@@ -1,0 +1,21 @@
+/*
+ * class examples
+ */
+use io;
+
+class foo {
+    method rev_it(string $tmp) {
+        $tmp = $tmp.uppercase();
+        return $tmp.rev();
+    }
+}
+
+
+$tmp = foo.ctor();
+$bar = $tmp.rev_it("blaat");
+io.print($bar);                 // TAALB
+
+// This should work, since 51 will be automatically converted to a string in the argument list?
+$tmp = foo.ctor();
+$bar = $tmp.rev_it(51);
+io.print($bar);                 // 15 (string)

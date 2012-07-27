@@ -1,0 +1,34 @@
+/*
+ * Array examples
+ */
+use io;
+
+$a = [ "1", 1, "4", 5.0 ];
+$b = [ "a" => "1", "b" ];      // "a" => "1",  0 => "b"
+
+$a.length        number of elements
+$a.has($s)       has $a got key $s?
+$a.contains($s)  has $a got value $s?
+$a.remove()      remove (index)
+$a.insert()      insert (on this index, shift up)
+$a.shift
+$a.unshift
+$a.push          push element
+$a.pop           pop element
+$a.json          return string json
+
+$alphabet = array.range('a','z');
+
+foreach $a as $e {
+    // $e.index : how many have we done (0..length)
+    if ($e.index == 0) {
+        io.print("This is the first");
+    }
+
+    // $e.left : how many are left (length..0)
+    if ($e.left == 0) {
+        io.print("This will be the last one");
+    }
+
+    io.printf("Key: %s   Val: %s\n", $e.key, $e.val);
+}

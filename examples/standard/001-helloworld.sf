@@ -1,0 +1,6 @@
+/*
+  Hello world example
+*/
+use io;
+
+io.print("hello world");

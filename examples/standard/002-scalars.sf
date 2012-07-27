@@ -1,0 +1,23 @@
+/*
+ * Scalar examples
+ */
+use io;
+
+// $a is a string, concat is a method of the string object
+$a = "hello";
+$a.concat(" ", "world");
+
+// $b is an int (object)
+$b = 1;
+
+// $c is a string object
+$c = $b.string();
+
+// using a decimal in a string context automatically calls .string
+$d = "This is number $b !"
+
+// This is literal $b, so no expansion
+$e = 'This is number $b';
+
+// $f is 1.0 (decimal)
+$f = 1.decimal();

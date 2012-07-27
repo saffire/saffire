@@ -1,0 +1,91 @@
+/*
+ * class examples
+ */
+use io;
+
+class foo {
+
+    /**
+     * All classes are always based on a main class. This class has got some basic functionality
+     * like
+     *    .props (to iterate all properties)
+     *    .methods (to iterate all methods)
+     *    .size (size of the class (in what?)
+     *    .parents (which parent classes does this class have)
+     *    .name (name of the class)
+     *    .implements (which interfaces does it have
+     *    .mem (memory usage)
+     *
+     * could do:
+     *    .clone (called when cloning)
+     *    .ctor (called during construction)
+     *    .dtor (caleld during destruction)
+     */
+
+    // Constructor, called during init of variable
+    public method ctor() {
+    }
+
+    // Destructor, called during destroying the variable
+    public method dtor() {
+    }
+
+    // [abstract] [final] [static] [private|public|protected] method ...
+    static private method foo1(string $arg1 = "baz", &integer $arg2, $arg3) {
+        /*
+         * $arg1 must be a string, if not given, a string "baz" is used
+         * $arg2 must be an integer, it CAN modify this class, hence the &
+         * $arg3 can be any type, no hinting specified
+         *
+         * Calling the method:
+         *
+         *  $tmp = foo;
+         *  $tmp.foo1(arg2 = i, arg3 = "additional argument")
+         */
+
+    }
+
+    public method foo2 () {
+    }
+
+    method foo3 () {
+    }
+
+}
+
+
+// Extending other classes
+class bar extends foo {
+}
+//"bar".parents return array("foo")
+
+class baz extends foo implements ibaz {
+}
+
+//$tmp = baz.ctor();
+//$tmp.parents() returns array("foo")
+//$tmp.implements() returns array("ibaz")
+
+interface baz {
+    method foo();
+}
+
+abstract class baz {
+    abstract method foo();
+}
+
+
+$i = "1234";
+$tmp = foo.ctor();
+$tmp.foo1(arg2=$i, arg3="additional argument"); // skips arg1, uses default
+
+// This is possible, but how about arg3?
+$tmp.foo1(arg2=$i, arg1="additional argument", arg3 = "qux");
+
+// This is wrong, since arg2 is read/write, and it's not a variable reference?
+// $tmp.foo1(arg2="5", arg1="additional argument", arg3 = "qux");
+
+// Should we also call the .string method in this case for arg1?
+// $tmp.foo1("5", $i, "5");
+
+
