@@ -167,7 +167,8 @@ void saffire_do_print(char *str) {
             printf("%ld", var->val.num);
         }
     } else {
-        printf("%s", str);
+        str[strlen(str)-1] = '\0';
+        printf("%s", str+1);
     }
 }
 
