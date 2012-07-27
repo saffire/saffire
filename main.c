@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "parser.tab.h"
 
+#include "saffire_parser.h"
+
 extern int yyparse();
 extern FILE *yyin;
 
@@ -76,7 +78,7 @@ t_var *var_alloc(char type, char *name, void *val) {
     if (var->type == VT_LONG) {
         var->val.num = (long)val;
     } else if (var->type == VT_STRING) {
-        *var->val.str = (char) strdup((char *)val);
+        var->val.str = strdup((char *)val);
     }
 
     vars[var_idx] = var;
@@ -112,17 +114,14 @@ void _do_incdec(char *var_name, int inc) {
 }
 
 void saffire_do_program_begin(char *title) {
-    printf("do_program_begin: %s \n", title);
+    //printf("do_program_begin: %s \n", title);
 }
 void saffire_do_program_end() {
-    printf("do_program_end\n");
+    //printf("do_program_end\n");
 }
 
-void saffire_ext_info() {
-    printf("extinfo()\n");
-}
 void saffire_do_assign(char *var_name, char *val) {
-    printf("assign(%s => %s)\n", var_name, val);
+    //printf("assign(%s => %s)\n", var_name, val);
 
 
     char type = VT_STRING;
@@ -143,7 +142,7 @@ void saffire_do_assign(char *var_name, char *val) {
             exit(1);
         }
         if (type == VT_STRING) {
-            *var->val.str = (char) strdup(val);
+            var->val.str = strdup(val);
         } else if (type = VT_LONG) {
             var->val.num = num;
         }
@@ -154,7 +153,7 @@ void saffire_do_assign(char *var_name, char *val) {
 
 
 void saffire_do_print(char *str) {
-    printf("print(%s)\n", str);
+    //printf("print(%s)\n", str);
 
     if (str[0] == '$') {
         t_var *var = var_find(str);
@@ -173,32 +172,32 @@ void saffire_do_print(char *str) {
 }
 
 void saffire_do_pre_inc(char *var_name) {
-    printf("do_pre_inc()\n");
+    //printf("do_pre_inc()\n");
     _do_incdec(var_name, 1);
 }
 
 void saffire_do_post_inc(char *var_name) {
-    printf("do_post_inc()\n");
+    //printf("do_post_inc()\n");
     _do_incdec(var_name, 1);
 }
 
 void saffire_do_pre_dec(char *var_name) {
-    printf("do_pre_dec()\n");
+    //printf("do_pre_dec()\n");
     _do_incdec(var_name, 0);
 }
 
 void saffire_do_post_dec(char *var_name) {
-    printf("do_post_dec()\n");
+    //printf("do_post_dec()\n");
     _do_incdec(var_name, 0);
 }
 
 
 void saffire_inner_statement() {
-    printf("inner_statement();\n");
+    //printf("inner_statement();\n");
 }
 
 void saffire_do_expr() {
-    printf("expr\n");
+    //printf("expr\n");
 }
 
 

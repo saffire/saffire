@@ -1,6 +1,8 @@
 %{
     #include <stdio.h>
+    #include "saffire_parser.h"
 
+    int yylex(void);
     void yyerror(const char *err) { printf("Error: %s\n", err); }
 
     #define YYDEBUG 1
@@ -29,7 +31,7 @@ saffire:
 ;
 
 program_declaration_statement:
-        T_PROGRAM T_LABEL { saffire_do_program_begin($2); }
+        T_PROGRAM T_LABEL { saffire_do_program_begin((char *)$2); }
 ;
 
 inner_statement_list:
@@ -52,12 +54,12 @@ scalar:
 
 expr_without_variable:
         variable { $$ = $1; }
-    |   variable '=' expr { $$ = $3; saffire_do_assign($1, $3); }
-    |   T_DEC variable { $$ = $2; saffire_do_pre_dec($2); }
-    |   T_INC variable { $$ = $2; saffire_do_pre_inc($2); }
-    |   T_PRINT expr { $$ = $2; saffire_do_print($2); }
-    |   variable T_DEC { $$ = $1; saffire_do_post_dec($1); }
-    |   variable T_INC { $$ = $1; saffire_do_post_inc($1); }
+    |   variable '=' expr { $$ = $3; saffire_do_assign((char *)$1, (char *)$3); }
+    |   T_DEC variable { $$ = $2; saffire_do_pre_dec((char *)$2); }
+    |   T_INC variable { $$ = $2; saffire_do_pre_inc((char *)$2); }
+    |   T_PRINT expr { $$ = $2; saffire_do_print((char *)$2); }
+    |   variable T_DEC { $$ = $1; saffire_do_post_dec((char *)$1); }
+    |   variable T_INC { $$ = $1; saffire_do_post_inc((char *)$1); }
     |   '(' expr ')' { $$ = $2; }
     |   /* empty */
 ;
