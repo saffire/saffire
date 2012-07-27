@@ -205,22 +205,26 @@ void saffire_do_expr() {
 
 
 int main(int argc, char *argv[]) {
+    // Here we just initialize some temporary variable storage
     int i;
     for (i=0; i!=MAX_VARS; i++) {
         vars[i] = NULL;
     }
 
+    // Usage
     if (argc < 2) {
         fprintf(stderr, "Please specify source file\n");
         return 1;
     }
 
+    // Open file
     FILE *fp = fopen(argv[1], "r");
     if (!fp) {
         fprintf(stderr, "Could not open file: %s\n", argv[1]);
         return 1;
     }
 
+    // Parse it
     yyin = fp;
     yyparse();
 

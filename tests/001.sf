@@ -1,0 +1,4 @@
+program p001
+{
+	print "hello world!";
+}

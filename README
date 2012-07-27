@@ -3,6 +3,5 @@ Simple POC for lexing/parsing a language. Right now, the parser does a bit of in
 Needs:
     - we should create opcodes out of the parser.
     - docs
-    - operator precedence ("print --$b" vs "print $b--" should work)
     - pure_parser
     - everything else

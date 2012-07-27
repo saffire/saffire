@@ -12,6 +12,7 @@
 %token T_LABEL
 %token T_PROGRAM
 %token T_PRINT
+%right T_INC T_DEC
 %token T_INC
 %token T_DEC
 %token T_VARIABLE
@@ -57,7 +58,7 @@ expr_without_variable:
     |   T_PRINT expr { $$ = $2; saffire_do_print($2); }
     |   variable T_DEC { $$ = $1; saffire_do_post_dec($1); }
     |   variable T_INC { $$ = $1; saffire_do_post_inc($1); }
-
+    |   '(' expr ')' { $$ = $2; }
     |   /* empty */
 ;
 
