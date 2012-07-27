@@ -1,0 +1,6 @@
+*.o
+.idea
+lex.yy.c
+parser.tab.*
+parser.output
+saffire
