@@ -1,4 +1,8 @@
+/*
+  This is a multiline comment
+ */
 program p001
 {
+    // single line comment: Prints hello world
 	print "hello world!";
 }

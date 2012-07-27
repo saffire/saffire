@@ -22,12 +22,16 @@ tabspace    [ \t]*
 tokens      [;:,.\[\]()|^&+-/*=%!~$<>?@]
 any_char    [^]
 newline     ("\n")
+sl_comment  "//".+
+ml_comment  "/*"([^\*]|\*[^/])*"*/"
 
 opening_tags    [\"\']
 closing_tags    [\"\']
 
 
 %%
+
+{ml_comment}|{sl_comment} { }
 
 [\(\)\{\}:;=,]    { return yytext[0]; }
 
