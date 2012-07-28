@@ -87,10 +87,4 @@ clean:
 	$(RM) $(OBJS) || true
 	$(RM) $(TARGET) || true
 
-# run Tests
-test: 
-	./saffire tests/001.sf
-	./saffire tests/002.sf
-	./saffire tests/003.sf
-
 .PHONY:	all debug clean
