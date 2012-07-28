@@ -7,9 +7,9 @@ extern int yyparse();
 extern FILE *yyin;
 
 
-const VT_NULL   = 0;
-const VT_LONG   = 1;
-const VT_STRING = 2;
+const int VT_NULL   = 0;
+const int VT_LONG   = 1;
+const int VT_STRING = 2;
 
 typedef struct var {
     char type;
@@ -29,7 +29,7 @@ void print_var(t_var *var) {
     printf("  Name: %s\n", var->name);
     printf("  Type: %d\n", var->type);
     if (var->type == VT_LONG) {
-        printf("  Val:  %d\n", var->val.num);
+        printf("  Val:  %ld\n", var->val.num);
     }
     if (var->type == VT_STRING) {
         printf("  Val:  %s\n", var->val.str);
@@ -42,8 +42,7 @@ void print_var(t_var *var) {
 
 
 int var_find_slot() {
-    int i;
-    for (i=0; i!=MAX_VARS; i++) {
+    for (int i = 0; i !=MAX_VARS; i++) {
         if (vars[i] == NULL) {
             return i;
         }
@@ -71,21 +70,20 @@ t_var *var_alloc(char type, char *name, void *val) {
         exit(1);
     }
     t_var *var = (t_var *)malloc(sizeof(t_var));
-
     var->type = type;
     var->name = strdup(name);
 
     if (var->type == VT_LONG) {
         var->val.num = (long)val;
     } else if (var->type == VT_STRING) {
-        var->val.str = strdup((char *)val);
+        *var->val.str = (char) strdup((char *)val);
     }
 
     vars[var_idx] = var;
     return var;
 }
 
-var_free(t_var *var) {
+void var_free(t_var *var) {
     free(var->name);
     if (var->type == VT_STRING) {
         free(var->val.str);
@@ -145,7 +143,7 @@ void saffire_do_assign(char *var_name, char *val) {
             exit(1);
         }
         if (type == VT_STRING) {
-            var->val.str = strdup(val);
+            *var->val.str = (char) strdup(val);
         } else if (type = VT_LONG) {
             var->val.num = num;
         }
@@ -165,12 +163,12 @@ void saffire_do_print(char *str) {
             exit(1);
         }
         if (var->type == VT_STRING) {
-            printf("print_var_str(%s)", var->val.str);
+            printf("%s", var->val.str);
         } else if (var->type = VT_LONG) {
-            printf("print_var_num(%d)", var->val.num);
+            printf("%ld", var->val.num);
         }
     } else {
-        printf(str);
+        printf("%s", str);
     }
 }
 

@@ -4,5 +4,8 @@ program p002
 	$a++;
 	$a++;
 	--$a;
-	print $a;
+	print $a++;
+	print ++$a;	
 }
+
+// Should output: 7 9
