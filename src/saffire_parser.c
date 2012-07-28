@@ -7,8 +7,14 @@
 #include "svar.h"
 
 
+/*
+ * This file should hold all information to parse the tree into bytecode probably.
+ * For now, it pretty much interpret the code during parsing.
+ */
+
 void saffire_do_program_begin(char *title) {
 }
+
 void saffire_do_program_end() {
 }
 
@@ -44,7 +50,6 @@ void saffire_do_assign(char *var_name, char *val) {
         }
     }
 }
-
 
 void saffire_do_print(char *str) {
     if (str[0] == '$') {
