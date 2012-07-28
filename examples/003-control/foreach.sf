@@ -1,0 +1,19 @@
+// MAYBE THIS SHOULD JUST BE AN ITERATOR?
+
+foreach $a as $e {
+    // $e.index : how many have we done (0..length)
+    // $e.left : how many are left (length..0)
+    // $e.key
+    // $e.val
+
+    if ($e.index == 0) {
+        io.print("This is the first");
+    }
+
+
+    if ($e.left == 0) {
+        io.print("This will be the last one");
+    }
+
+    io.printf("Key: %s   Val: %s\n", $e.key, $e.val);
+}

@@ -21,3 +21,9 @@ $e = 'This is number $b';
 
 // $f is 1.0 (decimal)
 $f = 1.decimal();
+
+
+// Strings as "arrays"
+"bar"[1] == "a"
+
+// strings are UTF8. strlen always returns length of actual string, not the byte length!

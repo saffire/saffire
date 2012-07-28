@@ -1,0 +1,11 @@
+$a = 10;
+
+while ($a) {
+    $a--;
+} else {
+    io.print("A was already 0");
+}
+
+do {
+  $a--;
+} while ($a);

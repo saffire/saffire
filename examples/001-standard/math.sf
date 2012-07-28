@@ -1,0 +1,27 @@
+$a = 1;
+$b = 2;
+
+$c = $a + $b;   // 3
+
+$c = $a - $b;   // -1
+
+$c = $a * $b;   // 2
+
+$c = $a / $b;   // (double) 0.5
+
+$c = $a /_ $b;  // (int)0;  // Floor
+
+$c = $a % $b;   // 1  // modulus
+
+$c = $a ^ $b;   // 1  1 exp 2
+
+$c = -$a;       // -1
+
+// Integers (and doubles) have math methods:
+
+$c = (-$a).abs()   // 1     // which precedence?
+$c = $b.sqrt()     // 4
+$c = $b.log($a)
+$c = $b.ln($a)
+
+etc...

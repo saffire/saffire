@@ -1,0 +1,11 @@
+switch ("foo") {
+    case "bar" :
+        ...
+        break;
+    case "baz" :
+        ...
+        // Intentionally fallthrough
+    default :
+        ...
+        break;
+}
