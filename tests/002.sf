@@ -1,12 +1,12 @@
 program p002
 {
-	$a = 6;
-	$a++;
-	$a++;
-	--$a;
-	print $a++;
+	$a = 6;     // A will become 6
+	$a++;       // A = 7
+	$a++;       // A = 8
+	--$a;       // A = 7
+	print $a++; // first print, then ++
 	print " ";
-	print ++$a;
+	print ++$a; // first ++, then print
 }
 
 // Should output: 7 9
