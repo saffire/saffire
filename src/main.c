@@ -9,17 +9,24 @@
 
 #include "version.h"
 
-extern int yyparse();
-extern FILE *yyin;
+extern int      yyparse();
+extern FILE     *yyin;
 
-char *source_file = "-";
-int  source_args = 0;
+char    *source_file = "-";     // defaults to stdin
+int     source_args = 0;        // default to no additional arguments
 
+
+/**
+ * Prints current version number and copyright information
+ */
 void print_version() {
-  printf("%s  - %s\n", saffire_version, saffire_copyright);
+    printf("%s  - %s\n", saffire_version, saffire_copyright);
 }
 
 
+/**
+ * Prints usage information
+ */
 void print_usage() {
     printf("\n"
            "Usage: saffire [options] [script [args]]\n"
@@ -34,6 +41,9 @@ void print_usage() {
 }
 
 
+/**
+ * parses options and set some (global) variables if needed
+ */
 void parse_options(int argc, char *argv[]) {
     int c;
     int option_index;
@@ -41,6 +51,7 @@ void parse_options(int argc, char *argv[]) {
     // Suppress default errors
     opterr = 0;
 
+    // Long options maps back to short options
     static struct option long_options[] = {
             { "version", no_argument, 0, 'v' },
             { "help",    no_argument, 0, 'h' },
@@ -49,6 +60,7 @@ void parse_options(int argc, char *argv[]) {
             { 0, 0, 0, 0 }
         };
 
+    // Iterate all the options
     while (1) {
         c = getopt_long (argc, argv, "vhcl", long_options, &option_index);
         if (c == -1) break;
@@ -78,9 +90,11 @@ void parse_options(int argc, char *argv[]) {
         }
     }
 
+    // All options done, check for additional options like source filename and optional arguments
     if (optind < argc) {
         source_file = argv[optind++];
         if (optind < argc) {
+            // Source args points to the FIRST saffire script argument (./saffire script.sf first second third)
             source_args = optind;
         }
     }
@@ -90,14 +104,7 @@ void parse_options(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     parse_options(argc, argv);
 
-    printf ("Source file: %s\n", source_file);
-    if (source_args != 0) {
-        for (int i=source_args; i!=argc; i++) {
-            printf("  Arg: %s\n", argv[i]);
-        }
-    }
-
-    // Open file
+    // Open file, or use stdin if needed
     FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
     if (!fp) {
         fprintf(stderr, "Could not open file: %s\n", source_file);
@@ -107,7 +114,7 @@ int main(int argc, char *argv[]) {
     // Initialize system
     svar_init_table();
 
-    // Parse it
+    // Parse the file input
     yyin = fp;
     yyparse();
 

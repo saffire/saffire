@@ -21,7 +21,7 @@
     nodeType *nPtr;
 }
 
-%token END 		0 "end of file"
+%token END 0 "end of file"
 %token <sVal> T_LABEL
 %token T_PROGRAM
 %token T_PRINT
