@@ -1,0 +1,24 @@
+/**
+ * Saffire tuple handling
+ *
+ */
+class foo {
+    method bar() {
+        return "1", "2", "3";
+    }
+}
+
+
+$a, $b, $c = foo.bar();     // $a = "1", $b = "2"  $c = "3"
+
+// Since only one variable is given, it will be filled with a tuple with all elements
+$a = foo.bar();             // $a = ("1", "2", "3")
+
+// there are actually 2 arguments given, $a and <undef>, $a will be filled with "1", <undef> with ("2", "3")
+$a, = foo.bar();            // $a = "1"
+
+// <undef>,$b,$c. 3 arguments, so all three can be filled
+,$b, $c = foo.bar();        // $b = "2", $c = "3"
+
+// 2 args, <undef> filled with "1", and $b with ("2" and "3")
+,$b = foo.bar();            // $b = ("2", "3")

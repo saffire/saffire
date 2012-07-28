@@ -10,16 +10,15 @@ class foo {
      * like
      *    .props (to iterate all properties)
      *    .methods (to iterate all methods)
-     *    .size (size of the class (in what?)
      *    .parents (which parent classes does this class have)
      *    .name (name of the class)
      *    .implements (which interfaces does it have
-     *    .mem (memory usage)
+     *    .mem (memory usage of the class)
      *
      * could do:
      *    .clone (called when cloning)
-     *    .ctor (called during construction)
-     *    .dtor (caleld during destruction)
+     *    .ctor (called during construction, cannot be called directly)
+     *    .dtor (caleld during destruction, cannot be called directly)
      */
 
     // Constructor, called during init of variable
@@ -57,7 +56,7 @@ class foo {
 // Extending other classes
 class bar extends foo {
 }
-//"bar".parents return array("foo")
+//"bar".parents() return array("foo")
 
 class baz extends foo implements ibaz {
 }

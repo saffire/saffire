@@ -1,0 +1,23 @@
+use io;
+
+class foo {
+    method bar(string $tmp) {
+        if ($tmp =~ "/[A-Z]+/") {
+            throw invalidException("This is not ok");
+        }
+        return $tmp.rev();
+    }
+}
+
+
+$tmp = foo.ctor();
+try {
+    $tmp.bar("aaaaa");
+    $tmp.bar("1234");
+} catch (invalidException) {
+    // Invalidexception has been found
+} catch (exception) {
+    // Another exception has been found
+} finally {
+    // We always come here
+}

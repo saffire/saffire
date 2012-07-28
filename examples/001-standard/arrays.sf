@@ -19,16 +19,30 @@ $a.json          return string json
 
 $alphabet = array.range('a','z');
 
-foreach $a as $e {
-    // $e.index : how many have we done (0..length)
-    if ($e.index == 0) {
+foreach $a as value, key, meta {
+    // $meta.index : how many have we done (0..length)
+    if ($meta.index == 0) {
         io.print("This is the first");
     }
 
-    // $e.left : how many are left (length..0)
-    if ($e.left == 0) {
+    // $meta.left : how many are left (length..0)
+    if ($meta.left == 0) {
         io.print("This will be the last one");
     }
 
-    io.printf("Key: %s   Val: %s\n", $e.key, $e.val);
+    io.printf("Key: %s   Val: %s\n", $key, $val);
+
+    // meta object(immutable)
+    //   meta.index   0-based index (int)
+    //   meta.first   true when first element (bool)
+    //   meta.last    true when last element (bool)
+    //   meta.left    how many elements are left (if available) (int)
+    //   meta.count   number of elements (if available!) (int)
+    //   meta.key     key (mixed, or only string?)
+    //   meta.value   value (mixed)
 }
+
+
+
+
+

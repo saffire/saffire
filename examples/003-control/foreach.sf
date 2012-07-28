@@ -1,19 +1,20 @@
 // MAYBE THIS SHOULD JUST BE AN ITERATOR?
 
-foreach $a as $e {
-    // $e.index : how many have we done (0..length)
-    // $e.left : how many are left (length..0)
-    // $e.key
-    // $e.val
+foreach string.range("A","Z") as e {
+  if (e.first) {
+    io.printf("Oh hai! this is the first out of %d items!\n", e.count);
+  }
+  if (e.last) {
+    io.print("This will be the last item. kthnkbai!");
+  }
 
-    if ($e.index == 0) {
-        io.print("This is the first");
-    }
+  io.print("Item: " + e.index + " Key: " + e.key + " Val: "+ e.val + "\n");
 
-
-    if ($e.left == 0) {
-        io.print("This will be the last one");
-    }
-
-    io.printf("Key: %s   Val: %s\n", $e.key, $e.val);
+ // e object(immutable)
+ //   e.index   0-based index (int)
+ //   e.first   true when first element (bool)
+ //   e.last    true when last element (bool)
+ //   e.count   number of elements (if available!) (int)
+ //   e.key     key (mixed, or only string?)
+ //   e.val     value (mixed)
 }
