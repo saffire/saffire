@@ -42,6 +42,7 @@ debug: all
 # Our objects that needs to be compiled
 OBJS =	main.o \
 	svar.o \
+	saffire_parser.o \
 	lex.yy.o \
 	parser.tab.o
 
