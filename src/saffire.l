@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define YYSTYPE char *
-YYSTYPE yylval;
-
+#include "node.h"
 #include "parser.tab.h"
 
 %}
@@ -48,19 +46,24 @@ closing_tags    [\"\']
     return T_PRINT; }
 
 {opening_tags}[^\"]*{closing_tags} {
-    yylval=strdup(yytext);
+    yylval.sVal = strdup(yytext+1);
+    if (yylval.sVal[yyleng-2] != yytext[0]) {
+        fprintf(stderr,"improperly terminated string");
+    } else {
+        yylval.sVal[yyleng-2] = 0;
+    }
     return T_STRING; }
 
 \${label} {
-    yylval=strdup(yytext);
+    yylval.sVal = strdup(yytext);
     return T_VARIABLE; }
 
 {label} {
-    yylval=strdup(yytext);
+    yylval.sVal = strdup(yytext);
     return T_LABEL; }
 
 {lnum} {
-    yylval = strdup(yytext);
+    yylval.lVal = strtol(yytext, NULL, 10);
     return T_LNUM; }
 
 {whitespace} { }

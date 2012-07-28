@@ -9,7 +9,5 @@
     void saffire_do_post_inc(char *var_name);
     void saffire_do_pre_dec(char *var_name);
     void saffire_do_post_dec(char *var_name);
-    void saffire_inner_statement();
-    void saffire_do_expr();
 
 #endif
