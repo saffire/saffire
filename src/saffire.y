@@ -6,7 +6,11 @@
     int yylex(void);
     void yyerror(const char *err) { printf("Error: %s\n", err); }
 
-    #define YYDEBUG 1
+    #ifdef __DEBUG
+        #define YYDEBUG 1
+    #else
+        #define YYDEBUG 0
+    #endif
 
 %}
 
