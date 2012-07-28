@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include "node.h"
     #include "saffire_parser.h"
 
     int yylex(void);
@@ -9,38 +10,49 @@
 
 %}
 
+%union {
+    char *sVal;
+    long lVal;
+    double dVal;
+    nodeType *nPtr;
+}
 
 %token END 		0 "end of file"
-%token T_LABEL
+%token <sVal> T_LABEL
 %token T_PROGRAM
 %token T_PRINT
 %right T_INC T_DEC
 %token T_INC
 %token T_DEC
-%token T_VARIABLE
-%token T_LNUM
-%token T_TOKEN
-%token T_STRING
+%token <sVal> T_VARIABLE
+%token <lVal> T_LNUM
+%token <sVal> T_STRING
+
+%type <sVal> inner_statement_list inner_statement expr scalar expr_without_variable variable
 
 %start saffire
 
 %% /* rules */
 
 saffire:
-        program_declaration_statement { } '{' inner_statement_list '}' { saffire_do_program_end(); }
+        program_declaration_statement { }
+        '{'
+        inner_statement_list
+        '}' { saffire_do_program_end(); }
 ;
 
 program_declaration_statement:
-        T_PROGRAM T_LABEL { saffire_do_program_begin((char *)$2); }
+        T_PROGRAM T_LABEL { saffire_do_program_begin($2); }
 ;
 
 inner_statement_list:
-        inner_statement_list { } inner_statement { $$ = $1; }
+        inner_statement_list { }
+        inner_statement { $$ = $1; }
     |   /* empty */
 ;
 
 inner_statement:
-        expr { $$ = $1; } ';'
+        expr { $<sVal>$ = $1; } ';'
 
 expr:
         expr_without_variable { $$ = $1; }
@@ -48,24 +60,24 @@ expr:
 ;
 
 scalar:
-        T_STRING { $$ = $1; }
-    |   T_LNUM { $$ = $1; }
+        T_STRING { $<sVal>$ = $1; }
+    |   T_LNUM { $<lVal>$ = $1; }
 ;
 
 expr_without_variable:
         variable { $$ = $1; }
-    |   variable '=' expr { $$ = $3; saffire_do_assign((char *)$1, (char *)$3); }
-    |   T_DEC variable { $$ = $2; saffire_do_pre_dec((char *)$2); }
-    |   T_INC variable { $$ = $2; saffire_do_pre_inc((char *)$2); }
-    |   T_PRINT expr { $$ = $2; saffire_do_print((char *)$2); }
-    |   variable T_DEC { $$ = $1; saffire_do_post_dec((char *)$1); }
-    |   variable T_INC { $$ = $1; saffire_do_post_inc((char *)$1); }
+    |   variable '=' expr { $$ = $3; saffire_do_assign($1, $3); }
+    |   T_DEC variable { $$ = $2; saffire_do_pre_dec($2); }
+    |   T_INC variable { $$ = $2; saffire_do_pre_inc($2); }
+    |   T_PRINT expr { $$ = $2; saffire_do_print($2); }
+    |   variable T_DEC { $$ = $1; saffire_do_post_dec($1); }
+    |   variable T_INC { $$ = $1; saffire_do_post_inc($1); }
     |   '(' expr ')' { $$ = $2; }
     |   /* empty */
 ;
 
 variable:
-        T_VARIABLE { $$ = $1; }
+        T_VARIABLE { $<sVal>$ = $1; }
 ;
 
 
