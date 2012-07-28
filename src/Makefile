@@ -33,7 +33,7 @@ all:	$(TARGET)
 
 
 # Additional debug flags (will be added when "make debug")
-debug: CC_DEBUG_FLAGS = -ggdb
+debug: CC_DEBUG_FLAGS = -ggdb -D__DEBUG
 debug: BISON_DEBUG_FLAGS = -v
 debug: LEX_DEBUG_FLAGS = -d
 debug: all
