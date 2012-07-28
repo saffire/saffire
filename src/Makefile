@@ -13,7 +13,7 @@ LIBS =
 # Standard flags for C compiler
 INCLUDES  =
 USR_FLAGS =
-CFLAGS   = -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
+CFLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 
 # Bison flags
 BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
@@ -50,6 +50,7 @@ debug: build
 
 # Our objects that needs to be compiled
 OBJS =	main.o \
+	svar.o \
 	lex.yy.o \
 	parser.tab.o \
 	hashtable/hashtable.o
