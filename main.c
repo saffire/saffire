@@ -83,7 +83,7 @@ t_var *var_alloc(char type, char *name, void *val) {
     return var;
 }
 
-void_free(t_var *var) {
+void var_free(t_var *var) {
     free(var->name);
     if (var->type == VT_STRING) {
         free(var->val.str);
