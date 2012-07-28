@@ -12,8 +12,11 @@ clean:
 	cd src && $(MAKE) $@
 
 test:
-	./src/saffire ./tests/001.sf
-	./src/saffire ./tests/002.sf
-	./src/saffire ./tests/003.sf
+	for i in ./tests/*.sf; do \
+	  echo "*** Testing: $$i" ; \
+	  ./src/saffire $$i ; \
+	  echo "" ; \
+	  echo "" ; \
+	done
 
 .PHONY:	all debug saffire clean test
