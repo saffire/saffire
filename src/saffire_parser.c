@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "saffire_parser.h"
+#include "saffire_compile.h"
 #include "node.h"
 #include "parser.tab.h"
 #include "svar.h"
@@ -11,7 +12,7 @@ extern void yyerror(const char *err);
 
 
 void saffire_execute(nodeType *p) {
-    printf ("Interpreting the nodes...\n");
+    saffire_compile(p);
 }
 
 
@@ -51,7 +52,7 @@ nodeType *saffire_var(char *var_name) {
     }
 
     p->type = typeVar;
-    p->var.var = svar_alloc(SV_NULL, var_name, NULL);
+    p->var.name = strdup(var_name);
 
     return p;
 }
