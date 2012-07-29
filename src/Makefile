@@ -43,6 +43,7 @@ debug: all
 OBJS =	main.o \
 	svar.o \
 	saffire_parser.o \
+	saffire_compile.o \
 	lex.yy.o \
 	parser.tab.o
 
@@ -70,8 +71,8 @@ lex.yy.c: saffire.l
 
 # Clean up old data
 clean:
-	echo [RM] $@
-	$(RM) parser.tab.c parser.tab.h lex.yy.c || true
+	echo [RM] $@$
+	$(RM) parser.tab.c parser.tab.h lex.yy.c parser.output || true
 	$(RM) *.o || true
 	$(RM) $(TARGET) || true
 
