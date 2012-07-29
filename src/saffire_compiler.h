@@ -3,6 +3,6 @@
 
 #include "node.h"
 
-void saffire_compile(nodeType *p);
+void saffire_compiler(nodeType *p);
 
 #endif
