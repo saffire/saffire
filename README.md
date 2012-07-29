@@ -11,6 +11,7 @@ We are aiming to have a small specification which we can lex/parse and compile t
 We're on freenode as well, at channel #saffire. Websites are coming up as soon as we get some sort of specification of the ground.
 
 Needs:
+
     - A language specificaton (see /examples)
     - Ability to create an AST, and we should create opcodes.
     - interpret these opcodes through a standalone interpreter
