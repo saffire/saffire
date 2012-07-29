@@ -49,10 +49,6 @@ closing_tags    [\"\']
     yylval.sVal = strdup(yytext);
     return T_VARIABLE; }
 
-{label} {
-    yylval.sVal = strdup(yytext);
-    return T_LABEL; }
-
 {lnum} {
     yylval.lVal = strtol(yytext, NULL, 10);
     return T_LNUM; }
