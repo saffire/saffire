@@ -1,10 +1,16 @@
 #include <stdio.h>
-#include "saffire_compile.h"
+#include <stdlib.h>
+#include "saffire_compiler.h"
 #include "parser.tab.h"
 
 static int lbl;
 
-void saffire_compile(nodeType *p) {
+#define SC0(p) saffire_compiler(p->opr.ops[0])
+#define SC1(p) saffire_compiler(p->opr.ops[1])
+#define SC2(p) saffire_compiler(p->opr.ops[2])
+
+
+void saffire_compiler(nodeType *p) {
     int lbl1, lbl2;
 
     if (!p) return;
@@ -26,44 +32,44 @@ void saffire_compile(nodeType *p) {
             switch (p->opr.oper) {
                 case T_WHILE :
                     printf("L%03d:\n", lbl1 = lbl++);
-                    saffire_compile(p->opr.ops[0]);
+                    SC0(p);
                     printf("\tjz\tL%03d\n", lbl2 = lbl++);
-                    saffire_compile(p->opr.ops[1]);
+                    SC1(p);
                     printf("\tjmp\tL%03d\n", lbl1);
                     printf("L%03d:\n", lbl2);
                     break;
 
                 case T_IF:
-                    saffire_compile(p->opr.ops[0]);
+                    SC0(p);
                     if (p->opr.nops > 2) {
                         // if else
                         printf("\tjz\tL%03d\n", lbl1 = lbl++);
-                        saffire_compile(p->opr.ops[1]);
+                        SC1(p);
                         printf("\tjmp\tL%03d\n", lbl2 = lbl++);
                         printf("L%03d:\n", lbl1);
-                        saffire_compile(p->opr.ops[2]);
+                        SC2(p);
                         printf("L%03d\n", lbl2);
                     } else {
                         // if
                         printf("\tjz\tL%03d\n", lbl1 = lbl++);
-                        saffire_compile(p->opr.ops[1]);
+                        SC1(p);
                         printf("L%03d:\n", lbl1);
                     }
                     break;
 
                 case T_PRINT :
-                    saffire_compile(p->opr.ops[0]);
+                    SC0(p);
                     printf("\tprint\n");
                     break;
 
                 case '=' :
-                    saffire_compile(p->opr.ops[1]);
+                    SC1(p);
                     printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->var.name);
                     break;
 
                 default :
-                    saffire_compile(p->opr.ops[0]);
-                    saffire_compile(p->opr.ops[1]);
+                    SC0(p);
+                    SC1(p);
                     switch (p->opr.oper) {
                         case '+' : printf("\tadd\n"); break;
                         case '-' : printf("\tsub\n"); break;
