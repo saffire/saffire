@@ -57,4 +57,3 @@ search paths should be customizable. Perhaps through a saffire main class:
     saffire.include_path.concat("/my/spf/directory");
     saffire.max_memory = 512;
     saffire.max_execution_time = 30;
-
