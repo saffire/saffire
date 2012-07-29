@@ -4,7 +4,7 @@
     #include "svar.h"
 
     // different kind of nodes we manage
-    typedef enum { TypeVar, typeOpr } nodeEnum;
+    typedef enum { typeVar, typeOpr } nodeEnum;
 
     // A variable node points to a var
     typedef struct {
