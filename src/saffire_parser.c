@@ -101,4 +101,3 @@ void saffire_free_node(nodeType *p) {
     }
     free(p);
 }
-
