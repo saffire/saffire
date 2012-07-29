@@ -14,3 +14,5 @@ if ($a == "foo") {
 } else {
     ...
 }
+
+// elseif ($a == "bar")    SHOULD THIS BE SUPPORTED OR NOT?

@@ -1,0 +1,65 @@
+There should be a number of available classes:
+
+
+class saffire
+-------------
+Main class which controls the state of the current saffire app. Can be used for settings, normally found in a
+saffire.ini file.
+
+    // Info
+    saffire.memory_usage            (int) how many bytes is this instance using
+    saffire.classes                 returns array of all classes current available
+
+    // Maintenance
+    saffire.gc                      cycle garbage collector
+
+    // Settings
+    saffire.max_execution_time      (int) get/set number of seconds you can execute.
+    saffire.max_memory              (int) get/set number of MB's of memory usage (can only increase!)
+    saffire.search_path             get/set
+
+
+
+class io
+--------
+A simple IO class to use input/output.
+
+    print           prints a string or something castable to a string
+    printf()        uses printf() notation to print
+
+class file
+----------
+File handling class
+
+
+class spf
+---------
+Saffire package file class. Creates, reads and maintains spf files.
+
+    .isPackage(String file)     checks if filename is a sfp package
+    .metainfo                   get/set meta info
+    .metainfo.owner             get/set owner
+    .metainfo.url               get/set url
+    .metainfo.email             get/set email
+    .dependencies               get/set dependencies
+    .addFile()                  add file to package
+    .removeFile()               remove file from package
+    .updateFile()               updates a file in package
+    .createFromDir              creates a package from a directory
+
+class string
+------------
+Class to handle strings.
+
+    .rev        reverse a string
+    .slice      slice a string
+    .bytes      returns a byte array for the string
+    .length     returns number of characters
+    .format     utf-8, or other format (do we need to support this?)
+    .concat     contacts other strings
+
+
+class int
+---------
+Class to handle integers
+

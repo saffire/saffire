@@ -73,18 +73,3 @@ abstract class baz {
     abstract method foo();
 }
 
-
-$i = "1234";
-$tmp = foo.ctor();
-$tmp.foo1(arg2=$i, arg3="additional argument"); // skips arg1, uses default
-
-// This is possible, but how about arg3?
-$tmp.foo1(arg2=$i, arg1="additional argument", arg3 = "qux");
-
-// This is wrong, since arg2 is read/write, and it's not a variable reference?
-// $tmp.foo1(arg2="5", arg1="additional argument", arg3 = "qux");
-
-// Should we also call the .string method in this case for arg1?
-// $tmp.foo1("5", $i, "5");
-
-

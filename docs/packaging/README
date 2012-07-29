@@ -1,0 +1,60 @@
+Packaging
+=========
+
+If we use classes, it might be possible that those classes are actually packages of classes.
+
+For instance:
+
+    use fooFramework as ff;
+    $req = ff.http.request();
+
+this actually uses the request method of the http class from the fooFramework package.
+
+It should be directly mapped to path names, so this class should reside in the:
+
+    /fooFramework/http.sf
+    /fooFramework/utils.sf
+    /fooFramework/Extras/MySQL.sf
+
+so you can use:
+
+    use fooFramework as ff;
+    $mysql = ff.Extras.MySQL();
+
+which would create a mysql object taken from the class in file: /fooFramework/Extras/MySQL.sf
+
+However, you can also use the MySQL class directly:
+
+    use fooFramework.Extras.MySQL;
+    $mysql = MySQL();
+
+If we would accept implicit classes, this should be usable as well:
+
+    // No use statement. Explicit
+    $mysql = fooFramework.Extras.MySQL();
+
+
+In order to bundle or package stuff, we should use a TAR-like system (tar compliant would be nice, since this
+makes creating and maintaining packages easier).
+
+It should consists of a .metainfo file, with information about the package. a .dependency file with dependency
+information and maybe some other files.
+
+    fooFramework.spf  (spf = saffire package file)
+        .dependency
+        .metainfo
+        fooFramework.sf
+        utils.sf
+        Extras/
+            MySQL.sf
+
+
+
+Search paths:
+-------------
+search paths should be customizable. Perhaps through a saffire main class:
+
+    saffire.include_path.concat("/my/spf/directory");
+    saffire.max_memory = 512;
+    saffire.max_execution_time = 30;
+

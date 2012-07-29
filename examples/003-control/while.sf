@@ -1,5 +1,12 @@
-$a = 10;
+/*
+ * while structure.
+ *
+ * While-loops support else() for when we didn't even went into the first loop. This is only supported on
+ * while{}, not do{}while, since the last one ALWAYS will enter the loop once.
+ *
+ */
 
+$a = 10;
 while ($a) {
     $a--;
 } else {
@@ -9,3 +16,16 @@ while ($a) {
 do {
   $a--;
 } while ($a);
+
+
+
+
+$a = 10;
+while ($a) {
+    $a--;
+    if ($a == 7) continue;    // Will return to the begin of the loop
+    if ($a == 5) break;       // Will break out of this loop when a = 5
+    if ($a == 4) breakelse;   // Will break out of this loop AND do the ELSE part when $a = 4;
+} else {
+    io.print("we didn't enter the loop, or breakelse was called");
+}

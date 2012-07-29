@@ -1,4 +1,33 @@
-// MAYBE THIS SHOULD JUST BE AN ITERATOR?
+// foreach automatically calls the .iter() method from a variable
+
+/* since string.range("A","Z") returns an array(?) from [a..z], this array object has the .iter() method, that's why
+   we can use it inside the foreach. The iter() class should return a tuple with 3 items:
+
+   (value, key, meta)
+
+   which can be assigned to either loose variables, or inside one variable:
+
+   foreach $arr as $key, $val, $meta {
+   }
+
+   or
+
+   foreach ($arr as $e) {
+     // $e.key
+     // $e.val
+     // $e.meta
+   }
+
+   if we don't need meta:
+
+   foreach $arr as $val, $key,  {
+   }
+
+   Notice the extra comma, this is needed otherwise $key will be filled with a tuple (key, meta).
+   The comma actually separates an undef variable, so the meta wil be assigned to nothing.
+
+*/
+
 
 foreach string.range("A","Z") as e {
   if (e.first) {
@@ -9,12 +38,19 @@ foreach string.range("A","Z") as e {
   }
 
   io.print("Item: " + e.index + " Key: " + e.key + " Val: "+ e.val + "\n");
-
- // e object(immutable)
- //   e.index   0-based index (int)
- //   e.first   true when first element (bool)
- //   e.last    true when last element (bool)
- //   e.count   number of elements (if available!) (int)
- //   e.key     key (mixed, or only string?)
- //   e.val     value (mixed)
 }
+
+
+/*
+    the meta object is an immutable object with the following info:
+
+    e object(immutable)
+       e.index   0-based index (int)
+       e.first   true when first element (bool)
+       e.last    true when last element (bool)
+       e.count   number of elements (if available!) (int)
+       e.key     key (mixed, or only string?)
+       e.val     value (mixed)
+
+    this way more information about the loop can be found, which can come in handy sometimes.
+ */

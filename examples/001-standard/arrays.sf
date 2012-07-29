@@ -1,6 +1,11 @@
 /*
  * Array examples
  */
+
+
+// Everything is a class. No global functions, so print etc should be done through an io class. This could either
+// be loaded explicitly or implicitly. We prefer explicit, so "use io". Some classes like string, int etc should
+// always be available and loaded implicitly.
 use io;
 
 $a = [ "1", 1, "4", 5.0 ];
@@ -18,6 +23,9 @@ $a.pop           pop element
 $a.json          return string json
 
 $alphabet = array.range('a','z');
+
+
+// See foreach.sf for more info on handling interatorable classes
 
 foreach $a as value, key, meta {
     // $meta.index : how many have we done (0..length)

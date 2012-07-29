@@ -22,3 +22,18 @@ $a, = foo.bar();            // $a = "1"
 
 // 2 args, <undef> filled with "1", and $b with ("2" and "3")
 ,$b = foo.bar();            // $b = ("2", "3")
+
+
+/* PROBLEM: if we apply the expression onto itself when there is no LeftHandValue given, what should the following do?
+ *
+ * $foo1 = "1";
+ * $foo2 = "2";
+ * $foo3 = "3";
+ * $a, ,$c = $foo1.int(), $foo2.int(), $foo3.int()
+ *
+ * Since only $a en $c are filled, and the middle is not assigned, does this mean that
+ *   $foo1 = "1", $a = 1;
+ *   $foo3 = "3", $c = 3;
+ * but:
+ *   $foo2 = 2;  // Since we cast and assign to none, we assume ourself?
+ */

@@ -19,3 +19,14 @@ $a = "FOO".regex("/FO+"/); // (bool)true, regex match
 if ("FOO" ~= "/fo+/i") { // (bool)true
 
 
+
+// Strings are UTF-8
+
+
+"bjšrk".length          // 5, Number of characters, not bytes!
+"bjšrk".bytes.length    // 6, Number of bytes
+
+
+.bytes is a method that returns a byte-array of the string
+
+byteArray("bjšrk").length = 6

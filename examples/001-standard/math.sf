@@ -1,3 +1,7 @@
+/**
+ * Simple math stuff
+ */
+
 $a = 1;
 $b = 2;
 
@@ -17,11 +21,17 @@ $c = $a ^ $b;   // 1  1 exp 2
 
 $c = -$a;       // -1
 
-// Integers (and doubles) have math methods:
+// Integers (and doubles) have math methods, or do we use our own math class?
 
 $c = (-$a).abs()   // 1     // which precedence?
+$c = -$a.abs()   // 1     // which precedence?
 $c = $b.sqrt()     // 4
 $c = $b.log($a)
 $c = $b.ln($a)
 
-etc...
+// or
+
+$c = math.abs(-$a);
+$c = math.sqrt($b);
+$c = math.log($a);
+$c = math.ln($a);
