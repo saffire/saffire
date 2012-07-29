@@ -87,10 +87,10 @@ expr:
     |   expr T_LE expr      { TRACE $$ = saffire_opr(T_LE, 2, $1, $3); }
     |   expr T_NE expr      { TRACE $$ = saffire_opr(T_NE, 2, $1, $3); }
     |   expr T_EQ expr      { TRACE $$ = saffire_opr(T_EQ, 2, $1, $3); }
-    |   T_DEC T_VARIABLE                { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($2)  ); }
-    |   T_INC T_VARIABLE                { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($2)); }
-    |   T_VARIABLE T_DEC                { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($1)); }
-    |   T_VARIABLE T_INC                { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($1)); }
+    |   T_DEC T_VARIABLE    { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($2)  ); }
+    |   T_INC T_VARIABLE    { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($2)); }
+    |   T_VARIABLE T_DEC    { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($1)); }
+    |   T_VARIABLE T_INC    { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($1)); }
     |   '(' expr ')'        { TRACE $$ = $2; }
 
 ;
