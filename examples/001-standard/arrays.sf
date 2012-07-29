@@ -3,26 +3,48 @@
  */
 
 
-// Everything is a class. No global functions, so print etc should be done through an io class. This could either
-// be loaded explicitly or implicitly. We prefer explicit, so "use io". Some classes like string, int etc should
+// Everything is a class. No global functions, so print etc should be done
+// through an I/O class. This could either be loaded explicitly or implicitly.
+We prefer explicit, so "use io". Some classes like string, int etc should
 // always be available and loaded implicitly.
+
 use io;
 
 $a = [ "1", 1, "4", 5.0 ];
 $b = [ "a" => "1", "b" ];      // "a" => "1",  0 => "b"
 
-$a.length        number of elements
-$a.has($s)       has $a got key $s?
-$a.contains($s)  has $a got value $s?
-$a.remove()      remove (index)
-$a.insert()      insert (on this index, shift up)
-$a.shift
-$a.unshift
-$a.push          push element
-$a.pop           pop element
-$a.json          return string json
+$a.length()                     number of elements
+    Return Integer     
+    
+$a.has( Object $key)            has $a got key $key
+    Return Bool
+    Note: This assumes all objects have a .hash() method         
 
-$alphabet = array.range('a','z');
+$a.contains( String $key)       has $a got value $s?
+    Return Bool                  
+
+$a.remove( String $key)         remove item from the array as identified by the provided key
+    Return self                 Provides fluent interface    
+    Throws                      When $key does not exist
+    
+$a.insert( $value, [ String $key] )      Insert $value into array. If $key
+                                                has not been given, $value.hash() will
+                                                be used as key.
+                                                
+    Return self                 Provides fluent interface    
+    Throws                      When $key already exists
+    
+
+static array.range( Int|String Start, Int|String Stop, [Int Step])
+                                Create an array with values starting at Start, ending at Stop.
+                                Increment with 1, unless step has been supplied. Step can for now
+                                only be used in conjunction with integers.
+    Return instance of Array
+
+Choices:
+- no shift, unshift, pop, push since it's an hash map, not an array
+- no .json() method since it would require all values to have a .json() method as well
+
 
 
 // See foreach.sf for more info on handling interatorable classes
