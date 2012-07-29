@@ -23,7 +23,7 @@ closing_tags    [\"\']
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[\(\)\{\}:;=,]    { return yytext[0]; }
+[-<>\(\)\{\}:;=,]    { return yytext[0]; }
 
 ">="        return T_GE;
 "<="        return T_LE;

@@ -79,7 +79,6 @@ void saffire_compile(nodeType *p) {
                         case T_INC : printf("\tinc\n"); break;
                         case T_DEC : printf("\tdec\n"); break;
                         case ';' :
-                                printf("\n");
                                 // End of statement?
                                 break;
                         default:
