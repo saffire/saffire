@@ -1,0 +1,15 @@
+$a = 10;
+while ($a > 0) {
+
+    if ($a == 5) {
+        print "A is five";
+    }
+
+    if ($a < 5) {
+        print "A is less then five now";
+    }
+
+    print $a;
+
+    $a = $a - 1;
+}
