@@ -16,8 +16,9 @@ $b = [ "a" => "1", "b" ];      // "a" => "1",  0 => "b"
 $a.length()                     number of elements
     Return Integer     
     
-$a.has( String $key)            has $a got key $key
-    Return Bool         
+$a.has( Object $key)            has $a got key $key
+    Return Bool
+    Note: This assumes all objects have a .hash() method         
 
 $a.contains( String $key)       has $a got value $s?
     Return Bool                  
@@ -26,7 +27,7 @@ $a.remove( String $key)         remove item from the array as identified by the 
     Return self                 Provides fluent interface    
     Throws                      When $key does not exist
     
-$a.insert( String $value, [ String $key] )      Insert $value into array. If $key
+$a.insert( $value, [ String $key] )      Insert $value into array. If $key
                                                 has not been given, $value.hash() will
                                                 be used as key.
                                                 
