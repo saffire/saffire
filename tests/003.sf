@@ -1,7 +1,6 @@
-program p003
-{
-	print $b = 5;
+print $b = 5;
 
-	print $b--;
-	print --$b;
-}
+print $b--;
+print --$b;
+
+// Output:  5 5 3
