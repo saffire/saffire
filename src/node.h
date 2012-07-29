@@ -15,7 +15,7 @@
     } intConNodeType;
 
     typedef struct {
-        svar *var;                  // pointer to svar variable
+        char *name;                 // Name of the actual variable to use
     } varNodeType;
 
     typedef struct {
