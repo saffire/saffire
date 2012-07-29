@@ -12,9 +12,9 @@ We're on freenode as well, at channel #saffire. Websites are coming up as soon a
 
 Needs:
 
-    - A language specificaton (see /examples)
-    - Ability to create an AST, and we should create opcodes.
-    - interpret these opcodes through a standalone interpreter
-    - have documentation
-    - have a re-entrant lexer/parser: (implement %pure_parser)
-    - everything else
+  - A language specificaton (see /examples)
+  - Ability to create an AST, and we should create opcodes.
+  - interpret these opcodes through a standalone interpreter
+  - have documentation
+  - have a re-entrant lexer/parser: (implement %pure_parser)
+  - everything else
