@@ -1,5 +1,7 @@
 /*
  * Goto is a perfect way to implement state-machines. Also to shoot yourself in the foot.
+ *
+ * One can only goto to a label that resides within the same scope.
  */
 
 

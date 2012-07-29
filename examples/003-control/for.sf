@@ -5,7 +5,14 @@ for ($i=0; $i!=5; $i++) {
 
 // Or maybe this should be an iterator from an object?
 
-foreach (int.range(0,5) as $i) {
+foreach (int.range(0,5) as $i, ) {
     io.print($i);
 }
 
+// 012345
+
+foreach (int.range(0,5) as $i) {
+    io.print($i.value);
+}
+
+// 012345
