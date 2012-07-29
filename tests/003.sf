@@ -1,5 +1,5 @@
 
-print $b = 5;
+print ($b = 5);
 
 print $b--;
 print --$b;
