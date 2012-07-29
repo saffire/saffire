@@ -54,6 +54,8 @@ svar *svar_find(char *name) {
         // Empty slot, check the next
         if (vars[i] == NULL) continue;
 
+        printf("checking: %s\n", name);
+
         // Check if name matches
         if (strcmp(vars[i]->name, name) == 0) {
             // return svar in slot
@@ -68,7 +70,7 @@ svar *svar_find(char *name) {
 /**
  * Allocate and initialize an svar
  */
-svar *svar_alloc(char type, char *name, void *val) {
+svar *svar_alloc(char type, char *name, char *s, long l) {
     // Find a free slot to add our svar into
     int idx = svar_find_free_slot();
     if (idx == -1) {
@@ -83,9 +85,9 @@ svar *svar_alloc(char type, char *name, void *val) {
 
     // Set additional values if needed
     if (var->type == SV_LONG) {
-        var->val.l = (long)val;
+        var->val.l = l;
     } else if (var->type == SV_STRING) {
-        var->val.s = strdup((char *)val);
+        var->val.s = strdup(s);
     }
 
     // Store this variable in our main lookup table
@@ -118,4 +120,9 @@ void svar_init_table() {
     for (int i=0; i!=MAX_VARS; i++) {
         vars[i] = NULL;
     }
+}
+
+
+int svar_true(svar *var) {
+    return (var->type == SV_LONG && var->val.l);
 }

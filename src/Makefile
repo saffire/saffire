@@ -8,7 +8,7 @@ LD=gcc
 RM=rm
 
 # Additional inker libraries
-LIBS =
+LIBS = -lm
 
 # Standard flags for C compiler
 INCLUDES  =
@@ -43,7 +43,8 @@ debug: all
 OBJS =	main.o \
 	svar.o \
 	saffire_parser.o \
-	saffire_compile.o \
+	saffire_compiler.o \
+	saffire_interpreter.o \
 	lex.yy.o \
 	parser.tab.o
 

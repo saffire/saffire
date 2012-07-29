@@ -9,7 +9,7 @@
 
     /* Svars are stored in a fixed lookup table. We can only have
      * this many variables in our program */
-    #define MAX_VARS 50
+    #define MAX_VARS 100
 
 
     // Constant defines for different sval types
@@ -31,8 +31,10 @@
 
 
     void svar_init_table();
-    svar *svar_alloc(char type, char *name, void *val);
+    svar *svar_alloc(char type, char *name, char *s, long l);
     svar *svar_find(char *name);
     void svar_print(svar *var);
+
+    int svar_true(svar *var);
 
 #endif
