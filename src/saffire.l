@@ -8,42 +8,31 @@
 
 %}
 
-
-lnum        [0-9]+
-dnum        ([0-9]*"."[0-9]+)|([0-9]+"."[0-9]*)
-exp_dnum    (({lnum}|{dnum})[eE][+-]?{lnum})
-hnum        "0x"[0-9a-fA-F]+
-bnum        "0b"[01]+
-label       [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
-whitespace  [ \t\n\r]+
-tabspace    [ \t]*
-tokens      [;:,.\[\]()|^&+-/*=%!~$<>?@]
-any_char    [^]
-newline     ("\n")
-sl_comment  "//".+
-ml_comment  "/*"([^\*]|\*[^/])*"*/"
-
+lnum            [0-9]+
+label           [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
+whitespace      [ \t\n\r]+
+sl_comment      "//".+
+ml_comment      "/*"([^\*]|\*[^/])*"*/"
 opening_tags    [\"\']
 closing_tags    [\"\']
-
 
 %%
 
 {ml_comment}|{sl_comment} { }
+{whitespace} { }
 
 [\(\)\{\}:;=,]    { return yytext[0]; }
 
-"program" {
-    return T_PROGRAM; }
+">="        return T_GE;
+"<="        return T_LE;
+"=="        return T_EQ;
+"++"        return T_INC;
+"--"        return T_DEC;
 
-"++" {
-    return T_INC; }
-
-"--" {
-    return T_DEC; }
-
-"print" {
-    return T_PRINT; }
+"print"     return T_PRINT;
+"while"     return T_WHILE;
+"if"        return T_IF;
+"else"      return T_ELSE;
 
 {opening_tags}[^\"]*{closing_tags} {
     yylval.sVal = strdup(yytext+1);
@@ -58,16 +47,9 @@ closing_tags    [\"\']
     yylval.sVal = strdup(yytext);
     return T_VARIABLE; }
 
-{label} {
-    yylval.sVal = strdup(yytext);
-    return T_LABEL; }
-
 {lnum} {
     yylval.lVal = strtol(yytext, NULL, 10);
     return T_LNUM; }
-
-{whitespace} { }
-
 
 . {
     printf ("Unknown token: '%s'\n", yytext);

@@ -4,16 +4,21 @@
     #include "svar.h"
 
     // different kind of nodes we manage
-    typedef enum { typeVar, typeOpr } nodeEnum;
+    typedef enum { typeStrCon, typeIntCon, typeVar, typeOpr } nodeEnum;
 
-    // A variable node points to a var
     typedef struct {
-        nodeEnum type;              // Type of the node
+        char *value;                // Pointer to the actual constant string
+    } strConNodeType;
+
+    typedef struct {
+        int value;                  // Integer constant
+    } intConNodeType;
+
+    typedef struct {
         svar *var;                  // pointer to svar variable
     } varNodeType;
 
     typedef struct {
-        nodeEnum type;              // type of the node
         int oper;                   // Operator
         int nops;                   // number of additional operands
         struct nodeTypeTag **ops;   // Operands
@@ -22,8 +27,10 @@
     typedef struct nodeTypeTag {
         nodeEnum type;              // Type of the node
         union {
-            varNodeType var;        // variable
-            oprNodeType opr;        // operator
+            intConNodeType intCon;        // constant int
+            strConNodeType strCon;        // constant string
+            varNodeType var;              // variable
+            oprNodeType opr;              // operator
         };
     } nodeType;
 
