@@ -2,14 +2,20 @@ $a = 10;
 while ($a > 0) {
 
     if ($a == 5) {
-        print "A is five";
-    }
-
-    if ($a < 5) {
-        print "A is less then five now";
+        print "E ";
+    } else if ($a < 5) {
+        print "L ";
+    } else {
+        print "M ";
     }
 
     print $a;
+    print " ";
 
     $a = $a - 1;
 }
+
+
+/* Output:
+M 10 M 9 M 8 M 7 M 6 E 5 L 4 L 3 L 2 L 1
+*/

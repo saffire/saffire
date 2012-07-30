@@ -1,10 +1,14 @@
 
 $a = 6;     // A will become 6
-$a++;       // A = 7
-$a++;       // A = 8
---$a;       // A = 7
-print $a++; // first print, then ++
+$a = $a + 1;       // A = 7
+print $a;
 print " ";
-print ++$a; // first ++, then print
+$a = $a + 1;       // A = 8
+$a = $a - 1;       // A = 7
+print $a + 1; // ..
+print " ";
+print $a - 1; // ..
 
-// Should output: 7 9
+/* Output:
+7 8 6
+*/
