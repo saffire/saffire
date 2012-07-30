@@ -1,6 +1,9 @@
-print ($b = 5);
+$b = 0;
+print $b;
 
-print $b--;
-print --$b;
+print $b + 1;
+print $b - 1;
 
-// Output:  5 5 3
+/* Output:
+01-1
+*/

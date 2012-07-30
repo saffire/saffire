@@ -13,10 +13,7 @@ clean:
 
 test:
 	for i in ./tests/*.sf; do \
-	  echo "*** Testing: $$i" ; \
-	  ./src/saffire $$i ; \
-	  echo "" ; \
-	  echo "" ; \
+	  ./tests/sf-unittest.sh $$i; \
 	done
 
 .PHONY:	all debug saffire clean test
