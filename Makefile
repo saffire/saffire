@@ -14,7 +14,7 @@ clean:
 test:
 	for i in ./tests/*.sf; do \
 	  echo "*** Testing: $$i" ; \
-	  ./src/saffire $$i ; \
+	  ./src/saffire $$i | php interpreter/interpreter.php ; \
 	  echo "" ; \
 	  echo "" ; \
 	done
