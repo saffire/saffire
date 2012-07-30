@@ -4,3 +4,7 @@
 
 // single line comment: Prints hello world
 print "hello world!";
+
+/* Output:
+hello world!
+*/
