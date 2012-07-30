@@ -48,7 +48,7 @@ void saffire_compiler(nodeType *p) {
                         printf("\tjmp\tL%03d\n", lbl2 = lbl++);
                         printf("L%03d:\n", lbl1);
                         SC2(p);
-                        printf("L%03d\n", lbl2);
+                        printf("L%03d:\n", lbl2);
                     } else {
                         // if
                         printf("\tjz\tL%03d\n", lbl1 = lbl++);
