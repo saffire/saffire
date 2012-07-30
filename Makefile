@@ -13,7 +13,7 @@ clean:
 
 test:
 	for i in ./tests/*.sf; do \
-	  ./sf-unittest.sh $$i; \
+	  ./tests/sf-unittest.sh $$i; \
 	done
 
 .PHONY:	all debug saffire clean test
