@@ -13,10 +13,7 @@ clean:
 
 test:
 	for i in ./tests/*.sf; do \
-	  echo "*** Testing: $$i" ; \
-	  ./src/saffire $$i | php interpreter/interpreter.php ; \
-	  echo "" ; \
-	  echo "" ; \
+	  ./sf-unittest.sh $$i; \
 	done
 
 .PHONY:	all debug saffire clean test
