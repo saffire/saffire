@@ -13,10 +13,10 @@ use io;
 
 // $a is a string, concat is a method of the string object
 $a = "hello";
-$a.concat(" ", "world");    // $a = "hello world"
+$b = $a.concat(" ", "world");    // $b = "hello world"
 
 $a = "hello";
-$a.concat(" world");    // $a = "hello world"
+$b = $a.concat(" world");    // $b = "hello world"
 
 $a = "hello";
 $b = $a.concat(" world");    // $b = "hello world",  $a = "hello"
@@ -27,19 +27,22 @@ $b = 1;
 // $c is a string object
 $c = $b.string();   // $c = "1", $b = 1;
 
-$b.string(); // $b = "1" !??  this is an explicit cast?
+$a = 1;      // A is an integer
+$b = $a;     // B is an integer
+$b.string(); // No explicit assignment. $b is assigned return value of $b.string ("1")
+             // $a still is an integer
 
-// using a decimal in a string context automatically calls .string
-$d = "This is number $b !"
+// using a decimal in a string context automatically calls .string()
+$d = "This is number $b !"  // This is number 1 !
 
 // This is literal $b, so no expansion
-$e = 'This is number $b';
+$e = 'This is number $b';   // This is number $b
 
 // $f is 1.0 (decimal)
 $f = 1.decimal();
 
-
-// Strings as "arrays"
+// Strings as "arrays" (proxies to .substring())
 "bar"[1] == "a"
 
-// strings are UTF8. .length always returns length of actual string, not the byte length!
+// strings are UTF8. The method .length() always returns length of actual string,
+// not the byte length!

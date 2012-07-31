@@ -1,8 +1,12 @@
-*.o
 .idea
+/nbproject/private/
+.project
+.cproject
+.settings
 nbproject/*
+*.o
 lex.yy.c
 parser.tab.*
 parser.output
 saffire
-/nbproject/private/
+
