@@ -1,7 +1,7 @@
 use io;
 
 class foo {
-    method bar(string $tmp) {
+    method bar(String $tmp) {
         if ($tmp =~ "/[A-Z]+/") {
             throw invalidException("This is not ok");
         }
@@ -10,7 +10,7 @@ class foo {
 }
 
 
-$tmp = foo.ctor();
+$tmp = foo();
 try {
     $tmp.bar("aaaaa");
     $tmp.bar("1234");

@@ -3,7 +3,13 @@
  */
 use io;
 
-/* QUESTION: Do we want $<variable> or just <variable>. What are their pro's en cons? */
+
+// Strings
+// Integer
+// Double
+// Boolean
+// Null
+
 
 // $a is a string, concat is a method of the string object
 $a = "hello";
