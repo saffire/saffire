@@ -25,3 +25,12 @@ if ("".length)           // length return 0, is that false?
 if (" ".length)          // length return 1, is that false?
 
 if (" ".trim.length)     // length return 0 (after trim), is that false?
+
+
+// Do we support non-parentheses in conditionals and methods?
+
+if $a.empty? { .. }
+
+
+// Do we support ? en ! in our method names?
+if $a.isEmpty() { .. }
