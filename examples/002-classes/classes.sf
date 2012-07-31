@@ -14,6 +14,7 @@ class foo {
      *    .name (name of the class)
      *    .implements (which interfaces does it have
      *    .mem (memory usage of the class)
+     *    .annotations (return annotations per method found)
      *
      * could do:
      *    .clone (called when cloning)
