@@ -1,0 +1,44 @@
+/*
+ * Data structure examples.
+ *
+ * $a = [ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
+ * $b = { "a"=>1, "b"=>2, "c"=>3, "d"=>4 }      // hash a=>1, b=>2, c=>3, d=>4
+ *
+ *
+ * // does value exists in list $a?
+ * if (1 in $a) { .. }
+ *
+ * // Does value (or key) exist in list $b?
+ * if (1 in $b) { .. }
+ * if ("a" in $b.keys) { .. }
+ */
+
+// Everything is a class. No global functions, so print etc should be done through an io class. This could either
+// be loaded explicitly or implicitly. We prefer explicit, so "use io". Some classes like string, int etc should
+// always be available and loaded implicitly.
+use io;
+
+
+// Lists can hold any kind of object (including other lists)
+$a = [ "1", 1, "4", 5.0 ];
+
+// Do hashes ONLY support key=>value's, or can we omit keys like this:
+$b = { "a" => "1", "b" };      // "a" => "1",  0 => "b"
+
+
+// Lists and/or hashes have a few data structure handling methods:
+
+$a.length           // number of elements
+$a.has($s)          // has $a got key $s?
+$a.contains($s)     // has $a got value $s?
+$a.remove()         // remove (index)
+$a.insert()         // insert (on this index, shift up)
+$a.shift
+$a.unshift
+$a.push             // push element
+$a.pop              // pop element
+
+$alphabet = array.range('a','z');       // create a range ?
+
+
+

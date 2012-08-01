@@ -24,7 +24,7 @@
    }
 
    Notice the extra comma, this is needed otherwise $key will be filled with a tuple (key, meta).
-   The comma actually separates an undef variable, so the meta wil be assigned to nothing.
+   The comma actually separates an <undef> variable, so the meta wil be assigned to nothing.
 
 */
 

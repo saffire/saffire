@@ -11,17 +11,24 @@ class foo {
 
 $a, $b, $c = foo.bar();     // $a = "1", $b = "2"  $c = "3"
 
-// Since only one variable is given, it will be filled with a tuple with all elements
-$a = foo.bar();             // $a = ("1", "2", "3")
+// Since only one variable is given, it will only fill the first variable
+$a = foo.bar();             // $a = "1"
 
-// there are actually 2 arguments given, $a and <undef>, $a will be filled with "1", <undef> with ("2", "3")
-$a, = foo.bar();            // $a = "1"
+// there are actually 3 arguments given, $a and <undef> anb $c.  $a will be filled with "1", <undef> with "2", and $c with "3"
+$a, ,$c= foo.bar();            // $a = "1"
 
 // <undef>,$b,$c. 3 arguments, so all three can be filled
 ,$b, $c = foo.bar();        // $b = "2", $c = "3"
 
 // 2 args, <undef> filled with "1", and $b with ("2" and "3")
 ,$b = foo.bar();            // $b = ("2", "3")
+
+
+
+// Since ($a) means we actually want the whole tuple inside one variable? Or do we have another way?
+($a) = foo.bar();           // $a = ("1", "2", "3")
+
+
 
 
 /* PROBLEM: if we apply the expression onto itself when there is no LeftHandValue given, what should the following do?
