@@ -1,0 +1,77 @@
+/**
+ * Aspect Oriented Programming
+ */
+
+
+Should we support this?
+
+keywords:
+- Advice
+- Join point
+    - before any method  (@aop.before annotation, or aop.before() method)
+    - after any method   (@aop.after annotation, or aop.after() method)
+    - during exception   (@aop.exception annotation, or aop.exception() method)
+    - during finally     (@aop.finally annotation, or aop.finally() method)
+    - around any method  (@aop.around annotation, or aop.around() method)
+- Point cuts?
+
+class Foo {
+    /**
+     * @aop.before("logger.log", args => ["pre-log", $str], order => 5)
+     * @aop.before("timer.start", when => '$str == "foo"', order => 1)
+     * @aop.after("timer.stop")
+     */
+    method bar($str) {
+    }
+
+    /**
+     * @aop.around("foo.footer_header_decorator")
+     */
+    method typeFunc($str) {
+        return $str.upper;
+    }
+
+    /**
+     * @aop.around("foo.blink_decorator")
+     */
+    method footer_header_decorator(Aop $aop) {
+        io.print("HEADER");
+        io.print $aop.proceed()
+        io.print("FOOTER");
+    }
+
+    method blink_decorator(Aop $aop) {
+        io.print("<blink>");
+        io.print $aop.proceed()
+        io.print("</blink>");
+    }
+
+
+    /**
+     * aop.pointcut("call", method => "admin.*");       // ???
+     */
+    method alwaysCalled() {
+    }
+}
+
+
+// admin.bar :
+//    foo.alwaysCalled()
+//    admin.bar
+
+// foo.bar("foo") :
+//      timer.start();
+//      logger.log("pre-log", "foo");       // because ordering!
+//      timer.stop();
+
+// foo.bar("baz") :
+//      logger.log("pre-log", "baz");
+//      timer.stop();
+
+
+// foo.typeFunc("baz")
+//      foo.footer_header_decorator(Aop)        HEADER
+//          foo.blink_decorator(Aop)            <blink>
+//              foo.typeFunc("baz")             BAZ
+//          foo.blink_decorator(Aop)            </blink>
+//      foo.footer_header_decorator(Aop)        FOOTER

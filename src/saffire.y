@@ -1,71 +1,97 @@
 %{
     #include <stdio.h>
+    #include "node.h"
     #include "saffire_parser.h"
 
+    extern int yylineno;
     int yylex(void);
-    void yyerror(const char *err) { printf("Error: %s\n", err); }
+    void yyerror(const char *err) { printf("Error in line: %d: %s\n", yylineno, err); }
 
-    #define YYDEBUG 1
+    #ifdef __DEBUG
+        #define YYDEBUG 1
+        #define TRACE printf("Reduce at line %d\n", __LINE__);
+    #else
+        #define YYDEBUG 0
+        #define TRACE
+    #endif
 
 %}
 
+%union {
+    char *sVal;
+    long lVal;
+    double dVal;
+    nodeType *nPtr;
+}
 
-%token END 		0 "end of file"
-%token T_LABEL
-%token T_PROGRAM
-%token T_PRINT
+%token END 0 "end of file"
+%token <lVal> T_LNUM
+%token <sVal> T_VARIABLE
+%token <sVal> T_STRING
+
+%token T_WHILE T_IF T_PRINT
+%nonassoc T_IFX
+%nonassoc T_ELSE
+
 %right T_INC T_DEC
-%token T_INC
-%token T_DEC
-%token T_VARIABLE
-%token T_LNUM
-%token T_TOKEN
-%token T_STRING
+%left T_GE T_LE T_EQ T_NE '>' '<' '^'
+%left '+' '-'
+%left '*' '/'
+
+%type <nPtr> statement expr statement_list
 
 %start saffire
 
 %% /* rules */
 
 saffire:
-        program_declaration_statement { } '{' inner_statement_list '}' { saffire_do_program_end(); }
+        function { }
 ;
 
-program_declaration_statement:
-        T_PROGRAM T_LABEL { saffire_do_program_begin((char *)$2); }
-;
-
-inner_statement_list:
-        inner_statement_list { } inner_statement { $$ = $1; }
+function:
+        function statement  { saffire_execute($2); saffire_free_node($2); }
     |   /* empty */
 ;
 
-inner_statement:
-        expr { $$ = $1; } ';'
+statement:
+        ';'                             { TRACE $$ = saffire_opr(';', 2, NULL, NULL); }
+    |   expr ';'                        { TRACE $$ = $1; }
+    |   T_VARIABLE '=' expr             { TRACE $$ = saffire_opr('=', 2, saffire_var($1), $3); }
+    |   T_PRINT expr                    { TRACE $$ = saffire_opr(T_PRINT, 1, $2); }
+    |   T_WHILE '(' expr ')' statement  { TRACE $$ = saffire_opr(T_WHILE, 2, $3, $5); }
+    |   T_IF '(' expr ')' statement %prec T_IFX
+                                        { TRACE $$ = saffire_opr(T_IF, 2, $3, $5); }
+    |   T_IF '(' expr ')' statement T_ELSE statement
+                                        { TRACE $$ = saffire_opr(T_IF, 3, $3, $5, $7); }
+    |   '{' statement_list '}'          { TRACE $$ = $2; }
+;
+
+statement_list:
+        statement                   { TRACE $$ = $1; }
+    |   statement_list statement    { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+;
+
 
 expr:
-        expr_without_variable { $$ = $1; }
-    |   scalar { $$ = $1; }
-;
+        T_LNUM              { TRACE $$ = saffire_intCon($1); }
+    |   T_STRING            { TRACE $$ = saffire_strCon($1); }
+    |   T_VARIABLE          { TRACE $$ = saffire_var($1); }
+    |   expr '+' expr       { TRACE $$ = saffire_opr('+', 2, $1, $3); }
+    |   expr '-' expr       { TRACE $$ = saffire_opr('-', 2, $1, $3); }
+    |   expr '*' expr       { TRACE $$ = saffire_opr('*', 2, $1, $3); }
+    |   expr '/' expr       { TRACE $$ = saffire_opr('/', 2, $1, $3); }
+    |   expr '<' expr       { TRACE $$ = saffire_opr('<', 2, $1, $3); }
+    |   expr '>' expr       { TRACE $$ = saffire_opr('>', 2, $1, $3); }
+    |   expr '^' expr       { TRACE $$ = saffire_opr('^', 2, $1, $3); }
+    |   expr T_GE expr      { TRACE $$ = saffire_opr(T_GE, 2, $1, $3); }
+    |   expr T_LE expr      { TRACE $$ = saffire_opr(T_LE, 2, $1, $3); }
+    |   expr T_NE expr      { TRACE $$ = saffire_opr(T_NE, 2, $1, $3); }
+    |   expr T_EQ expr      { TRACE $$ = saffire_opr(T_EQ, 2, $1, $3); }
+    |   T_DEC T_VARIABLE    { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($2)  ); }
+    |   T_INC T_VARIABLE    { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($2)); }
+    |   T_VARIABLE T_DEC    { TRACE $$ = saffire_opr(T_DEC, 1, saffire_var($1)); }
+    |   T_VARIABLE T_INC    { TRACE $$ = saffire_opr(T_INC, 1, saffire_var($1)); }
+    |   '(' expr ')'        { TRACE $$ = $2; }
 
-scalar:
-        T_STRING { $$ = $1; }
-    |   T_LNUM { $$ = $1; }
 ;
-
-expr_without_variable:
-        variable { $$ = $1; }
-    |   variable '=' expr { $$ = $3; saffire_do_assign((char *)$1, (char *)$3); }
-    |   T_DEC variable { $$ = $2; saffire_do_pre_dec((char *)$2); }
-    |   T_INC variable { $$ = $2; saffire_do_pre_inc((char *)$2); }
-    |   T_PRINT expr { $$ = $2; saffire_do_print((char *)$2); }
-    |   variable T_DEC { $$ = $1; saffire_do_post_dec((char *)$1); }
-    |   variable T_INC { $$ = $1; saffire_do_post_inc((char *)$1); }
-    |   '(' expr ')' { $$ = $2; }
-    |   /* empty */
-;
-
-variable:
-        T_VARIABLE { $$ = $1; }
-;
-
 

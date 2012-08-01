@@ -15,4 +15,4 @@ if ($a == "foo") {
     ...
 }
 
-// elseif ($a == "bar")    SHOULD THIS BE SUPPORTED OR NOT?
+// elseif ($a == "bar")    SHOULD THIS BE SUPPORTED OR NOT? ALWAYS A SPACE BETWEEN ELSE and IF?

@@ -8,12 +8,12 @@ LD=gcc
 RM=rm
 
 # Additional inker libraries
-LIBS =
+LIBS = -lm
 
 # Standard flags for C compiler
 INCLUDES  =
 USR_FLAGS =
-C_FLAGS   = -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
+C_FLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 
 # Bison flags
 BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
@@ -33,7 +33,7 @@ all:	$(TARGET)
 
 
 # Additional debug flags (will be added when "make debug")
-debug: CC_DEBUG_FLAGS = -ggdb
+debug: CC_DEBUG_FLAGS = -ggdb -D__DEBUG
 debug: BISON_DEBUG_FLAGS = -v
 debug: LEX_DEBUG_FLAGS = -d
 debug: all
@@ -41,6 +41,10 @@ debug: all
 
 # Our objects that needs to be compiled
 OBJS =	main.o \
+	svar.o \
+	saffire_parser.o \
+	saffire_compiler.o \
+	saffire_interpreter.o \
 	lex.yy.o \
 	parser.tab.o
 
@@ -68,13 +72,9 @@ lex.yy.c: saffire.l
 
 # Clean up old data
 clean:
-	echo [RM] $@
-	$(RM) parser.tab.c parser.tab.h lex.yy.c || true
+	echo [RM] $@$
+	$(RM) parser.tab.c parser.tab.h lex.yy.c parser.output || true
 	$(RM) *.o || true
 	$(RM) $(TARGET) || true
 
-# run Tests
-test:
-	./saffire tests/001.sf
-	./saffire tests/002.sf
-	./saffire tests/003.sf
+.PHONY:	all debug clean
