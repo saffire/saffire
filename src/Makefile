@@ -13,7 +13,7 @@ LIBS = -lm
 # Standard flags for C compiler
 INCLUDES  =
 USR_FLAGS =
-C_FLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
+CFLAGS    = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 
 # Bison flags
 BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
@@ -22,21 +22,30 @@ BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
 LEX_FLAGS = $(LEX_DEBUG_FLAGS)
 
 # Linker flags
-LD_FLAGS = $(LIBS) $(LD_DEBUG_FLAGS)
+LDFLAGS = $(LIBS) $(LD_DEBUG_FLAGS)
 
 
 # Main target application
 TARGET = saffire
 
-# Default make target
-all:	$(TARGET)
 
+all:
+	echo "Usage: make <target>"
+	echo 
+	echo "Targets:"
+	echo "  saffire   Build a complete build"
+	echo "  debug     Build a debug build"
+	echo "  clean     Clean temporary objects and files"
+	echo "  test      Execute tests"
+
+## Default make target
+#saffire:	$(TARGET)
 
 # Additional debug flags (will be added when "make debug")
 debug: CC_DEBUG_FLAGS = -ggdb -D__DEBUG
 debug: BISON_DEBUG_FLAGS = -v
 debug: LEX_DEBUG_FLAGS = -d
-debug: all
+debug: build
 
 
 # Our objects that needs to be compiled
@@ -46,18 +55,19 @@ OBJS =	main.o \
 	saffire_compiler.o \
 	saffire_interpreter.o \
 	lex.yy.o \
-	parser.tab.o
+	parser.tab.o \
+	hashtable/hashtable.o
 
 # Main target
 saffire: $(OBJS)
-	$(LD) $(LD_FLAGS) -o $(TARGET) $(OBJS)
+	$(LD) $(LDFLAGS) -o $(TARGET) $(OBJS)
 
 # depends on parser.tab.c (actually, parser.tab.h)
-main.o:	parser.tab.c
+main.o:	lex.yy.c parser.tab.c
 
 # Bison the parser from our saffire.y
 parser.tab.c:
-	echo [BISON] $<
+	echo [BISON] $@
 	$(BISON) $(BISON_FLAGS) -o $@ saffire.y
 
 # Lex our lexer from saffire.l
@@ -68,7 +78,7 @@ lex.yy.c: saffire.l
 # Compile .c files into .o objects
 .c.o:
 	echo [CC] $<
-	$(CC) $(C_FLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Clean up old data
 clean:
