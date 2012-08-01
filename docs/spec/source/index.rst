@@ -13,6 +13,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   releases
    operator-precedence
 
 Indices and tables
