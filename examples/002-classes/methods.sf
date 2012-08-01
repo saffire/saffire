@@ -11,12 +11,12 @@ class foo {
 }
 
 
-$tmp = foo.ctor();
+$tmp = foo();
 $bar = $tmp.rev_it("blaat");
 io.print($bar);                 // TAALB
 
 // This should work, since 51 will be automatically converted to a string in the argument list?
-$tmp = foo.ctor();
+$tmp = foo();
 $bar = $tmp.rev_it(51);
 io.print($bar);                 // 15 (string)
 
@@ -54,7 +54,7 @@ class color {
         $color = Color($color);
         return $this + $color;  // calls the +(Color $color) function
     }
-    method +(Int $pms_color) {
+    method +(Integer $pms_color) {
         $color = Color($this->pmsList[$pms_color]);
         return $this + $color;  // calls the +(Color $color) function
     }
@@ -66,7 +66,7 @@ class color {
  * Argument calling
  */
 $i = "1234";
-$tmp = foo.ctor();
+$tmp = foo();
 $tmp.foo1(arg2=$i, arg3="additional argument"); // skips arg1, uses default
 
 // This is possible, but how about arg3?

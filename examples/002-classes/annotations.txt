@@ -1,0 +1,43 @@
+/**
+ * Annotations
+ *
+ * Annotations are read through the parser?
+ */
+
+class foo {
+
+    /**
+     * @foo(name="test", id="my_id", options = { opt1="5", opt2=3})
+     */
+    method bar {
+    }
+
+    /**
+     * @expectException("foo")
+     * @override
+     * @bar(id="5")
+     * @bar id=6
+     */
+    method baz {
+    }
+}
+
+foo.bar.annoations returns:
+    {
+        "@foo" => Annotation( { "name" => "test",
+                                "id" => "my_id",
+                                "options" => {
+                                   "opt1" => "5",
+                                   "opt2" => 3,
+                                }),
+    }
+
+foo.baz.annotations returns:
+    {
+        "@expectException" => Annotation([ "foo" ]),
+        "@override" => Annotation([ ]),
+        "@bar" = [
+                   Annotation({ "id" => "5" }),
+                   Annotation({ "id" => 6  })
+                 ],
+    }

@@ -1,5 +1,41 @@
 There should be a number of available classes:
 
+// Main class
+saffire             Global class
+
+// Scalar classes
+string              (scalar) string class
+integer             (scalar) integer class
+double              (scalar) double class  (do we support floats?)
+boolean             (scalar) boolean class
+
+// Data structure classes
+list                list class
+hash                hash class
+
+// Additional classes
+io                  (file) I/O class
+math                math class
+spf                 Saffire package file class
+
+// Objects (instantiated classes)
+null                null object
+true                true object (boolean(true))
+false               false object (boolean(false))
+
+
+Is the following true:
+    null == false
+    null != true
+    0 == null
+    1 == true
+    "0" == null
+    "0" == false
+    "1" == true
+    "true" == true
+    "false" == false
+
+
 
 class saffire
 -------------
@@ -59,7 +95,7 @@ Class to handle strings.
     .concat     contacts other strings
 
 
-class int
----------
+class integer
+-------------
 Class to handle integers
 

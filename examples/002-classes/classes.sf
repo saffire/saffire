@@ -6,7 +6,7 @@ use io;
 class foo {
 
     /**
-     * All classes are always based on a main class. This class has got some basic functionality
+     * All classes are always based on a main base class. This class has got some basic functionality
      * like
      *    .props (to iterate all properties)
      *    .methods (to iterate all methods)
@@ -14,6 +14,7 @@ class foo {
      *    .name (name of the class)
      *    .implements (which interfaces does it have
      *    .mem (memory usage of the class)
+     *    .annotations (return annotations per method found)
      *
      * could do:
      *    .clone (called when cloning)
@@ -38,7 +39,7 @@ class foo {
          *
          * Calling the method:
          *
-         *  $tmp = foo;
+         *  $tmp = foo();
          *  $tmp.foo1(arg2 = i, arg3 = "additional argument")
          */
 
