@@ -45,7 +45,7 @@ all:
 debug: CC_DEBUG_FLAGS = -ggdb -D__DEBUG
 debug: BISON_DEBUG_FLAGS = -v
 debug: LEX_DEBUG_FLAGS = -d
-debug: build
+debug: saffire
 
 
 # Our objects that needs to be compiled

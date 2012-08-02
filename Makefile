@@ -3,13 +3,13 @@
 all:	saffire
 
 debug:
-	cd src && $(MAKE) $@
+	cd src && $(MAKE) debug 
 
 saffire:
-	cd src && $(MAKE) $@
+	cd src && $(MAKE) saffire
 
 clean:
-	cd src && $(MAKE) $@
+	cd src && $(MAKE) clean
 
 test:
 	for i in ./tests/*.sf; do \

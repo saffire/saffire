@@ -180,18 +180,6 @@ svar *saffire_interpreter(nodeType *p) {
                         i = (var1->val.l == var2->val.l);
                         return svar_temp_alloc(SV_LONG, NULL, i);
 
-                case T_INC :
-                        var1 = SI0(p);
-                        i = (var1->val.l + 1);
-                        printf("INC: %ld\n", i);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case T_DEC :
-                        var1 = SI0(p);
-                        i = (var1->val.l - 1);
-                        printf("DEC: %ld\n", i);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
                 default:
                     printf("Unhandled opcode: %d\n", p->opr.oper);
                     exit(1);

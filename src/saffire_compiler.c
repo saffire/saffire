@@ -3,7 +3,7 @@
 #include "saffire_compiler.h"
 #include "parser.tab.h"
 
-static int lbl;
+static int lbl = 0;
 
 #define SC0(p) saffire_compiler(p->opr.ops[0])
 #define SC1(p) saffire_compiler(p->opr.ops[1])
@@ -30,6 +30,33 @@ void saffire_compiler(nodeType *p) {
 
         case typeOpr :
             switch (p->opr.oper) {
+                case T_LIST :
+                    // Don't expand tree when none are present (empty list)
+                    printf("\tlist_init\n");
+                    if (p->opr.nops >= 1) SC0(p);
+                    break;
+                case T_LIST_APPEND :
+                    SC0(p);
+                    if (p->opr.nops >= 2) SC1(p);
+                    printf("\tlist_append\n");
+                    break;
+
+                case T_HASH :
+                    printf("\thash_init\n");
+                    // Don't expand tree when none are present (empty hash)
+                    if (p->opr.nops >= 1) SC0(p);
+                    break;
+                case T_HASH_APPEND :
+                    SC0(p);
+                    SC1(p);
+                    SC2(p);
+                    printf("\thash_append\n");
+                    break;
+
+                case T_USE :
+                    printf("\tuse_alias\t\"%s\"\t\"%s\"\n", p->opr.ops[0]->var.name, p->opr.ops[1]->var.name);
+                    break;
+
                 case T_WHILE :
                     printf("L%03d:\n", lbl1 = lbl++);
                     SC0(p);
@@ -82,9 +109,8 @@ void saffire_compiler(nodeType *p) {
                         case T_LE : printf("\tcompLE\n"); break;
                         case T_NE : printf("\tcompNE\n"); break;
                         case T_EQ : printf("\tcompEQ\n"); break;
-                        case T_INC : printf("\tinc\n"); break;
-                        case T_DEC : printf("\tdec\n"); break;
                         case ';' :
+                                printf("\n");
                                 // End of statement?
                                 break;
                         default:

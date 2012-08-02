@@ -22,8 +22,6 @@ void saffire_execute(nodeType *p) {
 }
 
 
-//#define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
-
 nodeType *saffire_strCon(char *value) {
     nodeType *p;
 
