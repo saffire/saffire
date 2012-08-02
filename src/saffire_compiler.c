@@ -115,7 +115,6 @@ void saffire_compiler(nodeType *p) {
                                 break;
                         default:
                             printf("Unhandled opcode: %d\n", p->opr.oper);
-                            exit(1);
                             break;
                     }
             }

@@ -1,0 +1,16 @@
+/*
+ * Interfaces
+ */
+
+interface Foo {
+}
+
+interface Foo implements Bar {
+}
+
+interface Foo implements Bar, Baz {
+}
+
+
+/* Output:
+*/

@@ -34,6 +34,17 @@
 %nonassoc T_IFX
 %nonassoc T_ELSE
 
+%token T_PLUS_EQUAL
+%token T_MINUS_EQUAL
+%token T_MUL_EQUAL
+%token T_DIV_EQUAL
+%token T_MOD_EQUAL
+%token T_AND_EQUAL
+%token T_OR_EQUAL
+%token T_XOR_EQUAL
+%token T_SL_EQUAL
+%token T_SR_EQUAL
+
 %token T_LIST T_HASH T_LIST_APPEND T_HASH_APPEND
 
 %left T_GE T_LE T_EQ T_NE '>' '<' '^'
@@ -43,6 +54,11 @@
 %type <nPtr> statement statement_list expr expr_list use_statement
 %type <nPtr> hash_vars list_vars hash_scalar_indexes scalar_values
 %type <nPtr> assignment_list assignment_list_element
+%type <nPtr> class_inner_statements top_statement_list top_statements
+%type <nPtr> class_definition interface_definition constant_list constant
+
+%token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
+%token T_CONST
 
 %start saffire
 
@@ -50,13 +66,15 @@
 
 saffire:
         /* Use statements are only possible at the top of a file */
-        use_statements { }
-        function { }
+        use_statement_list { }
+
+        /* Top statements follow use statements */
+        top_statement_list { }
 ;
 
-use_statements:
+use_statement_list:
         /* Multiple use statements are possible */
-        use_statements use_statement { saffire_execute($2); saffire_free_node($2); }
+        use_statement_list use_statement { saffire_execute($2); saffire_free_node($2); }
     |   /* empty */
 ;
 
@@ -67,10 +85,30 @@ use_statement:
     |   T_USE T_LABEL ';' { TRACE $$ = saffire_opr(T_USE, 2, saffire_strCon($2), saffire_strCon($2));  }
 ;
 
-function:
-        function statement  { saffire_execute($2); saffire_free_node($2); }
-    |   /* empty */
+
+top_statement_list:
+        top_statement_list top_statements { saffire_execute($2); saffire_free_node($2); }
+    |   top_statements { saffire_execute($1); saffire_free_node($1); }
 ;
+
+/* Top statements can be classes, interfaces, constants, statements */
+top_statements:
+      class_definition { TRACE $$ = $1 }
+    | interface_definition { TRACE $$ = $1 }
+    | constant_list { TRACE $$ = $1 }
+    | statement { TRACE $$ = $1 }
+    | /* Empty */ { }
+;
+
+
+/* Statements inside a class: methods, constants */
+class_inner_statements:
+        constant_list { TRACE $$ = $1 }
+      | /* Empty */ { }
+/*    | method_defintion { TRACE $$ = $1 } */
+;
+
+
 
 
 statement:
@@ -85,6 +123,15 @@ statement:
     |   T_IF '(' expr ')' statement T_ELSE statement
                                         { TRACE $$ = saffire_opr(T_IF, 3, $3, $5, $7); }
     |   '{' statement_list '}'          { TRACE $$ = $2; }
+;
+
+constant_list:
+        constant                    { TRACE $$ = $1; }
+    |   constant_list constant      { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+;
+
+constant:
+        T_CONST T_LABEL '=' scalar_values ';' { TRACE $$ = saffire_opr(';', 2, saffire_var($2), $4); }
 ;
 
 statement_list:
@@ -108,6 +155,7 @@ expr_list:
 
 expr:
         scalar_values
+    |   T_LABEL             { TRACE $$ = saffire_strCon($1); }
     |   expr '+' expr       { TRACE $$ = saffire_opr('+', 2, $1, $3); }
     |   expr '-' expr       { TRACE $$ = saffire_opr('-', 2, $1, $3); }
     |   expr '*' expr       { TRACE $$ = saffire_opr('*', 2, $1, $3); }
@@ -119,6 +167,16 @@ expr:
     |   expr T_LE expr      { TRACE $$ = saffire_opr(T_LE, 2, $1, $3); }
     |   expr T_NE expr      { TRACE $$ = saffire_opr(T_NE, 2, $1, $3); }
     |   expr T_EQ expr      { TRACE $$ = saffire_opr(T_EQ, 2, $1, $3); }
+    |   expr T_PLUS_EQUAL expr    { TRACE $$ = saffire_opr(T_PLUS_EQUAL, 2, $1, $3); }
+    |   expr T_MINUS_EQUAL expr   { TRACE $$ = saffire_opr(T_MINUS_EQUAL, 2, $1, $3); }
+    |   expr T_MUL_EQUAL expr     { TRACE $$ = saffire_opr(T_MUL_EQUAL, 2, $1, $3); }
+    |   expr T_DIV_EQUAL expr     { TRACE $$ = saffire_opr(T_DIV_EQUAL, 2, $1, $3); }
+    |   expr T_MOD_EQUAL expr     { TRACE $$ = saffire_opr(T_MOD_EQUAL, 2, $1, $3); }
+    |   expr T_AND_EQUAL expr     { TRACE $$ = saffire_opr(T_AND_EQUAL, 2, $1, $3); }
+    |   expr T_OR_EQUAL expr      { TRACE $$ = saffire_opr(T_OR_EQUAL, 2, $1, $3); }
+    |   expr T_XOR_EQUAL expr     { TRACE $$ = saffire_opr(T_XOR_EQUAL, 2, $1, $3); }
+    |   expr T_SL_EQUAL expr      { TRACE $$ = saffire_opr(T_SL_EQUAL, 2, $1, $3); }
+    |   expr T_SR_EQUAL expr      { TRACE $$ = saffire_opr(T_SR_EQUAL, 2, $1, $3); }
     |   '(' expr ')'        { TRACE $$ = $2; }
 ;
 
@@ -159,3 +217,37 @@ hash_scalar_indexes:
 ;
 
 
+class_definition:
+        class_header_keywords T_LABEL class_extends class_interface_implements
+        '{'
+        class_inner_statements
+        '}' { TRACE $$ = saffire_strCon($2); }
+;
+
+interface_definition:
+        T_INTERFACE T_LABEL class_interface_implements
+        '{'
+/* interface_inner_statements */
+        '}' { TRACE $$ = saffire_strCon($2); }
+;
+
+
+class_header_keywords:
+        T_CLASS { printf("standard class"); }
+    |   T_FINAL T_CLASS { printf("Final class"); }
+    |   T_ABSTRACT T_CLASS { printf("Abstract class"); }
+;
+
+class_extends:
+        T_EXTENDS class_list { }
+    |   /* empty */
+
+class_interface_implements:
+        T_IMPLEMENTS class_list { }
+    |   /* empty */
+
+/* Comma separated list of classes (for extends and implements) */
+class_list:
+        class_list ',' T_LABEL { }
+    |   T_LABEL { }
+;

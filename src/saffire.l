@@ -11,7 +11,7 @@
 %option yylineno
 
 lnum            [0-9]+
-label           [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
+label           [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff\.]*
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -23,12 +23,23 @@ closing_tags    [\"\']
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[-+<>\(\)\{\}:;=,\[\]]    { return yytext[0]; }
+[-+<>\(\)\{\}:;=,\.\[\]]    { return yytext[0]; }
 
 ">="        return T_GE;
 "<="        return T_LE;
 "=="        return T_EQ;
 "!="        return T_NE;
+
+"+="        return T_PLUS_EQUAL;
+"-="        return T_MINUS_EQUAL;
+"*="        return T_MUL_EQUAL;
+"/="        return T_DIV_EQUAL;
+"%="        return T_MOD_EQUAL;
+"&="        return T_AND_EQUAL;
+"|="        return T_OR_EQUAL;
+"^="        return T_XOR_EQUAL;
+"<<="       return T_SL_EQUAL;
+">>="       return T_SR_EQUAL;
 
 "print"     return T_PRINT;
 "while"     return T_WHILE;
@@ -36,6 +47,13 @@ closing_tags    [\"\']
 "else"      return T_ELSE;
 "use"       return T_USE;
 "as"        return T_AS;
+"class"         return T_CLASS;
+"extends"       return T_EXTENDS;
+"implements"    return T_IMPLEMENTS;
+"abstract"      return T_ABSTRACT;
+"final"         return T_FINAL;
+"interface"     return T_INTERFACE;
+"const"         return T_CONST;
 
 {opening_tags}[^\"]*{closing_tags} {
     yylval.sVal = strdup(yytext+1);

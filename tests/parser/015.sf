@@ -1,6 +1,9 @@
 /*
- * Objects assignment
+ * Object declarations
  */
+
+class Foo {
+}
 
 class Foo extends Bar {
 }
@@ -14,9 +17,26 @@ class Foo implements Bar {
 class Foo implements Bar, Baz {
 }
 
+class Foo extends Bar implements Qux {
+}
 
 class Foo extends Bar, Baz implements Qux, Quux {
 }
+
+final class Foo {
+}
+
+abstract class Foo {
+}
+
+abstract class Foo implements Qux, Quux {
+}
+
+abstract class Foo extends Bar, Baz implements Qux, Quux {
+}
+
+
+
 
 /* Output:
 */
