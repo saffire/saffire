@@ -10,4 +10,5 @@ parser.tab.*
 parser.output
 saffire
 /nbproject/private/
+/docs/spec/build
 *.~*
