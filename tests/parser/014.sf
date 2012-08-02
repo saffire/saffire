@@ -1,0 +1,34 @@
+/*
+ * Objects assignment
+ */
+
+class Foo {
+    method ctor() {
+        io.print "Called when initializing";
+    }
+
+    method dtor() {
+        io.print "Called on destruction";
+    }
+
+    static method callme() {
+        io.print "Static call!";
+    }
+
+    public method foo1(String $a, Foo $b) {
+        return "foobar";
+    }
+
+    private method foo2() {
+        return self, "foo";
+    }
+}
+
+$foo = Foo();       // Auto calls ctor()
+$foo.destroy();     // Auto calls dtor()
+
+Foo.callme();      // Is this a static call?
+
+
+/* Output:
+*/

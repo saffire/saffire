@@ -1,0 +1,15 @@
+/*
+ * while statement
+ */
+
+while ($a) {
+    bar.printf("A= %d", $a);
+    $a--;
+} else {
+    foo.print "Nothing ", "to ", "do";
+}
+
+
+
+/* Output:
+*/

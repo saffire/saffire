@@ -1,0 +1,13 @@
+/*
+ * ternary
+ */
+
+$a = "foo" ? "bar" : "baz";
+
+// double ternary (order precedence)
+$a = $b ? $c : $d ? $e : $f;
+
+
+
+/* Output:
+*/

@@ -1,0 +1,18 @@
+/*
+ * Conditionals
+ */
+if ($a == 1) {
+    $a += 1;
+} else {
+    $a -= 1;
+}
+
+// Conditional with single statements, without curly brackets
+if ($a >= 1) $b++;
+if ($a != 1) $b++; else $c++;
+
+// Without parentheses
+if $foo.print? $a++;
+
+/* Output:
+*/

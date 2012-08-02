@@ -1,0 +1,18 @@
+/*
+ * function call
+ */
+
+
+$a.reverse();
+
+$a.reverse;
+
+$b = $a.reverse();
+
+$b = $a.reverse;
+
+// "fluid"
+$a.reverse.upper.reverse.slice();
+
+/* Output:
+*/

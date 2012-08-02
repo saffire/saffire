@@ -1,0 +1,22 @@
+/*
+ * Objects assignment
+ */
+
+class Foo extends Bar {
+}
+
+class Foo extends Bar, Baz {
+}
+
+class Foo implements Bar {
+}
+
+class Foo implements Bar, Baz {
+}
+
+
+class Foo extends Bar, Baz implements Qux, Quux {
+}
+
+/* Output:
+*/
