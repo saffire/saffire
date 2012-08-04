@@ -14,7 +14,11 @@ Contents:
 
    intro
    releases
-   operator-precedence
+   scalar-types
+   data-structures
+   keywords
+   modules
+   operators
 
 Indices and tables
 ==================

@@ -1,7 +1,57 @@
+#########
+Operators
+#########
+
+The following character sequences represent operators, delimiters, and other special tokens:
+
+
+========     ========================
+Operator     Explanation
+========     ========================
+\+           Plus operator
+\-           Minus operator
+\*           Multiplication operator
+/            Divide operator
+%            Modulus operator
+&            Bitwise and
+\|           Bitwise or
+\^           Bitwise xor
+~            Bitwise not
+<<           Shift left
+>>           Shift right
+\+=          Plus assign
+\-=          Minus assign
+\*=          Multiplication assign
+/=           Divide assign
+%=           Modulus assign
+<<=          Shiftleft assign
+>>=          Shiftright assign
+==           Equals
+<            Less than
+>            Greater than
+=            Assign
+!            Not
+!=           Not equals
+>=           Greater than or equal
+<=           Less than or equal
+(            parenthesis open
+)            parenthesis close
+[            List start
+]            List end
+{            Hash start
+}            Hash end
+,            expression separator
+.            method
+;            end expression
+:            hash key/value separator
+========     ========================
+
+
+
 Order precedence
 ================
 
-.. warning:: 
+.. warning::
 	This is currently taken from PHP as an example. This is not the final order precedence
 
 
