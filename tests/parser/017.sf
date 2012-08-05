@@ -11,6 +11,38 @@ interface Foo implements Bar {
 interface Foo implements Bar, Baz {
 }
 
+interface Foo implements Bar, Baz {
+    const tmp_foo = "baz";
+}
+
+interface Foo implements Bar, Baz {
+    const tmp_foo = "baz";
+    const tmp_bar = 44;
+}
+
+
+interface Foo implements Bar, Baz {
+    const tmp_foo = "baz";
+
+    public method tmp_bar();
+    public method tmp_bar2($a);
+    public method tmp_bar3($a, $b, $c);
+    public method tmp_bar4($a = 1, $b, $c = "foo");
+}
+
+
+interface Foo implements Bar, Baz {
+    const tmp_foo = "baz";
+
+    public method tmp_bar2($a);
+    public method tmp_bar3($a, $b, $c);
+
+    const tmp_bar = 44;
+
+    public method tmp_bar4($a = 1, $b, $c = "foo");
+}
+
+
 
 /* Output:
 */

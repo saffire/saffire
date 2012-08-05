@@ -84,11 +84,6 @@ void saffire_compiler(nodeType *p) {
                     }
                     break;
 
-                case T_PRINT :
-                    SC0(p);
-                    printf("\tprint\n");
-                    break;
-
                 case '=' :
                     SC1(p);
                     printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->var.name);

@@ -66,28 +66,6 @@ svar *saffire_interpreter(nodeType *p) {
                     }
                     return svar_temp_alloc(SV_NULL, NULL, 0);
 
-                case T_PRINT :
-                    var1 = SI0(p);
-                    printf("*** PRINTING DATA!!!!\n");
-                    if (var1->type == SV_STRING) {
-                        if (var1->val.s[0] == '$') {
-                            // found $<val>
-                            printf("doing string!\n");
-                            var2 = svar_find(var1->val.s);
-                            svar_print(var2);
-                            if (var2->type == SV_STRING) {
-                                printf("print: '%s'\n", var2->val.s);
-                            } else {
-                                printf("print: '%ld'\n", var2->val.l);
-                            }
-                        } else {
-                            printf("print: '%s'\n", var1->val.s);
-                        }
-                    } else {
-                        printf("print: '%ld'\n", var1->val.l);
-                    }
-                    return var1;
-
                 case '=' :
                     // Since we are assigning, we know the first operand is the name (string)
 
