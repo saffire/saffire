@@ -1,0 +1,43 @@
+/*
+    Try/catch/finally checks
+*/
+
+// Try/Catch
+try {
+    continue;
+} catch (Foo $blaat) {
+    continue;
+}
+
+
+// Try/Multi catch/Finally
+try {
+    goto barbar;
+} catch (Foo $blaat) {
+    continue;
+} catch (Bar $foo) {
+    continue;
+} finally {
+    continue;
+}
+
+
+// Try/Catch/Finally
+try {
+    continue;
+} catch (Foo $blaat) {
+    continue;
+} finally {
+    continue;
+}
+
+
+// Try finally
+try {
+    continue;
+} finally {
+    continue;
+}
+
+/* Output:
+*/

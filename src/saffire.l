@@ -11,7 +11,7 @@
 %option yylineno
 
 lnum            [0-9]+
-label           [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
+identifier      [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -31,16 +31,22 @@ closing_tags    [\"\']
 "=="        return T_EQ;
 "!="        return T_NE;
 
-"+="        return T_PLUS_EQUAL;
-"-="        return T_MINUS_EQUAL;
-"*="        return T_MUL_EQUAL;
-"/="        return T_DIV_EQUAL;
-"%="        return T_MOD_EQUAL;
-"&="        return T_AND_EQUAL;
-"|="        return T_OR_EQUAL;
-"^="        return T_XOR_EQUAL;
-"<<="       return T_SL_EQUAL;
-">>="       return T_SR_EQUAL;
+"||"        return T_OR;
+"&&"        return T_AND;
+
+"<<"        return T_SHIFT_LEFT;
+">>"        return T_SHIFT_RIGHT;
+
+"+="        return T_PLUS_ASSIGNMENT;
+"-="        return T_MINUS_ASSIGNMENT;
+"*="        return T_MUL_ASSIGNMENT;
+"/="        return T_DIV_ASSIGNMENT;
+"%="        return T_MOD_ASSIGNMENT;
+"&="        return T_AND_ASSIGNMENT;
+"|="        return T_OR_ASSIGNMENT;
+"^="        return T_XOR_ASSIGNMENT;
+"<<="       return T_SL_ASSIGNMENT;
+">>="       return T_SR_ASSIGNMENT;
 
 "while"     return T_WHILE;
 "if"        return T_IF;
@@ -62,6 +68,17 @@ closing_tags    [\"\']
 "protected"     return T_PROTECTED;
 "method"        return T_METHOD;
 
+"catch"         return T_CATCH;
+"finally"       return T_FINALLY;
+"throw"         return T_THROW;
+"return"        return T_RETURN;
+"break"         return T_BREAK;
+"breakelse"     return T_BREAKELSE;
+"continue"      return T_CONTINUE;
+"try"           return T_TRY;
+"default"       return T_DEFAULT;
+"goto"          return T_GOTO;
+
 {opening_tags}[^\"]*{closing_tags} {
     yylval.sVal = strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
@@ -71,18 +88,18 @@ closing_tags    [\"\']
     }
     return T_STRING; }
 
-\${label} {
+\${identifier} {
     yylval.sVal = strdup(yytext);
     return T_VARIABLE; }
 
-{label} {
+{identifier} {
     yylval.sVal = strdup(yytext);
-    return T_LABEL;
+    return T_IDENTIFIER;
 }
 
-{label}[!?]? {
+{identifier}[!?]? {
     yylval.sVal = strdup(yytext);
-    return T_LABEL_METHOD;
+    return T_IDENTIFIER_METHOD;
 }
 
 {lnum} {

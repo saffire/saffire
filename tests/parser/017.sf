@@ -12,17 +12,17 @@ interface Foo implements Bar, Baz {
 }
 
 interface Foo implements Bar, Baz {
-    const tmp_foo = "baz";
+    const tmp_foo;
 }
 
 interface Foo implements Bar, Baz {
-    const tmp_foo = "baz";
-    const tmp_bar = 44;
+    const tmp_foo;
+    const tmp_bar;
 }
 
 
 interface Foo implements Bar, Baz {
-    const tmp_foo = "baz";
+    const tmp_foo;
 
     public method tmp_bar();
     public method tmp_bar2($a);
@@ -32,12 +32,12 @@ interface Foo implements Bar, Baz {
 
 
 interface Foo implements Bar, Baz {
-    const tmp_foo = "baz";
+    const tmp_foo;
 
     public method tmp_bar2($a);
     public method tmp_bar3($a, $b, $c);
 
-    const tmp_bar = 44;
+    const tmp_bar;
 
     public method tmp_bar4($a = 1, $b, $c = "foo");
 }

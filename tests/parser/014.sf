@@ -3,15 +3,15 @@
  */
 
 class Foo {
-    method ctor() {
+    public method ctor() {
         io.print "Called when initializing";
     }
 
-    method dtor() {
+    public method dtor() {
         io.print "Called on destruction";
     }
 
-    static method callme() {
+    static public method callme() {
         io.print "Static call!";
     }
 
@@ -28,6 +28,7 @@ $foo = Foo();       // Auto calls ctor()
 $foo.destroy();     // Auto calls dtor()
 
 Foo.callme();      // Is this a static call?
+Foo.callme;
 
 
 /* Output:

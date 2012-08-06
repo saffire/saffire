@@ -1,0 +1,6 @@
+// Goto statement and goto label
+foo:
+    goto bar;
+
+
+
