@@ -61,6 +61,7 @@ OBJS =	main.o \
 # Main target
 saffire: $(OBJS)
 	$(LD) $(LDFLAGS) -o $(TARGET) $(OBJS)
+	echo "Saffire has been build in  $(CURDIR)/$(TARGET)"
 
 # depends on parser.tab.c (actually, parser.tab.h)
 main.o:	lex.yy.c parser.tab.c

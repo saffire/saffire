@@ -1,19 +1,27 @@
-.SILENT :
+.SILENT:
 
-all:	saffire
+all:
+	echo "Welcome to the Saffire Makefile"
+	echo "Usage: make <saffire|debug|docs|tests>"
+	echo
+	echo "make clean        Removes temporary objects and files"
+	echo "make saffire      Creates the saffire binary"
+	echo "make debug        Creates a debug version of the saffire binary"
+	echo "make docs         Generates (html) documentation"
+	echo "make tests        Runs the saffire tests suite"
+	echo
 
-debug:
-	cd src && $(MAKE) debug 
-
-saffire:
-	cd src && $(MAKE) saffire
+docs:
+	make -C docs/specs html
 
 clean:
-	cd src && $(MAKE) clean
+	make -C src clean
 
-test:
-	for i in ./tests/*.sf; do \
-	  ./tests/sf-unittest.sh $$i; \
-	done
+saffire:
+	make -C src saffire
 
-.PHONY:	all debug saffire clean test
+debug:
+	make -C src debug
+
+tests:
+	make -C src tests
