@@ -67,9 +67,10 @@
 %type <nPtr> scalar_value interface_inner_statements method_argument
 %type <nPtr> class_method_definition method_visibility statement_list statement
 %type <nPtr> constant_definition
-%type <nPtr> empty_statement jump_statement iteration_statement guarding_statement
+%type <nPtr> jump_statement iteration_statement guarding_statement
 %type <nPtr> expression_statement label_statement selection_statement block expression
 %type <nPtr> assignment_expression assignment_operator unary_expression catch_list catch_header catch
+%type <nPtr> list_var_list hash_var_list hash_scalar_indexes
 
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC
@@ -119,7 +120,6 @@ top_statement:
     |   interface_definition    { TRACE $$ = $1 }
     |   constant_list           { TRACE $$ = $1 }
     |   statement_list          { TRACE $$ = $1 }
-    |   /* Empty */             { }
 ;
 
 
@@ -143,11 +143,10 @@ block:
 ;
 
 statement:
-        empty_statement             { TRACE $$ = $1 }
-    |   label_statement             { TRACE $$ = $1 }
-    |   expression_statement ';'    { TRACE $$ = $1 }
-    |   selection_statement         { TRACE $$ = $1 }
-    |   iteration_statement         { TRACE $$ = $1 }
+        label_statement             { TRACE $$ = $1 }
+    |   expression_statement        { TRACE $$ = $1 }
+/*    |   selection_statement         { TRACE $$ = $1 } */
+/*    |   iteration_statement         { TRACE $$ = $1 } */
     |   jump_statement              { TRACE $$ = $1 }
     |   guarding_statement          { TRACE $$ = $1 }
     |   block                       { TRACE $$ = $1 }
@@ -167,13 +166,13 @@ iteration_statement:
 ;
 
 jump_statement:
-        T_BREAK ';'                 { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   T_BREAKELSE ';'             { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   T_CONTINUE ';'              { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   T_RETURN ';'                { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   T_RETURN expression ';'     { TRACE $$ = $2 }
-    |   T_THROW expression ';'      { TRACE $$ = $2 }
-    |   T_GOTO T_IDENTIFIER ';'          { TRACE $$ = saffire_strCon($2); }
+        T_BREAK ';'                 { }
+    |   T_BREAKELSE ';'             { }
+    |   T_CONTINUE ';'              { }
+    |   T_RETURN ';'                { }
+    |   T_RETURN expression ';'     { }
+    |   T_THROW expression ';'      { }
+    |   T_GOTO T_IDENTIFIER ';'     { }
 ;
 
 guarding_statement:
@@ -193,11 +192,8 @@ catch:
 
 catch_header:
         T_CATCH '(' T_IDENTIFIER T_VARIABLE ')' { TRACE $$ = saffire_strCon($<sVal>3) }
-    |   T_CATCH '(' ')' { TRACE $$ = saffire_strCon($<sVal>1) }
-;
-
-empty_statement:
-       /* empty */ { }
+    |   T_CATCH '('              T_VARIABLE ')' { TRACE $$ = saffire_strCon($<sVal>3) }
+    |   T_CATCH '('                         ')' { TRACE $$ = saffire_strCon($<sVal>1) }
 ;
 
 label_statement:
@@ -259,7 +255,6 @@ relational_expression:
     |   relational_expression '<' shift_expression
     |   relational_expression T_LE shift_expression
     |   relational_expression T_GE shift_expression
-/* instanceof ? */
 ;
 
 shift_expression:
@@ -282,10 +277,19 @@ multiplicative_expression:
 ;
 
 unary_expression:
-        '+' { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   '-' { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   '~' { TRACE $$ = saffire_strCon($<sVal>1); }
-    |   '!' { TRACE $$ = saffire_strCon($<sVal>1); }
+        primary_expression
+;
+
+primary_expression:
+        T_VARIABLE
+;
+
+
+unary_assignment:
+        '+' { }
+    |   '-' { }
+    |   '~' { }
+    |   '!' { }
     |   /* empty */ { }
 ;
 
@@ -300,7 +304,8 @@ expression:
 ;
 
 assignment_expression:
-        unary_expression assignment_operator assignment_expression { }
+        conditional_expression
+    |   unary_expression assignment_operator assignment_expression { }
 ;
 
 
@@ -320,9 +325,20 @@ assignment_operator:
 ;
 
 scalar_value:
-        T_LNUM     { TRACE $$ = saffire_intCon($1); }
-    |   T_STRING   { TRACE $$ = saffire_strCon($1); }
-    |   T_VARIABLE { TRACE $$ = saffire_var($1); }
+        T_LNUM                  { TRACE $$ = saffire_intCon($1); }
+    |   T_STRING                { TRACE $$ = saffire_strCon($1); }
+    |   T_VARIABLE              { TRACE $$ = saffire_var($1); }
+    |   T_IDENTIFIER            { TRACE $$ = saffire_strCon($1); }
+    |   '[' list_var_list ']'   { TRACE $$ = saffire_opr(T_LIST, 1, $2); }
+    |   '['               ']'   { TRACE $$ = saffire_opr(T_LIST, 0); }
+    |   '{' hash_var_list '}'   { TRACE $$ = saffire_opr(T_HASH, 1, $2); }
+    |   '{'               '}'   { TRACE $$ = saffire_opr(T_HASH, 0); }
+;
+
+
+primary_expression:
+        scalar_value
+    |   '(' expression ')'
 ;
 
 
@@ -370,8 +386,8 @@ method_argument_list:
 ;
 
 method_argument:
-        T_VARIABLE                              { TRACE $$ = saffire_var($1); }
-    |   T_VARIABLE '='  scalar_value            { TRACE $$ = saffire_var($1); }
+        T_VARIABLE                                   { TRACE $$ = saffire_var($1); }
+    |   T_VARIABLE '='  scalar_value                 { TRACE $$ = saffire_var($1); }
     |   T_IDENTIFIER T_VARIABLE '='  scalar_value    { TRACE $$ = saffire_var($2); }
     |   T_IDENTIFIER T_VARIABLE                      { TRACE $$ = saffire_var($2); }
 ;
@@ -461,12 +477,43 @@ qualified_name:
 
 
 variable_declarator_list:
-        variable_declarator
-    |   variable_declarator_list ',' variable_declarator
+        scalar_value { }
+    |   variable_declarator_list ',' scalar_value { }
 ;
 
 variable_declarator:
-    variable_declarator_list '=' expression
+    variable_declarator_list '=' expression { }
 ;
 
+
+/**
+ ************************************************************
+ *                  HASHES AND LISTS
+ ************************************************************
+ */
+
+list_var_list:
+        /* First item */
+        scalar_value { TRACE $$ = saffire_opr(T_LIST_APPEND, 1, $1); }
+        /* Middle items */
+    |   list_var_list ',' scalar_value { TRACE $$ = saffire_opr(T_LIST_APPEND, 2, $1, $3); }
+        /* Last item ending with a comma */
+    |   list_var_list ',' { TRACE $$ = $1 }
+;
+
+hash_var_list:
+        /* First item */
+        hash_scalar_indexes ':' scalar_value { TRACE $$ = saffire_opr(T_HASH_APPEND, 2, $1, $3); }
+        /* Middle items */
+    |   hash_var_list ',' hash_scalar_indexes ':' scalar_value { TRACE $$ = saffire_opr(T_HASH_APPEND, 3, $1, $3, $5); }
+        /* Last item with a comma */
+    |   hash_var_list ',' { TRACE $$ = $1 }
+;
+
+hash_scalar_indexes:
+        /* These can be used as indexes for our hashes */
+        T_LNUM     { TRACE $$ = saffire_intCon($1); }
+    |   T_STRING   { TRACE $$ = saffire_strCon($1); }
+    |   T_VARIABLE { TRACE $$ = saffire_var($1); }
+;
 

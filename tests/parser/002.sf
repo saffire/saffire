@@ -1,6 +1,7 @@
 /*
  * Standard assignments
  */
+
 $a = 1;
 $b = "foo";
 $c = $d;

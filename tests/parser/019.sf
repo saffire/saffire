@@ -5,7 +5,7 @@
 // Try/Catch
 try {
     continue;
-} catch (Foo $blaat) {
+} catch (Foo $bar) {
     continue;
 }
 
@@ -13,7 +13,7 @@ try {
 // Try/Multi catch/Finally
 try {
     goto barbar;
-} catch (Foo $blaat) {
+} catch (Foo $bar) {
     continue;
 } catch (Bar $foo) {
     continue;
@@ -25,7 +25,19 @@ try {
 // Try/Catch/Finally
 try {
     continue;
-} catch (Foo $blaat) {
+} catch (Foo $bar) {
+    continue;
+} finally {
+    continue;
+}
+
+
+// Try/Catch/Finally
+try {
+    continue;
+} catch ($foo) {
+    continue;
+} catch ($bar) {
     continue;
 } finally {
     continue;
