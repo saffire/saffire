@@ -146,7 +146,7 @@ statement:
         label_statement             { TRACE $$ = $1 }
     |   expression_statement        { TRACE $$ = $1 }
     |   selection_statement         { TRACE $$ = $1 }
-/*    |   iteration_statement         { TRACE $$ = $1 } */
+    |   iteration_statement         { TRACE $$ = $1 }
     |   jump_statement              { TRACE $$ = $1 }
     |   guarding_statement          { TRACE $$ = $1 }
     |   block                       { TRACE $$ = $1 }
@@ -282,6 +282,7 @@ unary_expression:
 
 primary_expression:
         T_VARIABLE { TRACE }
+    |   T_STRING { TRACE }
 ;
 
 expression_statement:
@@ -328,10 +329,11 @@ scalar_value:
 
 
 primary_expression:
-        T_IDENTIFIER '.' qualified_name { TRACE printf("PrimaryExpr"); }
-    |   T_VARIABLE '.' qualified_name   { TRACE printf("PrimaryExpr"); }
-    |   scalar_value                    { TRACE printf("PrimaryExpr"); }
-    |   '(' expression ')'              { TRACE printf("PrimaryExpr"); }
+        qualified_name                    { TRACE }
+    |   T_IDENTIFIER '.' qualified_name   { TRACE }
+    |   T_VARIABLE '.' qualified_name     { TRACE }
+    |   scalar_value                      { TRACE }
+    |   '(' expression ')'                { TRACE }
 ;
 
 qualified_name:
@@ -349,8 +351,10 @@ method_or_var:
 
 
 calling_method_argument_list:
-        expression                                     { TRACE $$ = $1; }
+        expression                                     { TRACE }
+    |   scalar_value                                   { TRACE }
     |   calling_method_argument_list ',' expression    { TRACE $$ = saffire_opr(';', 2, $1, $3); }
+    |   calling_method_argument_list ',' scalar_value  { TRACE $$ = saffire_opr(';', 2, $1, $3); }
     |   /* empty */ { }
 ;
 
@@ -380,15 +384,12 @@ interface_inner_statements:
 ;
 
 interface_method_definition:
-        T_PUBLIC T_METHOD T_IDENTIFIER_METHOD '(' method_argument_list ')' ';'   { TRACE $$ = saffire_strCon($3); }
-    |   T_PUBLIC T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'          { TRACE $$ = saffire_strCon($3); }
+        T_PUBLIC T_METHOD method_or_var '(' method_argument_list ')' ';'   { TRACE }
 ;
 
 class_method_definition:
-        method_keywords T_METHOD T_IDENTIFIER_METHOD '(' method_argument_list ')' '{' '}'        { TRACE $$ = saffire_strCon($3); }
-    |   method_keywords T_METHOD T_IDENTIFIER        '(' method_argument_list ')' '{' '}'        { TRACE $$ = saffire_strCon($3); }
-    |   T_ABSTRACT method_keywords T_METHOD T_IDENTIFIER_METHOD '(' method_argument_list ')' ';' { TRACE $$ = saffire_strCon($3); }
-    |   T_ABSTRACT method_keywords T_METHOD T_IDENTIFIER        '(' method_argument_list ')' ';' { TRACE $$ = saffire_strCon($3); }
+                   method_keywords T_METHOD method_or_var '(' method_argument_list ')' '{' '}'    { TRACE $$ = saffire_strCon($2); }
+    |   T_ABSTRACT method_keywords T_METHOD method_or_var '(' method_argument_list ')' ';'        { TRACE $$ = saffire_strCon($3); }
 ;
 
 method_argument_list:

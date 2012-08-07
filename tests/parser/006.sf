@@ -17,7 +17,7 @@ $a = io.compute($b, $c, "Foo", 1, $bar, [ 1, 2, 3 ], { "a" : "Foo" } );
 
 // assign function output to a variable
 $b = foo.print $a;
-$c, $d = foo.return_double_vals()
+$c, $d = foo.return_double_vals();
 
 $c = Color("yellow");
 $d = Color("blue");
