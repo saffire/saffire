@@ -388,8 +388,8 @@ interface_method_definition:
 ;
 
 class_method_definition:
-                   method_keywords T_METHOD method_or_var '(' method_argument_list ')' '{' '}'    { TRACE $$ = saffire_strCon($2); }
-    |   T_ABSTRACT method_keywords T_METHOD method_or_var '(' method_argument_list ')' ';'        { TRACE $$ = saffire_strCon($3); }
+                   method_keywords T_METHOD method_or_var '(' method_argument_list ')' block    { TRACE $$ = saffire_strCon($2); }
+    |   T_ABSTRACT method_keywords T_METHOD method_or_var '(' method_argument_list ')' ';'      { TRACE $$ = saffire_strCon($3); }
 ;
 
 method_argument_list:
