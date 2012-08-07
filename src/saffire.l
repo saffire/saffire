@@ -53,6 +53,9 @@ closing_tags    [\"\']
 "else"      return T_ELSE;
 "use"       return T_USE;
 "as"        return T_AS;
+"do"        return T_DO;
+"for"       return T_FOR;
+"switch"    return T_SWITCH;
 
 "class"         return T_CLASS;
 "extends"       return T_EXTENDS;

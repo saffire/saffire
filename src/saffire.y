@@ -32,7 +32,7 @@
 %token <sVal> T_IDENTIFIER
 %token <sVal> T_METHOD
 
-%token T_WHILE T_IF T_USE T_AS
+%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR
 %nonassoc T_IFX
 %nonassoc T_ELSE
 
@@ -70,7 +70,7 @@
 %type <nPtr> jump_statement iteration_statement guarding_statement
 %type <nPtr> expression_statement label_statement selection_statement block expression
 %type <nPtr> assignment_expression assignment_operator unary_expression catch_list catch_header catch
-%type <nPtr> list_var_list hash_var_list hash_scalar_indexes
+%type <nPtr> list_element_list hash_element_list hash_scalar_indexes
 
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC
@@ -153,26 +153,27 @@ statement:
 ;
 
 selection_statement:
-        /*  if */       { }
-    |   /*  if else */  { }
-    |   /*  switch */   { }
+        T_IF expression statement { TRACE }
+    |   T_IF expression statement T_ELSE statement { TRACE }
+    |   T_SWITCH expression statement { TRACE }
 ;
 
 iteration_statement:
-        /* while */     { }
-    |   /* do */        { }
-    |   /* for() */     { }
+        T_WHILE expression statement { TRACE }
+    |   T_DO statement T_WHILE expression ';' { TRACE }
+    |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE }
+    |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE }
     |   /* foreach() */ { }
 ;
 
 jump_statement:
-        T_BREAK ';'                 { }
-    |   T_BREAKELSE ';'             { }
-    |   T_CONTINUE ';'              { }
-    |   T_RETURN ';'                { }
-    |   T_RETURN expression ';'     { }
-    |   T_THROW expression ';'      { }
-    |   T_GOTO T_IDENTIFIER ';'     { }
+        T_BREAK ';'                 { TRACE }
+    |   T_BREAKELSE ';'             { TRACE }
+    |   T_CONTINUE ';'              { TRACE }
+    |   T_RETURN ';'                { TRACE }
+    |   T_RETURN expression ';'     { TRACE }
+    |   T_THROW expression ';'      { TRACE }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE }
 ;
 
 guarding_statement:
@@ -187,7 +188,7 @@ catch_list:
 ;
 
 catch:
-    catch_header block { TRACE $$ = $2 }
+        catch_header block { TRACE $$ = $2 }
 ;
 
 catch_header:
@@ -317,21 +318,21 @@ assignment_operator:
 ;
 
 scalar_value:
-        T_LNUM                  { TRACE $$ = saffire_intCon($1); }
-    |   T_STRING                { TRACE $$ = saffire_strCon($1); }
-    |   T_VARIABLE              { TRACE $$ = saffire_var($1); }
-    |   T_IDENTIFIER            { TRACE $$ = saffire_strCon($1); }
-    |   '[' list_var_list ']'   { TRACE $$ = saffire_opr(T_LIST, 1, $2); }
-    |   '['               ']'   { TRACE $$ = saffire_opr(T_LIST, 0); }
-    |   '{' hash_var_list '}'   { TRACE $$ = saffire_opr(T_HASH, 1, $2); }
-    |   '{'               '}'   { TRACE $$ = saffire_opr(T_HASH, 0); }
+        T_LNUM                      { TRACE $$ = saffire_intCon($1); }
+    |   T_STRING                    { TRACE $$ = saffire_strCon($1); }
+    |   T_VARIABLE                  { TRACE $$ = saffire_var($1); }
+    |   T_IDENTIFIER                { TRACE $$ = saffire_strCon($1); }
+    |   '[' list_element_list ']'   { TRACE $$ = saffire_opr(T_LIST, 1, $2); }
+    |   '['                   ']'   { TRACE $$ = saffire_opr(T_LIST, 0); }
+    |   '{' hash_element_list '}'   { TRACE $$ = saffire_opr(T_HASH, 1, $2); }
+    |   '{'                   '}'   { TRACE $$ = saffire_opr(T_HASH, 0); }
 ;
 
 
 primary_expression:
         qualified_name                    { TRACE }
-    |   T_IDENTIFIER '.' qualified_name   { TRACE }
-    |   T_VARIABLE '.' qualified_name     { TRACE }
+    |   T_IDENTIFIER '.' qualified_name   { TRACE }     /* Foo.bar(),  foo!.bar() is not possible */
+    |   T_VARIABLE '.' qualified_name     { TRACE }     /* $foo.bar() */
     |   scalar_value                      { TRACE }
     |   '(' expression ')'                { TRACE }
 ;
@@ -483,24 +484,27 @@ class_list:
  ************************************************************
  */
 
-list_var_list:
+/* Elements inside lists */
+list_element_list:
         /* First item */
         scalar_value { TRACE $$ = saffire_opr(T_LIST_APPEND, 1, $1); }
         /* Middle items */
-    |   list_var_list ',' scalar_value { TRACE $$ = saffire_opr(T_LIST_APPEND, 2, $1, $3); }
+    |   list_element_list ',' scalar_value { TRACE $$ = saffire_opr(T_LIST_APPEND, 2, $1, $3); }
         /* Last item ending with a comma */
-    |   list_var_list ',' { TRACE $$ = $1 }
+    |   list_element_list ',' { TRACE $$ = $1 }
 ;
 
-hash_var_list:
+/* Elements inside hashes (key : value pairs) */
+hash_element_list:
         /* First item */
         hash_scalar_indexes ':' scalar_value { TRACE $$ = saffire_opr(T_HASH_APPEND, 2, $1, $3); }
         /* Middle items */
-    |   hash_var_list ',' hash_scalar_indexes ':' scalar_value { TRACE $$ = saffire_opr(T_HASH_APPEND, 3, $1, $3, $5); }
+    |   hash_element_list ',' hash_scalar_indexes ':' scalar_value { TRACE $$ = saffire_opr(T_HASH_APPEND, 3, $1, $3, $5); }
         /* Last item with a comma */
-    |   hash_var_list ',' { TRACE $$ = $1 }
+    |   hash_element_list ',' { TRACE $$ = $1 }
 ;
 
+/* Hash keys can only be numeric, string or variables */
 hash_scalar_indexes:
         /* These can be used as indexes for our hashes */
         T_LNUM     { TRACE $$ = saffire_intCon($1); }
