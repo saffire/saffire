@@ -66,7 +66,7 @@
 %type <nPtr> class_definition interface_definition constant_list constant
 %type <nPtr> scalar_value interface_inner_statements method_argument
 %type <nPtr> class_method_definition method_visibility statement_list statement
-%type <nPtr> constant_definition
+%type <nPtr> constant_definition calling_method_argument_list
 %type <nPtr> jump_statement iteration_statement guarding_statement
 %type <nPtr> expression_statement label_statement selection_statement block expression
 %type <nPtr> assignment_expression assignment_operator unary_expression catch_list catch_header catch
@@ -145,7 +145,7 @@ block:
 statement:
         label_statement             { TRACE $$ = $1 }
     |   expression_statement        { TRACE $$ = $1 }
-/*    |   selection_statement         { TRACE $$ = $1 } */
+    |   selection_statement         { TRACE $$ = $1 }
 /*    |   iteration_statement         { TRACE $$ = $1 } */
     |   jump_statement              { TRACE $$ = $1 }
     |   guarding_statement          { TRACE $$ = $1 }
@@ -210,91 +210,82 @@ label_statement:
  */
 
 constant_expression:
-        conditional_expression
+        conditional_expression { TRACE }
 ;
 
 conditional_expression:
-        conditional_or_expression
-    |   conditional_or_expression '?' expression ':' conditional_expression
+        conditional_or_expression { TRACE }
+    |   conditional_or_expression '?' expression ':' conditional_expression { TRACE }
 ;
 
 conditional_or_expression:
-        conditional_and_expression
-    |   conditional_or_expression T_OR conditional_and_expression
+        conditional_and_expression { TRACE }
+    |   conditional_or_expression T_OR conditional_and_expression { TRACE }
 ;
 
 conditional_and_expression:
-        inclusive_or_expression
-    |   conditional_and_expression T_AND inclusive_or_expression
+        inclusive_or_expression { TRACE }
+    |   conditional_and_expression T_AND inclusive_or_expression { TRACE }
 ;
 
 inclusive_or_expression:
-        exclusive_or_expression
-    |   inclusive_or_expression '|' exclusive_or_expression
+        exclusive_or_expression { TRACE }
+    |   inclusive_or_expression '|' exclusive_or_expression { TRACE }
 ;
 
 exclusive_or_expression:
-        and_expression
-    |   exclusive_or_expression '^' and_expression
+        and_expression { TRACE }
+    |   exclusive_or_expression '^' and_expression { TRACE }
 ;
 
 and_expression:
-        equality_expression
-    |   and_expression '&' equality_expression
+        equality_expression { TRACE }
+    |   and_expression '&' equality_expression { TRACE }
 ;
 
 equality_expression:
-        relational_expression
-    |   equality_expression T_EQ relational_expression
-    |   equality_expression T_NE relational_expression
+        relational_expression { TRACE }
+    |   equality_expression T_EQ relational_expression { TRACE }
+    |   equality_expression T_NE relational_expression { TRACE }
 ;
 
 relational_expression:
-        shift_expression
-    |   relational_expression '>' shift_expression
-    |   relational_expression '<' shift_expression
-    |   relational_expression T_LE shift_expression
-    |   relational_expression T_GE shift_expression
+        shift_expression { TRACE }
+    |   relational_expression '>' shift_expression { TRACE }
+    |   relational_expression '<' shift_expression { TRACE }
+    |   relational_expression T_LE shift_expression { TRACE }
+    |   relational_expression T_GE shift_expression { TRACE }
 ;
 
 shift_expression:
-        additive_expression
-    |   shift_expression T_SHIFT_LEFT additive_expression
-    |   shift_expression T_SHIFT_RIGHT additive_expression
+        additive_expression { TRACE }
+    |   shift_expression T_SHIFT_LEFT additive_expression { TRACE }
+    |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE }
 ;
 
 additive_expression:
-        multiplicative_expression
-    |   additive_expression '+' multiplicative_expression
-    |   additive_expression '-' multiplicative_expression
+        multiplicative_expression { TRACE }
+    |   additive_expression '+' multiplicative_expression { TRACE }
+    |   additive_expression '-' multiplicative_expression { TRACE }
 ;
 
 multiplicative_expression:
-        unary_expression
-    |   multiplicative_expression '*' unary_expression
-    |   multiplicative_expression '/' unary_expression
-    |   multiplicative_expression '%' unary_expression
+        unary_expression { TRACE }
+    |   multiplicative_expression '*' unary_expression { TRACE }
+    |   multiplicative_expression '/' unary_expression { TRACE }
+    |   multiplicative_expression '%' unary_expression { TRACE }
 ;
 
 unary_expression:
-        primary_expression
+        primary_expression { TRACE }
 ;
 
 primary_expression:
-        T_VARIABLE
-;
-
-
-unary_assignment:
-        '+' { }
-    |   '-' { }
-    |   '~' { }
-    |   '!' { }
-    |   /* empty */ { }
+        T_VARIABLE { TRACE }
 ;
 
 expression_statement:
-        ';' { }
+        ';' { TRACE }
     |   expression ';' { TRACE $$ = $1 }
 ;
 
@@ -304,8 +295,8 @@ expression:
 ;
 
 assignment_expression:
-        conditional_expression
-    |   unary_expression assignment_operator assignment_expression { }
+        conditional_expression { TRACE }
+    |   unary_expression assignment_operator assignment_expression { TRACE }
 ;
 
 
@@ -337,10 +328,31 @@ scalar_value:
 
 
 primary_expression:
-        scalar_value
-    |   '(' expression ')'
+        T_IDENTIFIER '.' qualified_name { TRACE printf("PrimaryExpr"); }
+    |   T_VARIABLE '.' qualified_name   { TRACE printf("PrimaryExpr"); }
+    |   scalar_value                    { TRACE printf("PrimaryExpr"); }
+    |   '(' expression ')'              { TRACE printf("PrimaryExpr"); }
 ;
 
+qualified_name:
+        method_or_var                                      { TRACE }
+    |   method_or_var '(' ')'                              { TRACE }
+    |   method_or_var '(' calling_method_argument_list ')' { TRACE }
+    |   method_or_var     calling_method_argument_list     { TRACE }
+    |   method_or_var '.' qualified_name                   { TRACE }
+;
+
+method_or_var:
+        T_IDENTIFIER        { TRACE }
+    |   T_IDENTIFIER_METHOD { TRACE }
+;
+
+
+calling_method_argument_list:
+        expression                                     { TRACE $$ = $1; }
+    |   calling_method_argument_list ',' expression    { TRACE $$ = saffire_opr(';', 2, $1, $3); }
+    |   /* empty */ { }
+;
 
 /**
  ************************************************************
@@ -351,10 +363,10 @@ primary_expression:
 
 /* Statements inside a class: constant and methods */
 class_inner_statements:
-        class_inner_statements constant { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+        class_inner_statements constant                { TRACE $$ = saffire_opr(';', 2, $1, $2); }
     |   class_inner_statements class_method_definition { TRACE $$ = saffire_opr(';', 2, $1, $2); }
-    |   constant { TRACE $$ = $1 }
-    |   class_method_definition { TRACE $$ = $1 }
+    |   constant                                       { TRACE $$ = $1 }
+    |   class_method_definition                        { TRACE $$ = $1 }
     |   /* empty */ { }
 ;
 
@@ -362,8 +374,8 @@ class_inner_statements:
 interface_inner_statements:
         interface_inner_statements constant_definition          { TRACE $$ = saffire_opr(';', 2, $1, $2); }
     |   interface_inner_statements interface_method_definition  { TRACE $$ = saffire_opr(';', 2, $1, $2); }
-    |   constant_definition             { TRACE $$ = $1 }
-    |   interface_method_definition     { TRACE $$ = $1 }
+    |   constant_definition                                     { TRACE $$ = $1 }
+    |   interface_method_definition                             { TRACE $$ = $1 }
     |   /* empty */ { }
 ;
 
@@ -425,64 +437,42 @@ method_keywords:
 ;
 
 method_mode:
-        T_FINAL          { printf("Final \n"); }
-    |           T_STATIC { printf("Static \n"); }
-    |   T_FINAL T_STATIC { printf("Final Standard \n"); }
+        T_FINAL          { TRACE }
+    |           T_STATIC { TRACE }
+    |   T_FINAL T_STATIC { TRACE }
     |   /* empty */ { }
 ;
 
 /* methods MUST be one of these. There is no default visibility */
 method_visibility:
-        T_PROTECTED { printf("Protected \n"); }
-    |   T_PUBLIC    { printf("Public \n"); }
-    |   T_PRIVATE   { printf("Private \n"); }
+        T_PROTECTED { TRACE }
+    |   T_PUBLIC    { TRACE }
+    |   T_PRIVATE   { TRACE }
 ;
 
 /* class keywords. Final, abstract or none */
 class_header_keywords:
-                   T_CLASS { printf("Standard \n"); }
-    |   T_FINAL    T_CLASS { printf("Final \n"); }
-    |   T_ABSTRACT T_CLASS { printf("Abstract \n"); }
+                   T_CLASS { TRACE }
+    |   T_FINAL    T_CLASS { TRACE }
+    |   T_ABSTRACT T_CLASS { TRACE }
 ;
 
 /* extends a list of classes, or no extends at all */
 class_extends:
-        T_EXTENDS class_list { }
+        T_EXTENDS class_list { TRACE }
     |   /* empty */
 ;
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
-        T_IMPLEMENTS class_list { }
+        T_IMPLEMENTS class_list { TRACE }
     |   /* empty */
 ;
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        class_list ',' T_IDENTIFIER { }
-    |   T_IDENTIFIER { }
-;
-
-
-/**
- ************************************************************
- *                  ASSIGNMENT
- ************************************************************
- */
-
-qualified_name:
-        T_IDENTIFIER
-    |   qualified_name '.' T_IDENTIFIER
-;
-
-
-variable_declarator_list:
-        scalar_value { }
-    |   variable_declarator_list ',' scalar_value { }
-;
-
-variable_declarator:
-    variable_declarator_list '=' expression { }
+        class_list ',' T_IDENTIFIER { TRACE }
+    |   T_IDENTIFIER { TRACE }
 ;
 
 

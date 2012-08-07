@@ -12,7 +12,7 @@ if ($a >= 1) $b++;
 if ($a != 1) $b++; else $c++;
 
 // Without parentheses
-if $foo.print? $a++;
+if $foo $a++;
 
 /* Output:
 */
