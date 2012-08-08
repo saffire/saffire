@@ -11,7 +11,7 @@
 %option yylineno
 
 lnum            [0-9]+
-identifier      [a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
+identifier      [\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -23,13 +23,14 @@ closing_tags    [\"\']
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[-+<>\(\)\{\}:;=,\.\[\]\?]    { return yytext[0]; }
+[-+<>\(\)\{\}:;=,\.\[\]\?!]    { return yytext[0]; }
 
 
 ">="        return T_GE;
 "<="        return T_LE;
 "=="        return T_EQ;
 "!="        return T_NE;
+"in"        return T_IN;
 
 "||"        return T_OR;
 "&&"        return T_AND;
@@ -70,6 +71,8 @@ closing_tags    [\"\']
 "private"       return T_PRIVATE;
 "protected"     return T_PROTECTED;
 "method"        return T_METHOD;
+"readonly"      return T_READONLY;
+"property"      return T_PROPERTY;
 
 "catch"         return T_CATCH;
 "finally"       return T_FINALLY;
@@ -94,18 +97,9 @@ closing_tags    [\"\']
     }
     return T_STRING; }
 
-\${identifier} {
-    yylval.sVal = strdup(yytext);
-    return T_VARIABLE; }
-
 {identifier} {
     yylval.sVal = strdup(yytext);
     return T_IDENTIFIER;
-}
-
-{identifier}[!?]? {
-    yylval.sVal = strdup(yytext);
-    return T_IDENTIFIER_METHOD;
 }
 
 {lnum} {

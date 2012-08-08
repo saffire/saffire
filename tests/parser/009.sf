@@ -2,9 +2,14 @@
  * while statement
  */
 
+while ($a <= $b) {
+    bar.printf("A= %d", $a);
+    $b += $a;
+}
+
 while ($a) {
     bar.printf("A= %d", $a);
-    $a--;
+    $b -= 1;
 } else {
     foo.print "Nothing ", "to ", "do";
 }

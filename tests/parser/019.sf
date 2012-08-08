@@ -4,7 +4,9 @@
 
 // Try/Catch
 try {
-    continue;
+    throw Foo();
+    throw $a;
+    throw "Baz";
 } catch (Foo $bar) {
     continue;
 }

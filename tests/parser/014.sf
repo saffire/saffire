@@ -20,8 +20,13 @@ class Foo {
     }
 
     private method foo2() {
-        return self, "foo";
+        return self, "foo", ("bar, 4);
     }
+
+    protected method foo3() {
+        return [ 1, 2, 3 ], { "foo" : self, "bar" : 42 };
+    }
+
 }
 
 $foo = Foo();       // Auto calls ctor()
