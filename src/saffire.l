@@ -82,6 +82,9 @@ closing_tags    [\"\']
 "default"       return T_DEFAULT;
 "goto"          return T_GOTO;
 
+"self"          return T_SELF;
+"parent"        return T_PARENT;
+
 {opening_tags}[^\"]*{closing_tags} {
     yylval.sVal = strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {

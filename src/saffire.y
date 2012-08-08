@@ -50,7 +50,7 @@
 %token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT
 
 %token T_LIST_START T_LIST_END T_HASH_START T_HASH_END
-%token T_OBJECT_OPERATOR
+%token T_OBJECT_OPERATOR T_SELF T_PARENT
 
 
 %token T_LIST T_HASH T_LIST_APPEND T_HASH_APPEND
@@ -210,10 +210,6 @@ label_statement:
  ************************************************************
  */
 
-constant_expression:
-        conditional_expression { TRACE }
-;
-
 conditional_expression:
         conditional_or_expression { TRACE }
     |   conditional_or_expression '?' expression ':' conditional_expression { TRACE }
@@ -281,11 +277,6 @@ unary_expression:
         primary_expression { TRACE }
 ;
 
-primary_expression:
-        T_VARIABLE { TRACE }
-    |   T_STRING { TRACE }
-;
-
 expression_statement:
         ';' { TRACE }
     |   expression ';' { TRACE $$ = $1 }
@@ -331,6 +322,7 @@ scalar_value:
 
 primary_expression:
         qualified_name                    { TRACE }
+    |   object_context '.' qualified_name { TRACE }     /* parent.bar(), self.bar() */
     |   T_IDENTIFIER '.' qualified_name   { TRACE }     /* Foo.bar(),  foo!.bar() is not possible */
     |   T_VARIABLE '.' qualified_name     { TRACE }     /* $foo.bar() */
     |   scalar_value                      { TRACE }
@@ -346,16 +338,15 @@ qualified_name:
 ;
 
 method_or_var:
-        T_IDENTIFIER        { TRACE }
+        T_VARIABLE          { TRACE }
+    |   T_IDENTIFIER        { TRACE }
     |   T_IDENTIFIER_METHOD { TRACE }
 ;
 
 
 calling_method_argument_list:
         expression                                     { TRACE }
-    |   scalar_value                                   { TRACE }
     |   calling_method_argument_list ',' expression    { TRACE $$ = saffire_opr(';', 2, $1, $3); }
-    |   calling_method_argument_list ',' scalar_value  { TRACE $$ = saffire_opr(';', 2, $1, $3); }
     |   /* empty */ { }
 ;
 
@@ -512,3 +503,14 @@ hash_scalar_indexes:
     |   T_VARIABLE { TRACE $$ = saffire_var($1); }
 ;
 
+
+/**
+ ************************************************************
+ *
+ ************************************************************
+ */
+
+object_context:
+        T_SELF      { TRACE }
+    |   T_PARENT    { TRACE }
+;
