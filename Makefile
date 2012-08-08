@@ -24,4 +24,4 @@ debug:
 	make -C src debug
 
 tests:
-	make -C src tests
+	echo "Alas, there are no testsuites available at the moment."
