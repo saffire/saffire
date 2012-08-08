@@ -19,7 +19,7 @@ $a = io.compute($b, $c, "Foo", 1, $bar, [ 1, 2, 3 ], { "a" : "Foo" } );
 $b = foo.print $a;
 $c, $d = foo.return_double_vals();
 
-$c = $Color("yellow");
+$c = $color("yellow");
 $d = Color("blue");
 
 /* Output:

@@ -14,7 +14,5 @@ foreach string.range("a", "z") as $val, $key {
 foreach ["a", "b", "c" ] as $val {
 }
 
-
-
 /* Output:
 */

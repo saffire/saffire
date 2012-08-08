@@ -13,6 +13,17 @@ if ($a == 1) {
 if ($a >= 1) $b+=1;
 if ($a != 1) $b+=1; else $c+=1;
 
+
+if ($a != 1) $b+=1; else {
+    $c += 1;
+    $b -= 1;
+}
+
+if ($a != 1) {
+    $b+=1;
+} else $b -= 1;
+
+
 // Without parentheses
 if $foo $a+=1;
 
