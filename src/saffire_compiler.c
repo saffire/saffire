@@ -30,23 +30,23 @@ void saffire_compiler(nodeType *p) {
 
         case typeOpr :
             switch (p->opr.oper) {
-                case T_LIST :
+                case '[' :
                     // Don't expand tree when none are present (empty list)
                     printf("\tlist_init\n");
                     if (p->opr.nops >= 1) SC0(p);
                     break;
-                case T_LIST_APPEND :
+                case ']' :
                     SC0(p);
                     if (p->opr.nops >= 2) SC1(p);
                     printf("\tlist_append\n");
                     break;
 
-                case T_HASH :
+                case '{' :
                     printf("\thash_init\n");
                     // Don't expand tree when none are present (empty hash)
                     if (p->opr.nops >= 1) SC0(p);
                     break;
-                case T_HASH_APPEND :
+                case '}' :
                     SC0(p);
                     SC1(p);
                     SC2(p);

@@ -11,7 +11,7 @@
 %option yylineno
 
 lnum            [0-9]+
-identifier      [\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?
+identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -23,7 +23,7 @@ closing_tags    [\"\']
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[-+<>\(\)\{\}:;=,\.\[\]\?!]    { return yytext[0]; }
+[-+<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
 
 
 ">="        return T_GE;
@@ -56,6 +56,7 @@ closing_tags    [\"\']
 "as"        return T_AS;
 "do"        return T_DO;
 "for"       return T_FOR;
+"foreach"   return T_FOREACH;
 "switch"    return T_SWITCH;
 
 "class"         return T_CLASS;

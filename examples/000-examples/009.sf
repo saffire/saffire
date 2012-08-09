@@ -11,19 +11,19 @@ while ($a) {
     bar.printf("A= %d", $a);
     $b -= 1;
 } else {
-    foo.print "Nothing ", "to ", "do";
+    foo.print("Nothing ", "to ", "do");
 }
 
 while ($a) {
     bar.printf("A= %d", $a);
     $b -= 1;
-} else  foo.print "Nothing ", "to ", "do";
+} else  foo.print("Nothing ", "to ", "do");
 
 
 while ($a)
     bar.printf("A= %d", $a);
 else
-    foo.print "Nothing ", "to ", "do";
+    foo.print("Nothing ", "to ", "do");
 
 
 

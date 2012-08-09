@@ -62,6 +62,15 @@ class Foo {
     {
 
     }
+
+    public method tmp_bar5(String $a = 1, Numeric $b, Boolean $c = False)
+    {
+    }
+
+    public method tmp_bar5(String $a, Numeric $b, $c = False)
+    {
+    }
+
 }
 
 

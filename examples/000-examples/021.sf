@@ -2,6 +2,8 @@
  * Example color class
  */
 
+use io;
+
 {
          if ! $a {
              //throw Exception("Color not found!");
@@ -13,15 +15,15 @@
 
 class Color {
     /** Available PMS colors */
-    protected readonly property $pms = { 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" };
+    protected readonly property $pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
 
     /** Actual stored color */
     public property $color = Null;
 
     /** Mix table. We can mix these colors */
-    protected readonly property $mix_table = [
-                                                (5, 2, 1),  // Yellow + Blue = Green
-                                                (0, 5, 3),  // Red + Yellow = Orange
+    protected readonly property $mix_table = list[
+                                                tuple[5, 2, 1],  // Yellow + Blue = Green
+                                                tuple[0, 5, 3],  // Red + Yellow = Orange
                                              ];
 
 
@@ -51,21 +53,21 @@ class Color {
     /**
      *
      */
-    public method +(Color $color) {
+    public method ::+(Color $color) {
         return self.mix($color);
     }
 
     /**
      *
      */
-    public method +(String $color) {
+    public method ::+(String $color) {
         return self.mix(Color($color));
     }
 
     /**
      *
      */
-    public method +(Integer $pms) {
+    public method ::+(Integer $pms) {
         return self.mix(Color($pms));
     }
 
@@ -73,7 +75,7 @@ class Color {
      *
      */
     protected method mix(Color $color) {
-        foreach (self.mix_table as $t) {
+        foreach self.mix_table as $t {
             $src1, $src2, $dst = $t;
 
             if (self.getColor() == $src1 && $color.getColor() == $src2) {
@@ -90,17 +92,17 @@ class Color {
     /**
      * Automatically called when cast to string, or in a string context
      */
-    public method .toString() {
+    public method toString() {
         return self.pms[self.color];
     }
 
 }
 
 
-use io;
+
 
 const PMS_GREEN = 2;
 
 $c1 = Color("yellow");
 $c2 = $c1 + Color(PMS_GREEN);
-io.printf "The mixed color is: ", Color;
+io.printf("The mixed color is: ", Color);

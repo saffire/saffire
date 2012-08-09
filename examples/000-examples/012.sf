@@ -3,15 +3,15 @@
  */
 
 foreach SomeObject as $val, $key, $meta {
-    io.print $meta.index, "\n";
+    io.print($meta.index, "\n");
 }
 
 // Is this allowed? we don't return keys in our list. Should it return Null for keys?
 foreach string.range("a", "z") as $val, $key {
-    io.printf "K: %s  V: %s\n", $key, $val;
+    io.printf("K: %s  V: %s\n", $key, $val);
 }
 
-foreach ["a", "b", "c" ] as $val {
+foreach list["a", "b", "c" ] as $val {
 }
 
 /* Output:

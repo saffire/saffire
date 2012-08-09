@@ -29,8 +29,7 @@
 %token <sVal> T_STRING
 %token <sVal> T_IDENTIFIER
 
-%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR
-%nonassoc T_IFX
+%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH
 %nonassoc T_ELSE
 
 %token T_PLUS_ASSIGNMENT
@@ -46,11 +45,7 @@
 
 %token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
 
-%token T_LIST_START T_LIST_END T_HASH_START T_HASH_END
-%token T_OBJECT_OPERATOR T_SELF T_PARENT
-
-
-%token T_LIST T_HASH T_LIST_APPEND T_HASH_APPEND
+%token T_SELF T_PARENT
 
 %left '=' T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN
 %left '+' '-'
@@ -62,7 +57,7 @@
 %token use_statement interface_method_definition method_argument_list
 %token  class_inner_statements top_statement_list top_statement
 %token  class_definition interface_definition constant_list constant
-%token  scalar_value interface_inner_statements method_argument real_scalar_value
+%token  scalar_value interface_inner_statements real_scalar_value
 %token  class_method_definition statement_list statement
 %token  calling_method_argument_list interface_property_definition
 %token  jump_statement iteration_statement guarding_statement class_property_definition
@@ -90,12 +85,12 @@ saffire:
         use_statement_list { TRACE("use_statement_list") }
 
         /* Top statements follow use statements */
-        top_statement_list { TRACE("") }
+        top_statement_list { TRACE("top_statement_list") }
 ;
 
 use_statement_list:
-        non_empty_use_statement_list { TRACE("") }
-    |   /* empty */ { TRACE("") }
+        non_empty_use_statement_list { TRACE("use_staement_list") }
+    |   /* empty */ { TRACE("empty statementlist") }
 ;
 
 non_empty_use_statement_list:
@@ -113,13 +108,13 @@ use_statement:
 
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
-        non_empty_top_statement_list { TRACE("") }
+        non_empty_top_statement_list { TRACE("ne top statement list") }
     |   /* empty */ { }
 ;
 
 non_empty_top_statement_list:
-        top_statement{ TRACE("") }
-    |   non_empty_top_statement_list top_statement { TRACE("") }
+        top_statement{ TRACE("top statement") }
+    |   non_empty_top_statement_list top_statement { TRACE("top statement next") }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -171,7 +166,13 @@ iteration_statement:
     |   T_DO statement T_WHILE expression ';' { TRACE("") }
     |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE("") }
     |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE("") }
+    |   T_FOREACH expression  T_AS expression statement { TRACE("") }
 /*    |    foreach()  { } */
+;
+
+expression_statement:
+        ';' { TRACE("empty expression") }
+    |   expression ';' { TRACE("expression") }
 ;
 
 jump_statement:
@@ -218,45 +219,55 @@ label_statement:
  ************************************************************
  */
 
+expression:
+        assignment_expression { TRACE("expr") }
+    |   expression ',' assignment_expression { TRACE("expr ,") }
+;
+
+assignment_expression:
+        conditional_expression { TRACE("assignment expr") }
+    |   unary_expression assignment_operator assignment_expression { TRACE("assignment expr, ") }
+;
+
 conditional_expression:
-        conditional_or_expression { TRACE("") }
-    |   conditional_or_expression '?' expression ':' conditional_expression { TRACE("") }
+        conditional_or_expression { TRACE("cond expr") }
+    |   conditional_or_expression '?' expression ':' conditional_expression { TRACE("cond expr") }
 ;
 
 conditional_or_expression:
-        conditional_and_expression { TRACE("") }
-    |   conditional_or_expression T_OR conditional_and_expression { TRACE("") }
+        conditional_and_expression { TRACE("cond or expr") }
+    |   conditional_or_expression T_OR conditional_and_expression { TRACE("cond OR") }
 ;
 
 conditional_and_expression:
-        inclusive_or_expression { TRACE("") }
-    |   conditional_and_expression T_AND inclusive_or_expression { TRACE("") }
+        inclusive_or_expression { TRACE("cond and epr") }
+    |   conditional_and_expression T_AND inclusive_or_expression { TRACE("cond AND") }
 ;
 
 inclusive_or_expression:
-        exclusive_or_expression { TRACE("") }
-    |   inclusive_or_expression '|' exclusive_or_expression { TRACE("") }
+        exclusive_or_expression { TRACE("incl or expr") }
+    |   inclusive_or_expression '|' exclusive_or_expression { TRACE("incl OR") }
 ;
 
 exclusive_or_expression:
-        and_expression { TRACE("") }
-    |   exclusive_or_expression '^' and_expression { TRACE("") }
+        and_expression { TRACE("excl or expr") }
+    |   exclusive_or_expression '^' and_expression { TRACE("excl OR") }
 ;
 
 and_expression:
-        equality_expression { TRACE("") }
-    |   and_expression '&' equality_expression { TRACE("") }
+        equality_expression { TRACE("and expr") }
+    |   and_expression '&' equality_expression { TRACE("AND") }
 ;
 
 equality_expression:
-        relational_expression { TRACE("") }
+        relational_expression { TRACE("equal expr") }
     |   equality_expression T_EQ relational_expression { TRACE("eq") }
     |   equality_expression T_NE relational_expression { TRACE("ne") }
     |   equality_expression T_IN relational_expression { TRACE("in") }
 ;
 
 relational_expression:
-        shift_expression { TRACE("") }
+        shift_expression { TRACE("relat expr") }
     |   relational_expression '>' shift_expression { TRACE("") }
     |   relational_expression '<' shift_expression { TRACE("") }
     |   relational_expression T_LE shift_expression { TRACE("") }
@@ -264,30 +275,38 @@ relational_expression:
 ;
 
 shift_expression:
-        additive_expression { TRACE("") }
+        additive_expression { TRACE("shift expr") }
     |   shift_expression T_SHIFT_LEFT additive_expression { TRACE("") }
     |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE("") }
 ;
 
 additive_expression:
-        multiplicative_expression { TRACE("") }
+        multiplicative_expression { TRACE("add expr") }
     |   additive_expression '+' multiplicative_expression { TRACE("") }
     |   additive_expression '-' multiplicative_expression { TRACE("") }
 ;
 
 multiplicative_expression:
-        unary_expression { TRACE("") }
-    |   multiplicative_expression '*' unary_expression { TRACE("") }
-    |   multiplicative_expression '/' unary_expression { TRACE("") }
-    |   multiplicative_expression '%' unary_expression { TRACE("") }
+        unary_expression { TRACE("multi expr") }
+    |   multiplicative_expression '*' unary_expression { TRACE("me *") }
+    |   multiplicative_expression '/' unary_expression { TRACE("me /") }
+    |   multiplicative_expression '%' unary_expression { TRACE("me %") }
 ;
 
 unary_expression:
-        primary_expression
-    |   arithmic_unary_operator multiplicative_expression { TRACE("") }
-    |   logical_unary_operator multiplicative_expression { TRACE("") }
+        arithmic_unary_operator primary_expression { TRACE("unary expr") }
+    |   logical_unary_expression
 ;
 
+logical_unary_expression:
+        primary_expression
+    |   logical_unary_operator unary_expression
+;
+
+primary_expression:
+        qualified_name  { TRACE("prim QF") }
+    |   not_just_name   { TRACE("notjustname") }
+ ;
 
 arithmic_unary_operator:
         '+' { TRACE("+") }
@@ -297,22 +316,6 @@ arithmic_unary_operator:
 logical_unary_operator:
         '~' { TRACE("~") }
     |   '!' { TRACE("!") }
-;
-
-
-expression_statement:
-        ';' { TRACE("empty expression") }
-    |   expression ';' { TRACE("expression") }
-;
-
-expression:
-        assignment_expression { TRACE("assignment") }
-    |   expression ',' assignment_expression { TRACE("assignment") }
-;
-
-assignment_expression:
-        conditional_expression { TRACE("") }
-    |   unary_expression assignment_operator assignment_expression { TRACE("") }
 ;
 
 
@@ -336,39 +339,54 @@ real_scalar_value:
     |   T_STRING { TRACE("") }
 ;
 
-scalar_value:
-        T_LNUM                      { TRACE("") }
-    |   T_STRING                    { TRACE("") }
-    |   T_IDENTIFIER                { TRACE("") }
-    |   '[' list_element_list ']'   { TRACE("") }
-    |   '['                   ']'   { TRACE("") }
-    |   '{' hash_element_list '}'   { TRACE("") }
-    |   '{'                   '}'   { TRACE("") }
-    |   '(' list_element_list ')'   { TRACE("") }
-;
-
-
-primary_expression:
-        qualified_name                    { TRACE("") }
-    |   object_context '.' qualified_name { TRACE("") }     /* parent.bar(), self.bar() */
-    |   T_IDENTIFIER '.' qualified_name   { TRACE("") }     /* Foo.bar(),  foo!.bar() is not possible */
-    |   scalar_value                      { TRACE("") }
-    |   '(' expression ')'                { TRACE("") }
-;
 
 qualified_name:
-        T_IDENTIFIER                                      { TRACE("") }
-    |   T_IDENTIFIER '(' ')'                              { TRACE("") }
-    |   T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE("") }
-    |   T_IDENTIFIER     calling_method_argument_list     { TRACE("") }
-    |   T_IDENTIFIER '.' qualified_name                   { TRACE("") }
+         T_IDENTIFIER
+     |   qualified_name '.' T_IDENTIFIER { TRACE("QF") printf("%s\n", $3); }
 ;
-
 
 calling_method_argument_list:
         expression                                     { TRACE("") }
     |   calling_method_argument_list ',' expression    { TRACE("") }
     |   /* empty */ { TRACE("") }
+;
+
+
+not_just_name:
+        special_name { TRACE("njn sn") }
+    |   complex_primary { TRACE("njn cp") }
+;
+
+complex_primary:
+        '(' expression ')' { TRACE("cp (expr)") }
+    |   complex_primary_no_parenthesis { TRACE("cp cpnp") }
+;
+
+complex_primary_no_parenthesis:
+        T_LNUM          { TRACE("num") }
+    |   T_STRING        { TRACE("string") }
+    |   field_access    { TRACE("field xs") }
+    |   method_call     { TRACE("methodcall") }
+    |   data_structure  { TRACE("datastructure") }
+;
+
+field_access:
+        not_just_name '.' T_IDENTIFIER
+    |   qualified_name '.' special_name
+;
+
+method_call:
+        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE("") }
+    |   complex_primary_no_parenthesis '(' ')' { TRACE("") }
+    |   qualified_name '(' calling_method_argument_list ')' { TRACE("") }
+    |   qualified_name '(' ')' { TRACE("") }
+;
+
+
+
+special_name:
+        T_SELF      { TRACE("self") }
+    |   T_PARENT    { TRACE("parent") }
 ;
 
 
@@ -380,45 +398,54 @@ calling_method_argument_list:
 
 
 /* Statements inside a class: constant and methods */
-class_inner_statements:
-        class_inner_statements constant                     { TRACE("is_constant_l") }
-    |   constant                                            { TRACE("is_constant") }
-    |   class_inner_statements class_property_definition    { TRACE("is_prop_l") }
-    |   class_property_definition                           { TRACE("is_prop") }
-    |   class_inner_statements class_method_definition      { TRACE("is_meth_l") }
-    |   class_method_definition                             { TRACE("is_meth") }
-    |   /* empty */ { }
+class_inner_statement_list:
+        class_inner_statement                               { TRACE("class_is") }
+    |   class_inner_statement_list class_inner_statement    { TRACE("class_is_l") }
+;
+
+class_inner_statement:
+        constant                    { TRACE("is_constant") }
+    |   class_property_definition   { TRACE("is_property") }
+    |   class_method_definition     { TRACE("is_method") }
 ;
 
 /* Statements inside an interface: constant and methods */
-interface_inner_statements:
-        interface_inner_statements interface_method_definition     { TRACE("") }
-    |   interface_method_definition                                { TRACE("") }
-    |   interface_inner_statements interface_property_definition   { TRACE("") }
-    |   interface_property_definition                              { TRACE("") }
-    |   /* empty */ { }
+interface_inner_statement_list:
+        interface_inner_statement                                    { TRACE("") }
+    |   interface_inner_statement_list interface_inner_statement     { TRACE("") }
+;
+
+interface_inner_statement:
+        interface_method_definition
+    |   interface_property_definition
 ;
 
 interface_method_definition:
         modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE("") }
+    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE("") }
 ;
 
 class_method_definition:
         modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { TRACE("Method def") } compound_statement    { TRACE("") }
+    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' { TRACE("Method def") } compound_statement    { TRACE("") }
     |   interface_method_definition
 ;
 
 method_argument_list:
-        method_argument                             { TRACE("") }
-    |   method_argument_list ',' method_argument    { TRACE("") }
-    |   /* empty */ { }
+        /* empty */
+    |   non_empty_method_argument_list
+;
+
+non_empty_method_argument_list:
+        method_argument                                       { TRACE("") }
+    |   non_empty_method_argument_list ',' method_argument    { TRACE("") }
 ;
 
 method_argument:
-        T_IDENTIFIER                                   { TRACE("") }
-    |   T_IDENTIFIER '='  scalar_value                 { TRACE("") }
-    |   T_IDENTIFIER T_IDENTIFIER '='  scalar_value    { TRACE("") }
-    |   T_IDENTIFIER T_IDENTIFIER                      { TRACE("") }
+        T_IDENTIFIER { TRACE("identifier") }
+    |   T_IDENTIFIER '=' primary_expression     { TRACE("2x identifier = ") }
+    |   T_IDENTIFIER T_IDENTIFIER { TRACE("2x identifier") }
+    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression     { TRACE("2x identifier = ") }
 ;
 
 constant_list:
@@ -431,22 +458,25 @@ constant:
 ;
 
 class_definition:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements
-        '{'
-        class_inner_statements
-        '}' { TRACE("") }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE("") }
+    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' '}' { TRACE("") }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE("") }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' '}' { TRACE("") }
+
+
 ;
 
 interface_definition:
-        T_INTERFACE T_IDENTIFIER class_interface_implements
-        '{'
-        interface_inner_statements
-        '}' { TRACE("") }
+        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE("") }
+    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' '}' { TRACE("") }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE("") }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' '}' { TRACE("") }
+
 ;
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' scalar_value ';'  { TRACE("") }
+        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE("") }
     |   modifier_list T_PROPERTY T_IDENTIFIER ';'                   { TRACE("") }
 ;
 
@@ -456,8 +486,7 @@ interface_property_definition:
 
 /* Modifier list can be either empty, or filled */
 modifier_list:
-        /* empty */ { TRACE("") }
-    |   non_empty_modifier_list { TRACE("modified_list") }
+       non_empty_modifier_list { TRACE("modified_list") }
 ;
 
 /* Has at least one modifier */
@@ -496,48 +525,29 @@ class_list:
 ;
 
 
-/**
- ************************************************************
- *                  HASHES AND LISTS
- ************************************************************
- */
-
-/* Elements inside lists */
-list_element_list:
-        /* First item */
-        scalar_value { TRACE("") }
-        /* Middle items */
-    |   list_element_list ',' scalar_value { TRACE("") }
-        /* Last item ending with a comma */
-    |   list_element_list ',' { TRACE("") }
-;
-
-/* Elements inside hashes (key : value pairs) */
-hash_element_list:
-        /* First item */
-        hash_scalar_indexes ':' scalar_value { TRACE("") }
-        /* Middle items */
-    |   hash_element_list ',' hash_scalar_indexes ':' scalar_value { TRACE("") }
-        /* Last item with a comma */
-    |   hash_element_list ',' { TRACE("") }
-;
-
-/* Hash keys can only be numeric, string or variables */
-hash_scalar_indexes:
-        /* These can be used as indexes for our hashes */
-        T_LNUM       { TRACE("") }
-    |   T_STRING     { TRACE("") }
-    |   T_IDENTIFIER { TRACE("") }
-;
-
 
 /**
  ************************************************************
- *
+ * data structure
  ************************************************************
  */
 
-object_context:
-        T_SELF      { TRACE("self") }
-    |   T_PARENT    { TRACE("parent") }
+data_structure:
+        qualified_name  '[' data_structure_elements     ']' { TRACE("datastruct[1]") }
+    |   qualified_name  '[' data_structure_elements ',' ']' { TRACE("datastruct[2]") }
+    |   qualified_name  '[' /* empty */                 ']' { TRACE("datastruct[3]") }
+    |   complex_primary '[' data_structure_elements     ']' { TRACE("datastruct[4]") }
+    |   complex_primary '[' data_structure_elements ',' ']' { TRACE("datastruct[5]") }
+    |   complex_primary '[' /* empty */                 ']' { TRACE("datastruct[6]") }
 ;
+
+data_structure_elements:
+        data_structure_element { TRACE("ds pe") }
+    |   data_structure_elements ',' data_structure_element { TRACE("ds pe,") }
+;
+
+data_structure_element:
+        assignment_expression { TRACE("dse pe") }
+    |   data_structure_element ':' assignment_expression { TRACE("dse pe :") }
+;
+

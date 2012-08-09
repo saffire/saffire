@@ -4,27 +4,27 @@
 
 class Foo {
     public method ctor() {
-        io.print "Called when initializing";
+        io.print("Called when initializing");
     }
 
     public method dtor() {
-        io.print "Called on destruction";
+        io.print("Called on destruction");
     }
 
     static public method callme() {
-        io.print "Static call!";
+        io.print("Static call!");
     }
 
     public method foo1(String $a, Foo $b) {
-        return "foobar";
+        return("foobar");
     }
 
     private method foo2() {
-        return self, "foo", ("bar, 4);
+        return self, "foo", ("bar", 4);
     }
 
     protected method foo3() {
-        return [ 1, 2, 3 ], { "foo" : self, "bar" : 42 };
+        return list[ 1, 2, 3 ], hash[ "foo" : self, "bar" : 42 ];
     }
 
 }
@@ -33,7 +33,6 @@ $foo = Foo();       // Auto calls ctor()
 $foo.destroy();     // Auto calls dtor()
 
 Foo.callme();      // Is this a static call?
-Foo.callme;
 
 
 /* Output:

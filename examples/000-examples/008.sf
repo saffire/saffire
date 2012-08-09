@@ -5,14 +5,10 @@
 
 $a.reverse();
 
-$a.reverse;
-
 $b = $a.reverse();
 
-$b = $a.reverse;
-
 // "fluid"
-$a.reverse.upper.reverse.slice();
+$a.reverse().upper().reverse().slice();
 
 /* Output:
 */
