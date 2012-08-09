@@ -1,8 +1,8 @@
 /*
  * Data structure examples.
  *
- * $a = [ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
- * $b = { "a"=>1, "b"=>2, "c"=>3, "d"=>4 }      // hash a=>1, b=>2, c=>3, d=>4
+ * $a = list[ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
+ * $b = hash[ "a"=>1, "b"=>2, "c"=>3, "d"=>4 ]      // hash a=>1, b=>2, c=>3, d=>4
  *
  *
  * // does value exists in list $a?
@@ -20,14 +20,15 @@ use io;
 
 
 // Lists can hold any kind of object (including lists, hashes or other data structures)
-$a = [ "1", 1, "4", 5.0 ];
-$a = [ "1", "2", [ "3", "4", "5"] ];
+$a = list[ "1", 1, "4" ];
+$a = list[ "1", "2", list[ "3", "4", "5"] ];
 
 // Do hashes ONLY support key=>value's, or can we omit keys like this:
-$b = { "a" => "1", "b" };      // "a" => "1",  0 => "b"     // ???
+// $b = list[ "a" : "1", "b" ];      // "a" => "1",  0 => "b"     // ???
 
 
-// Lists and/or hashes have a few data structure handling methods:
+/**
+ * Lists and/or hashes have a few data structure handling methods:
 
 $a.length()                     number of elements
     Return Integer
@@ -64,5 +65,5 @@ Choices:
 
 $alphabet = array.range('a','z');       // create a range ?
 
-
+*/
 

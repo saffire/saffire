@@ -29,7 +29,7 @@
 %token <sVal> T_STRING
 %token <sVal> T_IDENTIFIER
 
-%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH
+%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
 
 %token T_PLUS_ASSIGNMENT
@@ -157,7 +157,7 @@ statement:
 selection_statement:
         T_IF expression statement { TRACE("endif") }
     |   T_IF expression statement T_ELSE statement { TRACE("endif-else") }
-    |   T_SWITCH expression statement { TRACE("") }
+    |   T_SWITCH '(' expression ')' compound_statement { TRACE("") }
 ;
 
 iteration_statement:
@@ -166,8 +166,7 @@ iteration_statement:
     |   T_DO statement T_WHILE expression ';' { TRACE("") }
     |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE("") }
     |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE("") }
-    |   T_FOREACH expression  T_AS expression statement { TRACE("") }
-/*    |    foreach()  { } */
+    |   T_FOREACH expression T_AS expression statement { TRACE("") }
 ;
 
 expression_statement:
@@ -208,7 +207,7 @@ catch_header:
 
 label_statement:
         T_IDENTIFIER ':' { TRACE("") }
-/*    |   T_CASE ConstantExpression ':' */
+    |   T_CASE constant_expression ':' { TRACE("") }
     |   T_DEFAULT ':' { TRACE("") }
 ;
 
@@ -218,6 +217,10 @@ label_statement:
  *                  ASSIGNMENT & EXPRESSION
  ************************************************************
  */
+
+constant_expression:
+        conditional_expression { TRACE("cond") }
+;
 
 expression:
         assignment_expression { TRACE("expr") }

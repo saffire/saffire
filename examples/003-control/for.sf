@@ -1,18 +1,17 @@
-for ($i=0; $i!=5; $i++) {
+for ($i=0; $i!=5; $i+=1) {
+    io.print($i);
+}
+
+for ( ; $i!=5; ) {
+    io.print($i);
+}
+
+for (; ; $i+=1) {
+    io.print($i);
+}
+
+for (;;) {
     io.print($i);
 }
 
 
-// Or maybe this should be an iterator from an object?
-
-foreach (int.range(0,5) as $i, ) {
-    io.print($i);
-}
-
-// 012345
-
-foreach (int.range(0,5) as $i) {
-    io.print($i.value);
-}
-
-// 012345

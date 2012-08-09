@@ -5,3 +5,4 @@ garbage collection can be set per context (?)  saffire.gc.algo = SAFFIRE_GC_ALGO
 
 All classes extend a saffire-base-class. This (final) class contains methods like clone, memory, etc.
 
+=~  for regex matching?

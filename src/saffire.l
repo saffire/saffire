@@ -85,6 +85,7 @@ closing_tags    [\"\']
 "try"           return T_TRY;
 "default"       return T_DEFAULT;
 "goto"          return T_GOTO;
+"case"          return T_CASE;
 
 "self"          return T_SELF;
 "parent"        return T_PARENT;
