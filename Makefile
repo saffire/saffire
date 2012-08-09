@@ -24,4 +24,4 @@ debug:
 	make -C src debug
 
 tests:
-	echo "Alas, there are no testsuites available at the moment."
+	for i in examples/*/*.sf ; do echo $$i ; src/saffire $$i 2>&1 | grep -i syntax ; done
