@@ -29,3 +29,7 @@ Major releases **can** include backward compatibility breaks. It is not guarante
 run on a Saffire 2.0 engine. All though BC breaks will be kept for a minimum, it's not guaranteed they will not happen.
 We have choosen for this setup to make sure that we can guarantuee BC through minor releases, but still can move the
 language and engine forward without being "held back" by BC.
+
+
+:Authors:
+   Joshua Thijssen

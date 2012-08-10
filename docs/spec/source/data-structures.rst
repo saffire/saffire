@@ -48,3 +48,8 @@ $a, $b, $c = "foo", ("bar", "baz"), "qux";
 // $a = "foo"
 // $b = ("bar", "baz")
 // $c = "qux";
+
+
+
+:Authors:
+   Joshua Thijssen

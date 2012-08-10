@@ -19,6 +19,10 @@ Contents:
    keywords
    modules
    operators
+   objects
+   interfaces
+   overloading
+   magic-methods
 
 Indices and tables
 ==================
@@ -27,3 +31,7 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+
+:Authors:
+   Joshua Thijssen
