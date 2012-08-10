@@ -9,4 +9,6 @@ lex.yy.c
 parser.tab.*
 parser.output
 saffire
-docs/spec/build
+/nbproject/private/
+/docs/spec/build
+*.~*

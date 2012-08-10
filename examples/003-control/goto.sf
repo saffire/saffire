@@ -4,21 +4,22 @@
  * One can only goto to a label that resides within the same scope.
  */
 
+class bar {
+    method foo(string $filename) {
+        // Create file and append info
+        $file = io.create($filename, "0644");
+        $file.append("Hello world");
 
-function foo(string $filename) {
-    // Create file and append info
-    $file = io.create($filename, "0644");
-    $file.append("Hello world");
+        // Something is wrong here..
+        if ($filename == "foo") {
+            io.print("Something went wrong");
+            goto cleanup;
+        }
+        return true;
 
-    // Something is wrong here..
-    if ($filename == "foo") {
-        io.print("Something went wrong");
-        goto cleanup;
+    cleanup:
+        $file.unlink();
     }
-    return true;
-
-cleanup:
-    $file.unlink();
 }
 
 /*

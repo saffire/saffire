@@ -2,7 +2,7 @@ use io;
 
 class foo {
     method bar(String $tmp) {
-        if ($tmp =~ "/[A-Z]+/") {
+        if ($tmp == "/[A-Z]+/") {
             throw invalidException("This is not ok");
         }
         return $tmp.rev();

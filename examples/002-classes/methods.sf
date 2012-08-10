@@ -26,16 +26,16 @@ io.print($bar);                 // 15 (string)
  */
 
 class color {
-    method +(Color $color) {
-        return $this->mix($color);
+    method ::+(Color $color) {
+        return self.mix($color);
     }
 
     private method mix(Color $Color) {
-        if (this->color == "yellow" && $color == "blue") {
-            this->color = "green";
+        if (self.color == "yellow" && $color == "blue") {
+            self.color = "green";
         }
-        if (this->color == "yellow" && $color == "red") {
-            this->color = "orange";
+        if (self.color == "yellow" && $color == "red") {
+            self.color = "orange";
         }
         return $this;
     }
@@ -49,14 +49,14 @@ $c = Color("yellow") + Color("blue");  // $c == "green"
  * Method overloading?
  */
 class color {
-    method +(Color $color) { ... }
-    method +(String $color) {
+    method ::+(Color $color) { }
+    method ::+(String $color) {
         $color = Color($color);
-        return $this + $color;  // calls the +(Color $color) function
+        return self + $color;  // calls the +(Color $color) function
     }
-    method +(Integer $pms_color) {
-        $color = Color($this->pmsList[$pms_color]);
-        return $this + $color;  // calls the +(Color $color) function
+    method ::+(Integer $pms_color) {
+        $color = Color(self.pmsList[$pms_color]);
+        return self + $color;  // calls the +(Color $color) function
     }
 }
 

@@ -99,6 +99,7 @@ int ht_add(t_hash_table *ht, char *str, void *data) {
 
     // Increase element count
     ht->element_count++;
+    return 0;
 }
 
 /*
@@ -186,4 +187,5 @@ void ht_destroy(t_hash_table *ht) {
 
     // Destroy hash table
     free(ht);
+    return;
 }

@@ -24,4 +24,4 @@ debug:
 	make -C src debug
 
 tests:
-	make -C src tests
+	for i in examples/*/*.sf ; do echo $$i ; src/saffire $$i 2>&1 | grep -i syntax ; done

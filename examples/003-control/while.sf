@@ -8,13 +8,13 @@
 
 $a = 10;
 while ($a) {
-    $a--;
+    $a-=1;
 } else {
     io.print("A was already 0");
 }
 
 do {
-  $a--;
+  $a-=1;
 } while ($a);
 
 
@@ -22,7 +22,7 @@ do {
 
 $a = 10;
 while ($a) {
-    $a--;
+    $a-=1;
     if ($a == 7) continue;    // Will return to the begin of the loop
     if ($a == 5) break;       // Will break out of this loop when a = 5
     if ($a == 4) breakelse;   // Will break out of this loop AND do the ELSE part when $a = 4;

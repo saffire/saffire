@@ -1,6 +1,6 @@
 Saffire
 =======
-Simple POC for lexing/parsing a language. Right now, the parser does a bit of interpreting.
+A new soon-to-be programming scripting language, based on primarily Python, PHP and Ruby.
 
 Note:
 -----
@@ -9,12 +9,3 @@ This is NOT ment as a replacement for ANY language currently available. This is 
 We are aiming to have a small specification which we can lex/parse and compile to bytecode. From that bytecode, another system should be able to interpret those opcodes (and/or later, JIT-compile it).
 
 We're on freenode as well, at channel #saffire. Websites are coming up as soon as we get some sort of specification of the ground.
-
-Needs:
-
-  - A language specificaton (see /examples)
-  - Ability to create an AST, and we should create opcodes.
-  - interpret these opcodes through a standalone interpreter
-  - have documentation
-  - have a re-entrant lexer/parser: (implement %pure_parser)
-  - everything else

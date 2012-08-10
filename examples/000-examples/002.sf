@@ -1,0 +1,16 @@
+/*
+ * Standard assignments
+ */
+
+$a = 1;
+$b = "foo";
+$c = $d;
+
+$c = $d || $b;
+
+$c = $d * $b;
+
+$c = $d * $b || $c ^ $a - -1;
+
+/* Output:
+*/

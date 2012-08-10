@@ -1,0 +1,10 @@
+/*
+ * Standard object assignment
+ */
+
+$a = Null;      // Null object, evaluates to false
+$b = True;      // Boolean object evaluates to true
+$c = False;     // Boolean object evaluates to false
+
+/* Output:
+*/

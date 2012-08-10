@@ -1,0 +1,128 @@
+/*
+ * Object declarations
+ */
+
+class Foo {
+}
+
+class Foo extends Bar {
+}
+
+class Foo extends Bar, Baz {
+}
+
+class Foo implements Bar {
+}
+
+class Foo implements Bar, Baz {
+}
+
+class Foo extends Bar implements Qux {
+}
+
+class Foo extends Bar, Baz implements Qux, Quux {
+}
+
+final class Foo {
+}
+
+abstract class Foo {
+}
+
+abstract class Foo implements Qux, Quux {
+}
+
+abstract class Foo extends Bar, Baz implements Qux, Quux {
+}
+
+
+
+class Foo {
+    const tmp_foo = "baz";
+}
+
+class Foo {
+    const tmp_foo = "baz";
+    const tmp_bar = 44;
+}
+
+
+class Foo {
+    const tmp_foo = "baz";
+
+    public method tmp_bar() {
+    }
+    public method tmp_bar2($a) {
+
+    }
+    public method tmp_bar3($a, $b, $c) {
+
+    }
+    public method tmp_bar4($a = 1, $b, $c = "foo")
+    {
+
+    }
+
+    public method tmp_bar5(String $a = 1, Numeric $b, Boolean $c = False)
+    {
+    }
+
+    public method tmp_bar5(String $a, Numeric $b, $c = False)
+    {
+    }
+
+}
+
+
+class Foo {
+    const tmp_foo = "baz";
+
+    public method tmp_bar2($a) {
+    }
+    public method tmp_bar3($a, $b, $c) {
+
+    }
+
+    const tmp_bar = 44;
+
+    public method tmp_bar4($a = 1, $b, $c = "foo") {
+    }
+}
+
+class Foo {
+    private method tmp_bar2() { }
+    public method tmp_bar3() { }
+    protected method tmp_bar4($a = 1, $b, $c = "foo") { }
+
+    final private method tmp_bar5() { }
+    final public method tmp_bar6() { }
+    final protected method tmp_bar7($a = 1, $b, $c = "foo") { }
+
+    static private method tmp_bar8() { }
+    static public method tmp_bar9() { }
+    static protected method tmp_bar10($a = 1, $b, $c = "foo") { }
+
+    final static private method tmp_bar11() { }
+    final static public method tmp_bar12() { }
+    final static protected method tmp_bar13($a = 1, $b, $c = "foo") { }
+}
+
+abstract class Foo {
+    protected method tmp_bar5() { }
+
+    abstract private method tmp_bar2();
+    abstract public method tmp_bar3();
+
+    protected method tmp_bar6() { }
+
+    abstract protected method tmp_bar4($a = 1, $b, $c = "foo");
+
+    protected method tmp_bar7() { }
+}
+
+
+
+
+
+/* Output:
+*/
