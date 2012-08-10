@@ -13,7 +13,7 @@ published. A release will be considered major when at least one of the following
 
 Minor versions are available:
 
-* When more new
+* When more smaller features are implemented.
 * Bugfixes, security updates or features are implemented that modified the internal structures used by Saffire.
   For instance, a bugfix that adds a new field in the internal hashtable structure must be done in a minor update,
   not in a release update.

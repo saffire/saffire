@@ -17,6 +17,7 @@ Contents:
    scalar-types
    data-structures
    keywords
+   control-structures
    modules
    operators
    objects
