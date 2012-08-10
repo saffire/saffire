@@ -4,7 +4,7 @@ Releases
 
 All releases are in the form of ``major.minor.release``.
 
-**major** releases
+**Major** releases
 Every major release will increase the ``major`` number. There is no timeframe for when new major releases will be
 published. A release will be considered major when at least one of the following rules are true:
 
