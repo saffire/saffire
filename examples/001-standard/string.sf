@@ -18,7 +18,7 @@ $a = "FOO".lowercase(); // foo
 $a = "FOO".tr("FO","BA"); // BAA         TBD what does 'tr' stand for?
 $a = "FOO".regex("/FO+/"); // (bool)true, regex match
 
-if ("FOO" == "/fo+/i") { // (bool)true
+if ("FOO" == "/fo+/i") { } // (bool)true
 
 
 
@@ -31,4 +31,4 @@ if ("FOO" == "/fo+/i") { // (bool)true
 
 //.bytes is a method that returns a byte-array of the string
 
-$a = byteArray("bj�rk").length();  // $a = 6
+$a = byteArray("bj�rk").length(); // a = 6

@@ -15,15 +15,13 @@ identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
-opening_tags    [\"\']
-closing_tags    [\"\']
 
 %%
 
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[-+<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
 
 
 ">="        return T_GE;
@@ -48,6 +46,9 @@ closing_tags    [\"\']
 "^="        return T_XOR_ASSIGNMENT;
 "<<="       return T_SL_ASSIGNMENT;
 ">>="       return T_SR_ASSIGNMENT;
+
+"++"        return T_OP_INC;
+"--"        return T_OP_DEC;
 
 "while"     return T_WHILE;
 "if"        return T_IF;
@@ -90,7 +91,7 @@ closing_tags    [\"\']
 "self"          return T_SELF;
 "parent"        return T_PARENT;
 
-{opening_tags}[^\"]*{closing_tags} {
+\"[^\"]*\" {
     yylval.sVal = strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
@@ -98,6 +99,16 @@ closing_tags    [\"\']
         yylval.sVal[yyleng-2] = 0;
     }
     return T_STRING; }
+
+\'[^\']*\' {
+    yylval.sVal = strdup(yytext+1);
+    if (yylval.sVal[yyleng-2] != yytext[0]) {
+        fprintf(stderr,"improperly terminated string");
+    } else {
+        yylval.sVal[yyleng-2] = 0;
+    }
+    return T_STRING; }
+
 
 {identifier} {
     yylval.sVal = strdup(yytext);

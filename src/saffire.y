@@ -32,6 +32,7 @@
 %token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
 
+%token T_OP_INC T_OP_DEC
 %token T_PLUS_ASSIGNMENT
 %token T_MINUS_ASSIGNMENT
 %token T_MUL_ASSIGNMENT
@@ -297,13 +298,25 @@ multiplicative_expression:
 ;
 
 unary_expression:
-        arithmic_unary_operator primary_expression { TRACE("unary expr") }
+        T_OP_INC unary_expression { TRACE("++") }
+    |   T_OP_DEC unary_expression { TRACE("--") }
+    |   arithmic_unary_operator primary_expression { TRACE("unary expr") }
     |   logical_unary_expression
 ;
 
+postfix_expression:
+        primary_expression { TRACE("") }
+    |   real_postfix_expression { TRACE("") }
+;
+
+real_postfix_expression:
+        postfix_expression T_OP_INC { TRACE("++") }
+    |   postfix_expression T_OP_DEC { TRACE("--") }
+;
+
 logical_unary_expression:
-        primary_expression
-    |   logical_unary_operator unary_expression
+        postfix_expression { TRACE("") }
+    |   logical_unary_operator unary_expression { TRACE("") }
 ;
 
 primary_expression:

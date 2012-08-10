@@ -1,4 +1,4 @@
-for ($i=0; $i!=5; $i+=1) {
+for ($i=0; $i!=5; $i++) {
     io.print($i);
 }
 
@@ -6,7 +6,7 @@ for ( ; $i!=5; ) {
     io.print($i);
 }
 
-for (; ; $i+=1) {
+for (; ; $i++) {
     io.print($i);
 }
 
