@@ -1,0 +1,12 @@
+/**
+ * Regular expressions
+ */
+
+if ($a =~ "/^foo/") {
+}
+
+if ($a =~ "/foobar/i") {
+}
+
+if ($a =~ "/foobar/") {
+}

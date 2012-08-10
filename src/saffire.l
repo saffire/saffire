@@ -24,6 +24,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 [-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
 
 
+"=~"        return T_REGEX;
 ">="        return T_GE;
 "<="        return T_LE;
 "=="        return T_EQ;
@@ -90,6 +91,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 "self"          return T_SELF;
 "parent"        return T_PARENT;
+
 
 \"[^\"]*\" {
     yylval.sVal = strdup(yytext+1);
