@@ -15,7 +15,6 @@ extern FILE     *yyin;
 char    *source_file = "-";     // defaults to stdin
 int     source_args = 0;        // default to no additional arguments
 
-
 /**
  * Prints current version number and copyright information
  */

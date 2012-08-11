@@ -2,9 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "hashtable/hashtable.h"
 #include "svar.h"
 
-svar *vars[MAX_VARS];
+t_hash_table *variable_table;
 
 const int SV_NULL   = 0;
 const int SV_LONG   = 1;
@@ -33,51 +34,16 @@ void svar_print(svar *var) {
 }
 
 /**
- * Find a free svar slot.
- *
- * Returns index of slot, or -1 on none found
- */
-int svar_find_free_slot() {
-    for (int i = 0; i !=MAX_VARS; i++) {
-        if (vars[i] == NULL) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/**
  * Find a svar based on name
  */
 svar *svar_find(char *name) {
-    for (int i=0; i!=MAX_VARS; i++) {
-        // Empty slot, check the next
-        if (vars[i] == NULL) continue;
-
-        printf("checking: %s\n", name);
-
-        // Check if name matches
-        if (strcmp(vars[i]->name, name) == 0) {
-            // return svar in slot
-            return vars[i];
-        }
-    }
-
-    // No var found with this name
-    return NULL;
+    return ht_find(variable_table, name);
 }
 
 /**
- * Allocate and initialize an svar
+ * Allocate and initialize an svar and place it into the variable table
  */
 svar *svar_alloc(char type, char *name, char *s, long l) {
-    // Find a free slot to add our svar into
-    int idx = svar_find_free_slot();
-    if (idx == -1) {
-        fprintf(stderr, "No more room for variables!");
-        exit(1);
-    }
-
     // Allocate memory and set standard info
     svar *var = (svar *)malloc(sizeof(svar));
     var->type = type;
@@ -91,12 +57,12 @@ svar *svar_alloc(char type, char *name, char *s, long l) {
     }
 
     // Store this variable in our main lookup table
-    vars[idx] = var;
+    ht_add(variable_table, name, var);
     return var;
 }
 
 /**
- * Free an allocated svar
+ * Free an allocated svar and remove it from the variable table
  */
 void svar_free(svar *var) {
     if (var == NULL) {
@@ -111,15 +77,15 @@ void svar_free(svar *var) {
     if (var->type == SV_STRING) {
         free(var->val.s);
     }
+
+    ht_remove(variable_table, var->name);
 }
 
 /**
  * Initialize room for a limited number of svars
  */
 void svar_init_table() {
-    for (int i=0; i!=MAX_VARS; i++) {
-        vars[i] = NULL;
-    }
+    variable_table = ht_create();
 }
 
 
