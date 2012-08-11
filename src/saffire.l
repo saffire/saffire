@@ -49,8 +49,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 [-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
 
-
-"=~"        return T_REGEX;
+"=~"        return T_RE;
 ">="        return T_GE;
 "<="        return T_LE;
 "=="        return T_EQ;

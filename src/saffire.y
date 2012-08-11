@@ -74,7 +74,7 @@
 
 %token T_SELF T_PARENT
 
-%left '=' T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_REGEX T_REGEX_EXPR
+%left '=' T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
 
@@ -306,7 +306,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE() }
-    |   regex_expression T_REGEX T_STRING { TRACE() }
+    |   regex_expression T_RE T_STRING { TRACE() }
 ;
 
 shift_expression:
