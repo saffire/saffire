@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __NODE_H__
-#define __NODE_H__
+#ifndef __AST_H__
+#define __AST_H__
 
     #include "svar.h"
 
@@ -47,10 +47,11 @@
     typedef struct {
         int oper;                   // Operator
         int nops;                   // number of additional operands
-        struct nodeTag **ops;       // Operands
+        struct ast_element **ops;   // Operands (should be max of 2: left and right)
     } oprNode;
 
-    typedef struct nodeTag {
+
+    typedef struct ast_element {
         nodeEnum type;              // Type of the node
         union {
             intConNode intCon;        // constant int
@@ -58,6 +59,15 @@
             varNode var;              // variable
             oprNode opr;              // operator
         };
-    } node;
+    } t_ast_element;
 
+    t_ast_element *makeAssignment(char*name, struct AstElement* val);
+    t_ast_element *makeExpByNum(int val);
+    t_ast_element *makeExpByName(char*name);
+    t_ast_element *makeExp(struct AstElement* left, struct AstElement* right, char op);
+    t_ast_element *makeStatement(struct AstElement* dest, struct AstElement* toAppend);
+    t_ast_element *makeWhile(struct AstElement* cond, struct AstElement* exec);
+    t_ast_element *makeCall(char* name, struct AstElement* param);
+
+}
 #endif

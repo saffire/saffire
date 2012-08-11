@@ -51,6 +51,7 @@ debug: saffire
 # Our objects that needs to be compiled
 OBJS =	main.o \
 	svar.o \
+	ast.o \
 	saffire_parser.o \
 	saffire_compiler.o \
 	saffire_interpreter.o \
