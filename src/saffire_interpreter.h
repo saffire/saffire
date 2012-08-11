@@ -28,7 +28,8 @@
 #define __SAFFIRE_INTERPRETER_H__
 
     #include "node.h"
+    #include "svar.h"
 
-    svar *saffire_interpreter(nodeType *p);
+    svar *saffire_interpreter(node *p);
 
 #endif

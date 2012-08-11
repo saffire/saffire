@@ -63,7 +63,7 @@ void svar_print(svar *var) {
  * Find a svar based on name
  */
 svar *svar_find(char *name) {
-    return ht_find(variable_table, name);
+    return (svar *)ht_find(variable_table, name);
 }
 
 /**

@@ -47,7 +47,7 @@
     char *sVal;
     long lVal;
     double dVal;
-    nodeType *nPtr;
+    node *nPtr;
 }
 
 %token END 0 "end of file"

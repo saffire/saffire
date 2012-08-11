@@ -36,7 +36,7 @@ static int lbl = 0;
 #define SC2(p) saffire_compiler(p->opr.ops[2])
 
 
-void saffire_compiler(nodeType *p) {
+void saffire_compiler(node *p) {
     int lbl1, lbl2;
 
     if (!p) return;

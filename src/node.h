@@ -34,30 +34,30 @@
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
-    } strConNodeType;
+    } strConNode;
 
     typedef struct {
         int value;                  // Integer constant
-    } intConNodeType;
+    } intConNode;
 
     typedef struct {
         char *name;                 // Name of the actual variable to use
-    } varNodeType;
+    } varNode;
 
     typedef struct {
         int oper;                   // Operator
         int nops;                   // number of additional operands
-        struct nodeTypeTag **ops;   // Operands
-    } oprNodeType;
+        struct nodeTag **ops;       // Operands
+    } oprNode;
 
-    typedef struct nodeTypeTag {
+    typedef struct nodeTag {
         nodeEnum type;              // Type of the node
         union {
-            intConNodeType intCon;        // constant int
-            strConNodeType strCon;        // constant string
-            varNodeType var;              // variable
-            oprNodeType opr;              // operator
+            intConNode intCon;        // constant int
+            strConNode strCon;        // constant string
+            varNode var;              // variable
+            oprNode opr;              // operator
         };
-    } nodeType;
+    } node;
 
 #endif

@@ -38,20 +38,10 @@
 extern void yyerror(const char *err);
 
 
-void saffire_execute(nodeType *p) {
-    int mode_compile = 1;
-    if (mode_compile) {
-        saffire_compiler(p);
-    } else {
-        saffire_interpreter(p);
-    }
-}
+node *saffire_strCon(char *value) {
+    node *p;
 
-
-nodeType *saffire_strCon(char *value) {
-    nodeType *p;
-
-    if ((p = malloc(sizeof(nodeType))) == NULL) {
+    if ((p = malloc(sizeof(node))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -61,10 +51,10 @@ nodeType *saffire_strCon(char *value) {
     return p;
 }
 
-nodeType *saffire_intCon(int value) {
-    nodeType *p;
+node *saffire_intCon(int value) {
+    node *p;
 
-    if ((p = malloc(sizeof(nodeType))) == NULL) {
+    if ((p = malloc(sizeof(node))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -74,10 +64,10 @@ nodeType *saffire_intCon(int value) {
     return p;
 }
 
-nodeType *saffire_var(char *var_name) {
-    nodeType *p;
+node *saffire_var(char *var_name) {
+    node *p;
 
-    if ((p = malloc(sizeof(nodeType))) == NULL) {
+    if ((p = malloc(sizeof(node))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -87,14 +77,14 @@ nodeType *saffire_var(char *var_name) {
     return p;
 }
 
-nodeType *saffire_opr(int opr, int nops, ...) {
+node *saffire_opr(int opr, int nops, ...) {
     va_list ap;
-    nodeType *p;
+    node *p;
 
-    if ((p = malloc(sizeof(nodeType))) == NULL) {
+    if ((p = malloc(sizeof(node))) == NULL) {
         yyerror("Out of memory");
     }
-    if ((p->opr.ops = malloc (nops * sizeof(nodeType))) == NULL) {
+    if ((p->opr.ops = malloc (nops * sizeof(node))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -104,14 +94,14 @@ nodeType *saffire_opr(int opr, int nops, ...) {
 
     va_start(ap, nops);
     for (int i =0; i < nops; i++) {
-        p->opr.ops[i] = va_arg(ap, nodeType *);
+        p->opr.ops[i] = va_arg(ap, node *);
     }
     va_end(ap);
 
     return p;
 }
 
-void saffire_free_node(nodeType *p) {
+void saffire_free_node(node *p) {
     if (!p) return;
 
     // @TODO: If it's a strConOpr, we must free our char as well!

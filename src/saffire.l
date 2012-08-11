@@ -136,7 +136,6 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     }
     return T_STRING; }
 
-
 {identifier} {
     yylval.sVal = strdup(yytext);
     return T_IDENTIFIER;

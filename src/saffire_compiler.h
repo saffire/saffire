@@ -29,6 +29,6 @@
 
 #include "node.h"
 
-void saffire_compiler(nodeType *p);
+void saffire_compiler(node *p);
 
 #endif

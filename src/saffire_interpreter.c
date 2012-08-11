@@ -50,7 +50,7 @@ svar *svar_temp_alloc(int type, char *s, long l) {
 }
 
 
-svar *saffire_interpreter(nodeType *p) {
+svar *saffire_interpreter(node *p) {
     svar *var, *var1, *var2, *tmp;
     long i;
 
