@@ -32,7 +32,8 @@
     #define saffire_version_build   "1"
 
     #define saffire_version   "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
-    #define saffire_copyright "Copyright (C) 2012"
+    #define saffire_copyright "Copyright (C) 2012 " saffire_authors
+    #define saffire_authors   "Joshua Thijssen, Dolf Schimmel"
 
 #endif
 
