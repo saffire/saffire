@@ -293,7 +293,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE }
-    |   regex_expression T_RE { saffire_push_state(st_regex); } T_REGEX { saffire_pop_state(); } { TRACE }
+    |   regex_expression T_RE T_REGEX { TRACE }
 ;
 
 shift_expression:
@@ -399,6 +399,7 @@ complex_primary:
 complex_primary_no_parenthesis:
         T_LNUM          { TRACE }
     |   T_STRING        { TRACE }
+    |   T_REGEX         { TRACE }
     |   field_access    { TRACE }
     |   method_call     { TRACE }
     |   data_structure  { TRACE }

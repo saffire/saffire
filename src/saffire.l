@@ -35,10 +35,24 @@
 
 #define YY_NO_INPUT 1
 
+    static void yy_push_state (int new_state );
+    static void yy_pop_state (void );
+
+void saffire_push_state(int state) {
+    printf("Pushing state %d\n", state);
+    yy_push_state(state);
+}
+
+void saffire_pop_state() {
+    printf("Popping state\n");
+    yy_pop_state();
+}
+
 %}
 
 /* Exclusive - only match <regex> rules */
-%x st_regex
+%s st_regex
+%s st_div
 
 %option stack
 %option yylineno
@@ -57,82 +71,84 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
-[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
-<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    return T_REGEX;
+<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    { return T_REGEX; }
+<st_div>\/ { return '/'; }
 
-"=~"        return T_RE;
-">="        return T_GE;
-"<="        return T_LE;
-"=="        return T_EQ;
-"!="        return T_NE;
-"in"        return T_IN;
+"=~"        { saffire_push_state(st_regex); return T_RE; }
+">="        { saffire_push_state(st_regex); return T_GE; }
+"<="        { saffire_push_state(st_regex); return T_LE; }
+"=="        { saffire_push_state(st_regex); return T_EQ; }
+"!="        { saffire_push_state(st_regex); return T_NE; }
+"in"        { saffire_push_state(st_regex); return T_IN; }
 
-"||"        return T_OR;
-"&&"        return T_AND;
+"||"        { saffire_push_state(st_regex); return T_OR; }
+"&&"        { saffire_push_state(st_regex); return T_AND; }
 
-"<<"        return T_SHIFT_LEFT;
-">>"        return T_SHIFT_RIGHT;
+"<<"        { saffire_push_state(st_regex); return T_SHIFT_LEFT; }
+">>"        { saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
 
-"+="        return T_PLUS_ASSIGNMENT;
-"-="        return T_MINUS_ASSIGNMENT;
-"*="        return T_MUL_ASSIGNMENT;
-"/="        return T_DIV_ASSIGNMENT;
-"%="        return T_MOD_ASSIGNMENT;
-"&="        return T_AND_ASSIGNMENT;
-"|="        return T_OR_ASSIGNMENT;
-"^="        return T_XOR_ASSIGNMENT;
-"<<="       return T_SL_ASSIGNMENT;
-">>="       return T_SR_ASSIGNMENT;
+"+="        { saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
+"-="        { saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
+"*="        { saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
+"/="        { saffire_push_state(st_regex); return T_DIV_ASSIGNMENT; }
+"%="        { saffire_push_state(st_regex); return T_MOD_ASSIGNMENT; }
+"&="        { saffire_push_state(st_regex); return T_AND_ASSIGNMENT; }
+"|="        { saffire_push_state(st_regex); return T_OR_ASSIGNMENT; }
+"^="        { saffire_push_state(st_regex); return T_XOR_ASSIGNMENT; }
+"<<="       { saffire_push_state(st_regex); return T_SL_ASSIGNMENT; }
+">>="       { saffire_push_state(st_regex); return T_SR_ASSIGNMENT; }
 
-"++"        return T_OP_INC;
-"--"        return T_OP_DEC;
+"++"        { saffire_push_state(st_div); return T_OP_INC; }
+"--"        { saffire_push_state(st_div); return T_OP_DEC; }
 
-"while"     return T_WHILE;
-"if"        return T_IF;
-"else"      return T_ELSE;
-"use"       return T_USE;
-"as"        return T_AS;
-"do"        return T_DO;
-"for"       return T_FOR;
-"foreach"   return T_FOREACH;
-"switch"    return T_SWITCH;
+"while"     { saffire_push_state(st_regex); return T_WHILE; }
+"if"        { saffire_push_state(st_regex); return T_IF; }
+"else"      { saffire_push_state(st_regex); return T_ELSE; }
+"use"       { saffire_push_state(st_regex); return T_USE; }
+"as"        { saffire_push_state(st_regex); return T_AS; }
+"do"        { saffire_push_state(st_regex); return T_DO; }
+"for"       { saffire_push_state(st_regex); return T_FOR; }
+"foreach"   { saffire_push_state(st_regex); return T_FOREACH; }
+"switch"    { saffire_push_state(st_regex); return T_SWITCH; }
 
-"class"         return T_CLASS;
-"extends"       return T_EXTENDS;
-"implements"    return T_IMPLEMENTS;
-"abstract"      return T_ABSTRACT;
-"final"         return T_FINAL;
-"interface"     return T_INTERFACE;
-"const"         return T_CONST;
-"static"        return T_STATIC;
+"class"         { saffire_push_state(st_regex); return T_CLASS; }
+"extends"       { saffire_push_state(st_regex); return T_EXTENDS; }
+"implements"    { saffire_push_state(st_regex); return T_IMPLEMENTS; }
+"abstract"      { saffire_push_state(st_regex); return T_ABSTRACT; }
+"final"         { saffire_push_state(st_regex); return T_FINAL; }
+"interface"     { saffire_push_state(st_regex); return T_INTERFACE; }
+"const"         { saffire_push_state(st_regex); return T_CONST; }
+"static"        { saffire_push_state(st_regex); return T_STATIC; }
 
-"public"        return T_PUBLIC;
-"private"       return T_PRIVATE;
-"protected"     return T_PROTECTED;
-"method"        return T_METHOD;
-"readonly"      return T_READONLY;
-"property"      return T_PROPERTY;
+"public"        { saffire_push_state(st_regex); return T_PUBLIC; }
+"private"       { saffire_push_state(st_regex); return T_PRIVATE; }
+"protected"     { saffire_push_state(st_regex); return T_PROTECTED; }
+"method"        { saffire_push_state(st_regex); return T_METHOD; }
+"readonly"      { saffire_push_state(st_regex); return T_READONLY; }
+"property"      { saffire_push_state(st_regex); return T_PROPERTY; }
 
-"catch"         return T_CATCH;
-"finally"       return T_FINALLY;
-"throw"         return T_THROW;
-"return"        return T_RETURN;
-"break"         return T_BREAK;
-"breakelse"     return T_BREAKELSE;
-"continue"      return T_CONTINUE;
-"try"           return T_TRY;
-"default"       return T_DEFAULT;
-"goto"          return T_GOTO;
-"case"          return T_CASE;
+"catch"         { saffire_push_state(st_regex); return T_CATCH; }
+"finally"       { saffire_push_state(st_regex); return T_FINALLY; }
+"throw"         { saffire_push_state(st_regex); return T_THROW; }
+"return"        { saffire_push_state(st_regex); return T_RETURN; }
+"break"         { saffire_push_state(st_regex); return T_BREAK; }
+"breakelse"     { saffire_push_state(st_regex); return T_BREAKELSE; }
+"continue"      { saffire_push_state(st_regex); return T_CONTINUE; }
+"try"           { saffire_push_state(st_regex); return T_TRY; }
+"default"       { saffire_push_state(st_regex); return T_DEFAULT; }
+"goto"          { saffire_push_state(st_regex); return T_GOTO; }
+"case"          { saffire_push_state(st_regex); return T_CASE; }
 
-"self"          return T_SELF;
-"parent"        return T_PARENT;
+"self"          { saffire_push_state(st_regex); return T_SELF; }
+"parent"        { saffire_push_state(st_regex); return T_PARENT; }
 
 
 \"[^\"]*\" {
+    saffire_push_state(st_div);
     yylval.sVal = strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
@@ -142,6 +158,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_STRING; }
 
 \'[^\']*\' {
+    saffire_push_state(st_div);
     yylval.sVal = strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
@@ -151,11 +168,13 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_STRING; }
 
 {identifier} {
+    saffire_push_state(st_div);
     yylval.sVal = strdup(yytext);
     return T_IDENTIFIER;
 }
 
 {lnum} {
+    saffire_push_state(st_div);
     yylval.lVal = strtol(yytext, NULL, 10);
     return T_LNUM; }
 
@@ -168,12 +187,3 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 int yywrap(void) { return 1; }
 
-void saffire_push_state(int state) {
-    printf("Pushing state %d\n", state);
-    yy_push_state(state);
-}
-
-void saffire_pop_state() {
-    printf("Popping state\n");
-    yy_pop_state();
-}
