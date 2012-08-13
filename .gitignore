@@ -5,10 +5,11 @@
 .settings
 nbproject/*
 *.o
-lex.yy.c
-parser.tab.*
-parser.output
-saffire
+src/lex.yy.h
+src/lex.yy.c
+src/parser.tab.*
+src/parser.output
+src/saffire
 /nbproject/private/
 /docs/spec/build
 *.~*
