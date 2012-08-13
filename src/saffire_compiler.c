@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "saffire_compiler.h"
 #include "parser.tab.h"
+#include "ast.h"
 
 static int lbl = 0;
 
@@ -36,7 +37,7 @@ static int lbl = 0;
 #define SC2(p) saffire_compiler(p->opr.ops[2])
 
 
-void saffire_compiler(node *p) {
+void saffire_compiler(t_ast_element *p) {
     int lbl1, lbl2;
 
     if (!p) return;

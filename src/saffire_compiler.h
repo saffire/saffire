@@ -27,8 +27,8 @@
 #ifndef __SAFFIRE_COMPILE_H__
 #define __SAFFIRE_COMPILE_H__
 
-#include "node.h"
+#include "ast.h"
 
-void saffire_compiler(node *p);
+void saffire_compiler(t_ast_element *p);
 
 #endif

@@ -31,6 +31,7 @@
 #include "saffire_interpreter.h"
 #include "parser.tab.h"
 #include "svar.h"
+#include "ast.h"
 
 #define SI(p)   (saffire_interpreter(p))
 #define SI0(p)  (saffire_interpreter(p->opr.ops[0]))
@@ -50,7 +51,7 @@ svar *svar_temp_alloc(int type, char *s, long l) {
 }
 
 
-svar *saffire_interpreter(node *p) {
+svar *saffire_interpreter(t_ast_element *p) {
     svar *var, *var1, *var2, *tmp;
     long i;
 

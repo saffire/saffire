@@ -26,53 +26,53 @@
 */
 
 #include "ast.h"
+#include <stdio.h>
 
 /**
  *
  */
-t_ast_element *makeAssignment(char*name, struct AstElement* val) {
+t_ast_element *make_assignment(char*name, t_ast_element* val) {
+    return NULL;
 }
 
 /**
  *
  */
 t_ast_element *makeExpByNum(int val){
-
+    return NULL;
 }
 
 /**
  *
  */
 t_ast_element *makeExpByName(char*name) {
-
+    return NULL;
 }
 
 /**
  *
  */
-t_ast_element *makeExp(struct AstElement* left, struct AstElement* right, char op) {
-
+t_ast_element *makeExp(t_ast_element *left, t_ast_element *right, char op) {
+    return NULL;
 }
 
 /**
  *
  */
-t_ast_element *makeStatement(struct AstElement* dest, struct AstElement* toAppend) {
-
+t_ast_element *makeStatement(t_ast_element *dest, t_ast_element *toAppend) {
+    return NULL;
 }
 
 /**
  *
  */
-t_ast_element *makeWhile(struct AstElement* cond, struct AstElement* exec) {
-
+t_ast_element *makeWhile(t_ast_element *cond, t_ast_element *exec) {
+    return NULL;
 }
 
 /**
  *
  */
-t_ast_element *makeCall(char* name, struct AstElement* param) {
-
+t_ast_element *makeCall(char* name, t_ast_element *param) {
+    return NULL;
 }
-
-#endif

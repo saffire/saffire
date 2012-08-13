@@ -61,13 +61,12 @@
         };
     } t_ast_element;
 
-    t_ast_element *makeAssignment(char*name, struct AstElement* val);
-    t_ast_element *makeExpByNum(int val);
-    t_ast_element *makeExpByName(char*name);
-    t_ast_element *makeExp(struct AstElement* left, struct AstElement* right, char op);
-    t_ast_element *makeStatement(struct AstElement* dest, struct AstElement* toAppend);
-    t_ast_element *makeWhile(struct AstElement* cond, struct AstElement* exec);
-    t_ast_element *makeCall(char* name, struct AstElement* param);
+    t_ast_element *ast_make_assignment(char*name, t_ast_element *val);
+    t_ast_element *ast_make_expression_by_number(int val);
+    t_ast_element *ast_make_expression_by_name(char*name);
+    t_ast_element *ast_make_expression(t_ast_element *left, t_ast_element *right, char op);
+    t_ast_element *ast_make_statement(t_ast_element *dest, t_ast_element *toAppend);
+    t_ast_element *ast_make_while(t_ast_element *cond, t_ast_element *exec);
+    t_ast_element *ast_make_call(char* name, t_ast_element *param);
 
-}
 #endif

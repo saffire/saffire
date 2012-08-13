@@ -27,13 +27,13 @@
 #ifndef __SAFFIRE_PARSER_H__
 #define __SAFFIRE_PARSER_H__
 
-    #include "node.h"
+    #include "ast.h"
 
-    node *saffire_strCon(char *value);
-    node *saffire_intCon(int value);
-    node *saffire_var(char *var_name);
-    node *saffire_opr(int opr, int nops, ...);
-    void saffire_free_node(node *p);
-    void saffire_execute(node *p);
+    t_ast_element *saffire_strCon(char *value);
+    t_ast_element *saffire_intCon(int value);
+    t_ast_element *saffire_var(char *var_name);
+    t_ast_element *saffire_opr(int opr, int nops, ...);
+    void saffire_free_node(t_ast_element *p);
+    void saffire_execute(t_ast_element *p);
 
 #endif

@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "node.h"
+#include "ast.h"
 #include "parser.tab.h"
 #include "saffire_parser.h"
 #include "svar.h"

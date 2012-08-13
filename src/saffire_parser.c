@@ -31,17 +31,17 @@
 #include "saffire_parser.h"
 #include "saffire_compiler.h"
 #include "saffire_interpreter.h"
-#include "node.h"
+#include "ast.h"
 #include "parser.tab.h"
 #include "svar.h"
 
 extern void yyerror(const char *err);
 
 
-node *saffire_strCon(char *value) {
-    node *p;
+t_ast_element *saffire_strCon(char *value) {
+    t_ast_element *p;
 
-    if ((p = malloc(sizeof(node))) == NULL) {
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -51,10 +51,10 @@ node *saffire_strCon(char *value) {
     return p;
 }
 
-node *saffire_intCon(int value) {
-    node *p;
+t_ast_element *saffire_intCon(int value) {
+    t_ast_element *p;
 
-    if ((p = malloc(sizeof(node))) == NULL) {
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -64,10 +64,10 @@ node *saffire_intCon(int value) {
     return p;
 }
 
-node *saffire_var(char *var_name) {
-    node *p;
+t_ast_element *saffire_var(char *var_name) {
+    t_ast_element *p;
 
-    if ((p = malloc(sizeof(node))) == NULL) {
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -77,14 +77,14 @@ node *saffire_var(char *var_name) {
     return p;
 }
 
-node *saffire_opr(int opr, int nops, ...) {
+t_ast_element *saffire_opr(int opr, int nops, ...) {
     va_list ap;
-    node *p;
+    t_ast_element *p;
 
-    if ((p = malloc(sizeof(node))) == NULL) {
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
-    if ((p->opr.ops = malloc (nops * sizeof(node))) == NULL) {
+    if ((p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -94,14 +94,14 @@ node *saffire_opr(int opr, int nops, ...) {
 
     va_start(ap, nops);
     for (int i =0; i < nops; i++) {
-        p->opr.ops[i] = va_arg(ap, node *);
+        p->opr.ops[i] = va_arg(ap, t_ast_element *);
     }
     va_end(ap);
 
     return p;
 }
 
-void saffire_free_node(node *p) {
+void saffire_free_node(t_ast_element *p) {
     if (!p) return;
 
     // @TODO: If it's a strConOpr, we must free our char as well!

@@ -25,13 +25,21 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 %{
+
+
+#define YY_HEADER_EXPORT_START_CONDITIONS 1
+
     #include <stdio.h>
-    #include "node.h"
+    #include "ast.h"
     #include "saffire_parser.h"
+    #include "lex.yy.h"
 
     extern int yylineno;
     int yylex(void);
     void yyerror(const char *err) { printf("Error in line: %d: %s\n", yylineno, err); }
+
+    void saffire_push_state(int state);
+    void saffire_pop_state();
 
     #ifdef __DEBUG
         #define YYDEBUG 1
@@ -47,7 +55,7 @@
     char *sVal;
     long lVal;
     double dVal;
-    node *nPtr;
+    t_ast_element *nPtr;
 }
 
 %token END 0 "end of file"
@@ -72,10 +80,6 @@
 
 %token <nPtr> expr
 
-%token non_empty_use_statement_list
-
-
-%error-verbose
 %start saffire
 
 %% /* rules */
@@ -101,15 +105,15 @@ use_statement_list:
 ;
 
 non_empty_use_statement_list:
-        use_statement { TRACE $$ = $1 }
-    |   non_empty_use_statement_list use_statement { saffire_execute($2); saffire_free_node($2); }
+        use_statement { TRACE }
+    |   non_empty_use_statement_list use_statement { TRACE }
 ;
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE saffire_opr(T_USE, 2, $2, $4); }
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE }
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER ';' { TRACE saffire_opr(T_USE, 2, $2, $2); }
+    |   T_USE T_IDENTIFIER ';' { TRACE }
 ;
 
 
@@ -120,16 +124,16 @@ top_statement_list:
 ;
 
 non_empty_top_statement_list:
-        top_statement{ TRACE $$ = $1 }
-    |   non_empty_top_statement_list top_statement { saffire_execute($2); saffire_free_node($2); }
+        top_statement{ TRACE }
+    |   non_empty_top_statement_list top_statement { TRACE }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
 top_statement:
-        class_definition        { TRACE $$ = $1 }
-    |   interface_definition    { TRACE $$ = $1 }
-    |   constant_list           { TRACE $$ = $1 }
-    |   statement_list          { TRACE $$ = $1 }
+        class_definition        { TRACE }
+    |   interface_definition    { TRACE }
+    |   constant_list           { TRACE }
+    |   statement_list          { TRACE }
 ;
 
 
@@ -143,22 +147,22 @@ top_statement:
 /* A compound statement is a (set of) statement captured by curly brackets */
 compound_statement:
         '{' '}'                 { TRACE }
-    |   '{' statement_list '}'  { TRACE $$ = $2 }
+    |   '{' statement_list '}'  { TRACE }
 ;
 
 statement_list:
-        statement                { TRACE $$ = $1 }
-    |   statement_list statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+        statement                { TRACE }
+    |   statement_list statement { TRACE }
 ;
 
 statement:
-        label_statement        { TRACE $$ = $1 }
-    |   compound_statement     { TRACE $$ = $1 }
-    |   expression_statement   { TRACE $$ = $1 }
-    |   selection_statement    { TRACE $$ = $1 }
-    |   iteration_statement    { TRACE $$ = $1 }
-    |   jump_statement         { TRACE $$ = $1 }
-    |   guarding_statement     { TRACE $$ = $1 }
+        label_statement        { TRACE }
+    |   compound_statement     { TRACE }
+    |   expression_statement   { TRACE }
+    |   selection_statement    { TRACE }
+    |   iteration_statement    { TRACE }
+    |   jump_statement         { TRACE }
+    |   guarding_statement     { TRACE }
 ;
 
 selection_statement:
@@ -177,18 +181,18 @@ iteration_statement:
 ;
 
 expression_statement:
-        ';'             { TRACE $$ = saffire_opr(';', 2, NULL, NULL); }
-    |   expression ';'  { TRACE $$ = $1 }
+        ';'             { TRACE }
+    |   expression ';'  { TRACE }
 ;
 
 jump_statement:
-        T_BREAK ';'                 { TRACE $$ = $1 }
-    |   T_BREAKELSE ';'             { TRACE $$ = $1 }
-    |   T_CONTINUE ';'              { TRACE $$ = $1 }
-    |   T_RETURN ';'                { TRACE $$ = $1 }
-    |   T_RETURN expression ';'     { TRACE $$ = $1 }
-    |   T_THROW expression ';'      { TRACE $$ = $1 }
-    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = $1 }
+        T_BREAK ';'                 { TRACE }
+    |   T_BREAKELSE ';'             { TRACE }
+    |   T_CONTINUE ';'              { TRACE }
+    |   T_RETURN ';'                { TRACE }
+    |   T_RETURN expression ';'     { TRACE }
+    |   T_THROW expression ';'      { TRACE }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE }
 ;
 
 guarding_statement:
@@ -286,7 +290,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE }
-    |   regex_expression T_RE T_STRING { TRACE }
+    |   regex_expression T_RE { saffire_push_state(st_regex); } T_REGEX { saffire_pop_state(); } { TRACE }
 ;
 
 shift_expression:
@@ -309,67 +313,67 @@ multiplicative_expression:
 ;
 
 unary_expression:
-        T_OP_INC unary_expression                   { TRACE $$ = saffire_opr(T_OP_INC, 1, $2); }
-    |   T_OP_DEC unary_expression                   { TRACE $$ = saffire_opr(T_OP_DEC, 1, $2); }
-    |   arithmic_unary_operator primary_expression  { TRACE $$ = saffire_opr('-', 1, $2); }
-    |   logical_unary_expression                    { TRACE $$ = $1 }
+        T_OP_INC unary_expression                   { TRACE }
+    |   T_OP_DEC unary_expression                   { TRACE }
+    |   arithmic_unary_operator primary_expression  { TRACE }
+    |   logical_unary_expression                    { TRACE }
 ;
 
 postfix_expression:
-        primary_expression      { TRACE $$ = $1 }
-    |   real_postfix_expression { TRACE $$ = $1 }
+        primary_expression      { TRACE }
+    |   real_postfix_expression { TRACE }
 ;
 
 real_postfix_expression:
-        postfix_expression T_OP_INC { TRACE $$ = saffire_opr(T_OP_INC, 1, $1); }
-    |   postfix_expression T_OP_DEC { TRACE $$ = saffire_opr(T_OP_DEC, 1, $1); }
+        postfix_expression T_OP_INC { TRACE }
+    |   postfix_expression T_OP_DEC { TRACE }
 ;
 
 logical_unary_expression:
-        postfix_expression                      { TRACE $$ = $1 }
-    |   logical_unary_operator unary_expression { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+        postfix_expression                      { TRACE }
+    |   logical_unary_operator unary_expression { TRACE }
 ;
 
 primary_expression:
-        qualified_name  { TRACE $$ = $1 }
-    |   not_just_name   { TRACE $$ = $1 }
+        qualified_name  { TRACE }
+    |   not_just_name   { TRACE }
  ;
 
 arithmic_unary_operator:
-        '+' { TRACE $$ = $1 }
-    |   '-' { TRACE $$ = $1 }
+        '+' { TRACE }
+    |   '-' { TRACE }
 ;
 
 logical_unary_operator:
-        '~' { TRACE $$ = $1 }
-    |   '!' { TRACE $$ = $1 }
+        '~' { TRACE }
+    |   '!' { TRACE }
 ;
 
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        '='                { TRACE $$ = $1 }
-    |   T_PLUS_ASSIGNMENT  { TRACE $$ = $1 }
-    |   T_MINUS_ASSIGNMENT { TRACE $$ = $1 }
-    |   T_MUL_ASSIGNMENT   { TRACE $$ = $1 }
-    |   T_DIV_ASSIGNMENT   { TRACE $$ = $1 }
-    |   T_MOD_ASSIGNMENT   { TRACE $$ = $1 }
-    |   T_AND_ASSIGNMENT   { TRACE $$ = $1 }
-    |   T_OR_ASSIGNMENT    { TRACE $$ = $1 }
-    |   T_XOR_ASSIGNMENT   { TRACE $$ = $1 }
-    |   T_SL_ASSIGNMENT    { TRACE $$ = $1 }
-    |   T_SR_ASSIGNMENT    { TRACE $$ = $1 }
+        '='                { TRACE }
+    |   T_PLUS_ASSIGNMENT  { TRACE }
+    |   T_MINUS_ASSIGNMENT { TRACE }
+    |   T_MUL_ASSIGNMENT   { TRACE }
+    |   T_DIV_ASSIGNMENT   { TRACE }
+    |   T_MOD_ASSIGNMENT   { TRACE }
+    |   T_AND_ASSIGNMENT   { TRACE }
+    |   T_OR_ASSIGNMENT    { TRACE }
+    |   T_XOR_ASSIGNMENT   { TRACE }
+    |   T_SL_ASSIGNMENT    { TRACE }
+    |   T_SR_ASSIGNMENT    { TRACE }
 ;
 
 real_scalar_value:
-        T_LNUM   { TRACE $$ = saffire_intCon($1); }
-    |   T_STRING { TRACE $$ = saffire_strCon($1); }
+        T_LNUM   { TRACE }
+    |   T_STRING { TRACE }
 ;
 
 
 qualified_name:
          T_IDENTIFIER
-     |   qualified_name '.' T_IDENTIFIER { TRACE printf("%s\n", $3); }
+     |   qualified_name '.' T_IDENTIFIER { TRACE }
 ;
 
 calling_method_argument_list:
@@ -412,8 +416,8 @@ method_call:
 
 
 special_name:
-        T_SELF      { TRACE $$ = $1 }
-    |   T_PARENT    { TRACE $$ = $1 }
+        T_SELF      { TRACE }
+    |   T_PARENT    { TRACE }
 ;
 
 

@@ -27,9 +27,9 @@
 #ifndef __SAFFIRE_INTERPRETER_H__
 #define __SAFFIRE_INTERPRETER_H__
 
-    #include "node.h"
+    #include "ast.h"
     #include "svar.h"
 
-    svar *saffire_interpreter(node *p);
+    svar *saffire_interpreter(t_ast_element *p);
 
 #endif

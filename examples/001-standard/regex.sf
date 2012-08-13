@@ -2,11 +2,14 @@
  * Regular expressions
  */
 
-if ($a =~ "/^foo/") {
+if ($a =~ /^foo/) {
 }
 
-if ($a =~ "/foobar/i") {
+# With optional parameters
+if ($a =~ /foobar/i) {
 }
 
-if ($a =~ "/foobar/") {
+# With escaped / in the middle
+if ($a =~ /foo\/bar/) {
+
 }

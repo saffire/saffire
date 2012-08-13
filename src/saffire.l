@@ -28,13 +28,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#include "node.h"
+#include "ast.h"
 #include "parser.tab.h"
+
+#define YY_NO_INPUT 1
 
 %}
 
+/* Exclusive - only match <regex> rules */
+%x st_regex
+
+%option stack
 %option yylineno
+
+/* suppres -Wall warning about yyunput */
+%option nounput noyy_top_state
 
 lnum            [0-9]+
 identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
@@ -48,6 +58,10 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 {whitespace} { }
 
 [-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { return yytext[0]; }
+
+
+    /* Only match regex when we are in the regex state */
+<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    return T_REGEX;
 
 "=~"        return T_RE;
 ">="        return T_GE;
@@ -153,3 +167,13 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 %%
 
 int yywrap(void) { return 1; }
+
+void saffire_push_state(int state) {
+    printf("Pushing state %d\n", state);
+    yy_push_state(state);
+}
+
+void saffire_pop_state() {
+    printf("Popping state\n");
+    yy_pop_state();
+}

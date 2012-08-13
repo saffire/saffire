@@ -19,7 +19,7 @@ CFLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
 
 # Lex flags
-LEX_FLAGS = $(LEX_DEBUG_FLAGS)
+LEX_FLAGS = $(LEX_DEBUG_FLAGS) --header-file=lex.yy.h
 
 # Linker flags
 LDFLAGS = $(LIBS) $(LD_DEBUG_FLAGS)
