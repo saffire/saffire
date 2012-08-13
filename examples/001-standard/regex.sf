@@ -13,3 +13,19 @@ if ($a =~ /foobar/i) {
 if ($a =~ /foo\/bar/) {
 
 }
+
+# Regex as object
+if (/foo\/bar/.match("foo")) {
+
+}
+
+# Regex as argument
+if ("foo/bar".match(/foo/)) {
+
+}
+
+
+#
+r = /$b ; $f = $r/m;
+
+r = $a/$b ; $f = $r/m;

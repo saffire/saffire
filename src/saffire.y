@@ -80,6 +80,9 @@
 
 %token <nPtr> expr
 
+
+%error-verbose
+
 %start saffire
 
 %% /* rules */
