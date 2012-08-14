@@ -39,12 +39,10 @@
     static void yy_pop_state (void );
 
 void saffire_push_state(int state) {
-    printf("Pushing state %d\n", state);
     yy_push_state(state);
 }
 
 void saffire_pop_state() {
-    printf("Popping state\n");
     yy_pop_state();
 }
 

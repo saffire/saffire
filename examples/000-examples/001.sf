@@ -6,6 +6,8 @@
 use fooFramework as foo;
 use BarFramework as bar;
 use io;
+use test;
+use tmp as aliased;
 
 /* Output:
 */

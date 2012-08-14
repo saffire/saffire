@@ -84,7 +84,7 @@ t_ast_element *saffire_opr(int opr, int nops, ...) {
     if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
-    if ((p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
+    if (nops && (p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -92,11 +92,13 @@ t_ast_element *saffire_opr(int opr, int nops, ...) {
     p->opr.oper = opr;
     p->opr.nops = nops;
 
-    va_start(ap, nops);
-    for (int i =0; i < nops; i++) {
-        p->opr.ops[i] = va_arg(ap, t_ast_element *);
+    if (nops) {
+        va_start(ap, nops);
+        for (int i=0; i < nops; i++) {
+            p->opr.ops[i] = va_arg(ap, t_ast_element *);
+        }
+        va_end(ap);
     }
-    va_end(ap);
 
     return p;
 }
@@ -115,3 +117,44 @@ void saffire_free_node(t_ast_element *p) {
     }
     free(p);
 }
+
+void saffire_print_node(t_ast_element *p, int recurse, int level) {
+    printf("(%d) *** P->type: ", level);
+    switch (p->type) {
+        case typeStrCon :
+            printf("typeStrCon\n");
+            printf("str: '%s'\n", p->strCon.value);
+            break;
+        case typeIntCon :
+            printf("typeIntCon\n");
+            printf("int: %d\n", p->intCon.value);
+            break;
+        case typeVar :
+            printf("typeVar\n");
+            printf("name: '%s'\n", p->var.name);
+            break;
+        case typeOpr :
+            printf("typeOpr\n");
+            printf("operator : %d\n", p->opr.oper);
+            printf("operators: %d\n", p->opr.nops);
+
+            for (int i=0; i!=p->opr.nops; i++) {
+                saffire_print_node(p->opr.ops[i], recurse, ++level);
+            }
+            break;
+        default :
+            printf("unknown (%d)\n", p->type);
+            break;
+    }
+    printf("\n");
+}
+
+
+/**
+ *
+ */
+void saffire_execute(t_ast_element *p) {
+    saffire_print_node(p, 1, 0);
+    saffire_compiler(p);
+}
+

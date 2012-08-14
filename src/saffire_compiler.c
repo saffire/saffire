@@ -57,29 +57,6 @@ void saffire_compiler(t_ast_element *p) {
 
         case typeOpr :
             switch (p->opr.oper) {
-                case '[' :
-                    // Don't expand tree when none are present (empty list)
-                    printf("\tlist_init\n");
-                    if (p->opr.nops >= 1) SC0(p);
-                    break;
-                case ']' :
-                    SC0(p);
-                    if (p->opr.nops >= 2) SC1(p);
-                    printf("\tlist_append\n");
-                    break;
-
-                case '{' :
-                    printf("\thash_init\n");
-                    // Don't expand tree when none are present (empty hash)
-                    if (p->opr.nops >= 1) SC0(p);
-                    break;
-                case '}' :
-                    SC0(p);
-                    SC1(p);
-                    SC2(p);
-                    printf("\thash_append\n");
-                    break;
-
                 case T_USE :
                     printf("\tuse_alias\t\"%s\"\t\"%s\"\n", p->opr.ops[0]->var.name, p->opr.ops[1]->var.name);
                     break;

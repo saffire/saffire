@@ -78,8 +78,11 @@
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 
-%token <nPtr> expr
-
+%type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
+%type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
+%type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
+%type <nPtr> label_statement selection_statement iteration_statement
+%type <nPtr> guarding_statement expression
 
 %error-verbose
 
@@ -95,48 +98,48 @@
  */
 
 saffire:
-        /* Use statements are only possible at the top of a file */
-        use_statement_list { TRACE }
+        program { TRACE saffire_execute($1); saffire_free_node($1); }
+;
 
-        /* Top statements follow use statements */
-        top_statement_list { TRACE }
+program:
+        use_statement_list top_statement_list { TRACE $$ = saffire_opr(';',2, $1, $2); }
 ;
 
 use_statement_list:
-        non_empty_use_statement_list { TRACE }
+        non_empty_use_statement_list { TRACE $$ = $1; }
     |   /* empty */ { TRACE }
 ;
 
 non_empty_use_statement_list:
-        use_statement { TRACE }
-    |   non_empty_use_statement_list use_statement { TRACE }
+        use_statement { TRACE $$ = $1; }
+    |   non_empty_use_statement_list use_statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
 ;
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE }
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = saffire_opr(T_USE, 2, saffire_strCon($2), saffire_strCon($4));}
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER ';' { TRACE }
+    |   T_USE T_IDENTIFIER ';' { TRACE $$ = saffire_opr(T_USE, 2, saffire_strCon($2), saffire_strCon($2)); }
 ;
 
 
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
-        non_empty_top_statement_list { TRACE }
+        non_empty_top_statement_list { TRACE $$ = $1; }
     |   /* empty */ { }
 ;
 
 non_empty_top_statement_list:
-        top_statement{ TRACE }
-    |   non_empty_top_statement_list top_statement { TRACE }
+        top_statement{ TRACE $$ = $1; }
+    |   non_empty_top_statement_list top_statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
 top_statement:
-        class_definition        { TRACE }
-    |   interface_definition    { TRACE }
-    |   constant_list           { TRACE }
-    |   statement_list          { TRACE }
+        class_definition        { TRACE $$ = $1; }
+    |   interface_definition    { TRACE $$ = $1; }
+    |   constant_list           { TRACE $$ = $1; }
+    |   statement_list          { TRACE $$ = $1; }
 ;
 
 
@@ -150,22 +153,22 @@ top_statement:
 /* A compound statement is a (set of) statement captured by curly brackets */
 compound_statement:
         '{' '}'                 { TRACE }
-    |   '{' statement_list '}'  { TRACE }
+    |   '{' statement_list '}'  { TRACE $$ = $2; }
 ;
 
 statement_list:
-        statement                { TRACE }
-    |   statement_list statement { TRACE }
+        statement                { TRACE $$ = $1; }
+    |   statement_list statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
 ;
 
 statement:
-        label_statement        { TRACE }
-    |   compound_statement     { TRACE }
-    |   expression_statement   { TRACE }
-    |   selection_statement    { TRACE }
-    |   iteration_statement    { TRACE }
-    |   jump_statement         { TRACE }
-    |   guarding_statement     { TRACE }
+        label_statement        { TRACE $$ = $1; }
+    |   compound_statement     { TRACE $$ = $1; }
+    |   expression_statement   { TRACE $$ = $1; }
+    |   selection_statement    { TRACE $$ = $1; }
+    |   iteration_statement    { TRACE $$ = $1; }
+    |   jump_statement         { TRACE $$ = $1; }
+    |   guarding_statement     { TRACE $$ = $1; }
 ;
 
 selection_statement:
@@ -184,18 +187,18 @@ iteration_statement:
 ;
 
 expression_statement:
-        ';'             { TRACE }
-    |   expression ';'  { TRACE }
+        ';'             { TRACE $$ = saffire_opr(';', 2, NULL, NULL); }
+    |   expression ';'  { TRACE $$ = $1; }
 ;
 
 jump_statement:
-        T_BREAK ';'                 { TRACE }
-    |   T_BREAKELSE ';'             { TRACE }
-    |   T_CONTINUE ';'              { TRACE }
-    |   T_RETURN ';'                { TRACE }
-    |   T_RETURN expression ';'     { TRACE }
-    |   T_THROW expression ';'      { TRACE }
-    |   T_GOTO T_IDENTIFIER ';'     { TRACE }
+        T_BREAK ';'                 { TRACE $$ = saffire_opr(T_BREAK, 2, NULL, NULL); }
+    |   T_BREAKELSE ';'             { TRACE $$ = saffire_opr(T_BREAKELSE, 2, NULL, NULL); }
+    |   T_CONTINUE ';'              { TRACE $$ = saffire_opr(T_CONTINUE, 2, NULL, NULL); }
+    |   T_RETURN ';'                { TRACE $$ = saffire_opr(T_RETURN, 2, NULL, NULL); }
+    |   T_RETURN expression ';'     { TRACE $$ = saffire_opr(T_RETURN, 2, $2, NULL); }
+    |   T_THROW expression ';'      { TRACE $$ = saffire_opr(T_THROW, 2, $2, NULL); }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = saffire_opr(T_GOTO, 2, saffire_strCon($2), NULL); }
 ;
 
 guarding_statement:
