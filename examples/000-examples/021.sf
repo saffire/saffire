@@ -43,7 +43,7 @@ class Color {
      */
     public method ctor(Integer $pms) {
         // Check if this PMS color exists
-        if $pms in self.pms.keys() {
+        if ! $pms in self.pms.keys() {
             throw Exception("PMS key not found!");
         }
 
