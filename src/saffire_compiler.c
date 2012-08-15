@@ -43,6 +43,10 @@ void saffire_compiler(t_ast_element *p) {
     if (!p) return;
 
     switch (p->type) {
+        case nullVar :
+            printf("\tnop\n");
+            break;
+
         case typeStrCon :
             printf("\tpush\t\"%s\"\n", p->strCon.value);
             break;
@@ -93,6 +97,10 @@ void saffire_compiler(t_ast_element *p) {
                     printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->var.name);
                     break;
 
+                case T_METHOD_CALL :
+                    printf("\tcall\t");
+                    break;
+
                 default :
                     SC0(p);
                     SC1(p);
@@ -108,6 +116,8 @@ void saffire_compiler(t_ast_element *p) {
                         case T_LE : printf("\tcompLE\n"); break;
                         case T_NE : printf("\tcompNE\n"); break;
                         case T_EQ : printf("\tcompEQ\n"); break;
+                        case '.' :
+                        case T_LIST :
                         case ';' :
                                 printf("\n");
                                 // End of statement?

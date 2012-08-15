@@ -78,6 +78,34 @@ t_ast_element *saffire_var(char *var_name) {
     return p;
 }
 
+t_ast_element *saffire_nop(void) {
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = nullVar;
+
+    return p;
+}
+
+t_ast_element *saffire_add(t_ast_element *src, t_ast_element *new_element) {
+    if (src->type != typeOpr) {
+        yyerror("Cannot add to non-opr element");
+    }
+
+    src->opr.nops++;
+    src->opr.ops = realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
+    if (src->opr.ops == NULL) {
+        yyerror("Out of memory");
+    }
+    src->opr.ops[src->opr.nops-1] = new_element;
+
+    return src;
+}
+
+
 t_ast_element *saffire_opr(int opr, int nops, ...) {
     va_list ap;
     t_ast_element *p;
@@ -162,11 +190,9 @@ void saffire_dot_node_iterate(FILE *f, t_ast_element *p, int link_node_nr) {
             break;
         case typeIntCon :
             fprintf(f, "style=rounded,label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->intCon.value);
-            printf("int: %d\n", p->intCon.value);
             break;
         case typeVar :
             fprintf(f, "style=rounded,label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->var.name);
-            printf("name: '%s'\n", p->var.name);
             break;
         case typeOpr :
             fprintf(f, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
@@ -174,6 +200,9 @@ void saffire_dot_node_iterate(FILE *f, t_ast_element *p, int link_node_nr) {
             for (int i=0; i!=p->opr.nops; i++) {
                 saffire_dot_node_iterate(f, p->opr.ops[i], cur_node_nr);
             }
+            break;
+        case nullVar :
+            fprintf(f, "style=rounded,label=\"{N:%d|Type=NULL}\"]\n", cur_node_nr);
             break;
         default :
             fprintf(f, "style=rounded,color=firebrick1,label=\"{N:%d|Type=UNKNOWN|Value=%d}\"]\n", node_nr, p->type);
@@ -210,6 +239,6 @@ void saffire_dot_node(t_ast_element *p) {
 void saffire_execute(t_ast_element *p) {
     saffire_dot_node(p);
     saffire_print_node(p, 1, 0);
-    saffire_compiler(p);
+//    saffire_compiler(p);
 }
 

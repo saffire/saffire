@@ -77,7 +77,7 @@
 %token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
-%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL
+%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_LIST T_PROGRAM T_USE_STATEMENTS
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
@@ -116,17 +116,17 @@ saffire:
 ;
 
 program:
-        use_statement_list top_statement_list { TRACE $$ = saffire_opr(';',2, $1, $2); }
+        use_statement_list top_statement_list { TRACE $$ = saffire_opr(T_PROGRAM,2, $1, $2); }
 ;
 
 use_statement_list:
         non_empty_use_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { TRACE }
+    |   /* empty */ { TRACE $$ = saffire_nop(); }
 ;
 
 non_empty_use_statement_list:
-        use_statement { TRACE $$ = $1; }
-    |   non_empty_use_statement_list use_statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+        use_statement { TRACE $$ = saffire_opr(T_USE_STATEMENTS, 1, $1); }
+    |   non_empty_use_statement_list use_statement { TRACE $$ = saffire_add($$, $2); }
 ;
 
 use_statement:
@@ -140,12 +140,12 @@ use_statement:
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
         non_empty_top_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { }
+    |   /* empty */ { TRACE $$ = saffire_nop(); }
 ;
 
 non_empty_top_statement_list:
         top_statement{ TRACE $$ = $1; }
-    |   non_empty_top_statement_list top_statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+    |   non_empty_top_statement_list top_statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -172,7 +172,7 @@ compound_statement:
 
 statement_list:
         statement                { TRACE $$ = $1; }
-    |   statement_list statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+    |   statement_list statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
 ;
 
 statement:
@@ -223,11 +223,11 @@ guarding_statement:
 
 catch_list:
         catch            { TRACE $$ = $1 }
-    |   catch_list catch { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+    |   catch_list catch { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
 ;
 
 catch:
-        catch_header compound_statement { TRACE $$ = saffire_opr(';', 2, $1, $2); }
+        catch_header compound_statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
 ;
 
 catch_header:
@@ -393,7 +393,7 @@ real_scalar_value:
 
 qualified_name:
          T_IDENTIFIER { TRACE $$ = saffire_var($1); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = saffire_var($3); /* TODO */ }
+     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = saffire_opr('.', 2, $1, saffire_var($3)); }
 ;
 
 calling_method_argument_list:
@@ -423,8 +423,8 @@ complex_primary_no_parenthesis:
 ;
 
 field_access:
-        not_just_name '.' T_IDENTIFIER
-    |   qualified_name '.' special_name
+        not_just_name '.' T_IDENTIFIER  { TRACE }
+    |   qualified_name '.' special_name { TRACE }
 ;
 
 method_call:
@@ -452,7 +452,7 @@ special_name:
 /* Statements inside a class: constant and methods */
 class_inner_statement_list:
         class_inner_statement                               { TRACE $$ = $1; }
-    |   class_inner_statement_list class_inner_statement    { TRACE $$ = saffire_opr(';',2, $1, $2); }
+    |   class_inner_statement_list class_inner_statement    { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
 ;
 
 class_inner_statement:
@@ -464,7 +464,7 @@ class_inner_statement:
 /* Statements inside an interface: constant and methods */
 interface_inner_statement_list:
         interface_inner_statement                                    { TRACE $$ = $1; }
-    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = saffire_opr(';',2, $1, $2); }
+    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
 ;
 
 interface_inner_statement:
@@ -502,7 +502,7 @@ method_argument:
 
 constant_list:
         constant                    { TRACE $$ = $1; }
-    |   constant_list constant      { TRACE $$ = saffire_opr(';',2, $1, $2); }
+    |   constant_list constant      { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
 ;
 
 constant:
@@ -544,7 +544,7 @@ modifier_list:
 /* Has at least one modifier */
 non_empty_modifier_list:
         modifier { TRACE $$ = $1; }
-    |   non_empty_modifier_list modifier { TRACE $$ = saffire_opr(';',2, $1, $2); }
+    |   non_empty_modifier_list modifier { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
 ;
 
 /* Property and method modifiers. */

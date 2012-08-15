@@ -33,6 +33,8 @@
     t_ast_element *saffire_intCon(int value);
     t_ast_element *saffire_var(char *var_name);
     t_ast_element *saffire_opr(int opr, int nops, ...);
+    t_ast_element *saffire_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *saffire_nop(void);
     void saffire_free_node(t_ast_element *p);
     void saffire_execute(t_ast_element *p);
 

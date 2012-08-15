@@ -76,6 +76,10 @@ svar *saffire_interpreter(t_ast_element *p) {
             printf ("var: %s\n", p->var.name);
             return svar_temp_alloc(SV_STRING, p->var.name, 0);
 
+        case nullVar :
+            /* nop */
+            break;
+
         case typeOpr :
             printf ("opr.oper(%d)\n", p->opr.oper);
             switch (p->opr.oper) {

@@ -30,7 +30,7 @@
     #include "svar.h"
 
     // different kind of nodes we manage
-    typedef enum { typeStrCon, typeIntCon, typeVar, typeOpr } nodeEnum;
+    typedef enum { typeStrCon, typeIntCon, nullVar, typeVar, typeOpr } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
