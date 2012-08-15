@@ -52,6 +52,7 @@ debug: saffire
 OBJS =	main.o \
 	svar.o \
 	ast.o \
+	dot.o \
 	saffire_parser.o \
 	saffire_compiler.o \
 	saffire_interpreter.o \

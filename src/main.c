@@ -40,6 +40,8 @@ extern FILE     *yyin;
 
 char    *source_file = "-";     // defaults to stdin
 int     source_args = 0;        // default to no additional arguments
+int     generate_dot = 0;
+char    *dot_file = NULL;
 
 /**
  * Prints current version number and copyright information
@@ -56,10 +58,11 @@ void print_usage() {
     printf("\n"
            "Usage: saffire [options] [script [args]]\n"
            "Available options are:\n"
-           "  -v, --version    Show version information \n"
-           "  -h, --help       This usage information \n"
-           "  -c, --cli        Command line interface\n"
-           "  -l, --lint FILE  Lint check script\n"
+           "  -v, --version         Show version information \n"
+           "  -h, --help            This usage information \n"
+           "  -c, --cli             Command line interface\n"
+           "  -l, --lint            Lint check script\n"
+           "      --dot <output>    Generate an AST in .dot format\n"
            "\n"
            "With no FILE, or FILE is -, read standard input.\n"
            "\n");
@@ -82,6 +85,7 @@ void parse_options(int argc, char *argv[]) {
             { "help",    no_argument, 0, 'h' },
             { "cli",     no_argument, 0, 'c' },
             { "lint",    no_argument, 0, 'l' },
+            { "dot",     required_argument, 0, 0 },
             { 0, 0, 0, 0 }
         };
 
@@ -91,6 +95,14 @@ void parse_options(int argc, char *argv[]) {
         if (c == -1) break;
 
         switch (c) {
+            case 0 :
+                // Long option without any short alias is called. Have to strcmp the string itself
+                if (strcmp(long_options[option_index].name, "dot") == 0) {
+                    generate_dot = 1;
+                    dot_file = optarg;
+                    printf ("DOT called. Writing into %s", optarg);
+                    break;
+                }
             case 'h' :
                 print_version();
                 print_usage();
@@ -139,9 +151,19 @@ int main(int argc, char *argv[]) {
     // Initialize system
     svar_init_table();
 
-    // Parse the file input
+    // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
     yyparse();
+
+    if (generate_dot) {
+        // generate DOT file
+        saffire_dot_node(ast_root, dot_file);
+    }
+
+    // Release memory of ast_root
+    if (ast_root != NULL) {
+        saffire_free_node(ast_root);
+    }
 
     return 0;
 }

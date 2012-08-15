@@ -24,21 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SAFFIRE_PARSER_H__
-#define __SAFFIRE_PARSER_H__
-
-    #include "ast.h"
-
-    t_ast_element *ast_root;
-
-    t_ast_element *saffire_strCon(char *value);
-    t_ast_element *saffire_intCon(int value);
-    t_ast_element *saffire_var(char *var_name);
-    t_ast_element *saffire_opr(int opr, int nops, ...);
-    t_ast_element *saffire_add(t_ast_element *src, t_ast_element *new_element);
-    t_ast_element *saffire_nop(void);
-    void saffire_free_node(t_ast_element *p);
-    void saffire_execute(t_ast_element *p);
+#ifndef __DOT_H__
+#define __DOT_H__
 
     void saffire_dot_node(t_ast_element *ast, const char *outputfile);
 

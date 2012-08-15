@@ -112,7 +112,7 @@
  */
 
 saffire:
-        program { TRACE saffire_execute($1); saffire_free_node($1); }
+        program { TRACE ast_root = $1; }
 ;
 
 program:
