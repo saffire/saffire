@@ -13,3 +13,5 @@ src/saffire
 /nbproject/private/
 /docs/spec/build
 *.~*
+ast.png
+ast.dot

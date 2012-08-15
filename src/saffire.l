@@ -34,6 +34,7 @@
 #include "parser.tab.h"
 
 #define YY_NO_INPUT 1
+#define YYPRINT 1
 
     static void yy_push_state (int new_state );
     static void yy_pop_state (void );
