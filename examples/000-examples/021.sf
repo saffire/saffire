@@ -105,4 +105,4 @@ const PMS_GREEN = 2;
 
 $c1 = Color("yellow");
 $c2 = $c1 + Color(PMS_GREEN);
-io.printf("The mixed color is: ", Color);
+io.printf("The mixed color is: ", $c2);

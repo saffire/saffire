@@ -2,10 +2,8 @@
   Hello world example
 */
 use io;
-use framework as frame;
-use foo as bar;
 
-// io.console.blaat.print("hello world!");
+io.console.print("hello world!", "blaat", $a, 1 + 1);
 
 
 /*

@@ -76,7 +76,8 @@
 %token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
-%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_LIST T_PROGRAM T_USE_STATEMENTS
+%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
+%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
@@ -143,8 +144,8 @@ top_statement_list:
 ;
 
 non_empty_top_statement_list:
-        top_statement{ TRACE $$ = $1; }
-    |   non_empty_top_statement_list top_statement { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
+        top_statement{ TRACE $$ = ast_opr(T_TOP_STATEMENTS, 1, $1); }
+    |   non_empty_top_statement_list top_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -170,8 +171,8 @@ compound_statement:
 ;
 
 statement_list:
-        statement                { TRACE $$ = $1; }
-    |   statement_list statement { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
+        statement                { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+    |   statement_list statement { TRACE $$ = ast_add($$, $2); }
 ;
 
 statement:
@@ -253,43 +254,43 @@ constant_expression:
 ;
 
 expression:
-        assignment_expression { TRACE $$ = $1; }
-    |   expression ',' assignment_expression { TRACE }
+        assignment_expression { TRACE $$ = ast_opr(T_EXPRESSIONS, 1, $1); }
+    |   expression ',' assignment_expression { TRACE $$ = ast_add($$, $3); }
 ;
 
 assignment_expression:
         conditional_expression { TRACE $$ = $1; }
-    |   unary_expression assignment_operator assignment_expression { TRACE }
+    |   unary_expression assignment_operator assignment_expression { TRACE $$ = ast_opr('=', 3, $1, $2, $3); }
 ;
 
 conditional_expression:
         conditional_or_expression { TRACE $$ = $1; }
-    |   conditional_or_expression '?' expression ':' conditional_expression { TRACE }
+    |   conditional_or_expression '?' expression ':' conditional_expression { TRACE $$ = ast_opr('?', 2, $1, $3); }
 ;
 
 conditional_or_expression:
         conditional_and_expression { TRACE $$ = $1; }
-    |   conditional_or_expression T_OR conditional_and_expression { TRACE }
+    |   conditional_or_expression T_OR conditional_and_expression { TRACE $$ = ast_opr(T_OR, 2, $1, $3);}
 ;
 
 conditional_and_expression:
         inclusive_or_expression { TRACE $$ = $1; }
-    |   conditional_and_expression T_AND inclusive_or_expression { TRACE }
+    |   conditional_and_expression T_AND inclusive_or_expression { TRACE $$ = ast_opr(T_AND, 2, $1, $3); }
 ;
 
 inclusive_or_expression:
         exclusive_or_expression { TRACE $$ = $1; }
-    |   inclusive_or_expression '|' exclusive_or_expression { TRACE }
+    |   inclusive_or_expression '|' exclusive_or_expression { TRACE $$ = ast_opr('|', 2, $1, $3);}
 ;
 
 exclusive_or_expression:
         and_expression { TRACE $$ = $1; }
-    |   exclusive_or_expression '^' and_expression { TRACE }
+    |   exclusive_or_expression '^' and_expression { TRACE $$ = ast_opr('^', 2, $1, $3); }
 ;
 
 and_expression:
         equality_expression { TRACE $$ = $1; }
-    |   and_expression '&' equality_expression { TRACE }
+    |   and_expression '&' equality_expression { TRACE $$ = ast_opr('&', 2, $1, $3); }
 ;
 
 equality_expression:
@@ -371,7 +372,7 @@ logical_unary_operator:
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        '='                { TRACE $$ = ast_strCon("="); }
+        '='                { TRACE $$ = ast_strCon("=");  }
     |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_strCon("+="); }
     |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_strCon("-="); }
     |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_strCon("*="); }
@@ -391,14 +392,14 @@ real_scalar_value:
 
 
 qualified_name:
-         T_IDENTIFIER { TRACE $$ = ast_var($1); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_opr('.', 2, $1, ast_var($3)); }
+         T_IDENTIFIER { TRACE $$ = ast_opr(T_FQMN, 1, ast_var($1)); }
+     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_var($3)); }
 ;
 
 calling_method_argument_list:
-        expression                                     { TRACE $$ = $1; }
-    |   calling_method_argument_list ',' expression    { TRACE }
-    |   /* empty */ { TRACE }
+        assignment_expression                                     { TRACE $$ = ast_opr(T_ARGUMENT_LIST, 1, $1); }
+    |   calling_method_argument_list ',' assignment_expression    { TRACE $$ = ast_add($$, $3); }
+    |   /* empty */ { TRACE $$ = ast_nop(); }
 ;
 
 
@@ -427,10 +428,10 @@ field_access:
 ;
 
 method_call:
-        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   complex_primary_no_parenthesis '(' ')' { TRACE ast_opr(T_METHOD_CALL, 1, $1); }
-    |   qualified_name '(' calling_method_argument_list ')' { TRACE ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   qualified_name '(' ')' { TRACE ast_opr(T_METHOD_CALL, 1, $1); }
+        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   complex_primary_no_parenthesis '(' ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
+    |   qualified_name '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   qualified_name '(' ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
 ;
 
 
@@ -483,7 +484,7 @@ class_method_definition:
 ;
 
 method_argument_list:
-        /* empty */  { TRACE }
+        /* empty */  { TRACE $$ = ast_nop(); }
     |   non_empty_method_argument_list { TRACE $$ = $1; }
 ;
 
@@ -560,13 +561,13 @@ modifier:
 /* extends a list of classes, or no extends at all */
 class_extends:
         T_EXTENDS class_list { TRACE $$ = ast_opr(T_EXTENDS, 1, $2); }
-    |   /* empty */  { TRACE }
+    |   /* empty */  { TRACE $$ = ast_nop(); }
 ;
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
         T_IMPLEMENTS class_list { TRACE $$ = ast_opr(T_IMPLEMENTS, 1, $2); }
-    |   /* empty */  { TRACE }
+    |   /* empty */  { TRACE $$ = ast_nop(); }
 ;
 
 /* Comma separated list of classes (for extends and implements) */
