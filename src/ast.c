@@ -25,54 +25,146 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "ast.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include "parser.tab.h"
+#include "svar.h"
+#include "ast.h"
+
+extern void yyerror(const char *err);
 
 /**
  *
  */
-t_ast_element *make_assignment(char*name, t_ast_element* val) {
-    return NULL;
+t_ast_element *ast_strCon(char *value) {
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = typeStrCon;
+    p->strCon.value = strdup(value);
+
+    return p;
 }
 
-/**
- *
- */
-t_ast_element *makeExpByNum(int val){
-    return NULL;
-}
 
 /**
  *
  */
-t_ast_element *makeExpByName(char*name) {
-    return NULL;
+t_ast_element *ast_intCon(int value) {
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = typeIntCon;
+    p->intCon.value = value;
+
+    return p;
 }
+
 
 /**
  *
  */
-t_ast_element *makeExp(t_ast_element *left, t_ast_element *right, char op) {
-    return NULL;
+t_ast_element *ast_var(char *var_name) {
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = typeVar;
+    p->var.name = strdup(var_name);
+
+    return p;
 }
+
 
 /**
  *
  */
-t_ast_element *makeStatement(t_ast_element *dest, t_ast_element *toAppend) {
-    return NULL;
+t_ast_element *ast_nop(void) {
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = nullVar;
+
+    return p;
 }
+
 
 /**
  *
  */
-t_ast_element *makeWhile(t_ast_element *cond, t_ast_element *exec) {
-    return NULL;
+t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
+    if (src->type != typeOpr) {
+        yyerror("Cannot add to non-opr element");
+    }
+
+    src->opr.nops++;
+    src->opr.ops = realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
+    if (src->opr.ops == NULL) {
+        yyerror("Out of memory");
+    }
+    src->opr.ops[src->opr.nops-1] = new_element;
+
+    return src;
 }
+
 
 /**
  *
  */
-t_ast_element *makeCall(char* name, t_ast_element *param) {
-    return NULL;
+t_ast_element *ast_opr(int opr, int nops, ...) {
+    va_list ap;
+    t_ast_element *p;
+
+    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+    if (nops && (p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
+        yyerror("Out of memory");
+    }
+
+    p->type = typeOpr;
+    p->opr.oper = opr;
+    p->opr.nops = nops;
+
+    if (nops) {
+        va_start(ap, nops);
+        for (int i=0; i < nops; i++) {
+            p->opr.ops[i] = va_arg(ap, t_ast_element *);
+        }
+        va_end(ap);
+    }
+
+    return p;
+}
+
+
+/**
+ *
+ */
+void ast_free_node(t_ast_element *p) {
+    if (!p) return;
+
+    // @TODO: If it's a strConOpr, we must free our char as well!
+    // @TODO: If it's a varOpr, we must free our svar as well
+
+    if (p->type == typeOpr) {
+        for (int i=0; i < p->opr.nops; i++) {
+            ast_free_node(p->opr.ops[i]);
+        }
+        free(p->opr.ops);
+    }
+    free(p);
 }

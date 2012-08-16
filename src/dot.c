@@ -25,14 +25,14 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include "ast.h"
 #include "parser.tab.h"
+#include "ast.h"
 
 extern char *get_token_string(int token);
 
 static int node_nr = 0;
 
-void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
+static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     int cur_node_nr = node_nr;
     node_nr++;
     fprintf(fp, "\tN_%d [", cur_node_nr);
@@ -66,7 +66,7 @@ void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     }
 }
 
-void saffire_dot_node(t_ast_element *ast, const char *outputfile) {
+void dot_generate(t_ast_element *ast, const char *outputfile) {
     FILE *fp = fopen(outputfile, "w");
     if (!fp) {
         printf("Cannot open ast.dot for writing\n");

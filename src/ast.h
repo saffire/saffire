@@ -61,12 +61,17 @@
         };
     } t_ast_element;
 
-    t_ast_element *ast_make_assignment(char*name, t_ast_element *val);
-    t_ast_element *ast_make_expression_by_number(int val);
-    t_ast_element *ast_make_expression_by_name(char*name);
-    t_ast_element *ast_make_expression(t_ast_element *left, t_ast_element *right, char op);
-    t_ast_element *ast_make_statement(t_ast_element *dest, t_ast_element *toAppend);
-    t_ast_element *ast_make_while(t_ast_element *cond, t_ast_element *exec);
-    t_ast_element *ast_make_call(char* name, t_ast_element *param);
+
+    // actual root element
+    t_ast_element *ast_root;
+
+    t_ast_element *ast_strCon(char *value);
+    t_ast_element *ast_intCon(int value);
+    t_ast_element *ast_var(char *var_name);
+    t_ast_element *ast_opr(int opr, int nops, ...);
+    t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_nop(void);
+
+    void ast_free_node(t_ast_element *p);
 
 #endif

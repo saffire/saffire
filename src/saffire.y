@@ -30,9 +30,8 @@
 #define YY_HEADER_EXPORT_START_CONDITIONS 1
 
     #include <stdio.h>
-    #include "ast.h"
-    #include "saffire_parser.h"
     #include "lex.yy.h"
+    #include "ast.h"
 
     extern int yylineno;
     int yylex(void);
@@ -53,10 +52,10 @@
 %}
 
 %union {
-    char *sVal;
-    long lVal;
-    double dVal;
-    t_ast_element *nPtr;
+    char          *sVal;
+    long          lVal;
+    double        dVal;
+    struct ast_element *nPtr;
 }
 
 %token END 0 "end of file"
@@ -116,36 +115,36 @@ saffire:
 ;
 
 program:
-        use_statement_list top_statement_list { TRACE $$ = saffire_opr(T_PROGRAM,2, $1, $2); }
+        use_statement_list top_statement_list { TRACE $$ = ast_opr(T_PROGRAM,2, $1, $2); }
 ;
 
 use_statement_list:
         non_empty_use_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { TRACE $$ = saffire_nop(); }
+    |   /* empty */ { TRACE $$ = ast_nop(); }
 ;
 
 non_empty_use_statement_list:
-        use_statement { TRACE $$ = saffire_opr(T_USE_STATEMENTS, 1, $1); }
-    |   non_empty_use_statement_list use_statement { TRACE $$ = saffire_add($$, $2); }
+        use_statement { TRACE $$ = ast_opr(T_USE_STATEMENTS, 1, $1); }
+    |   non_empty_use_statement_list use_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = saffire_opr(T_USE, 2, saffire_strCon($2), saffire_strCon($4));}
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($4));}
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER ';' { TRACE $$ = saffire_opr(T_USE, 2, saffire_strCon($2), saffire_strCon($2)); }
+    |   T_USE T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($2)); }
 ;
 
 
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
         non_empty_top_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { TRACE $$ = saffire_nop(); }
+    |   /* empty */ { TRACE $$ = ast_nop(); }
 ;
 
 non_empty_top_statement_list:
         top_statement{ TRACE $$ = $1; }
-    |   non_empty_top_statement_list top_statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
+    |   non_empty_top_statement_list top_statement { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -172,7 +171,7 @@ compound_statement:
 
 statement_list:
         statement                { TRACE $$ = $1; }
-    |   statement_list statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
+    |   statement_list statement { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
 statement:
@@ -186,60 +185,60 @@ statement:
 ;
 
 selection_statement:
-        T_IF expression statement { TRACE $$ = saffire_opr(T_IF, 2, $2, $3); }
-    |   T_IF expression statement T_ELSE statement { TRACE $$ = saffire_opr(T_IF, 3, $2, $3, $5); }
-    |   T_SWITCH '(' expression ')' compound_statement { TRACE $$ = saffire_opr(T_SWITCH, 2, $3, $5); }
+        T_IF expression statement { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
+    |   T_IF expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
+    |   T_SWITCH '(' expression ')' compound_statement { TRACE $$ = ast_opr(T_SWITCH, 2, $3, $5); }
 ;
 
 iteration_statement:
-        T_WHILE expression statement T_ELSE statement { TRACE $$ = saffire_opr(T_WHILE, 3, $2, $3, $5); }
-    |   T_WHILE expression statement { TRACE $$ = saffire_opr(T_WHILE, 2, $2, $3); }
-    |   T_DO statement T_WHILE expression ';' { TRACE $$ = saffire_opr(T_DO, 2, $2, $4); }
-    |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE $$ = saffire_opr(T_FOR, 3, $3, $4, $6); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = saffire_opr(T_FOR, 4, $3, $4, $5, $7); }
-    |   T_FOREACH expression T_AS expression statement { TRACE $$ = saffire_opr(T_FOREACH, 3, $2, $4, $5); }
+        T_WHILE expression statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $2, $3, $5); }
+    |   T_WHILE expression statement { TRACE $$ = ast_opr(T_WHILE, 2, $2, $3); }
+    |   T_DO statement T_WHILE expression ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $4); }
+    |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
+    |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $7); }
+    |   T_FOREACH expression T_AS expression statement { TRACE $$ = ast_opr(T_FOREACH, 3, $2, $4, $5); }
 ;
 
 expression_statement:
-        ';'             { TRACE $$ = saffire_opr(';', 0); }
+        ';'             { TRACE $$ = ast_opr(';', 0); }
     |   expression ';'  { TRACE $$ = $1; }
 ;
 
 jump_statement:
-        T_BREAK ';'                 { TRACE $$ = saffire_opr(T_BREAK, 0); }
-    |   T_BREAKELSE ';'             { TRACE $$ = saffire_opr(T_BREAKELSE, 0); }
-    |   T_CONTINUE ';'              { TRACE $$ = saffire_opr(T_CONTINUE, 0); }
-    |   T_RETURN ';'                { TRACE $$ = saffire_opr(T_RETURN, 0); }
-    |   T_RETURN expression ';'     { TRACE $$ = saffire_opr(T_RETURN, 1, $2); }
-    |   T_THROW expression ';'      { TRACE $$ = saffire_opr(T_THROW, 1, $2); }
-    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = saffire_opr(T_GOTO, 1, saffire_strCon($2)); }
+        T_BREAK ';'                 { TRACE $$ = ast_opr(T_BREAK, 0); }
+    |   T_BREAKELSE ';'             { TRACE $$ = ast_opr(T_BREAKELSE, 0); }
+    |   T_CONTINUE ';'              { TRACE $$ = ast_opr(T_CONTINUE, 0); }
+    |   T_RETURN ';'                { TRACE $$ = ast_opr(T_RETURN, 0); }
+    |   T_RETURN expression ';'     { TRACE $$ = ast_opr(T_RETURN, 1, $2); }
+    |   T_THROW expression ';'      { TRACE $$ = ast_opr(T_THROW, 1, $2); }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_strCon($2)); }
 ;
 
 guarding_statement:
-        T_TRY compound_statement catch_list { TRACE $$ = saffire_opr(T_TRY, 2, $2, $3); }
-    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { TRACE $$ = saffire_opr(T_FINALLY, 3, $2, $3, $5); }
-    |   T_TRY compound_statement            T_FINALLY compound_statement  { TRACE $$ = saffire_opr(T_FINALLY, 2, $2, $4); }
+        T_TRY compound_statement catch_list { TRACE $$ = ast_opr(T_TRY, 2, $2, $3); }
+    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 3, $2, $3, $5); }
+    |   T_TRY compound_statement            T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 2, $2, $4); }
 ;
 
 catch_list:
         catch            { TRACE $$ = $1 }
-    |   catch_list catch { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
+    |   catch_list catch { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
 catch:
-        catch_header compound_statement { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
+        catch_header compound_statement { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
 catch_header:
-        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = saffire_opr(T_CATCH, 2, saffire_strCon($3), saffire_strCon($4)); }
-    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = saffire_opr(T_CATCH, 1, saffire_strCon($3)); }
-    |   T_CATCH '('                           ')' { TRACE $$ = saffire_opr(T_CATCH, 0); }
+        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_strCon($3), ast_strCon($4)); }
+    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_strCon($3)); }
+    |   T_CATCH '('                           ')' { TRACE $$ = ast_opr(T_CATCH, 0); }
 ;
 
 label_statement:
-        T_IDENTIFIER ':'                { TRACE $$ = saffire_opr(T_LABEL, 1, saffire_strCon($1)); }
-    |   T_CASE constant_expression ':'  { TRACE $$ = saffire_opr(T_CASE, 1, $2);}
-    |   T_DEFAULT ':'                   { TRACE $$ = saffire_opr(T_DEFAULT, 0);}
+        T_IDENTIFIER ':'                { TRACE $$ = ast_opr(T_LABEL, 1, ast_strCon($1)); }
+    |   T_CASE constant_expression ':'  { TRACE $$ = ast_opr(T_CASE, 1, $2);}
+    |   T_DEFAULT ':'                   { TRACE $$ = ast_opr(T_DEFAULT, 0);}
 ;
 
 
@@ -295,47 +294,47 @@ and_expression:
 
 equality_expression:
         relational_expression { TRACE $$ = $1; }
-    |   equality_expression T_EQ relational_expression { TRACE $$ = saffire_opr(T_EQ, 2, $1, $3); }
-    |   equality_expression T_NE relational_expression { TRACE $$ = saffire_opr(T_NE, 2, $1, $3); }
-    |   equality_expression T_IN relational_expression { TRACE $$ = saffire_opr(T_IN, 2, $1, $3); }
+    |   equality_expression T_EQ relational_expression { TRACE $$ = ast_opr(T_EQ, 2, $1, $3); }
+    |   equality_expression T_NE relational_expression { TRACE $$ = ast_opr(T_NE, 2, $1, $3); }
+    |   equality_expression T_IN relational_expression { TRACE $$ = ast_opr(T_IN, 2, $1, $3); }
 ;
 
 relational_expression:
         regex_expression { TRACE $$ = $1; }
-    |   relational_expression '>' regex_expression { TRACE $$ = saffire_opr('>', 2, $1, $3); }
-    |   relational_expression '<' regex_expression { TRACE $$ = saffire_opr('<', 2, $1, $3); }
-    |   relational_expression T_LE regex_expression { TRACE $$ = saffire_opr(T_LE, 2, $1, $3); }
-    |   relational_expression T_GE regex_expression { TRACE $$ = saffire_opr(T_GE, 2, $1, $3); }
+    |   relational_expression '>' regex_expression { TRACE $$ = ast_opr('>', 2, $1, $3); }
+    |   relational_expression '<' regex_expression { TRACE $$ = ast_opr('<', 2, $1, $3); }
+    |   relational_expression T_LE regex_expression { TRACE $$ = ast_opr(T_LE, 2, $1, $3); }
+    |   relational_expression T_GE regex_expression { TRACE $$ = ast_opr(T_GE, 2, $1, $3); }
 ;
 
 regex_expression:
         shift_expression { TRACE $$ = $1; }
-    |   regex_expression T_RE T_REGEX { TRACE $$ = saffire_opr(T_RE, 2, $1, $3); }
+    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, $3); }
 ;
 
 shift_expression:
         additive_expression { TRACE $$ = $1; }
-    |   shift_expression T_SHIFT_LEFT additive_expression { TRACE $$ = saffire_opr(T_SHIFT_LEFT, 2, $1, $3); }
-    |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE $$ = saffire_opr(T_SHIFT_RIGHT, 2, $1, $3); }
+    |   shift_expression T_SHIFT_LEFT additive_expression { TRACE $$ = ast_opr(T_SHIFT_LEFT, 2, $1, $3); }
+    |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE $$ = ast_opr(T_SHIFT_RIGHT, 2, $1, $3); }
 ;
 
 additive_expression:
         multiplicative_expression { TRACE $$ = $1; }
-    |   additive_expression '+' multiplicative_expression { TRACE $$ = saffire_opr('+', 2, $1, $3); }
-    |   additive_expression '-' multiplicative_expression { TRACE $$ = saffire_opr('-', 2, $1, $3); }
+    |   additive_expression '+' multiplicative_expression { TRACE $$ = ast_opr('+', 2, $1, $3); }
+    |   additive_expression '-' multiplicative_expression { TRACE $$ = ast_opr('-', 2, $1, $3); }
 ;
 
 multiplicative_expression:
         unary_expression { TRACE $$ = $1; }
-    |   multiplicative_expression '*' unary_expression { TRACE $$ = saffire_opr('*', 2, $1, $3); }
-    |   multiplicative_expression '/' unary_expression { TRACE $$ = saffire_opr('/', 2, $1, $3); }
-    |   multiplicative_expression '%' unary_expression { TRACE $$ = saffire_opr('%', 2, $1, $3); }
+    |   multiplicative_expression '*' unary_expression { TRACE $$ = ast_opr('*', 2, $1, $3); }
+    |   multiplicative_expression '/' unary_expression { TRACE $$ = ast_opr('/', 2, $1, $3); }
+    |   multiplicative_expression '%' unary_expression { TRACE $$ = ast_opr('%', 2, $1, $3); }
 ;
 
 unary_expression:
-        T_OP_INC unary_expression                   { TRACE $$ = saffire_opr(T_OP_INC, 1, $2); }
-    |   T_OP_DEC unary_expression                   { TRACE $$ = saffire_opr(T_OP_DEC, 1, $2); }
-    |   arithmic_unary_operator primary_expression  { TRACE $$ = saffire_opr(T_ARITHMIC, 2, $1, $2); }
+        T_OP_INC unary_expression                   { TRACE $$ = ast_opr(T_OP_INC, 1, $2); }
+    |   T_OP_DEC unary_expression                   { TRACE $$ = ast_opr(T_OP_DEC, 1, $2); }
+    |   arithmic_unary_operator primary_expression  { TRACE $$ = ast_opr(T_ARITHMIC, 2, $1, $2); }
     |   logical_unary_expression                    { TRACE $$ = $1; }
 ;
 
@@ -345,13 +344,13 @@ postfix_expression:
 ;
 
 real_postfix_expression:
-        postfix_expression T_OP_INC { TRACE $$ = saffire_opr(T_OP_INC, 1, $1); }
-    |   postfix_expression T_OP_DEC { TRACE $$ = saffire_opr(T_OP_DEC, 1, $1); }
+        postfix_expression T_OP_INC { TRACE $$ = ast_opr(T_OP_INC, 1, $1); }
+    |   postfix_expression T_OP_DEC { TRACE $$ = ast_opr(T_OP_DEC, 1, $1); }
 ;
 
 logical_unary_expression:
         postfix_expression                      { TRACE $$ = $1; }
-    |   logical_unary_operator unary_expression { TRACE $$ = saffire_opr(T_LOGICAL, 2, $1, $2); }
+    |   logical_unary_operator unary_expression { TRACE $$ = ast_opr(T_LOGICAL, 2, $1, $2); }
 ;
 
 primary_expression:
@@ -360,40 +359,40 @@ primary_expression:
  ;
 
 arithmic_unary_operator:
-        '+' { TRACE $$ = saffire_strCon("+"); }
-    |   '-' { TRACE $$ = saffire_strCon("-"); }
+        '+' { TRACE $$ = ast_strCon("+"); }
+    |   '-' { TRACE $$ = ast_strCon("-"); }
 ;
 
 logical_unary_operator:
-        '~' { TRACE $$ = saffire_strCon("~"); }
-    |   '!' { TRACE $$ = saffire_strCon("!"); }
+        '~' { TRACE $$ = ast_strCon("~"); }
+    |   '!' { TRACE $$ = ast_strCon("!"); }
 ;
 
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        '='                { TRACE $$ = saffire_strCon("="); }
-    |   T_PLUS_ASSIGNMENT  { TRACE $$ = saffire_strCon("+="); }
-    |   T_MINUS_ASSIGNMENT { TRACE $$ = saffire_strCon("-="); }
-    |   T_MUL_ASSIGNMENT   { TRACE $$ = saffire_strCon("*="); }
-    |   T_DIV_ASSIGNMENT   { TRACE $$ = saffire_strCon("/="); }
-    |   T_MOD_ASSIGNMENT   { TRACE $$ = saffire_strCon("%="); }
-    |   T_AND_ASSIGNMENT   { TRACE $$ = saffire_strCon("&="); }
-    |   T_OR_ASSIGNMENT    { TRACE $$ = saffire_strCon("|="); }
-    |   T_XOR_ASSIGNMENT   { TRACE $$ = saffire_strCon("^="); }
-    |   T_SL_ASSIGNMENT    { TRACE $$ = saffire_strCon("<="); }
-    |   T_SR_ASSIGNMENT    { TRACE $$ = saffire_strCon(">="); }
+        '='                { TRACE $$ = ast_strCon("="); }
+    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_strCon("+="); }
+    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_strCon("-="); }
+    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_strCon("*="); }
+    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_strCon("/="); }
+    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_strCon("%="); }
+    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_strCon("&="); }
+    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_strCon("|="); }
+    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_strCon("^="); }
+    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_strCon("<="); }
+    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_strCon(">="); }
 ;
 
 real_scalar_value:
-        T_LNUM   { TRACE $$ = saffire_intCon($1); }
-    |   T_STRING { TRACE $$ = saffire_strCon($1); }
+        T_LNUM   { TRACE $$ = ast_intCon($1); }
+    |   T_STRING { TRACE $$ = ast_strCon($1); }
 ;
 
 
 qualified_name:
-         T_IDENTIFIER { TRACE $$ = saffire_var($1); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = saffire_opr('.', 2, $1, saffire_var($3)); }
+         T_IDENTIFIER { TRACE $$ = ast_var($1); }
+     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_opr('.', 2, $1, ast_var($3)); }
 ;
 
 calling_method_argument_list:
@@ -414,9 +413,9 @@ complex_primary:
 ;
 
 complex_primary_no_parenthesis:
-        T_LNUM          { TRACE $$ = saffire_intCon($1); }
-    |   T_STRING        { TRACE $$ = saffire_strCon($1); }
-    |   T_REGEX         { TRACE $$ = saffire_strCon($1); }
+        T_LNUM          { TRACE $$ = ast_intCon($1); }
+    |   T_STRING        { TRACE $$ = ast_strCon($1); }
+    |   T_REGEX         { TRACE $$ = ast_strCon($1); }
     |   field_access    { TRACE $$ = $1; }
     |   method_call     { TRACE $$ = $1; }
     |   data_structure  { TRACE $$ = $1; }
@@ -428,17 +427,17 @@ field_access:
 ;
 
 method_call:
-        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE saffire_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   complex_primary_no_parenthesis '(' ')' { TRACE saffire_opr(T_METHOD_CALL, 1, $1); }
-    |   qualified_name '(' calling_method_argument_list ')' { TRACE saffire_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   qualified_name '(' ')' { TRACE saffire_opr(T_METHOD_CALL, 1, $1); }
+        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   complex_primary_no_parenthesis '(' ')' { TRACE ast_opr(T_METHOD_CALL, 1, $1); }
+    |   qualified_name '(' calling_method_argument_list ')' { TRACE ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   qualified_name '(' ')' { TRACE ast_opr(T_METHOD_CALL, 1, $1); }
 ;
 
 
 
 special_name:
-        T_SELF      { TRACE $$ = saffire_strCon("SELF"); }
-    |   T_PARENT    { TRACE $$ = saffire_strCon("PARENT"); }
+        T_SELF      { TRACE $$ = ast_strCon("SELF"); }
+    |   T_PARENT    { TRACE $$ = ast_strCon("PARENT"); }
 ;
 
 
@@ -452,7 +451,7 @@ special_name:
 /* Statements inside a class: constant and methods */
 class_inner_statement_list:
         class_inner_statement                               { TRACE $$ = $1; }
-    |   class_inner_statement_list class_inner_statement    { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
+    |   class_inner_statement_list class_inner_statement    { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
 ;
 
 class_inner_statement:
@@ -464,7 +463,7 @@ class_inner_statement:
 /* Statements inside an interface: constant and methods */
 interface_inner_statement_list:
         interface_inner_statement                                    { TRACE $$ = $1; }
-    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
+    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
 ;
 
 interface_inner_statement:
@@ -473,8 +472,8 @@ interface_inner_statement:
 ;
 
 interface_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = saffire_var($3); /* @TODO */ }
-    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = saffire_var($2); /* @TODO */ }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_var($3); /* @TODO */ }
+    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_var($2); /* @TODO */ }
 ;
 
 class_method_definition:
@@ -494,19 +493,19 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER { TRACE $$ = saffire_strCon($1); }
-    |   T_IDENTIFIER '=' primary_expression     { TRACE $$ = saffire_var($1); /* @TODO */ }
-    |   T_IDENTIFIER T_IDENTIFIER { TRACE $$ = saffire_var($1); /* @TODO */ }
-    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression     { TRACE $$ = saffire_var($1); /* @TODO */ }
+        T_IDENTIFIER { TRACE $$ = ast_strCon($1); }
+    |   T_IDENTIFIER '=' primary_expression     { TRACE $$ = ast_var($1); /* @TODO */ }
+    |   T_IDENTIFIER T_IDENTIFIER { TRACE $$ = ast_var($1); /* @TODO */ }
+    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression     { TRACE $$ = ast_var($1); /* @TODO */ }
 ;
 
 constant_list:
         constant                    { TRACE $$ = $1; }
-    |   constant_list constant      { TRACE $$ = saffire_opr(T_LIST,2, $1, $2); }
+    |   constant_list constant      { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
 ;
 
 constant:
-        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE $$ = saffire_opr(T_CONST, 2, saffire_var($2), $4); }
+        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE $$ = ast_opr(T_CONST, 2, ast_var($2), $4); }
 ;
 
 class_definition:
@@ -544,36 +543,36 @@ modifier_list:
 /* Has at least one modifier */
 non_empty_modifier_list:
         modifier { TRACE $$ = $1; }
-    |   non_empty_modifier_list modifier { TRACE $$ = saffire_opr(T_LIST, 2, $1, $2); }
+    |   non_empty_modifier_list modifier { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
 /* Property and method modifiers. */
 modifier:
-        T_PROTECTED { TRACE $$ = saffire_opr(T_PROTECTED, 0); }
-    |   T_PUBLIC    { TRACE $$ = saffire_opr(T_PUBLIC, 0); }
-    |   T_PRIVATE   { TRACE $$ = saffire_opr(T_PRIVATE, 0); }
-    |   T_FINAL     { TRACE $$ = saffire_opr(T_FINAL, 0); }
-    |   T_ABSTRACT  { TRACE $$ = saffire_opr(T_ABSTRACT, 0); }
-    |   T_STATIC    { TRACE $$ = saffire_opr(T_STATIC, 0); }
-    |   T_READONLY  { TRACE $$ = saffire_opr(T_READONLY, 0); }
+        T_PROTECTED { TRACE $$ = ast_opr(T_PROTECTED, 0); }
+    |   T_PUBLIC    { TRACE $$ = ast_opr(T_PUBLIC, 0); }
+    |   T_PRIVATE   { TRACE $$ = ast_opr(T_PRIVATE, 0); }
+    |   T_FINAL     { TRACE $$ = ast_opr(T_FINAL, 0); }
+    |   T_ABSTRACT  { TRACE $$ = ast_opr(T_ABSTRACT, 0); }
+    |   T_STATIC    { TRACE $$ = ast_opr(T_STATIC, 0); }
+    |   T_READONLY  { TRACE $$ = ast_opr(T_READONLY, 0); }
 ;
 
 /* extends a list of classes, or no extends at all */
 class_extends:
-        T_EXTENDS class_list { TRACE $$ = saffire_opr(T_EXTENDS, 1, $2); }
+        T_EXTENDS class_list { TRACE $$ = ast_opr(T_EXTENDS, 1, $2); }
     |   /* empty */  { TRACE }
 ;
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
-        T_IMPLEMENTS class_list { TRACE $$ = saffire_opr(T_IMPLEMENTS, 1, $2); }
+        T_IMPLEMENTS class_list { TRACE $$ = ast_opr(T_IMPLEMENTS, 1, $2); }
     |   /* empty */  { TRACE }
 ;
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
         class_list ',' T_IDENTIFIER { TRACE }
-    |   T_IDENTIFIER { TRACE $$ = saffire_strCon($1); }
+    |   T_IDENTIFIER { TRACE $$ = ast_strCon($1); }
 ;
 
 

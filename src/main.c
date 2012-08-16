@@ -28,10 +28,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "ast.h"
 #include "parser.tab.h"
-#include "saffire_parser.h"
 #include "svar.h"
+#include "dot.h"
+#include "ast.h"
 
 #include "version.h"
 
@@ -157,12 +157,12 @@ int main(int argc, char *argv[]) {
 
     if (generate_dot) {
         // generate DOT file
-        saffire_dot_node(ast_root, dot_file);
+        dot_generate(ast_root, dot_file);
     }
 
     // Release memory of ast_root
     if (ast_root != NULL) {
-        saffire_free_node(ast_root);
+        ast_free_node(ast_root);
     }
 
     return 0;

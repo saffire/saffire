@@ -27,6 +27,8 @@
 #ifndef __DOT_H__
 #define __DOT_H__
 
-    void saffire_dot_node(t_ast_element *ast, const char *outputfile);
+    #include "ast.h"
+
+    void dot_generate(t_ast_element *ast, const char *outputfile);
 
 #endif
