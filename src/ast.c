@@ -155,6 +155,9 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
  *
  */
 void ast_free_node(t_ast_element *p) {
+    return;
+
+
     if (!p) return;
 
     // @TODO: If it's a strConOpr, we must free our char as well!

@@ -77,7 +77,8 @@
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
-%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS
+%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT
+%token T_MODIFIERS T_CONSTANTS
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
@@ -260,7 +261,7 @@ expression:
 
 assignment_expression:
         conditional_expression { TRACE $$ = $1; }
-    |   unary_expression assignment_operator assignment_expression { TRACE $$ = ast_opr('=', 3, $1, $2, $3); }
+    |   unary_expression assignment_operator assignment_expression { TRACE $$ = ast_opr(T_ASSIGNMENT, 3, $1, $2, $3); }
 ;
 
 conditional_expression:
@@ -429,12 +430,10 @@ field_access:
 
 method_call:
         complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   complex_primary_no_parenthesis '(' ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
-    |   qualified_name '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   qualified_name '(' ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
+    |   complex_primary_no_parenthesis '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
+    |   qualified_name                 '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   qualified_name                 '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
 ;
-
-
 
 special_name:
         T_SELF      { TRACE $$ = ast_strCon("SELF"); }
@@ -451,8 +450,8 @@ special_name:
 
 /* Statements inside a class: constant and methods */
 class_inner_statement_list:
-        class_inner_statement                               { TRACE $$ = $1; }
-    |   class_inner_statement_list class_inner_statement    { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
+        class_inner_statement                               { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+    |   class_inner_statement_list class_inner_statement    { TRACE $$ = ast_add($$, $2); }
 ;
 
 class_inner_statement:
@@ -463,12 +462,12 @@ class_inner_statement:
 
 /* Statements inside an interface: constant and methods */
 interface_inner_statement_list:
-        interface_inner_statement                                    { TRACE $$ = $1; }
-    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
+        interface_inner_statement                                    { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+    |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = ast_add($$, $2); }
 ;
 
 interface_inner_statement:
-        interface_method_definition { TRACE $$ = $1; }
+        interface_method_definition   { TRACE $$ = $1; }
     |   interface_property_definition { TRACE $$ = $1; }
 ;
 
@@ -489,8 +488,8 @@ method_argument_list:
 ;
 
 non_empty_method_argument_list:
-        method_argument                                       { TRACE $$ = $1; }
-    |   non_empty_method_argument_list ',' method_argument    { TRACE }
+        method_argument                                       { TRACE $$ = ast_opr(T_ARGUMENT_LIST, 1, $1); }
+    |   non_empty_method_argument_list ',' method_argument    { TRACE $$ = ast_add($$, $3); }
 ;
 
 method_argument:
@@ -501,8 +500,8 @@ method_argument:
 ;
 
 constant_list:
-        constant                    { TRACE $$ = $1; }
-    |   constant_list constant      { TRACE $$ = ast_opr(T_LIST,2, $1, $2); }
+        constant                    { TRACE $$ = ast_opr(T_CONSTANTS, 1, $1); }
+    |   constant_list constant      { TRACE $$ = ast_add($$, $1); }
 ;
 
 constant:
@@ -510,10 +509,10 @@ constant:
 ;
 
 class_definition:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE }
-    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' '}' { TRACE }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' '}' { TRACE }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_opr(T_CLASS, 5, $1, ast_var($3), $4, $5, $7); }
+    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_opr(T_CLASS, 5, $1, ast_var($3), $4, $5, ast_nop()); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_opr(T_CLASS, 5, ast_nop(), ast_var($2), $3, $4, $6); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_opr(T_CLASS, 5, ast_nop(), ast_var($2), $3, $4, ast_nop()); }
 
 
 ;
@@ -543,8 +542,8 @@ modifier_list:
 
 /* Has at least one modifier */
 non_empty_modifier_list:
-        modifier { TRACE $$ = $1; }
-    |   non_empty_modifier_list modifier { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
+        modifier                         { TRACE $$ = ast_opr(T_MODIFIERS, 1, $1); }
+    |   non_empty_modifier_list modifier { TRACE $$ = ast_add($$, $2); }
 ;
 
 /* Property and method modifiers. */
@@ -572,8 +571,8 @@ class_interface_implements:
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        class_list ',' T_IDENTIFIER { TRACE }
-    |   T_IDENTIFIER { TRACE $$ = ast_strCon($1); }
+        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_strCon($1)); }
+    |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_strCon($3)); }
 ;
 
 
