@@ -1,0 +1,21 @@
+/*
+ * assign multiple vars to multiple lvals
+ */
+$a, $b = $c, $d;
+
+
+// $e = "foo",  bar is unused
+$e = "foo", "bar";
+
+// $e = tuple (readonly list)
+$e = ("foo", "bar");
+
+$a, $b = "Foo", $c, $d ;
+
+
+// Multi assignment
+$a = $b = $c = $d = $e = $f = "foobar";
+
+
+/* Output:
+*/

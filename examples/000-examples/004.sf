@@ -1,0 +1,16 @@
+/*
+ * Tests hashes
+ */
+
+$d1 = hash[ 1 : $a, 2 : $b, "c" : $c, ];
+
+$d2 = hash[ 1 : $a,  ];
+
+$d3 = hash[ ];
+
+$d4 = hash[ 1 : $a, 2 : $b, "c" : list[ $a1_1 : $a, 21 : $b, "c_1" : $c ], "d" : 4 ];
+
+$d5 = hash[ 1 : $a, 2 : $b, "c" : list[ $a1_1 : $a, 21 : $b, "c_1" : $c ], "d" : 4, "e" : list[ 1, 2, 3, list[ 4, 5 ] ] ];
+
+/* Output:
+*/

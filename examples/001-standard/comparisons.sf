@@ -1,36 +1,28 @@
-if ($a == "5")          // $a equals "5"
+if ($a == "5")  { }         // $a equals "5"
 
-if ($a != "5")          // $a does not equal "5"
+if ($a != "5")  { }          // $a does not equal "5"
 
-if ($a < "5")           // $a less than "5"
+if ($a < "5")   { }          // $a less than "5"
 
-if ($a > "5")           // $a greater than "5"
+if ($a > "5")   { }          // $a greater than "5"
 
-if ($a >= "5")           // $a greater or equal than "5"
+if ($a >= "5")   { }          // $a greater or equal than "5"
 
-if ($a <= "5")           // $a less or equal than "5"
+if ($a <= "5")   { }          // $a less or equal than "5"
 
-if (true)                // Only works
+if (true)    { }              // Only works
 
-if (false)               // Only works
+if (false)   { }              // Only works
 
-if (null)
+if (null)  { }
 
-if ("")                  // empty string still evaluates to true (since it's an object?)
+if ("")   { }                 // empty string still evaluates to true (since it's an object?)
 
-if ("".empty)            // empty returns false, so this returns empty
+if ("".empty())   { }           // empty returns false, so this returns empty
 
-if ("".length)           // length return 0, is that false?
+if ("".length())  { }           // length return 0, is that false?
 
-if (" ".length)          // length return 1, is that false?
+if (" ".length())   { }         // length return 1, is that false?
 
-if (" ".trim.length)     // length return 0 (after trim), is that false?
+if (" ".trim().length())   { }    // length return 0 (after trim), is that false?
 
-
-// Do we support non-parentheses in conditionals and methods?
-
-if $a.empty? { .. }
-
-
-// Do we support ? en ! in our method names?
-if $a.isEmpty() { .. }

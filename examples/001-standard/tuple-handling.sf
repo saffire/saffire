@@ -3,7 +3,7 @@
  *
  */
 class foo {
-    method bar() {
+    public method bar() {
         return "1", "2", "3";
     }
 }
@@ -15,7 +15,7 @@ $a, $b, $c = foo.bar();     // $a = "1", $b = "2"  $c = "3"
 $a = foo.bar();             // $a = "1"
 
 // there are actually 3 arguments given, $a and <undef> anb $c.  $a will be filled with "1", <undef> with "2", and $c with "3"
-$a, ,$c= foo.bar();            // $a = "1"
+$a, ,$c = foo.bar();            // $a = "1"
 
 // <undef>,$b,$c. 3 arguments, so all three can be filled
 ,$b, $c = foo.bar();        // $b = "2", $c = "3"
