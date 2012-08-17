@@ -77,7 +77,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    { return T_REGEX; }
 <st_div>\/ { return '/'; }
 
-"=~"        { saffire_push_state(st_regex); return T_RE; }
+"~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
 "<="        { saffire_push_state(st_regex); return T_LE; }
 "=="        { saffire_push_state(st_regex); return T_EQ; }

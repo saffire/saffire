@@ -8,7 +8,7 @@ interface Foo {
 interface Foo implements Bar {
 }
 
-interface Foo implements Bar, Baz {
+interface Foo implements Bar, Baz, Qux {
 }
 
 

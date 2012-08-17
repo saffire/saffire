@@ -13,7 +13,7 @@ use io;
 }
 
 
-class Color {
+final private public abstract class Color {
     /** Available PMS colors */
     protected readonly property $pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
 

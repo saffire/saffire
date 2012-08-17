@@ -62,7 +62,7 @@
 %token <lVal> T_LNUM
 %token <sVal> T_STRING T_IDENTIFIER T_REGEX
 
-%type <lVal> modifier non_empty_modifier_list  modifier_list
+%type <lVal> modifier modifier_list
 
 %token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
@@ -79,8 +79,8 @@
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
-%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT
-%token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT
+%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
+%token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
@@ -124,7 +124,7 @@ program:
 
 use_statement_list:
         non_empty_use_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { TRACE $$ = ast_nop(); }
+    |   /* empty */                  { TRACE $$ = ast_nop(); }
 ;
 
 non_empty_use_statement_list:
@@ -134,20 +134,20 @@ non_empty_use_statement_list:
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($4));}
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($4)); }
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($2)); }
+    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($2)); }
 ;
 
 
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
         non_empty_top_statement_list { TRACE $$ = $1; }
-    |   /* empty */ { TRACE $$ = ast_nop(); }
+    |   /* empty */                  { TRACE $$ = ast_nop(); }
 ;
 
 non_empty_top_statement_list:
-        top_statement{ TRACE $$ = ast_opr(T_TOP_STATEMENTS, 1, $1); }
+        top_statement                              { TRACE $$ = ast_opr(T_TOP_STATEMENTS, 1, $1); }
     |   non_empty_top_statement_list top_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -169,7 +169,7 @@ top_statement:
 
 /* A compound statement is a (set of) statement captured by curly brackets */
 compound_statement:
-        '{' '}'                 { TRACE }
+        '{' '}'                 { TRACE /* Intentionally left blank */ }
     |   '{' statement_list '}'  { TRACE $$ = $2; }
 ;
 
@@ -189,17 +189,21 @@ statement:
 ;
 
 selection_statement:
-        T_IF expression statement { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
+        T_IF expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
     |   T_IF expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
+
     |   T_SWITCH '(' expression ')' compound_statement { TRACE $$ = ast_opr(T_SWITCH, 2, $3, $5); }
 ;
 
 iteration_statement:
         T_WHILE expression statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $2, $3, $5); }
-    |   T_WHILE expression statement { TRACE $$ = ast_opr(T_WHILE, 2, $2, $3); }
+    |   T_WHILE expression statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $2, $3); }
+
     |   T_DO statement T_WHILE expression ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $4); }
-    |   T_FOR '(' expression_statement expression_statement ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
+
+    |   T_FOR '(' expression_statement expression_statement            ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
     |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $7); }
+
     |   T_FOREACH expression T_AS expression statement { TRACE $$ = ast_opr(T_FOREACH, 3, $2, $4, $5); }
 ;
 
@@ -219,7 +223,7 @@ jump_statement:
 ;
 
 guarding_statement:
-        T_TRY compound_statement catch_list { TRACE $$ = ast_opr(T_TRY, 2, $2, $3); }
+        T_TRY compound_statement catch_list                               { TRACE $$ = ast_opr(T_TRY, 2, $2, $3); }
     |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 3, $2, $3, $5); }
     |   T_TRY compound_statement            T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 2, $2, $4); }
 ;
@@ -241,8 +245,8 @@ catch_header:
 
 label_statement:
         T_IDENTIFIER ':'                { TRACE $$ = ast_opr(T_LABEL, 1, ast_strCon($1)); }
-    |   T_CASE constant_expression ':'  { TRACE $$ = ast_opr(T_CASE, 1, $2);}
-    |   T_DEFAULT ':'                   { TRACE $$ = ast_opr(T_DEFAULT, 0);}
+    |   T_CASE constant_expression ':'  { TRACE $$ = ast_opr(T_CASE, 1, $2); }
+    |   T_DEFAULT ':'                   { TRACE $$ = ast_opr(T_DEFAULT, 0); }
 ;
 
 
@@ -395,14 +399,14 @@ real_scalar_value:
 
 
 qualified_name:
-         T_IDENTIFIER { TRACE $$ = ast_opr(T_FQMN, 1, ast_var($1)); }
+         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_var($1)); }
      |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_var($3)); }
 ;
 
 calling_method_argument_list:
         assignment_expression                                     { TRACE $$ = ast_opr(T_ARGUMENT_LIST, 1, $1); }
     |   calling_method_argument_list ',' assignment_expression    { TRACE $$ = ast_add($$, $3); }
-    |   /* empty */ { TRACE $$ = ast_nop(); }
+    |   /* empty */                                               { TRACE $$ = ast_nop(); }
 ;
 
 
@@ -426,8 +430,8 @@ complex_primary_no_parenthesis:
 ;
 
 field_access:
-        not_just_name '.' T_IDENTIFIER  { TRACE }
-    |   qualified_name '.' special_name { TRACE }
+        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_var($3)); }
+    |   qualified_name '.' special_name { TRACE $$ = ast_opr('.', 2, $1, $3); }
 ;
 
 method_call:
@@ -485,8 +489,8 @@ class_method_definition:
 ;
 
 method_argument_list:
-        /* empty */                    { TRACE $$ = ast_nop(); }
-    |   non_empty_method_argument_list { TRACE $$ = $1; }
+        non_empty_method_argument_list { TRACE $$ = $1; }
+    |   /* empty */                    { TRACE $$ = ast_nop(); }
 ;
 
 non_empty_method_argument_list:
@@ -495,10 +499,10 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER { TRACE $$ = ast_strCon($1); }
-    |   T_IDENTIFIER '=' primary_expression     { TRACE $$ = ast_var($1); /* @TODO */ }
-    |   T_IDENTIFIER T_IDENTIFIER { TRACE $$ = ast_var($1); /* @TODO */ }
-    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression     { TRACE $$ = ast_var($1); /* @TODO */ }
+        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_var($1), ast_nop()); }
+    |   T_IDENTIFIER '=' primary_expression              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_var($1), $3); }
+    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_var($1), ast_var($2), ast_nop()); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_var($1), ast_var($2), $4); }
 ;
 
 constant_list:
@@ -515,16 +519,13 @@ class_definition:
     |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class($1, $3, $4, $5, ast_nop()); }
     |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_class( 0, $2, $3, $4, $6); }
     |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class( 0, $2, $3, $4, ast_nop()); }
-
-
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE }
-    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' '}' { TRACE }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' '}' { TRACE }
-
+        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface($1, $3, $4, $6); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface($1, $3, $4, ast_nop()); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface( 0, $2, $3, $5); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface( 0, $2, $3, ast_nop()); }
 ;
 
 
@@ -534,18 +535,12 @@ class_property_definition:
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_intCon($1), ast_var($3)); }
 ;
 
-/* Modifier list can be either empty, or filled */
 modifier_list:
-       non_empty_modifier_list { TRACE $$ = $1; }
-;
-
-/* Has at least one modifier */
-non_empty_modifier_list:
-        modifier                         { TRACE $$ = $1 }
-    |   non_empty_modifier_list modifier { TRACE $$ |= $2 }
+        modifier               { TRACE $$ = $1 }
+    |   modifier_list modifier { TRACE $$ |= $2 }
 ;
 
 /* Property and method modifiers. */
@@ -562,13 +557,13 @@ modifier:
 /* extends a list of classes, or no extends at all */
 class_extends:
         T_EXTENDS class_list { TRACE $$ = ast_opr(T_EXTENDS, 1, $2); }
-    |   /* empty */  { TRACE $$ = ast_nop(); }
+    |   /* empty */          { TRACE $$ = ast_nop(); }
 ;
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
         T_IMPLEMENTS class_list { TRACE $$ = ast_opr(T_IMPLEMENTS, 1, $2); }
-    |   /* empty */  { TRACE $$ = ast_nop(); }
+    |   /* empty */             { TRACE $$ = ast_nop(); }
 ;
 
 /* Comma separated list of classes (for extends and implements) */
@@ -581,7 +576,7 @@ class_list:
 
 /**
  ************************************************************
- * data structure
+ * data structures
  ************************************************************
  */
 
@@ -595,12 +590,12 @@ data_structure:
 ;
 
 data_structure_elements:
-        data_structure_element { TRACE $$ = ast_opr(T_DATA_ELEMENTS, 1, $1); }
+        data_structure_element                             { TRACE $$ = ast_opr(T_DATA_ELEMENTS, 1, $1); }
     |   data_structure_elements ',' data_structure_element { TRACE $$ = ast_add($$, $3); }
 ;
 
 data_structure_element:
-        assignment_expression { TRACE $$ = ast_opr(T_DATA_ELEMENT, 1, $1); }
+        assignment_expression                            { TRACE $$ = ast_opr(T_DATA_ELEMENT, 1, $1); }
     |   data_structure_element ':' assignment_expression { TRACE $$ = ast_add($$, $3); }
 ;
 

@@ -145,6 +145,10 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     return p;
 }
 
+
+/**
+ *
+ */
 t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
 
@@ -158,6 +162,26 @@ t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_as
     return p;
 }
 
+
+/**
+ *
+ */
+t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeInterface;
+    p->interface.modifiers = modifiers;
+    p->interface.name = strdup(name);
+    p->interface.implements = implements;
+    p->interface.body = body;
+
+    return p;
+}
+
+
+/**
+ *
+ */
 t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
 

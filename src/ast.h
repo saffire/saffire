@@ -31,18 +31,17 @@
 
 
     /* @TODO: These should not be here */
-    #define CONST_CLASS_PROTECTED    1
-    #define CONST_CLASS_PUBLIC       2
-    #define CONST_CLASS_PRIVATE      4
-    #define CONST_CLASS_FINAL        8
-    #define CONST_CLASS_ABSTRACT    16
-    #define CONST_CLASS_STATIC      32
-    #define CONST_CLASS_READONLY    64
-
+    #define CONST_CLASS_PROTECTED           1
+    #define CONST_CLASS_PUBLIC              2
+    #define CONST_CLASS_PRIVATE             4
+    #define CONST_CLASS_FINAL               8
+    #define CONST_CLASS_ABSTRACT           16
+    #define CONST_CLASS_STATIC             32
+    #define CONST_CLASS_READONLY           64
 
 
     // different kind of nodes we manage
-    typedef enum { typeStrCon, typeIntCon, typeNull, typeVar, typeOpr, typeClass, typeMethod } nodeEnum;
+    typedef enum { typeStrCon, typeIntCon, typeNull, typeVar, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
@@ -73,6 +72,13 @@
     typedef struct {
         int modifiers;
         char *name;
+        struct ast_element *implements;
+        struct ast_element *body;
+    } interfaceNode;
+
+    typedef struct {
+        int modifiers;
+        char *name;
         struct ast_element *arguments;
         struct ast_element *body;
     } methodNode;
@@ -85,6 +91,7 @@
             varNode var;              // variable
             oprNode opr;              // operators
             classNode class;          // class
+            interfaceNode interface;  // interface
             methodNode method;        // methods
         };
     } t_ast_element;
@@ -100,6 +107,7 @@
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body);
+    t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);
 
