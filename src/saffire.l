@@ -70,12 +70,13 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 {ml_comment}|{sl_comment} { }
 {whitespace} { }
 
+<st_div>\/ { return '/'; }
+
 [-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
 <st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    { return T_REGEX; }
-<st_div>\/ { return '/'; }
 
 "~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
