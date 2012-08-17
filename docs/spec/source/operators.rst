@@ -34,6 +34,7 @@ Operator     Explanation
 !=           Not equals
 >=           Greater than or equal
 <=           Less than or equal
+=~           Regular expression match
 (            parenthesis open
 )            parenthesis close
 [            List start
@@ -102,3 +103,7 @@ Order precedence
 | left            | ,                                                          | many uses                        |
 +-----------------+------------------------------------------------------------+----------------------------------+
 
+
+
+:Authors:
+   Joshua Thijssen

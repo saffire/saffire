@@ -4,7 +4,7 @@ Releases
 
 All releases are in the form of ``major.minor.release``.
 
-**major** releases
+**Major** releases
 Every major release will increase the ``major`` number. There is no timeframe for when new major releases will be
 published. A release will be considered major when at least one of the following rules are true:
 
@@ -13,7 +13,7 @@ published. A release will be considered major when at least one of the following
 
 Minor versions are available:
 
-* When more new
+* When more smaller features are implemented.
 * Bugfixes, security updates or features are implemented that modified the internal structures used by Saffire.
   For instance, a bugfix that adds a new field in the internal hashtable structure must be done in a minor update,
   not in a release update.
@@ -29,3 +29,7 @@ Major releases **can** include backward compatibility breaks. It is not guarante
 run on a Saffire 2.0 engine. All though BC breaks will be kept for a minimum, it's not guaranteed they will not happen.
 We have choosen for this setup to make sure that we can guarantuee BC through minor releases, but still can move the
 language and engine forward without being "held back" by BC.
+
+
+:Authors:
+   Joshua Thijssen

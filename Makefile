@@ -12,7 +12,7 @@ all:
 	echo
 
 docs:
-	make -C docs/specs html
+	make -C docs/spec html
 
 clean:
 	make -C src clean
@@ -24,4 +24,6 @@ debug:
 	make -C src debug
 
 tests:
-	for i in examples/*/*.sf ; do echo $$i ; src/saffire $$i 2>&1 | grep -i syntax ; done
+	make -C src tests
+
+.PHONY: docs clean tests
