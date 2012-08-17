@@ -59,6 +59,11 @@ void saffire_compiler(t_ast_element *p) {
             printf("\tpush\t~\"%s\"\n", p->var.name);
             break;
 
+        case typeClass :
+        case typeInterface :
+        case typeMethod :
+            break;
+
         case typeOpr :
             switch (p->opr.oper) {
                 case T_USE :

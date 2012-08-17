@@ -80,6 +80,11 @@ svar *saffire_interpreter(t_ast_element *p) {
             /* nop */
             break;
 
+        case typeClass :
+        case typeInterface :
+        case typeMethod :
+            break;
+
         case typeOpr :
             printf ("opr.oper(%d)\n", p->opr.oper);
             switch (p->opr.oper) {
