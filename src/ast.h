@@ -29,8 +29,20 @@
 
     #include "svar.h"
 
+
+    /* @TODO: These should not be here */
+    #define CONST_CLASS_PROTECTED    1
+    #define CONST_CLASS_PUBLIC       2
+    #define CONST_CLASS_PRIVATE      4
+    #define CONST_CLASS_FINAL        8
+    #define CONST_CLASS_ABSTRACT    16
+    #define CONST_CLASS_STATIC      32
+    #define CONST_CLASS_READONLY    64
+
+
+
     // different kind of nodes we manage
-    typedef enum { typeStrCon, typeIntCon, nullVar, typeVar, typeOpr } nodeEnum;
+    typedef enum { typeStrCon, typeIntCon, typeNull, typeVar, typeOpr, typeClass, typeMethod } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
@@ -50,6 +62,20 @@
         struct ast_element **ops;   // Operands (should be max of 2: left and right)
     } oprNode;
 
+    typedef struct {
+        int modifiers;
+        char *name;
+        struct ast_element *extends;
+        struct ast_element *implements;
+        struct ast_element *body;
+    } classNode;
+
+    typedef struct {
+        int modifiers;
+        char *name;
+        struct ast_element *arguments;
+        struct ast_element *body;
+    } methodNode;
 
     typedef struct ast_element {
         nodeEnum type;              // Type of the node
@@ -57,7 +83,9 @@
             intConNode intCon;        // constant int
             strConNode strCon;        // constant string
             varNode var;              // variable
-            oprNode opr;              // operator
+            oprNode opr;              // operators
+            classNode class;          // class
+            methodNode method;        // methods
         };
     } t_ast_element;
 
@@ -65,12 +93,16 @@
     // actual root element
     t_ast_element *ast_root;
 
+
     t_ast_element *ast_strCon(char *value);
     t_ast_element *ast_intCon(int value);
     t_ast_element *ast_var(char *var_name);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body);
+    t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);
+
 
     void ast_free_node(t_ast_element *p);
 

@@ -27,10 +27,29 @@
 #include <stdio.h>
 #include "parser.tab.h"
 #include "ast.h"
+#include <string.h>
 
 extern char *get_token_string(int token);
 
 static int node_nr = 0;
+
+
+
+static char *show_modifiers(int modifiers) {
+    char *s;
+    s = malloc(100);
+
+    if (modifiers & CONST_CLASS_PROTECTED) s = strcat(s, "PROTECTED\\n");
+    if (modifiers & CONST_CLASS_PUBLIC) s = strcat(s, "PUBLIC\\n");
+    if (modifiers & CONST_CLASS_PRIVATE) s = strcat(s, "PRIVATE\\n");
+    if (modifiers & CONST_CLASS_FINAL) s = strcat(s, "FINAL\\n");
+    if (modifiers & CONST_CLASS_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
+    if (modifiers & CONST_CLASS_STATIC) s = strcat(s, "STATIC\\n");
+    if (modifiers & CONST_CLASS_READONLY) s = strcat(s, "READONLY\\n");
+
+    return s;
+}
+
 
 static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     int cur_node_nr = node_nr;
@@ -38,14 +57,17 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
     fprintf(fp, "\tN_%d [", cur_node_nr);
     switch (p->type) {
         case typeStrCon :
-            fprintf(fp, "style=rounded,label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->strCon.value);
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->strCon.value);
             break;
+
         case typeIntCon :
-            fprintf(fp, "style=rounded,label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->intCon.value);
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->intCon.value);
             break;
+
         case typeVar :
-            fprintf(fp, "style=rounded,label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->var.name);
+            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->var.name);
             break;
+
         case typeOpr :
             fprintf(fp, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
 
@@ -53,11 +75,26 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
                 saffire_dot_node_iterate(fp, p->opr.ops[i], cur_node_nr);
             }
             break;
-        case nullVar :
+
+        case typeNull :
             fprintf(fp, "style=rounded,label=\"{N:%d|Type=NULL}\"]\n", cur_node_nr);
             break;
+
+        case typeClass :
+            fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{N:%d|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
+            saffire_dot_node_iterate(fp, p->class.extends, cur_node_nr);
+            saffire_dot_node_iterate(fp, p->class.implements, cur_node_nr);
+            saffire_dot_node_iterate(fp, p->class.body, cur_node_nr);
+            break;
+
+        case typeMethod:
+            fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Method|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->method.name, show_modifiers(p->method.modifiers), p->method.modifiers);
+            saffire_dot_node_iterate(fp, p->method.arguments, cur_node_nr);
+            saffire_dot_node_iterate(fp, p->method.body, cur_node_nr);
+            break;
+
         default :
-            fprintf(fp, "style=rounded,color=firebrick1,label=\"{N:%d|Type=UNKNOWN|Value=%d}\"]\n", node_nr, p->type);
+            fprintf(fp, "style=\"filled,rounded\",fillcolor=firebrick1,label=\"{N:%d|Type=UNKNOWN|Value=%d}\"]\n", node_nr, p->type);
             break;
     }
 
@@ -83,3 +120,4 @@ void dot_generate(t_ast_element *ast, const char *outputfile) {
     fprintf(fp, "}\n");
     fclose(fp);
 }
+

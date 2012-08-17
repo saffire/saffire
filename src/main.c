@@ -100,7 +100,6 @@ void parse_options(int argc, char *argv[]) {
                 if (strcmp(long_options[option_index].name, "dot") == 0) {
                     generate_dot = 1;
                     dot_file = optarg;
-                    printf ("DOT called. Writing into %s", optarg);
                     break;
                 }
             case 'h' :

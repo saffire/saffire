@@ -43,7 +43,7 @@ void saffire_compiler(t_ast_element *p) {
     if (!p) return;
 
     switch (p->type) {
-        case nullVar :
+        case typeNull :
             printf("\tnop\n");
             break;
 

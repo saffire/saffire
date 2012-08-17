@@ -38,12 +38,22 @@ extern void yyerror(const char *err);
 /**
  *
  */
-t_ast_element *ast_strCon(char *value) {
+static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
 
     if ((p = malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
+
+    return p;
+}
+
+
+/**
+ *
+ */
+t_ast_element *ast_strCon(char *value) {
+    t_ast_element *p = ast_alloc_element();
 
     p->type = typeStrCon;
     p->strCon.value = strdup(value);
@@ -56,11 +66,7 @@ t_ast_element *ast_strCon(char *value) {
  *
  */
 t_ast_element *ast_intCon(int value) {
-    t_ast_element *p;
-
-    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
-    }
+    t_ast_element *p = ast_alloc_element();
 
     p->type = typeIntCon;
     p->intCon.value = value;
@@ -73,11 +79,7 @@ t_ast_element *ast_intCon(int value) {
  *
  */
 t_ast_element *ast_var(char *var_name) {
-    t_ast_element *p;
-
-    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
-    }
+    t_ast_element *p = ast_alloc_element();
 
     p->type = typeVar;
     p->var.name = strdup(var_name);
@@ -90,13 +92,9 @@ t_ast_element *ast_var(char *var_name) {
  *
  */
 t_ast_element *ast_nop(void) {
-    t_ast_element *p;
+    t_ast_element *p = ast_alloc_element();
 
-    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
-    }
-
-    p->type = nullVar;
+    p->type = typeNull;
 
     return p;
 }
@@ -125,12 +123,9 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
  *
  */
 t_ast_element *ast_opr(int opr, int nops, ...) {
+    t_ast_element *p = ast_alloc_element();
     va_list ap;
-    t_ast_element *p;
 
-    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
-    }
     if (nops && (p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
@@ -150,13 +145,37 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     return p;
 }
 
+t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeClass;
+    p->class.modifiers = modifiers;
+    p->class.name = strdup(name);
+    p->class.extends = extends;
+    p->class.implements = implements;
+    p->class.body = body;
+
+    return p;
+}
+
+t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeMethod;
+    p->method.modifiers = modifiers;
+    p->method.name = strdup(name);
+    p->method.arguments = arguments;
+    p->method.body = body;
+
+    return p;
+}
+
 
 /**
  *
  */
 void ast_free_node(t_ast_element *p) {
     return;
-
 
     if (!p) return;
 

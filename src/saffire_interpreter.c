@@ -76,7 +76,7 @@ svar *saffire_interpreter(t_ast_element *p) {
             printf ("var: %s\n", p->var.name);
             return svar_temp_alloc(SV_STRING, p->var.name, 0);
 
-        case nullVar :
+        case typeNull :
             /* nop */
             break;
 

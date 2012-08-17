@@ -62,6 +62,8 @@
 %token <lVal> T_LNUM
 %token <sVal> T_STRING T_IDENTIFIER T_REGEX
 
+%type <lVal> modifier non_empty_modifier_list  modifier_list
+
 %token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
 
@@ -78,19 +80,19 @@
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
 %token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT
-%token T_MODIFIERS T_CONSTANTS
+%token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement selection_statement iteration_statement class_list
 %type <nPtr> guarding_statement expression catch_list catch constant_expression data_structure_element data_structure_elements
-%type <nPtr> class_interface_implements modifier non_empty_modifier_list class_extends method_argument_list
+%type <nPtr> class_interface_implements class_extends method_argument_list
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> complex_primary_no_parenthesis not_just_name complex_primary method_call real_postfix_expression
 %type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator assignment_operator
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
-%type <nPtr> relational_expression catch_header conditional_expression assignment_expression modifier_list real_scalar_value
+%type <nPtr> relational_expression catch_header conditional_expression assignment_expression real_scalar_value
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
 %type <nPtr> class_method_definition class_property_definition special_name qualified_name calling_method_argument_list
 %type <nPtr> data_structure field_access logical_unary_expression equality_expression and_expression inclusive_or_expression
@@ -472,18 +474,18 @@ interface_inner_statement:
 ;
 
 interface_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_var($3); /* @TODO */ }
-    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_var($2); /* @TODO */ }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_method($1, $3, $5, ast_nop()); }
+    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_method( 0, $2, $4, ast_nop()); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { TRACE } compound_statement    { TRACE }
-    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' { TRACE } compound_statement    { TRACE }
-    |   interface_method_definition
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE $$ = ast_method($1, $3, $5, $7); }
+    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE $$ = ast_method( 0, $2, $4, $6); }
+    |   interface_method_definition { TRACE $$ = $1 }
 ;
 
 method_argument_list:
-        /* empty */  { TRACE $$ = ast_nop(); }
+        /* empty */                    { TRACE $$ = ast_nop(); }
     |   non_empty_method_argument_list { TRACE $$ = $1; }
 ;
 
@@ -509,10 +511,10 @@ constant:
 ;
 
 class_definition:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_opr(T_CLASS, 5, $1, ast_var($3), $4, $5, $7); }
-    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_opr(T_CLASS, 5, $1, ast_var($3), $4, $5, ast_nop()); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_opr(T_CLASS, 5, ast_nop(), ast_var($2), $3, $4, $6); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_opr(T_CLASS, 5, ast_nop(), ast_var($2), $3, $4, ast_nop()); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_class($1, $3, $4, $5, $7); }
+    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class($1, $3, $4, $5, ast_nop()); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_class( 0, $2, $3, $4, $6); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class( 0, $2, $3, $4, ast_nop()); }
 
 
 ;
@@ -527,8 +529,8 @@ interface_definition:
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE }
+        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE $$ = ast_opr(T_PROPERTY, 3, ast_intCon($1), ast_var($3), $5); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_intCon($1), ast_var($3)); }
 ;
 
 interface_property_definition:
@@ -542,19 +544,19 @@ modifier_list:
 
 /* Has at least one modifier */
 non_empty_modifier_list:
-        modifier                         { TRACE $$ = ast_opr(T_MODIFIERS, 1, $1); }
-    |   non_empty_modifier_list modifier { TRACE $$ = ast_add($$, $2); }
+        modifier                         { TRACE $$ = $1 }
+    |   non_empty_modifier_list modifier { TRACE $$ |= $2 }
 ;
 
 /* Property and method modifiers. */
 modifier:
-        T_PROTECTED { TRACE $$ = ast_opr(T_PROTECTED, 0); }
-    |   T_PUBLIC    { TRACE $$ = ast_opr(T_PUBLIC, 0); }
-    |   T_PRIVATE   { TRACE $$ = ast_opr(T_PRIVATE, 0); }
-    |   T_FINAL     { TRACE $$ = ast_opr(T_FINAL, 0); }
-    |   T_ABSTRACT  { TRACE $$ = ast_opr(T_ABSTRACT, 0); }
-    |   T_STATIC    { TRACE $$ = ast_opr(T_STATIC, 0); }
-    |   T_READONLY  { TRACE $$ = ast_opr(T_READONLY, 0); }
+        T_PROTECTED { TRACE $$ = CONST_CLASS_PROTECTED; }
+    |   T_PUBLIC    { TRACE $$ = CONST_CLASS_PUBLIC; }
+    |   T_PRIVATE   { TRACE $$ = CONST_CLASS_PRIVATE; }
+    |   T_FINAL     { TRACE $$ = CONST_CLASS_FINAL; }
+    |   T_ABSTRACT  { TRACE $$ = CONST_CLASS_ABSTRACT; }
+    |   T_STATIC    { TRACE $$ = CONST_CLASS_STATIC; }
+    |   T_READONLY  { TRACE $$ = CONST_CLASS_READONLY; }
 ;
 
 /* extends a list of classes, or no extends at all */
@@ -584,26 +586,28 @@ class_list:
  */
 
 data_structure:
-        qualified_name  '[' data_structure_elements     ']' { TRACE }
-    |   qualified_name  '[' data_structure_elements ',' ']' { TRACE }
-    |   qualified_name  '[' /* empty */                 ']' { TRACE }
-    |   complex_primary '[' data_structure_elements     ']' { TRACE }
-    |   complex_primary '[' data_structure_elements ',' ']' { TRACE }
-    |   complex_primary '[' /* empty */                 ']' { TRACE }
+        qualified_name  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   qualified_name  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   qualified_name  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
+    |   complex_primary '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   complex_primary '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   complex_primary '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
 ;
 
 data_structure_elements:
-        data_structure_element { TRACE $$ = $1; }
-    |   data_structure_elements ',' data_structure_element { TRACE }
+        data_structure_element { TRACE $$ = ast_opr(T_DATA_ELEMENTS, 1, $1); }
+    |   data_structure_elements ',' data_structure_element { TRACE $$ = ast_add($$, $3); }
 ;
 
 data_structure_element:
-        assignment_expression { TRACE $$ = $1; }
-    |   data_structure_element ':' assignment_expression { TRACE }
+        assignment_expression { TRACE $$ = ast_opr(T_DATA_ELEMENT, 1, $1); }
+    |   data_structure_element ':' assignment_expression { TRACE $$ = ast_add($$, $3); }
 ;
 
 %%
 
+   /* Returns the actual name of a token, must be implemented here, because we have no access
+      to the yytoknum and yytname otherwise. */
    char *get_token_string(int token) {
         for (int i=0; i!=YYNTOKENS; i++) {
             if (token == yytoknum[i]) {
