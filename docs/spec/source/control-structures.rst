@@ -39,7 +39,6 @@ It's also possible to chain if/else statements:
 		// done when $a not equals 1 or 2
 	}
 
-
 while
 -----
 A while loop will iterate over the statements until the evaluation will be false.
@@ -64,7 +63,7 @@ The while-structure also accepts an else-statement. This else statement is execu
 
 dowhile
 -------
-A do-while loop is similar to a while loop except the loop will **at least** be executed once, since the evaluation will be done at the end of the loop. This means that do-while does not support the `else`_ statement.
+A do-while loop is similar to a while loop except the loop will **at least** be executed once, since the evaluation will be done at the end of the loop. This means that do-while does not support the else statement.
 
 ::
 
@@ -168,10 +167,10 @@ There is an additional field called $meta, which is filled with foreach metadata
 	}	
 
 .. note:: 
-	A datastructure (an object that implemented "datastructure", like the `list`_, `hash`_ etc), already have implemented the .iter() method and thus are iterable. 
+	A datastructure (an object that implemented "datastructure", like the list, hash etc), already have implemented the .iter() method and thus are iterable.
 
 
-Foreach can be accompanied by an `else`_. This is called whenever the .iter() is not implemented, or when there is an empty list, or when `breakelse`_ is issued inside the foreach{} block.
+Foreach can be accompanied by an else. This is called whenever the .iter() is not implemented, or when there is an empty list, or when `breakelse`_ is issued inside the foreach{} block.
 
 
 
