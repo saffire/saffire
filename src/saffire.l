@@ -60,7 +60,7 @@ void saffire_pop_state() {
 %option nounput noyy_top_state
 
 lnum            [0-9]+
-identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
+identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
