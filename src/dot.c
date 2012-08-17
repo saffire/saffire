@@ -40,7 +40,7 @@ static int node_nr = 0;
  * Returns a list of flag strings for nice output in the graphs
  */
 static char *show_modifiers(int modifiers) {
-    char *s = (char *)malloc(sizeof(char)*100); // 100 bytes should be enough for everyone
+    char *s = (char *)calloc(100, sizeof(char)); // 100 bytes should be enough for everyone
 
     if (modifiers & CONST_CLASS_PROTECTED) s = strcat(s, "PROTECTED\\n");
     if (modifiers & CONST_CLASS_PUBLIC) s = strcat(s, "PUBLIC\\n");
