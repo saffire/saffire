@@ -12,7 +12,7 @@ all:
 	echo
 
 docs:
-	make -C docs/specs html
+	make -C docs/spec html
 
 clean:
 	make -C src clean
@@ -25,3 +25,5 @@ debug:
 
 tests:
 	make -C src tests
+
+.PHONY: docs clean tests
