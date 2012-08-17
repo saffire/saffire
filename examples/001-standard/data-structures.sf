@@ -1,8 +1,8 @@
 /*
  * Data structure examples.
  *
- * $a = [ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
- * $b = { "a"=>1, "b"=>2, "c"=>3, "d"=>4 }      // hash a=>1, b=>2, c=>3, d=>4
+ * $a = list[ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
+ * $b = hash[ "a"=>1, "b"=>2, "c"=>3, "d"=>4 ]      // hash a=>1, b=>2, c=>3, d=>4
  *
  *
  * // does value exists in list $a?
@@ -19,26 +19,51 @@
 use io;
 
 
-// Lists can hold any kind of object (including other lists)
-$a = [ "1", 1, "4", 5.0 ];
+// Lists can hold any kind of object (including lists, hashes or other data structures)
+$a = list[ "1", 1, "4" ];
+$a = list[ "1", "2", list[ "3", "4", "5"] ];
 
 // Do hashes ONLY support key=>value's, or can we omit keys like this:
-$b = { "a" => "1", "b" };      // "a" => "1",  0 => "b"
+// $b = list[ "a" : "1", "b" ];      // "a" => "1",  0 => "b"     // ???
 
 
-// Lists and/or hashes have a few data structure handling methods:
+/**
+ * Lists and/or hashes have a few data structure handling methods:
 
-$a.length           // number of elements
-$a.has($s)          // has $a got key $s?
-$a.contains($s)     // has $a got value $s?
-$a.remove()         // remove (index)
-$a.insert()         // insert (on this index, shift up)
-$a.shift
-$a.unshift
-$a.push             // push element
-$a.pop              // pop element
+$a.length()                     number of elements
+    Return Integer
+
+$a.has( Object $key)            has $a got key $key
+    Return Bool
+    Note: This assumes all objects have a .hash() method
+
+$a.contains( String $key)       has $a got value $s?
+    Return Bool
+
+$a.remove( String $key)         remove item from the array as identified by the provided key
+    Return self                 Provides fluent interface
+    Throws                      When $key does not exist
+
+$a.insert( $value, [ String $key] )      Insert $value into array. If $key
+                                                has not been given, $value.hash() will
+                                                be used as key.
+
+    Return self                 Provides fluent interface
+    Throws                      When $key already exists
+
+
+static array.range( Int|String Start, Int|String Stop, [Int Step])
+                                Create an array with values starting at Start, ending at Stop.
+                                Increment with 1, unless step has been supplied. Step can for now
+                                only be used in conjunction with integers.
+    Return instance of Array
+
+Choices:
+- no shift, unshift, pop, push since it's an hash map, not an array
+- no .json() method since it would require all values to have a .json() method as well
+
 
 $alphabet = array.range('a','z');       // create a range ?
 
-
+*/
 

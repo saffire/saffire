@@ -1,9 +1,8 @@
-$a = "hello"
-$a.concat(" world");        // Since we don't use the return value, it will concat on itself, basically: $a = $a.concat()
+$a = "hello";
+$a.concat(" world");        // Since we don't use the return value, it will do nothing
 $b = $a.concat(" world");   // $a = "hello"  $b = "hello world"
 
-"foobar".slice(0,3);  // will return error, since value is not returned, and "foobar" is not a writable object
-                      // TBD should it ?
+"foobar".slice(0,3);  // No assignment
 
 // .slice() or .substring() ? TBD
 $a = "foobar".slice(0,3);  // foo
@@ -15,20 +14,20 @@ $a = "foobar".slice(3,2).concat("z").uppercase().rev();  // ZAB
 $a = "foo".repeat(3); // foofoofoo
 $a = "foo".uppercase(); // FOO
 $a = "FOO".lowercase(); // foo
-$a = "FOO".tr("FO","BA); // BAA         TBD what does 'tr' stand for?
-$a = "FOO".regex("/FO+"/); // (bool)true, regex match
+$a = "FOO".tr("FO","BA"); // BAA            
+$a = "FOO".regex("/FO+/"); // (bool)true, regex match
 
-if ("FOO" ~= "/fo+/i") { // (bool)true
+if ("FOO" ~= /fo+/i) { $a = 1; } // (bool)true
 
 
 
 // Strings are UTF-8
 
 
-"bj�rk".length          // 5, Number of characters, not bytes!
-"bj�rk".bytes.length    // 6, Number of bytes
+"bj�rk".length();          // 5, Number of characters, not bytes!
+"bj�rk".bytes().length();    // 6, Number of bytes
 
 
-.bytes is a method that returns a byte-array of the string
+//.bytes is a method that returns a byte-array of the string
 
-byteArray("bj�rk").length = 6
+$a = byteArray("bj�rk").length(); // a = 6

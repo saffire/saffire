@@ -1,0 +1,18 @@
+/*
+ * Constant defines assignment
+ */
+
+final class Foo extends Bar {
+    const bar = "5";
+    const foo = 1;
+}
+
+const item = "foobar";
+
+
+$tmp = item;
+$tmp = Foo.bar;
+$tmp = Foo.foo;
+
+/* Output:
+*/

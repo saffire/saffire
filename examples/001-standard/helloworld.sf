@@ -3,7 +3,7 @@
 */
 use io;
 
-io.print("hello world!");
+io.console.print("hello world!", "blaat", $a, 1 + 1);
 
 
 /*

@@ -1,230 +1,168 @@
+/*
+ Copyright (c) 2012, The Saffire Group
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+     * Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+     * Neither the name of the <organization> nor the
+       names of its contributors may be used to endorse or promote products
+       derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include "parser.tab.h"
+#include "svar.h"
+#include "dot.h"
+#include "ast.h"
 
-#include "saffire_parser.h"
+#include "version.h"
 
-extern int yyparse();
-extern FILE *yyin;
+extern int      yyparse();
+extern FILE     *yyin;
 
+char    *source_file = "-";     // defaults to stdin
+int     source_args = 0;        // default to no additional arguments
+int     generate_dot = 0;
+char    *dot_file = NULL;
 
-const int VT_NULL   = 0;
-const int VT_LONG   = 1;
-const int VT_STRING = 2;
-
-typedef struct var {
-    char type;
-    char *name;
-    union {
-        long num;
-        char *str;
-
-    } val;
-} t_var;
-
-#define MAX_VARS 50
-t_var *vars[MAX_VARS];
-
-void print_var(t_var *var) {
-    printf("VAR:\n");
-    printf("  Name: %s\n", var->name);
-    printf("  Type: %d\n", var->type);
-    if (var->type == VT_LONG) {
-        printf("  Val:  %ld\n", var->val.num);
-    }
-    if (var->type == VT_STRING) {
-        printf("  Val:  %s\n", var->val.str);
-    }
-    printf("\n");
+/**
+ * Prints current version number and copyright information
+ */
+void print_version() {
+    printf("%s  - %s\n", saffire_version, saffire_copyright);
 }
 
 
-
-
-
-int var_find_slot() {
-    for (int i = 0; i !=MAX_VARS; i++) {
-        if (vars[i] == NULL) {
-            return i;
-        }
-    }
-    return -1;
+/**
+ * Prints usage information
+ */
+void print_usage() {
+    printf("\n"
+           "Usage: saffire [options] [script [args]]\n"
+           "Available options are:\n"
+           "  -v, --version         Show version information \n"
+           "  -h, --help            This usage information \n"
+           "  -c, --cli             Command line interface\n"
+           "  -l, --lint            Lint check script\n"
+           "      --dot <output>    Generate an AST in .dot format\n"
+           "\n"
+           "With no FILE, or FILE is -, read standard input.\n"
+           "\n");
 }
 
-t_var *var_find(char *name) {
-    int i;
-    for (i=0; i!=MAX_VARS; i++) {
-        if (vars[i] == NULL) continue;
 
-        if (strcmp(vars[i]->name, name) == 0) {
-            return vars[i];
-        }
-    }
+/**
+ * parses options and set some (global) variables if needed
+ */
+void parse_options(int argc, char *argv[]) {
+    int c;
+    int option_index;
 
-    return NULL;
-}
+    // Suppress default errors
+    opterr = 0;
 
-t_var *var_alloc(char type, char *name, void *val) {
-    int var_idx = var_find_slot();
-    if (var_idx == -1) {
-        fprintf(stderr, "No more room for variables!");
-        exit(1);
-    }
-    t_var *var = (t_var *)malloc(sizeof(t_var));
-    var->type = type;
-    var->name = strdup(name);
+    // Long options maps back to short options
+    static struct option long_options[] = {
+            { "version", no_argument, 0, 'v' },
+            { "help",    no_argument, 0, 'h' },
+            { "cli",     no_argument, 0, 'c' },
+            { "lint",    no_argument, 0, 'l' },
+            { "dot",     required_argument, 0, 0 },
+            { 0, 0, 0, 0 }
+        };
 
-    if (var->type == VT_LONG) {
-        var->val.num = (long)val;
-    } else if (var->type == VT_STRING) {
-        var->val.str = strdup((char *)val);
-    }
+    // Iterate all the options
+    while (1) {
+        c = getopt_long (argc, argv, "vhcl", long_options, &option_index);
+        if (c == -1) break;
 
-    vars[var_idx] = var;
-    return var;
-}
+        switch (c) {
+            case 0 :
+                // Long option without any short alias is called. Have to strcmp the string itself
+                if (strcmp(long_options[option_index].name, "dot") == 0) {
+                    generate_dot = 1;
+                    dot_file = optarg;
+                    break;
+                }
+            case 'h' :
+                print_version();
+                print_usage();
+                exit(0);
+                break;
+            case 'v' :
+                print_version();
+                exit(0);
+                break;
+            case 'l' :
+                printf("Lint check()");
+                break;
+            case 'c' :
+                printf("cli");
+                break;
 
-void var_free(t_var *var) {
-    free(var->name);
-    if (var->type == VT_STRING) {
-        free(var->val.str);
-    }
-}
-
-void _do_incdec(char *var_name, int inc) {
-    t_var *var = var_find(var_name);
-    if (var == NULL) {
-        printf("Warning: var is not initialized.");
-        var = var_alloc(VT_LONG, var_name, 0);
-    }
-
-    if (var->type != VT_LONG) {
-        printf("Warning: var is not a number");
-        return;
-    }
-
-    if (inc) {
-        var->val.num++;
-    } else {
-        var->val.num--;
-    }
-
-    //print_var(var);
-}
-
-void saffire_do_program_begin(char *title) {
-    //printf("do_program_begin: %s \n", title);
-}
-void saffire_do_program_end() {
-    //printf("do_program_end\n");
-}
-
-void saffire_do_assign(char *var_name, char *val) {
-    //printf("assign(%s => %s)\n", var_name, val);
-
-
-    char type = VT_STRING;
-    char *endptr;
-    long num = strtol(val, &endptr, 10);
-    if (endptr == val+strlen(val)) {
-        type = VT_LONG;
-    }
-
-
-    t_var *var = var_find(var_name);
-    if (var == NULL) {
-        printf("Initial assign\n");
-        var = var_alloc(type, var_name, type == VT_STRING ? (void *)val : (void *)num);
-    } else {
-        if (var->type != type) {
-            printf("We cannot switch types!");
-            exit(1);
-        }
-        if (type == VT_STRING) {
-            var->val.str = strdup(val);
-        } else if (type = VT_LONG) {
-            var->val.num = num;
+            case '?' :
+            default :
+                printf("saffire: invalid option '%s'\n"
+                       "Try 'saffire --help' for more information\n", argv[optind-1]);
+                exit(1);
         }
     }
 
-    //print_var(var);
-}
-
-
-void saffire_do_print(char *str) {
-    //printf("print(%s)\n", str);
-
-    if (str[0] == '$') {
-        t_var *var = var_find(str);
-        if (var == NULL) {
-            printf("Cannot find variable %s", str);
-            exit(1);
+    // All options done, check for additional options like source filename and optional arguments
+    if (optind < argc) {
+        source_file = argv[optind++];
+        if (optind < argc) {
+            // Source args points to the FIRST saffire script argument (./saffire script.sf first second third)
+            source_args = optind;
         }
-        if (var->type == VT_STRING) {
-            printf("%s", var->val.str);
-        } else if (var->type = VT_LONG) {
-            printf("%ld", var->val.num);
-        }
-    } else {
-        str[strlen(str)-1] = '\0';
-        printf("%s", str+1);
     }
-}
-
-void saffire_do_pre_inc(char *var_name) {
-    //printf("do_pre_inc()\n");
-    _do_incdec(var_name, 1);
-}
-
-void saffire_do_post_inc(char *var_name) {
-    //printf("do_post_inc()\n");
-    _do_incdec(var_name, 1);
-}
-
-void saffire_do_pre_dec(char *var_name) {
-    //printf("do_pre_dec()\n");
-    _do_incdec(var_name, 0);
-}
-
-void saffire_do_post_dec(char *var_name) {
-    //printf("do_post_dec()\n");
-    _do_incdec(var_name, 0);
-}
-
-
-void saffire_inner_statement() {
-    //printf("inner_statement();\n");
-}
-
-void saffire_do_expr() {
-    //printf("expr\n");
 }
 
 
 int main(int argc, char *argv[]) {
-    // Here we just initialize some temporary variable storage
-    int i;
-    for (i=0; i!=MAX_VARS; i++) {
-        vars[i] = NULL;
-    }
+    parse_options(argc, argv);
 
-    // Usage
-    if (argc < 2) {
-        fprintf(stderr, "Please specify source file\n");
-        return 1;
-    }
-
-    // Open file
-    FILE *fp = fopen(argv[1], "r");
+    // Open file, or use stdin if needed
+    FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
     if (!fp) {
-        fprintf(stderr, "Could not open file: %s\n", argv[1]);
+        fprintf(stderr, "Could not open file: %s\n", source_file);
         return 1;
     }
 
-    // Parse it
+    // Initialize system
+    svar_init_table();
+
+    // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
     yyparse();
+
+    if (generate_dot) {
+        // generate DOT file
+        dot_generate(ast_root, dot_file);
+    }
+
+    // Release memory of ast_root
+    if (ast_root != NULL) {
+        ast_free_node(ast_root);
+    }
 
     return 0;
 }

@@ -4,4 +4,3 @@ you can easily configure and view details about saffire.
 garbage collection can be set per context (?)  saffire.gc.algo = SAFFIRE_GC_ALGO_TRAIN  for instance
 
 All classes extend a saffire-base-class. This (final) class contains methods like clone, memory, etc.
-

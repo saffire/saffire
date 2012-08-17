@@ -10,9 +10,9 @@ if ($a == "5") { // checks for $a == string == "5"  (coerse?)
 if ($a == "foo") {
 
 } else if ($a == "bar") {
-    ...
+
 } else {
-    ...
+
 }
 
 // elseif ($a == "bar")    SHOULD THIS BE SUPPORTED OR NOT? ALWAYS A SPACE BETWEEN ELSE and IF?
