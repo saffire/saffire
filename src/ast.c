@@ -52,11 +52,11 @@ static t_ast_element *ast_alloc_element(void) {
 /**
  *
  */
-t_ast_element *ast_strCon(char *value) {
+t_ast_element *ast_string(char *value) {
     t_ast_element *p = ast_alloc_element();
 
-    p->type = typeStrCon;
-    p->strCon.value = strdup(value);
+    p->type = typeString;
+    p->string.value = strdup(value);
 
     return p;
 }
@@ -65,11 +65,11 @@ t_ast_element *ast_strCon(char *value) {
 /**
  *
  */
-t_ast_element *ast_intCon(int value) {
+t_ast_element *ast_numerical(int value) {
     t_ast_element *p = ast_alloc_element();
 
-    p->type = typeIntCon;
-    p->intCon.value = value;
+    p->type = typeNumerical;
+    p->numerical.value = value;
 
     return p;
 }
@@ -78,11 +78,11 @@ t_ast_element *ast_intCon(int value) {
 /**
  *
  */
-t_ast_element *ast_var(char *var_name) {
+t_ast_element *ast_identifier(char *var_name) {
     t_ast_element *p = ast_alloc_element();
 
-    p->type = typeVar;
-    p->var.name = strdup(var_name);
+    p->type = typeIdentifier;
+    p->identifier.name = strdup(var_name);
 
     return p;
 }
@@ -203,7 +203,7 @@ void ast_free_node(t_ast_element *p) {
 
     if (!p) return;
 
-    // @TODO: If it's a strConOpr, we must free our char as well!
+    // @TODO: If it's a stringOpr, we must free our char as well!
     // @TODO: If it's a varOpr, we must free our svar as well
 
     if (p->type == typeOpr) {

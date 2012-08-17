@@ -64,17 +64,17 @@ svar *saffire_interpreter(t_ast_element *p) {
     }
 
     switch (p->type) {
-        case typeStrCon :
-            printf ("strcon: %s\n", p->strCon.value);
-            return svar_temp_alloc(SV_STRING, p->strCon.value, 0);
+        case typeString :
+            printf ("string: %s\n", p->string.value);
+            return svar_temp_alloc(SV_STRING, p->string.value, 0);
 
-        case typeIntCon :
-            printf ("intcon: %d\n", p->intCon.value);
-            return svar_temp_alloc(SV_LONG, NULL, p->intCon.value);
+        case typeNumerical :
+            printf ("numerical: %d\n", p->numerical.value);
+            return svar_temp_alloc(SV_LONG, NULL, p->numerical.value);
 
-        case typeVar :
-            printf ("var: %s\n", p->var.name);
-            return svar_temp_alloc(SV_STRING, p->var.name, 0);
+        case typeIdentifier :
+            printf ("var: %s\n", p->identifier.name);
+            return svar_temp_alloc(SV_STRING, p->identifier.name, 0);
 
         case typeNull :
             /* nop */

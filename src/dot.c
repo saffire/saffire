@@ -64,16 +64,16 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
 
     fprintf(fp, "\tN_%d [", cur_node_nr);
     switch (p->type) {
-        case typeStrCon :
-            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->strCon.value);
+        case typeString :
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->string.value);
             break;
 
-        case typeIntCon :
-            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->intCon.value);
+        case typeNumerical :
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->numerical.value);
             break;
 
-        case typeVar :
-            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->var.name);
+        case typeIdentifier :
+            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.name);
             break;
 
         case typeOpr :

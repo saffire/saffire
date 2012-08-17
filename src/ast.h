@@ -41,19 +41,19 @@
 
 
     // different kind of nodes we manage
-    typedef enum { typeStrCon, typeIntCon, typeNull, typeVar, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;
+    typedef enum { typeString, typeNumerical, typeNull, typeIdentifier, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
-    } strConNode;
+    } stringNode;
 
     typedef struct {
         int value;                  // Integer constant
-    } intConNode;
+    } numericalNode;
 
     typedef struct {
         char *name;                 // Name of the actual variable to use
-    } varNode;
+    } identifierNode;
 
     typedef struct {
         int oper;                   // Operator
@@ -86,13 +86,13 @@
     typedef struct ast_element {
         nodeEnum type;              // Type of the node
         union {
-            intConNode intCon;        // constant int
-            strConNode strCon;        // constant string
-            varNode var;              // variable
-            oprNode opr;              // operators
-            classNode class;          // class
-            interfaceNode interface;  // interface
-            methodNode method;        // methods
+            numericalNode numerical;    // constant int
+            stringNode string;          // constant string
+            identifierNode identifier;  // variable
+            oprNode opr;                // operators
+            classNode class;            // class
+            interfaceNode interface;    // interface
+            methodNode method;          // methods
         };
     } t_ast_element;
 
@@ -101,9 +101,9 @@
     t_ast_element *ast_root;
 
 
-    t_ast_element *ast_strCon(char *value);
-    t_ast_element *ast_intCon(int value);
-    t_ast_element *ast_var(char *var_name);
+    t_ast_element *ast_string(char *value);
+    t_ast_element *ast_numerical(int value);
+    t_ast_element *ast_identifier(char *var_name);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body);

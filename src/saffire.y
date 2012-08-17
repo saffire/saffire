@@ -134,9 +134,9 @@ non_empty_use_statement_list:
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($4)); }
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($4)); }
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_strCon($2), ast_strCon($2)); }
+    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($2)); }
 ;
 
 
@@ -219,7 +219,7 @@ jump_statement:
     |   T_RETURN ';'                { TRACE $$ = ast_opr(T_RETURN, 0); }
     |   T_RETURN expression ';'     { TRACE $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { TRACE $$ = ast_opr(T_THROW, 1, $2); }
-    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_strCon($2)); }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_string($2)); }
 ;
 
 guarding_statement:
@@ -238,13 +238,13 @@ catch:
 ;
 
 catch_header:
-        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_strCon($3), ast_strCon($4)); }
-    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_strCon($3)); }
+        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_string($3), ast_string($4)); }
+    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_string($3)); }
     |   T_CATCH '('                           ')' { TRACE $$ = ast_opr(T_CATCH, 0); }
 ;
 
 label_statement:
-        T_IDENTIFIER ':'                { TRACE $$ = ast_opr(T_LABEL, 1, ast_strCon($1)); }
+        T_IDENTIFIER ':'                { TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
     |   T_CASE constant_expression ':'  { TRACE $$ = ast_opr(T_CASE, 1, $2); }
     |   T_DEFAULT ':'                   { TRACE $$ = ast_opr(T_DEFAULT, 0); }
 ;
@@ -317,7 +317,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE $$ = $1; }
-    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, ast_strCon($3)); }
+    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, ast_string($3)); }
 ;
 
 shift_expression:
@@ -367,40 +367,40 @@ primary_expression:
  ;
 
 arithmic_unary_operator:
-        '+' { TRACE $$ = ast_strCon("+"); }
-    |   '-' { TRACE $$ = ast_strCon("-"); }
+        '+' { TRACE $$ = ast_string("+"); }
+    |   '-' { TRACE $$ = ast_string("-"); }
 ;
 
 logical_unary_operator:
-        '~' { TRACE $$ = ast_strCon("~"); }
-    |   '!' { TRACE $$ = ast_strCon("!"); }
+        '~' { TRACE $$ = ast_string("~"); }
+    |   '!' { TRACE $$ = ast_string("!"); }
 ;
 
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        '='                { TRACE $$ = ast_strCon("=");  }
-    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_strCon("+="); }
-    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_strCon("-="); }
-    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_strCon("*="); }
-    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_strCon("/="); }
-    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_strCon("%="); }
-    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_strCon("&="); }
-    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_strCon("|="); }
-    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_strCon("^="); }
-    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_strCon("<="); }
-    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_strCon(">="); }
+        '='                { TRACE $$ = ast_string("=");  }
+    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_string("+="); }
+    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_string("-="); }
+    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_string("*="); }
+    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_string("/="); }
+    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_string("%="); }
+    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_string("&="); }
+    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_string("|="); }
+    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_string("^="); }
+    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_string("<="); }
+    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_string(">="); }
 ;
 
 real_scalar_value:
-        T_LNUM   { TRACE $$ = ast_intCon($1); }
-    |   T_STRING { TRACE $$ = ast_strCon($1); }
+        T_LNUM   { TRACE $$ = ast_numerical($1); }
+    |   T_STRING { TRACE $$ = ast_string($1); }
 ;
 
 
 qualified_name:
-         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_var($1)); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_var($3)); }
+         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_identifier($1)); }
+     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_identifier($3)); }
 ;
 
 calling_method_argument_list:
@@ -421,16 +421,16 @@ complex_primary:
 ;
 
 complex_primary_no_parenthesis:
-        T_LNUM          { TRACE $$ = ast_intCon($1); }
-    |   T_STRING        { TRACE $$ = ast_strCon($1); }
-    |   T_REGEX         { TRACE $$ = ast_strCon($1); }
+        T_LNUM          { TRACE $$ = ast_numerical($1); }
+    |   T_STRING        { TRACE $$ = ast_string($1); }
+    |   T_REGEX         { TRACE $$ = ast_string($1); }
     |   field_access    { TRACE $$ = $1; }
     |   method_call     { TRACE $$ = $1; }
     |   data_structure  { TRACE $$ = $1; }
 ;
 
 field_access:
-        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_var($3)); }
+        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); }
     |   qualified_name '.' special_name { TRACE $$ = ast_opr('.', 2, $1, $3); }
 ;
 
@@ -442,8 +442,8 @@ method_call:
 ;
 
 special_name:
-        T_SELF      { TRACE $$ = ast_strCon("SELF"); }
-    |   T_PARENT    { TRACE $$ = ast_strCon("PARENT"); }
+        T_SELF      { TRACE $$ = ast_string("SELF"); }
+    |   T_PARENT    { TRACE $$ = ast_string("PARENT"); }
 ;
 
 
@@ -499,10 +499,10 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_var($1), ast_nop()); }
-    |   T_IDENTIFIER '=' primary_expression              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_var($1), $3); }
-    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_var($1), ast_var($2), ast_nop()); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_var($1), ast_var($2), $4); }
+        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); }
+    |   T_IDENTIFIER '=' primary_expression              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
+    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); }
 ;
 
 constant_list:
@@ -511,7 +511,7 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE $$ = ast_opr(T_CONST, 2, ast_var($2), $4); }
+        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); }
 ;
 
 class_definition:
@@ -530,12 +530,12 @@ interface_definition:
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE $$ = ast_opr(T_PROPERTY, 3, ast_intCon($1), ast_var($3), $5); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_intCon($1), ast_var($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_intCon($1), ast_var($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
 ;
 
 modifier_list:
@@ -568,8 +568,8 @@ class_interface_implements:
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_strCon($1)); }
-    |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_strCon($3)); }
+        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_string($1)); }
+    |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_string($3)); }
 ;
 
 

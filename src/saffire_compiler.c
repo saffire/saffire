@@ -47,16 +47,16 @@ void saffire_compiler(t_ast_element *p) {
             printf("\tnop\n");
             break;
 
-        case typeStrCon :
-            printf("\tpush\t\"%s\"\n", p->strCon.value);
+        case typeString :
+            printf("\tpush\t\"%s\"\n", p->string.value);
             break;
 
-        case typeIntCon :
-            printf("\tpush\t%d\n", p->intCon.value);
+        case typeNumerical :
+            printf("\tpush\t%d\n", p->numerical.value);
             break;
 
-        case typeVar :
-            printf("\tpush\t~\"%s\"\n", p->var.name);
+        case typeIdentifier :
+            printf("\tpush\t~\"%s\"\n", p->identifier.name);
             break;
 
         case typeClass :
@@ -67,7 +67,7 @@ void saffire_compiler(t_ast_element *p) {
         case typeOpr :
             switch (p->opr.oper) {
                 case T_USE :
-                    printf("\tuse_alias\t\"%s\"\t\"%s\"\n", p->opr.ops[0]->var.name, p->opr.ops[1]->var.name);
+                    printf("\tuse_alias\t\"%s\"\t\"%s\"\n", p->opr.ops[0]->identifier.name, p->opr.ops[1]->identifier.name);
                     break;
 
                 case T_WHILE :
@@ -99,7 +99,7 @@ void saffire_compiler(t_ast_element *p) {
 
                 case '=' :
                     SC1(p);
-                    printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->var.name);
+                    printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->identifier.name);
                     break;
 
                 case T_METHOD_CALL :
