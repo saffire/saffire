@@ -169,7 +169,7 @@ top_statement:
 
 /* A compound statement is a (set of) statement captured by curly brackets */
 compound_statement:
-        '{' '}'                 { TRACE /* Intentionally left blank */ }
+        '{' '}'                 { TRACE $$ = ast_nop(); }
     |   '{' statement_list '}'  { TRACE $$ = $2; }
 ;
 
@@ -317,7 +317,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE $$ = $1; }
-    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, $3); }
+    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, ast_strCon($3)); }
 ;
 
 shift_expression:
