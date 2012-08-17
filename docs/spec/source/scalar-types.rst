@@ -4,30 +4,30 @@ Scalar types
 
 Saffire is an object-only language. This means that everything, including strings, numerical values etc, are objects.
 
-String
+**String**
 This represents an (UTF-8) array of characters. A length() of a string will always return the number of CHARACTERS, not the number of bytes. Make sure that
 when dealing with binary 
 
-Numeric
+**Numeric**
 Integer ranging from Numeric.MIN to Numeric.MAX.
 
-Double
+**Double**
 Any fixed point number.
 
-Boolean
+**Boolean**
 Representing either a true or a false value.
 
-Null
+**Null**
 Represents a null value.
 
 
 Standard objects
 ----------------
 
-True
+**True**
 A boolean representing a true value
 
-False
+**False**
 A boolean representing a false value
 
 

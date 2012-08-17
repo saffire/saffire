@@ -2,7 +2,7 @@
 Objects
 #######
 
-Everything in Saffire is an object. Even constant strings like "foo" are represented as string, which makes it possible to do:
+Everything in Saffire is an object. Even constant strings like "foo" are represented as `string`, which makes it possible to do:
 
 ::
 
