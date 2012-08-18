@@ -1,0 +1,8 @@
+Check if multiple visiblity masks are possible
+@@@
+
+private public class Foo {
+}
+
+@@@
+Error in line: 1: Cannot have multiple visiblity masks

@@ -1,0 +1,101 @@
+**********
+Title: Class modifiers tests
+Author: Joshua Thijssen <joshua@saffire-lang.org>
+
+
+Every unittest consist of a header block inside at least 2 **'s.
+Every header block must at least have a "title" and "author" tag.
+More tags could be added, like version dependencies etc.
+
+The rest of the headers are plain comments.
+
+After the headers, 0 or more tests will be added.
+
+Every test is separated by at least 2 @@'s.
+
+Every test has got a source-code and output expectation, both separated by at least two =='s.
+
+
+Output should be something like:
+
+  Start time: 12:34:56
+  Running: Class modifiers tests : Simple modifiers 1 : PASS
+  Running: Class modifiers tests : Simple modifiers 2 : FAIL
+  End time: 12:35:00 (4 seconds running time)
+
+  Status:
+    Test suites:   4
+    Total tests:  16
+    Passed:       12 (75.00%)
+    Failed:        4 (25.00%)
+
+
+**********
+# Simple modifiers 1
+public class Foo {
+}
+
+====
+@@@@
+# Simple modifiers 2
+private class Foo {
+}
+
+====
+@@@@
+# Simple modifiers 3
+protected class Foo {
+}
+
+====
+@@@@
+# Multiple modifiers 1
+private protected class Foo {
+}
+
+====
+@@@@
+# Multiple modifiers 2
+public protected class Foo {
+}
+
+====
+@@@@
+# Double modifiers 1
+public public class Foo {
+}
+
+====
+@@@@
+# No modifiers
+class Foo {
+}
+
+====
+@@@@
+# Abstract + visiblity modifiers 1
+abstract public class Foo {
+}
+
+====
+@@@@
+# Double Abstract
+abstract abstract public class Foo {
+}
+
+====
+@@@@
+# Double Static
+static static public class Foo {
+}
+
+====
+@@@@
+# Final abstract
+final abstract public class Foo {
+}
+====
+@@@@
+# Final static
+final static public class Foo {
+}
