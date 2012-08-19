@@ -24,49 +24,30 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SAFFIRE_COMPILE_H__
-#define __SAFFIRE_COMPILE_H__
+#ifndef __CLASS_H__
+#define __CLASS_H__
 
-    #include "ast.h"
-    #include "class.h"
     #include "hashtable/hashtable.h"
 
-    /* @TODO: These should not be here */
-    #define MODIFIER_PUBLIC              1
-    #define MODIFIER_PROTECTED           2
-    #define MODIFIER_PRIVATE             4
-    #define MODIFIER_FINAL               8
-    #define MODIFIER_ABSTRACT           16
-    #define MODIFIER_STATIC             32
-    #define MODIFIER_READONLY           64
-
-    #define MODIFIER_MASK_VISIBLITY      (MODIFIER_PUBLIC | MODIFIER_PROTECTED | MODIFIER_PRIVATE)
-
-
     /**
-     * Global compile table with information needed during compilation of the code
+     * Primary start of a class structure. Will change
      */
-    typedef struct global_table {
-        t_hash_table *constants;        // Table of all constants defined (globally)
-        t_hash_table *classes;          // Table of all FQCN classes
+    typedef struct class {
+        int modifiers;                  // MODIFIER_* flags
+        char *name;                     // Fully qualified class name
+        struct class *parent;           // Parent class (or NULL when extending no other class) @TODO: Always extend Base class
 
-        t_class *active_class;          // Current active class
-        int in_active_class;            // 1 when we are inside a class, 0 otherwise
-    } t_global_table;
+        t_hash_table *methods;          // Methods inside this class
+        t_hash_table *constants;        // Constants inside this class
+        t_hash_table *properties;       // Properties inside this class
 
-    t_global_table *global_table;      // A global table with compilation info
+        struct class **interfaces;      // Interfaces
+        int num_interfaces;             // Number of interfaces
 
-    void sfc_init(void);
-    void sfc_new_scope(char *name);
-
-    void sfc_init_class(int modifiers, char *name);
-    void sfc_fini_class(void);
-
-    void sfc_validate_constant(char *constant);
-    void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body);
-    void sfc_validate_class_modifiers(long modifiers);
-    void sfc_validate_method_modifiers(long modifiers);
-    void sfc_validate_property_modifiers(long modifiers);
-    long sfc_validate_flags(long cur_flags, long new_flag);
+        // additional info
+        char *filename;                 // Full filename path in which this class resides
+        int line_start;                 // Start of the class
+        int line_end;                   // End of the class
+    } t_class;
 
 #endif
