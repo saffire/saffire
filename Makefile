@@ -24,6 +24,6 @@ debug:
 	make -C src debug
 
 tests:
-	make -C src tests
+	make -C examples all
 
 .PHONY: docs clean tests

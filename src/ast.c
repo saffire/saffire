@@ -50,6 +50,9 @@ t_ast_element *ast_compile_tree(FILE *fp) {
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
     yyparse();
+
+    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
+    return ast_root;
 }
 
 

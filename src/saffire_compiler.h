@@ -67,6 +67,6 @@
     void sfc_validate_class_modifiers(long modifiers);
     void sfc_validate_method_modifiers(long modifiers);
     void sfc_validate_property_modifiers(long modifiers);
-    long sfc_validate_flags(long cur_flags, long new_flag);
+    void sfc_validate_flags(long cur_flags, long new_flag);
 
 #endif

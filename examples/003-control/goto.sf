@@ -5,7 +5,7 @@
  */
 
 class bar {
-    method foo(string $filename) {
+    public method foo(string $filename) {
         // Create file and append info
         $file = io.create($filename, "0644");
         $file.append("Hello world");

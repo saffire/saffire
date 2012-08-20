@@ -98,8 +98,6 @@ void sfc_validate_method_modifiers(long modifiers) {
  * Validate property modifiers
  */
 void sfc_validate_property_modifiers(long modifiers) {
-    printf("sfc_validate_property_modifiers(%ld)\n", modifiers);
-
     if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
         sfc_error("Methods must define a visibility");
     }
@@ -109,7 +107,7 @@ void sfc_validate_property_modifiers(long modifiers) {
 /**
  * Checks if modifier flags are allowed (does not check the context (class, method, property etc).
  */
-long fasdfasdfs(long cur_flags, long new_flag) {
+void sfc_validate_flags(long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBLITY) && (new_flag & MODIFIER_MASK_VISIBLITY)) {
         sfc_error("Cannot have multiple visiblity masks");

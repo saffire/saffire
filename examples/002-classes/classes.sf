@@ -48,7 +48,7 @@ class foo {
     public method foo2 () {
     }
 
-    method foo3 () {
+    private method foo3 () {
     }
 
 }
@@ -67,10 +67,10 @@ class baz extends foo implements ibaz {
 //$tmp.implements() returns array("ibaz")
 
 interface baz {
-    method foo();
+    public method foo();
 }
 
-abstract class baz {
-    abstract method foo();
+abstract class bazbaz {
+    abstract public method foo();
 }
 
