@@ -4,7 +4,7 @@
 use io;
 
 class foo {
-    method rev_it(string $tmp) {
+    public method rev_it(string $tmp) {
         $tmp = $tmp.uppercase();
         return $tmp.rev();
     }
@@ -26,7 +26,7 @@ io.print($bar);                 // 15 (string)
  */
 
 class color {
-    method ::+(Color $color) {
+    public method ::+(Color $color) {
         return self.mix($color);
     }
 
@@ -48,13 +48,15 @@ $c = Color("yellow") + Color("blue");  // $c == "green"
 /*
  * Method overloading?
  */
-class color {
-    method ::+(Color $color) { }
-    method ::+(String $color) {
+class color2 {
+    public method ::+(Color $color) { }
+
+    public method ::+(String $color) {
         $color = Color($color);
         return self + $color;  // calls the +(Color $color) function
     }
-    method ::+(Integer $pms_color) {
+
+    public method ::+(Integer $pms_color) {
         $color = Color(self.pmsList[$pms_color]);
         return self + $color;  // calls the +(Color $color) function
     }

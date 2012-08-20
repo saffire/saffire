@@ -31,6 +31,7 @@
 
     #include <stdio.h>
     #include "lex.yy.h"
+    #include "saffire_compiler.h"
     #include "ast.h"
 
     extern int yylineno;
@@ -87,7 +88,7 @@
 %type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement selection_statement iteration_statement class_list
 %type <nPtr> guarding_statement expression catch_list catch constant_expression data_structure_element data_structure_elements
-%type <nPtr> class_interface_implements class_extends method_argument_list
+%type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> complex_primary_no_parenthesis not_just_name complex_primary method_call real_postfix_expression
 %type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator assignment_operator
@@ -101,6 +102,8 @@
 %type <sVal> '=' T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
 
+
+%token_table
 %error-verbose
 
 %start saffire
@@ -478,14 +481,16 @@ interface_inner_statement:
 ;
 
 interface_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_method($1, $3, $5, ast_nop()); }
-    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE $$ = ast_method( 0, $2, $4, ast_nop()); }
+    interface_or_abstract_method_definition { TRACE $$ = $1; }
+;
+
+interface_or_abstract_method_definition:
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, ast_nop()); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE $$ = ast_method($1, $3, $5, $7); }
-    |                 T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE $$ = ast_method( 0, $2, $4, $6); }
-    |   interface_method_definition { TRACE $$ = $1 }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); }
+    |   interface_or_abstract_method_definition { TRACE $$ = $1 }
 ;
 
 method_argument_list:
@@ -511,53 +516,55 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); }
+        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); }
 ;
 
 class_definition:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_class($1, $3, $4, $5, $7); }
-    |   modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class($1, $3, $4, $5, ast_nop()); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{' class_inner_statement_list '}' { TRACE $$ = ast_class( 0, $2, $3, $4, $6); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements '{'                            '}' { TRACE $$ = ast_class( 0, $2, $3, $4, ast_nop()); }
+        class_header '{' class_inner_statement_list '}' { TRACE $$ = ast_class(global_table->active_class, $3); sfc_fini_class(); }
+    |   class_header '{'                            '}' { TRACE $$ = ast_class(global_table->active_class, ast_nop()); sfc_fini_class(); }
+;
+
+class_header:
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class($1, $3); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_init_class( 0, $2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface($1, $3, $4, $6); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface($1, $3, $4, ast_nop()); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface( 0, $2, $3, $5); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface( 0, $2, $3, ast_nop()); }
-;
+        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, $6); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, ast_nop()); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface(0, $2, $3, $5); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface(0, $2, $3, ast_nop()); };
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
 ;
 
 modifier_list:
         modifier               { TRACE $$ = $1 }
-    |   modifier_list modifier { TRACE $$ |= $2 }
+    |   modifier_list modifier { TRACE sfc_validate_flags($$, $2); $$ |= $2; }
 ;
 
 /* Property and method modifiers. */
 modifier:
-        T_PROTECTED { TRACE $$ = CONST_CLASS_PROTECTED; }
-    |   T_PUBLIC    { TRACE $$ = CONST_CLASS_PUBLIC; }
-    |   T_PRIVATE   { TRACE $$ = CONST_CLASS_PRIVATE; }
-    |   T_FINAL     { TRACE $$ = CONST_CLASS_FINAL; }
-    |   T_ABSTRACT  { TRACE $$ = CONST_CLASS_ABSTRACT; }
-    |   T_STATIC    { TRACE $$ = CONST_CLASS_STATIC; }
-    |   T_READONLY  { TRACE $$ = CONST_CLASS_READONLY; }
+        T_PROTECTED { TRACE $$ = MODIFIER_PROTECTED; }
+    |   T_PUBLIC    { TRACE $$ = MODIFIER_PUBLIC; }
+    |   T_PRIVATE   { TRACE $$ = MODIFIER_PRIVATE; }
+    |   T_FINAL     { TRACE $$ = MODIFIER_FINAL; }
+    |   T_ABSTRACT  { TRACE $$ = MODIFIER_ABSTRACT; }
+    |   T_STATIC    { TRACE $$ = MODIFIER_STATIC; }
+    |   T_READONLY  { TRACE $$ = MODIFIER_READONLY; }
 ;
 
-/* extends a list of classes, or no extends at all */
+/* extends only one class */
 class_extends:
-        T_EXTENDS class_list { TRACE $$ = ast_opr(T_EXTENDS, 1, $2); }
-    |   /* empty */          { TRACE $$ = ast_nop(); }
+        T_EXTENDS T_IDENTIFIER { TRACE $$ = ast_string($2); }
+    |   /* empty */            { TRACE $$ = ast_nop(); }
 ;
 
 /* implements a list of classes, or no implement at all */

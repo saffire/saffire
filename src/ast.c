@@ -30,13 +30,34 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "parser.tab.h"
+#include "saffire_compiler.h"
 #include "svar.h"
 #include "ast.h"
 
 extern void yyerror(const char *err);
+extern int yyparse();
+extern FILE *yyin;
+
 
 /**
- *
+ * Compile a a file into an AST (through bison). Returns the AST root node.
+ */
+t_ast_element *ast_compile_tree(FILE *fp) {
+    // Initialize system
+    svar_init_table();
+    sfc_init();
+
+    // Parse the file input, will return the tree in the global ast_root variable
+    yyin = fp;
+    yyparse();
+
+    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
+    return ast_root;
+}
+
+
+/**
+ * Allocate a new element
  */
 static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
@@ -50,7 +71,7 @@ static t_ast_element *ast_alloc_element(void) {
 
 
 /**
- *
+ * Creates a string node
  */
 t_ast_element *ast_string(char *value) {
     t_ast_element *p = ast_alloc_element();
@@ -63,7 +84,7 @@ t_ast_element *ast_string(char *value) {
 
 
 /**
- *
+ * Creates a numerical node
  */
 t_ast_element *ast_numerical(int value) {
     t_ast_element *p = ast_alloc_element();
@@ -76,7 +97,7 @@ t_ast_element *ast_numerical(int value) {
 
 
 /**
- *
+ * Creates a identifier node
  */
 t_ast_element *ast_identifier(char *var_name) {
     t_ast_element *p = ast_alloc_element();
@@ -89,7 +110,7 @@ t_ast_element *ast_identifier(char *var_name) {
 
 
 /**
- *
+ * Creates a null/nop node
  */
 t_ast_element *ast_nop(void) {
     t_ast_element *p = ast_alloc_element();
@@ -101,26 +122,29 @@ t_ast_element *ast_nop(void) {
 
 
 /**
- *
+ * Add a node to an existing operator node. This allows to have multiple children in later stages (like lists)
  */
 t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
     if (src->type != typeOpr) {
         yyerror("Cannot add to non-opr element");
     }
 
-    src->opr.nops++;
+    // Resize operator memory
     src->opr.ops = realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
     if (src->opr.ops == NULL) {
         yyerror("Out of memory");
     }
-    src->opr.ops[src->opr.nops-1] = new_element;
+
+    // Add new operator
+    src->opr.ops[src->opr.nops] = new_element;
+    src->opr.nops++;
 
     return src;
 }
 
 
 /**
- *
+ * Create an operator node
  */
 t_ast_element *ast_opr(int opr, int nops, ...) {
     t_ast_element *p = ast_alloc_element();
@@ -134,6 +158,7 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     p->opr.oper = opr;
     p->opr.nops = nops;
 
+    // Add additional nodes (they can be added later with ast_add())
     if (nops) {
         va_start(ap, nops);
         for (int i=0; i < nops; i++) {
@@ -147,16 +172,24 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
 
 
 /**
- *
+ * Create a class node.
  */
-t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body) {
+t_ast_element *ast_class(t_class *class, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeClass;
-    p->class.modifiers = modifiers;
-    p->class.name = strdup(name);
-    p->class.extends = extends;
-    p->class.implements = implements;
+    p->class.modifiers = class->modifiers;
+    p->class.name = strdup(class->name);
+    if (class->parent != NULL) {
+        // @TODO: Probably we want this done differently
+        p->class.extends = ast_string(class->parent->name);
+    } else {
+        p->class.extends = ast_nop();
+    }
+
+    // @TODO: Make sure interfaces are added correctly
+    p->class.implements = NULL;
+
     p->class.body = body;
 
     return p;
@@ -164,7 +197,7 @@ t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_as
 
 
 /**
- *
+ * Create an interface node
  */
 t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
@@ -180,7 +213,7 @@ t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implement
 
 
 /**
- *
+ * Create a method node
  */
 t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
@@ -196,7 +229,7 @@ t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t
 
 
 /**
- *
+ * Free up an AST node
  */
 void ast_free_node(t_ast_element *p) {
     return;

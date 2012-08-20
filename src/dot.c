@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "parser.tab.h"
 #include "ast.h"
+#include "saffire_compiler.h"
 #include <string.h>
 
 extern char *get_token_string(int token);
@@ -42,13 +43,13 @@ static int node_nr = 0;
 static char *show_modifiers(int modifiers) {
     char *s = (char *)calloc(100, sizeof(char)); // 100 bytes should be enough for everyone
 
-    if (modifiers & CONST_CLASS_PROTECTED) s = strcat(s, "PROTECTED\\n");
-    if (modifiers & CONST_CLASS_PUBLIC) s = strcat(s, "PUBLIC\\n");
-    if (modifiers & CONST_CLASS_PRIVATE) s = strcat(s, "PRIVATE\\n");
-    if (modifiers & CONST_CLASS_FINAL) s = strcat(s, "FINAL\\n");
-    if (modifiers & CONST_CLASS_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
-    if (modifiers & CONST_CLASS_STATIC) s = strcat(s, "STATIC\\n");
-    if (modifiers & CONST_CLASS_READONLY) s = strcat(s, "READONLY\\n");
+    if (modifiers & MODIFIER_PROTECTED) s = strcat(s, "PROTECTED\\n");
+    if (modifiers & MODIFIER_PUBLIC) s = strcat(s, "PUBLIC\\n");
+    if (modifiers & MODIFIER_PRIVATE) s = strcat(s, "PRIVATE\\n");
+    if (modifiers & MODIFIER_FINAL) s = strcat(s, "FINAL\\n");
+    if (modifiers & MODIFIER_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
+    if (modifiers & MODIFIER_STATIC) s = strcat(s, "STATIC\\n");
+    if (modifiers & MODIFIER_READONLY) s = strcat(s, "READONLY\\n");
 
     return s;
 }

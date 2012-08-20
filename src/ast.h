@@ -28,17 +28,7 @@
 #define __AST_H__
 
     #include "svar.h"
-
-
-    /* @TODO: These should not be here */
-    #define CONST_CLASS_PROTECTED           1
-    #define CONST_CLASS_PUBLIC              2
-    #define CONST_CLASS_PRIVATE             4
-    #define CONST_CLASS_FINAL               8
-    #define CONST_CLASS_ABSTRACT           16
-    #define CONST_CLASS_STATIC             32
-    #define CONST_CLASS_READONLY           64
-
+    #include "class.h"
 
     // different kind of nodes we manage
     typedef enum { typeString, typeNumerical, typeNull, typeIdentifier, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;
@@ -100,13 +90,14 @@
     // actual root element
     t_ast_element *ast_root;
 
+    t_ast_element *ast_compile_tree(FILE *fp);
 
     t_ast_element *ast_string(char *value);
     t_ast_element *ast_numerical(int value);
     t_ast_element *ast_identifier(char *var_name);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
-    t_ast_element *ast_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements, t_ast_element *body);
+    t_ast_element *ast_class(t_class *class, t_ast_element *body);
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);

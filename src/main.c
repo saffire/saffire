@@ -28,15 +28,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "parser.tab.h"
-#include "svar.h"
 #include "dot.h"
 #include "ast.h"
 
 #include "version.h"
-
-extern int      yyparse();
-extern FILE     *yyin;
 
 char    *source_file = "-";     // defaults to stdin
 int     source_args = 0;        // default to no additional arguments
@@ -147,12 +142,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Initialize system
-    svar_init_table();
-
-    // Parse the file input, will return the tree in the global ast_root variable
-    yyin = fp;
-    yyparse();
+    ast_compile_tree(fp);
 
     if (generate_dot) {
         // generate DOT file
