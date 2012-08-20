@@ -2,52 +2,52 @@
  * Object declarations
  */
 
-class Foo {
+class Foo1 {
 }
 
-class Foo extends Bar {
+class Foo2 extends Bar {
 }
 
-class Foo extends Bar, Baz {
+class Foo3 extends Baz {
 }
 
-class Foo implements Bar {
+class Foo4 implements Bar {
 }
 
-class Foo implements Bar, Baz {
+class Foo5 implements Bar, Baz {
 }
 
-class Foo extends Bar implements Qux {
+class Foo6 extends Bar implements Qux {
 }
 
-class Foo extends Bar, Baz implements Qux, Quux {
+class Foo7 extends Bar implements Qux, Quux {
 }
 
-final class Foo {
+final class Foo8 {
 }
 
-abstract class Foo {
+abstract class Foo9 {
 }
 
-abstract class Foo implements Qux, Quux {
+abstract class Foo10 implements Qux, Quux {
 }
 
-abstract class Foo extends Bar, Baz implements Qux, Quux {
+abstract class Foo11 extends Bar implements Qux, Quux {
 }
 
 
 
-class Foo {
+class Foo12 {
     const tmp_foo = "baz";
 }
 
-class Foo {
+class Foo13 {
     const tmp_foo = "baz";
     const tmp_bar = 44;
 }
 
 
-class Foo {
+class Foo14 {
     const tmp_foo = "baz";
 
     public method tmp_bar() {
@@ -74,7 +74,7 @@ class Foo {
 }
 
 
-class Foo {
+class Foo15 {
     const tmp_foo = "baz";
 
     public method tmp_bar2($a) {
@@ -89,7 +89,7 @@ class Foo {
     }
 }
 
-class Foo {
+class Foo16 {
     private method tmp_bar2() { }
     public method tmp_bar3() { }
     protected method tmp_bar4($a = 1, $b, $c = "foo") { }
@@ -107,10 +107,10 @@ class Foo {
     final static protected method tmp_bar13($a = 1, $b, $c = "foo") { }
 }
 
-abstract class Foo {
+abstract class Foo17 {
     protected method tmp_bar5() { }
 
-    abstract private method tmp_bar2();
+    abstract protected method tmp_bar2();
     abstract public method tmp_bar3();
 
     protected method tmp_bar6() { }
@@ -119,9 +119,6 @@ abstract class Foo {
 
     protected method tmp_bar7() { }
 }
-
-
-
 
 
 /* Output:

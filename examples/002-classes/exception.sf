@@ -1,7 +1,7 @@
 use io;
 
 class foo {
-    method bar(String $tmp) {
+    public method bar(String $tmp) {
         if ($tmp == "/[A-Z]+/") {
             throw invalidException("This is not ok");
         }
