@@ -21,7 +21,8 @@ If a datastructure has multiple arguments per element (like a key/value pair), y
 
 	hash["foo":1, "bar":2, "baz":3];
 
-More values are possible too, for instance, a priority-queue, which not only has key/value pairs, but also an additional priority.
+More values are possible too, for instance, a priority-queue, which not only has key/value pairs, but also an additional
+priority.
 
 ::
 
@@ -35,7 +36,9 @@ There are 3 internal data structures available:
 - `Set`_
 - `Tuples`_
 
-It's possible to create your own data-structures. However, be advised that the reason for using custom data structures is the advantage in terms of either memory, speed or both. By creating a data-structure in Saffire means that your structure will never be as fast as a native one.
+It's possible to create your own data-structures. However, be advised that the reason for using custom data structures
+is the advantage in terms of either memory, speed or both. By creating a data-structure in Saffire means that your
+structure will never be as fast as a native one.
 
 
 
@@ -70,7 +73,8 @@ Hashes have the same properties as lists, but each value has a (unique) key.
 
 Set
 ---
-Sets are like lists, but can only hold unique values. Every time a value is added that already exists, that value will be ignored.
+Sets are like lists, but can only hold unique values. Every time a value is added that already exists, that value will
+be ignored.
 
 
 ::
@@ -84,7 +88,10 @@ Sets can be used to quickly add, subtract or check items.
 
 Tuples
 ------
-Tuples work a bit differently than the other data-structures. They are internal structure that holds 0 or more other elements.
+Tuples work a bit differently than the other data-structures. They are internal structure that holds 0 or more other
+elements.
+
+::
 
 	$a = ( "foo", "bar" );
 
