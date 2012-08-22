@@ -12,14 +12,14 @@ An if-statement let you execute code only when a certain condition have been met
 		// only done when $a equals 1
 	}
 
-Off course, when you only have one statement, you can omit the brackets:
+When you only have one statement, you can omit the brackets:
 
 ::
 
 	if ($a == 1) dothis();
 
 
-It's also possible to have an else-statement, which gets executed when the condition is NOT met:
+It's also possible to have an else-statement after the if, which gets executed when the condition is NOT met:
 
 ::
 
@@ -30,6 +30,8 @@ It's also possible to have an else-statement, which gets executed when the condi
 	}
 
 It's also possible to chain if/else statements:
+
+::
 
 	if ($a == 1) {
 		// done when $a == 1
@@ -49,7 +51,8 @@ A while loop will iterate over the statements until the evaluation will be false
 		$a++;
 	}
 
-The while-structure also accepts an else-statement. This else statement is executed if the **initial** evaluation is NOT true **or** when breakelse is called from inside the loop.
+The while-structure also accepts an else-statement. This else statement is executed if the **initial** evaluation is NOT
+true **or** when breakelse is called from inside the loop.
 
 ::
 
@@ -63,7 +66,8 @@ The while-structure also accepts an else-statement. This else statement is execu
 
 dowhile
 -------
-A do-while loop is similar to a while loop except the loop will **at least** be executed once, since the evaluation will be done at the end of the loop. This means that do-while does not support the else statement.
+A do-while loop is similar to a while loop except the loop will **at least** be executed once, since the evaluation will
+be done at the end of the loop. This means that do-while does not support the else statement.
 
 ::
 
@@ -80,7 +84,9 @@ for
 
 	for (epxr1 ; expr2 ; expr3) {}
 
-At the beginning of the loop, the expr1 will be executed.  On every iteration, expr2 is evaluated. If this expression returns False, the for-loop will be ended, otherwise the loop will be executed. At the end of each iteration, expr3 is called.
+At the beginning of the loop, the expr1 will be executed.  On every iteration, expr2 is evaluated. If this expression
+returns False, the for-loop will be ended, otherwise the loop will be executed. At the end of each iteration, expr3 is
+called.
 
 A classis way to loop over 1 to 10:
 
@@ -90,7 +96,8 @@ A classis way to loop over 1 to 10:
 		// $1 will be 1 to 10
 	}
 
-All expression can be empty. If expr2 is empty, it will be considered True. The following statement will be a endless loop:
+All expression can be empty. If expr2 is empty, it will be considered True. The following statement will be a endless
+loop:
 
 ::
 
@@ -116,7 +123,8 @@ The .iter() method returns a tuple of 3 variables:
 - key
 - metadata
 
-The value is the actual value that is returned. For instance, a list datastructure will only return the elements, since there aren't any keys.
+The value is the actual value that is returned. For instance, a list datastructure will only return the elements, since
+there aren't any keys.
 
 ::
 
@@ -151,7 +159,8 @@ There is an additional field called $meta, which is filled with foreach metadata
 
 
 .. note:: 
-	.iter() methods can add additional information to the meta data, for instance, with a priority-queue, the actual priority of an element can be stored in $meta.priority
+	.iter() methods can add additional information to the meta data, for instance, with a priority-queue, the actual
+	priority of an element can be stored in $meta.priority
 
 ::
 
@@ -167,22 +176,27 @@ There is an additional field called $meta, which is filled with foreach metadata
 	}	
 
 .. note:: 
-	A datastructure (an object that implemented "datastructure", like the list, hash etc), already have implemented the .iter() method and thus are iterable.
+	A datastructure (an object that implemented "datastructure", like the list, hash etc), already have implemented the
+	.iter() method and thus are iterable.
 
 
-Foreach can be accompanied by an else. This is called whenever the .iter() is not implemented, or when there is an empty list, or when `breakelse`_ is issued inside the foreach{} block.
+Foreach can be accompanied by an else. This is called whenever the .iter() is not implemented, or when there is an empty
+list, or when `breakelse`_ is issued inside the foreach{} block.
 
 
 
 break
 -----
-**Break** can be used to end the execution of `for`_, `foreach`_, `while`_, `dowhile`_ and `switch`_ statements. See the corresponding statements for more information.
+**Break** can be used to end the execution of `for`_, `foreach`_, `while`_, `dowhile`_ and `switch`_ statements. See the
+corresponding statements for more information.
 
 
 
 breakelse
 ---------
-The **breakelse** statement is used in the `for`_ and `while`_ statements. They act the same way as a normal break statement, but when a for and while statement are accompanied with an else statement, it will automatically execute that as well.
+The **breakelse** statement is used in the `for`_ and `while`_ statements. They act the same way as a normal break
+statement, but when a for and while statement are accompanied with an else statement, it will automatically execute that
+as well.
 
 ::
 
@@ -201,7 +215,8 @@ The **breakelse** statement is used in the `for`_ and `while`_ statements. They 
 
 switch
 ------
-**switch** can be seen as a multi-if statement. Instead of evaluating one expression, it evaluates many expressions and directly executes those statements
+**switch** can be seen as a multi-if statement. Instead of evaluating one expression, it evaluates many expressions and
+directly executes those statements
 
 ::
 
@@ -267,7 +282,8 @@ continue
 
 return
 ------
-**Return** will exit a method and return to the caller. Calling return from the global scope will stop execution of the script.
+**Return** will exit a method and return to the caller. Calling return from the global scope will stop execution of the
+script.
 
 ::
 
@@ -286,7 +302,8 @@ return
 
 	$a = Foo.Bar();   // $a = "Baz"
 
-Note that return can include zero or more arguments. Those arguments are directly returned to the caller. If at the end of a method no return statement is given, the result of the last expression will be the return value.
+Note that return can include zero or more arguments. Those arguments are directly returned to the caller. If at the end
+of a method no return statement is given, the result of the last expression will be the return value.
 
 ::
 
@@ -302,7 +319,9 @@ Note that return can include zero or more arguments. Those arguments are directl
 
 goto
 ----
-**Goto** can be used to jump directly to a label. These labels are defined as <name>: at the beginning of a line. Note that you cannot jump outside a code block. This means that you can only **goto** a labael inside the same method for instance. 
+**Goto** can be used to jump directly to a label. These labels are defined as <name>: at the beginning of a line. Note
+that you cannot jump outside a code block. This means that you can only **goto** a labael inside the same method for
+instance.
 
 ::
 
@@ -339,7 +358,8 @@ Also, you cannot jump inside a loop.
 	}
 
 .. warning::
-	Even though **goto** might be seen as **evil** by many programmers, it does have its purpose. But not many. If you are not sure wether or not you should use **goto**, you probably are "doing it wrong"(tm).
+	Even though **goto** might be seen as **evil** by many programmers, it does have its purpose. But not many. If you
+	are not sure wether or not you should use **goto**, you probably are "doing it wrong"(tm).
 
 
 
