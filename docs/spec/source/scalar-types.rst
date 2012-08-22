@@ -6,10 +6,12 @@ Saffire is an object-only language. This means that everything, including string
 
 **String**
 This represents an (UTF-8) array of characters. A length() of a string will always return the number of CHARACTERS, not
-the number of bytes. Make sure that when dealing with binary
+the number of bytes. Make sure that when dealing with binary data, you are using String.bytes() instead of String, in
+order to retrieve the actual bytes.
 
 **Numeric**
-Integer ranging from Numeric.MIN to Numeric.MAX.
+Numeric integer ranging from Numeric.MIN to Numeric.MAX. Longer numerical values can use a different class (LongNumeric)
+instead.
 
 **Double**
 Any fixed point number.
@@ -17,18 +19,18 @@ Any fixed point number.
 **Boolean**
 Representing either a true or a false value.
 
-**Null**
-Represents a null value.
-
 
 Standard objects
 ----------------
 
+**Null**
+Represents a null value. This object cannot be extended or changed.
+
 **True**
-A boolean representing a true value
+A boolean representing a true value. This object cannot be extended or changed.
 
 **False**
-A boolean representing a false value
+A boolean representing a false value. This object cannot be extended or changed.
 
 
 :Authors:
