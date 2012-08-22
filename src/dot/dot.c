@@ -26,10 +26,10 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "parser.tab.h"
-#include "ast.h"
-#include "saffire_compiler.h"
 #include <string.h>
+#include "compiler/saffire_compiler.h"
+#include "compiler/parser.tab.h"
+#include "compiler/ast.h"
 
 extern char *get_token_string(int token);
 
@@ -59,6 +59,10 @@ static char *show_modifiers(int modifiers) {
  * Output node (and link to parent node number). Recursively called when child nodes are present.
  */
 static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
+    if (! p) {
+        return;
+    }
+
     // Store node_nr, since this is a static var that will change.
     int cur_node_nr = node_nr;
     node_nr++;

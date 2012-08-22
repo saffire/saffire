@@ -28,10 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "saffire_interpreter.h"
-#include "parser.tab.h"
-#include "svar.h"
-#include "ast.h"
+#include "interpreter/saffire_interpreter.h"
+#include "compiler/parser.tab.h"
+#include "general/svar.h"
+#include "compiler/ast.h"
 
 #define SI(p)   (saffire_interpreter(p))
 #define SI0(p)  (saffire_interpreter(p->opr.ops[0]))

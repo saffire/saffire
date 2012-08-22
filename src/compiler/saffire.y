@@ -30,9 +30,9 @@
 #define YY_HEADER_EXPORT_START_CONDITIONS 1
 
     #include <stdio.h>
-    #include "lex.yy.h"
-    #include "saffire_compiler.h"
-    #include "ast.h"
+    #include "compiler/lex.yy.h"
+    #include "compiler/saffire_compiler.h"
+    #include "compiler/ast.h"
 
     extern int yylineno;
     int yylex(void);

@@ -28,8 +28,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "hashtable/hashtable.h"
-#include "svar.h"
+#include "general/hashtable.h"
+#include "general/svar.h"
 
 t_hash_table *variable_table;
 

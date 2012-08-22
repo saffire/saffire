@@ -30,8 +30,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ast.h"
-#include "parser.tab.h"
+#include "compiler/ast.h"
+#include "compiler/parser.tab.h"
 
 #define YY_NO_INPUT 1
 #define YYPRINT 1

@@ -27,8 +27,8 @@
 #ifndef __AST_H__
 #define __AST_H__
 
-    #include "svar.h"
-    #include "class.h"
+    #include "general/svar.h"
+    #include "compiler/class.h"
 
     // different kind of nodes we manage
     typedef enum { typeString, typeNumerical, typeNull, typeIdentifier, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;

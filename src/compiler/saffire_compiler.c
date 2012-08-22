@@ -28,9 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "saffire_compiler.h"
-#include "parser.tab.h"
-#include "ast.h"
+#include "compiler/saffire_compiler.h"
+#include "compiler/parser.tab.h"
+#include "compiler/ast.h"
 
 extern void yyerror(const char *err);
 extern int yylineno;

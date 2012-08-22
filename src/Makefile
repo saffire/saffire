@@ -11,7 +11,7 @@ RM=rm
 LIBS = -lm
 
 # Standard flags for C compiler
-INCLUDES  =
+INCLUDES  = -I.
 USR_FLAGS =
 CFLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 
@@ -19,7 +19,7 @@ CFLAGS   = -Wall -std=gnu99 $(CC_DEBUG_FLAGS) $(INCLUDES) $(USR_FLAGS)
 BISON_FLAGS = -d $(BISON_DEBUG_FLAGS)
 
 # Lex flags
-LEX_FLAGS = $(LEX_DEBUG_FLAGS) --header-file=lex.yy.h
+LEX_FLAGS = $(LEX_DEBUG_FLAGS) --header-file=compiler/lex.yy.h
 
 # Linker flags
 LDFLAGS = $(LIBS) $(LD_DEBUG_FLAGS)
@@ -49,14 +49,14 @@ debug: saffire
 
 # Our objects that needs to be compiled
 OBJS =	main.o \
-	svar.o \
-	ast.o \
-	dot.o \
-	saffire_compiler.o \
-	saffire_interpreter.o \
-	lex.yy.o \
-	parser.tab.o \
-	hashtable/hashtable.o
+	general/svar.o \
+	compiler/ast.o \
+	dot/dot.o \
+	compiler/saffire_compiler.o \
+	interpreter/saffire_interpreter.o \
+	compiler/lex.yy.o \
+	compiler/parser.tab.o \
+	general/hashtable.o
 
 # Main target
 saffire: $(OBJS)
@@ -64,17 +64,17 @@ saffire: $(OBJS)
 	echo "Saffire has been build in  $(CURDIR)/$(TARGET)"
 
 # depends on parser.tab.c (actually, parser.tab.h)
-main.o:	lex.yy.c parser.tab.c
+main.o:	compiler/lex.yy.c compiler/parser.tab.c
 
 # Bison the parser from our saffire.y
-parser.tab.c:
+compiler/parser.tab.c:
 	echo [BISON] $@
-	$(BISON) $(BISON_FLAGS) -o $@ saffire.y
+	$(BISON) $(BISON_FLAGS) -o $@ compiler/saffire.y
 
 # Lex our lexer from saffire.l
-lex.yy.c: saffire.l
+compiler/lex.yy.c: compiler/saffire.l
 	echo [LEX] $<
-	$(LEX) $(LEX_FLAGS) $<
+	$(LEX) $(LEX_FLAGS) -o $@ $<
 
 # Compile .c files into .o objects
 .c.o:
@@ -84,8 +84,8 @@ lex.yy.c: saffire.l
 # Clean up old data
 clean:
 	echo [RM] $@
-	$(RM) parser.tab.c parser.tab.h lex.yy.c parser.output || true
-	$(RM) $(OBJS) || true
-	$(RM) $(TARGET) || true
+	$(RM) -f compiler/parser.tab.c compiler/parser.tab.h compiler/lex.yy.c compiler/parser.output || true
+	$(RM) -f $(OBJS) || true
+	$(RM) -f $(TARGET) || true
 
 .PHONY:	all debug clean

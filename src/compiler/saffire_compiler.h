@@ -27,9 +27,9 @@
 #ifndef __SAFFIRE_COMPILE_H__
 #define __SAFFIRE_COMPILE_H__
 
-    #include "ast.h"
-    #include "class.h"
-    #include "hashtable/hashtable.h"
+    #include "compiler/ast.h"
+    #include "compiler/class.h"
+    #include "general/hashtable.h"
 
     /* @TODO: These should not be here */
     #define MODIFIER_PUBLIC              1

@@ -28,8 +28,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "dot.h"
-#include "ast.h"
+#include "dot/dot.h"
+#include "compiler/ast.h"
 
 #include "version.h"
 

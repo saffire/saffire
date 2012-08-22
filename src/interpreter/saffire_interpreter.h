@@ -27,8 +27,8 @@
 #ifndef __SAFFIRE_INTERPRETER_H__
 #define __SAFFIRE_INTERPRETER_H__
 
-    #include "ast.h"
-    #include "svar.h"
+    #include "compiler/ast.h"
+    #include "general/svar.h"
 
     svar *saffire_interpreter(t_ast_element *p);
 

@@ -29,10 +29,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "parser.tab.h"
-#include "saffire_compiler.h"
-#include "svar.h"
-#include "ast.h"
+#include "compiler/saffire_compiler.h"
+#include "compiler/parser.tab.h"
+#include "general/svar.h"
+#include "compiler/ast.h"
 
 extern void yyerror(const char *err);
 extern int yyparse();
