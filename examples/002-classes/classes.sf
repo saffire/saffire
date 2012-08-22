@@ -20,6 +20,10 @@ class foo {
      *    .clone (called when cloning)
      *    .ctor (called during construction, cannot be called directly)
      *    .dtor (caleld during destruction, cannot be called directly)
+     *
+     *    .protect (makes the object immutable)
+     *    .destroy (destroy this object)
+     *    .refcount (returns the number of references this class has)
      */
 
     // Constructor, called during init of variable
