@@ -42,7 +42,7 @@ char    *dot_file = NULL;
  * Prints current version number and copyright information
  */
 void print_version() {
-    printf("%s  - %s\n", saffire_version, saffire_copyright);
+    printf("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
 }
 
 
