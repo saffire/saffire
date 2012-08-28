@@ -14,6 +14,10 @@ Contents:
 
    intro
    releases
+   using-saffire
+   saffire-from-other-languages
+   tutorials
+   typing
    scalar-types
    data-structures
    keywords
@@ -24,6 +28,7 @@ Contents:
    interfaces
    overloading
    magic-methods
+
 
 Indices and tables
 ==================

@@ -36,7 +36,6 @@ all:
 	echo "  saffire   Build a complete build"
 	echo "  debug     Build a debug build"
 	echo "  clean     Clean temporary objects and files"
-	echo "  test      Execute tests"
 
 ## Default make target
 #saffire:	$(TARGET)

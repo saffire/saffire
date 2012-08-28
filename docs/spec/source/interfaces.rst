@@ -2,7 +2,8 @@
 Interfaces
 ##########
 
-Saffire interfaces is a boilerplate class that a class that uses the interface must implement. They are similar to abstract classes, however:
+Saffire interfaces is a boilerplate class that a class that uses the interface must implement. They are similar to
+abstract classes, however:
 
 * A class can only extend one (abstract) class
 * An abstract class can have abstract methods, but also methods with bodies.

@@ -26,111 +26,222 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 #include "saffire_compiler.h"
 #include "parser.tab.h"
 #include "ast.h"
 
-static int lbl = 0;
+extern void yyerror(const char *err);
+extern int yylineno;
 
-#define SC0(p) saffire_compiler(p->opr.ops[0])
-#define SC1(p) saffire_compiler(p->opr.ops[1])
-#define SC2(p) saffire_compiler(p->opr.ops[2])
+/**
+ * Print out an error and exit
+ */
+static void sfc_error(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    printf("Error in line: %d", yylineno);
+    vprintf(str, args);
+    printf("\n");
+    va_end(args);
+    exit(1);
+}
 
 
-void saffire_compiler(t_ast_element *p) {
-    int lbl1, lbl2;
-
-    if (!p) return;
-
-    switch (p->type) {
-        case typeNull :
-            printf("\tnop\n");
-            break;
-
-        case typeString :
-            printf("\tpush\t\"%s\"\n", p->string.value);
-            break;
-
-        case typeNumerical :
-            printf("\tpush\t%d\n", p->numerical.value);
-            break;
-
-        case typeIdentifier :
-            printf("\tpush\t~\"%s\"\n", p->identifier.name);
-            break;
-
-        case typeClass :
-        case typeInterface :
-        case typeMethod :
-            break;
-
-        case typeOpr :
-            switch (p->opr.oper) {
-                case T_USE :
-                    printf("\tuse_alias\t\"%s\"\t\"%s\"\n", p->opr.ops[0]->identifier.name, p->opr.ops[1]->identifier.name);
-                    break;
-
-                case T_WHILE :
-                    printf("L%03d:\n", lbl1 = lbl++);
-                    SC0(p);
-                    printf("\tjz\tL%03d\n", lbl2 = lbl++);
-                    SC1(p);
-                    printf("\tjmp\tL%03d\n", lbl1);
-                    printf("L%03d:\n", lbl2);
-                    break;
-
-                case T_IF:
-                    SC0(p);
-                    if (p->opr.nops > 2) {
-                        // if else
-                        printf("\tjz\tL%03d\n", lbl1 = lbl++);
-                        SC1(p);
-                        printf("\tjmp\tL%03d\n", lbl2 = lbl++);
-                        printf("L%03d:\n", lbl1);
-                        SC2(p);
-                        printf("L%03d:\n", lbl2);
-                    } else {
-                        // if
-                        printf("\tjz\tL%03d\n", lbl1 = lbl++);
-                        SC1(p);
-                        printf("L%03d:\n", lbl1);
-                    }
-                    break;
-
-                case '=' :
-                    SC1(p);
-                    printf("\tpop\t~\"%s\"\n", p->opr.ops[0]->identifier.name);
-                    break;
-
-                case T_METHOD_CALL :
-                    printf("\tcall\t");
-                    break;
-
-                default :
-                    SC0(p);
-                    SC1(p);
-                    switch (p->opr.oper) {
-                        case '+' : printf("\tadd\n"); break;
-                        case '-' : printf("\tsub\n"); break;
-                        case '*' : printf("\tmul\n"); break;
-                        case '/' : printf("\tdiv\n"); break;
-                        case '^' : printf("\tpow\n"); break;
-                        case '<' : printf("\tcompLT\n"); break;
-                        case '>' : printf("\tcompGT\n"); break;
-                        case T_GE : printf("\tcompGE\n"); break;
-                        case T_LE : printf("\tcompLE\n"); break;
-                        case T_NE : printf("\tcompNE\n"); break;
-                        case T_EQ : printf("\tcompEQ\n"); break;
-                        case '.' :
-                        case T_LIST :
-                        case ';' :
-                                printf("\n");
-                                // End of statement?
-                                break;
-                        default:
-                            printf("Unhandled opcode: %d\n", p->opr.oper);
-                            break;
-                    }
-            }
+/**
+ * Validate class modifiers
+ */
+void sfc_validate_class_modifiers(long modifiers) {
+    // Classes do not have a visibility
+    if (modifiers & MODIFIER_MASK_VISIBLITY) {
+        sfc_error("Classes cannot have a visibility");
     }
+}
+
+
+/**
+ * Validate abstract method body
+ */
+void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
+    // If the method is not abstract, we don't need to check
+    if ((modifiers & MODIFIER_ABSTRACT) == 0) {
+        return;
+    }
+
+    // Right now, this is an abstract method
+
+    // Check if we have a body
+    if (body->type != typeNull) {
+        sfc_error("Abstract methods cannot have a body");
+    }
+}
+
+
+/**
+ * Validate method modifiers
+ */
+void sfc_validate_method_modifiers(long modifiers) {
+    // Make sure we have at least 1 visibility bit set
+    if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
+        sfc_error("Methods must define a visibility");
+    }
+
+    // Check if abstract and private are set. This is not allowed
+    if ((modifiers & (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) == (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) {
+        sfc_error("Abstract methods cannot be private");
+    }
+}
+
+
+/**
+ * Validate property modifiers
+ */
+void sfc_validate_property_modifiers(long modifiers) {
+    if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
+        sfc_error("Methods must define a visibility");
+    }
+}
+
+
+/**
+ * Checks if modifier flags are allowed (does not check the context (class, method, property etc).
+ */
+void sfc_validate_flags(long cur_flags, long new_flag) {
+    // Only one of the visibility flags must be set
+    if ((cur_flags & MODIFIER_MASK_VISIBLITY) && (new_flag & MODIFIER_MASK_VISIBLITY)) {
+        sfc_error("Cannot have multiple visiblity masks");
+    }
+
+    // Is one of the new flags already been set?
+    if (cur_flags & new_flag) {
+        sfc_error("Modifiers can only be set once");
+    }
+
+    // Make sure abstract and final are not both set.
+    if (((cur_flags | new_flag) & (MODIFIER_ABSTRACT | MODIFIER_FINAL)) == (MODIFIER_ABSTRACT | MODIFIER_FINAL)) {
+       sfc_error("Abstract members cannot be made final");
+    }
+}
+
+
+/**
+ * Validate a constant
+ */
+void sfc_validate_constant(char *name) {
+    // Check if the class exists in the class table
+    if (global_table->active_class) {
+        // inside the current class
+        t_hash_table_bucket *htb = ht_find(global_table->active_class->constants, name);
+        if (htb != NULL) {
+            sfc_error("Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
+        }
+
+        // Save structure to the global class hash and set as the active class
+        ht_add(global_table->active_class->constants, name, name);
+
+    } else {
+        // Global scope
+        t_hash_table_bucket *htb = ht_find(global_table->constants, name);
+        if (htb != NULL) {
+            sfc_error("Constant '%s' has already be defined in the global scope", name);
+        }
+
+        // Save structure to the global class hash and set as the active class
+        ht_add(global_table->constants, name, name);
+    }
+
+}
+
+
+/**
+ * Initialize a class
+ */
+void sfc_init_class(int modifiers, char *name) {
+    // Are we inside a class already, if so, we cannot add another class
+    if (global_table->in_active_class == 1) {
+        sfc_error("You cannot define a class inside another class");
+    }
+
+    // Check if the class exists in the class table
+    t_hash_table_bucket *htb = ht_find(global_table->classes, name);
+    if (htb != NULL) {
+        sfc_error("This class is already defined");
+    }
+
+    // Initialize and populte a new class structure
+    t_class *new_class = (t_class *)malloc(sizeof(t_class));
+    new_class->modifiers = modifiers;
+    new_class->name = name;
+
+    // @TODO: Check if parent actually exists
+    new_class->parent = NULL;
+
+    new_class->methods = ht_create();
+    new_class->constants = ht_create();
+    new_class->properties = ht_create();
+
+    new_class->interfaces = NULL;
+    new_class->num_interfaces = 0;
+
+    new_class->filename = "";
+    new_class->line_start = yylineno;
+    new_class->line_end = 0;
+
+    // Save structure to the global class hash and set as the active class
+    ht_add(global_table->classes, name, new_class);
+    global_table->active_class = new_class;
+
+    // We are currently inside a class.
+    global_table->in_active_class = 1;
+}
+
+
+/**
+ * End a class
+ */
+void sfc_fini_class(void) {
+    // Cannot close a class when we are not inside one
+    if (global_table->in_active_class == 0) {
+        sfc_error("Closing a class, but we weren't inside one to begin with");
+    }
+
+    // Is there an active class?
+    if (global_table->active_class == NULL) {
+        sfc_error("Somehow we try to close the global scope");
+    }
+
+    // Set line ending
+    (global_table->active_class)->line_end = yylineno;
+
+    // Close class, move back to global scope
+    global_table->active_class = NULL;
+
+    // Not inside a class anymore
+    global_table->in_active_class = 0;
+}
+
+
+/**
+ * Initialize the compiler global table
+ */
+static void sfc_init_global_table(void) {
+    // Allocate table memory
+    global_table = (t_global_table *)malloc(sizeof(t_global_table));
+    if (! global_table) {
+        // @TODO: alloc error
+    }
+
+    // Initialize table
+    global_table->constants = ht_create();
+    global_table->classes = ht_create();
+    global_table->active_class = NULL;
+}
+
+
+/**
+ * Initialize the saffire_compiler
+ */
+void sfc_init(void) {
+    sfc_init_global_table();
 }

@@ -20,6 +20,10 @@ class foo {
      *    .clone (called when cloning)
      *    .ctor (called during construction, cannot be called directly)
      *    .dtor (caleld during destruction, cannot be called directly)
+     *
+     *    .protect (makes the object immutable)
+     *    .destroy (destroy this object)
+     *    .refcount (returns the number of references this class has)
      */
 
     // Constructor, called during init of variable
@@ -48,7 +52,7 @@ class foo {
     public method foo2 () {
     }
 
-    method foo3 () {
+    private method foo3 () {
     }
 
 }
@@ -67,10 +71,10 @@ class baz extends foo implements ibaz {
 //$tmp.implements() returns array("ibaz")
 
 interface baz {
-    method foo();
+    public method foo();
 }
 
-abstract class baz {
-    abstract method foo();
+abstract class bazbaz {
+    abstract public method foo();
 }
 
