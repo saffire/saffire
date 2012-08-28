@@ -49,7 +49,7 @@ class $foo {
 }
 
 ====
-This isn't possible!
+This should not be possible!
 @@@@
 // scalar class
 class "foo" {
