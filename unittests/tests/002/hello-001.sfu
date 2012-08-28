@@ -1,8 +1,12 @@
-Check if multiple visiblity masks are possible
+title: test
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+************
 @@@
+# Check if multiple visiblity masks are possible
 
 private public class Foo {
 }
 
-@@@
+=====
 Error in line: 1: Cannot have multiple visiblity masks
