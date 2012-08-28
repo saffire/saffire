@@ -107,6 +107,13 @@ class UnitTester {
         $this->_output("\tIgnored     : ".sprintf("%5d", $this->_results['ignored'])." (".$this->_perc($this->_results['ignored'], $this->_results['total_tests']).")\n");
         $this->_output("\tSkipped     : ".sprintf("%5d", $this->_results['skipped'])." (".$this->_perc($this->_results['skipped'], $this->_results['total_tests']).")\n");
         $this->_output("\n");
+
+
+        foreach ($this->_results['errors'] as $error) {
+            $this->_output("=============================\n");
+            $this->_output($error);
+            $this->_output("\n");
+        }
     }
 
     protected function _perc($p, $t) {
@@ -125,6 +132,8 @@ class UnitTester {
         $this->_results['failed'] = 0;
         $this->_results['skipped'] = 0;
         $this->_results['ignored'] = 0;
+
+        $this->_results['errors'] = array();
         $this->_current = array();
     }
 
@@ -275,11 +284,16 @@ class UnitTester {
 
         if ($outputExpected) {
             // We expect certain output. Let's try and diff it..
-            exec("/usr/bin/diff --suppress-common-lines -W 500 -y ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
+            exec("/usr/bin/diff --suppress-common-lines ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
             if ($result != 0) {
-//                print "\n";
-//                print join("\n", $output);
-//                print "\n";
+                $tmp = "";
+                $tmp .= "Error in ".$this->_current['filename']."\n";
+                $tmp .= join("\n", $output);
+                $tmp .= "\n";
+
+                // @TODO: when we are at X errors, quit anyway
+                $this->_results['errors'][] = $tmp;
+
                 $ret = self::FAIL;
                 goto cleanup;
             } else {
@@ -287,7 +301,6 @@ class UnitTester {
                 goto cleanup;
             }
         }
-
 
 cleanup:
         // Unlink all temp files
@@ -310,7 +323,6 @@ cleanup:
             if (empty($line)) continue;     // Skip empty lines
             if ($line[0] == "#") continue;  // Skip comments
 
-            //$this->_output("LINE: $line\n");
             $tmp = explode(":", $line, 2);
             if (count($tmp) != 2) {
                 $this->_output("Cannot find tag on line ".$this->_current['lineno']."\n");
