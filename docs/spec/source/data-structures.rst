@@ -7,7 +7,7 @@ Data structures are first-class citizens in Saffire.
 
 Every data structure is handled the same way:
 
-	<strucuture>[value,value,...]
+	<strucuture>[key:val1:val2,key:val1:val2,...]
 
 A list can be defined as:
 
@@ -15,7 +15,7 @@ A list can be defined as:
 
 	list["foo", "bar", "baz"];
 
-If a datastructure has multiple arguments per element (like a key/value pair), you can separate them with a :
+If a datastructure has multiple arguments per element (like a key/value pair), you can separate them with a ``:``
 
 ::
 
@@ -34,7 +34,6 @@ There are 3 internal data structures available:
 - `List`_
 - `Hash`_
 - `Set`_
-- `Tuples`_
 
 It's possible to create your own data-structures. However, be advised that the reason for using custom data structures
 is the advantage in terms of either memory, speed or both. By creating a data-structure in Saffire means that your
@@ -50,7 +49,7 @@ Lists are data structures with values only. A value can be available multiple ti
 
 	$a = list[ "foo", "bar", "baz" ];
 
-this represents a list of 4 Strings, which can be accessed through the [] notation.
+this represents a list of 4 Strings, which can be accessed through the ``[]`` notation.
 
 ::
 
