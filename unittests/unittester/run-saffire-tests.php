@@ -25,10 +25,16 @@ if (! isset($argv[1]) || $argv[1] == "") {
     exit;
 }
 
-
-$it = new RecursiveDirectoryIterator($argv[1]);
-$it = new RecursiveIteratorIterator($it);
-$it = new RegexIterator($it, '/^.+\.sfu$/i', RecursiveRegexIterator::GET_MATCH);
+if (is_dir($argv[1])) {
+    $it = new RecursiveDirectoryIterator($argv[1]);
+    $it = new RecursiveIteratorIterator($it);
+    $it = new RegexIterator($it, '/^.+\.sfu$/i', RecursiveRegexIterator::GET_MATCH);
+} else if (is_file($argv[1])) {
+    $it = new ArrayIterator(array($argv[1]));
+} else {
+    print "I don't know what $argv[1] is.\n";
+    exit;
+}
 
 $suite = new \Saffire\UnitTester($it);
 $suite->addOutput(new \Saffire\Output\Console());
