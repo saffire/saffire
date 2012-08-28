@@ -1,0 +1,84 @@
+title: switch control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+switch ("foo") {
+
+}
+====
+@@@@
+switch ($a=1) {
+}
+
+====
+This should not be possible?
+@@@@
+switch ($a) {
+    case "foo" :
+}
+
+====
+@@@@
+switch ($a) {
+    case "foo" :
+}
+
+====
+@@@@
+switch ($a) {
+    case $a == 1 :
+}
+
+====
+Not possible
+@@@@
+switch ($a) {
+    break;
+}
+
+====
+@@@@
+switch ($a) {
+    case 1:
+        $a = 1;
+        break;
+    case 2:
+        $a = 1;
+        break;
+}
+
+====
+@@@@
+switch ($a) {
+    case 1:
+        $a = 1;
+        break;
+    case 1:
+        $a = 1;
+        break;
+}
+====
+@@@@
+switch ($a) {
+    case default:
+        $a = 1;
+        break;
+    case 1:
+        $a = 1;
+        break;
+}
+====
+Error in line: 3: syntax error, unexpected T_DEFAULT
+@@@@
+switch ($a) {
+    default:
+        $a = 1;
+        break;
+    case 1:
+        $a = 1;
+        break;
+    default:
+        $a = 1;
+        break;
+}
+====

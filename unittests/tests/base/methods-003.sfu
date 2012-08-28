@@ -3,6 +3,14 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 class Foo {
+    public method private() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_PRIVATE, expecting T_IDENTIFIER
+@@@@
+class Foo {
     public method "foo"() {
     }
 }

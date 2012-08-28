@@ -1,0 +1,27 @@
+title: for control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+for ($i=0; $i!=10; $i++) {
+}
+
+====
+@@@@
+for (;;) ;
+
+====
+@@@@
+for ($i=0,$b=1; ; $i++) {
+}
+
+====
+@@@@
+for ($i=0; "foo"; ) {
+}
+
+====
+@@@@
+for ($i=0; $i!=10; $i++,$j++) {
+}
+
+====
