@@ -91,7 +91,8 @@ class UnitTester {
 
         // Iterate and test all files
         foreach ($this->_it as $filename) {
-            $this->_runTest($filename[0]);
+            if (is_array($filename)) $filename = $filename[0];
+            $this->_runTest($filename);
         }
 
         // Output end time
@@ -117,6 +118,7 @@ class UnitTester {
     }
 
     protected function _perc($p, $t) {
+        if ($t == 0) return "0.00%";
         return round($p / $t * 100, 2)."%";
     }
 
@@ -188,7 +190,7 @@ class UnitTester {
         // Read header
         $f = file_get_contents($filename);
         if ($f == null) {
-            $this->_results['fail']++;
+            $this->_results['failed']++;
         }
         $this->_current['contents'] = $f;
 
