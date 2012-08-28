@@ -7,7 +7,7 @@ Hello world
 
 ::
 
-    use io
+    use io;
 
     io.print("hello world!");
 
@@ -20,7 +20,7 @@ Simple calculations
 
 ::
 
-    use io
+    use io;
 
     $a = 1;
     $a += 1;
@@ -38,7 +38,7 @@ Classes and Objects
 
 ::
 
-    use io
+    use io;
 
     class Foo() {
         public method ctor() {
