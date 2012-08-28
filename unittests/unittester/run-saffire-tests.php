@@ -13,8 +13,6 @@ function autoload($className) {
     }
     $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className) . '.php';
 
-    print "Loading file: ".$fileName."\n";
-
     require $fileName;
 }
 spl_autoload_register("autoload");

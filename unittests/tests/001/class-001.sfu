@@ -19,8 +19,8 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 #
 #  Saffire Test Suite v0.1 - The Saffire Group
 #  Start time: 12:34:56
-#  001\modifiers-001.sfu: Class modifiers tests: ...........XX...X.X.XX..
-#  001\modifiers-001.sfu: Class modifiers tests: .....
+#  001\modifiers-001.sfu: Class tests: ...........XX...X.X.XX..
+#  001\modifiers-001.sfu: Method modifiers tests: .....
 #  End time: 12:35:00 (4 seconds running time)
 #
 #  Status:
@@ -31,72 +31,76 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 
 **********
-# Simple modifiers 1
-public class Foo {
-}
-
-====
-asdfasfasd
-@@@@
-# Simple modifiers 2
-private class Foo {
-}
-
-====
-@@@@
-# Simple modifiers 3
-protected class Foo {
-}
-
-====
-@@@@
-# Multiple modifiers 1
-private protected class Foo {
-}
-
-====
-@@@@
-# Multiple modifiers 2
-public protected class Foo {
-}
-
-====
-@@@@
-# Double modifiers 1
-public public class Foo {
-}
-
-====
-@@@@
-# No modifiers
+// Simple class
 class Foo {
 }
 
 ====
 @@@@
-# Abstract + visiblity modifiers 1
-abstract public class Foo {
+// Keyword class
+class goto {
+}
+
+====
+Error in line: 3: syntax error, unexpected T_GOTO, expecting T_IDENTIFIER
+@@@@
+// var class
+class $foo {
+}
+
+====
+This isn't possible!
+@@@@
+// scalar class
+class "foo" {
+}
+
+====
+Error in line: 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
+@@@@
+// final abstract class
+final abstract class Foo {
+}
+
+====
+Error in line: 3Abstract members cannot be made final
+@@@@
+abstract class Foo {
 }
 
 ====
 @@@@
-# Double Abstract
+static class Foo {
+}
+
+====
+@@@@
+final static class Foo {
+}
+
+====
+@@@@
+static class Foo {
+}
+
+====
+@@@@
+// Double Abstract
 abstract abstract public class Foo {
 }
 
 ====
+Error in line: 3Modifiers can only be set once
 @@@@
-# Double Static
+// Double Static
 static static public class Foo {
 }
 
 ====
+Error in line: 3Modifiers can only be set once
 @@@@
-# Final abstract
-final abstract public class Foo {
+// Double Final
+final final public class Foo {
 }
 ====
-@@@@
-# Final static
-final static public class Foo {
-}
+Error in line: 3Modifiers can only be set once

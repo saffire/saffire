@@ -196,12 +196,12 @@ class UnitTester {
             return;
         }
 
-        $this->_output($this->_current['tags']['title']." : ");
+        $this->_output($this->_current['tags']['title']." : [");
 
         // Do each test, separated by @@@
         $this->_runFunctionalTests($header_and_body[1]);
 
-        $this->_output("\n");
+        $this->_output("]\n");
     }
 
 
@@ -211,8 +211,6 @@ class UnitTester {
         $tests = preg_split($pattern, $body);
 
         foreach ($tests as $test) {
-            usleep(50000);
-
             // Run the actual test
             $result = $this->_runFunctionalTest($test);
             $this->_results['total_tests']++;
@@ -277,12 +275,15 @@ class UnitTester {
 
         if ($outputExpected) {
             // We expect certain output. Let's try and diff it..
-            exec("/usr/bin/diff --suppress-common-lines -y ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
-            if ($output != 0) {
+            exec("/usr/bin/diff --suppress-common-lines -W 500 -y ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
+            if ($result != 0) {
 //                print "\n";
 //                print join("\n", $output);
 //                print "\n";
                 $ret = self::FAIL;
+                goto cleanup;
+            } else {
+                $ret = self::PASS;
                 goto cleanup;
             }
         }
