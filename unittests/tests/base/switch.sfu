@@ -13,6 +13,13 @@ switch ($a=1) {
 ====
 This should not be possible?
 @@@@
+case 5:
+    break;
+case 3:
+    break;
+====
+This should not be possible?
+@@@@
 switch ($a) {
     case "foo" :
 }
