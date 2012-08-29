@@ -20,7 +20,7 @@ while $a {
 }
 
 ====
-Not possible
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
 while ($a) $a = 1;
 

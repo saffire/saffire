@@ -43,15 +43,23 @@
     #define MODIFIER_MASK_VISIBLITY      (MODIFIER_PUBLIC | MODIFIER_PROTECTED | MODIFIER_PRIVATE)
 
 
+    typedef struct switch_struct {
+        int has_default;                // 1: a default is present. 0: no default
+        struct switch_struct *parent;   // Pointer to parent switch statement (or NULL when we are at the first)
+    } t_switch_struct;
+
     /**
      * Global compile table with information needed during compilation of the code
      */
     typedef struct global_table {
-        t_hash_table *constants;        // Table of all constants defined (globally)
-        t_hash_table *classes;          // Table of all FQCN classes
+        t_hash_table *constants;          // Table of all constants defined (globally)
+        t_hash_table *classes;            // Table of all FQCN classes
 
-        t_class *active_class;          // Current active class
-        int in_active_class;            // 1 when we are inside a class, 0 otherwise
+        t_class *active_class;            // Current active class
+
+        int in_class;                     // 1 when we are inside a class, 0 otherwise
+        t_switch_struct *switches;        // Linked list of switch statements
+        t_switch_struct *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
     } t_global_table;
 
     t_global_table *global_table;      // A global table with compilation info
@@ -62,6 +70,12 @@
     void sfc_init_class(int modifiers, char *name);
     void sfc_fini_class(void);
 
+    void sfc_switch_case(void);
+    void sfc_switch_default(void);
+    void sfc_switch_end(void);
+    void sfc_switch_begin(void);
+
+    void sfc_method_validate(const char *name);
     void sfc_validate_constant(char *constant);
     void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body);
     void sfc_validate_class_modifiers(long modifiers);

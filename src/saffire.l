@@ -61,6 +61,7 @@ void saffire_pop_state() {
 
 lnum            [0-9]+
 identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
+variable        ([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
