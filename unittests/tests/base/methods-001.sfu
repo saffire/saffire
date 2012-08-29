@@ -1,0 +1,69 @@
+title: Method modifiers tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+class Foo {
+    public method Bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    private method Bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    protected method Bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    private protected method Bar() {
+    }
+}
+
+====
+Error in line: 3Cannot have multiple visiblity masks
+@@@@
+class Foo {
+    protected protected method Bar() {
+    }
+}
+====
+Error in line: 3Cannot have multiple visiblity masks
+@@@@
+class Foo {
+    static protected method Bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    static final protected method Bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    static abstract final protected method Bar() {
+    }
+}
+
+====
+Error in line: 3Abstract members cannot be made final
+@@@@
+class Foo {
+    static static protected method Bar() {
+    }
+}
+
+====
+Error in line: 3Modifiers can only be set once

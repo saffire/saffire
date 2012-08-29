@@ -1,0 +1,79 @@
+title: Method naming tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+class Foo {
+    public method private() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_PRIVATE, expecting T_IDENTIFIER
+@@@@
+class Foo {
+    public method "foo"() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
+@@@@
+class Foo {
+    public method $bar() {
+    }
+}
+
+====
+Not possible
+@@@@
+class Foo {
+    public method 1() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+@@@@
+class Foo {
+    public method bar!() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    public method bar?() {
+    }
+}
+====
+@@@@
+class Foo {
+    public method _bar() {
+    }
+}
+
+====
+@@@@
+class Foo {
+    public method 1_bar() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+@@@@
+class Foo {
+    public method 1?_bar() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+@@@@
+class Foo {
+    public method ?_bar() {
+    }
+}
+
+====
+Error in line: 3: syntax error, unexpected '?', expecting T_IDENTIFIER

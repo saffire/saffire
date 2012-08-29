@@ -1,0 +1,47 @@
+title: while control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+while (1) {
+  $a = 1;
+}
+
+====
+@@@@
+while ($a = 5) {
+  $a = 1;
+}
+
+====
+TODO: Should return assignment in condition warning
+@@@@
+while $a {
+  $a = 1;
+}
+
+====
+Not possible
+@@@@
+while ($a) $a = 1;
+
+====
+@@@@
+while ($a) {
+    $a = 1;
+} else {
+    $a = 1;
+}
+
+====
+@@@@
+while ($a) {
+    $a = 1;
+} else $a = 1;
+
+====
+@@@@
+while ($a) $a = 1; else $a = 1;
+====
+@@@@
+while ($a) {} else {}
+====
