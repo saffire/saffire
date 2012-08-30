@@ -75,6 +75,8 @@
     void sfc_switch_end(void);
     void sfc_switch_begin(void);
 
+    void saffire_check_label(const char *name);
+
     void sfc_method_validate(const char *name);
     void sfc_validate_constant(char *constant);
     void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body);

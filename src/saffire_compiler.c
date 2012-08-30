@@ -304,6 +304,16 @@ void sfc_switch_default(void) {
 
 
 /**
+ *
+ */
+void saffire_check_label(const char *name) {
+    if (name[0] == '$') {
+        sfc_error("A variable cannot be used as a label");
+    }
+}
+
+
+/**
  * Initialize the saffire_compiler
  */
 void sfc_init(void) {
