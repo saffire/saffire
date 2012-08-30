@@ -25,3 +25,25 @@ for ($i=0; $i!=10; $i++,$j++) {
 }
 
 ====
+@@@@
+for ($i) {
+}
+
+====
+Error in line 2: syntax error, unexpected ')', expecting ';' or ','
+@@@@
+for ($i;) {
+}
+
+====
+Error in line 2: syntax error, unexpected ')'
+@@@@
+for $i;$j;$i++ {
+}
+
+====
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+@@@@
+for ($i;$j;$i++);
+
+====
