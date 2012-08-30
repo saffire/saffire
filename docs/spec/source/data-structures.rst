@@ -7,7 +7,7 @@ Data structures are first-class citizens in Saffire.
 
 Every data structure is handled the same way:
 
-	<strucuture>[key:val1:val2,key:val1:val2,...]
+	<structure>[key:val1:val2,key:val1:val2,...]
 
 A list can be defined as:
 
@@ -15,7 +15,7 @@ A list can be defined as:
 
 	list["foo", "bar", "baz"];
 
-If a datastructure has multiple arguments per element (like a key/value pair), you can separate them with a ``:``
+If a data structure has multiple arguments per element (like a key/value pair), you can separate them with a ``:``
 
 ::
 
@@ -35,9 +35,8 @@ There are 3 internal data structures available:
 - `Hash`_
 - `Set`_
 
-It's possible to create your own data-structures. However, be advised that the reason for using custom data structures
-is the advantage in terms of either memory, speed or both. By creating a data-structure in Saffire means that your
-structure will never be as fast as a native one.
+It's possible to create your own data structures. Be advised that by using custom data structures, you sacrifice
+memory and speed compared to the native data structures. Your structure will never be as fast as the native ones.
 
 
 
@@ -49,7 +48,7 @@ Lists are data structures with values only. A value can be available multiple ti
 
 	$a = list[ "foo", "bar", "baz" ];
 
-this represents a list of 4 Strings, which can be accessed through the ``[]`` notation.
+this represents a list of three Strings, which can be accessed through the ``[index]`` notation:
 
 ::
 
@@ -57,17 +56,20 @@ this represents a list of 4 Strings, which can be accessed through the ``[]`` no
 	$a[1]  // "baz"
 	$a[2]  // "bar"
 
+
+
 Hash
 ----
-Hashes have the same properties as lists, but each value has a (unique) key.
+Hashes have the same properties as lists, but each value has a unique key.
 
 
 ::
 
-	$a = hash[ 1 : "foo", 2 : "bar", "test" : "baz" ];
+	$a = hash[ 1:"foo", 2:"bar", "test":"baz" ];
 
 	$a[1]       // "foo"
 	$a["test"]  // "baz"
+
 
 
 Set
@@ -79,7 +81,7 @@ be ignored.
 ::
 
 	$a = [[ "foo", "bar", "baz", "foo", "bar" ]];
-	// $a hols "foo", "bar" and "baz"
+	// $a holds "foo", "bar" and "baz"
 
 Sets can be used to quickly add, subtract or check items.
 
@@ -87,8 +89,8 @@ Sets can be used to quickly add, subtract or check items.
 
 Tuples
 ------
-Tuples work a bit differently than the other data-structures. They are internal structure that holds 0 or more other
-elements.
+Tuples work a bit differently than the other data structures. A tuple is an internal structure that holds zero or more
+other elements.
 
 ::
 
@@ -108,3 +110,4 @@ Tuples are read-only lists. They can be used to group values.
 
 :Authors:
    Joshua Thijssen
+   Caspar Dunant
