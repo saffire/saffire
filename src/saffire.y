@@ -192,17 +192,17 @@ statement:
 ;
 
 selection_statement:
-        T_IF expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
-    |   T_IF expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
+        T_IF conditional_expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
+    |   T_IF conditional_expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
 
-    |   T_SWITCH '(' expression ')' { sfc_switch_begin(); } '{' case_statements '}' { sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
+    |   T_SWITCH '(' conditional_expression ')' { sfc_switch_begin(); } '{' case_statements '}' { sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
 ;
 
 iteration_statement:
-        T_WHILE '(' expression ')' statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $3, $5, $7); }
-    |   T_WHILE '(' expression ')' statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $3, $5); }
+        T_WHILE '(' conditional_expression ')' statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $3, $5, $7); }
+    |   T_WHILE '(' conditional_expression ')' statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $3, $5); }
 
-    |   T_DO statement T_WHILE '(' expression ')' ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $5); }
+    |   T_DO statement T_WHILE '(' conditional_expression ')' ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $5); }
 
     |   T_FOR '(' expression_statement expression_statement            ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
     |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $7); }
@@ -256,8 +256,8 @@ case_statements:
 ;
 
 case_statement:
-        T_CASE expression ':'   { sfc_switch_case(); }    statement_list { TRACE $$ = ast_opr(T_CASE, 2, $2, $5); }
-    |   T_CASE expression ':'   { sfc_switch_case(); }    { TRACE $$ = ast_opr(T_CASE, 2, $2, ast_nop()); }
+        T_CASE conditional_expression ':'   { sfc_switch_case(); }    statement_list { TRACE $$ = ast_opr(T_CASE, 2, $2, $5); }
+    |   T_CASE conditional_expression ':'   { sfc_switch_case(); }    { TRACE $$ = ast_opr(T_CASE, 2, $2, ast_nop()); }
     |   T_DEFAULT ':'           { sfc_switch_default(); } statement_list { TRACE $$ = ast_opr(T_DEFAULT, 1, $4); }
     |   T_DEFAULT ':'           { sfc_switch_default(); } { TRACE $$ = ast_opr(T_DEFAULT, 1, ast_nop()); }
 ;

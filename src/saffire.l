@@ -73,7 +73,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^]    { saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */

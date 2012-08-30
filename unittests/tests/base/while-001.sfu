@@ -13,7 +13,7 @@ while ($a = 5) {
 }
 
 ====
-TODO: Should return assignment in condition warning
+Error in line 2: syntax error, unexpected '=', expecting ')'
 @@@@
 while $a {
   $a = 1;

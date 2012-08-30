@@ -13,6 +13,7 @@ if ($a = 5) {
 }
 
 ====
+Cannot use an assignment inside an if-statement
 @@@@
 if ($a == 5) {
   $a = 1;
@@ -20,26 +21,23 @@ if ($a == 5) {
 
 ====
 @@@@
-if ($a == 5 || $b = 1) {
+if ($a == 5 || $b == 1) {
   $a = 1;
 }
 
 ====
-Should be ok?
 @@@@
-if ($a == 5 && $b = 1) {
+if ($a == 5 && $b == 1) {
   $a = 1;
 }
 
 ====
-Should be ok?
 @@@@
-if ($a == 5 | $c == 1) {
+if ($a == 5 | 1) {
   $a = 1;
 }
 
 ====
-Should be ok?
 @@@@
 if ("foo") {
   $a = 1;
@@ -52,7 +50,6 @@ if (foo) {
 }
 
 ====
-Should not be possible
 @@@@
 if ($foo) $a = 1;
 

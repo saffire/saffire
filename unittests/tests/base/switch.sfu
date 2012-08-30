@@ -12,7 +12,7 @@ switch ($a=1) {
 }
 
 ====
-Error in line 3: syntax error, unexpected '}', expecting T_CASE or T_DEFAULT
+Error in line 2: syntax error, unexpected '=', expecting ')'
 @@@@
 case 5:
     break;
