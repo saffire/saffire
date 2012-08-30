@@ -1,0 +1,32 @@
+title: Method return tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+return;
+====
+Error in line 2: Cannot use return outside a method
+@@@@
+return "foo";
+====
+Error in line 2: Cannot use return outside a method
+@@@@
+class Foo {
+    public method bar() {
+        return "foo";
+    }
+}
+====
+@@@@
+class Foo {
+    public method bar() {
+        return "foo", "bar", "baz";
+    }
+}
+====
+@@@@
+class Foo {
+    public method bar() {
+        return $a = 1;
+    }
+}
+====
