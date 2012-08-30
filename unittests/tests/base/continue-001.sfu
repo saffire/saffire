@@ -1,0 +1,37 @@
+title: Continue control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+continue;
+====
+Error in line 2: We can only continue inside a loop
+@@@@
+do {
+    continue;
+} while (1);
+
+====
+@@@@
+do {
+    while (1) {
+        continue;
+    }
+    continue;
+} while (1);
+
+====
+@@@@
+foreach ($a as $b) {
+    continue;
+}
+====
+@@@@
+foreach ($a as $b) {
+    foreach ($a as $b) {
+        continue;
+    }
+    continue;
+}
+continue;
+====
+Error in line 8: We can only continue inside a loop

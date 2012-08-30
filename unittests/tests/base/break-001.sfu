@@ -1,0 +1,37 @@
+title: Break control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+break;
+====
+Error in line 2: We can only break inside a loop
+@@@@
+do {
+    break;
+} while (1);
+
+====
+@@@@
+do {
+    while (1) {
+        break;
+    }
+    break;
+} while (1);
+
+====
+@@@@
+foreach ($a as $b) {
+    break;
+}
+====
+@@@@
+foreach ($a as $b) {
+    foreach ($a as $b) {
+        break;
+    }
+    break;
+}
+break;
+====
+Error in line 8: We can only break inside a loop
