@@ -4,7 +4,7 @@ Control structures
 
 if
 --
-An if-statement let you execute code only when a certain condition have been met.
+An if-statement lets you execute code only when a certain condition has been met.
 
 ::
 
@@ -12,19 +12,19 @@ An if-statement let you execute code only when a certain condition have been met
 		// only done when $a equals 1
 	}
 
-When you only have one statement, you can omit the brackets:
+When you only have one statement, you can omit the curly brackets:
 
 ::
 
 	if ($a == 1) dothis();
 
 
-It's also possible to have an else-statement after the if, which gets executed when the condition is NOT met:
+It's also possible to have an else-statement after the if, which gets executed if the condition is NOT met:
 
 ::
 
 	if ($a == 1) {
-		// done when $a == 1
+		// done when $a equals 1
 	} else {
 		// done when $a not equals 1
 	}
@@ -34,16 +34,18 @@ It's also possible to chain if/else statements:
 ::
 
 	if ($a == 1) {
-		// done when $a == 1
+		// done when $a equals 1
 	} else if ($a == 2) {
-		// done when $a == 2
+		// done when $a equals 2
 	} else {
 		// done when $a not equals 1 or 2
 	}
 
+
+
 while
 -----
-A while loop will iterate over the statements until the evaluation will be false.
+A **while** loop will iterate over the statements until the condition will be false.
 
 ::
 
@@ -51,23 +53,23 @@ A while loop will iterate over the statements until the evaluation will be false
 		$a++;
 	}
 
-The while-structure also accepts an else-statement. This else statement is executed if the **initial** evaluation is NOT
-true **or** when breakelse is called from inside the loop.
+The while-structure also accepts an else-statement. If the **initial** evaluation is NOT True **or** when `breakelse`_ is
+ called from inside the loop, the else-statement is executed.
 
 ::
 
 	while ($a < 10) {
 		$a++;
 	} else {
-		// Called when $a was 10 or more
+		// Called when $a initially was 10 or more
 	}
 
 
 
-dowhile
+do-while
 -------
-A do-while loop is similar to a while loop except the loop will **at least** be executed once, since the evaluation will
-be done at the end of the loop. This means that do-while does not support the else statement.
+A **do-while** loop is similar to a `while`_ loop except the loop will **at least** be executed once, since the
+evaluation will be done at the end. This means that do-while does not support the else statement.
 
 ::
 
@@ -80,15 +82,15 @@ be done at the end of the loop. This means that do-while does not support the el
 
 for
 ---
-**for** loops can be completely controlled by the three expressions given in the header:
+A **for** loops can be completely controlled by the three expressions given in the header:
 
 	for (epxr1 ; expr2 ; expr3) {}
 
-At the beginning of the loop, the expr1 will be executed.  On every iteration, expr2 is evaluated. If this expression
-returns False, the for-loop will be ended, otherwise the loop will be executed. At the end of each iteration, expr3 is
+At the beginning of the loop, the expr1 will be executed.  Before every iteration expr2 is evaluated. If this expression
+is False, the for-loop will be ended, otherwise the loop will be executed. At the end of each iteration, expr3 is
 called.
 
-A classis way to loop over 1 to 10:
+A classic way to loop over 1 to 10:
 
 ::
 	
@@ -123,7 +125,7 @@ The .iter() method returns a tuple of 3 variables:
 - key
 - metadata
 
-The value is the actual value that is returned. For instance, a list datastructure will only return the elements, since
+The value is the actual value that is returned. For instance, a list data structure will only return the elements, since
 there aren't any keys.
 
 ::
@@ -160,7 +162,7 @@ There is an additional field called $meta, which is filled with foreach metadata
 
 .. note:: 
 	.iter() methods can add additional information to the meta data, for instance, with a priority-queue, the actual
-	priority of an element can be stored in $meta.priority
+	priority of an element could be stored in $meta.priority
 
 ::
 
@@ -176,11 +178,11 @@ There is an additional field called $meta, which is filled with foreach metadata
 	}	
 
 .. note:: 
-	A datastructure (an object that implemented "datastructure", like the list, hash etc), already have implemented the
-	.iter() method and thus are iterable.
+	A data structure (an object that implements a data structure like list or hash), already has the .iter() method
+	implemented and is iterable.
 
 
-Foreach can be accompanied by an else. This is called whenever the .iter() is not implemented, or when there is an empty
+`Foreach`_ can be accompanied by an else. This is called whenever the .iter() is not implemented, or when there is an empty
 list, or when `breakelse`_ is issued inside the foreach{} block.
 
 
@@ -194,9 +196,8 @@ corresponding statements for more information.
 
 breakelse
 ---------
-The **breakelse** statement is used in the `for`_ and `while`_ statements. They act the same way as a normal break
-statement, but when a for and while statement are accompanied with an else statement, it will automatically execute that
-as well.
+The **breakelse** statement is used in the `for`_ and `while`_ statements. It acts the same way as a normal break
+statement, but if there is an else statement, it will automatically executed.
 
 ::
 
@@ -209,14 +210,14 @@ as well.
 	}
 
 .. note::
-	When no else statement has been given, the breakelse behaves the same was as a break statement.
+	When no else statement has been given, the breakelse behaves exactly like a break statement.
 
 
 
 switch
 ------
 **switch** can be seen as a multi-if statement. Instead of evaluating one expression, it evaluates many expressions and
-directly executes those statements
+directly executes those statements.
 
 ::
 
@@ -250,7 +251,7 @@ With **switch** this can be rewritten as:
 	}
 
 .. warning::
-	When omitting the `break`_ in a case statement, it will automatically fall through the next statement:
+	When omitting the `break`_ in a case statement, it will automatically fall through to the next statement:
 
 ::
 
@@ -278,6 +279,9 @@ continue
 		// $i is an odd number.
 	}
 
+.. note::
+	In case of a `for`_ loop, the expr2 expression is evaluated before the next iteration is started.
+
 
 
 return
@@ -296,31 +300,22 @@ script.
 	class Foo {
 		method Bar() {
 			return "Baz";
-			// Will not be called
+			// The rest of this method will not be executed
 		}
 	}
 
 	$a = Foo.Bar();   // $a = "Baz"
 
-Note that return can include zero or more arguments. Those arguments are directly returned to the caller. If at the end
-of a method no return statement is given, the result of the last expression will be the return value.
-
-::
-
-	class Foo {
-		method Bar() {
-			$a = "Baz";
-		}
-	}
-
-	$b = Foo.Bar();   // $b = "Baz", since that is the last result in the method Bar. 
+.. note::
+	The return value can include zero or more arguments. Those arguments are directly returned to the caller. If at the end
+	of a method no return statement is given, `self` will be returned.
 
 
 
 goto
 ----
 **Goto** can be used to jump directly to a label. These labels are defined as <name>: at the beginning of a line. Note
-that you cannot jump outside a code block. This means that you can only **goto** a labael inside the same method for
+that you cannot jump outside a code block. This means that you can only **goto** a label inside the same method for
 instance.
 
 ::
@@ -358,10 +353,11 @@ Also, you cannot jump inside a loop.
 	}
 
 .. warning::
-	Even though **goto** might be seen as **evil** by many programmers, it does have its purpose. But not many. If you
-	are not sure wether or not you should use **goto**, you probably are "doing it wrong"(tm).
+	Even though `goto`_ might be seen as **evil** by many programmers, it does have its purpose, but not many. If you
+	are not sure whether or not you should use `goto`_, you're probably "doing it wrong"(tm).
 
 
 
 :Authors:
    Joshua Thijssen
+   Caspar Dunant
