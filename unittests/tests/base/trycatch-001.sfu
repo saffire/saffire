@@ -1,0 +1,68 @@
+title: Try/Catch tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+// try catch finally
+try {
+
+} catch (Exception $e) {
+
+} finally {
+
+}
+====
+@@@@
+// Try multiple catches
+try {
+
+} catch (Exception $e) {
+
+} catch (Exception $e) {
+
+} catch (Exception $e) {
+
+}
+====
+@@@@
+// Only try, no catch
+try {
+}
+====
+Error in line 5: syntax error, unexpected end of file, expecting T_CATCH
+@@@@
+// non-compound statement
+try $a catch (Exception $e) $b;
+====
+Error in line 3: syntax error, unexpected T_IDENTIFIER, expecting '{'
+@@@@
+// No typehint
+try {
+    $a=1;
+} catch ($e) {
+
+}
+====
+Error in line 5: syntax error, unexpected ')', expecting T_IDENTIFIER
+@@@@
+// Catch-all
+try {
+    $a=1;
+} catch () {
+
+}
+====
+Error in line 5: syntax error, unexpected ')', expecting T_IDENTIFIER
+@@@@
+// Single catch
+catch (Exception $e) {
+}
+====
+Error in line 3: syntax error, unexpected T_CATCH, expecting end of file
+@@@@
+// Only a try and finally
+try {
+
+} finally {
+
+}
+====

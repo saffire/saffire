@@ -229,7 +229,6 @@ jump_statement:
 guarding_statement:
         T_TRY compound_statement catch_list                               { TRACE $$ = ast_opr(T_TRY, 2, $2, $3); }
     |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 3, $2, $3, $5); }
-    |   T_TRY compound_statement            T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 2, $2, $4); }
 ;
 
 catch_list:
@@ -243,8 +242,6 @@ catch:
 
 catch_header:
         T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_string($3), ast_string($4)); }
-    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_string($3)); }
-    |   T_CATCH '('                           ')' { TRACE $$ = ast_opr(T_CATCH, 0); }
 ;
 
 label_statement:
