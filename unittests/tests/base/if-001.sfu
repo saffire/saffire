@@ -70,6 +70,17 @@ if ($foo) {
 ====
 @@@@
 if ($foo) {
+} else if ($foo) {
+} else ($foo);
+====
+@@@@
+if ($foo) {
+} elseif ($foo) {
+} else ($foo);
+====
+Error in line 3: syntax error, unexpected '{', expecting ';' or ','
+@@@@
+if ($foo) {
   $a = 1;
 } else if ($bar) {
   $b = 1;
