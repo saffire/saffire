@@ -1,0 +1,47 @@
+title: while control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+while (1) {
+  $a = 1;
+}
+
+====
+@@@@
+while ($a = 5) {
+  $a = 1;
+}
+
+====
+Error in line 2: syntax error, unexpected '=', expecting ')'
+@@@@
+while $a {
+  $a = 1;
+}
+
+====
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+@@@@
+while ($a) $a = 1;
+
+====
+@@@@
+while ($a) {
+    $a = 1;
+} else {
+    $a = 1;
+}
+
+====
+@@@@
+while ($a) {
+    $a = 1;
+} else $a = 1;
+
+====
+@@@@
+while ($a) $a = 1; else $a = 1;
+====
+@@@@
+while ($a) {} else {}
+====

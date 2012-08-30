@@ -5,16 +5,16 @@ Scalar types
 Saffire is an object-only language. This means that everything, including strings, numerical values etc, are objects.
 
 **String**
-This represents an (UTF-8) array of characters. A length() of a string will always return the number of CHARACTERS, not
-the number of bytes. Make sure that when dealing with binary data, you are using String.bytes() instead of String, in
-order to retrieve the actual bytes.
+This represents an (UTF-8) array of characters. A ``length()`` of a string will always return the number of CHARACTERS,
+not the number of bytes. Make sure that when dealing with binary data, you are using ``String.bytes()`` instead of
+``String``, in order to retrieve the actual bytes.
 
 **Numeric**
-Numeric integer ranging from Numeric.MIN to Numeric.MAX. Longer numerical values can use a different class (LongNumeric)
-instead.
+Numeric integer ranging from ``Numeric.MIN`` to ``Numeric.MAX``. Longer numerical values can use a different class
+(LongNumeric) instead.
 
 **Double**
-Any fixed point number.
+Any fixed point number. Note that Saffire does not have floating point numbers.
 
 **Boolean**
 Representing either a true or a false value.
