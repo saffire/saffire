@@ -36,7 +36,7 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(const char *err) { printf("Error in line: %d: %s\n", yylineno, err); }
+    void yyerror(const char *err) { printf("Error in line %d: %s\n", yylineno, err); }
 
     void saffire_push_state(int state);
     void saffire_pop_state();
@@ -87,7 +87,7 @@
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement selection_statement iteration_statement class_list
-%type <nPtr> guarding_statement expression catch_list catch constant_expression data_structure_element data_structure_elements
+%type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> complex_primary_no_parenthesis not_just_name complex_primary method_call real_postfix_expression
@@ -97,7 +97,7 @@
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
 %type <nPtr> class_method_definition class_property_definition special_name qualified_name calling_method_argument_list
 %type <nPtr> data_structure field_access logical_unary_expression equality_expression and_expression inclusive_or_expression
-%type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression
+%type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
 
 %type <sVal> '=' T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -192,22 +192,22 @@ statement:
 ;
 
 selection_statement:
-        T_IF expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
-    |   T_IF expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
+        T_IF conditional_expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
+    |   T_IF conditional_expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
 
-    |   T_SWITCH '(' expression ')' compound_statement { TRACE $$ = ast_opr(T_SWITCH, 2, $3, $5); }
+    |   T_SWITCH '(' conditional_expression ')' { sfc_switch_begin(); } '{' case_statements '}' { sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
 ;
 
 iteration_statement:
-        T_WHILE expression statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $2, $3, $5); }
-    |   T_WHILE expression statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $2, $3); }
+        T_WHILE '(' conditional_expression ')' statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $3, $5, $7); }
+    |   T_WHILE '(' conditional_expression ')' statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $3, $5); }
 
-    |   T_DO statement T_WHILE expression ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $4); }
+    |   T_DO statement T_WHILE '(' conditional_expression ')' ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $5); }
 
     |   T_FOR '(' expression_statement expression_statement            ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
     |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $7); }
 
-    |   T_FOREACH expression T_AS expression statement { TRACE $$ = ast_opr(T_FOREACH, 3, $2, $4, $5); }
+    |   T_FOREACH '(' expression T_AS expression ')' statement { TRACE $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
 ;
 
 expression_statement:
@@ -247,10 +247,21 @@ catch_header:
 ;
 
 label_statement:
-        T_IDENTIFIER ':'                { TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
-    |   T_CASE constant_expression ':'  { TRACE $$ = ast_opr(T_CASE, 1, $2); }
-    |   T_DEFAULT ':'                   { TRACE $$ = ast_opr(T_DEFAULT, 0); }
+        T_IDENTIFIER ':'        { TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
 ;
+
+case_statements:
+        case_statement { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+    |   case_statements case_statement { TRACE $$ = ast_add($$, $2); }
+;
+
+case_statement:
+        T_CASE conditional_expression ':'   { sfc_switch_case(); }    statement_list { TRACE $$ = ast_opr(T_CASE, 2, $2, $5); }
+    |   T_CASE conditional_expression ':'   { sfc_switch_case(); }    { TRACE $$ = ast_opr(T_CASE, 2, $2, ast_nop()); }
+    |   T_DEFAULT ':'           { sfc_switch_default(); } statement_list { TRACE $$ = ast_opr(T_DEFAULT, 1, $4); }
+    |   T_DEFAULT ':'           { sfc_switch_default(); } { TRACE $$ = ast_opr(T_DEFAULT, 1, ast_nop()); }
+;
+
 
 
 /**
@@ -258,10 +269,6 @@ label_statement:
  *                  ASSIGNMENT & EXPRESSION
  ************************************************************
  */
-
-constant_expression:
-        conditional_expression { TRACE $$ = $1; }
-;
 
 expression:
         assignment_expression { TRACE $$ = ast_opr(T_EXPRESSIONS, 1, $1); }
@@ -485,11 +492,11 @@ interface_method_definition:
 ;
 
 interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, ast_nop()); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); sfc_method_validate($3); $$ = ast_method($1, $3, $5, ast_nop()); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_method_validate($3); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); }
     |   interface_or_abstract_method_definition { TRACE $$ = $1 }
 ;
 
@@ -505,9 +512,11 @@ non_empty_method_argument_list:
 
 method_argument:
         T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); }
-    |   T_IDENTIFIER '=' primary_expression              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
+    |   T_IDENTIFIER '=' T_LNUM                          { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
+    |   T_IDENTIFIER '=' T_STRING                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
     |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' primary_expression { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' T_LNUM             { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' T_STRING           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); }
 ;
 
 constant_list:

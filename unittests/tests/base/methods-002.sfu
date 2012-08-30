@@ -49,7 +49,7 @@ class Foo {
 }
 
 ====
-Error in line: 3: syntax error, unexpected T_STRING, expecting ')'
+Error in line 3: syntax error, unexpected T_STRING, expecting ')'
 @@@@
 class Foo {
     public method Bar(1) {
@@ -57,7 +57,7 @@ class Foo {
 }
 
 ====
-Error in line: 3: syntax error, unexpected T_LNUM, expecting ')'
+Error in line 3: syntax error, unexpected T_LNUM, expecting ')'
 @@@@
 class Foo {
     public method Bar($arg = 1) {
@@ -79,7 +79,14 @@ class Foo {
 }
 
 ====
-Not be possible?
+Error in line 3: syntax error, unexpected T_IDENTIFIER, expecting T_LNUM or T_STRING
+@@@@
+class Foo {
+    public method Bar(String $arg = 1) {
+    }
+}
+
+====
 @@@@
 class Foo {
     public method Bar(String $arg = 5+1) {
@@ -87,7 +94,7 @@ class Foo {
 }
 
 ====
-Error in line: 3: syntax error, unexpected '+', expecting ')'
+Error in line 3: syntax error, unexpected '+', expecting ')'
 @@@@
 class Foo {
     public method Bar($a,) {
@@ -95,4 +102,4 @@ class Foo {
 }
 
 ====
-Error in line: 3: syntax error, unexpected ')', expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected ')', expecting T_IDENTIFIER

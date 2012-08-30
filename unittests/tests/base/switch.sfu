@@ -6,22 +6,50 @@ switch ("foo") {
 
 }
 ====
+Error in line 4: syntax error, unexpected '}', expecting T_CASE or T_DEFAULT
 @@@@
 switch ($a=1) {
 }
 
 ====
-This should not be possible?
+Error in line 2: syntax error, unexpected '=', expecting ')'
 @@@@
 case 5:
     break;
 case 3:
     break;
 ====
-This should not be possible?
+Error in line 2: syntax error, unexpected T_CASE, expecting end of file
+@@@@
+switch (1) {
+    case 1 :
+        switch (2) {
+            case 2:
+                if ($a == 1) {
+                    case 3:
+                }
+        }
+    case 4:
+        break;
+}
+====
+Error in line 7: syntax error, unexpected T_CASE
+@@@@
+switch (1) {
+    default :
+        switch (2) {
+            default:
+                if ($a == 1) {
+                }
+        }
+    case 4:
+        break;
+}
+====
 @@@@
 switch ($a) {
     case "foo" :
+    case "bar" :
 }
 
 ====
@@ -34,16 +62,21 @@ switch ($a) {
 @@@@
 switch ($a) {
     case $a == 1 :
+    case $b == 1 :
+        break;
+    default :
+         $a = 1;
+         break;
 }
 
 ====
-Not possible
 @@@@
 switch ($a) {
     break;
 }
 
 ====
+Error in line 3: syntax error, unexpected T_BREAK, expecting T_CASE or T_DEFAULT
 @@@@
 switch ($a) {
     case 1:
@@ -75,7 +108,7 @@ switch ($a) {
         break;
 }
 ====
-Error in line: 3: syntax error, unexpected T_DEFAULT
+Error in line 3: syntax error, unexpected T_DEFAULT
 @@@@
 switch ($a) {
     default:
@@ -85,6 +118,20 @@ switch ($a) {
         $a = 1;
         break;
     default:
+        $a = 1;
+        break;
+}
+====
+Error in line 10: default label already supplied
+@@@@
+switch ($a) {
+    case False:
+        $a = 1;
+        break;
+    case True:
+        $a = 1;
+        break;
+    case Null:
         $a = 1;
         break;
 }

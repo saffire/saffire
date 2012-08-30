@@ -42,28 +42,28 @@ class goto {
 }
 
 ====
-Error in line: 3: syntax error, unexpected T_GOTO, expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected T_GOTO, expecting T_IDENTIFIER
 @@@@
 // var class
 class $foo {
 }
 
 ====
-This should not be possible!
+Error in line 3: A variable cannot be used as a class name
 @@@@
 // scalar class
 class "foo" {
 }
 
 ====
-Error in line: 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
 @@@@
 // final abstract class
 final abstract class Foo {
 }
 
 ====
-Error in line: 3Abstract members cannot be made final
+Error in line 3: Abstract members cannot be made final
 @@@@
 abstract class Foo {
 }
@@ -90,17 +90,17 @@ abstract abstract public class Foo {
 }
 
 ====
-Error in line: 3Modifiers can only be set once
+Error in line 3: Modifiers can only be set once
 @@@@
 // Double Static
 static static public class Foo {
 }
 
 ====
-Error in line: 3Modifiers can only be set once
+Error in line 3: Modifiers can only be set once
 @@@@
 // Double Final
 final final public class Foo {
 }
 ====
-Error in line: 3Modifiers can only be set once
+Error in line 3: Modifiers can only be set once
