@@ -2,4 +2,71 @@ title: goto control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+// Correct syntax
+label:
+    goto label;
+====
+@@@@
+1:
+    goto 1;
+====
+@@@@
+// double labels
+label:
+label:
+    goto label;
+====
+@@@@
+// No label specified
+    goto label;
+====
+@@@@
+// incorrect label
+$foo:
+====
+Error in line 3: A variable cannot be used as a label
+@@@@
+// incorrect label
+"blaat":
+====
+Error in line 3: syntax error, unexpected ':', expecting ';' or ','
+@@@@
+// incorrect label
+/regex/:
+====
+Error in line 3: syntax error, unexpected '/', expecting end of file
+@@@@
+// Correct scope
+while(true) {
+label:
+    goto label;
+}
+====
+@@@@
+// Allowed to jump out of a loop
+label:
+while (true) {
+    goto label;
+}
+====
+@@@@
+// Allowed to jump out of a loop
+while(true) {
+    goto label;
+}
+label:
+====
+@@@@
+// Not allowed to jump into a loop
+goto label;
+while(true) {
+    label:
+}
+====
+@@@@
+// Not allowed to jump into a loop
+while(true) {
+    label:
+}
+goto label;
 ====
