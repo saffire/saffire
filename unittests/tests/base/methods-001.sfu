@@ -29,14 +29,14 @@ class Foo {
 }
 
 ====
-Error in line: 3Cannot have multiple visiblity masks
+Error in line 3: Cannot have multiple visiblity masks
 @@@@
 class Foo {
     protected protected method Bar() {
     }
 }
 ====
-Error in line: 3Cannot have multiple visiblity masks
+Error in line 3: Cannot have multiple visiblity masks
 @@@@
 class Foo {
     static protected method Bar() {
@@ -58,7 +58,7 @@ class Foo {
 }
 
 ====
-Error in line: 3Abstract members cannot be made final
+Error in line 3: Abstract members cannot be made final
 @@@@
 class Foo {
     static static protected method Bar() {
@@ -66,4 +66,4 @@ class Foo {
 }
 
 ====
-Error in line: 3Modifiers can only be set once
+Error in line 3: Modifiers can only be set once

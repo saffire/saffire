@@ -13,14 +13,14 @@ while ($a = 5) {
 }
 
 ====
-TODO: Should return assignment in condition warning
+Error in line 2: syntax error, unexpected '=', expecting ')'
 @@@@
 while $a {
   $a = 1;
 }
 
 ====
-Not possible
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
 while ($a) $a = 1;
 

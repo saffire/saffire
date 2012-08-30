@@ -41,7 +41,7 @@ extern int yylineno;
 static void sfc_error(char *str, ...) {
     va_list args;
     va_start(args, str);
-    printf("Error in line: %d", yylineno);
+    printf("Error in line %d: ", yylineno);
     vprintf(str, args);
     printf("\n");
     va_end(args);
@@ -153,14 +153,26 @@ void sfc_validate_constant(char *name) {
 
 }
 
+/**
+ * Validate method name
+ */
+void sfc_method_validate(const char *name) {
+    if (name[0] == '$') {
+        sfc_error("A variable cannot be used as a method name");
+    }
+}
 
 /**
  * Initialize a class
  */
 void sfc_init_class(int modifiers, char *name) {
     // Are we inside a class already, if so, we cannot add another class
-    if (global_table->in_active_class == 1) {
+    if (global_table->in_class == 1) {
         sfc_error("You cannot define a class inside another class");
+    }
+
+    if (name[0] == '$') {
+        sfc_error("A variable cannot be used as a class name");
     }
 
     // Check if the class exists in the class table
@@ -193,7 +205,7 @@ void sfc_init_class(int modifiers, char *name) {
     global_table->active_class = new_class;
 
     // We are currently inside a class.
-    global_table->in_active_class = 1;
+    global_table->in_class = 1;
 }
 
 
@@ -202,7 +214,7 @@ void sfc_init_class(int modifiers, char *name) {
  */
 void sfc_fini_class(void) {
     // Cannot close a class when we are not inside one
-    if (global_table->in_active_class == 0) {
+    if (global_table->in_class == 0) {
         sfc_error("Closing a class, but we weren't inside one to begin with");
     }
 
@@ -218,7 +230,7 @@ void sfc_fini_class(void) {
     global_table->active_class = NULL;
 
     // Not inside a class anymore
-    global_table->in_active_class = 0;
+    global_table->in_class = 0;
 }
 
 
@@ -236,6 +248,58 @@ static void sfc_init_global_table(void) {
     global_table->constants = ht_create();
     global_table->classes = ht_create();
     global_table->active_class = NULL;
+
+    global_table->in_class = 0;
+
+    global_table->switches = NULL;
+    global_table->current_switch = NULL;
+}
+
+
+void sfc_switch_begin(void) {
+    // Allocate switch structure
+    t_switch_struct *ss = (t_switch_struct *)malloc(sizeof(t_switch_struct));
+
+    // Set default values
+    ss->has_default = 0;
+
+    // Add the current switch as the parent
+    t_switch_struct *tmp =  global_table->current_switch;
+    ss->parent = tmp;
+
+    // Set current switch to the new switch
+    global_table->current_switch = ss;
+}
+
+void sfc_switch_end(void) {
+    t_switch_struct *ss = global_table->current_switch;
+
+    // set current to the parent
+    global_table->current_switch = ss->parent;
+
+    // Free switch structure
+    free(ss);
+}
+
+void sfc_switch_case(void) {
+//    if (global_table->current_switch == NULL || global_table->current_switch->in_switch == 0) {
+//        sfc_error("Case labels can only be supplied inside a switch-statement");
+//    }
+}
+
+void sfc_switch_default(void) {
+    t_switch_struct *ss = global_table->current_switch;
+
+    if (ss == NULL) {
+        sfc_error("Default label expected inside a switch statement");
+    }
+
+    // Check if default already exists
+    if (ss->has_default) {
+        sfc_error("default label already supplied");
+    }
+
+    ss->has_default = 1;
 }
 
 
