@@ -2,4 +2,50 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+foreach ($blaat as $k)  {
+}
+====
+@@@@
+foreach ($blaat as $k, $v)  {
+}
+====
+@@@@
+foreach ($blaat as $k, $v)  {
+}
+====
+@@@@
+foreach ($blaat as $k, $v, $i)  {
+}
+====
+@@@@
+foreach ($blaat as $k, , $i)  {
+}
+====
+@@@@
+foreach ($blaat as $k, , )  {
+}
+====
+@@@@
+foreach $blaat {
+}
+====
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+@@@@
+foreach $blaat {
+}
+====
+Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+@@@@
+foreach ("foo" as $a) {
+}
+====
+@@@@
+foreach (1 as $a) {
+}
+====
+@@@@
+foreach (1 as $a) $a;
+====
+@@@@
+foreach (1 as $a);
 ====
