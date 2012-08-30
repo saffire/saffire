@@ -86,7 +86,7 @@
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
-%type <nPtr> label_statement selection_statement iteration_statement class_list
+%type <nPtr> label_statement selection_statement iteration_statement class_list while_statement
 %type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
@@ -195,20 +195,25 @@ selection_statement:
         T_IF conditional_expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
     |   T_IF conditional_expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
 
-    |   T_SWITCH '(' conditional_expression ')' { sfc_switch_begin(); } '{' case_statements '}' { sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
+    |   T_SWITCH '(' conditional_expression ')' { sfc_loop_enter(); sfc_switch_begin(); } '{' case_statements '}' { sfc_loop_leave(); sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
 ;
 
 iteration_statement:
-        T_WHILE '(' conditional_expression ')' statement T_ELSE statement { TRACE $$ = ast_opr(T_WHILE, 3, $3, $5, $7); }
-    |   T_WHILE '(' conditional_expression ')' statement                  { TRACE $$ = ast_opr(T_WHILE, 2, $3, $5); }
+        while_statement T_ELSE statement { TRACE $$ = ast_add($1, $3); }
+    |   while_statement { TRACE $$ = $1; }
 
-    |   T_DO statement T_WHILE '(' conditional_expression ')' ';' { TRACE $$ = ast_opr(T_DO, 2, $2, $5); }
+    |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave(); TRACE $$ = ast_opr(T_DO, 2, $3, $6); }
 
-    |   T_FOR '(' expression_statement expression_statement            ')' statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $6); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $7); }
+    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { TRACE $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
+    |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { TRACE $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
 
-    |   T_FOREACH '(' expression T_AS expression ')' statement { TRACE $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
+    |   T_FOREACH '(' expression T_AS expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave(); TRACE $$ = ast_opr(T_FOREACH, 3, $3, $5, $8); }
 ;
+
+while_statement:
+        T_WHILE '(' conditional_expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave(); TRACE $$ = ast_opr(T_WHILE, 2, $3, $6); }
+;
+
 
 expression_statement:
         ';'             { TRACE $$ = ast_opr(';', 0); }
@@ -216,11 +221,11 @@ expression_statement:
 ;
 
 jump_statement:
-        T_BREAK ';'                 { TRACE $$ = ast_opr(T_BREAK, 0); }
-    |   T_BREAKELSE ';'             { TRACE $$ = ast_opr(T_BREAKELSE, 0); }
-    |   T_CONTINUE ';'              { TRACE $$ = ast_opr(T_CONTINUE, 0); }
-    |   T_RETURN ';'                { TRACE $$ = ast_opr(T_RETURN, 0); }
-    |   T_RETURN expression ';'     { TRACE $$ = ast_opr(T_RETURN, 1, $2); }
+        T_BREAK ';'                 { saffire_validate_break(); TRACE $$ = ast_opr(T_BREAK, 0); }
+    |   T_BREAKELSE ';'             { saffire_validate_breakelse(); TRACE $$ = ast_opr(T_BREAKELSE, 0); }
+    |   T_CONTINUE ';'              { saffire_validate_continue(); TRACE $$ = ast_opr(T_CONTINUE, 0); }
+    |   T_RETURN ';'                { saffire_validate_return(); TRACE $$ = ast_opr(T_RETURN, 0); }
+    |   T_RETURN expression ';'     { saffire_validate_return(); TRACE $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { TRACE $$ = ast_opr(T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_string($2)); }
     |   T_GOTO T_LNUM ';'           { TRACE $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }
@@ -491,11 +496,11 @@ interface_method_definition:
 ;
 
 interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); sfc_method_validate($3); $$ = ast_method($1, $3, $5, ast_nop()); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method(); TRACE $$ = ast_method($1, $3, $5, ast_nop()); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_method_validate($3); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { sfc_init_method($3); sfc_validate_method_modifiers($1); } compound_statement { sfc_fini_method(); sfc_validate_abstract_method_body($1, $8); TRACE $$ = ast_method($1, $3, $5, $8); }
     |   interface_or_abstract_method_definition { TRACE $$ = $1 }
 ;
 
