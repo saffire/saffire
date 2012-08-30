@@ -82,7 +82,7 @@ evaluation will be done at the end. This means that do-while does not support th
 
 for
 ---
-A **for** loops can be completely controlled by the three expressions given in the header:
+A **for** loop can be completely controlled by the three expressions given in the header:
 
 	for (epxr1 ; expr2 ; expr3) {}
 
@@ -197,13 +197,13 @@ corresponding statements for more information.
 breakelse
 ---------
 The **breakelse** statement is used in the `for`_ and `while`_ statements. It acts the same way as a normal break
-statement, but if there is an else statement, it will automatically executed.
+statement, but if there is an else statement it will be executed.
 
 ::
 
 	while ($a) {
 		$a--;
-		if ($a == 5) breakelse;	// Break the loop, but execute else
+		if ($a == 5) breakelse;	// Break the loop, and execute else
 		if ($a == 3) break;	// Break the loop, but don't execute else
 	} else {
 		// Do something else when $a initially was false, or when breakelse was triggered
