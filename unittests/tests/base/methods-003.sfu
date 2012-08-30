@@ -24,7 +24,7 @@ class Foo {
 }
 
 ====
-Error in line 4: A variable cannot be used as a method name
+Error in line 3: A variable cannot be used as a method name
 @@@@
 class Foo {
     public method 1() {

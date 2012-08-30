@@ -154,12 +154,21 @@ void sfc_validate_constant(char *name) {
 }
 
 /**
- * Validate method name
+ * Enter a method, and validate method name
  */
-void sfc_method_validate(const char *name) {
+void sfc_init_method(const char *name) {
     if (name[0] == '$') {
         sfc_error("A variable cannot be used as a method name");
     }
+
+    global_table->in_method = 1;
+}
+
+/**
+ * Leave a method
+ */
+void sfc_fini_method() {
+    global_table->in_method = 0;
 }
 
 /**
@@ -250,9 +259,24 @@ static void sfc_init_global_table(void) {
     global_table->active_class = NULL;
 
     global_table->in_class = 0;
+    global_table->in_method = 0;
+    global_table->in_loop = 0;
+
 
     global_table->switches = NULL;
     global_table->current_switch = NULL;
+}
+
+void sfc_loop_enter(void) {
+//    printf("void sfc_loop_enter(void) {\n");
+    // Increase loop counter, since we are entering a new loop
+    global_table->in_loop++;
+}
+
+void sfc_loop_leave(void) {
+//    printf("void sfc_loop_leave(void) {\n");
+    // Decrease loop counter, since we are going down one loop
+    global_table->in_loop--;
 }
 
 
@@ -309,6 +333,46 @@ void sfc_switch_default(void) {
 void saffire_check_label(const char *name) {
     if (name[0] == '$') {
         sfc_error("A variable cannot be used as a label");
+    }
+}
+
+
+/**
+ *
+ */
+void saffire_validate_return() {
+    if (global_table->in_method == 0) {
+        sfc_error("Cannot use return outside a method");
+    }
+}
+
+
+/**
+ *
+ */
+void saffire_validate_break() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only break inside a loop");
+    }
+}
+
+
+/**
+ *
+ */
+void saffire_validate_continue() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only continue inside a loop");
+    }
+}
+
+
+/**
+ *
+ */
+void saffire_validate_breakelse() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only breakelse inside a loop");
     }
 }
 
