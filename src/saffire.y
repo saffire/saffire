@@ -223,6 +223,7 @@ jump_statement:
     |   T_RETURN expression ';'     { TRACE $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { TRACE $$ = ast_opr(T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_string($2)); }
+    |   T_GOTO T_LNUM ';'           { TRACE $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }
 ;
 
 guarding_statement:
@@ -247,7 +248,8 @@ catch_header:
 ;
 
 label_statement:
-        T_IDENTIFIER ':'        { TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
+        T_IDENTIFIER ':'    { saffire_check_label($1); TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
+    |   T_LNUM ':'          { TRACE $$ = ast_opr(T_LABEL, 1, ast_numerical($1)); }
 ;
 
 case_statements:
