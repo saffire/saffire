@@ -31,7 +31,7 @@
 #include <unistd.h>
 
 #include "compiler/ast.h"
-#include "saffire-parser.h"
+#include "compiler/parser.tab.h"
 
 #define YY_NO_INPUT 1
 #define YYPRINT 1
@@ -55,6 +55,8 @@ void saffire_pop_state() {
 
 %option stack
 %option yylineno
+
+%option noyyfree noyyrealloc noyyalloc
 
 /* suppres -Wall warning about yyunput */
 %option nounput noyy_top_state

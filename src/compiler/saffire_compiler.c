@@ -31,6 +31,7 @@
 #include "compiler/saffire_compiler.h"
 #include "compiler/parser.tab.h"
 #include "compiler/ast.h"
+#include "general/smm.h"
 
 extern void yyerror(const char *err);
 extern int yylineno;
@@ -182,7 +183,7 @@ void sfc_init_class(int modifiers, char *name) {
     }
 
     // Initialize and populte a new class structure
-    t_class *new_class = (t_class *)malloc(sizeof(t_class));
+    t_class *new_class = (t_class *)smm_malloc(SMM_TAG_OTHER, sizeof(t_class));
     new_class->modifiers = modifiers;
     new_class->name = name;
 
@@ -239,10 +240,7 @@ void sfc_fini_class(void) {
  */
 static void sfc_init_global_table(void) {
     // Allocate table memory
-    global_table = (t_global_table *)malloc(sizeof(t_global_table));
-    if (! global_table) {
-        // @TODO: alloc error
-    }
+    global_table = (t_global_table *)smm_malloc(SMM_TAG_OTHER, sizeof(t_global_table));
 
     // Initialize table
     global_table->constants = ht_create();
@@ -253,6 +251,32 @@ static void sfc_init_global_table(void) {
 
     global_table->switches = NULL;
     global_table->current_switch = NULL;
+}
+
+static void sfc_fini_global_table(void) {
+    // Iterate over classes and remove all info
+    t_hash_table *ht = global_table->classes;
+    for (int i=0; i!=ht->bucket_size; i++) {
+        if (ht->bucket_list[i] == NULL) continue;    // Empty bucket
+
+        t_hash_table_bucket *htb = ht->bucket_list[i];
+        while (htb) {
+            t_class *class = htb->data;
+
+            ht_destroy(class->methods);
+            ht_destroy(class->constants);
+            ht_destroy(class->properties);
+
+            htb = htb->next;
+        }
+    }
+
+    // Destroy global constant and classes tables
+    ht_destroy(global_table->constants);
+    ht_destroy(global_table->classes);
+
+    // Free actual global table
+    smm_free(SMM_TAG_OTHER, global_table);
 }
 
 
@@ -284,7 +308,7 @@ void sfc_loop_leave(void) {
  */
 void sfc_switch_begin(void) {
     // Allocate switch structure
-    t_switch_struct *ss = (t_switch_struct *)malloc(sizeof(t_switch_struct));
+    t_switch_struct *ss = (t_switch_struct *)smm_malloc(SMM_TAG_OTHER, sizeof(t_switch_struct));
 
     // Set default values
     ss->has_default = 0;
@@ -393,4 +417,8 @@ void saffire_validate_breakelse() {
  */
 void sfc_init(void) {
     sfc_init_global_table();
+}
+
+void sfc_fini(void) {
+    sfc_fini_global_table();
 }

@@ -67,7 +67,7 @@
     t_global_table *global_table;      // A global table with compilation info
 
     void sfc_init(void);
-    void sfc_new_scope(char *name);
+    void sfc_fini(void);
 
     void sfc_init_class(int modifiers, char *name);
     void sfc_fini_class(void);

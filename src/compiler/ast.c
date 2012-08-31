@@ -32,8 +32,11 @@
 #include "compiler/saffire_compiler.h"
 #include "compiler/parser.tab.h"
 #include "general/svar.h"
+#include "general/smm.h"
 #include "compiler/ast.h"
 
+//extern void yylex_destroy
+extern int yylex_destroy();
 extern void yyerror(const char *err);
 extern int yyparse();
 extern FILE *yyin;
@@ -50,6 +53,10 @@ t_ast_element *ast_compile_tree(FILE *fp) {
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
     yyparse();
+    yylex_destroy();
+
+    sfc_fini();
+    svar_fini_table();
 
     // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
     return ast_root;
@@ -62,7 +69,7 @@ t_ast_element *ast_compile_tree(FILE *fp) {
 static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
 
-    if ((p = malloc(sizeof(t_ast_element))) == NULL) {
+    if ((p = smm_malloc(SMM_TAG_AST, sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -130,7 +137,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
     }
 
     // Resize operator memory
-    src->opr.ops = realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
+    src->opr.ops = smm_realloc(SMM_TAG_AST, src->opr.ops, src->opr.nops * sizeof(t_ast_element));
     if (src->opr.ops == NULL) {
         yyerror("Out of memory");
     }
@@ -150,7 +157,7 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     t_ast_element *p = ast_alloc_element();
     va_list ap;
 
-    if (nops && (p->opr.ops = malloc (nops * sizeof(t_ast_element))) == NULL) {
+    if (nops && (p->opr.ops = smm_malloc (SMM_TAG_AST, nops * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -232,18 +239,39 @@ t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t
  * Free up an AST node
  */
 void ast_free_node(t_ast_element *p) {
-    return;
-
     if (!p) return;
 
-    // @TODO: If it's a stringOpr, we must free our char as well!
-    // @TODO: If it's a varOpr, we must free our svar as well
-
-    if (p->type == typeOpr) {
-        for (int i=0; i < p->opr.nops; i++) {
-            ast_free_node(p->opr.ops[i]);
-        }
-        free(p->opr.ops);
+    switch (p->type) {
+        case typeString :
+            free(p->string.value); // strdupped
+            break;
+        case typeIdentifier :
+            free(p->identifier.name); // strdupped
+            break;
+        case typeClass :
+            free(p->class.name); // strdupped
+            ast_free_node(p->class.extends);
+            ast_free_node(p->class.implements);
+            ast_free_node(p->class.body);
+            break;
+        case typeInterface :
+            free(p->interface.name); // strdupped
+            ast_free_node(p->interface.implements);
+            ast_free_node(p->interface.body);
+            break;
+        case typeMethod :
+            free(p->method.name); // strdupped
+            ast_free_node(p->method.arguments);
+            ast_free_node(p->method.body);
+            break;
+        case typeOpr :
+            if (p->opr.nops) {
+                for (int i=0; i < p->opr.nops; i++) {
+                    ast_free_node(p->opr.ops[i]);
+                }
+                smm_free(SMM_TAG_AST, p->opr.ops);
+            }
+            break;
     }
-    free(p);
+    smm_free(SMM_TAG_AST, p);
 }

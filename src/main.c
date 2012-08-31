@@ -30,6 +30,7 @@
 #include <getopt.h>
 #include "dot/dot.h"
 #include "compiler/ast.h"
+#include "general/smm.h"
 
 #include "version.h"
 
@@ -142,7 +143,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Initialize saffire memory manager
+    smm_init();
+
+    // Compile file into a tree
     ast_compile_tree(fp);
+
+    // Close file
+    fclose(fp);
 
     if (generate_dot) {
         // generate DOT file

@@ -30,6 +30,7 @@
 
 #include "general/hashtable.h"
 #include "general/svar.h"
+#include "general/smm.h"
 
 t_hash_table *variable_table;
 
@@ -71,7 +72,7 @@ svar *svar_find(char *name) {
  */
 svar *svar_alloc(char type, char *name, char *s, long l) {
     // Allocate memory and set standard info
-    svar *var = (svar *)malloc(sizeof(svar));
+    svar *var = (svar *)smm_malloc(SMM_TAG_SVAR, sizeof(svar));
     var->type = type;
     var->name = strdup(name);
 
@@ -105,6 +106,8 @@ void svar_free(svar *var) {
     }
 
     ht_remove(variable_table, var->name);
+
+    smm_free(SMM_TAG_SVAR, var);
 }
 
 /**
@@ -114,6 +117,9 @@ void svar_init_table() {
     variable_table = ht_create();
 }
 
+void svar_fini_table() {
+    ht_destroy(variable_table);
+}
 
 int svar_true(svar *var) {
     return (var->type == SV_LONG && var->val.l);
