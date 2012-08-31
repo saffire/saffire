@@ -146,6 +146,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "self"          { saffire_push_state(st_regex); return T_SELF; }
 "parent"        { saffire_push_state(st_regex); return T_PARENT; }
 
+"yield"         { saffire_push_state(st_regex); return T_YIELD; }
+
 
 \"[^\"]*\" {
     saffire_push_state(st_div);
