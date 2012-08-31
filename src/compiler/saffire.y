@@ -30,13 +30,25 @@
 #define YY_HEADER_EXPORT_START_CONDITIONS 1
 
     #include <stdio.h>
-    #include "compiler/lex.yy.h"
+    #include "general/smm.h"
+    #include "lex.yy.h"
     #include "compiler/saffire_compiler.h"
     #include "compiler/ast.h"
 
     extern int yylineno;
     int yylex(void);
     void yyerror(const char *err) { printf("Error in line %d: %s\n", yylineno, err); }
+
+    // Use our own saffire memory manager
+    void *yyalloc (size_t bytes) {
+        return smm_malloc(SMM_TAG_PARSER, bytes);
+    }
+    void *yyrealloc (void *ptr, size_t bytes) {
+        return smm_realloc(SMM_TAG_PARSER, ptr, bytes);
+    }
+    void yyfree (void *ptr) {
+        return smm_free(SMM_TAG_PARSER, ptr);
+    }
 
     void saffire_push_state(int state);
     void saffire_pop_state();
@@ -82,6 +94,8 @@
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
 %token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
+
+%token T_YIELD
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
@@ -137,9 +151,9 @@ non_empty_use_statement_list:
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($4)); }
+        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($4)); free($2); free($4); }
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($2)); }
+    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($2)); free($2); }
 ;
 
 
@@ -222,7 +236,7 @@ jump_statement:
     |   T_RETURN ';'                { TRACE $$ = ast_opr(T_RETURN, 0); }
     |   T_RETURN expression ';'     { TRACE $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { TRACE $$ = ast_opr(T_THROW, 1, $2); }
-    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_string($2)); }
+    |   T_GOTO T_IDENTIFIER ';'     { TRACE $$ = ast_opr(T_GOTO, 1, ast_string($2)); free($2); }
     |   T_GOTO T_LNUM ';'           { TRACE $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }
 ;
 
@@ -233,7 +247,7 @@ guarding_statement:
 ;
 
 catch_list:
-        catch            { TRACE $$ = $1 }
+        catch            { TRACE $$ = $1; }
     |   catch_list catch { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
 ;
 
@@ -242,13 +256,13 @@ catch:
 ;
 
 catch_header:
-        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_string($3), ast_string($4)); }
-    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_string($3)); }
+        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 2, ast_string($3), ast_string($4)); free($3); free($4); }
+    |   T_CATCH '('              T_IDENTIFIER ')' { TRACE $$ = ast_opr(T_CATCH, 1, ast_string($3)); free($3); }
     |   T_CATCH '('                           ')' { TRACE $$ = ast_opr(T_CATCH, 0); }
 ;
 
 label_statement:
-        T_IDENTIFIER ':'    { saffire_check_label($1); TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); }
+        T_IDENTIFIER ':'    { saffire_check_label($1); TRACE $$ = ast_opr(T_LABEL, 1, ast_string($1)); free($1); }
     |   T_LNUM ':'          { TRACE $$ = ast_opr(T_LABEL, 1, ast_numerical($1)); }
 ;
 
@@ -329,7 +343,7 @@ relational_expression:
 
 regex_expression:
         shift_expression { TRACE $$ = $1; }
-    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, ast_string($3)); }
+    |   regex_expression T_RE T_REGEX { TRACE $$ = ast_opr(T_RE, 2, $1, ast_string($3)); free($3); }
 ;
 
 shift_expression:
@@ -406,13 +420,13 @@ assignment_operator:
 
 real_scalar_value:
         T_LNUM   { TRACE $$ = ast_numerical($1); }
-    |   T_STRING { TRACE $$ = ast_string($1); }
+    |   T_STRING { TRACE $$ = ast_string($1); free($1); }
 ;
 
 
 qualified_name:
-         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_identifier($1)); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_identifier($3)); }
+         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_identifier($1)); free($1); }
+     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_identifier($3)); free($3); }
 ;
 
 calling_method_argument_list:
@@ -434,15 +448,15 @@ complex_primary:
 
 complex_primary_no_parenthesis:
         T_LNUM          { TRACE $$ = ast_numerical($1); }
-    |   T_STRING        { TRACE $$ = ast_string($1); }
-    |   T_REGEX         { TRACE $$ = ast_string($1); }
+    |   T_STRING        { TRACE $$ = ast_string($1); free($1); }
+    |   T_REGEX         { TRACE $$ = ast_string($1); free($1); }
     |   field_access    { TRACE $$ = $1; }
     |   method_call     { TRACE $$ = $1; }
     |   data_structure  { TRACE $$ = $1; }
 ;
 
 field_access:
-        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); }
+        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); free($3); }
     |   qualified_name '.' special_name { TRACE $$ = ast_opr('.', 2, $1, $3); }
 ;
 
@@ -494,12 +508,12 @@ interface_method_definition:
 ;
 
 interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); sfc_method_validate($3); $$ = ast_method($1, $3, $5, ast_nop()); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { TRACE sfc_validate_method_modifiers($1); sfc_method_validate($3); $$ = ast_method($1, $3, $5, ast_nop()); free($3); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_method_validate($3); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); }
-    |   interface_or_abstract_method_definition { TRACE $$ = $1 }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' compound_statement    { TRACE sfc_validate_abstract_method_body($1, $7); sfc_method_validate($3); sfc_validate_method_modifiers($1); $$ = ast_method($1, $3, $5, $7); free($3); }
+    |   interface_or_abstract_method_definition { TRACE $$ = $1; }
 ;
 
 method_argument_list:
@@ -513,12 +527,12 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); }
-    |   T_IDENTIFIER '=' T_LNUM                          { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
-    |   T_IDENTIFIER '=' T_STRING                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); }
-    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' T_LNUM             { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' T_STRING           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); }
+        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); free($1); }
+    |   T_IDENTIFIER '=' T_LNUM                          { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); free($1); }
+    |   T_IDENTIFIER '=' T_STRING                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); free($1); free($3); }
+    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); free($1); free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' T_LNUM             { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); free($1); free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' T_STRING           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); free($1); free($2); free($4); }
 ;
 
 constant_list:
@@ -527,7 +541,7 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); }
+        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); free($2); }
 ;
 
 class_definition:
@@ -536,28 +550,28 @@ class_definition:
 ;
 
 class_header:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class($1, $3); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_init_class( 0, $2); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class($1, $3); free($3); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_init_class( 0, $2); free($2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, $6); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, ast_nop()); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface(0, $2, $3, $5); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface(0, $2, $3, ast_nop()); };
+        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, $6); free($3); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, ast_nop()); free($3); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { TRACE $$ = ast_interface(0, $2, $3, $5); free($2); }
+    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { TRACE $$ = ast_interface(0, $2, $3, ast_nop()); free($2); };
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); free($3); }
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); free($3); }
 ;
 
 modifier_list:
-        modifier               { TRACE $$ = $1 }
+        modifier               { TRACE $$ = $1; }
     |   modifier_list modifier { TRACE sfc_validate_flags($$, $2); $$ |= $2; }
 ;
 
@@ -574,7 +588,7 @@ modifier:
 
 /* extends only one class */
 class_extends:
-        T_EXTENDS T_IDENTIFIER { TRACE $$ = ast_string($2); }
+        T_EXTENDS T_IDENTIFIER { TRACE $$ = ast_string($2); free($2); }
     |   /* empty */            { TRACE $$ = ast_nop(); }
 ;
 
@@ -586,8 +600,8 @@ class_interface_implements:
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_string($1)); }
-    |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_string($3)); }
+        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_string($1)); free($1); }
+    |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_string($3)); free($3); }
 ;
 
 

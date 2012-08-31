@@ -31,7 +31,7 @@
 #include <unistd.h>
 
 #include "compiler/ast.h"
-#include "compiler/parser.tab.h"
+#include "saffire-parser.h"
 
 #define YY_NO_INPUT 1
 #define YYPRINT 1
