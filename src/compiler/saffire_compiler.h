@@ -58,6 +58,8 @@
         t_class *active_class;            // Current active class
 
         int in_class;                     // 1 when we are inside a class, 0 otherwise
+        int in_loop;
+        int in_method;
         t_switch_struct *switches;        // Linked list of switch statements
         t_switch_struct *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
     } t_global_table;

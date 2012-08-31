@@ -256,6 +256,32 @@ static void sfc_init_global_table(void) {
 }
 
 
+/**
+ * Enter a control-loop
+ */
+void sfc_loop_enter(void) {
+    // Increase loop counter, since we are entering a new loop
+    global_table->in_loop++;
+}
+
+
+/**
+ * Leave a loop.
+ */
+void sfc_loop_leave(void) {
+    // Not possible to leave a loop when we aren't inside any
+    if (global_table->in_loop <= 0) {
+        sfc_error("Somehow, we are trying to leave a loop from the outer scope");
+    }
+
+    // Decrease loop counter, since we are going down one loop
+    global_table->in_loop--;
+}
+
+
+/**
+ * Begin switch statement
+ */
 void sfc_switch_begin(void) {
     // Allocate switch structure
     t_switch_struct *ss = (t_switch_struct *)malloc(sizeof(t_switch_struct));
@@ -271,6 +297,10 @@ void sfc_switch_begin(void) {
     global_table->current_switch = ss;
 }
 
+
+/**
+ * End switch statement
+ */
 void sfc_switch_end(void) {
     t_switch_struct *ss = global_table->current_switch;
 
@@ -281,12 +311,17 @@ void sfc_switch_end(void) {
     free(ss);
 }
 
+
+/**
+ * Check case label
+ */
 void sfc_switch_case(void) {
-//    if (global_table->current_switch == NULL || global_table->current_switch->in_switch == 0) {
-//        sfc_error("Case labels can only be supplied inside a switch-statement");
-//    }
 }
 
+
+/**
+ * Check if a default label is valid
+ */
 void sfc_switch_default(void) {
     t_switch_struct *ss = global_table->current_switch;
 
@@ -304,11 +339,51 @@ void sfc_switch_default(void) {
 
 
 /**
- *
+ * Make sure a label is not a variable
  */
 void saffire_check_label(const char *name) {
     if (name[0] == '$') {
         sfc_error("A variable cannot be used as a label");
+    }
+}
+
+
+/**
+ * Make sure return happens inside a method
+ */
+void saffire_validate_return() {
+    if (global_table->in_method == 0) {
+        sfc_error("Cannot use return outside a method");
+    }
+}
+
+
+/**
+ * Make sure break happens inside a loop
+ */
+void saffire_validate_break() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only break inside a loop");
+    }
+}
+
+
+/**
+ * Make sure continue happens inside a loop
+ */
+void saffire_validate_continue() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only continue inside a loop");
+    }
+}
+
+
+/**
+ * Make sure breakelse happens inside a loop
+ */
+void saffire_validate_breakelse() {
+    if (global_table->in_loop == 0) {
+        sfc_error("We can only breakelse inside a loop");
     }
 }
 
