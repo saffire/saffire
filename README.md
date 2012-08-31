@@ -3,9 +3,9 @@ Saffire
 A new soon-to-be programming scripting language, based on primarily Python, PHP and Ruby.
 
 Installation:
-
+-------------
 # autogen.sh
-# ./configure
+# ./configure [--enable-debug]
 # make
 
 
