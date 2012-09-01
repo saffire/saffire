@@ -121,7 +121,7 @@ svar *saffire_interpreter(t_ast_element *p) {
                     } else {
                         printf("setting string: %s\n", var1->val.s);
                         var->type = SV_STRING;
-                        var->val.s = strdup(var1->val.s);
+                        var->val.s = smm_strdup(var1->val.s);
                     }
 
                     svar_print(var);

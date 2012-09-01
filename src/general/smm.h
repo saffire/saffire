@@ -29,32 +29,9 @@
 
     #include <stdlib.h>
 
-    // Maximum number of tags!
-    #define SMM_MAX_TAGS     25
-
-    #define SMM_TAG_INTERNAL   0                // Internal SMM allocations
-    #define SMM_TAG_PLAIN      1                // Called through standard malloc/free/realloc methods
-    #define SMM_TAG_HASH       2                // Hash tables
-    #define SMM_TAG_SVAR       3                // Svars
-    #define SMM_TAG_AST        4                // AST
-    #define SMM_TAG_PARSER     5                // bison parser vars
-    #define SMM_TAG_OTHER      SMM_MAX_TAGS-1   // Everything else that doesn't fit another category
-
-    typedef struct smm_tag {
-        int tag;                // Tag number
-        int cur_element_count;  // Current number of elements
-        int max_element_count;  // Maximum seen number of elements
-        int cur_size;           // Current size in bytes
-        int max_size;           // Maximum seen size in bytes
-        int untracked_count;    // Number of untracked elements
-        int untracked_size;     // Size in bytes of untracked data
-    } t_smm_tag;
-
-    void smm_init();
-
-    void *smm_malloc(int tag, size_t size);
-    void *smm_realloc(int tag, void *ptr, size_t size);
-    void smm_free(int tag, void *ptr);
-    t_smm_tag *smm_get_stats(int tag);
+    void *smm_malloc(size_t size);
+    void *smm_realloc(void *ptr, size_t size);
+    void smm_free(void *ptr);
+    char *smm_strdup(const char *s);
 
 #endif

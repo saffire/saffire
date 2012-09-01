@@ -72,15 +72,15 @@ svar *svar_find(char *name) {
  */
 svar *svar_alloc(char type, char *name, char *s, long l) {
     // Allocate memory and set standard info
-    svar *var = (svar *)smm_malloc(SMM_TAG_SVAR, sizeof(svar));
+    svar *var = (svar *)smm_malloc(sizeof(svar));
     var->type = type;
-    var->name = strdup(name);
+    var->name = smm_strdup(name);
 
     // Set additional values if needed
     if (var->type == SV_LONG) {
         var->val.l = l;
     } else if (var->type == SV_STRING) {
-        var->val.s = strdup(s);
+        var->val.s = smm_strdup(s);
     }
 
     // Store this variable in our main lookup table
@@ -98,16 +98,16 @@ void svar_free(svar *var) {
     }
 
     // Free the name
-    free(var->name);
+    smm_free(var->name);
 
     // Free additional memory if needed
     if (var->type == SV_STRING) {
-        free(var->val.s);
+        smm_free(var->val.s);
     }
 
     ht_remove(variable_table, var->name);
 
-    smm_free(SMM_TAG_SVAR, var);
+    smm_free(var);
 }
 
 /**

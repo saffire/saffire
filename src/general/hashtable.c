@@ -38,8 +38,8 @@
  */
 t_hash_table *ht_create(void) {
     // Allocate memory for table and buckets
-    t_hash_table *ht = (t_hash_table *)smm_malloc(SMM_TAG_HASH, sizeof(t_hash_table));
-    ht->bucket_list = (t_hash_table_bucket **)smm_malloc(SMM_TAG_HASH, sizeof(t_hash_table_bucket *) * HT_INITIAL_BUCKET_SIZE);
+    t_hash_table *ht = (t_hash_table *)smm_malloc(sizeof(t_hash_table));
+    ht->bucket_list = (t_hash_table_bucket **)smm_malloc(sizeof(t_hash_table_bucket *) * HT_INITIAL_BUCKET_SIZE);
 
     // Initialize buckets
     for (int i=0; i != HT_INITIAL_BUCKET_SIZE; i++) {
@@ -96,8 +96,8 @@ int ht_add(t_hash_table *ht, char *str, void *data) {
     unsigned int hash_value = ht_hash(ht, str);
 
     // Create bucket for new variable
-    t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(SMM_TAG_HASH, sizeof(t_hash_table_bucket));
-    htb->key = strdup(str);
+    t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(sizeof(t_hash_table_bucket));
+    htb->key = smm_strdup(str);
     htb->data = data;
     htb->next = NULL;
     htb->prev = NULL;
@@ -158,8 +158,8 @@ void ht_remove(t_hash_table *ht, char *str) {
     }
 
     // Free key and bucket
-    free(htb->key);
-    smm_free(SMM_TAG_HASH, htb);
+    smm_free(htb->key);
+    smm_free(htb);
 
 
     // Decrease element count
@@ -192,19 +192,19 @@ void ht_destroy(t_hash_table *ht) {
             while (htb->prev) {
                 htb = htb->prev;
 
-                free(htb->next->key); // strdupped
-                smm_free(SMM_TAG_HASH, htb->next);
+                smm_free(htb->next->key); // strdupped
+                smm_free(htb->next);
             }
         }
 
-        free(ht->bucket_list[i]->key); // strdupped
-        smm_free(SMM_TAG_HASH, ht->bucket_list[i]);
+        smm_free(ht->bucket_list[i]->key); // strdupped
+        smm_free(ht->bucket_list[i]);
     }
 
     // Free bucket list array
-    smm_free(SMM_TAG_HASH, ht->bucket_list);
+    smm_free(ht->bucket_list);
 
     // Destroy hash table
-    smm_free(SMM_TAG_HASH, ht);
+    smm_free(ht);
     return;
 }

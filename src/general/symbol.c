@@ -45,7 +45,7 @@ t_symbol_table *symbol_init_table(void) {
  * Create a new symbol table on top of another table (new scope)
  */
 t_symbol_table *symbol_new_table(t_symbol_table *prev_st) {
-    t_symbol_table *st = (t_symbol_table *)smm_alloc(SMM_TAG_INTERNAL, sizeof(t_symbol_table));
+    t_symbol_table *st = (t_symbol_table *)smm_malloc(sizeof(t_symbol_table));
 
     if (prev_st) {
         // Increases scope level

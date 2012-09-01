@@ -28,6 +28,7 @@
 #define __CLASS_H__
 
     #include "general/hashtable.h"
+    #include "compiler/ast.h"
 
     /**
      * Primary start of a class structure. Will change
@@ -36,6 +37,9 @@
         int modifiers;                  // MODIFIER_* flags
         char *name;                     // Fully qualified class name
         struct class *parent;           // Parent class (or NULL when extending no other class) @TODO: Always extend Base class
+
+        struct ast_element *extends;
+        struct ast_element *implements;
 
         t_hash_table *methods;          // Methods inside this class
         t_hash_table *constants;        // Constants inside this class

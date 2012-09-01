@@ -166,7 +166,7 @@ void sfc_method_validate(const char *name) {
 /**
  * Initialize a class
  */
-void sfc_init_class(int modifiers, char *name) {
+void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
         sfc_error("You cannot define a class inside another class");
@@ -183,12 +183,15 @@ void sfc_init_class(int modifiers, char *name) {
     }
 
     // Initialize and populte a new class structure
-    t_class *new_class = (t_class *)smm_malloc(SMM_TAG_OTHER, sizeof(t_class));
+    t_class *new_class = (t_class *)smm_malloc(sizeof(t_class));
     new_class->modifiers = modifiers;
-    new_class->name = name;
+    new_class->name = strdup(name);
 
     // @TODO: Check if parent actually exists
     new_class->parent = NULL;
+
+    new_class->extends = extends;
+    new_class->implements = implements;
 
     new_class->methods = ht_create();
     new_class->constants = ht_create();
@@ -240,7 +243,7 @@ void sfc_fini_class(void) {
  */
 static void sfc_init_global_table(void) {
     // Allocate table memory
-    global_table = (t_global_table *)smm_malloc(SMM_TAG_OTHER, sizeof(t_global_table));
+    global_table = (t_global_table *)smm_malloc(sizeof(t_global_table));
 
     // Initialize table
     global_table->constants = ht_create();
@@ -263,9 +266,13 @@ static void sfc_fini_global_table(void) {
         while (htb) {
             t_class *class = htb->data;
 
+            smm_free(class->name);  // Strdupped
+
             ht_destroy(class->methods);
             ht_destroy(class->constants);
             ht_destroy(class->properties);
+
+            smm_free(class);
 
             htb = htb->next;
         }
@@ -276,7 +283,7 @@ static void sfc_fini_global_table(void) {
     ht_destroy(global_table->classes);
 
     // Free actual global table
-    smm_free(SMM_TAG_OTHER, global_table);
+    smm_free(global_table);
 }
 
 
@@ -308,7 +315,7 @@ void sfc_loop_leave(void) {
  */
 void sfc_switch_begin(void) {
     // Allocate switch structure
-    t_switch_struct *ss = (t_switch_struct *)smm_malloc(SMM_TAG_OTHER, sizeof(t_switch_struct));
+    t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
 
     // Set default values
     ss->has_default = 0;
@@ -332,7 +339,7 @@ void sfc_switch_end(void) {
     global_table->current_switch = ss->parent;
 
     // Free switch structure
-    free(ss);
+    smm_free(ss);
 }
 
 

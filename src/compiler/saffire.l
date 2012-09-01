@@ -36,8 +36,10 @@
 #define YY_NO_INPUT 1
 #define YYPRINT 1
 
-    static void yy_push_state (int new_state );
-    static void yy_pop_state (void );
+
+/* Create yy_*_state wrappers */
+static void yy_push_state (int new_state);
+static void yy_pop_state (void );
 
 void saffire_push_state(int state) {
     yy_push_state(state);
@@ -49,18 +51,21 @@ void saffire_pop_state() {
 
 %}
 
-/* Exclusive - only match <regex> rules */
+/* Define lexer states */
 %s st_regex
 %s st_div
 
 %option stack
 %option yylineno
 
+/* We define our own yymalloc functionality */
 %option noyyfree noyyrealloc noyyalloc
 
 /* suppres -Wall warning about yyunput */
 %option nounput noyy_top_state
 
+
+/* Our actual lexemes */
 lnum            [0-9]+
 identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
@@ -159,7 +164,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     } else {
         yylval.sVal[yyleng-2] = 0;
     }
-    return T_STRING; }
+    return T_STRING;
+}
 
 \'[^\']*\' {
     saffire_push_state(st_div);
@@ -169,7 +175,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     } else {
         yylval.sVal[yyleng-2] = 0;
     }
-    return T_STRING; }
+    return T_STRING;
+}
 
 {identifier} {
     saffire_push_state(st_div);
@@ -180,7 +187,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 {lnum} {
     saffire_push_state(st_div);
     yylval.lVal = strtol(yytext, NULL, 10);
-    return T_LNUM; }
+    return T_LNUM;
+}
 
 . {
     printf ("Unknown token: '%s'\n", yytext);
@@ -190,4 +198,3 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 %%
 
 int yywrap(void) { return 1; }
-

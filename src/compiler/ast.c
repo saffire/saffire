@@ -69,7 +69,7 @@ t_ast_element *ast_compile_tree(FILE *fp) {
 static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
 
-    if ((p = smm_malloc(SMM_TAG_AST, sizeof(t_ast_element))) == NULL) {
+    if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -84,7 +84,7 @@ t_ast_element *ast_string(char *value) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeString;
-    p->string.value = strdup(value);
+    p->string.value = smm_strdup(value);
 
     return p;
 }
@@ -110,7 +110,7 @@ t_ast_element *ast_identifier(char *var_name) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeIdentifier;
-    p->identifier.name = strdup(var_name);
+    p->identifier.name = smm_strdup(var_name);
 
     return p;
 }
@@ -137,7 +137,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
     }
 
     // Resize operator memory
-    src->opr.ops = smm_realloc(SMM_TAG_AST, src->opr.ops, src->opr.nops * sizeof(t_ast_element));
+    src->opr.ops = smm_realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
     if (src->opr.ops == NULL) {
         yyerror("Out of memory");
     }
@@ -157,7 +157,7 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     t_ast_element *p = ast_alloc_element();
     va_list ap;
 
-    if (nops && (p->opr.ops = smm_malloc (SMM_TAG_AST, nops * sizeof(t_ast_element))) == NULL) {
+    if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");
     }
 
@@ -186,16 +186,10 @@ t_ast_element *ast_class(t_class *class, t_ast_element *body) {
 
     p->type = typeClass;
     p->class.modifiers = class->modifiers;
-    p->class.name = strdup(class->name);
-    if (class->parent != NULL) {
-        // @TODO: Probably we want this done differently
-        p->class.extends = ast_string(class->parent->name);
-    } else {
-        p->class.extends = ast_nop();
-    }
+    p->class.name = smm_strdup(class->name);
 
-    // @TODO: Make sure interfaces are added correctly
-    p->class.implements = NULL;
+    p->class.extends = class->extends;
+    p->class.implements = class->implements;
 
     p->class.body = body;
 
@@ -211,7 +205,7 @@ t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implement
 
     p->type = typeInterface;
     p->interface.modifiers = modifiers;
-    p->interface.name = strdup(name);
+    p->interface.name = smm_strdup(name);
     p->interface.implements = implements;
     p->interface.body = body;
 
@@ -227,7 +221,7 @@ t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t
 
     p->type = typeMethod;
     p->method.modifiers = modifiers;
-    p->method.name = strdup(name);
+    p->method.name = smm_strdup(name);
     p->method.arguments = arguments;
     p->method.body = body;
 
@@ -243,24 +237,24 @@ void ast_free_node(t_ast_element *p) {
 
     switch (p->type) {
         case typeString :
-            free(p->string.value); // strdupped
+            smm_free(p->string.value);
             break;
         case typeIdentifier :
-            free(p->identifier.name); // strdupped
+            smm_free(p->identifier.name);
             break;
         case typeClass :
-            free(p->class.name); // strdupped
+            smm_free(p->class.name);
             ast_free_node(p->class.extends);
             ast_free_node(p->class.implements);
             ast_free_node(p->class.body);
             break;
         case typeInterface :
-            free(p->interface.name); // strdupped
+            smm_free(p->interface.name);
             ast_free_node(p->interface.implements);
             ast_free_node(p->interface.body);
             break;
         case typeMethod :
-            free(p->method.name); // strdupped
+            smm_free(p->method.name);
             ast_free_node(p->method.arguments);
             ast_free_node(p->method.body);
             break;
@@ -269,9 +263,9 @@ void ast_free_node(t_ast_element *p) {
                 for (int i=0; i < p->opr.nops; i++) {
                     ast_free_node(p->opr.ops[i]);
                 }
-                smm_free(SMM_TAG_AST, p->opr.ops);
+                smm_free(p->opr.ops);
             }
             break;
     }
-    smm_free(SMM_TAG_AST, p);
+    smm_free(p);
 }

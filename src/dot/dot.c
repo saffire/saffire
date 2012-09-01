@@ -42,7 +42,7 @@ static int node_nr = 0;
  * Returns a list of flag strings for nice output in the graphs
  */
 static char *show_modifiers(int modifiers) {
-    char *s = (char *)smm_malloc(SMM_TAG_OTHER, sizeof(char) * 100); // 100 bytes should be enough for everyone
+    char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
     memset(s, 0, 100);
 
     if (modifiers & MODIFIER_PROTECTED) s = strcat(s, "PROTECTED\\n");

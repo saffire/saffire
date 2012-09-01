@@ -143,9 +143,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Initialize saffire memory manager
-    smm_init();
-
     // Compile file into a tree
     ast_compile_tree(fp);
 

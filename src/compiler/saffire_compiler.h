@@ -69,7 +69,7 @@
     void sfc_init(void);
     void sfc_fini(void);
 
-    void sfc_init_class(int modifiers, char *name);
+    void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements);
     void sfc_fini_class(void);
 
     void sfc_switch_case(void);
