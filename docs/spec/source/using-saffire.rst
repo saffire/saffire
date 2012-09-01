@@ -1,5 +1,5 @@
 #############
-Using saffire
+Using Saffire
 #############
 
 Command line usage
@@ -15,7 +15,7 @@ Return usage information
 Show the version information
 
 **-c or --cli**
-Start an interactive command line version of saffire.
+Start an interactive command line version of Saffire.
 
 **-l or --lint**
 Execute a lint-check on the source code.
@@ -25,7 +25,7 @@ Generate a AST tree in DOT format.
 
 Interactive mode
 ----------------
-When starting saffire with the **-c** or **--cli**, it will start an interactive mode. In this mode you can insert your
+When starting Saffire with the **-c** or **--cli**, it will start an interactive mode. In this mode you can insert your
 code line by line and will execute it straight away.
 
 FastCGI usage
@@ -33,3 +33,4 @@ FastCGI usage
 
 :Authors:
    Joshua Thijssen
+   Caspar Dunant

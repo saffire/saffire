@@ -58,8 +58,8 @@
         t_class *active_class;            // Current active class
 
         int in_class;                     // 1 when we are inside a class, 0 otherwise
-        int in_loop;
-        int in_method;
+        int in_loop_counter;              // incremental loop counter. (deals with while() inside while() etc)
+        int in_method;                    // 1 when we are inside a method, 0 otherwise
         t_switch_struct *switches;        // Linked list of switch statements
         t_switch_struct *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
     } t_global_table;
@@ -79,7 +79,17 @@
 
     void saffire_check_label(const char *name);
 
-    void sfc_method_validate(const char *name);
+    void saffire_validate_return();
+    void saffire_validate_break();
+    void saffire_validate_continue();
+    void saffire_validate_breakelse();
+
+    void sfc_loop_enter(void);
+    void sfc_loop_leave(void);
+
+
+    void sfc_init_method(const char *name);
+    void sfc_fini_method(void);
     void sfc_validate_constant(char *constant);
     void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body);
     void sfc_validate_class_modifiers(long modifiers);

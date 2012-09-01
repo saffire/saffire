@@ -4,7 +4,7 @@ Saffire from other languages
 
 Saffire for PHP programmers
 ---------------------------
-There are some differences between PHP and saffire
+There are some differences between PHP and Saffire
 
 - There are no (global) functions.
 - Scalar values like strings and integers are objects too.
@@ -15,8 +15,8 @@ There are some differences between PHP and saffire
 - Array's are hashmaps, used as the ``hash[]`` data structure. Numerical arrays are used as ``list[]`` structures.
 - Saffire supports method and operator overloading.
 - Methods and properties visibilities must be explicitly stated (they are not implied public).
-- Saffire support multiple assignments like: ``$a, $b = 1, 2;``. It also includes multiple entries through return;
-- If no explicit return value is used for a value, the actual object is return (return self).
+- Saffire support multiple assignments like: ``$a, $b = 1, 2;``. It also works for returning multiple values.
+- If no explicit return value is used for a value, the actual object is returned (return self).
 - The ``$this`` keyword is actually called ``self``. Static methods can only be called with ``static.<method>``. It's
   possible to reference to a static property from an object context.
 

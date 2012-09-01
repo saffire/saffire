@@ -155,12 +155,21 @@ void sfc_validate_constant(char *name) {
 }
 
 /**
- * Validate method name
+ * Enter a method, and validate method name
  */
-void sfc_method_validate(const char *name) {
+void sfc_init_method(const char *name) {
     if (name[0] == '$') {
         sfc_error("A variable cannot be used as a method name");
     }
+
+    global_table->in_method = 1;
+}
+
+/**
+ * Leave a method
+ */
+void sfc_fini_method() {
+    global_table->in_method = 0;
 }
 
 /**
@@ -251,11 +260,15 @@ static void sfc_init_global_table(void) {
     global_table->active_class = NULL;
 
     global_table->in_class = 0;
+    global_table->in_method = 0;
+    global_table->in_loop_counter = 0;
+
 
     global_table->switches = NULL;
     global_table->current_switch = NULL;
 }
 
+<<<<<<< HEAD:src/compiler/saffire_compiler.c
 static void sfc_fini_global_table(void) {
     // Iterate over classes and remove all info
     t_hash_table *ht = global_table->classes;
@@ -286,13 +299,25 @@ static void sfc_fini_global_table(void) {
     smm_free(global_table);
 }
 
+void sfc_loop_enter(void) {
+//    printf("void sfc_loop_enter(void) {\n");
+    // Increase loop counter, since we are entering a new loop
+    global_table->in_loop_counter++;
+}
+
+void sfc_loop_leave(void) {
+//    printf("void sfc_loop_leave(void) {\n");
+    // Decrease loop counter, since we are going down one loop
+    global_table->in_loop_counter--;
+}
+
 
 /**
  * Enter a control-loop
  */
 void sfc_loop_enter(void) {
     // Increase loop counter, since we are entering a new loop
-    global_table->in_loop++;
+    global_table->in_loop_counter++;
 }
 
 
@@ -301,12 +326,12 @@ void sfc_loop_enter(void) {
  */
 void sfc_loop_leave(void) {
     // Not possible to leave a loop when we aren't inside any
-    if (global_table->in_loop <= 0) {
+    if (global_table->in_loop_counter <= 0) {
         sfc_error("Somehow, we are trying to leave a loop from the outer scope");
     }
 
     // Decrease loop counter, since we are going down one loop
-    global_table->in_loop--;
+    global_table->in_loop_counter--;
 }
 
 
@@ -381,6 +406,7 @@ void saffire_check_label(const char *name) {
 
 /**
  * Make sure return happens inside a method
+ *
  */
 void saffire_validate_return() {
     if (global_table->in_method == 0) {
@@ -391,9 +417,10 @@ void saffire_validate_return() {
 
 /**
  * Make sure break happens inside a loop
+ *
  */
 void saffire_validate_break() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only break inside a loop");
     }
 }
@@ -401,9 +428,10 @@ void saffire_validate_break() {
 
 /**
  * Make sure continue happens inside a loop
+ *
  */
 void saffire_validate_continue() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only continue inside a loop");
     }
 }
@@ -411,9 +439,10 @@ void saffire_validate_continue() {
 
 /**
  * Make sure breakelse happens inside a loop
+ *
  */
 void saffire_validate_breakelse() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only breakelse inside a loop");
     }
 }
