@@ -29,15 +29,15 @@
 */
 
 
-foreach string.range("A","Z") as e {
-  if (e.first) {
-    io.printf("Oh hai! this is the first out of %d items!\n", e.count);
+foreach (string.range("A","Z") as $e) {
+  if ($e.first) {
+    io.printf("Oh hai! this is the first out of %d items!\n", $e.count);
   }
-  if (e.last) {
+  if ($e.last) {
     io.print("This will be the last item. kthnkbai!");
   }
 
-  io.print("Item: " + e.index + " Key: " + e.key + " Val: "+ e.val + "\n");
+  io.print("Item: " + $e.index + " Key: " + $e.key + " Val: "+ $e.val + "\n");
 }
 
 

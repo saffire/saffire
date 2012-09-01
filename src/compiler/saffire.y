@@ -112,6 +112,7 @@
 %type <nPtr> class_method_definition class_property_definition special_name qualified_name calling_method_argument_list
 %type <nPtr> data_structure field_access logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
+%type <nPtr> primary
 
 %type <sVal> '=' T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -447,6 +448,12 @@ complex_primary:
     |   complex_primary_no_parenthesis { TRACE $$ = $1; }
 ;
 
+primary:
+        T_LNUM          { TRACE $$ = ast_numerical($1); }
+    |   T_STRING        { TRACE $$ = ast_string($1); smm_free($1); }
+    |   T_IDENTIFIER    { TRACE $$ = ast_identifier($1); smm_free($1); }
+;
+
 complex_primary_no_parenthesis:
         T_LNUM          { TRACE $$ = ast_numerical($1); }
     |   T_STRING        { TRACE $$ = ast_string($1); smm_free($1); }
@@ -529,11 +536,9 @@ non_empty_method_argument_list:
 
 method_argument:
         T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); smm_free($1); }
-    |   T_IDENTIFIER '=' T_LNUM                          { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
-    |   T_IDENTIFIER '=' T_STRING                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); smm_free($3); }
+    |   T_IDENTIFIER '=' primary                         { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
     |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' T_LNUM             { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' T_STRING           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($1), $4); smm_free($1); smm_free($2); smm_free($4); }
+    |   T_IDENTIFIER T_IDENTIFIER '=' primary            { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); smm_free($1); smm_free($2); }
 ;
 
 constant_list:

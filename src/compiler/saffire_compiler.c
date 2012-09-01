@@ -268,7 +268,6 @@ static void sfc_init_global_table(void) {
     global_table->current_switch = NULL;
 }
 
-<<<<<<< HEAD:src/compiler/saffire_compiler.c
 static void sfc_fini_global_table(void) {
     // Iterate over classes and remove all info
     t_hash_table *ht = global_table->classes;
@@ -297,18 +296,6 @@ static void sfc_fini_global_table(void) {
 
     // Free actual global table
     smm_free(global_table);
-}
-
-void sfc_loop_enter(void) {
-//    printf("void sfc_loop_enter(void) {\n");
-    // Increase loop counter, since we are entering a new loop
-    global_table->in_loop_counter++;
-}
-
-void sfc_loop_leave(void) {
-//    printf("void sfc_loop_leave(void) {\n");
-    // Decrease loop counter, since we are going down one loop
-    global_table->in_loop_counter--;
 }
 
 

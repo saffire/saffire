@@ -83,7 +83,10 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 
     /* Only match regex when we are in the regex state */
-<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    { return T_REGEX; }
+<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    {
+    yylval.sVal = smm_strdup(yytext);
+    return T_REGEX;
+}
 
 "~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
@@ -158,7 +161,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 \"[^\"]*\" {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext+1);
+    yylval.sVal = smm_strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
     } else {
@@ -169,7 +172,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 \'[^\']*\' {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext+1);
+    yylval.sVal = smm_strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
     } else {
@@ -180,7 +183,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 {identifier} {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext);
+    yylval.sVal = smm_strdup(yytext);
     return T_IDENTIFIER;
 }
 

@@ -32,6 +32,7 @@
 #include "compiler/parser.tab.h"
 #include "general/svar.h"
 #include "compiler/ast.h"
+#include "general/smm.h"
 
 #define SI(p)   (saffire_interpreter(p))
 #define SI0(p)  (saffire_interpreter(p->opr.ops[0]))
