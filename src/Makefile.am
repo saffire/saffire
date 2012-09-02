@@ -16,7 +16,8 @@ CLEANFILES = compiler/parser.tab.c compiler/parser.tab.h compiler/lex.yy.c compi
              compiler/*.o \
              dot/*.o \
              general/*.o \
-             interpreter/*.o
+             interpreter/*.o \
+             object/*.o
 
 compiler/parser.tab.h: compiler/parser.tab.c
 
@@ -28,7 +29,8 @@ compiler/lex.yy.c: compiler/saffire.l
 
 saffire_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   main.c general/svar.c compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
-                  interpreter/saffire_interpreter.c general/hashtable.c general/smm.c
+                  interpreter/saffire_interpreter.c general/hashtable.c general/smm.c \
+                  object/object.c object/base.c object/string.c object/numerical.c object/boolean.c
 
 
 saffire_LDADD = $(INIT_LIBS) -lm
