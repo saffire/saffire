@@ -14,9 +14,9 @@ $tmp = foo();
 try {
     $tmp.bar("aaaaa");
     $tmp.bar("1234");
-} catch (invalidException) {
+} catch (invalidException $e) {
     // Invalidexception has been found
-} catch (exception) {
+} catch (exception $e) {
     // Another exception has been found
 } finally {
     // We always come here

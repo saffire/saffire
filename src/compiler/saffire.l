@@ -30,14 +30,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ast.h"
-#include "parser.tab.h"
+#include "compiler/ast.h"
+#include "compiler/parser.tab.h"
 
 #define YY_NO_INPUT 1
 #define YYPRINT 1
 
-    static void yy_push_state (int new_state );
-    static void yy_pop_state (void );
+
+/* Create yy_*_state wrappers */
+static void yy_push_state (int new_state);
+static void yy_pop_state (void );
 
 void saffire_push_state(int state) {
     yy_push_state(state);
@@ -49,16 +51,21 @@ void saffire_pop_state() {
 
 %}
 
-/* Exclusive - only match <regex> rules */
+/* Define lexer states */
 %s st_regex
 %s st_div
 
 %option stack
 %option yylineno
 
+/* We define our own yymalloc functionality */
+%option noyyfree noyyrealloc noyyalloc
+
 /* suppres -Wall warning about yyunput */
 %option nounput noyy_top_state
 
+
+/* Our actual lexemes */
 lnum            [0-9]+
 identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
@@ -76,7 +83,10 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 
     /* Only match regex when we are in the regex state */
-<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    { return T_REGEX; }
+<st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    {
+    yylval.sVal = smm_strdup(yytext);
+    return T_REGEX;
+}
 
 "~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
@@ -146,37 +156,42 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "self"          { saffire_push_state(st_regex); return T_SELF; }
 "parent"        { saffire_push_state(st_regex); return T_PARENT; }
 
+"yield"         { saffire_push_state(st_regex); return T_YIELD; }
+
 
 \"[^\"]*\" {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext+1);
+    yylval.sVal = smm_strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
     } else {
         yylval.sVal[yyleng-2] = 0;
     }
-    return T_STRING; }
+    return T_STRING;
+}
 
 \'[^\']*\' {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext+1);
+    yylval.sVal = smm_strdup(yytext+1);
     if (yylval.sVal[yyleng-2] != yytext[0]) {
         fprintf(stderr,"improperly terminated string");
     } else {
         yylval.sVal[yyleng-2] = 0;
     }
-    return T_STRING; }
+    return T_STRING;
+}
 
 {identifier} {
     saffire_push_state(st_div);
-    yylval.sVal = strdup(yytext);
+    yylval.sVal = smm_strdup(yytext);
     return T_IDENTIFIER;
 }
 
 {lnum} {
     saffire_push_state(st_div);
     yylval.lVal = strtol(yytext, NULL, 10);
-    return T_LNUM; }
+    return T_LNUM;
+}
 
 . {
     printf ("Unknown token: '%s'\n", yytext);
@@ -186,4 +201,3 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 %%
 
 int yywrap(void) { return 1; }
-

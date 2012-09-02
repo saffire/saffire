@@ -28,10 +28,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "saffire_interpreter.h"
-#include "parser.tab.h"
-#include "svar.h"
-#include "ast.h"
+#include "interpreter/saffire_interpreter.h"
+#include "compiler/parser.tab.h"
+#include "general/svar.h"
+#include "compiler/ast.h"
+#include "general/smm.h"
 
 #define SI(p)   (saffire_interpreter(p))
 #define SI0(p)  (saffire_interpreter(p->opr.ops[0]))
@@ -121,7 +122,7 @@ svar *saffire_interpreter(t_ast_element *p) {
                     } else {
                         printf("setting string: %s\n", var1->val.s);
                         var->type = SV_STRING;
-                        var->val.s = strdup(var1->val.s);
+                        var->val.s = smm_strdup(var1->val.s);
                     }
 
                     svar_print(var);

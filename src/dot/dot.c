@@ -26,10 +26,11 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "parser.tab.h"
-#include "ast.h"
-#include "saffire_compiler.h"
 #include <string.h>
+#include "compiler/saffire_compiler.h"
+#include "compiler/parser.tab.h"
+#include "compiler/ast.h"
+#include "general/smm.h"
 
 extern char *get_token_string(int token);
 
@@ -41,7 +42,8 @@ static int node_nr = 0;
  * Returns a list of flag strings for nice output in the graphs
  */
 static char *show_modifiers(int modifiers) {
-    char *s = (char *)calloc(100, sizeof(char)); // 100 bytes should be enough for everyone
+    char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
+    memset(s, 0, 100);
 
     if (modifiers & MODIFIER_PROTECTED) s = strcat(s, "PROTECTED\\n");
     if (modifiers & MODIFIER_PUBLIC) s = strcat(s, "PUBLIC\\n");
@@ -59,6 +61,10 @@ static char *show_modifiers(int modifiers) {
  * Output node (and link to parent node number). Recursively called when child nodes are present.
  */
 static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
+    if (! p) {
+        return;
+    }
+
     // Store node_nr, since this is a static var that will change.
     int cur_node_nr = node_nr;
     node_nr++;

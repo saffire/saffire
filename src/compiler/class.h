@@ -24,37 +24,34 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SVAR_H__
-#define __SVAR_H__
+#ifndef __CLASS_H__
+#define __CLASS_H__
 
-    /*
-     * svars are comparable with php's zval
-     *
+    #include "general/hashtable.h"
+    #include "compiler/ast.h"
+
+    /**
+     * Primary start of a class structure. Will change
      */
+    typedef struct class {
+        int modifiers;                  // MODIFIER_* flags
+        char *name;                     // Fully qualified class name
+        struct class *parent;           // Parent class (or NULL when extending no other class) @TODO: Always extend Base class
 
-    // Constant defines for different sval types
-    extern const int SV_NULL;
-    extern const int SV_LONG;
-    extern const int SV_STRING;
-    extern const int SV_DOUBLE;
+        struct ast_element *extends;
+        struct ast_element *implements;
 
-    typedef struct _svar {
-        char type;          // Type of the variable
-        char *name;         // Name of the variable
-        union {
-            long   l;       // Numerical variable
-            double d;       // Double value
-            char*  s;       // String value
-        } val;
-    } svar;
+        t_hash_table *methods;          // Methods inside this class
+        t_hash_table *constants;        // Constants inside this class
+        t_hash_table *properties;       // Properties inside this class
 
+        struct class **interfaces;      // Interfaces
+        int num_interfaces;             // Number of interfaces
 
-
-    void svar_init_table();
-    svar *svar_alloc(char type, char *name, char *s, long l);
-    svar *svar_find(char *name);
-    void svar_print(svar *var);
-
-    int svar_true(svar *var);
+        // additional info
+        char *filename;                 // Full filename path in which this class resides
+        int line_start;                 // Start of the class
+        int line_end;                   // End of the class
+    } t_class;
 
 #endif

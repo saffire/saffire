@@ -2,55 +2,48 @@
     Try/catch/finally checks
 */
 
+
 // Try/Catch
 try {
-    throw Foo();
-    throw $a;
+    $a = 1;
 } catch (Foo $bar) {
-    continue;
+    $a = 1;
 }
 
 
 // Try/Multi catch/Finally
 try {
-    goto barbar;
+    $a = 1;
 } catch (Foo $bar) {
-    continue;
+    $a = 1;
 } catch (Bar $foo) {
-    continue;
+    $a = 1;
 } finally {
-    continue;
+    $a = 1;
 }
 
 
 // Try/Catch/Finally
 try {
-    continue;
+    $a = 1;
 } catch (Foo $bar) {
-    continue;
+    $a = 1;
 } finally {
-    continue;
+    $a = 1;
 }
 
 
 // Try/Catch/Finally
 try {
-    continue;
-} catch ($foo) {
-    continue;
-} catch ($bar) {
-    continue;
+    $a = 1;
+} catch (Foo $foo) {
+    $a = 1;
+} catch (Bar $bar) {
+    $a = 1;
 } finally {
-    continue;
+    $a = 1;
 }
 
-
-// Try finally
-try {
-    continue;
-} finally {
-    continue;
-}
 
 /* Output:
 */

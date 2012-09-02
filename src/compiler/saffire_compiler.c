@@ -28,9 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "saffire_compiler.h"
-#include "parser.tab.h"
-#include "ast.h"
+#include "compiler/saffire_compiler.h"
+#include "compiler/parser.tab.h"
+#include "compiler/ast.h"
+#include "general/smm.h"
 
 extern void yyerror(const char *err);
 extern int yylineno;
@@ -174,7 +175,7 @@ void sfc_fini_method() {
 /**
  * Initialize a class
  */
-void sfc_init_class(int modifiers, char *name) {
+void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
         sfc_error("You cannot define a class inside another class");
@@ -191,12 +192,15 @@ void sfc_init_class(int modifiers, char *name) {
     }
 
     // Initialize and populte a new class structure
-    t_class *new_class = (t_class *)malloc(sizeof(t_class));
+    t_class *new_class = (t_class *)smm_malloc(sizeof(t_class));
     new_class->modifiers = modifiers;
-    new_class->name = name;
+    new_class->name = strdup(name);
 
     // @TODO: Check if parent actually exists
     new_class->parent = NULL;
+
+    new_class->extends = extends;
+    new_class->implements = implements;
 
     new_class->methods = ht_create();
     new_class->constants = ht_create();
@@ -248,10 +252,7 @@ void sfc_fini_class(void) {
  */
 static void sfc_init_global_table(void) {
     // Allocate table memory
-    global_table = (t_global_table *)malloc(sizeof(t_global_table));
-    if (! global_table) {
-        // @TODO: alloc error
-    }
+    global_table = (t_global_table *)smm_malloc(sizeof(t_global_table));
 
     // Initialize table
     global_table->constants = ht_create();
@@ -260,29 +261,73 @@ static void sfc_init_global_table(void) {
 
     global_table->in_class = 0;
     global_table->in_method = 0;
-    global_table->in_loop = 0;
+    global_table->in_loop_counter = 0;
 
 
     global_table->switches = NULL;
     global_table->current_switch = NULL;
 }
 
+static void sfc_fini_global_table(void) {
+    // Iterate over classes and remove all info
+    t_hash_table *ht = global_table->classes;
+    for (int i=0; i!=ht->bucket_size; i++) {
+        if (ht->bucket_list[i] == NULL) continue;    // Empty bucket
+
+        t_hash_table_bucket *htb = ht->bucket_list[i];
+        while (htb) {
+            t_class *class = htb->data;
+
+            smm_free(class->name);  // Strdupped
+
+            ht_destroy(class->methods);
+            ht_destroy(class->constants);
+            ht_destroy(class->properties);
+
+            smm_free(class);
+
+            htb = htb->next;
+        }
+    }
+
+    // Destroy global constant and classes tables
+    ht_destroy(global_table->constants);
+    ht_destroy(global_table->classes);
+
+    // Free actual global table
+    smm_free(global_table);
+}
+
+
+/**
+ * Enter a control-loop
+ */
 void sfc_loop_enter(void) {
-//    printf("void sfc_loop_enter(void) {\n");
     // Increase loop counter, since we are entering a new loop
-    global_table->in_loop++;
+    global_table->in_loop_counter++;
 }
 
+
+/**
+ * Leave a loop.
+ */
 void sfc_loop_leave(void) {
-//    printf("void sfc_loop_leave(void) {\n");
+    // Not possible to leave a loop when we aren't inside any
+    if (global_table->in_loop_counter <= 0) {
+        sfc_error("Somehow, we are trying to leave a loop from the outer scope");
+    }
+
     // Decrease loop counter, since we are going down one loop
-    global_table->in_loop--;
+    global_table->in_loop_counter--;
 }
 
 
+/**
+ * Begin switch statement
+ */
 void sfc_switch_begin(void) {
     // Allocate switch structure
-    t_switch_struct *ss = (t_switch_struct *)malloc(sizeof(t_switch_struct));
+    t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
 
     // Set default values
     ss->has_default = 0;
@@ -295,6 +340,10 @@ void sfc_switch_begin(void) {
     global_table->current_switch = ss;
 }
 
+
+/**
+ * End switch statement
+ */
 void sfc_switch_end(void) {
     t_switch_struct *ss = global_table->current_switch;
 
@@ -302,15 +351,20 @@ void sfc_switch_end(void) {
     global_table->current_switch = ss->parent;
 
     // Free switch structure
-    free(ss);
+    smm_free(ss);
 }
 
+
+/**
+ * Check case label
+ */
 void sfc_switch_case(void) {
-//    if (global_table->current_switch == NULL || global_table->current_switch->in_switch == 0) {
-//        sfc_error("Case labels can only be supplied inside a switch-statement");
-//    }
 }
 
+
+/**
+ * Check if a default label is valid
+ */
 void sfc_switch_default(void) {
     t_switch_struct *ss = global_table->current_switch;
 
@@ -328,7 +382,7 @@ void sfc_switch_default(void) {
 
 
 /**
- *
+ * Make sure a label is not a variable
  */
 void saffire_check_label(const char *name) {
     if (name[0] == '$') {
@@ -338,6 +392,7 @@ void saffire_check_label(const char *name) {
 
 
 /**
+ * Make sure return happens inside a method
  *
  */
 void saffire_validate_return() {
@@ -348,30 +403,33 @@ void saffire_validate_return() {
 
 
 /**
+ * Make sure break happens inside a loop
  *
  */
 void saffire_validate_break() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only break inside a loop");
     }
 }
 
 
 /**
+ * Make sure continue happens inside a loop
  *
  */
 void saffire_validate_continue() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only continue inside a loop");
     }
 }
 
 
 /**
+ * Make sure breakelse happens inside a loop
  *
  */
 void saffire_validate_breakelse() {
-    if (global_table->in_loop == 0) {
+    if (global_table->in_loop_counter == 0) {
         sfc_error("We can only breakelse inside a loop");
     }
 }
@@ -382,4 +440,8 @@ void saffire_validate_breakelse() {
  */
 void sfc_init(void) {
     sfc_init_global_table();
+}
+
+void sfc_fini(void) {
+    sfc_fini_global_table();
 }

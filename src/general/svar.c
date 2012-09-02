@@ -28,8 +28,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "hashtable/hashtable.h"
-#include "svar.h"
+#include "general/hashtable.h"
+#include "general/svar.h"
+#include "general/smm.h"
 
 t_hash_table *variable_table;
 
@@ -71,15 +72,15 @@ svar *svar_find(char *name) {
  */
 svar *svar_alloc(char type, char *name, char *s, long l) {
     // Allocate memory and set standard info
-    svar *var = (svar *)malloc(sizeof(svar));
+    svar *var = (svar *)smm_malloc(sizeof(svar));
     var->type = type;
-    var->name = strdup(name);
+    var->name = smm_strdup(name);
 
     // Set additional values if needed
     if (var->type == SV_LONG) {
         var->val.l = l;
     } else if (var->type == SV_STRING) {
-        var->val.s = strdup(s);
+        var->val.s = smm_strdup(s);
     }
 
     // Store this variable in our main lookup table
@@ -97,14 +98,16 @@ void svar_free(svar *var) {
     }
 
     // Free the name
-    free(var->name);
+    smm_free(var->name);
 
     // Free additional memory if needed
     if (var->type == SV_STRING) {
-        free(var->val.s);
+        smm_free(var->val.s);
     }
 
     ht_remove(variable_table, var->name);
+
+    smm_free(var);
 }
 
 /**
@@ -114,6 +117,9 @@ void svar_init_table() {
     variable_table = ht_create();
 }
 
+void svar_fini_table() {
+    ht_destroy(variable_table);
+}
 
 int svar_true(svar *var) {
     return (var->type == SV_LONG && var->val.l);

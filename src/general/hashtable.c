@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "hashtable.h"
+#include "smm.h"
 
 #define HT_INITIAL_BUCKET_SIZE   16             // Number of initial buckets
 
@@ -37,16 +38,8 @@
  */
 t_hash_table *ht_create(void) {
     // Allocate memory for table and buckets
-    t_hash_table *ht = (t_hash_table *)malloc(sizeof(t_hash_table));
-    if (! ht) {
-        return NULL;
-    }
-
-    ht->bucket_list = (t_hash_table_bucket **)malloc(sizeof(t_hash_table_bucket *) * HT_INITIAL_BUCKET_SIZE);
-    if (! ht->bucket_list) {
-        free(ht);
-        return NULL;
-    }
+    t_hash_table *ht = (t_hash_table *)smm_malloc(sizeof(t_hash_table));
+    ht->bucket_list = (t_hash_table_bucket **)smm_malloc(sizeof(t_hash_table_bucket *) * HT_INITIAL_BUCKET_SIZE);
 
     // Initialize buckets
     for (int i=0; i != HT_INITIAL_BUCKET_SIZE; i++) {
@@ -103,8 +96,8 @@ int ht_add(t_hash_table *ht, char *str, void *data) {
     unsigned int hash_value = ht_hash(ht, str);
 
     // Create bucket for new variable
-    t_hash_table_bucket *htb = (t_hash_table_bucket *)malloc(sizeof(t_hash_table_bucket));
-    htb->key = strdup(str);
+    t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(sizeof(t_hash_table_bucket));
+    htb->key = smm_strdup(str);
     htb->data = data;
     htb->next = NULL;
     htb->prev = NULL;
@@ -165,8 +158,8 @@ void ht_remove(t_hash_table *ht, char *str) {
     }
 
     // Free key and bucket
-    free(htb->key);
-    free(htb);
+    smm_free(htb->key);
+    smm_free(htb);
 
 
     // Decrease element count
@@ -199,19 +192,19 @@ void ht_destroy(t_hash_table *ht) {
             while (htb->prev) {
                 htb = htb->prev;
 
-                free(htb->next->key);
-                free(htb->next);
+                smm_free(htb->next->key); // strdupped
+                smm_free(htb->next);
             }
         }
 
-        free(ht->bucket_list[i]->key);
-        free(ht->bucket_list[i]);
+        smm_free(ht->bucket_list[i]->key); // strdupped
+        smm_free(ht->bucket_list[i]);
     }
 
     // Free bucket list array
-    free(ht->bucket_list);
+    smm_free(ht->bucket_list);
 
     // Destroy hash table
-    free(ht);
+    smm_free(ht);
     return;
 }
