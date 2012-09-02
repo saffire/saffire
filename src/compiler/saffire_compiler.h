@@ -27,9 +27,9 @@
 #ifndef __SAFFIRE_COMPILE_H__
 #define __SAFFIRE_COMPILE_H__
 
-    #include "ast.h"
-    #include "class.h"
-    #include "hashtable/hashtable.h"
+    #include "compiler/ast.h"
+    #include "compiler/class.h"
+    #include "general/hashtable.h"
 
     /* @TODO: These should not be here */
     #define MODIFIER_PUBLIC              1
@@ -58,8 +58,8 @@
         t_class *active_class;            // Current active class
 
         int in_class;                     // 1 when we are inside a class, 0 otherwise
-        int in_method;
-        int in_loop;
+        int in_loop_counter;              // incremental loop counter. (deals with while() inside while() etc)
+        int in_method;                    // 1 when we are inside a method, 0 otherwise
         t_switch_struct *switches;        // Linked list of switch statements
         t_switch_struct *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
     } t_global_table;
@@ -67,9 +67,9 @@
     t_global_table *global_table;      // A global table with compilation info
 
     void sfc_init(void);
-    void sfc_new_scope(char *name);
+    void sfc_fini(void);
 
-    void sfc_init_class(int modifiers, char *name);
+    void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements);
     void sfc_fini_class(void);
 
     void sfc_switch_case(void);

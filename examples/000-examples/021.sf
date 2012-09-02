@@ -22,11 +22,11 @@ class Color {
      * Constructor for strings
      */
     public method ctor(String $color) {
-        if ! $color in self.pms {
+        if ! $color in self.$pms {
             //throw Exception("Color not found!");
             $a = 1;
         }
-        self.color = $color;
+        self.$color = $color;
     }
 
     /**
@@ -34,11 +34,11 @@ class Color {
      */
     public method ctor(Integer $pms) {
         // Check if this PMS color exists
-        if ! $pms in self.pms.keys() {
+        if ! $pms in self.$pms.keys() {
             throw Exception("PMS key not found!");
         }
 
-        self.ctor(self.pms[$pms]);
+        self.ctor(self.$pms[$pms]);
     }
 
     /**
@@ -66,7 +66,7 @@ class Color {
      *
      */
     protected method mix(Color $color) {
-        foreach self.mix_table as $t {
+        foreach (self.$mix_table as $t) {
             $src1, $src2, $dst = $t;
 
             if (self.getColor() == $src1 && $color.getColor() == $src2) {

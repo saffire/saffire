@@ -24,16 +24,32 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#include <stdio.h>
+#include <string.h>
+#include <malloc.h>
+#include "hashtable.h"
+#include "smm.h"
 
-    #define saffire_version_major   "0"
-    #define saffire_version_minor   "0"
-    #define saffire_version_build   "1"
 
-    #define saffire_version   "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
-    #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
-    #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__
+void *smm_malloc(size_t size) {
+    void *ptr = malloc(size);
+    if (ptr == NULL) {
+        fprintf(stderr, "Error while allocating memory (%d bytes)!\n", size);
+        exit(1);
+    }
+    return ptr;
+}
 
-#endif
+void *smm_realloc(void *ptr, size_t size) {
+    return realloc(ptr, size);
+}
 
+void smm_free(void *ptr) {
+    return free(ptr);
+}
+
+char *smm_strdup(const char *s) {
+    char *d = smm_malloc(strlen(s)+1);
+    strcpy(d, s);
+    return d;
+}

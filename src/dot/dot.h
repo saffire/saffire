@@ -24,30 +24,11 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __CLASS_H__
-#define __CLASS_H__
+#ifndef __DOT_H__
+#define __DOT_H__
 
-    #include "hashtable/hashtable.h"
+    #include "compiler/ast.h"
 
-    /**
-     * Primary start of a class structure. Will change
-     */
-    typedef struct class {
-        int modifiers;                  // MODIFIER_* flags
-        char *name;                     // Fully qualified class name
-        struct class *parent;           // Parent class (or NULL when extending no other class) @TODO: Always extend Base class
-
-        t_hash_table *methods;          // Methods inside this class
-        t_hash_table *constants;        // Constants inside this class
-        t_hash_table *properties;       // Properties inside this class
-
-        struct class **interfaces;      // Interfaces
-        int num_interfaces;             // Number of interfaces
-
-        // additional info
-        char *filename;                 // Full filename path in which this class resides
-        int line_start;                 // Start of the class
-        int line_end;                   // End of the class
-    } t_class;
+    void dot_generate(t_ast_element *ast, const char *outputfile);
 
 #endif

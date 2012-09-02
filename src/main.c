@@ -28,8 +28,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "dot.h"
-#include "ast.h"
+#include "dot/dot.h"
+#include "compiler/ast.h"
+#include "general/smm.h"
 
 #include "version.h"
 
@@ -42,7 +43,7 @@ char    *dot_file = NULL;
  * Prints current version number and copyright information
  */
 void print_version() {
-    printf("%s  - %s\n", saffire_version, saffire_copyright);
+    printf("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
 }
 
 
@@ -142,7 +143,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Compile file into a tree
     ast_compile_tree(fp);
+
+    // Close file
+    fclose(fp);
 
     if (generate_dot) {
         // generate DOT file

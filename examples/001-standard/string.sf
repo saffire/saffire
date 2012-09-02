@@ -14,7 +14,7 @@ $a = "foobar".slice(3,2).concat("z").uppercase().rev();  // ZAB
 $a = "foo".repeat(3); // foofoofoo
 $a = "foo".uppercase(); // FOO
 $a = "FOO".lowercase(); // foo
-$a = "FOO".tr("FO","BA"); // BAA            
+$a = "FOO".tr("FO","BA"); // BAA
 $a = "FOO".regex("/FO+/"); // (bool)true, regex match
 
 if ("FOO" ~= /fo+/i) { $a = 1; } // (bool)true
@@ -23,8 +23,7 @@ if ("FOO" ~= /fo+/i) { $a = 1; } // (bool)true
 
 // Strings are UTF-8
 
-
-"bj�rk".length();          // 5, Number of characters, not bytes!
+"bj�rk".length();            // 5, Number of characters, not bytes!
 "bj�rk".bytes().length();    // 6, Number of bytes
 
 

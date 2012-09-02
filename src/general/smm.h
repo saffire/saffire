@@ -24,16 +24,14 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VERSION_H__
-#define __VERSION_H__
+#ifndef __SMM_H__
+#define __SMM_H__
 
-    #define saffire_version_major   "0"
-    #define saffire_version_minor   "0"
-    #define saffire_version_build   "1"
+    #include <stdlib.h>
 
-    #define saffire_version   "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
-    #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
-    #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__
+    void *smm_malloc(size_t size);
+    void *smm_realloc(void *ptr, size_t size);
+    void smm_free(void *ptr);
+    char *smm_strdup(const char *s);
 
 #endif
-
