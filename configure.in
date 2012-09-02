@@ -7,6 +7,11 @@ AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADERS([src/config.h])
 
+# Clear CFLAGS (they are set to "-O2 -g" by default)
+if test -z "$CFLAGS"; then
+        CFLAGS=
+fi
+
 # Checks for programs.
 AC_LANG_C
 AC_PROG_CC

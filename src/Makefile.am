@@ -1,11 +1,11 @@
 bin_PROGRAMS = saffire
 
 if DEBUG
-AM_CFLAGS = -ggdb  -O0 -D__DEBUG
-AM_CXXFLAGS = -ggdb -O0 -D__DEBUG
+  AM_CFLAGS = -ggdb  -O0 -D__DEBUG
+  AM_CXXFLAGS = -ggdb -O0 -D__DEBUG
 else
-AM_CFLAGS =
-AM_CXXFLAGS =
+  AM_CFLAGS = -O2
+  AM_CXXFLAGS = -O2
 endif
 
 BUILT_SOURCES=compiler/lex.yy.c
