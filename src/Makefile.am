@@ -34,5 +34,5 @@ saffire_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c
 
 
-saffire_LDADD = $(INIT_LIBS) -lm
+saffire_LDADD = -lm
 

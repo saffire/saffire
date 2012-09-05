@@ -35,8 +35,20 @@ esac],
 
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
+
+dnl # check for icu-config
+dnl AC_PATH_PROG(icu_config, icu-config, no)
+dnl if test "$icu_config" = "no"; then
+dnl 	AC_MSG_ERROR([Cannot find icu-config. ICU library is needed.])
+dnl fi
+dnl ICU_CPPFLAGS=`$icu_config --cppflags`
+dnl ICU_LIBS=`$icu_config --ldflags`
+dnl AC_SUBST([ICU_CPPFLAGS])
+dnl AC_SUBST([ICU_LIBS])
+
+
 # Checks for libraries.
-AC_CHECK_LIB([m], [main])
+AC_CHECK_LIB([m], [main], , [ AC_MSG_ERROR([math library missing])])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
