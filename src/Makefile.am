@@ -30,6 +30,7 @@ compiler/lex.yy.c: compiler/saffire.l
 saffire_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   main.c general/svar.c compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
                   interpreter/saffire_interpreter.c general/hashtable.c general/smm.c \
+                  general/md5.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c
 
 
