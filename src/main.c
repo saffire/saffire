@@ -31,6 +31,7 @@
 #include "dot/dot.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
+#include "object/object.h"
 
 #include "version.h"
 
@@ -134,6 +135,8 @@ void parse_options(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
+    test();
+
     parse_options(argc, argv);
 
     // Open file, or use stdin if needed
