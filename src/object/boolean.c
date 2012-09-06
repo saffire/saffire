@@ -27,11 +27,11 @@
 
 #include "object.h"
 
-t_object *object_boolean_new(void) {
+SAFFIRE_NEW_OBJECT(boolean) {
     t_object *obj = object_new();
 
-    obj->header->name = "boolean";
-    obj->header->fqn = "::boolean";
+    obj->header.name = "boolean";
+    obj->header.fqn = "::boolean";
 
 //    obj->methods = boolean_methods;
 //    obj->properties = boolean_properties;

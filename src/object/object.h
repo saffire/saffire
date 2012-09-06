@@ -29,48 +29,57 @@
 
     #include "general/hashtable.h"
 
+    // Define forward
     struct _object;
 
+    //
     typedef struct _object_header {
                 int ref_count;                 // Reference count
-                struct _object *extends;              // Extends object (only t_base_object is allowed to have this NULL)
+                struct _object *extends;       // Extends object (only t_base_object is allowed to have this NULL)
 
                 int implement_count;           // Number of interfaces
-                struct _object *implements;          // Actual interfaces
+                struct _object *implements;    // Actual interfaces
 
                 char *name;                    // Name of the class
                 char *fqn;                     // Fully qualified name (::<name>)
     } t_object_header;
 
+    // These functions must be present to deal with objects (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        void (*alloc)(struct _object *);            // Allocate data
-        void (*free)(struct _object *);             // Free data
-        struct _object *(*clone)(struct _object *);            // Clone data
+        void (*alloc)(struct _object *);                       // Allocate objects internal data
+        void (*free)(struct _object *);                        // Free objects internal data
+        struct _object *(*clone)(struct _object *);            // Clone the object
     } t_object_funcs;
 
+    // Actual "global" object. Every object is typed on this object, but with a different "data" section.
     typedef struct _object {
-        t_object_header *header;         // Object header
+        t_object_header header;          // Object header
 
-        t_hash_table *methods;           // Methods
-        t_hash_table *properties;        // Properties
+        t_hash_table *methods;           // Object methods
+        t_hash_table *properties;        // Object properties
+        t_hash_table *constants;         // Object constants (needed?)
 
         t_object_funcs funcs;           // Functions for internal maintenance (alloc, free, clone etc)
-        void *data;                      // Additional internal data
+
+        // int type;                        // The type of the object (string, numerical, boolean etc)
+        void *data;                      // Additional internal data for the object
     } t_object;
-
-
-    typedef struct _object_data_string {
-        long length;        // length of the string
-        long hash;          // Hash of the string (or 0 when no hash is calculated)
-        char *value;        // Actual string value (0 terminated, must keep in sync with .length!)
-    } t_object_data_string;
 
 
     void test(void);
     void object_init(void);
     t_object *object_new(void);
     t_object *object_clone(t_object *obj);
-    void object_string_init(void);
-    t_object *object_string_new(void);
+
+
+    typedef struct _saffire_result {
+        void *result;
+    } t_saffire_result;
+
+
+
+    #define SAFFIRE_NEW_OBJECT(obj) t_object *object_##obj##_new(void)
+
+    #define SAFFIRE_METHOD(obj, method) t_saffire_result *object_##obj##_method_##method(t_object *self)
 
 #endif

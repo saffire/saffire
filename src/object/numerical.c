@@ -27,16 +27,17 @@
 
 #include "object.h"
 
-t_object *object_numerical_new(void) {
+SAFFIRE_NEW_OBJECT(numerical) {
     t_object *obj = object_new();
 
-    obj->header->name = "numerical";
-    obj->header->fqn = "::numerical";
+    obj->header.name = "numerical";
+    obj->header.fqn = "::numerical";
 
 //    obj->methods = numerical_methods;
 //    obj->properties = numerical_properties;
 
     return obj;
+
 }
 
 

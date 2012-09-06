@@ -26,9 +26,11 @@
 */
 
 #include "object.h"
+#include "string.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 
 
 t_hash_table *empty_methods;
@@ -45,15 +47,15 @@ void object_fini() {
 }
 
 
-void unused_object_alloc(t_object *obj) {
+static void unused_object_alloc(t_object *obj) {
     printf("Cannot alloc directly from an object");
     exit(1);
 }
-void unused_object_free(t_object *obj) {
+static void unused_object_free(t_object *obj) {
      printf("Cannot free directly from an object");
      exit(1);
 }
-t_object *unused_object_clone(t_object *obj) {
+static t_object *unused_object_clone(t_object *obj) {
     printf("Cannot clone directly from an object");
     exit(1);
 }
@@ -62,12 +64,10 @@ t_object *unused_object_clone(t_object *obj) {
 t_object *object_new(void) {
     t_object *obj = smm_malloc(sizeof(t_object));
 
-    obj->header = smm_malloc(sizeof(t_object_header));
-
-    obj->header->ref_count = 0;
-    obj->header->extends = NULL;
-    obj->header->implement_count = 0;
-    obj->header->implements = NULL;
+    obj->header.ref_count = 0;
+    obj->header.extends = NULL;
+    obj->header.implement_count = 0;
+    obj->header.implements = NULL;
 
     obj->funcs.alloc = unused_object_alloc;
     obj->funcs.free = unused_object_free;
@@ -82,25 +82,53 @@ t_object *object_new(void) {
 }
 
 
+/**
+ * Calls a method from specified object. Returns NULL when method is not found.
+ */
 void *object_call(t_object *obj, char *method) {
     t_hash_table_bucket *htb = ht_find(obj->methods, method);
     if (htb == NULL) {
-        printf("Cannot call method '%s' on object %s\n", method, obj->header->fqn);
+        printf("Cannot call method '%s' on object %s\n", method, obj->header.fqn);
         return NULL;
     }
 
-    printf("Calling method '%s' on object %s\n", method, obj->header->fqn);
-
+    printf("Calling method '%s' on object %s\n", method, obj->header.fqn);
     void *(*func)(t_object *) = htb->data;
 
     return func(obj);
 }
 
+/**
+ * Clones an object and returns new object
+ */
 t_object *object_clone(t_object *obj) {
     return obj->funcs.clone(obj);
 }
 
+
+/**
+ * Increase reference to object. Returns new reference count
+ */
+int object_inc_ref(t_object *obj) {
+    obj->header.ref_count++;
+    return obj->header.ref_count;
+}
+
+/**
+ * Decrease reference from object. Returns new reference count
+ */
+int object_dec_ref(t_object *obj) {
+    obj->header.ref_count++;
+    return obj->header.ref_count;
+}
+
+
 void test(void) {
+    setlocale(LC_ALL,"");
+
+    t_saffire_result *res;
+    size_t i;
+
     object_init();
     object_string_init();
 
@@ -109,28 +137,45 @@ void test(void) {
     object_call(obj, "ctor");
 
     printf("> obj::print\n");
-    object_call(obj, "print");
+    res = object_call(obj, "print");
+    smm_free(res);
 
     printf("> obj::length\n");
-    long i = (long)object_call(obj, "length");
+    res = object_call(obj, "length");
+    i = (size_t)res->result;
+    smm_free(res);
     printf("Length of the string is: %ld\n", i);
 
+    printf("> obj::byte_length\n");
+    res = object_call(obj, "byte_length");
+    i = (size_t)res->result;
+    smm_free(res);
+    printf("Byte Length of the string is: %ld\n", i);
+
+
     printf("> obj2 = obj::upper\n");
-    t_object *obj2 = (t_object *)object_call(obj, "upper");
+    res = object_call(obj, "upper");
+    t_object *obj2 = (t_object *)res->result;
+    smm_free(res);
     printf("> obj2::print\n");
-    object_call(obj2, "print");
+    res = object_call(obj2, "print");
 
     printf("> obj2::sirdoesnotexist\n");
-    object_call(obj2, "sirdoesnotexist");
+    res = object_call(obj2, "sirdoesnotexist");
+    smm_free(res);
 
     printf("> obj3 = obj2::reverse\n");
-    t_object *obj3 = (t_object *)object_call(obj2, "reverse");
+    res = object_call(obj2, "reverse");
+    t_object *obj3 = (t_object *)res->result;
+    smm_free(res);
 
     printf("> obj3::print\n");
-    object_call(obj3, "print");
+    res = object_call(obj3, "print");
+    smm_free(res);
 
     printf("> obj::print\n");
-    object_call(obj, "print");
+    res = object_call(obj, "print");
+    smm_free(res);
     exit(1);
 }
 

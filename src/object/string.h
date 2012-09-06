@@ -24,45 +24,21 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#ifndef __OBJECT_STRING_H__
+#define __OBJECT_STRING_H__
 
-#include "object.h"
+    #include "general/hashtable.h"
+    #include "general/md5.h"
+    #include "wchar.h"
 
-/*
- * The base object is the object from which all other objects will be extended. Even when an object isn't extended
- * explicitly, they still will be based on the base-object. This base class will have methods and properties about
- * dealing with objects like .methods() that returns all the methods available in the class, .immutable(), which
- * can set the object to readonly etc.
- */
+    typedef struct _object_data_string {
+        size_t char_length;    // length of the string in characters
+        size_t byte_length;    // length of the string in bytes
+        md5_byte_t hash[16];    // Hash of the string
+        wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
+    } t_object_data_string;
 
-t_hash_table *base_methods;
-t_hash_table *base_properties;
+    void object_string_init(void);
+    t_object *object_string_new(void);
 
-static void object_base_alloc(t_object *obj) { }
-static void object_base_free(t_object *obj) { }
-static t_object *object_base_clone(t_object *obj) { }
-
-void object_base_init() {
-    base_methods = ht_create();
-    base_properties = ht_create();
-}
-void object_base_fini() {
-    ht_destroy(base_methods);
-    ht_destroy(base_properties);
-}
-
-SAFFIRE_NEW_OBJECT(base) {
-    t_object *obj = object_new();
-
-    obj->header.name = "base";
-    obj->header.fqn = "::base";
-
-    obj->methods = base_methods;
-    obj->properties = base_properties;
-
-    obj->funcs.alloc = object_base_alloc;
-    obj->funcs.free = object_base_free;
-    obj->funcs.clone = object_base_clone;
-
-    return obj;
-}
-
+#endif
