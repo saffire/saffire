@@ -30,6 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "general/smm.h"
 #include "compiler/ast.h"
 #include "compiler/parser.tab.h"
 

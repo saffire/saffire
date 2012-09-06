@@ -1,0 +1,55 @@
+.TH SAFFIRE 1 "August 01, 2012"
+.SH NAME
+saffire \- The saffire programming language CLI binary
+.SH SYNOPSIS
+.B saffire
+.RI [ options ] [ scriptname [ args ] ]
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B saffire
+binary.
+.PP
+.B Saffire
+is language that allows you to easily write scripts to create web and command line applications.
+.br
+.SH OPTIONS
+This program follows the usual GNU command line syntax. A summary of options is included below.
+.TP
+.B \-h, \-\-help
+Display all available options.
+.TP
+.B \-v, \-\-version
+Display saffire version information.
+.TP
+.B \-c, \-\-cli
+Use Saffire in interactive mode.
+.TP
+.B \-l, \-\-lint <file>
+Do a lint (syntax) check on the given file.
+.TP
+.B \-\-dot <outfile>
+Generates a Graphiz DOT file with the abstract syntax tree (AST) of the given script.
+.br
+.SH FILES
+.I ~/.saffire.ini
+.RS 
+optional configuration settings file.
+.LP
+.SH NOTES
+When no scriptname has been given, or when the scriptname is
+.B
+-
+then the script will be read from the standard input.
+.SH LICENSE
+Saffire is licensed under the
+.B
+3-clause BSD License
+.
+.br
+More information at
+.B http://www.saffire-lang.com/
+.SH AUTHOR
+Saffire is written by the Saffire Group. For more information, contact us at
+.B <authors@saffire-lang.com>
+.br
