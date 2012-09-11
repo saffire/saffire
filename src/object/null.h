@@ -24,11 +24,23 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#ifndef __OBJECT_NULL_H__
+#define __OBJECT_NULL_H__
 
-#include "object.h"
-#include "boolean.h"
-#include "general/smm.h"
+    #include "object.h"
 
-t_boolean_object Object_Bool_False = { OBJECT_HEAD_INIT("bool"), 0 };
-t_boolean_object Object_Bool_True  = { OBJECT_HEAD_INIT("bool"), 1 };
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER;
+    } t_null_object;
+
+    t_null_object Object_Null_struct;
+
+    // Actual null object cast to a t_object
+    #define Object_Null   ((t_object *)Object_Null_struct)
+
+    // Simple macro to return (the) NULL object from a function
+    #define RETURN_NULL   object_inc_ref((t_object *)&Object_Null_struct); return (t_object *)(&Object_Null_struct);
+
+#endif
+
 

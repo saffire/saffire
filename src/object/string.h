@@ -27,18 +27,21 @@
 #ifndef __OBJECT_STRING_H__
 #define __OBJECT_STRING_H__
 
-    #include "general/hashtable.h"
     #include "general/md5.h"
+    #include "object/object.h"
     #include "wchar.h"
 
-    typedef struct _object_data_string {
-        size_t char_length;    // length of the string in characters
-        size_t byte_length;    // length of the string in bytes
-        md5_byte_t hash[16];    // Hash of the string
-        wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
-    } t_object_data_string;
+    #define RETURN_STRING(s)   RETURN_OBJECT(object_new((t_object *)&Object_String, s));
 
-    void object_string_init(void);
-    t_object *object_string_new(void);
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        size_t char_length;     // length of the string in characters
+        size_t byte_length;     // length of the string in bytes
+        md5_byte_t hash[16];    // (MD5) hash of the string
+        wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
+    } t_string_object;
+
+    t_string_object Object_String;
 
 #endif

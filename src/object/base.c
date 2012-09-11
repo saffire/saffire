@@ -25,44 +25,200 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "object.h"
+#include "object/object.h"
+#include "object/base.h"
+#include "object/string.h"
+#include "object/numerical.h"
+#include "object/boolean.h"
+#include "object/null.h"
+#include "general/smm.h"
+#include <string.h>
 
-/*
- * The base object is the object from which all other objects will be extended. Even when an object isn't extended
- * explicitly, they still will be based on the base-object. This base class will have methods and properties about
- * dealing with objects like .methods() that returns all the methods available in the class, .immutable(), which
- * can set the object to readonly etc.
+
+/* ======================================================================
+ *   Object methods
+ * ======================================================================
+ */
+
+/**
+ * Constructor
+ */
+SAFFIRE_METHOD(base, ctor) {
+    RETURN_SELF;
+}
+
+/**
+ * Destructor
+ */
+SAFFIRE_METHOD(base, dtor) {
+    RETURN_SELF;
+}
+
+/**
+ * Returns a list of all properties in this class (but not the parents)
+ */
+SAFFIRE_METHOD(base, properties) {
+    RETURN_SELF;
+}
+
+/**
+ * Return a list of all methods in this class (but not from the parents)
+ */
+SAFFIRE_METHOD(base, methods) {
+    // @TODO: return list of methods
+    RETURN_STRING("methods");
+}
+
+/**
+ * Returns a list of all the parent classes this class extends
+ */
+SAFFIRE_METHOD(base, parents) {
+    // @TODO: return list of parents
+    RETURN_STRING("parents");
+}
+
+/**
+ * Returns the name of the class
+ */
+SAFFIRE_METHOD(base, name) {
+    RETURN_STRING(self->name);
+}
+
+/**
+ * Returns a list of interfaces this object implements
+ */
+SAFFIRE_METHOD(base, implements) {
+    // @TODO: return list of implementations
+    RETURN_STRING("implementations");
+}
+
+/**
+ * Returns the number of memory in KB
+ */
+SAFFIRE_METHOD(base, memory) {
+    // @TODO: return memory usage of this object
+    RETURN_NUMERICAL(rand() % 100000)
+}
+
+/**
+ * Returns a list of annotations on the methods
+ */
+SAFFIRE_METHOD(base, annotations) {
+    // @TODO: return method annotations
+    RETURN_STRING("annotations");
+}
+
+/**
+ * Clone the object into a new object
+ */
+SAFFIRE_METHOD(base, clone) {
+    t_object *obj = (t_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+/**
+ * Sets object to immutable. Cannot undo.
+ */
+SAFFIRE_METHOD(base, immutable) {
+    self->immutable = 1;
+    RETURN_SELF;
+}
+
+/**
+ * Returns TRUE when immutable, FALSE otherwise
+ */
+SAFFIRE_METHOD(base, is_immutable) {
+    if (self->immutable) {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/**
+ * Destroys the object.
+ */
+SAFFIRE_METHOD(base, destroy) {
+    // @TODO: destroy the object
+    RETURN_NULL;
+}
+
+/**
+ * Returns reference count for this object
+ */
+SAFFIRE_METHOD(base, refcount) {
+    RETURN_NUMERICAL(self->ref_count);
+}
+
+
+/* ======================================================================
+ *   Global object management functions and data
+ * ======================================================================
  */
 
 t_hash_table *base_methods;
 t_hash_table *base_properties;
 
-static void object_base_alloc(t_object *obj) { }
-static void object_base_free(t_object *obj) { }
-static t_object *object_base_clone(t_object *obj) { }
-
-void object_base_init() {
+/**
+ * Initializes base methods and properties
+ */
+static void obj_init() {
     base_methods = ht_create();
+
+    ht_add(base_methods, "ctor", object_base_method_ctor);
+    ht_add(base_methods, "dtor", object_base_method_ctor);
+    ht_add(base_methods, "properties", object_base_method_properties);
+    ht_add(base_methods, "methods", object_base_method_methods);
+    ht_add(base_methods, "parents", object_base_method_parents);
+    ht_add(base_methods, "name", object_base_method_name);
+    ht_add(base_methods, "implements", object_base_method_implements);
+    ht_add(base_methods, "memory", object_base_method_memory);
+    ht_add(base_methods, "annotations", object_base_method_annotations);
+    ht_add(base_methods, "clone", object_base_method_clone);
+    ht_add(base_methods, "immutable", object_base_method_immutable);
+    ht_add(base_methods, "immutable?", object_base_method_is_immutable);
+    ht_add(base_methods, "destroy", object_base_method_destroy);
+    ht_add(base_methods, "refcount", object_base_method_refcount);
+
     base_properties = ht_create();
 }
-void object_base_fini() {
+
+
+/**
+ * Frees memory for a base object
+ */
+static void obj_fini() {
     ht_destroy(base_methods);
     ht_destroy(base_properties);
 }
 
-SAFFIRE_NEW_OBJECT(base) {
-    t_object *obj = object_new();
 
-    obj->header.name = "base";
-    obj->header.fqn = "::base";
+/**
+ * Clones a base object into a new object
+ */
+static t_object *obj_clone(t_object *obj) {
+    // Create new object and copy all info
+    t_base_object *new_obj = (t_base_object *)smm_malloc(sizeof(t_base_object));
+    memcpy(new_obj, obj, sizeof(t_base_object));
 
-    obj->methods = base_methods;
-    obj->properties = base_properties;
+    // New separated object, so refcount = 1
+    new_obj->ref_count = 1;
 
-    obj->funcs.alloc = object_base_alloc;
-    obj->funcs.free = object_base_free;
-    obj->funcs.clone = object_base_clone;
-
-    return obj;
+    return (t_object *)new_obj;
 }
 
+// Base object management functions
+t_object_funcs base_funcs = {
+        NULL,               // Allocate a new string object
+        NULL,               // Free a string object
+        obj_clone           // Clone a string object
+};
+
+// Intial object
+t_base_object Object_Base = {
+    OBJECT_HEAD_INIT3("base", &base_funcs, NULL)
+};
+
+
+
+SOMEWHERE WE NEED TO CALL OBJ_INIT AND OBJ_FINI... WE HAVENT IMPLEMENTED IT YET..

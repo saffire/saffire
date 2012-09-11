@@ -24,11 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#ifndef __OBJECT_BOOLEAN_H__
+#define __OBJECT_BOOLEAN_H__
 
-#include "object.h"
-#include "boolean.h"
-#include "general/smm.h"
+    #include "object.h"
 
-t_boolean_object Object_Bool_False = { OBJECT_HEAD_INIT("bool"), 0 };
-t_boolean_object Object_Bool_True  = { OBJECT_HEAD_INIT("bool"), 1 };
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
 
+        long    value;          // 0 = false, 1 = true
+    } t_boolean_object;
+
+    t_boolean_object Object_True_struct;
+    t_boolean_object Object_False_struct;
+
+    #define Object_True   ((t_object *)&Object_True_struct)
+    #define Object_False  ((t_object *)&Object_False_struct)
+
+    // Simple macro to return either TRUE or FALSE objects from a function
+    #define RETURN_TRUE   object_inc_ref((t_object *)&Object_True_struct); return (t_object *)(&Object_True_struct);
+    #define RETURN_FALSE  object_inc_ref((t_object *)&Object_False_struct); return (t_object *)(&Object_True_struct);
+
+#endif

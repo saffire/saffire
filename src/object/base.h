@@ -24,11 +24,15 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#ifndef __OBJECT_BASE_H__
+#define __OBJECT_BASE_H__
 
-#include "object.h"
-#include "boolean.h"
-#include "general/smm.h"
+    #include "object.h"
 
-t_boolean_object Object_Bool_False = { OBJECT_HEAD_INIT("bool"), 0 };
-t_boolean_object Object_Bool_True  = { OBJECT_HEAD_INIT("bool"), 1 };
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+    } t_base_object;
 
+    t_base_object Object_Base;
+
+#endif
