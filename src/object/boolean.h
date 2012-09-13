@@ -31,18 +31,22 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
-
-        long    value;          // 0 = false, 1 = true
+        long    value;              // 0 = false, 1 = true
     } t_boolean_object;
 
-    t_boolean_object Object_True_struct;
-    t_boolean_object Object_False_struct;
+    t_boolean_object Object_Boolean_struct;
+    t_boolean_object Object_Boolean_True_struct;
+    t_boolean_object Object_Boolean_False_struct;
 
-    #define Object_True   ((t_object *)&Object_True_struct)
-    #define Object_False  ((t_object *)&Object_False_struct)
+    #define Object_Boolean  ((t_object *)&Object_Boolean_struct)
+    #define Object_True     ((t_object *)&Object_Boolean_True_struct)
+    #define Object_False    ((t_object *)&Object_Boolean_False_struct)
 
     // Simple macro to return either TRUE or FALSE objects from a function
-    #define RETURN_TRUE   object_inc_ref((t_object *)&Object_True_struct); return (t_object *)(&Object_True_struct);
-    #define RETURN_FALSE  object_inc_ref((t_object *)&Object_False_struct); return (t_object *)(&Object_True_struct);
+    #define RETURN_TRUE   object_inc_ref((t_object *)&Object_Boolean_True_struct); return (t_object *)(&Object_Boolean_True_struct);
+    #define RETURN_FALSE  object_inc_ref((t_object *)&Object_Boolean_False_struct); return (t_object *)(&Object_Boolean_False_struct);
+
+    void object_boolean_init(void);
+    void object_boolean_fini(void);
 
 #endif

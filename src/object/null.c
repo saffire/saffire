@@ -31,4 +31,10 @@
 
 t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null") };
 
+void object_null_init(void) {
+}
+
+void object_null_fini(void) {
+}
+
 

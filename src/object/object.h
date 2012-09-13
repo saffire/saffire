@@ -31,17 +31,20 @@
     #include <stdarg.h>
     #include "general/hashtable.h"
 
+
     // Forward define
     struct _object;
     struct _saffire_result;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        struct _object *(*new)(va_list *arg_list);       // Allocates a new object
+        struct _object *(*new)(va_list arg_list);       // Allocates a new object
         void (*free)(struct _object *);                  // Frees objects internal data
         struct _object *(*clone)(struct _object *);      // Clones the object
     } t_object_funcs;
 
+
+    #define OBJECT_FLAG_INITIALIZED     1
 
 
     // Actual header that needs to be present in each object (as the first entry)
@@ -50,6 +53,7 @@
         char *name;                    /* Name of the class */ \
         \
         int immutable;                 /* 1 = immutable object.  0 = normal read/write */ \
+        int flags;                     /* object flags */ \
         \
         struct _object *extends;       /* Extends object (only t_base_object is allowed to have this NULL) */ \
         \
@@ -60,7 +64,7 @@
         t_hash_table *properties;      /* Object properties */  \
         t_hash_table *constants;       /* Object constants (needed?) */ \
         \
-        t_object_funcs funcs;          /* Functions for internal maintenance (new, free, clone etc) */
+        t_object_funcs *funcs;         /* Functions for internal maintenance (new, free, clone etc) */
 
 
     // Actual "global" object. Every object is typed on this object.
@@ -69,25 +73,27 @@
     } t_object;
 
 
+    extern t_object Object_Base_struct;
+
     #define OBJECT_HEAD_INIT3(name, funcs, base)   \
                 1,              /* initial refcount */     \
                 name,           /* name */                 \
                 0,              /* immutable */            \
+                0,              /* flags */                \
                 base,           /* extends */              \
                 0,              /* implement count */      \
                 NULL,           /* implements */           \
                 NULL,           /* methods */              \
                 NULL,           /* properties */           \
                 NULL,           /* constants */            \
-                funcs,          /* functions */
+                funcs           /* functions */
 
 
     // Object header initialization without any functions or base
-    #define OBJECT_HEAD_INIT2(name, funcs) OBJECT_HEAD_INIT(name, funcs, &Object_Base)
+    #define OBJECT_HEAD_INIT2(name, funcs) OBJECT_HEAD_INIT3(name, funcs, &Object_Base_struct)
 
     // Object header initialization without any functions
-    #define OBJECT_HEAD_INIT(name) OBJECT_HEAD_INIT(name, NULL)
-
+    #define OBJECT_HEAD_INIT(name) OBJECT_HEAD_INIT2(name, NULL)
 
 
     /*
@@ -99,7 +105,7 @@
 
     // Returns custom object 'obj'
     #define RETURN_OBJECT(obj) \
-        return obj
+        return (t_object*)obj
 
     // Returns self
     #define RETURN_SELF \

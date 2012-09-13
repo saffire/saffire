@@ -162,7 +162,7 @@ t_hash_table *base_properties;
 /**
  * Initializes base methods and properties
  */
-static void obj_init() {
+void object_base_init() {
     base_methods = ht_create();
 
     ht_add(base_methods, "ctor", object_base_method_ctor);
@@ -187,7 +187,7 @@ static void obj_init() {
 /**
  * Frees memory for a base object
  */
-static void obj_fini() {
+void object_base_fini() {
     ht_destroy(base_methods);
     ht_destroy(base_properties);
 }
@@ -214,11 +214,8 @@ t_object_funcs base_funcs = {
         obj_clone           // Clone a string object
 };
 
-// Intial object
-t_base_object Object_Base = {
+// Initial object
+t_object Object_Base_struct = {
     OBJECT_HEAD_INIT3("base", &base_funcs, NULL)
 };
 
-
-
-SOMEWHERE WE NEED TO CALL OBJ_INIT AND OBJ_FINI... WE HAVENT IMPLEMENTED IT YET..

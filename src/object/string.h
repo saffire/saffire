@@ -31,7 +31,7 @@
     #include "object/object.h"
     #include "wchar.h"
 
-    #define RETURN_STRING(s)   RETURN_OBJECT(object_new((t_object *)&Object_String, s));
+    #define RETURN_STRING(s)   RETURN_OBJECT(object_new(Object_String, s));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
@@ -42,6 +42,11 @@
         wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
     } t_string_object;
 
-    t_string_object Object_String;
+    t_string_object Object_String_struct;
+
+    #define Object_String   (t_object *)&Object_String_struct
+
+    void object_string_init(void);
+    void object_string_fini(void);
 
 #endif

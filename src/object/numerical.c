@@ -25,89 +25,16 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "object.h"
-#include "numerical.h"
+#include "object/object.h"
+#include "object/base.h"
+#include "object/numerical.h"
+#include "object/null.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <string.h>
 
 
-/* ======================================================================
- *   Global object management functions and data
- * ======================================================================
- */
 
-
-t_hash_table *numerical_methods;
-t_hash_table *numerical_properties;
-
-
-// String object management functions
-t_object_funcs numerical_funcs = {
-        obj_new,            // Allocate a new numerical object
-        NULL,               // Free a numerical object
-        obj_clone           // Clone a numerical object
-};
-
-// Intial object
-t_numerical_object Object_Numerical = {
-    OBJECT_HEAD_INIT2("numerical", numerical_funcs),
-    0
-};
-
-
-
-/**
- * Initializes numerical methods and properties
- */
-static void obj_init() {
-    numerical_methods = ht_create();
-    ht_add(numerical_methods, "ctor", object_numerical_ctor);
-    ht_add(numerical_methods, "dtor", object_numerical_dtor);
-
-    ht_add(numerical_methods, "neg", object_numerical_method_neg);
-    ht_add(numerical_methods, "abs", object_numerical_method_abs);
-
-    numerical_properties = ht_create();
-}
-
-
-/**
- * Frees memory for a numerical object
- */
-static void obj_fini() {
-    ht_destroy(numerical_methods);
-    ht_destroy(numerical_properties);
-}
-
-
-/**
- * Clones a numerical object into a new object
- */
-static t_object *obj_clone(t_numerical_object *obj) {
-    // Create new object and copy all info
-    t_numerical_object *new_obj = (t_numerical_object *)smm_malloc(sizeof(t_numerical_object));
-    memcpy(new_obj, obj, sizeof(t_numerical_object));
-
-    // New separated object, so refcount = 1
-    new_obj->ref_count = 1;
-
-    return (t_object *)new_obj;
-}
-
-
-/**
- * Creates a new numerical object by "cloning" the original one
- */
-static t_object *obj_new(va_list *arg_list) {
-    t_numerical_object *new_obj = (t_numerical_object *)smm_malloc(sizeof(t_numerical_object));
-    memcpy(new_obj, t_numerical_object, sizeof(t_numerical_object));
-
-    long value = va_arg(arg_list, long);
-    new_obj->value = value;
-
-    return (t_object *)new_obj;
-}
 
 
 /* ======================================================================
@@ -120,14 +47,14 @@ static t_object *obj_new(va_list *arg_list) {
  * Saffire method: constructor
  */
 SAFFIRE_METHOD(numerical, ctor) {
-    RETURN_SELF();
+    RETURN_SELF;
 }
 
 /**
  * Saffire method: destructor
  */
 SAFFIRE_METHOD(numerical, dtor) {
-    RETURN_NULL();
+    RETURN_NULL;
 }
 
 
@@ -157,7 +84,83 @@ SAFFIRE_METHOD(numerical, neg) {
  * Saffire method: output numerical value
  */
 SAFFIRE_METHOD(numerical, print) {
-    printf("%ld", self->value);
-    RETURN_SELF();
+    printf("%ld\n", self->value);
+    RETURN_SELF;
 }
 
+
+/* ======================================================================
+ *   Global object management functions and data
+ * ======================================================================
+ */
+
+
+/**
+ * Initializes numerical methods and properties
+ */
+void object_numerical_init(void) {
+    Object_Numerical_struct.methods = ht_create();
+    ht_add(Object_Numerical_struct.methods, "ctor", object_numerical_method_ctor);
+    ht_add(Object_Numerical_struct.methods, "dtor", object_numerical_method_dtor);
+
+    ht_add(Object_Numerical_struct.methods, "neg", object_numerical_method_neg);
+    ht_add(Object_Numerical_struct.methods, "abs", object_numerical_method_abs);
+    ht_add(Object_Numerical_struct.methods, "print", object_numerical_method_print);
+
+    Object_Numerical_struct.properties = ht_create();
+}
+
+
+/**
+ * Frees memory for a numerical object
+ */
+void object_numerical_fini(void) {
+    ht_destroy(Object_Numerical_struct.methods);
+    ht_destroy(Object_Numerical_struct.properties);
+}
+
+
+/**
+ * Clones a numerical object into a new object
+ */
+static t_object *obj_clone(t_numerical_object *obj) {
+    t_numerical_object *num_obj = (t_numerical_object *)obj;
+
+    // Create new object and copy all info
+    t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
+    memcpy(new_obj, num_obj, sizeof(t_numerical_object));
+
+    // New separated object, so refcount = 1
+    new_obj->ref_count = 1;
+
+    return (t_object *)new_obj;
+}
+
+
+/**
+ * Creates a new numerical object by "cloning" the original one
+ */
+static t_object *obj_new(va_list *arg_list) {
+    t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
+    memcpy(new_obj, Object_Numerical, sizeof(t_numerical_object));
+
+    long value = va_arg(arg_list, long);
+    new_obj->value = value;
+
+    return (t_object *)new_obj;
+}
+
+
+
+// String object management functions
+t_object_funcs numerical_funcs = {
+        obj_new,            // Allocate a new numerical object
+        NULL,               // Free a numerical object
+        obj_clone           // Clone a numerical object
+};
+
+// Intial object
+t_numerical_object Object_Numerical_struct = {
+    OBJECT_HEAD_INIT2("numerical", &numerical_funcs),
+    0
+};

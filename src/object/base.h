@@ -29,10 +29,11 @@
 
     #include "object.h"
 
-    typedef struct {
-        SAFFIRE_OBJECT_HEADER
-    } t_base_object;
+    #define t_base_object t_object
 
-    t_base_object Object_Base;
+    #define Object_Base   (t_object *)&Object_Base_struct
+
+    void object_base_init(void);
+    void object_base_fini(void);
 
 #endif

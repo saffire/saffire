@@ -31,117 +31,13 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <limits.h>
-#include "object.h"
-#include "string.h"
+#include "object/object.h"
+#include "object/string.h"
+#include "object/null.h"
+#include "object/base.h"
+#include "object/numerical.h"
 #include "general/smm.h"
 #include "general/md5.h"
-
-
-/* ======================================================================
- *   Global object management functions and data
- * ======================================================================
- */
-
-
-t_hash_table *string_methods;       // Pointer to hash table with string object methods
-t_hash_table *string_properties;    // pointer to hash table with string object properties
-
-// String object management functions
-t_object_funcs string_funcs = {
-        obj_new,              // Allocate a new string object
-        obj_free,             // Free a string object
-        obj_clone             // Clone a string object
-};
-
-// Intial object
-t_string_object Object_String = {
-    OBJECT_HEAD_INIT2("string", string_funcs),
-    0,
-    0,
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    NULL
-};
-
-/**
- * Initializes string methods and properties, these are used
- */
-static void obj_init(void) {
-    string_methods = ht_create();
-    ht_add(string_methods, "ctor", object_string_method_ctor);
-    ht_add(string_methods, "dtor", object_string_method_dtor);
-
-    ht_add(string_methods, "byte_length", object_string_method_byte_length);
-    ht_add(string_methods, "length", object_string_method_length);
-    ht_add(string_methods, "upper", object_string_method_upper);
-    ht_add(string_methods, "lower", object_string_method_lower);
-    ht_add(string_methods, "reverse", object_string_method_reverse);
-    ht_add(string_methods, "print", object_string_method_print);
-
-    string_properties = ht_create();
-}
-
-/**
- * Frees memory for a string object
- */
-static void obj_fini(void) {
-    ht_destroy(string_methods);
-    ht_destroy(string_properties);
-}
-
-
-/**
- * Frees memory for a string object
- */
-static void obj_free(t_string_object *obj) {
-    if (obj->value != NULL) {
-        smm_free(obj->value);
-    }
-}
-
-/**
- * Clones a string object into a new object
- */
-static t_object *so_clone(t_string_object *obj) {
-    // Create new object and copy all info
-    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
-    memcpy(new_obj, obj, sizeof(t_string_object));
-
-    // Newly separated object, so refcount is 1 again
-    new_obj->ref_count = 1;
-
-    // Copy / set internal data
-    new_obj->char_length = obj->char_length;
-    new_obj->byte_length = obj->byte_length;
-    memcpy(new_obj->hash, obj->hash, 16);
-    new_obj->value = wcsdup(obj->value);
-
-    return (t_object *)new_obj;
-}
-
-
-static t_object *obj_new(va_list *arg_list) {
-    // Create new object and copy all info
-    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
-    memcpy(new_obj, t_numerical_object, sizeof(t_string_object));
-
-    // Set internal data
-    char utf8_char_buf[MB_LEN_MAX];
-
-    wchar_t value = va_arg(arg_list, wchar_t);
-
-    obj->value = wcsdup(value);
-    obj->char_length = wcslen(obj->value);
-
-    // Calculate length for each character, and add to total
-    obj->byte_length = 0;
-    for (int i=0; i!=obj->char_length; i++) {
-        int l = wctomb(utf8_char_buf, obj->value[i]);
-        obj->byte_length += l;
-    }
-    recalc_hash(obj);
-
-    return (t_object *)new_obj;
-}
 
 
 /* ======================================================================
@@ -186,14 +82,14 @@ static void recalc_hash(t_string_object *obj) {
  * Saffire method: constructor
  */
 SAFFIRE_METHOD(string, ctor) {
-    RETURN_SELF();
+    RETURN_SELF;
 }
 
 /**
  * Saffire method: destructor
  */
 SAFFIRE_METHOD(string, dtor) {
-    RETURN_NULL();
+    RETURN_NULL;
 }
 
 
@@ -215,7 +111,7 @@ SAFFIRE_METHOD(string, byte_length) {
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
-    t_string_object *obj = object_clone((t_object *)self);
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
 
     for (int i=0; i!=obj->char_length; i++) {
         obj->value[i] = towupper(obj->value[i]);
@@ -229,7 +125,7 @@ SAFFIRE_METHOD(string, upper) {
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
-    t_string_object *obj = object_clone((t_object *)self);
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
 
     for (int i=0; i!=obj->char_length; i++) {
         obj->value[i] = towlower(obj->value[i]);
@@ -243,7 +139,7 @@ SAFFIRE_METHOD(string, lower) {
  * Saffire method: Returns reversed string object
  */
 SAFFIRE_METHOD(string, reverse) {
-    t_string_object *obj = object_clone((t_object *)self);
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
 
     wchar_t *str = obj->value;
     wchar_t *p1, *p2;
@@ -278,5 +174,113 @@ SAFFIRE_METHOD(string, print) {
     }
     printf("\n");
 
-    RETURN_SELF();
+    RETURN_SELF;
 }
+
+
+/* ======================================================================
+ *   Global object management functions and data
+ * ======================================================================
+ */
+
+/**
+ * Initializes string methods and properties, these are used
+ */
+void object_string_init(void) {
+    Object_String_struct.methods = ht_create();
+    ht_add(Object_String_struct.methods, "ctor", object_string_method_ctor);
+    ht_add(Object_String_struct.methods, "dtor", object_string_method_dtor);
+
+    ht_add(Object_String_struct.methods, "byte_length", object_string_method_byte_length);
+    ht_add(Object_String_struct.methods, "length", object_string_method_length);
+    ht_add(Object_String_struct.methods, "upper", object_string_method_upper);
+    ht_add(Object_String_struct.methods, "lower", object_string_method_lower);
+    ht_add(Object_String_struct.methods, "reverse", object_string_method_reverse);
+    ht_add(Object_String_struct.methods, "print", object_string_method_print);
+
+    Object_String_struct.properties = ht_create();
+}
+
+/**
+ * Frees memory for a string object
+ */
+void object_string_fini(void) {
+    ht_destroy(Object_String_struct.methods);
+    ht_destroy(Object_String_struct.properties);
+}
+
+
+/**
+ * Frees memory for a string object
+ */
+static void obj_free(t_object *obj) {
+    t_string_object *str_obj = (t_string_object *)obj;
+
+    if (str_obj->value != NULL) {
+        smm_free(str_obj->value);
+    }
+}
+
+/**
+ * Clones a string object into a new object
+ */
+static t_object *obj_clone(t_object *obj) {
+    t_string_object *str_obj = (t_string_object *)obj;
+
+    // Create new object and copy all info
+    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
+    memcpy(new_obj, str_obj, sizeof(t_string_object));
+
+    // Newly separated object, so refcount is 1 again
+    new_obj->ref_count = 1;
+
+    // Copy / set internal data
+    new_obj->char_length = str_obj->char_length;
+    new_obj->byte_length = str_obj->byte_length;
+    memcpy(new_obj->hash, str_obj->hash, 16);
+    new_obj->value = wcsdup(str_obj->value);
+
+    return (t_object *)new_obj;
+}
+
+
+static t_object *obj_new(va_list *arg_list) {
+    // Create new object and copy all info
+    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
+    memcpy(new_obj, Object_String, sizeof(t_string_object));
+
+    // Set internal data
+    char utf8_char_buf[MB_LEN_MAX];
+
+    wchar_t value = va_arg(arg_list, wchar_t);
+
+    new_obj->value = wcsdup((const wchar_t *)value);
+    new_obj->char_length = wcslen(new_obj->value);
+
+    // Calculate length for each character, and add to total
+    new_obj->byte_length = 0;
+    for (int i=0; i!=new_obj->char_length; i++) {
+        int l = wctomb(utf8_char_buf, new_obj->value[i]);
+        new_obj->byte_length += l;
+    }
+    recalc_hash(new_obj);
+
+    return (t_object *)new_obj;
+}
+
+
+// String object management functions
+t_object_funcs string_funcs = {
+        obj_new,              // Allocate a new string object
+        obj_free,             // Free a string object
+        obj_clone             // Clone a string object
+};
+
+// Intial object
+t_string_object Object_String_struct = {
+    OBJECT_HEAD_INIT2("string", &string_funcs),
+    0,
+    0,
+    L'\0',
+    NULL
+};

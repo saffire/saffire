@@ -29,7 +29,7 @@
 
     #include "object.h"
 
-    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_new((t_object *)&Object_Numerical, n));
+    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_new(Object_Numerical, n));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
@@ -37,6 +37,12 @@
         long value;     // Current value
     } t_numerical_object;
 
-    t_numerical_object Object_Numerical;
+    t_numerical_object Object_Numerical_struct;
+
+    #define Object_Numerical   (t_object *)&Object_Numerical_struct
+
+
+    void object_numerical_init(void);
+    void object_numerical_fini(void);
 
 #endif

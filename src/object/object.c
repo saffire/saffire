@@ -27,16 +27,15 @@
 
 #include "object/object.h"
 #include "object/string.h"
+#include "object/boolean.h"
 #include "object/null.h"
+#include "object/base.h"
 #include "object/numerical.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <stdarg.h>
-
-
-extern t_null_object Object_Null_struct;
 
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
@@ -61,11 +60,11 @@ t_object *object_clone(t_object *obj) {
     printf("Cloning: %s", obj->name);
 
     // No clone function, so return same object
-    if (! obj->funcs.clone) {
+    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
         return obj;
     }
 
-    return obj->funcs.clone(obj);
+    return obj->funcs->clone(obj);
 }
 
 
@@ -93,27 +92,45 @@ void object_dec_ref(t_object *obj) {
 t_object *object_new(t_object *obj, ...) {
     va_list arg_list;
 
+    printf("Instantiating a new object: %s\n", obj->name);
+
     // Return NULL when we cannot 'new' this object
-    if (!obj || ! obj->funcs.new) RETURN_NULL;
+    if (! obj || ! obj->funcs || ! obj->funcs->new) RETURN_NULL;
 
     va_start(arg_list, obj);
-    t_object *res = obj->funcs.new(&arg_list);
+    t_object *res = obj->funcs->new(arg_list);
     va_end(arg_list);
 
     return res;
 }
 
 
+void object_init() {
+    object_boolean_init();
+    object_null_init();
+    object_numerical_init();
+    object_string_init();
+}
+
+void object_fini() {
+    object_boolean_fini();
+    object_null_fini();
+    object_numerical_fini();
+    object_string_fini();
+}
+
 void test(void) {
     t_object *res;
 
+    printf("Object init\n");
+    object_init();
     setlocale(LC_ALL,"");
 
-    t_object *obj_n = object_new((t_object *)&Object_Numerical, 12345);
+    t_object *obj_n = object_new(Object_Numerical, 12345);
     object_call(obj_n, "ctor");
     object_call(obj_n, "print");
 
-    t_object *obj = object_new((t_object *)&Object_String, (void *)L"Björk Guðmundsdóttir");
+    t_object *obj = object_new(Object_String, (void *)L"Björk Guðmundsdóttir");
     object_call(obj, "ctor");
 
     res = object_call(obj, "print");
