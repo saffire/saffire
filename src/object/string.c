@@ -285,7 +285,7 @@ static t_object *obj_clone(t_object *obj) {
 }
 
 
-static t_object *obj_new(va_list *arg_list) {
+static t_object *obj_new(va_list arg_list) {
     // Create new object and copy all info
     t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
     memcpy(new_obj, Object_String, sizeof(t_string_object));
@@ -322,6 +322,6 @@ t_string_object Object_String_struct = {
     OBJECT_HEAD_INIT2("string", 0, &string_funcs),
     0,
     0,
-    L'\0',
-    NULL
+    '\0',
+    L'\0'
 };

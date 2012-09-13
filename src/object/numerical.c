@@ -166,7 +166,7 @@ void object_numerical_fini(void) {
 /**
  * Clones a numerical object into a new object
  */
-static t_object *obj_clone(t_numerical_object *obj) {
+static t_object *obj_clone(t_object *obj) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
 
     // Create new object and copy all info
@@ -183,7 +183,7 @@ static t_object *obj_clone(t_numerical_object *obj) {
 /**
  * Creates a new numerical object by "cloning" the original one
  */
-static t_object *obj_new(va_list *arg_list) {
+static t_object *obj_new(va_list arg_list) {
     t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
     memcpy(new_obj, Object_Numerical, sizeof(t_numerical_object));
 

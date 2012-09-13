@@ -32,8 +32,8 @@ saffire_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   interpreter/saffire_interpreter.c general/hashtable.c general/smm.c \
                   general/md5.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \
-                  object/null.c
+                  object/null.c object/regex.c
 
 
-saffire_LDADD = -lm
+saffire_LDADD = -lpcre
 
