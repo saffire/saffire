@@ -76,7 +76,7 @@ t_object *object_clone(t_object *obj) {
 
 
 /**
- * Increase reference to object. Returns new reference count
+ * Increase reference to object.
  */
 void object_inc_ref(t_object *obj) {
     printf("Increasing reference for: %s\n", obj->name);
@@ -84,7 +84,7 @@ void object_inc_ref(t_object *obj) {
 }
 
 /**
- * Decrease reference from object. Returns new reference count
+ * Decrease reference from object.
  */
 void object_dec_ref(t_object *obj) {
     printf("Decreasing reference for: %s\n", obj->name);
@@ -146,8 +146,54 @@ void test(void) {
     object_init();
     setlocale(LC_ALL,"");
 
+    printf("=================\n");
+    t_object *obj_n = object_new(Object_Numerical, 123);
+    object_call(obj_n, "print");
+    res = object_call(obj_n, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+    obj_n = object_new(Object_Numerical, 0);
+    object_call(obj_n, "print");
+    res = object_call(obj_n, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+    obj_n = object_new(Object_Numerical, 1234);
+    object_call(obj_n, "print");
+    res = object_call(obj_n, "string");
+    object_call(res, "print");
+
+    printf("=================\n");
+    t_object *obj_s;
+    obj_s = object_new(Object_String, (void *)L"");
+    res = object_call(obj_s, "print");
+    res = object_call(obj_s, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+    obj_s = object_new(Object_String, (void *)L"false");
+    res = object_call(obj_s, "print");
+    res = object_call(obj_s, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+    obj_s = object_new(Object_String, (void *)L"true");
+    res = object_call(obj_s, "print");
+    res = object_call(obj_s, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+    obj_s = object_new(Object_String, (void *)L"anythingelse");
+    res = object_call(obj_s, "print");
+    res = object_call(obj_s, "boolean");
+    res = object_call(res, "string");
+    object_call(res, "print");
+
+
+    printf("=================\n");
     // Simple numerical object called 12345
-    t_object *obj_n = object_new(Object_Numerical, 12345);
+    obj_n = object_new(Object_Numerical, 12345);
     res = object_call(obj_n, "ctor");
     res = object_call(obj_n, "print");
 
@@ -173,7 +219,6 @@ void test(void) {
     } else {
         printf ("Object is NOT immutable\n");
     }
-
 
 
     // negate the numerical value

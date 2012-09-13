@@ -27,14 +27,29 @@
 
 #include "object/object.h"
 #include "object/base.h"
+#include "object/boolean.h"
 #include "object/numerical.h"
+#include "object/string.h"
 #include "object/null.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
+#include <wctype.h>
 
 
-
+static wchar_t *itow (unsigned long int val) {
+    static wchar_t buf[30];
+    wchar_t *wcp = &buf[29];
+    *wcp = L'\0';
+    while (val != 0) {
+        *--wcp = btowc ('0' + val % 10);
+        val /= 10;
+    }
+    if (wcp == &buf[29])
+        *--wcp = L'0';
+    return wcp;
+}
 
 
 /* ======================================================================
@@ -89,6 +104,28 @@ SAFFIRE_METHOD(numerical, print) {
 }
 
 
+SAFFIRE_METHOD(numerical, conv_boolean) {
+    if (self->value == 0) {
+        RETURN_FALSE;
+    } else {
+        RETURN_TRUE;
+    }
+}
+
+SAFFIRE_METHOD(numerical, conv_null) {
+    RETURN_NULL;
+}
+
+SAFFIRE_METHOD(numerical, conv_numerical) {
+    RETURN_SELF;
+}
+
+SAFFIRE_METHOD(numerical, conv_string) {
+    wchar_t *tmp = itow(self->value);
+    RETURN_STRING(tmp);
+}
+
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -102,6 +139,12 @@ void object_numerical_init(void) {
     Object_Numerical_struct.methods = ht_create();
     ht_add(Object_Numerical_struct.methods, "ctor", object_numerical_method_ctor);
     ht_add(Object_Numerical_struct.methods, "dtor", object_numerical_method_dtor);
+
+    ht_add(Object_Numerical_struct.methods, "boolean", object_numerical_method_conv_boolean);
+    ht_add(Object_Numerical_struct.methods, "null", object_numerical_method_conv_null);
+    ht_add(Object_Numerical_struct.methods, "numerical", object_numerical_method_conv_numerical);
+    ht_add(Object_Numerical_struct.methods, "string", object_numerical_method_conv_string);
+
 
     ht_add(Object_Numerical_struct.methods, "neg", object_numerical_method_neg);
     ht_add(Object_Numerical_struct.methods, "abs", object_numerical_method_abs);
