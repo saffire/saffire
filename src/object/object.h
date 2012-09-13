@@ -27,59 +27,96 @@
 #ifndef __OBJECT_H__
 #define __OBJECT_H__
 
+    #include <stdlib.h>
+    #include <stdarg.h>
     #include "general/hashtable.h"
 
-    // Define forward
+
+    // Forward define
     struct _object;
+    struct _saffire_result;
 
-    //
-    typedef struct _object_header {
-                int ref_count;                 // Reference count
-                struct _object *extends;       // Extends object (only t_base_object is allowed to have this NULL)
-
-                int implement_count;           // Number of interfaces
-                struct _object *implements;    // Actual interfaces
-
-                char *name;                    // Name of the class
-                char *fqn;                     // Fully qualified name (::<name>)
-    } t_object_header;
-
-    // These functions must be present to deal with objects (cloning, allocating and free-ing info)
+    // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        void (*alloc)(struct _object *);                       // Allocate objects internal data
-        void (*free)(struct _object *);                        // Free objects internal data
-        struct _object *(*clone)(struct _object *);            // Clone the object
+        struct _object *(*new)(va_list arg_list);       // Allocates a new object
+        void (*free)(struct _object *);                  // Frees objects internal data
+        struct _object *(*clone)(struct _object *);      // Clones the object
     } t_object_funcs;
 
-    // Actual "global" object. Every object is typed on this object, but with a different "data" section.
+
+    #define OBJECT_FLAG_INITIALIZED     1
+
+
+    // Actual header that needs to be present in each object (as the first entry)
+    #define SAFFIRE_OBJECT_HEADER \
+        int ref_count;                 /* Reference count. When 0, it is targeted for garbage collection */ \
+        char *name;                    /* Name of the class */ \
+        \
+        int immutable;                 /* 1 = immutable object.  0 = normal read/write */ \
+        int flags;                     /* object flags */ \
+        \
+        struct _object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
+        \
+        int implement_count;           /* Number of interfaces */ \
+        struct _object **implements;   /* Actual interfaces */ \
+        \
+        t_hash_table *methods;         /* Object methods */ \
+        t_hash_table *properties;      /* Object properties */  \
+        t_hash_table *constants;       /* Object constants (needed?) */ \
+        \
+        t_object_funcs *funcs;         /* Functions for internal maintenance (new, free, clone etc) */
+
+
+    // Actual "global" object. Every object is typed on this object.
     typedef struct _object {
-        t_object_header header;          // Object header
-
-        t_hash_table *methods;           // Object methods
-        t_hash_table *properties;        // Object properties
-        t_hash_table *constants;         // Object constants (needed?)
-
-        t_object_funcs funcs;           // Functions for internal maintenance (alloc, free, clone etc)
-
-        // int type;                        // The type of the object (string, numerical, boolean etc)
-        void *data;                      // Additional internal data for the object
+        SAFFIRE_OBJECT_HEADER
     } t_object;
 
 
-    void test(void);
-    void object_init(void);
-    t_object *object_new(void);
+    extern t_object Object_Base_struct;
+
+    #define OBJECT_HEAD_INIT3(name, funcs, base)   \
+                1,              /* initial refcount */     \
+                name,           /* name */                 \
+                0,              /* immutable */            \
+                0,              /* flags */                \
+                base,           /* parent */               \
+                0,              /* implement count */      \
+                NULL,           /* implements */           \
+                NULL,           /* methods */              \
+                NULL,           /* properties */           \
+                NULL,           /* constants */            \
+                funcs           /* functions */
+
+
+    // Object header initialization without any functions or base
+    #define OBJECT_HEAD_INIT2(name, funcs) OBJECT_HEAD_INIT3(name, funcs, &Object_Base_struct)
+
+    // Object header initialization without any functions
+    #define OBJECT_HEAD_INIT(name) OBJECT_HEAD_INIT2(name, NULL)
+
+
+    /*
+     * Header macros
+     */
+    //#define SAFFIRE_NEW_OBJECT(obj) t_object *object_##obj##_new(void *args)
+    #define SAFFIRE_METHOD(obj, method) t_object *object_##obj##_method_##method(t_##obj##_object *self)
+
+
+    // Returns custom object 'obj'
+    #define RETURN_OBJECT(obj) \
+        return (t_object*)obj
+
+    // Returns self
+    #define RETURN_SELF \
+        return (t_object *)self
+
+
+    t_object *object_new(t_object *obj, ...);
     t_object *object_clone(t_object *obj);
+    void object_inc_ref(t_object *obj);
+    void object_dec_ref(t_object *obj);
 
-
-    typedef struct _saffire_result {
-        void *result;
-    } t_saffire_result;
-
-
-
-    #define SAFFIRE_NEW_OBJECT(obj) t_object *object_##obj##_new(void)
-
-    #define SAFFIRE_METHOD(obj, method) t_saffire_result *object_##obj##_method_##method(t_object *self)
+    void test(void);
 
 #endif

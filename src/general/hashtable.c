@@ -71,6 +71,8 @@ unsigned int ht_hash(t_hash_table *ht, char *str) {
  * Find key in hash table
  */
 t_hash_table_bucket *ht_find(t_hash_table *ht, char *str) {
+    if (! ht) return NULL;      // Not a hash table
+
     unsigned int hash_value = ht_hash(ht, str);
 
     // Locate the hash value in the bucket list.
