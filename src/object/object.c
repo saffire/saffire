@@ -31,6 +31,7 @@
 #include "object/null.h"
 #include "object/base.h"
 #include "object/numerical.h"
+#include "object/regex.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,6 +150,7 @@ void object_init() {
     object_null_init();
     object_numerical_init();
     object_string_init();
+    object_regex_init();
 }
 
 /**
@@ -160,6 +162,7 @@ void object_fini() {
     object_null_fini();
     object_numerical_fini();
     object_string_fini();
+    object_regex_fini();
 }
 
 
@@ -176,6 +179,24 @@ void test(void) {
     printf("Object init\n");
     object_init();
     setlocale(LC_ALL,"");
+
+    printf("=================\n");
+    obj[51] = object_new(Object_Regex, L"(o+)", 0);
+    obj[52] = object_call(obj[51], "match");
+    obj[53] = object_call(obj[52], "print");
+    printf("=================\n");
+    obj[54] = object_new(Object_Regex, L"(ba+)", 0);
+    obj[55] = object_call(obj[54], "match");
+    obj[56] = object_call(obj[55], "print");
+    printf("=================\n");
+    obj[58] = object_new(Object_Regex, L"(BA+)", 0);
+    obj[59] = object_call(obj[58], "match");
+    obj[60] = object_call(obj[59], "print");
+    printf("=================\n");
+    obj[62] = object_new(Object_Regex, L"(BA+)", PCRE_CASELESS);
+    obj[63] = object_call(obj[62], "match");
+    obj[64] = object_call(obj[63], "print");
+    printf("=================\n");
 
     printf("=================\n");
     obj[0] = object_new(Object_Numerical, 123);
