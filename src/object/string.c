@@ -32,6 +32,7 @@
 #include <wctype.h>
 #include <limits.h>
 #include "object/object.h"
+#include "object/boolean.h"
 #include "object/string.h"
 #include "object/null.h"
 #include "object/base.h"
@@ -177,6 +178,40 @@ SAFFIRE_METHOD(string, print) {
     RETURN_SELF;
 }
 
+/**
+ *
+ */
+SAFFIRE_METHOD(string, conv_boolean) {
+    if (self->char_length == 0) {
+        RETURN_FALSE;
+    } else {
+        RETURN_TRUE;
+    }
+}
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, conv_null) {
+    RETURN_NULL;
+}
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, conv_numerical) {
+    // Convert wide into char
+    long value = wcstol(self->value, NULL, 0);
+
+    RETURN_NUMERICAL(value);
+}
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, conv_string) {
+    RETURN_SELF;
+}
 
 /* ======================================================================
  *   Global object management functions and data
@@ -190,6 +225,11 @@ void object_string_init(void) {
     Object_String_struct.methods = ht_create();
     ht_add(Object_String_struct.methods, "ctor", object_string_method_ctor);
     ht_add(Object_String_struct.methods, "dtor", object_string_method_dtor);
+
+    ht_add(Object_String_struct.methods, "boolean", object_string_method_conv_boolean);
+    ht_add(Object_String_struct.methods, "null", object_string_method_conv_null);
+    ht_add(Object_String_struct.methods, "numerical", object_string_method_conv_numerical);
+    ht_add(Object_String_struct.methods, "string", object_string_method_conv_string);
 
     ht_add(Object_String_struct.methods, "byte_length", object_string_method_byte_length);
     ht_add(Object_String_struct.methods, "length", object_string_method_length);

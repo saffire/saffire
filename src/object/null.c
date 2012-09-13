@@ -25,16 +25,65 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "object.h"
-#include "null.h"
+#include "object/object.h"
+#include "object/boolean.h"
+#include "object/null.h"
+#include "object/numerical.h"
+#include "object/string.h"
 #include "general/smm.h"
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null") };
+/* ======================================================================
+ *   Object methods
+ * ======================================================================
+ */
 
+
+SAFFIRE_METHOD(null, conv_boolean) {
+    RETURN_FALSE;
+}
+
+SAFFIRE_METHOD(null, conv_null) {
+    RETURN_SELF;
+}
+
+SAFFIRE_METHOD(null, conv_numerical) {
+    RETURN_NUMERICAL(0);
+}
+
+SAFFIRE_METHOD(null, conv_string) {
+    RETURN_STRING(L"null");
+}
+
+
+/* ======================================================================
+ *   Global object management functions and data
+ * ======================================================================
+ */
+
+
+/**
+ * Initializes string methods and properties, these are used
+ */
 void object_null_init(void) {
+    Object_Null_struct.methods = ht_create();
+
+    ht_add(Object_Null_struct.methods, "boolean", object_null_method_conv_boolean);
+    ht_add(Object_Null_struct.methods, "null", object_null_method_conv_null);
+    ht_add(Object_Null_struct.methods, "numerical", object_null_method_conv_numerical);
+    ht_add(Object_Null_struct.methods, "string", object_null_method_conv_string);
+
+    Object_Null_struct.properties = ht_create();
 }
 
+/**
+ * Frees memory for a string object
+ */
 void object_null_fini(void) {
+    ht_destroy(Object_Null_struct.methods);
+    ht_destroy(Object_Null_struct.properties);
 }
+
+
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null") };
 
 
