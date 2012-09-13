@@ -36,7 +36,7 @@
     t_null_object Object_Null_struct;
 
     // Actual null object cast to a t_object
-    #define Object_Null   ((t_object *)Object_Null_struct)
+    #define Object_Null   ((t_object *)&Object_Null_struct)
 
     // Simple macro to return (the) NULL object from a function
     #define RETURN_NULL   { object_inc_ref((t_object *)&Object_Null_struct); return (t_object *)(&Object_Null_struct); }

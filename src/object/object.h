@@ -55,7 +55,7 @@
         int immutable;                 /* 1 = immutable object.  0 = normal read/write */ \
         int flags;                     /* object flags */ \
         \
-        struct _object *extends;       /* Extends object (only t_base_object is allowed to have this NULL) */ \
+        struct _object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
         \
         int implement_count;           /* Number of interfaces */ \
         struct _object **implements;   /* Actual interfaces */ \
@@ -80,7 +80,7 @@
                 name,           /* name */                 \
                 0,              /* immutable */            \
                 0,              /* flags */                \
-                base,           /* extends */              \
+                base,           /* parent */               \
                 0,              /* implement count */      \
                 NULL,           /* implements */           \
                 NULL,           /* methods */              \

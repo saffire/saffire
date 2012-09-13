@@ -66,7 +66,7 @@ SAFFIRE_METHOD(base, properties) {
  */
 SAFFIRE_METHOD(base, methods) {
     // @TODO: return list of methods
-    RETURN_STRING("methods");
+    RETURN_STRING(L"methods");
 }
 
 /**
@@ -74,7 +74,7 @@ SAFFIRE_METHOD(base, methods) {
  */
 SAFFIRE_METHOD(base, parents) {
     // @TODO: return list of parents
-    RETURN_STRING("parents");
+    RETURN_STRING(L"parents");
 }
 
 /**
@@ -89,7 +89,7 @@ SAFFIRE_METHOD(base, name) {
  */
 SAFFIRE_METHOD(base, implements) {
     // @TODO: return list of implementations
-    RETURN_STRING("implementations");
+    RETURN_STRING(L"implementations");
 }
 
 /**
@@ -105,7 +105,7 @@ SAFFIRE_METHOD(base, memory) {
  */
 SAFFIRE_METHOD(base, annotations) {
     // @TODO: return method annotations
-    RETURN_STRING("annotations");
+    RETURN_STRING(L"annotations");
 }
 
 /**
@@ -128,7 +128,7 @@ SAFFIRE_METHOD(base, immutable) {
  * Returns TRUE when immutable, FALSE otherwise
  */
 SAFFIRE_METHOD(base, is_immutable) {
-    if (self->immutable) {
+    if (self->immutable == 1) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -156,31 +156,28 @@ SAFFIRE_METHOD(base, refcount) {
  * ======================================================================
  */
 
-t_hash_table *base_methods;
-t_hash_table *base_properties;
-
 /**
  * Initializes base methods and properties
  */
 void object_base_init() {
-    base_methods = ht_create();
+    Object_Base_struct.methods = ht_create();
 
-    ht_add(base_methods, "ctor", object_base_method_ctor);
-    ht_add(base_methods, "dtor", object_base_method_ctor);
-    ht_add(base_methods, "properties", object_base_method_properties);
-    ht_add(base_methods, "methods", object_base_method_methods);
-    ht_add(base_methods, "parents", object_base_method_parents);
-    ht_add(base_methods, "name", object_base_method_name);
-    ht_add(base_methods, "implements", object_base_method_implements);
-    ht_add(base_methods, "memory", object_base_method_memory);
-    ht_add(base_methods, "annotations", object_base_method_annotations);
-    ht_add(base_methods, "clone", object_base_method_clone);
-    ht_add(base_methods, "immutable", object_base_method_immutable);
-    ht_add(base_methods, "immutable?", object_base_method_is_immutable);
-    ht_add(base_methods, "destroy", object_base_method_destroy);
-    ht_add(base_methods, "refcount", object_base_method_refcount);
+    ht_add(Object_Base_struct.methods, "ctor", object_base_method_ctor);
+    ht_add(Object_Base_struct.methods, "dtor", object_base_method_ctor);
+    ht_add(Object_Base_struct.methods, "properties", object_base_method_properties);
+    ht_add(Object_Base_struct.methods, "methods", object_base_method_methods);
+    ht_add(Object_Base_struct.methods, "parents", object_base_method_parents);
+    ht_add(Object_Base_struct.methods, "name", object_base_method_name);
+    ht_add(Object_Base_struct.methods, "implements", object_base_method_implements);
+    ht_add(Object_Base_struct.methods, "memory", object_base_method_memory);
+    ht_add(Object_Base_struct.methods, "annotations", object_base_method_annotations);
+    ht_add(Object_Base_struct.methods, "clone", object_base_method_clone);
+    ht_add(Object_Base_struct.methods, "immutable", object_base_method_immutable);
+    ht_add(Object_Base_struct.methods, "immutable?", object_base_method_is_immutable);
+    ht_add(Object_Base_struct.methods, "destroy", object_base_method_destroy);
+    ht_add(Object_Base_struct.methods, "refcount", object_base_method_refcount);
 
-    base_properties = ht_create();
+    Object_Base_struct.properties = ht_create();
 }
 
 
@@ -188,8 +185,8 @@ void object_base_init() {
  * Frees memory for a base object
  */
 void object_base_fini() {
-    ht_destroy(base_methods);
-    ht_destroy(base_properties);
+    ht_destroy(Object_Base_struct.methods);
+    ht_destroy(Object_Base_struct.properties);
 }
 
 

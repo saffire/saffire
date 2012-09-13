@@ -29,9 +29,9 @@
 #include "boolean.h"
 #include "general/smm.h"
 
-t_boolean_object Object_Bool_struct       = { OBJECT_HEAD_INIT("bool"), 0 };
-t_boolean_object Object_Bool_False_struct = { OBJECT_HEAD_INIT("bool"), 0 };
-t_boolean_object Object_Bool_True_struct  = { OBJECT_HEAD_INIT("bool"), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool"), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool"), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool"), 1 };
 
 void object_boolean_init(void) {
 }
