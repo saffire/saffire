@@ -84,6 +84,6 @@ void object_null_fini(void) {
 }
 
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null") };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", OBJECT_FLAG_STATIC) };
 
 
