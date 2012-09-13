@@ -44,7 +44,7 @@
     } t_object_funcs;
 
 
-    #define OBJECT_FLAG_INITIALIZED     1
+    #define OBJECT_FLAG_STATIC     1
 
 
     // Actual header that needs to be present in each object (as the first entry)
@@ -75,11 +75,11 @@
 
     extern t_object Object_Base_struct;
 
-    #define OBJECT_HEAD_INIT3(name, funcs, base)   \
+    #define OBJECT_HEAD_INIT4(name, flags, funcs, base) \
                 1,              /* initial refcount */     \
                 name,           /* name */                 \
                 0,              /* immutable */            \
-                0,              /* flags */                \
+                flags,          /* flags */                \
                 base,           /* parent */               \
                 0,              /* implement count */      \
                 NULL,           /* implements */           \
@@ -88,12 +88,13 @@
                 NULL,           /* constants */            \
                 funcs           /* functions */
 
+    #define OBJECT_HEAD_INIT3(name, flags, funcs, base) OBJECT_HEAD_INIT4(name, flags, funcs, base)
 
     // Object header initialization without any functions or base
-    #define OBJECT_HEAD_INIT2(name, funcs) OBJECT_HEAD_INIT3(name, funcs, &Object_Base_struct)
+    #define OBJECT_HEAD_INIT2(name, flags, funcs) OBJECT_HEAD_INIT3(name, flags, funcs, &Object_Base_struct)
 
     // Object header initialization without any functions
-    #define OBJECT_HEAD_INIT(name) OBJECT_HEAD_INIT2(name, NULL)
+    #define OBJECT_HEAD_INIT(name, flags) OBJECT_HEAD_INIT2(name, flags, NULL)
 
 
     /*
@@ -109,7 +110,7 @@
 
     // Returns self
     #define RETURN_SELF \
-        return (t_object *)self
+        { object_inc_ref((t_object *)self); return (t_object *)self; }
 
 
     t_object *object_new(t_object *obj, ...);

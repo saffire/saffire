@@ -204,6 +204,6 @@ t_object_funcs numerical_funcs = {
 
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT2("numerical", &numerical_funcs),
+    OBJECT_HEAD_INIT2("numerical", 0, &numerical_funcs),
     0
 };

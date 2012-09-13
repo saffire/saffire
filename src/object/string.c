@@ -257,7 +257,8 @@ static void obj_free(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
 
     if (str_obj->value != NULL) {
-        smm_free(str_obj->value);
+        free(str_obj->value);
+        str_obj->value = NULL;
     }
 }
 
@@ -318,7 +319,7 @@ t_object_funcs string_funcs = {
 
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", &string_funcs),
+    OBJECT_HEAD_INIT2("string", 0, &string_funcs),
     0,
     0,
     L'\0',
