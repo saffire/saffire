@@ -26,17 +26,15 @@
 */
 
 #include "object.h"
+#include "boolean.h"
+#include "general/smm.h"
 
-SAFFIRE_NEW_OBJECT(boolean) {
-    t_object *obj = object_new();
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool"), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool"), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool"), 1 };
 
-    obj->header.name = "boolean";
-    obj->header.fqn = "::boolean";
-
-//    obj->methods = boolean_methods;
-//    obj->properties = boolean_properties;
-
-    return obj;
+void object_boolean_init(void) {
 }
 
-
+void object_boolean_fini(void) {
+}

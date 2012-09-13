@@ -25,74 +25,36 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "object.h"
-#include "string.h"
+#include "object/object.h"
+#include "object/string.h"
+#include "object/boolean.h"
+#include "object/null.h"
+#include "object/base.h"
+#include "object/numerical.h"
 #include "general/smm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
-
-
-t_hash_table *empty_methods;
-t_hash_table *empty_properties;
-
-void object_init(void) {
-    empty_methods = ht_create();
-    empty_properties = ht_create();
-}
-
-void object_fini() {
-    ht_destroy(empty_methods);
-    ht_destroy(empty_properties);
-}
-
-
-static void unused_object_alloc(t_object *obj) {
-    printf("Cannot alloc directly from an object");
-    exit(1);
-}
-static void unused_object_free(t_object *obj) {
-     printf("Cannot free directly from an object");
-     exit(1);
-}
-static t_object *unused_object_clone(t_object *obj) {
-    printf("Cannot clone directly from an object");
-    exit(1);
-}
-
-
-t_object *object_new(void) {
-    t_object *obj = smm_malloc(sizeof(t_object));
-
-    obj->header.ref_count = 0;
-    obj->header.extends = NULL;
-    obj->header.implement_count = 0;
-    obj->header.implements = NULL;
-
-    obj->funcs.alloc = unused_object_alloc;
-    obj->funcs.free = unused_object_free;
-    obj->funcs.clone = unused_object_clone;
-
-    obj->methods = empty_methods;
-    obj->properties = empty_properties;
-
-    obj->data = NULL;
-
-    return obj;
-}
-
+#include <stdarg.h>
 
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
 void *object_call(t_object *obj, char *method) {
+    printf(">>> Finding method '%s' on object %s\n", method, obj->name);
+
     t_hash_table_bucket *htb = ht_find(obj->methods, method);
     if (htb == NULL) {
-        printf("Cannot call method '%s' on object %s\n", method, obj->header.fqn);
-        return NULL;
+        if (obj->parent == NULL) {
+            printf(">>> Cannot call method '%s' on object %s: not found\n", method, obj->name);
+            return NULL;
+        }
+
+        // Just recurse into the parent
+        return object_call(obj->parent, method);
     }
 
-    printf("Calling method '%s' on object %s\n", method, obj->header.fqn);
+    printf(">>> Calling method '%s' on object %s\n", method, obj->name);
     void *(*func)(t_object *) = htb->data;
 
     return func(obj);
@@ -102,80 +64,155 @@ void *object_call(t_object *obj, char *method) {
  * Clones an object and returns new object
  */
 t_object *object_clone(t_object *obj) {
-    return obj->funcs.clone(obj);
+    printf("Cloning: %s\n", obj->name);
+
+    // No clone function, so return same object
+    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
+        return obj;
+    }
+
+    return obj->funcs->clone(obj);
 }
 
 
 /**
  * Increase reference to object. Returns new reference count
  */
-int object_inc_ref(t_object *obj) {
-    obj->header.ref_count++;
-    return obj->header.ref_count;
+void object_inc_ref(t_object *obj) {
+    printf("Increasing reference for: %s\n", obj->name);
+    if (obj) obj->ref_count++;
 }
 
 /**
  * Decrease reference from object. Returns new reference count
  */
-int object_dec_ref(t_object *obj) {
-    obj->header.ref_count++;
-    return obj->header.ref_count;
+void object_dec_ref(t_object *obj) {
+    printf("Decreasing reference for: %s\n", obj->name);
+    if (obj) obj->ref_count++;
 }
 
 
+
+/**
+ * Creates a new object with specific values
+ */
+t_object *object_new(t_object *obj, ...) {
+    va_list arg_list;
+
+    printf("Instantiating a new object: %s\n", obj->name);
+
+    // Return NULL when we cannot 'new' this object
+    if (! obj || ! obj->funcs || ! obj->funcs->new) RETURN_NULL;
+
+    va_start(arg_list, obj);
+    t_object *res = obj->funcs->new(arg_list);
+    va_end(arg_list);
+
+    return res;
+}
+
+
+/**
+ * Initialize all the (scalar) objects
+ */
+void object_init() {
+    object_base_init();
+    object_boolean_init();
+    object_null_init();
+    object_numerical_init();
+    object_string_init();
+}
+
+/**
+ * Finalize all the (scalar) objects
+ */
+void object_fini() {
+    object_base_fini();
+    object_boolean_fini();
+    object_null_fini();
+    object_numerical_fini();
+    object_string_fini();
+}
+
+
+
+/**
+ * @TODO: Remove me
+ */
 void test(void) {
+    t_object *res;
+
+    printf("Object init\n");
+    object_init();
     setlocale(LC_ALL,"");
 
-    t_saffire_result *res;
-    size_t i;
+    // Simple numerical object called 12345
+    t_object *obj_n = object_new(Object_Numerical, 12345);
+    res = object_call(obj_n, "ctor");
+    res = object_call(obj_n, "print");
 
-    object_init();
-    object_string_init();
+    // Return a memory prints (not functioning yet)
+    res = object_call(obj_n, "memory");
+    res = object_call(res, "print");
 
-    printf("> obj::ctor\n");
-    t_object *obj = object_string_new();
-    object_call(obj, "ctor");
+    // Print parents
+    res = object_call(obj_n, "parents");
+    res = object_call(res, "print");
 
-    printf("> obj::print\n");
+
+    res = object_call(obj_n, "immutable?");
+    if (res == Object_True) {
+        printf ("Object is immutable\n");
+    } else {
+        printf ("Object is NOT immutable\n");
+    }
+    res = object_call(obj_n, "immutable");
+    res = object_call(obj_n, "immutable?");
+    if (res == Object_True) {
+        printf ("Object is immutable\n");
+    } else {
+        printf ("Object is NOT immutable\n");
+    }
+
+
+
+    // negate the numerical value
+    t_object *obj_n2 = object_call(obj_n, "neg");
+    res = object_call(obj_n2, "print");
+
+
+    // Create a string
+    t_object *obj = object_new(Object_String, (void *)L"Björk Guðmundsdóttir");
+    res = object_call(obj, "ctor");
     res = object_call(obj, "print");
-    smm_free(res);
 
-    printf("> obj::length\n");
     res = object_call(obj, "length");
-    i = (size_t)res->result;
-    smm_free(res);
-    printf("Length of the string is: %ld\n", i);
+    printf("Length of the string is: ");
+    res = object_call(res, "print");
+    printf("\n");
 
-    printf("> obj::byte_length\n");
     res = object_call(obj, "byte_length");
-    i = (size_t)res->result;
-    smm_free(res);
-    printf("Byte Length of the string is: %ld\n", i);
+    printf("Byte Length of the string is: ");
+    res = object_call(res, "print");
+    printf("\n");
 
-
-    printf("> obj2 = obj::upper\n");
-    res = object_call(obj, "upper");
-    t_object *obj2 = (t_object *)res->result;
-    smm_free(res);
+    // Uppercase object
+    t_object *obj2 = object_call(obj, "upper");
     printf("> obj2::print\n");
     res = object_call(obj2, "print");
 
-    printf("> obj2::sirdoesnotexist\n");
+    // call a method that does not exist
     res = object_call(obj2, "sirdoesnotexist");
-    smm_free(res);
 
-    printf("> obj3 = obj2::reverse\n");
-    res = object_call(obj2, "reverse");
-    t_object *obj3 = (t_object *)res->result;
-    smm_free(res);
+    // Create a reversed object from the uppercased one
+    t_object *obj3 = object_call(obj2, "reverse");
 
-    printf("> obj3::print\n");
+    // Print reversed uppercase
     res = object_call(obj3, "print");
-    smm_free(res);
 
-    printf("> obj::print\n");
+    // Print "normal" string
     res = object_call(obj, "print");
-    smm_free(res);
+
     exit(1);
 }
 

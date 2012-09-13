@@ -24,29 +24,17 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECT_STRING_H__
-#define __OBJECT_STRING_H__
 
-    #include "general/md5.h"
-    #include "object/object.h"
-    #include "wchar.h"
+#include "object.h"
+#include "null.h"
+#include "general/smm.h"
 
-    #define RETURN_STRING(s)   RETURN_OBJECT(object_new(Object_String, s));
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null") };
 
-    typedef struct {
-        SAFFIRE_OBJECT_HEADER
+void object_null_init(void) {
+}
 
-        size_t char_length;     // length of the string in characters
-        size_t byte_length;     // length of the string in bytes
-        md5_byte_t hash[16];    // (MD5) hash of the string
-        wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
-    } t_string_object;
+void object_null_fini(void) {
+}
 
-    t_string_object Object_String_struct;
 
-    #define Object_String   (t_object *)&Object_String_struct
-
-    void object_string_init(void);
-    void object_string_fini(void);
-
-#endif
