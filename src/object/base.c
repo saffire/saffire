@@ -120,7 +120,7 @@ SAFFIRE_METHOD(base, clone) {
  * Sets object to immutable. Cannot undo.
  */
 SAFFIRE_METHOD(base, immutable) {
-    self->immutable = 1;
+    self->flags |= OBJECT_FLAG_IMMUTABLE;
     RETURN_SELF;
 }
 
@@ -128,7 +128,7 @@ SAFFIRE_METHOD(base, immutable) {
  * Returns TRUE when immutable, FALSE otherwise
  */
 SAFFIRE_METHOD(base, is_immutable) {
-    if (self->immutable == 1) {
+    if (self->flags & OBJECT_FLAG_IMMUTABLE == OBJECT_FLAG_IMMUTABLE) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -213,6 +213,6 @@ t_object_funcs base_funcs = {
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", 0, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, 0, &base_funcs, NULL)
 };
 

@@ -45,12 +45,21 @@
 #include "general/md5.h"
 
 
+
+
 /* ======================================================================
  *   Supporting functions
  * ======================================================================
  */
 
+char *wctou8(const wchar_t *wstr) {
+    long len = wcslen(wstr)+1;
 
+    char *buf = (char *)smm_malloc(len);
+    long conv_len = wcstombs(buf, wstr, len);
+
+    return buf;
+}
 
 
 /* ======================================================================
@@ -65,6 +74,7 @@
 SAFFIRE_METHOD(regex, ctor) {
     RETURN_SELF;
 }
+
 
 /**
  * Saffire method: destructor
@@ -81,17 +91,26 @@ SAFFIRE_METHOD(regex, regex) {
     RETURN_STRING(self->regex_string);
 }
 
+
 /**
  * Saffire method: match a string against (compiled) regex
  */
 SAFFIRE_METHOD(regex, match) {
-    // fetch string from argument list. Match against regex. Return info
+    t_string_object *str;
     int ovector[OVECCOUNT];
     int rc;
 
-    char s[] = "Foobarbaz";
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
+
+    // Convert to utf8 and execute regex
+    char *s = wctou8(str->value);
     rc = pcre_exec(self->regex, 0, s, strlen(s), 0, 0, ovector, OVECCOUNT);
 
+    // Check result
     if (rc < 0) {
         switch (rc) {
             case PCRE_ERROR_NOMATCH:
@@ -103,9 +122,13 @@ SAFFIRE_METHOD(regex, match) {
         }
     }
 
+    // Display result
     for (int i=0; i<rc; i++) {
         printf("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
     }
+
+    // Free utf8 string
+    smm_free(s);
 
     // Return number of matches
     RETURN_NUMERICAL(rc);
@@ -123,6 +146,7 @@ SAFFIRE_METHOD(regex, conv_boolean) {
     }
 }
 
+
 /**
  *
  */
@@ -130,12 +154,14 @@ SAFFIRE_METHOD(regex, conv_null) {
     RETURN_NULL;
 }
 
+
 /**
  *
  */
 SAFFIRE_METHOD(regex, conv_numerical) {
     RETURN_NUMERICAL(0);
 }
+
 
 /**
  *
@@ -219,10 +245,7 @@ static t_object *obj_new(va_list arg_list) {
 
 
     wchar_t *value = va_arg(arg_list, wchar_t *);
-    long value_len = wcslen((const wchar_t *)value)+1;
-
-    char *buf = (char *)smm_malloc(value_len);
-    long conv_len = wcstombs(buf, (const wchar_t *)value, value_len);
+    char *buf = wctou8(value);
 
     int pcre_options = va_arg(arg_list, int);
 
@@ -245,7 +268,7 @@ t_object_funcs regex_funcs = {
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", 0, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, 0, &regex_funcs),
     NULL,
     L'\0',
 };
