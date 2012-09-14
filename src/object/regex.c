@@ -100,8 +100,9 @@ SAFFIRE_METHOD(regex, match) {
     int ovector[OVECCOUNT];
     int rc;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", str)) {
-        printf("Error while parsing argument list");
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
+        printf("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -109,6 +110,7 @@ SAFFIRE_METHOD(regex, match) {
     char *s = wctou8(str->value);
     rc = pcre_exec(self->regex, 0, s, strlen(s), 0, 0, ovector, OVECCOUNT);
 
+    // Check result
     if (rc < 0) {
         switch (rc) {
             case PCRE_ERROR_NOMATCH:
@@ -120,6 +122,7 @@ SAFFIRE_METHOD(regex, match) {
         }
     }
 
+    // Display result
     for (int i=0; i<rc; i++) {
         printf("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
     }
@@ -265,7 +268,7 @@ t_object_funcs regex_funcs = {
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectRegex, 0, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, 0, &regex_funcs),
     NULL,
     L'\0',
 };

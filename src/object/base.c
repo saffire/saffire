@@ -213,6 +213,6 @@ t_object_funcs base_funcs = {
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", objectBase, 0, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, 0, &base_funcs, NULL)
 };
 

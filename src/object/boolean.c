@@ -96,6 +96,6 @@ void object_boolean_fini(void) {
 }
 
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool", objectBoolean, 0), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool", objectBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool", objectBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, 0), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 1 };

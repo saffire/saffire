@@ -318,7 +318,7 @@ t_object_funcs string_funcs = {
 
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectString, 0, &string_funcs),
+    OBJECT_HEAD_INIT2("string", objectTypeString, 0, &string_funcs),
     0,
     0,
     '\0',

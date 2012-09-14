@@ -30,6 +30,7 @@
     #include <stdlib.h>
     #include <stdarg.h>
     #include "general/hashtable.h"
+    #include "general/dll.h"
 
 
     // Forward define
@@ -48,8 +49,9 @@
     #define OBJECT_FLAG_IMMUTABLE     1            /* Object is immutable */
     #define OBJECT_FLAG_STATIC        2            /* Do not free memory for this object */
 
-    // Object types
-    typedef enum { objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString } objectTypeEnum;
+    // Object types, the objectTypeAny is a wildcard type. Matches any other type.
+    const char *objectTypeNames[7];
+    typedef enum { objectTypeAny, objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString } objectTypeEnum;
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
@@ -102,9 +104,9 @@
     /*
      * Header macros
      */
-    #define SAFFIRE_METHOD(obj, method) t_object *object_##obj##_method_##method(t_##obj##_object *self, int arg_count, va_list arg_list)
+    #define SAFFIRE_METHOD(obj, method) t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *dll)
 
-    #define SAFFIRE_METHOD_ARGS arg_count, arg_list
+    #define SAFFIRE_METHOD_ARGS dll
 
 
 
@@ -118,7 +120,7 @@
 
 
 
-    int object_parse_arguments(const char arglist, ...);
+    int object_parse_arguments(t_dll *dll, const char *speclist, ...);
     t_object *object_new(t_object *obj, ...);
     t_object *object_clone(t_object *obj);
     void object_inc_ref(t_object *obj);

@@ -33,10 +33,14 @@
 #include "object/numerical.h"
 #include "object/regex.h"
 #include "general/smm.h"
+#include "general/dll.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <stdarg.h>
+
+
+const char *objectTypeNames[7] = { "object", "base", "boolean", "null", "numerical", "regex", "string" };
 
 
 /**
@@ -67,11 +71,23 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     }
 
     printf(">>> Calling method '%s' on object %s\n", method, obj->name);
-    t_object *(*func)(t_object *) = htb->data;
+    t_object *(*func)(t_object *, t_dll *dll) = htb->data;
 
+    // Add all arguments to a DLL
     va_start(arg_list, arg_count);
-    t_object *ret = func(obj, arg_count, arg_list);
+    t_dll *dll = dll_init();
+    for (int i=0; i!=arg_count; i++) {
+        t_object *obj = va_arg(arg_list, t_object *);
+        dll_append(dll, obj);
+    }
     va_end(arg_list);
+
+    // Call the actual method and return the result
+    t_object *ret = func(obj, dll);
+
+    // Free dll
+    dll_free(dll);
+    return ret;
 }
 
 
@@ -182,14 +198,36 @@ void object_fini() {
 }
 
 
-static int _object_parse_arguments(const char *speclist, int arg_count, va_list arg_list) {
-    const char *ptr = arguments;
+int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
+    const char *ptr = speclist;
+    int result = 0;
     t_object *obj;
     objectTypeEnum type;
-    int optional = 0;
+    va_list storage_list;
 
-    while (ptr != '\0') {
-        char c = *ptr;
+    va_start(storage_list, speclist);
+    int optional_argument = 0;
+
+    // Point to first element
+    t_dll_element *e = dll->start;
+
+    // First, check if the number of elements equals (or is more) than the number of mandatory objects in the speclist
+    int cnt = 0;
+    while (*ptr) {
+        if (*ptr == '|') break;
+        cnt++;
+        ptr++;
+    }
+    if (cnt < dll->size) {
+        printf("At least %d arguments are needed. Only %d are given", cnt, dll->size);
+        result = 0;
+        goto done;
+    }
+
+    // We know have have enough elements. Iterate the speclist
+    ptr = speclist;
+    while (*ptr) {
+        char c = *ptr; // Save current spec character
         ptr++;
         switch (c) {
             case 'n' : /* numerical */
@@ -208,41 +246,42 @@ static int _object_parse_arguments(const char *speclist, int arg_count, va_list 
                 type = objectTypeBoolean;
                 break;
             case 'o' : /* any object */
-                type = NULL;
+                type = objectTypeAny;
                 break;
             case '|' : /* Everything after a | is optional */
-                optional = 1;
+                optional_argument = 1;
                 continue;
                 break;
             default :
                 printf("Cannot parse argument '%c'\n", c);
-                return -1;
+                result = 0;
+                goto done;
                 break;
         }
 
-        // Fetch the next object from the list
-        obj = va_arg(arg_list, t_object *);
-        if (type != NULL && obj->type != type) {
-            printf("Wanted a %d, but got a %s\n", type, obj->type);
-            return -1;
+        // Fetch the next object from the list. We must assume the user has added enough room
+        t_object **storage_obj = va_arg(storage_list, t_object **);
+        t_object *argument_obj = e->data;
+        if (type != objectTypeAny || argument_obj->type != type) {
+            printf("Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+            result = 0;
+            goto done;
         }
 
+        // Copy this object to here
+        *storage_obj = argument_obj;
+
+        // Goto next element
+        e = e->next;
     }
-}
 
+    result = 1;
 
-int object_parse_arguments(int arg_count, va_list args, const char speclist, ...) {
-    va_list arg_list;
-
-    // Empty argument list
-    if (arg_count == 0) return 0;
-
-    va_start(arg_list, speclist);
-    int result = _object_parse_arguments(arg_count, arg_list, speclist);
-    va_end(arg_list);
-
+done:
+    va_end(storage_list);
     return result;
 }
+
 
 
 /**
@@ -260,13 +299,14 @@ void test(void) {
 
     printf("=================\n");
     obj[71] = object_new(Object_Regex, L"(o+)", 0);
-    obj[72] = object_new(Object_String, L"foofoobarbaz"));
+    obj[72] = object_new(Object_String, L"appooooopoopoo");
     obj[73] = object_call(obj[71], "match", 1, obj[72]);
     printf("=================\n");
 
+
     printf("=================\n");
     obj[51] = object_new(Object_Regex, L"(o+)", 0);
-    obj[70] = object_new(Object_String, L"foofoobarbaz"));
+    obj[70] = object_new(Object_String, L"foofoobarbaz");
     obj[52] = object_call(obj[51], "match", 1, obj[70]);
     obj[53] = object_call(obj[52], "print", 0);
     printf("=================\n");
