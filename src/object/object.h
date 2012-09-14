@@ -44,15 +44,20 @@
     } t_object_funcs;
 
 
-    #define OBJECT_FLAG_STATIC     1
+    // Object flags
+    #define OBJECT_FLAG_IMMUTABLE     1            /* Object is immutable */
+    #define OBJECT_FLAG_STATIC        2            /* Do not free memory for this object */
 
+    // Object types
+    typedef enum { objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString } objectTypeEnum;
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
         int ref_count;                 /* Reference count. When 0, it is targeted for garbage collection */ \
+        \
+        objectTypeEnum type;           /* Type of the (scalar) object */ \
         char *name;                    /* Name of the class */ \
         \
-        int immutable;                 /* 1 = immutable object.  0 = normal read/write */ \
         int flags;                     /* object flags */ \
         \
         struct _object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
@@ -72,13 +77,12 @@
         SAFFIRE_OBJECT_HEADER
     } t_object;
 
-
     extern t_object Object_Base_struct;
 
-    #define OBJECT_HEAD_INIT4(name, flags, funcs, base) \
+    #define OBJECT_HEAD_INIT3(name, type, flags, funcs, base) \
                 1,              /* initial refcount */     \
+                type,           /* scalar type */          \
                 name,           /* name */                 \
-                0,              /* immutable */            \
                 flags,          /* flags */                \
                 base,           /* parent */               \
                 0,              /* implement count */      \
@@ -88,20 +92,20 @@
                 NULL,           /* constants */            \
                 funcs           /* functions */
 
-    #define OBJECT_HEAD_INIT3(name, flags, funcs, base) OBJECT_HEAD_INIT4(name, flags, funcs, base)
-
     // Object header initialization without any functions or base
-    #define OBJECT_HEAD_INIT2(name, flags, funcs) OBJECT_HEAD_INIT3(name, flags, funcs, &Object_Base_struct)
+    #define OBJECT_HEAD_INIT2(name, type, flags, funcs) OBJECT_HEAD_INIT3(name, type, flags, funcs, &Object_Base_struct)
 
     // Object header initialization without any functions
-    #define OBJECT_HEAD_INIT(name, flags) OBJECT_HEAD_INIT2(name, flags, NULL)
+    #define OBJECT_HEAD_INIT(name, type, flags) OBJECT_HEAD_INIT2(name, type, flags, NULL)
 
 
     /*
      * Header macros
      */
-    //#define SAFFIRE_NEW_OBJECT(obj) t_object *object_##obj##_new(void *args)
-    #define SAFFIRE_METHOD(obj, method) t_object *object_##obj##_method_##method(t_##obj##_object *self)
+    #define SAFFIRE_METHOD(obj, method) t_object *object_##obj##_method_##method(t_##obj##_object *self, int arg_count, va_list arg_list)
+
+    #define SAFFIRE_METHOD_ARGS arg_count, arg_list
+
 
 
     // Returns custom object 'obj'
@@ -113,6 +117,8 @@
         { object_inc_ref((t_object *)self); return (t_object *)self; }
 
 
+
+    int object_parse_arguments(const char arglist, ...);
     t_object *object_new(t_object *obj, ...);
     t_object *object_clone(t_object *obj);
     void object_inc_ref(t_object *obj);

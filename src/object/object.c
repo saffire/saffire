@@ -38,28 +38,42 @@
 #include <locale.h>
 #include <stdarg.h>
 
+
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_call(t_object *obj, char *method) {
-    printf(">>> Finding method '%s' on object %s\n", method, obj->name);
+t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
+    t_hash_table_bucket *htb = NULL;
+    t_object *cur_obj = obj;
+    va_list arg_list;
 
-    t_hash_table_bucket *htb = ht_find(obj->methods, method);
-    if (htb == NULL) {
-        if (obj->parent == NULL) {
+    // Try and find the correct method (might be found of the bases classes!)
+
+    while (htb == NULL) {
+        printf(">>> Finding method '%s' on object %s\n", method, cur_obj->name);
+
+        // Find the method in the current object
+        htb = ht_find(cur_obj->methods, method);
+        if (htb != NULL) break;
+
+        // Not found and there is no parent, we're done!
+        if (cur_obj->parent == NULL) {
             printf(">>> Cannot call method '%s' on object %s: not found\n", method, obj->name);
             return NULL;
         }
 
-        // Just recurse into the parent
-        return object_call(obj->parent, method);
+        // Try again in the parent object
+        cur_obj = cur_obj->parent;
     }
 
     printf(">>> Calling method '%s' on object %s\n", method, obj->name);
     t_object *(*func)(t_object *) = htb->data;
 
-    return func(obj);
+    va_start(arg_list, arg_count);
+    t_object *ret = func(obj, arg_count, arg_list);
+    va_end(arg_list);
 }
+
 
 /**
  * Clones an object and returns new object
@@ -84,6 +98,7 @@ void object_inc_ref(t_object *obj) {
     printf("Increasing reference for: %s (%08X) to %d\n", obj->name, obj, obj->ref_count);
 }
 
+
 /**
  * Decrease reference from object.
  */
@@ -94,7 +109,7 @@ void object_dec_ref(t_object *obj) {
 
 
 /**
- * Free an object
+ * Free an object (if needed)
  */
 void object_free(t_object *obj) {
     if (! obj) return;
@@ -153,6 +168,7 @@ void object_init() {
     object_regex_init();
 }
 
+
 /**
  * Finalize all the (scalar) objects
  */
@@ -165,6 +181,68 @@ void object_fini() {
     object_regex_fini();
 }
 
+
+static int _object_parse_arguments(const char *speclist, int arg_count, va_list arg_list) {
+    const char *ptr = arguments;
+    t_object *obj;
+    objectTypeEnum type;
+    int optional = 0;
+
+    while (ptr != '\0') {
+        char c = *ptr;
+        ptr++;
+        switch (c) {
+            case 'n' : /* numerical */
+                type = objectTypeNumerical;
+                break;
+            case 'N' : /* null */
+                type = objectTypeNull;
+                break;
+            case 's' : /* string */
+                type = objectTypeString;
+                break;
+            case 'r' : /* regex */
+                type = objectTypeRegex;
+                break;
+            case 'b' : /* boolean */
+                type = objectTypeBoolean;
+                break;
+            case 'o' : /* any object */
+                type = NULL;
+                break;
+            case '|' : /* Everything after a | is optional */
+                optional = 1;
+                continue;
+                break;
+            default :
+                printf("Cannot parse argument '%c'\n", c);
+                return -1;
+                break;
+        }
+
+        // Fetch the next object from the list
+        obj = va_arg(arg_list, t_object *);
+        if (type != NULL && obj->type != type) {
+            printf("Wanted a %d, but got a %s\n", type, obj->type);
+            return -1;
+        }
+
+    }
+}
+
+
+int object_parse_arguments(int arg_count, va_list args, const char speclist, ...) {
+    va_list arg_list;
+
+    // Empty argument list
+    if (arg_count == 0) return 0;
+
+    va_start(arg_list, speclist);
+    int result = _object_parse_arguments(arg_count, arg_list, speclist);
+    va_end(arg_list);
+
+    return result;
+}
 
 
 /**
@@ -181,89 +259,96 @@ void test(void) {
     setlocale(LC_ALL,"");
 
     printf("=================\n");
+    obj[71] = object_new(Object_Regex, L"(o+)", 0);
+    obj[72] = object_new(Object_String, L"foofoobarbaz"));
+    obj[73] = object_call(obj[71], "match", 1, obj[72]);
+    printf("=================\n");
+
+    printf("=================\n");
     obj[51] = object_new(Object_Regex, L"(o+)", 0);
-    obj[52] = object_call(obj[51], "match");
-    obj[53] = object_call(obj[52], "print");
+    obj[70] = object_new(Object_String, L"foofoobarbaz"));
+    obj[52] = object_call(obj[51], "match", 1, obj[70]);
+    obj[53] = object_call(obj[52], "print", 0);
     printf("=================\n");
     obj[54] = object_new(Object_Regex, L"(ba+)", 0);
-    obj[55] = object_call(obj[54], "match");
-    obj[56] = object_call(obj[55], "print");
+    obj[55] = object_call(obj[54], "match", 1, obj[70]);
+    obj[56] = object_call(obj[55], "print", 0);
     printf("=================\n");
     obj[58] = object_new(Object_Regex, L"(BA+)", 0);
-    obj[59] = object_call(obj[58], "match");
-    obj[60] = object_call(obj[59], "print");
+    obj[59] = object_call(obj[58], "match", 1, obj[70]);
+    obj[60] = object_call(obj[59], "print", 0);
     printf("=================\n");
     obj[62] = object_new(Object_Regex, L"(BA+)", PCRE_CASELESS);
-    obj[63] = object_call(obj[62], "match");
-    obj[64] = object_call(obj[63], "print");
+    obj[63] = object_call(obj[62], "match", 1, obj[70]);
+    obj[64] = object_call(obj[63], "print", 0);
     printf("=================\n");
 
     printf("=================\n");
     obj[0] = object_new(Object_Numerical, 123);
-    obj[99] = object_call(obj[0], "print");
-    obj[1] = object_call(obj[0], "boolean");
-    obj[2] = object_call(obj[1], "string");
-    obj[92] = object_call(obj[2], "print");
+    obj[99] = object_call(obj[0], "print", 0);
+    obj[1] = object_call(obj[0], "boolean", 0);
+    obj[2] = object_call(obj[1], "string", 0);
+    obj[92] = object_call(obj[2], "print", 0);
 
     obj[3] = object_new(Object_Numerical, 0);
-    obj[98] = object_call(obj[3], "print");
-    obj[4] = object_call(obj[3], "boolean");
-    obj[5] = object_call(obj[4], "string");
-    obj[93] = object_call(obj[5], "print");
+    obj[98] = object_call(obj[3], "print", 0);
+    obj[4] = object_call(obj[3], "boolean", 0);
+    obj[5] = object_call(obj[4], "string", 0);
+    obj[93] = object_call(obj[5], "print", 0);
 
     obj[6] = object_new(Object_Numerical, 1234);
-    obj[97] = object_call(obj[6], "print");
-    obj[7] = object_call(obj[6], "string");
-    obj[96] = object_call(obj[7], "print");
+    obj[97] = object_call(obj[6], "print", 0);
+    obj[7] = object_call(obj[6], "string", 0);
+    obj[96] = object_call(obj[7], "print", 0);
 
     printf("=================\n");
     obj[8] = object_new(Object_String, (void *)L"");
-    obj[9] = object_call(obj[8], "print");
-    obj[10] = object_call(obj[8], "boolean");
-    obj[11] = object_call(obj[10], "string");
-    obj[95] = object_call(obj[11], "print");
+    obj[9] = object_call(obj[8], "print", 0);
+    obj[10] = object_call(obj[8], "boolean", 0);
+    obj[11] = object_call(obj[10], "string", 0);
+    obj[95] = object_call(obj[11], "print", 0);
 
     obj[12] = object_new(Object_String, (void *)L"false");
-    obj[13] = object_call(obj[12], "print");
-    obj[14] = object_call(obj[12], "boolean");
-    obj[15] = object_call(obj[14], "string");
-    obj[94] = object_call(obj[15], "print");
+    obj[13] = object_call(obj[12], "print", 0);
+    obj[14] = object_call(obj[12], "boolean", 0);
+    obj[15] = object_call(obj[14], "string", 0);
+    obj[94] = object_call(obj[15], "print", 0);
 
     obj[16] = object_new(Object_String, (void *)L"true");
-    obj[17] = object_call(obj[16], "print");
-    obj[18] = object_call(obj[16], "boolean");
-    obj[19] = object_call(obj[18], "string");
-    obj[90] = object_call(obj[19], "print");
+    obj[17] = object_call(obj[16], "print", 0);
+    obj[18] = object_call(obj[16], "boolean", 0);
+    obj[19] = object_call(obj[18], "string", 0);
+    obj[90] = object_call(obj[19], "print", 0);
 
     obj[20] = object_new(Object_String, (void *)L"anythingelse");
-    obj[21] = object_call(obj[20], "print");
-    obj[22] = object_call(obj[20], "boolean");
-    obj[23] = object_call(obj[22], "string");
-    obj[89] = object_call(obj[23], "print");
+    obj[21] = object_call(obj[20], "print", 0);
+    obj[22] = object_call(obj[20], "boolean", 0);
+    obj[23] = object_call(obj[22], "string", 0);
+    obj[89] = object_call(obj[23], "print", 0);
 
     printf("=================\n");
     // Simple numerical object called 12345
     obj[24] = object_new(Object_Numerical, 12345);
-    obj[25] = object_call(obj[24], "ctor");
-    obj[26] = object_call(obj[24], "print");
+    obj[25] = object_call(obj[24], "ctor", 0);
+    obj[26] = object_call(obj[24], "print", 0);
 
     // Return a memory prints (not functioning yet)
-    obj[27] = object_call(obj[24], "memory");
-    obj[28] = object_call(obj[27], "print");
+    obj[27] = object_call(obj[24], "memory", 0);
+    obj[28] = object_call(obj[27], "print", 0);
 
     // Print parents
-    obj[29] = object_call(obj[24], "parents");
-    obj[30] = object_call(obj[29], "print");
+    obj[29] = object_call(obj[24], "parents", 0);
+    obj[30] = object_call(obj[29], "print", 0);
 
 
-    obj[31] = object_call(obj[24], "immutable?");
+    obj[31] = object_call(obj[24], "immutable?", 0);
     if (obj[31] == Object_True) {
         printf ("Object is immutable\n");
     } else {
         printf ("Object is NOT immutable\n");
     }
-    obj[32] = object_call(obj[24], "immutable");
-    obj[33] = object_call(obj[24], "immutable?");
+    obj[32] = object_call(obj[24], "immutable", 0);
+    obj[33] = object_call(obj[24], "immutable?", 0);
     if (obj[33] == Object_True) {
         printf ("Object is immutable\n");
     } else {
@@ -272,41 +357,41 @@ void test(void) {
 
 
     // negate the numerical value
-    obj[34] = object_call(obj[24], "neg");
-    obj[36] = object_call(obj[34], "print");
+    obj[34] = object_call(obj[24], "neg", 0);
+    obj[36] = object_call(obj[34], "print", 0);
 
 
     // Create a string
     obj[35] = object_new(Object_String, (void *)L"Björk Guðmundsdóttir");
-    obj[37] = object_call(obj[35], "ctor");
-    obj[38] = object_call(obj[35], "print");
+    obj[37] = object_call(obj[35], "ctor", 0);
+    obj[38] = object_call(obj[35], "print", 0);
 
-    obj[39] = object_call(obj[35], "length");
+    obj[39] = object_call(obj[35], "length", 0);
     printf("Length of the string is: ");
-    obj[40] = object_call(obj[39], "print");
+    obj[40] = object_call(obj[39], "print", 0);
     printf("\n");
 
-    obj[41] = object_call(obj[35], "byte_length");
+    obj[41] = object_call(obj[35], "byte_length", 0);
     printf("Byte Length of the string is: ");
-    obj[48] = object_call(obj[41], "print");
+    obj[48] = object_call(obj[41], "print", 0);
     printf("\n");
 
     // Uppercase object
-    obj[42] = object_call(obj[35], "upper");
+    obj[42] = object_call(obj[35], "upper", 0);
     printf("> obj2::print\n");
-    obj[44] = object_call(obj[42], "print");
+    obj[44] = object_call(obj[42], "print", 0);
 
     // call a method that does not exist
-    obj[45] = object_call(obj[42], "sirdoesnotexist");
+    obj[45] = object_call(obj[42], "sirdoesnotexist", 0);
 
     // Create a reversed object from the uppercased one
-    obj[43] = object_call(obj[42], "reverse");
+    obj[43] = object_call(obj[42], "reverse", 0);
 
     // Print reversed uppercase
-    obj[46] = object_call(obj[43], "print");
+    obj[46] = object_call(obj[43], "print", 0);
 
     // Print "normal" string
-    obj[47] = object_call(obj[35], "print");
+    obj[47] = object_call(obj[35], "print", 0);
 
 
     // Free allocated objects
