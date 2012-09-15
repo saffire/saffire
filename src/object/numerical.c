@@ -37,6 +37,16 @@
 #include <wchar.h>
 #include <wctype.h>
 
+#define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
+#define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */
+
+// Offset calculations
+#define NUMERICAL_CACHE_OFF     abs(NUMERICAL_CACHED_MIN)
+// Max storage
+#define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHED_MIN + 1
+
+t_numerical_object *numerical_cache[NUMERICAL_CACHED_CNT];
+
 
 static wchar_t *itow (unsigned long int val) {
     static wchar_t buf[30];
@@ -151,6 +161,16 @@ void object_numerical_init(void) {
     ht_add(Object_Numerical_struct.methods, "print", object_numerical_method_print);
 
     Object_Numerical_struct.properties = ht_create();
+
+
+    // Create a numerical cache
+    int value = NUMERICAL_CACHED_MIN;
+    for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
+        numerical_cache[i] = smm_malloc(sizeof(t_numerical_object));
+        memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
+        numerical_cache[i]->value = value;
+        numerical_cache[i]->flags |= OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_STATIC;
+    }
 }
 
 
@@ -160,6 +180,10 @@ void object_numerical_init(void) {
 void object_numerical_fini(void) {
     ht_destroy(Object_Numerical_struct.methods);
     ht_destroy(Object_Numerical_struct.properties);
+
+    for (int i=0; i!=NUMERICAL_CACHED_CNT; i++) {
+        smm_free(numerical_cache[i + NUMERICAL_CACHE_OFF]);
+    }
 }
 
 
@@ -184,10 +208,17 @@ static t_object *obj_clone(t_object *obj) {
  * Creates a new numerical object by "cloning" the original one
  */
 static t_object *obj_new(va_list arg_list) {
+    long value = va_arg(arg_list, long);
+
+
+    // Return cached object if it's already present.
+    if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
+        return numerical_cache[value + NUMERICAL_CACHE_OFF];
+    }
+
     t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
     memcpy(new_obj, Object_Numerical, sizeof(t_numerical_object));
 
-    long value = va_arg(arg_list, long);
     new_obj->value = value;
 
     return (t_object *)new_obj;

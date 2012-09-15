@@ -40,6 +40,7 @@
 #include <stdarg.h>
 
 
+// Object type string constants
 const char *objectTypeNames[7] = { "object", "base", "boolean", "null", "numerical", "regex", "string" };
 
 
