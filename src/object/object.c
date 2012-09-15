@@ -200,16 +200,16 @@ void object_fini() {
 
 int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
     const char *ptr = speclist;
+    int optional_argument = 0;
+    va_list storage_list;
+    objectTypeEnum type;
     int result = 0;
     t_object *obj;
-    objectTypeEnum type;
-    va_list storage_list;
 
     va_start(storage_list, speclist);
-    int optional_argument = 0;
 
     // Point to first element
-    t_dll_element *e = dll->start;
+    t_dll_element *e = DLL_HEAD(dll);
 
     // First, check if the number of elements equals (or is more) than the number of mandatory objects in the speclist
     int cnt = 0;
@@ -262,7 +262,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         // Fetch the next object from the list. We must assume the user has added enough room
         t_object **storage_obj = va_arg(storage_list, t_object **);
         t_object *argument_obj = e->data;
-        if (type != objectTypeAny || argument_obj->type != type) {
+        if (type != objectTypeAny && type != argument_obj->type) {
             printf("Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
@@ -275,8 +275,10 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         e = e->next;
     }
 
+    // Everything is ok
     result = 1;
 
+    // General cleanup
 done:
     va_end(storage_list);
     return result;
