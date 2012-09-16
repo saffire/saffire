@@ -120,6 +120,10 @@
 
 
 
+    void object_init(void);
+    void object_fini(void);
+    t_object *object_call(t_object *obj, char *method, int arg_count, ...);
+    void object_free(t_object *obj);
     int object_parse_arguments(t_dll *dll, const char *speclist, ...);
     t_object *object_new(t_object *obj, ...);
     t_object *object_clone(t_object *obj);
