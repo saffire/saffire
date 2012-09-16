@@ -135,8 +135,6 @@ void parse_options(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
-    test();
-
     parse_options(argc, argv);
 
     // Open file, or use stdin if needed
