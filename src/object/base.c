@@ -211,8 +211,21 @@ t_object_funcs base_funcs = {
         obj_clone           // Clone a string object
 };
 
+t_object_operators base_ops = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", objectTypeBase, 0, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, &base_ops, OBJECT_NO_FLAGS, &base_funcs, NULL)
 };
 

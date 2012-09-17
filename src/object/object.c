@@ -93,6 +93,59 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
 
 
 /**
+ * Calls a method from specified object. Returns NULL when method is not found.
+ */
+t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...) {
+    t_object *cur_obj = obj;
+    va_list arg_list;
+    t_object *(*func)(t_object *, t_dll *dll, int in_place);
+
+    // Try and find the correct operator (might be found of the base classes!)
+    while (cur_obj && cur_obj->operators != NULL) {
+        printf(">>> Finding operator '%d' on object %s\n", operator, cur_obj->name);
+
+        switch (operator) {
+            case OPERATOR_ADD : func = cur_obj->operators->add; break;
+            case OPERATOR_SUB : func = cur_obj->operators->sub; break;
+            case OPERATOR_MUL : func = cur_obj->operators->mul; break;
+            case OPERATOR_DIV : func = cur_obj->operators->div; break;
+            case OPERATOR_MOD : func = cur_obj->operators->mod; break;
+            case OPERATOR_AND : func = cur_obj->operators->and; break;
+            case OPERATOR_OR  : func = cur_obj->operators->or; break;
+            case OPERATOR_XOR : func = cur_obj->operators->xor; break;
+            case OPERATOR_SL  : func = cur_obj->operators->sl; break;
+            case OPERATOR_SR  : func = cur_obj->operators->sr; break;
+        }
+
+        // Found a function? We're done!
+        if (func) break;
+
+        // Try again in the parent object
+        cur_obj = cur_obj->parent;
+    }
+
+
+    printf(">>> Calling operator %d on object %s\n", operator, obj->name);
+
+    // Add all arguments to a DLL
+    va_start(arg_list, arg_count);
+    t_dll *dll = dll_init();
+    for (int i=0; i!=arg_count; i++) {
+        t_object *obj = va_arg(arg_list, t_object *);
+        dll_append(dll, obj);
+    }
+    va_end(arg_list);
+
+    // Call the actual operator and return the result
+    t_object *ret = func(obj, dll, in_place);
+
+    // Free dll
+    dll_free(dll);
+    return ret;
+}
+
+
+/**
  * Clones an object and returns new object
  */
 t_object *object_clone(t_object *obj) {

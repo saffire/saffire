@@ -266,9 +266,22 @@ t_object_funcs regex_funcs = {
         obj_clone             // Clone a regex object
 };
 
+t_object_operators regex_ops = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectTypeRegex, 0, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, &regex_ops, OBJECT_NO_FLAGS, &regex_funcs),
     NULL,
     L'\0',
 };
