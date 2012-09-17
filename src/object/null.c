@@ -83,7 +83,19 @@ void object_null_fini(void) {
     ht_destroy(Object_Null_struct.properties);
 }
 
+t_object_operators null_ops = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE) };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, &null_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE) };
 
 

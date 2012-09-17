@@ -62,6 +62,135 @@ SAFFIRE_METHOD(boolean, conv_string) {
 
 
 /* ======================================================================
+ *   Standard operators
+ * ======================================================================
+ */
+SAFFIRE_OPERATOR_METHOD(boolean, add) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value += self->value;
+        if (self->value > 1) self->value = 1;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, sub) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value -= self->value;
+        if (self->value < 0) self->value = 0;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, mul) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value *= self->value;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, div) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value /= self->value;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, mod) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value %= 1;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, and) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value &= self->value;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, or) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value |= 1;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, xor) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value ^= self->value;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, sl) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value <<= self->value;
+        if (self->value > 1) self->value = 1;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, sr) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+
+    if (in_place) {
+        self->value >>= self->value;
+        if (self->value < 0) self->value = 0;
+        RETURN_SELF;
+    }
+
+    t_boolean_object *obj = (t_boolean_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+
+/* ======================================================================
  *   Global object management functions and data
  * ======================================================================
  */
@@ -96,6 +225,19 @@ void object_boolean_fini(void) {
 }
 
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, 0), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 1 };
+t_object_operators boolean_ops = {
+    object_boolean_operator_add,          // F+F=F  F+T=T  T+F=T  T+T=T
+    object_boolean_operator_sub,          // F-F=F  F-T=F  T-F=T  T-T=F
+    object_boolean_operator_mul,          // F*F=F  F*T=F  T*F=F  T*T=T
+    object_boolean_operator_div,          // F/F=F  F/T=F  T/F=F  T/T=T
+    object_boolean_operator_mod,          // F%F=F  F%T=F  T%F=F  T%T=T
+    object_boolean_operator_and,          // F&F=T  F&F=T  T&F=F  T&T=T
+    object_boolean_operator_or,           // F|F=F  F|T=T  T|F=T  T|T=T
+    object_boolean_operator_xor,          // F^F=F  F^T=T  T^F=T  T^T=F
+    object_boolean_operator_sl,           // F<F=F  F<T=F  T<F=T  T<T=F
+    object_boolean_operator_sr            // F>F=F  F>T=T  T>F=T  T>T=T
+};
+
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_NO_FLAGS), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 1 };

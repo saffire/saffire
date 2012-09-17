@@ -88,6 +88,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  */
 SAFFIRE_METHOD(numerical, abs) {
     t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+
     obj->value = abs(self->value);
 
     RETURN_OBJECT(obj);
@@ -99,6 +100,7 @@ SAFFIRE_METHOD(numerical, abs) {
  */
 SAFFIRE_METHOD(numerical, neg) {
     t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+
     obj->value = 0 - self->value;
 
     RETURN_OBJECT(obj);
@@ -133,6 +135,131 @@ SAFFIRE_METHOD(numerical, conv_numerical) {
 SAFFIRE_METHOD(numerical, conv_string) {
     wchar_t *tmp = itow(self->value);
     RETURN_STRING(tmp);
+}
+
+
+/* ======================================================================
+ *   Standard operators
+ * ======================================================================
+ */
+SAFFIRE_OPERATOR_METHOD(numerical, add) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value += 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, sub) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value -= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, mul) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value *= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, div) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value /= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, mod) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value %= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, and) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value &= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, or) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value |= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, xor) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value ^= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, sl) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value <<= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, sr) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+
+    if (in_place) {
+        self->value >>= 1;
+        RETURN_SELF;
+    }
+
+    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
 }
 
 
@@ -182,7 +309,7 @@ void object_numerical_fini(void) {
     ht_destroy(Object_Numerical_struct.properties);
 
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++) {
-        smm_free(numerical_cache[i + NUMERICAL_CACHE_OFF]);
+        smm_free(numerical_cache[i]);
     }
 }
 
@@ -213,7 +340,7 @@ static t_object *obj_new(va_list arg_list) {
 
     // Return cached object if it's already present.
     if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
-        return numerical_cache[value + NUMERICAL_CACHE_OFF];
+        return (t_object *)numerical_cache[value + NUMERICAL_CACHE_OFF];
     }
 
     t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
@@ -233,8 +360,21 @@ t_object_funcs numerical_funcs = {
         obj_clone           // Clone a numerical object
 };
 
+t_object_operators numerical_ops = {
+    object_numerical_operator_add,
+    object_numerical_operator_sub,
+    object_numerical_operator_mul,
+    object_numerical_operator_div,
+    object_numerical_operator_mod,
+    object_numerical_operator_and,
+    object_numerical_operator_or,
+    object_numerical_operator_xor,
+    object_numerical_operator_sl,
+    object_numerical_operator_sr
+};
+
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, 0, &numerical_funcs),
+    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, OBJECT_NO_FLAGS, &numerical_funcs),
     0
 };

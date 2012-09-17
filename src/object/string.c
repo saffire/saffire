@@ -212,6 +212,50 @@ SAFFIRE_METHOD(string, conv_string) {
     RETURN_SELF;
 }
 
+
+/* ======================================================================
+ *   Standard operators
+ * ======================================================================
+ */
+SAFFIRE_OPERATOR_METHOD(string, add) {
+    t_string_object *self = (t_string_object *)_self;
+
+    if (in_place) {
+        //self->value += 1;
+        RETURN_SELF;
+    }
+
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(string, sl) {
+    t_string_object *self = (t_string_object *)_self;
+
+    // @TODO:    "foo" << 1 == "oo"
+    if (in_place) {
+        //self->value <<= 1;
+        RETURN_SELF;
+    }
+
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(string, sr) {
+    t_string_object *self = (t_string_object *)_self;
+
+    // @TODO:    "foo" >> 1 == "fo"
+    if (in_place) {
+        //self->value >>= 1;
+        RETURN_SELF;
+    }
+
+    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
+    RETURN_OBJECT(obj);
+}
+
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -316,9 +360,22 @@ t_object_funcs string_funcs = {
         obj_clone             // Clone a string object
 };
 
+t_object_operators string_ops = {
+    object_string_operator_add,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    object_string_operator_sl,
+    object_string_operator_sr
+};
+
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectTypeString, 0, &string_funcs),
+    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, OBJECT_NO_FLAGS, &string_funcs),
     0,
     0,
     '\0',
