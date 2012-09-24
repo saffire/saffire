@@ -37,6 +37,27 @@ esac],
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 
+#gcov
+AC_ARG_ENABLE(coverage,
+AC_HELP_STRING([--enable-gcov],
+               [turn on test coverage @<:@default=no@:>@]), [enable_cov=$enableval],[enable_cov="no"])
+
+if test "x$enable_coverage" = "xyes"; then
+	if test "x$ac_compiler_gnu" != "xyes"; then
+		AC_MSG_ERROR([coverage testing only works if gcc is used])
+	fi
+
+	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
+	LDFLAGS="$LDFLAGS -lgcov"
+	AC_CHECK_PROGS(GCOV, gcov, false)
+	AC_CHECK_PROGS(LCOV, lcov, false)
+	AC_CHECK_PROGS(GENHTML, genhtml, false)
+fi
+
+AM_CONDITIONAL(ENABLE_COVERAGE, test "x$enable_coverage" = "xyes")
+
+
+
 dnl # check for icu-config
 dnl AC_PATH_PROG(icu_config, icu-config, no)
 dnl if test "$icu_config" = "no"; then
