@@ -31,3 +31,4 @@ src/libsaffire.a
 src/test
 *.gcno
 *.gcda
+.coverage.*

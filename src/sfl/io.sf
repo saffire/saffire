@@ -1,0 +1,15 @@
+/**
+ * This is the IO class.
+ */
+class io {
+
+	static public method print(...) {
+	}
+
+	static public method printf($format, ...) {
+	}
+
+	static public method fprintf(File $f, $format, ...) {
+	}
+
+}

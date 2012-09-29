@@ -1,0 +1,14 @@
+/**
+ * This is the file class.
+ */
+class saffire {
+
+    /**
+     * Changes the current umask
+     */
+    static public method umask(Numerical $mask) {
+    }
+    static public method umask(String $mask) {
+    }
+
+}

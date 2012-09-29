@@ -1,0 +1,11 @@
+/**
+ * This is the thread class
+ */
+class thread::lock {
+    /*
+     * acquire
+     * release
+     * locked?
+     */
+
+}

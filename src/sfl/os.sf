@@ -1,0 +1,227 @@
+/**
+ * This is the OS class.
+ */
+class os {
+
+    const GLOB_MARK     = 1;    // Adds a slash to each directory returned
+    const GLOB_NOSORT   = 2;    // Return files as they appear in the directory (no sorting)
+    const GLOB_NOCHECK  = 4;    // Return the search pattern if no files matching it were found
+    const GLOB_NOESCAPE = 8;    // Backslashes do not quote metacharacters
+    const GLOB_BRACE    = 16;   // Expands {a,b,c} to match 'a', 'b', or 'c'
+    const GLOB_ONLYDIR  = 32;   // Return only directory entries which match the pattern
+    const GLOB_ERR      = 64;   // Stop on read errors (like unreadable directories), by default errors are ignored.
+
+    /**
+     * Returns trailing name component of path
+     */
+    static public method basename(String $path, String $suffix = "") {
+    }
+
+    /**
+     * Changes file group
+     */
+    static public method chgrp(String $filename, String $group) {
+    }
+    static public method chgrp(String $filename, Numerical $group_id) {
+    }
+
+    /**
+     * Changes group ownership of symlink
+     */
+    static public method lchgrp(String $filename, String $group) {
+    }
+    static public method lchgrp(String $filename, Numerical $group_id) {
+    }
+
+    /**
+     * Changes file mode
+     */
+    static public method chmod(String $filename, Numerical $mode) {
+    }
+    static public method chmod(String $filename, String $mode) {
+    }
+
+    /**
+     * Changes user ownership of symlink
+     */
+    static public method lchmod(String $filename, Numerical $mode) {
+    }
+    static public method lchmod(String $filename, String $mode) {
+    }
+
+
+    /**
+     * Changes file owner
+     */
+    static public method chown(String $filename, String $user) {
+    }
+    static public method chown(String $filename, Numerical $user_id) {
+    }
+
+    /**
+     * Copies file
+     */
+    static public method copy(String $source, String $dest) {
+    }
+
+    /**
+     * Returns parent directory's path
+     */
+    static public method dirname(String $path) {
+    }
+
+
+    /**
+     * Returns available space on filesystem or disk partition
+     */
+    static public method free_space(String $path) {
+    }
+
+    /**
+     * Returns the total size of a filesystem or disk partition
+     */
+    static public method total_space(String $path) {
+    }
+
+    /**
+     * Returns if the file exists or not
+     */
+    static public method exists?(String $filename) {
+    }
+
+    /**
+     * Match filename against a pattern
+     */
+    static public method match(String $filename, String $pattern, Numerical $flags = 0) {
+    }
+
+    /**
+     * Opens a file.
+     *
+     * @returns File
+     */
+    static public method open(String $filename, String $mode = "r") {
+    }
+
+    /**
+     * Find pathnames matching a pattern
+     *
+     * @returns List
+     */
+    static public method glob(String $pattern) {
+    }
+    static public method glob(String $pattern, Numerical $flags = 0) {
+    }
+
+    /**
+     * Tells whether the filename is a directory
+     */
+    static public method dir?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is executable
+     */
+    static public method executable?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is a regular file
+     */
+    static public method file?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is a symbolic link
+     */
+    static public method link?(String $filename) {
+    }
+
+    /**
+     * Tells whether a file exists and is readable
+     */
+    static public method readable?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is writable
+     */
+    static public method writable?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is a regular file
+     */
+    static public method file?(String $filename) {
+    }
+
+    /**
+     * Tells whether the filename is a regular file
+     */
+    static public method file?(String $filename) {
+    }
+
+    /**
+     * Create a hard link
+     */
+    static public method link(String $target, String $link) {
+    }
+
+    /**
+     * Create a soft link
+     */
+    static public method symlink(String $target, String $link) {
+    }
+
+
+    /**
+     * Makes directory
+     */
+    static public method mkdir(String $path) {
+    }
+    static public method mkdir(String $path, Numerical $mode = 0777) {
+    }
+    static public method mkdir(String $path, Numerical $mode = 0777, Boolean $include_parents = False) {
+    }
+
+    /**
+     * Returns information about a file path
+     */
+    static public method pathinfo(String $path) {
+    }
+    static public method pathinfo(String $path, Numerical $options) {
+    }
+
+    /**
+     * Returns canonicalized absolute pathname
+     */
+    static public method realpath(String $path) {
+    }
+
+    /**
+     * Renames a file or directory
+     */
+    static public method rename(String $oldname, String $newname) {
+    }
+
+    /**
+     * Sets modification time of file
+     */
+    static public method touch(String $path) {
+    }
+    static public method touch(String $path, Numerical $timestamp) {
+    }
+
+    /**
+     * Sets access time of file
+     */
+    static public method atouch(String $path) {
+    }
+    static public method atouch(String $path, Numerical $timestamp) {
+    }
+
+    static public method unlink(String $filename) {
+    }
+
+
+}

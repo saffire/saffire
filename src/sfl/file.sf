@@ -1,0 +1,235 @@
+/**
+ * This is the file class.
+ */
+class file {
+
+    const SEEK_SET = 0;
+    const SEEK_CUR = 1;
+    const SEEK_END = 2;
+
+
+    /**
+     * Closes an open file pointer
+     */
+    public method close() {
+    }
+
+    /**
+     * Returns if the file has been opened or not
+     */
+    public method open?() {
+    }
+
+    /**
+     * Returns if the file at its end
+     */
+    public method eof?() {
+    }
+
+    /**
+     * Flushes the output to a file
+     */
+    public method flush() {
+    }
+
+    /**
+     * Gets character from file pointer
+     */
+    public method getc() {
+    }
+
+    /**
+     * Gets line from file pointer and parse for CSV fields
+     */
+    public method getcsv(Numerical $length = 0, String $delimiter = ",", String $enclosure = "\"", String $escape = "\\") {
+    }
+
+    /**
+     * Gets line from file pointer
+     */
+    public method gets() {
+    }
+
+    /**
+     * Reads entire file into a string
+     */
+    public method get_contents() {
+    }
+
+    /**
+     * Write a string to a file
+     */
+    public method put_contents(String $contents) {
+    }
+
+    /**
+     * Gets last access time of file
+     */
+    public method atime() {
+    }
+
+    /**
+     * Gets inode change time of file
+     */
+    public method ctime() {
+    }
+
+    /**
+     * Gets file group
+     */
+    public method group() {
+    }
+
+    /**
+     * Gets file inode
+     */
+    public method inode() {
+    }
+
+    /**
+     * Gets file modification time
+     */
+    public method mtime() {
+    }
+
+    /**
+     * Gets file owner
+     */
+    public method owner() {
+    }
+
+    /**
+     * Gets file permissions
+     */
+    public method permissions() {
+    }
+
+    /**
+     * Gets file size
+     */
+    public method size() {
+    }
+
+    /**
+     * Gets file type
+     */
+    public method type() {
+    }
+
+    /**
+     * Portable advisory file locking
+     */
+    public method lock(Numerical $operation) {
+    }
+
+    /**
+     * Format line as CSV and write to file pointer
+     */
+    public method getcsv(List $fields, String $delimiter = ",", String $enclosure = "\"", String $escape = "\\") {
+    }
+
+    /**
+     * Read binary string
+     */
+    public method read() {
+    }
+    public method read(Numerical $lenght = -1) {
+    }
+
+    /**
+     * Parses input from a file according to a format
+     */
+    public method scanf(String $format, ...) {
+    }
+
+    /**
+     * Seeks on a file pointer
+     */
+    public method seek(Numerical $offset) {
+    }
+    public method seek(Numerical $offset, Numerical $whence = SEEK_SET) {
+    }
+
+    /**
+     * Gets information about a file using an open file pointer.
+     *
+     * @returns Hash
+     */
+    public method stat() {
+    }
+
+    /**
+     * Returns the current position of the file read/write pointer
+     */
+    public method tell() {
+    }
+
+    /**
+     * Truncates a file to a given length
+     */
+    public method truncate(Numerical $size) {
+    }
+
+    /**
+     * Binary-safe file write
+     */
+    public method write(String $contents) {
+    }
+    public method write(String $contents, Numerical $length) {
+    }
+
+    /**
+     * Gets information about a link
+     */
+    public method linkinfo() {
+    }
+
+    /**
+     * Returns the target of a symbolic link
+     */
+    public method readlink() {
+    }
+
+    /**
+     * Rewind the position of a file pointer
+     */
+    public method rewind() {
+    }
+
+    /**
+     *
+     */
+    public method rmdir(String $path) {
+    }
+    public method rmdir(String $path, Boolean $recursive = False) {
+    }
+
+
+    /**
+     * Sets modification time of file
+     */
+    public method touch() {
+    }
+    public method touch(Numerical $timestamp) {
+    }
+
+    /**
+     * Sets access time of file
+     */
+    public method atouch() {
+    }
+    public method atouch(Numerical $timestamp) {
+    }
+
+
+    public method unlink() {
+    }
+
+
+
+
+
+
+
+
+}

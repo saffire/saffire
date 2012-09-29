@@ -1,0 +1,15 @@
+/**
+ * This is the ipc class
+ */
+class ipc {
+    const MSG_IPC_NOWAIT    = 1;
+    const MSG_EAGAIN        = 2;
+    const MSG_ENOMSG        = 4;
+    const MSG_NOERROR       = 8;
+    const MSG_EXCEPT        = 16;
+
+    /*
+     * ftok()
+     */
+}
+

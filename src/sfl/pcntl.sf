@@ -1,0 +1,18 @@
+/**
+ * This is the pcntl class
+ */
+class pcntl {
+    /*
+     * alarm()
+     * exec()
+     * fork()
+     * getpriority()
+     * setpriority()
+     * signal()
+     * sigprocmask()
+     * sigtimedwait()
+     * sigwaitinfo()
+     * wait()
+     * waitpid()
+     */
+}

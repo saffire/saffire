@@ -1,0 +1,14 @@
+/**
+ * This is the ipc::memory class
+ */
+class ipc::memory {
+    /*
+     * close()
+     * delete()
+     * open()
+     * remove()
+     * read()
+     * size()
+     * write()
+     */
+}

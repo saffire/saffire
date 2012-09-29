@@ -70,7 +70,7 @@ static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
 
     if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
+        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     return p;
@@ -133,13 +133,13 @@ t_ast_element *ast_nop(void) {
  */
 t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
     if (src->type != typeOpr) {
-        yyerror("Cannot add to non-opr element");
+        yyerror("Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
     }
 
     // Resize operator memory
     src->opr.ops = smm_realloc(src->opr.ops, src->opr.nops * sizeof(t_ast_element));
     if (src->opr.ops == NULL) {
-        yyerror("Out of memory");
+        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Add new operator
@@ -158,7 +158,7 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     va_list ap;
 
     if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");
+        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     p->type = typeOpr;
