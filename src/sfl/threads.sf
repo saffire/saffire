@@ -1,0 +1,19 @@
+/**
+ * This is the thread class
+ */
+class threads {
+
+    /*
+     * active_count()
+     * current_thread()
+     * enumerate()
+     * event()
+     * start()
+     * interrupt()
+     * exit()
+     * allocate_lock()
+     * get_indent()
+     * stack_size()
+     */
+}
+
