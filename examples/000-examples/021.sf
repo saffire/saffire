@@ -30,9 +30,9 @@ class Color {
     }
 
     /**
-     * Constructor for integers
+     * Constructor for numericals
      */
-    public method ctor(Integer $pms) {
+    public method ctor(Numerical $pms) {
         // Check if this PMS color exists
         if ! $pms in self.$pms.keys() {
             throw Exception("PMS key not found!");
@@ -58,7 +58,7 @@ class Color {
     /**
      *
      */
-    public method ::+(Integer $pms) {
+    public method ::+(Numerical $pms) {
         return self.mix(Color($pms));
     }
 

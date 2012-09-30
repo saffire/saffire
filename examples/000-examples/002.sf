@@ -4,13 +4,19 @@
 
 $a = 1;
 $b = "foo";
-$c = $d;
+$c = False;
+
+$a.print();
+$b.print();
+$c.print();
 
 $c = $d || $b;
 
 $c = $d * $b;
 
 $c = $d * $b || $c ^ $a - -1;
+
+$c.print();
 
 /* Output:
 */
