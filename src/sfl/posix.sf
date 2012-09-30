@@ -1,0 +1,43 @@
+/**
+ * This is the posix class
+ */
+class posix {
+    /*
+     * access()
+     * ctermid()
+     * errno()
+     * get_last_error()
+     * get_cwd()
+     * get_egid()
+     * get_euid()
+     * get_gid()
+     * get_grgid()
+     * get_grnam()
+     * get_groups()
+     * get_login()
+     * get_pgid()
+     * get_pgrp()
+     * get_pid()
+     * get_ppid()
+     * get_pwnam()
+     * get_pwuid()
+     * get_rlimit()
+     * get_sid()
+     * get_uid()
+     * get_initgroups()
+     * isatty?()
+     * kill()
+     * mkfifo()
+     * mknod()
+     * set_egid()
+     * set_euid()
+     * set_gid()
+     * set_pgid()
+     * set_sid()
+     * set_uid()
+     * strerror()
+     * times()
+     * ttyname()
+     * uname()
+     */
+}

@@ -1,0 +1,18 @@
+/**
+ * This is the ipc::semaphore class
+ */
+class ipc::semaphore {
+    /*
+     * acquire()
+     * get()
+     * release()
+     * remove()
+     * attach()
+     * detach()
+     * get_var()
+     * has_var?()
+     * put_var()
+     * remove_var()
+     * remove()
+     */
+}

@@ -1,0 +1,14 @@
+/**
+ * This is the ipc::message class
+ */
+class ipc::message {
+    /*
+    * get_queue()
+    * queue_exists?()
+    * receive()
+    * remove_queue()
+    * send()
+    * set_queue()
+    * stat_queue()
+    */
+}
