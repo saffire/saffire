@@ -31,169 +31,314 @@
 #include "interpreter/saffire_interpreter.h"
 #include "compiler/parser.tab.h"
 #include "general/svar.h"
+#include "general/hashtable.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
+#include "object/object.h"
+#include "object/string.h"
+#include "object/null.h"
+#include "object/boolean.h"
 
-#define SI(p)   (saffire_interpreter(p))
-#define SI0(p)  (saffire_interpreter(p->opr.ops[0]))
-#define SI1(p)  (saffire_interpreter(p->opr.ops[1]))
-#define SI2(p)  (saffire_interpreter(p->opr.ops[2]))
+#define SI(p)   (_saffire_interpreter(p))
+#define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
+#define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
+#define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
+
+static int obj_idx = 0;
+
+t_hash_table *vars;
 
 
+/**
+ * Print out an error and exit
+ */
+static void saffire_error(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    printf("Error: ");
+    vprintf(str, args);
+    printf("\n");
+    va_end(args);
+    exit(1);
+}
 
-static int svar_idx = 0;
-
-svar *svar_temp_alloc(int type, char *s, long l) {
-    char str[512];
-    sprintf(str, "TMP-%d", svar_idx++);
-    svar *tmp = svar_alloc(type, str, s, l);
-    svar_print(tmp);
-    return tmp;
+static void saffire_warning(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    printf("Warning: ");
+    vprintf(str, args);
+    printf("\n");
+    va_end(args);
+    exit(1);
 }
 
 
-svar *saffire_interpreter(t_ast_element *p) {
-    svar *var, *var1, *var2, *tmp;
-    long i;
 
-    if (!p) return svar_temp_alloc(SV_NULL, NULL, 0);
+#define SNODE_NULL          0
+#define SNODE_OBJECT        1
+#define SNODE_METHOD        2
+#define SNODE_VARIABLE      3
+
+typedef struct _snode {
+    char    type;
+    void    *data;
+} t_snode;
+
+
+#define AF_READABLE 1           // Item is readable (usable for RHS)
+#define AF_WRITABLE 2           // Item is writable (usable for LHS)
+
+//
+//static int svar_idx = 0;
+//
+//svar *svar_temp_alloc(int type, char *s, long l) {
+//    char str[512];
+//    sprintf(str, "TMP-%d", svar_idx++);
+//    svar *tmp = svar_alloc(type, str, s, l);
+//    svar_print(tmp);
+//    return tmp;
+//}
+
+#define IS_OBJECT(snode)  snode.type == SNODE_OBJECT
+#define IS_METHOD(snode)  snode.type == SNODE_METHOD
+#define IS_VARIABLE(snode)  snode.type == SNODE_VARIABLE
+
+
+#define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                 ret->type = SNODE_NULL; \
+                                 ret->data = NULL; \
+                                 return ret; }
+
+#define RETURN_SNODE_OBJECT(obj) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                 ret->type = SNODE_OBJECT; \
+                                 ret->data = obj; \
+                                 return ret; }
+
+#define RETURN_SNODE_METHOD(method) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                 ret->type = SNODE_METHOD; \
+                                 ret->data = method; \
+                                 return ret; }
+
+#define RETURN_SNODE_VARIABLE(var) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                 ret->type = SNODE_VARIABLE; \
+                                 ret->data = var; \
+                                 return ret; }
+
+
+/**
+ *
+ */
+t_object *si_obj(t_ast_element *p, int idx) {
+    if (idx > p->opr.nops) {
+        saffire_warning("Warning, want index %d, but max is %d\n", idx, p->opr.nops);
+    }
+
+    t_snode *snode = p->opr.ops[idx];
+    if (snode->type != SNODE_OBJECT) {
+        saffire_warning("Warning, need an object, but got a %d\n", snode->type);
+    }
+    return snode->data;
+}
+
+
+/**
+ *
+ */
+t_snode *_saffire_interpreter(t_ast_element *p) {
+    t_object *obj, *obj1, *obj2, *obj3;
+    t_hash_table_bucket *htb;
+
+    if (!p) {
+        RETURN_SNODE_OBJECT(Object_Null);
+    }
 
     printf ("interpreting(%d)\n", p->type);
 
-    if (p->type == 1) {
-        p->type = 1;
-    }
-
+    wchar_t *wchar_tmp;
     switch (p->type) {
         case typeString :
-            printf ("string: %s\n", p->string.value);
-            return svar_temp_alloc(SV_STRING, p->string.value, 0);
+            printf ("new string object: %s\n", p->string.value);
+
+            // Allocate enough room to hold string in wchar and convert
+            wchar_tmp = (wchar_t *)malloc(strlen(p->string.value)*sizeof(wchar_t));
+            mbstowcs(wchar_tmp, p->string.value, strlen(p->string.value));
+
+            // create string object
+            obj = object_new(Object_String, wchar_tmp);
+
+            // Free tmp wide string
+            smm_free(wchar_tmp);
+            RETURN_SNODE_OBJECT(obj);
 
         case typeNumerical :
             printf ("numerical: %d\n", p->numerical.value);
-            return svar_temp_alloc(SV_LONG, NULL, p->numerical.value);
+            // Create numerical object
+            obj = object_new(Object_String, p->numerical.value);
+            RETURN_SNODE_OBJECT(obj);
 
         case typeIdentifier :
-            printf ("var: %s\n", p->identifier.name);
-            return svar_temp_alloc(SV_STRING, p->identifier.name, 0);
+            htb = ht_find(vars, p->string.value);
+            if (htb == NULL) {
+                ht_add(vars, p->string.value, Object_Null);    // create NULL var by default
+                htb = ht_find(vars, p->string.value);
+            }
 
-        case typeNull :
-            /* nop */
-            break;
+            // Do constant vars
+            obj = si_obj(p, 1);
+            if (strcasecmp(obj->string.value, "True") == 0) {
+                RETURN_SNODE_OBJECT(Object_True);
+            }
+            if (strcasecmp(obj->string.value, "False") == 0) {
+                RETURN_SNODE_OBJECT(Object_False);
+            }
+            if (strcasecmp(obj->string.value, "Null") == 0) {
+                RETURN_SNODE_OBJECT(Object_Null);
+            }
 
-        case typeClass :
-        case typeInterface :
-        case typeMethod :
-            break;
+            // Return variable, otherwise it's a method (name)
+            if (p->string.value[0] == '$') {
+                RETURN_SNODE_VARIABLE(htb->data);
+            } else {
+                RETURN_SNODE_METHOD(htb->data);
+            }
 
         case typeOpr :
             printf ("opr.oper(%d)\n", p->opr.oper);
             switch (p->opr.oper) {
-                case T_WHILE :
-                    while (svar_true(SI0(p))) {
-                        SI1(p);
+                case T_PROGRAM :
+                    printf ("Use statements:\n");
+                    si_obj(p, 0);
+                    printf ("Actual app:\n");
+                    si_obj(p, 1);
+                    break;
+
+                case T_TOP_STATEMENTS:
+                case T_USE_STATEMENTS:
+                case T_STATEMENTS :
+                    for (int i=0; i!=p->opr.nops; i++) {
+                        _saffire_interpreter(p->opr.ops[i]);
                     }
-                    return svar_temp_alloc(SV_NULL, NULL, 0);
+                    break;
+                case T_USE :
+                    // @TODO: Use statements are not operational
+                    saffire_warning("Use statements are not functional");
+                    break;
 
-                case T_IF:
-                    if (svar_true(SI0(p))) {
-                        SI1(p);
-                    } else if (p->opr.nops > 2) {
-                        SI2(p);
-                    }
-                    return svar_temp_alloc(SV_NULL, NULL, 0);
-
-                case '=' :
-                    // Since we are assigning, we know the first operand is the name (string)
-
-                    tmp = SI0(p);
-                    var = svar_find(tmp->val.s);
-                    if (var == NULL) {
-                        // Assign value, since it doesn't exist yet or anymore
-                        printf ("Primary allocation for '%s'\n", tmp->val.s);
-                        var = svar_alloc(SV_NULL, tmp->val.s, NULL, 0);
-                    };
-
-                    var1 = SI1(p);
-                    if (var1->type == SV_LONG) {
-                        printf("setting long: %ld\n", var1->val.l);
-                        var->type = SV_LONG;
-                        var->val.l = var1->val.l;
-                    } else {
-                        printf("setting string: %s\n", var1->val.s);
-                        var->type = SV_STRING;
-                        var->val.s = smm_strdup(var1->val.s);
-                    }
-
-                    svar_print(var);
-                    return var;
-
-                case ';' :
+                case T_EXPRESSIONS :
                     SI0(p);
-                    return SI1(p);
+                    break;
+
+                case T_ASSIGNMENT :
+                    htb = (t_hash_table_bucket *)SI0(p);
+                    if (strcmp(SI1(p)->str.value, "=") == 0) {
+                        printf("Assignment is not =\n");
+                        htb->data = SI2(p);
+                    }
+                    return htb->data;
+                    break;
+
+//                case T_WHILE :
+//                    while (svar_true(SI0(p))) {
+//                        SI1(p);
+//                    }
+//                    return svar_temp_alloc(SV_NULL, NULL, 0);
+//
+//                case T_IF:
+//                    if (svar_true(SI0(p))) {
+//                        SI1(p);
+//                    } else if (p->opr.nops > 2) {
+//                        SI2(p);
+//                    }
+//                    return svar_temp_alloc(SV_NULL, NULL, 0);
+
+                case T_METHOD_CALL :
+//                    obj = SI0(p);
+//                    method = SI1(p);
+//                    // @TODO: add Arguments
+//                    return object_call(obj, method, 0);
+                    break;
+//
+                case T_FQMN :
+                    //tmp = SI0(p);
+                    for (int i=0; i!=p->opr.nops; i++) {
+                        p->opr.ops[i];
+                    }
+                    break;
+//
+//                case ';' :
+//                    SI0(p);
+//                    return SI1(p);
+//                case '<' :
+//                        var1 = SI0(p);
+//                        var2 = SI0(p);
+//                        i = (var1->val.l < var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
+//
+//                case '>' :
+//                        var1 = SI0(p);
+//                        var2 = SI1(p);
+//                        i = (var1->val.l > var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
+//
+//                case T_GE :
+//                        var1 = SI0(p);
+//                        var2 = SI1(p);
+//                        i = (var1->val.l >= var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
+//
+//                case T_LE :
+//                        var1 = SI0(p);
+//                        var2 = SI1(p);
+//                        i = (var1->val.l <= var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
+//
+//                case T_NE :
+//                        var1 = SI0(p);
+//                        var2 = SI1(p);
+//                        i = (var1->val.l != var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
+//
+//                case T_EQ :
+//                        var1 = SI0(p);
+//                        var2 = SI1(p);
+//                        i = (var1->val.l == var2->val.l);
+//                        return svar_temp_alloc(SV_LONG, NULL, i);
 
                 case '+' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-
-                        svar_print(var1);
-                        svar_print(var2);
-
-                        i = (var1->val.l + var2->val.l);
-                        printf("ADD: %ld + %ld = %ld\n", var1->val.l, var2->val.l, i);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::add", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
                 case '-' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        return svar_temp_alloc(SV_LONG, NULL, (var1->val.l - var2->val.l));
-
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::sub", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
                 case '*' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        return svar_temp_alloc(SV_LONG, NULL, (var1->val.l * var2->val.l));
-
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::mul", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
                 case '/' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = floor(var1->val.l / var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case '<' :
-                        var1 = SI0(p);
-                        var2 = SI0(p);
-                        i = (var1->val.l < var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case '>' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l > var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case T_GE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l >= var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case T_LE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l <= var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case T_NE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l != var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
-                case T_EQ :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l == var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::div", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
+                case T_AND :
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::and", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
+                case T_OR :
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::or", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
+                case '^' :
+                          obj1 = SI0(p);
+                          obj2 = SI1(p);
+                          obj = object_call(obj1, "::xor", 1, obj2);
+                          RETURN_SNODE_OBJECT(obj);
 
                 default:
                     printf("Unhandled opcode: %d\n", p->opr.oper);
@@ -202,5 +347,16 @@ svar *saffire_interpreter(t_ast_element *p) {
             }
             break;
     }
-    return 0;
+    RETURN_SNODE_NULL();
+}
+
+
+/**
+ *
+ */
+void saffire_interpreter(t_ast_element *p) {
+    vars = ht_create();
+    _saffire_interpreter(p);
+    ht_destroy(vars);
+//    return ret;
 }

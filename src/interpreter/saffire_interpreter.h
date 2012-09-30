@@ -28,8 +28,7 @@
 #define __SAFFIRE_INTERPRETER_H__
 
     #include "compiler/ast.h"
-    #include "general/svar.h"
 
-    svar *saffire_interpreter(t_ast_element *p);
+    void saffire_interpreter(t_ast_element *p);
 
 #endif

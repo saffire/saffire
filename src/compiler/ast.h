@@ -75,6 +75,7 @@
 
     typedef struct ast_element {
         nodeEnum type;              // Type of the node
+        int flags;                  // Current flag (used for interpreting)
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string

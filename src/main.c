@@ -28,10 +28,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <locale.h>
 #include "dot/dot.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "object/object.h"
+#include "interpreter/saffire_interpreter.h"
 
 #include "version.h"
 
@@ -135,6 +137,10 @@ void parse_options(int argc, char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
+    setlocale(LC_ALL,"");
+    object_init();
+
+
     parse_options(argc, argv);
 
     // Open file, or use stdin if needed
@@ -153,6 +159,9 @@ int main(int argc, char *argv[]) {
     if (generate_dot) {
         // generate DOT file
         dot_generate(ast_root, dot_file);
+    } else {
+        // Otherwise interpret it
+        saffire_interpreter(ast_root);
     }
 
     // Release memory of ast_root
