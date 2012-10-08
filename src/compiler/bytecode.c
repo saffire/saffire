@@ -30,63 +30,108 @@
 #include "compiler/ast.h"
 #include "general/dll.h"
 #include "general/smm.h"
+#include "version.h"
 
 
 /**
- *
+ * Check if a constant already is present inside the bytecode structure
  */
-static void _bytecode_parse_constants(t_ast_element *p, t_dll *constant_dll, int *len) {
-    t_bytecode_constant *constant;
+static int _bytecode_constant_exists(t_bytecode *bc, int type, void *value) {
+    t_dll_element *e = DLL_HEAD(bc->constant_dll);
+    long l;
+
+    while (e) {
+        t_bytecode_constant *constant = e->data;
+        if (constant->hdr.type == type) {
+            switch (constant->hdr.type) {
+                case BYTECODE_CONST_NULL :
+                    return 1;
+                    break;
+                case BYTECODE_CONST_STRING :
+                    if (strcmp(constant->data.s, value) == 0) return 1;
+                    break;
+                case BYTECODE_CONST_NUMERICAL :
+                    printf("Checking %d against %d\n", constant->data.l, (long)value);
+                    if (constant->data.l == (long)value) return 1;
+                    break;
+                case BYTECODE_CONST_BOOLEAN :
+                    if (constant->data.l == (long)value) return 1;
+                    break;
+                case BYTECODE_CONST_REGEX :
+                    break;
+            }
+        }
+        e = DLL_NEXT(e);
+    }
+
+    return 0;
+}
+
+/**
+ * Parse the AST and add all constants
+ */
+static void _bytecode_parse_constants(t_ast_element *p, t_bytecode *bc) {
+    t_bytecode_constant *constant = NULL;
     if (!p) return;
 
     switch (p->type) {
         case typeString :
-            constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-            constant->type = CONST_STRING;
-            constant->length = 3 + strlen(p->string.value);
-            constant->data = strdup(p->string.value);
-            dll_append(constant_dll, constant);
+            printf("STRING: '%s'\n", p->string.value);
+            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->string.value)) {
+                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+                constant->hdr.type = BYTECODE_CONST_STRING;
+                constant->hdr.length = strlen(p->string.value);
+                constant->data.s = smm_strdup(p->string.value);
+                dll_append(bc->constant_dll, constant);
+            }
             break;
         case typeNumerical :
-            constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-            constant->type = CONST_NUMERICAL;
-            constant->length = 3 + sizeof(long);
-            constant->data = (long *)malloc(sizeof(long));
-            constant->data = &p->numerical.value;
-            dll_append(constant_dll, constant);
+            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NUMERICAL, (void *)p->numerical.value)) {
+                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+                constant->hdr.type = BYTECODE_CONST_NUMERICAL;
+                constant->hdr.length = sizeof(long);
+                constant->data.l = p->numerical.value;
+                dll_append(bc->constant_dll, constant);
+            }
             break;
         case typeIdentifier :
-            constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-            constant->type = CONST_STRING;
-            constant->length = 3 + strlen(p->identifier.name);
-            constant->data = strdup(p->identifier.name);
-            dll_append(constant_dll, constant);
+            if (p->string.value[0] == '$') break;
+            printf("IDENT: '%s'\n", p->string.value);
+            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->identifier.name)) {
+                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+                constant->hdr.type = BYTECODE_CONST_STRING;
+                constant->hdr.length = strlen(p->identifier.name);
+                constant->data.s = smm_strdup(p->identifier.name);
+                dll_append(bc->constant_dll, constant);
+            }
+            break;
+        case typeNull :
+            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NULL, NULL)) {
+                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+                constant->hdr.type = BYTECODE_CONST_NULL;
+                constant->hdr.length = 0;
+                constant->data.l = 0;
+                dll_append(bc->constant_dll, constant);
+            }
             break;
         case typeOpr :
             // Plot all the operands
             for (int i=0; i!=p->opr.nops; i++) {
-                _bytecode_parse_constants(p->opr.ops[i], constant_dll, len);
+                _bytecode_parse_constants(p->opr.ops[i], bc);
             }
             break;
-        case typeNull :
-            constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-            constant->type = CONST_NULL;
-            constant->length = 3;
-            constant->data = 0;
-            dll_append(constant_dll, constant);
-            break;
         case typeInterface :
-            _bytecode_parse_constants(p->interface.implements, constant_dll, len);
-            _bytecode_parse_constants(p->interface.body, constant_dll, len);
+            _bytecode_parse_constants(p->interface.implements, bc);
+            _bytecode_parse_constants(p->interface.body, bc);
             break;
         case typeClass :
-            _bytecode_parse_constants(p->class.extends, constant_dll, len);
-            _bytecode_parse_constants(p->class.implements, constant_dll, len);
-            _bytecode_parse_constants(p->class.body, constant_dll, len);
+            _bytecode_parse_constants(p->class.extends, bc);
+            _bytecode_parse_constants(p->class.implements, bc);
+            _bytecode_parse_constants(p->class.body, bc);
             break;
         case typeMethod:
-            _bytecode_parse_constants(p->method.arguments, constant_dll, len);
-            _bytecode_parse_constants(p->method.body, constant_dll, len);
+            _bytecode_parse_constants(p->method.arguments, bc);
+            _bytecode_parse_constants(p->method.body, bc);
             break;
         default :
             printf("Unknown type!");
@@ -97,52 +142,152 @@ static void _bytecode_parse_constants(t_ast_element *p, t_dll *constant_dll, int
 
 
 /**
+ * Returns the length of byte from a (filled) bytecode structure.
+ */
+static long bytecode_calculate_length(t_bytecode *bc) {
+    t_dll_element *e;
+    long len = sizeof(t_bytecode_header);
+
+    // Calculate and add constant lengths
+    if (bc->constant_dll) {
+        e = DLL_HEAD(bc->constant_dll);
+        for (int i=0; i!=bc->constant_dll->size; i++) {
+            t_bytecode_constant *constant = e->data;
+            len += sizeof(t_bytecode_constant_header) + constant->hdr.length;
+            e = DLL_NEXT(e);
+        }
+    }
+
+    // Calculate and add class lengths
+    if (bc->class_dll) {
+        e = DLL_HEAD(bc->class_dll);
+        for (int i=0; i!=bc->class_dll->size; i++) {
+            t_bytecode_constant *constant = e->data;
+            len += sizeof(t_bytecode_constant_header) + constant->hdr.length;
+            e = DLL_NEXT(e);
+        }
+    }
+
+    return len;
+}
+
+/**
  *
  */
-char *bytecode_generate(t_ast_element *p, char *source_file, int *len) {
+static void bytecode_generate_buffer(t_bytecode *bc) {
     t_dll_element *e;
-    len = 0;
-
-    // Create initial header
-    t_bytecode_header *hdr = (t_bytecode_header *)smm_malloc(sizeof(t_bytecode_header));
-    memset(hdr, 0, sizeof(t_bytecode_header));
-    len += sizeof(t_bytecode_header);
-
-    // Fetch mtime from source file
-    struct stat sb;
-    long mtime = 0;
-    if (! stat(source_file, &sb)) {
-        mtime = sb.st_mtime;
-    }
-
-    hdr->magic = MAGIC_HEADER;
-    hdr->timestamp = mtime;
-
-
-    // Create and parse the constant DLL
-    t_dll *constant_dll = dll_init();
-    _bytecode_parse_constants(p, constant_dll, len);
-
-
-    // Create data buffer and fill
-    char *buf = (char *)smm_malloc(len);
     int bufpos = 0;
-    memcpy(buf+bufpos, hdr, sizeof(t_bytecode_header));
-    bufpos += sizeof(t_bytecode_header);
 
-    // Add all entries to the index
-    e = DLL_HEAD(constant_dll);
-    for (int i=0; i!=constant_dll->size; i++) {
+    // Create our binary bytecode buffer
+    bc->length = bytecode_calculate_length(bc);
+    bc->buffer = (char *)smm_malloc(bc->length);
+
+    // Skip the header. We still need to fill some vars first
+    bufpos = sizeof(t_bytecode_header);
+
+    printf("CDS: %d\n", bc->constant_dll->size);
+    printf("CDO: %08X (%d)\n", bufpos, bufpos);
+
+    // Add constant header vars
+    bc->header->constant_count = bc->constant_dll->size;
+    bc->header->constant_offset = bufpos;
+
+    // Add all constant entries
+    e = DLL_HEAD(bc->constant_dll);
+    for (int i=0; i!=bc->constant_dll->size; i++) {
         t_bytecode_constant *constant = e->data;
-        memcpy(buf+bufpos, constant, constant->length);
-        bufpos += constant->length;
-        e = e->next;
+
+        // Save header
+        memcpy(bc->buffer+bufpos, &constant->hdr, sizeof(t_bytecode_constant_header));
+        bufpos += sizeof(t_bytecode_constant_header);
+
+        // Save additional data
+        if (constant->hdr.length) {
+            if (constant->hdr.type == BYTECODE_CONST_STRING || constant->hdr.type == BYTECODE_CONST_REGEX) {
+                memcpy(bc->buffer+bufpos, constant->data.s, constant->hdr.length);
+            } else {
+                memcpy(bc->buffer+bufpos, &constant->data.l, constant->hdr.length);
+            }
+            bufpos += constant->hdr.length;
+        }
+
+        e = DLL_NEXT(e);
     }
 
 
-    // Free all
-    dll_free(constant_dll);
-    smm_free(hdr);
+    // Add class header vars
+    bc->header->class_count = 0x0;
+    bc->header->class_offset = bufpos;
 
-    return buf;
+    // Add all constant entries
+    e = DLL_HEAD(bc->class_dll);
+    // @TODO: fill this
+
+    // Finally, go back and fill the header.
+    bufpos = 0;
+    memcpy(bc->buffer+bufpos, bc->header, sizeof(t_bytecode_header));
+}
+
+
+
+/**
+ * Allocate the bytecode structure
+ */
+static t_bytecode *bytecode_structure_alloc(void) {
+    t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
+
+    bc->length = 0;
+    bc->header = (t_bytecode_header *)smm_malloc(sizeof(t_bytecode_header));
+    bc->constant_dll = dll_init();
+    bc->class_dll = dll_init();
+
+    memset(bc->header, 0, sizeof(t_bytecode_header));
+
+    return bc;
+}
+
+
+/**
+ * Release the bytecode structure
+ */
+void bytecode_free(t_bytecode *bc) {
+    dll_free(bc->class_dll);
+    dll_free(bc->constant_dll);
+    smm_free(bc->header);
+    smm_free(bc);
+}
+
+
+/**
+ * Generate a complete binary bytecode buffer from an AST.
+ */
+t_bytecode *bytecode_generate(t_ast_element *p, char *source_file) {
+    t_bytecode *bc = bytecode_structure_alloc();
+
+    // Fetch modification time from source file and fill into header
+    struct stat sb;
+    if (! stat(source_file, &sb)) {
+        bc->header->timestamp = sb.st_mtime;
+    }
+    bc->header->magic = MAGIC_HEADER;
+    bc->header->version = saffire_version_binary;
+
+
+    _bytecode_parse_constants(p, bc);
+    //_bytecode_parse_classes(p, bc);
+
+    bytecode_generate_buffer(bc);
+    return bc;
+}
+
+
+char *bytecode_generate_destfile(const char *src) {
+    printf("SRC: '%s'\n", src);
+    char *dst = (char *)smm_malloc(strlen(src)+2);
+    memset(dst, 0, strlen(src)+2);
+    strcpy(dst,src);
+    dst[strlen(dst)] = 'c'; // Add extra c to create *.sfc
+
+    printf("DST: '%s'\n", dst);
+    return dst;
 }

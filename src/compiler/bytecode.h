@@ -29,33 +29,29 @@
 
     #include <stdint.h>
     #include "compiler/ast.h"
+    #include "general/dll.h"
 
-    #define VERSION_MAJOR(v)    ((v >> 12) & 0x0004)
-    #define VERSION_MINOR(v)    ((v >>  8) & 0x0004)
-    #define VERSION_BUILD(v)    ((v >>  0) & 0x0008)
-    #define VERSION(maj, min, build) (maj << 12 | min << 8 | build)
+    #define PACKED  __attribute__((packed))
 
-    #define MAGIC_HEADER 0x53464243
+    #define MAGIC_HEADER 0x43424653     // big-endian SFBC (saffire bytecode)
+
+    #define BYTECODE_CONST_NULL          0
+    #define BYTECODE_CONST_STRING        1
+    #define BYTECODE_CONST_NUMERICAL     2
+    #define BYTECODE_CONST_BOOLEAN       3
+    #define BYTECODE_CONST_REGEX         4
 
     typedef struct _bytecode_header {
-        uint64_t   magic;              // magic number 0x53464243 (SFBC)
-        uint64_t   timestamp;          // Modified timestamp for source file
-        uint64_t   version;            // Version
+        uint32_t   magic;              // magic number 0x53464243 (SFBC)
+        uint32_t   timestamp;          // Modified timestamp for source file
+        uint32_t   version;            // Version
 
-//        uint16_t   index_count;        // Number of indexes
-//        uint32_t   index_offset;       // Start of the first index
-
-        uint16_t   constant_count;     // Number of constants in this file
+        uint32_t   constant_count;     // Number of constants in this file
         uint32_t   constant_offset;    // Start of the first constant
 
-        uint16_t   class_count;        // Number of classes in this file
+        uint32_t   class_count;        // Number of classes in this file
         uint32_t   class_offset;       // Start of the first classes
-    } t_bytecode_header;
-
-//    typedef struct _bytecode_index {
-//        uint16_t  length;                 // Length of the index
-//        uint32_t  offset;                 // Actual offset of the index
-//    } t_bytecode_index;
+    } PACKED t_bytecode_header;
 
     typedef struct _bytecode_class {
         uint32_t   name_index;         // Index to the name of the class
@@ -69,19 +65,29 @@
         uint32_t   property_offset;    // Start of the first property (or NULL when no properties)
         uint16_t   method_count;       // Number of properties
         uint32_t   method_offset;      // Start of the first method (or NULL when no methods)
-    } t_bytecode_class;
+    } PACKED t_bytecode_class;
 
-    #define CONST_NULL          0
-    #define CONST_STRING        1
-    #define CONST_NUMERICAL     2
-    #define CONST_BOOLEAN       3
-    #define CONST_REGEX         4
+    typedef struct _bytecode_constant_header {
+        uint32_t   length;          // Length of data
+        uint8_t    type;            // Type of the constant
+    } PACKED t_bytecode_constant_header;
 
     typedef struct _bytecode_constant {
-        uint8_t    type;            // Type of the constant
-        uint16_t   length;          // Length of data
-        void       *data;
+        t_bytecode_constant_header hdr;
+        union {
+            char *s;
+            long l;
+        } data;
     } t_bytecode_constant;
+
+    typedef struct _bytecode {
+        long length;                // Lenght of the complete structure (0 is not known yet)
+        char *buffer;               // Binary buffer
+        t_bytecode_header *header;
+        t_dll *constant_dll;
+        t_dll *class_dll;
+    } t_bytecode;
+
 
 //    typedef struct _bytecode_property {
 //    } t_bytecode_property;
@@ -97,6 +103,8 @@
 //    } t_bytecode_line;
 
 
-    char *bytecode_generate(t_ast_element *p, char *source_file, int *len);
+    t_bytecode *bytecode_generate(t_ast_element *p, char *source_file);
+    void bytecode_free(t_bytecode *bc);
+    char *bytecode_generate_destfile(const char *src);
 
 #endif

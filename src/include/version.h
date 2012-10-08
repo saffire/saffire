@@ -30,11 +30,18 @@
     #define saffire_version_major   "0"
     #define saffire_version_minor   "0"
     #define saffire_version_build   "1"
+    #define saffire_version_binary ((1 << 24) | (2 << 12) | (3 << 0))
 
     #define saffire_version       "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
     #define saffire_version_wide   L"" saffire_version
     #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
     #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__
+
+    #define VERSION_MAJOR(v)    ((v >> 12) & 0x0004)
+    #define VERSION_MINOR(v)    ((v >>  8) & 0x0004)
+    #define VERSION_BUILD(v)    ((v >>  0) & 0x0008)
+
+#endif
 
 #endif
 

@@ -139,6 +139,11 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
     return 1;
 }
 
+static const char *get_filename_extension(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return "";
+    return dot + 1;
+}
 
 /**
  * Main Saffire entry point
