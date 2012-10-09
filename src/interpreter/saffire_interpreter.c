@@ -47,8 +47,6 @@ extern char *get_token_string(int token);
 #define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
 #define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
 
-static int obj_idx = 0;
-
 t_hash_table *vars;
 
 
@@ -79,31 +77,18 @@ static void saffire_warning(char *str, ...) {
 
 #define SNODE_NULL          0
 #define SNODE_OBJECT        1
-#define SNODE_OBJECT        1
 #define SNODE_METHOD        2
 #define SNODE_VARIABLE      3
-#define SNODE_BOOL          4
 
 typedef struct _snode {
     char    type;
     void    *data;
 } t_snode;
 
-//
-//static int svar_idx = 0;
-//
-//svar *svar_temp_alloc(int type, char *s, long l) {
-//    char str[512];
-//    sprintf(str, "TMP-%d", svar_idx++);
-//    svar *tmp = svar_alloc(type, str, s, l);
-//    svar_print(tmp);
-//    return tmp;
-//}
 
 #define IS_OBJECT(snode)  (snode->type == SNODE_OBJECT)
 #define IS_METHOD(snode)  (snode->type == SNODE_METHOD)
 #define IS_VARIABLE(snode)  (snode->type == SNODE_VARIABLE)
-#define IS_BOOL(snode)  (snode->type == SNODE_BOOL)
 
 #define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
                                  ret->type = SNODE_NULL; \
@@ -123,15 +108,6 @@ typedef struct _snode {
 #define RETURN_SNODE_VARIABLE(var) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
                                  ret->type = SNODE_VARIABLE; \
                                  ret->data = var; \
-                                 return ret; }
-
-#define RETURN_SNODE_TRUE() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_BOOL; \
-                                 ret->data = (void *)1; \
-                                 return ret; }
-#define RETURN_SNODE_FALSE() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_BOOL; \
-                                 ret->data = (void *)0; \
                                  return ret; }
 
 
@@ -162,15 +138,13 @@ static int si_writable(t_snode *node) {
 
 
 
-static int si_cmp(t_ast_element *p, int cmp);
+static t_snode *si_cmp(t_ast_element *p, int cmp);
 
 
 static t_object *si_get_object(t_snode *node) {
     t_object *obj;
 
     if (IS_VARIABLE(node)) {
-        printf("This is a variable\n");
-
         // Fetch object where this var references to, and add it to the destination var
         t_hash_table_bucket *htb = node->data;
         obj = (t_object *)htb->data;
@@ -179,8 +153,6 @@ static t_object *si_get_object(t_snode *node) {
         }
 
     } else {
-        printf("This is NOT a variable\n");
-
         // Fetch object where this var references to, and add it to the destination var
         obj = (t_object *)node->data;
     }
@@ -200,8 +172,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     if (!p) {
         RETURN_SNODE_OBJECT(Object_Null);
     }
-
-    printf ("\ninterpreting(%d)\n", p->type);
 
     wchar_t *wchar_tmp;
     switch (p->type) {
@@ -255,20 +225,16 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             printf ("opr.oper: %s(%d)\n", get_token_string(p->opr.oper), p->opr.oper);
             switch (p->opr.oper) {
                 case T_PROGRAM :
-                    printf("Use statements:\n");
-                    printf("===============\n");
                     SI0(p);
-                    printf("Actual app:\n");
-                    printf("===========\n");
                     SI1(p);
                     break;
-
                 case T_TOP_STATEMENTS:
                 case T_USE_STATEMENTS:
                 case T_STATEMENTS :
                     for (int i=0; i!=CNT(p); i++) {
                         _saffire_interpreter(p->opr.ops[i]);
                     }
+                    RETURN_SNODE_NULL();
                     break;
                 case T_USE :
                     // @TODO: Use statements are not operational
@@ -276,23 +242,25 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 
                 case T_EXPRESSIONS :
-                    return SI0(p);
+                    // Return first expression result
+                    for (int i=0; i!=CNT(p); i++) {
+                        node1 = _saffire_interpreter(p->opr.ops[i]);
+                        if (i == 0) node2 = node1;
+                    }
+                    return node2;
                     break;
 
                 case T_ASSIGNMENT :
-                    // LHS should be a variable
                     node1 = SI0(p);
                     if (! IS_VARIABLE(node1)) {
-                        saffire_error("Variable is not writable!");
+                        saffire_error("Left hand side is not writable!");
                     }
 
                     // @TODO: operator should be =, but we don't check for now.. :/
 //                    node2 = SI1(p);
 
-
                     // Evaluate
                     node3 = SI2(p);
-
 
                     // Already something present, since we are loosing this, decrease it's reference count
                     t_hash_table_bucket *htb = node1->data;
@@ -301,6 +269,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         object_dec_ref(obj1);
                     }
 
+                    // Get the object and save it in our variable hashtable
                     obj1 = si_get_object(node3);
                     htb->data = obj1;
 
@@ -317,13 +286,19 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                 case T_IF:
                     node1 = SI0(p);
-                    if (node1->data == (void *)1) {
+                    obj1 = si_get_object(node1);
+
+                    // Check if it's already a boolean. If not, cast this object to boolean
+                    if (! OBJECT_IS_BOOLEAN(obj1)) {
+                        obj1 = object_call(obj1, "boolean", 0);
+                    }
+
+                    if (obj1 == Object_True) {
                         node2 = SI1(p);
                     } else if (CNT(p) > 2) {
                         node2 = SI2(p);
                     }
 
-                    RETURN_SNODE_OBJECT(node2->data);
                     break;
 
                 case T_METHOD_CALL :
@@ -344,39 +319,24 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 //                    }
                     break;
 
-//                case ';' :
-//                    SI0(p);
-//                    return SI1(p);
-
                 case '<' :
-                        if (si_cmp(p, COMPARISON_LT)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_LT);
                         break;
-
                 case '>' :
-                        if (si_cmp(p, COMPARISON_GT)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_GT);
                         break;
-
                 case T_GE :
-                        if (si_cmp(p, COMPARISON_GE)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_GE);
                         break;
                 case T_LE :
-                        if (si_cmp(p, COMPARISON_LE)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_LE);
                         break;
-
                 case T_NE :
-                        if (si_cmp(p, COMPARISON_NE)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_NE);
                         break;
-
                 case T_EQ :
-                        if (si_cmp(p, COMPARISON_EQ)) RETURN_SNODE_TRUE();
-                        RETURN_SNODE_FALSE();
+                        return si_cmp(p, COMPARISON_EQ);
                         break;
-
 
 //                case '+' :
 //                          obj1 = SI0(p);
@@ -429,7 +389,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 /**
  * Compare the objects according to the comparison (returns 0 or 1)
  */
-static int si_cmp(t_ast_element *p, int cmp) {
+static t_snode *si_cmp(t_ast_element *p, int cmp) {
     t_snode *node1 = SI0(p);
     t_snode *node2 = SI1(p);
 
@@ -438,12 +398,12 @@ static int si_cmp(t_ast_element *p, int cmp) {
 
     t_object *obj1 = si_get_object(node1);
     t_object *obj2 = si_get_object(node2);
-    printf ("T1: %d  T2: %d", obj1->type, obj2->type);
     if (obj1->type != obj2->type) {
         saffire_error("Types on comparison are not equal");
     }
 
-    return object_comparison(obj1, cmp, obj2);
+    t_object *obj = object_comparison(obj1, cmp, obj2);
+    RETURN_SNODE_OBJECT(obj);
 }
 
 

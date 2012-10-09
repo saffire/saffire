@@ -157,7 +157,7 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
 /**
  * Calls an comparison function. Returns true or false
  */
-int object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     t_object *cur_obj = obj1;
     int (*func)(t_object *, t_object *);
 
@@ -190,7 +190,8 @@ int object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     int ret = func(obj1, obj2);
 
     printf ("Result from the comparison: %d\n", ret);
-    return ret;
+
+    return ret ? Object_True : Object_False;
 }
 
 

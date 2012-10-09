@@ -101,6 +101,11 @@
     #define OBJECT_FLAG_IMMUTABLE     1            /* Object is immutable */
     #define OBJECT_FLAG_STATIC        2            /* Do not free memory for this object */
 
+
+    #define OBJECT_IS_BOOLEAN(obj) \
+        (obj->type == objectTypeBoolean)
+
+
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[7];
     typedef enum { objectTypeAny, objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString } objectTypeEnum;
@@ -187,7 +192,7 @@
     void object_fini(void);
     t_object *object_call(t_object *obj, char *method, int arg_count, ...);
     t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...);
-    int object_comparison(t_object *obj1, int comparison, t_object *obj2);
+    t_object *object_comparison(t_object *obj1, int comparison, t_object *obj2);
     void object_free(t_object *obj);
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *dll, const char *speclist, ...);

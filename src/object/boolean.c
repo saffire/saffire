@@ -195,22 +195,40 @@ SAFFIRE_OPERATOR_METHOD(boolean, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(boolean, eq) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value == other->value);
 }
 SAFFIRE_COMPARISON_METHOD(boolean, ne) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value != other->value);
 }
 SAFFIRE_COMPARISON_METHOD(boolean, lt) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value < other->value);
 }
 SAFFIRE_COMPARISON_METHOD(boolean, gt) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value > other->value);
 }
 SAFFIRE_COMPARISON_METHOD(boolean, le) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value <= other->value);
 }
 SAFFIRE_COMPARISON_METHOD(boolean, ge) {
-    return 0;
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value >= other->value);
 }
 
 
@@ -285,6 +303,6 @@ t_object_comparisons boolean_cmps = {
     NULL
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("bool", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_NO_FLAGS, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("bool", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("bool", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_NO_FLAGS, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };

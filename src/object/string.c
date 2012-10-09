@@ -263,28 +263,52 @@ SAFFIRE_OPERATOR_METHOD(string, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(string, eq) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) == 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, ne) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) != 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, lt) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) == -1);
 }
 SAFFIRE_COMPARISON_METHOD(string, gt) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) == 1);
 }
 SAFFIRE_COMPARISON_METHOD(string, le) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) <= 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, ge) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    return (wcscmp(self->value, other->value) >= 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, in) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    if (wcsstr(self->value, other->value) != NULL);
 }
 SAFFIRE_COMPARISON_METHOD(string, ni) {
-    return 0;
+    t_string_object *self = (t_string_object *)_self;
+    t_string_object *other = (t_string_object *)_other;
+
+    if (wcsstr(self->value, other->value) == NULL);
 }
 
 
