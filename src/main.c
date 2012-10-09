@@ -150,8 +150,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Compile file into a tree
-    ast_compile_tree(fp);
+    // Generate source file into an AST tree
+    ast_generate_tree(fp);
 
     // Close file
     fclose(fp);

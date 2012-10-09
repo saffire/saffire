@@ -208,24 +208,13 @@ static t_object *obj_clone(t_object *obj) {
 t_object_funcs base_funcs = {
         NULL,               // Allocate a new string object
         NULL,               // Free a string object
-        obj_clone           // Clone a string object
+        obj_clone,          // Clone a string object
+        NULL
 };
 
-t_object_operators base_ops = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", objectTypeBase, &base_ops, OBJECT_NO_FLAGS, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, NULL, NULL, OBJECT_NO_FLAGS, &base_funcs, NULL)
 };
 

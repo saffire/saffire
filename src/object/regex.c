@@ -244,8 +244,8 @@ static t_object *obj_new(va_list arg_list) {
     memcpy(new_obj, Object_Regex, sizeof(t_regex_object));
 
 
-    wchar_t *value = va_arg(arg_list, wchar_t *);
-    char *buf = wctou8(value);
+    new_obj->regex_string = va_arg(arg_list, wchar_t *);
+    char *buf = wctou8(new_obj->regex_string);
 
     int pcre_options = va_arg(arg_list, int);
 
@@ -259,29 +259,26 @@ static t_object *obj_new(va_list arg_list) {
 }
 
 
+char global_buf[1024];
+static char *obj_debug(struct _object *obj) {
+    char *buf = wctou8(((t_regex_object *)obj)->regex_string);
+    memcpy(global_buf, buf, 1024);
+    global_buf[1023] = 0;
+    smm_free(buf);
+    return global_buf;
+}
+
 // Regex object management functions
 t_object_funcs regex_funcs = {
         obj_new,              // Allocate a new regex object
         obj_free,             // Free a regex object
-        obj_clone             // Clone a regex object
-};
-
-t_object_operators regex_ops = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+        obj_clone,            // Clone a regex object
+        obj_debug
 };
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectTypeRegex, &regex_ops, OBJECT_NO_FLAGS, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, NULL, NULL, OBJECT_NO_FLAGS, &regex_funcs),
     NULL,
     L'\0',
 };

@@ -40,9 +40,19 @@
 #include <stdarg.h>
 
 
+#ifdef __DEBUG
+    t_dll *object_dll;
+    t_hash_table *object_hash;
+#endif
+
+
 // Object type string constants
 const char *objectTypeNames[7] = { "object", "base", "boolean", "null", "numerical", "regex", "string" };
 
+
+int object_is_immutable(t_object *obj) {
+    return ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE);
+}
 
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
@@ -144,6 +154,45 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
     return ret;
 }
 
+/**
+ * Calls an comparison function. Returns true or false
+ */
+int object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+    t_object *cur_obj = obj1;
+    int (*func)(t_object *, t_object *);
+
+    // Try and find the correct operator (might be found of the base classes!)
+    while (cur_obj && cur_obj->comparisons != NULL) {
+        printf(">>> Finding comparison '%d' on object %s\n", cmp, cur_obj->name);
+
+        switch (cmp) {
+            case COMPARISON_EQ : func = cur_obj->comparisons->eq; break;
+            case COMPARISON_NE : func = cur_obj->comparisons->ne; break;
+            case COMPARISON_LT : func = cur_obj->comparisons->lt; break;
+            case COMPARISON_LE : func = cur_obj->comparisons->le; break;
+            case COMPARISON_GT : func = cur_obj->comparisons->gt; break;
+            case COMPARISON_GE : func = cur_obj->comparisons->ge; break;
+            case COMPARISON_IN : func = cur_obj->comparisons->in; break;
+            case COMPARISON_NI : func = cur_obj->comparisons->ni; break;
+        }
+
+        // Found a function? We're done!
+        if (func) break;
+
+        // Try again in the parent object
+        cur_obj = cur_obj->parent;
+    }
+
+
+    printf(">>> Calling comparison %d on object %s\n", cmp, obj1->name);
+
+    // Call the actual equality operator and return the result
+    int ret = func(obj1, obj2);
+
+    printf ("Result from the comparison: %d\n", ret);
+    return ret;
+}
+
 
 /**
  * Clones an object and returns new object
@@ -178,6 +227,13 @@ void object_dec_ref(t_object *obj) {
 }
 
 
+char *object_debug(t_object *obj) {
+    if (obj && obj->funcs && obj->funcs->debug) {
+        return obj->funcs->debug(obj);
+    }
+    return "";
+}
+
 /**
  * Free an object (if needed)
  */
@@ -185,7 +241,7 @@ void object_free(t_object *obj) {
     if (! obj) return;
 
     // Decrease reference count and check if we need to free
-    object_dec_ref(obj);
+//    object_dec_ref(obj);
     if (obj->ref_count > 0) return;
 
     printf("Freeing object: %08X (%d) %s\n", obj, obj->flags, obj->name);
@@ -222,6 +278,15 @@ t_object *object_new(t_object *obj, ...) {
     t_object *res = obj->funcs->new(arg_list);
     va_end(arg_list);
 
+#ifdef __DEBUG
+    char addr[10];
+    sprintf(addr, "%08X", res);
+    if (! ht_find(object_hash, (char *)&addr)) {
+        dll_append(object_dll, res);
+        ht_add(object_hash, (char *)&addr, (void *)1);
+    }
+#endif
+
     return res;
 }
 
@@ -236,6 +301,15 @@ void object_init() {
     object_numerical_init();
     object_string_init();
     object_regex_init();
+
+#ifdef __DEBUG
+    object_dll = dll_init();
+    object_hash = ht_create();
+    dll_append(object_dll, Object_True);
+    dll_append(object_dll, Object_False);
+    dll_append(object_dll, Object_Null);
+#endif
+
 }
 
 

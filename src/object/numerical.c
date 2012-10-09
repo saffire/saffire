@@ -264,6 +264,51 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 
 
 /* ======================================================================
+ *   Standard comparisons
+ * ======================================================================
+ */
+SAFFIRE_COMPARISON_METHOD(numerical, eq) {
+    printf("Numerical EQ called");
+
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value == other->value);
+}
+SAFFIRE_COMPARISON_METHOD(numerical, ne) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value != other->value);
+}
+SAFFIRE_COMPARISON_METHOD(numerical, lt) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value < other->value);
+}
+SAFFIRE_COMPARISON_METHOD(numerical, gt) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value > other->value);
+}
+SAFFIRE_COMPARISON_METHOD(numerical, le) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value <= other->value);
+}
+SAFFIRE_COMPARISON_METHOD(numerical, ge) {
+    t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other = (t_numerical_object *)_other;
+
+    return (self->value >= other->value);
+}
+
+
+
+/* ======================================================================
  *   Global object management functions and data
  * ======================================================================
  */
@@ -352,12 +397,21 @@ static t_object *obj_new(va_list arg_list) {
 }
 
 
+char tmp[100];
+static char *obj_debug(struct _object *obj) {
+    sprintf(tmp, "%ld", ((t_numerical_object *)obj)->value);
+    return tmp;
+}
+
+
+
 
 // String object management functions
 t_object_funcs numerical_funcs = {
         obj_new,            // Allocate a new numerical object
         NULL,               // Free a numerical object
-        obj_clone           // Clone a numerical object
+        obj_clone,          // Clone a numerical object
+        obj_debug
 };
 
 t_object_operators numerical_ops = {
@@ -373,8 +427,19 @@ t_object_operators numerical_ops = {
     object_numerical_operator_sr
 };
 
+t_object_comparisons numerical_cmps = {
+    object_numerical_comparison_eq,
+    object_numerical_comparison_ne,
+    object_numerical_comparison_lt,
+    object_numerical_comparison_gt,
+    object_numerical_comparison_le,
+    object_numerical_comparison_ge,
+    NULL,
+    NULL
+};
+
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, OBJECT_NO_FLAGS, &numerical_funcs),
+    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, &numerical_cmps, OBJECT_NO_FLAGS, &numerical_funcs),
     0
 };

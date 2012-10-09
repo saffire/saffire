@@ -40,6 +40,8 @@
 #include "general/smm.h"
 #include "general/md5.h"
 
+extern char *wctou8(const wchar_t *wstr);
+
 
 /* ======================================================================
  *   Supporting functions
@@ -257,6 +259,36 @@ SAFFIRE_OPERATOR_METHOD(string, sr) {
 
 
 /* ======================================================================
+ *   Standard comparisons
+ * ======================================================================
+ */
+SAFFIRE_COMPARISON_METHOD(string, eq) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, ne) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, lt) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, gt) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, le) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, ge) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, in) {
+    return 0;
+}
+SAFFIRE_COMPARISON_METHOD(string, ni) {
+    return 0;
+}
+
+
+/* ======================================================================
  *   Global object management functions and data
  * ======================================================================
  */
@@ -352,12 +384,23 @@ static t_object *obj_new(va_list arg_list) {
     return (t_object *)new_obj;
 }
 
+char global_buf[1024];
+static char *obj_debug(struct _object *obj) {
+    char *buf = wctou8(((t_string_object *)obj)->value);
+    memcpy(global_buf, buf, 1024);
+    global_buf[1023] = 0;
+    smm_free(buf);
+
+    return global_buf;
+}
+
 
 // String object management functions
 t_object_funcs string_funcs = {
         obj_new,              // Allocate a new string object
         obj_free,             // Free a string object
-        obj_clone             // Clone a string object
+        obj_clone,            // Clone a string object
+        obj_debug
 };
 
 t_object_operators string_ops = {
@@ -373,9 +416,20 @@ t_object_operators string_ops = {
     object_string_operator_sr
 };
 
+t_object_comparisons string_cmps = {
+    object_string_comparison_eq,
+    object_string_comparison_ne,
+    object_string_comparison_lt,
+    object_string_comparison_gt,
+    object_string_comparison_le,
+    object_string_comparison_ge,
+    object_string_comparison_in,
+    object_string_comparison_ni
+};
+
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, OBJECT_NO_FLAGS, &string_funcs),
+    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_NO_FLAGS, &string_funcs),
     0,
     0,
     '\0',

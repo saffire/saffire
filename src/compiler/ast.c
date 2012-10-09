@@ -45,7 +45,7 @@ extern FILE *yyin;
 /**
  * Compile a a file into an AST (through bison). Returns the AST root node.
  */
-t_ast_element *ast_compile_tree(FILE *fp) {
+t_ast_element *ast_generate_tree(FILE *fp) {
     // Initialize system
     svar_init_table();
     sfc_init();
