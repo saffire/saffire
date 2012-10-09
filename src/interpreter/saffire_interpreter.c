@@ -168,7 +168,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_object *obj, *obj1, *obj2, *obj3;
     t_snode *node1, *node2, *node3;
     t_hash_table_bucket *htb;
-    int ret;
+    int ret, initial_loop;
 
     if (!p) {
         RETURN_SNODE_OBJECT(Object_Null);
@@ -280,9 +280,9 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 
                 case T_WHILE :
+                    initial_loop = 1;
                     while (1) {
                         node1 = SI0(p);
-
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
@@ -291,8 +291,13 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         if (obj1 == Object_True) {
                             SI1(p);
                         } else {
+                            // First loop is false, and we've got an else statement, execute it.
+                            if (initial_loop && CNT(p) > 2) {
+                                SI2(p);
+                            }
                             break;
                         }
+                        initial_loop = 0;
                     }
 
                     RETURN_SNODE_NULL();
