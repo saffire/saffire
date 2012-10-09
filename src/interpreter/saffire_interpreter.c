@@ -139,6 +139,7 @@ static int si_writable(t_snode *node) {
 
 
 static t_snode *si_cmp(t_ast_element *p, int cmp);
+static t_snode *si_opr(t_ast_element *p, int opr);
 
 
 static t_object *si_get_object(t_snode *node) {
@@ -338,41 +339,33 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         return si_cmp(p, COMPARISON_EQ);
                         break;
 
-//                case '+' :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::add", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case '-' :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::sub", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case '*' :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::mul", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case '/' :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::div", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case T_AND :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::and", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case T_OR :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::or", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
-//                case '^' :
-//                          obj1 = SI0(p);
-//                          obj2 = SI1(p);
-//                          obj = object_call(obj1, "::xor", 1, obj2);
-//                          RETURN_SNODE_OBJECT(obj);
+                case '+' :
+                        return si_opr(p, OPERATOR_ADD);
+                        break;
+                case '-' :
+                        return si_opr(p, OPERATOR_SUB);
+                        break;
+                case '*' :
+                        return si_opr(p, OPERATOR_MUL);
+                        break;
+                case '/' :
+                        return si_opr(p, OPERATOR_DIV);
+                        break;
+                case T_AND :
+                        return si_opr(p, OPERATOR_AND);
+                        break;
+                case T_OR :
+                        return si_opr(p, OPERATOR_OR);
+                        break;
+                case '^' :
+                        return si_opr(p, OPERATOR_XOR);
+                        break;
+                case T_SHIFT_LEFT :
+                        return si_opr(p, OPERATOR_SHL);
+                        break;
+                case T_SHIFT_RIGHT :
+                        return si_opr(p, OPERATOR_SHR);
+                        break;
 
                 default:
                     printf("Unhandled opcode: %d\n", p->opr.oper);
@@ -383,8 +376,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     }
     RETURN_SNODE_NULL();
 }
-
-
 
 /**
  * Compare the objects according to the comparison (returns 0 or 1)
@@ -406,6 +397,24 @@ static t_snode *si_cmp(t_ast_element *p, int cmp) {
     RETURN_SNODE_OBJECT(obj);
 }
 
+
+
+/**
+ * Calls object's operator
+ */
+static t_snode *si_opr(t_ast_element *p, int opr) {
+    t_snode *node1 = SI0(p);
+    t_snode *node2 = SI1(p);
+
+    t_object *obj1 = si_get_object(node1);
+    t_object *obj2 = si_get_object(node2);
+    if (obj1->type != obj2->type) {
+        saffire_error("Types on operator are not equal");
+    }
+
+    t_object *obj = object_operator(obj1, opr, 0, 1, obj2);
+    RETURN_SNODE_OBJECT(obj);
+}
 
 
 

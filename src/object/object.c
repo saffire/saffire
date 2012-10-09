@@ -123,8 +123,8 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
             case OPERATOR_AND : func = cur_obj->operators->and; break;
             case OPERATOR_OR  : func = cur_obj->operators->or; break;
             case OPERATOR_XOR : func = cur_obj->operators->xor; break;
-            case OPERATOR_SL  : func = cur_obj->operators->sl; break;
-            case OPERATOR_SR  : func = cur_obj->operators->sr; break;
+            case OPERATOR_SHL : func = cur_obj->operators->shl; break;
+            case OPERATOR_SHR : func = cur_obj->operators->shr; break;
         }
 
         // Found a function? We're done!

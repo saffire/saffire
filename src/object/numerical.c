@@ -144,121 +144,201 @@ SAFFIRE_METHOD(numerical, conv_string) {
  */
 SAFFIRE_OPERATOR_METHOD(numerical, add) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value += 1;
+        printf("Add to self\n");
+        self->value += other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value + other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value -= 1;
+        printf("Add to self\n");
+        self->value -= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value - other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value *= 1;
+        printf("Add to self\n");
+        self->value *= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value * other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value /= 1;
+        printf("Add to self\n");
+        self->value /= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value / other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value %= 1;
+        printf("Add to self\n");
+        self->value %= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value % other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value &= 1;
+        printf("Add to self\n");
+        self->value &= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value & other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value |= 1;
+        printf("Add to self\n");
+        self->value |= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value | other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value ^= 1;
+        printf("Add to self\n");
+        self->value ^= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value ^ other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value <<= 1;
+        printf("Add to self\n");
+        self->value <<= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value << other->value);
     RETURN_OBJECT(obj);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
     t_numerical_object *self = (t_numerical_object *)_self;
+    t_numerical_object *other;
+
+    // Parse the arguments
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
+        printf("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
 
     if (in_place) {
-        self->value >>= 1;
+        printf("Add to self\n");
+        self->value >>= other->value;
         RETURN_SELF;
     }
 
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
+    t_object *obj = object_new(Object_Numerical, self->value >> other->value);
     RETURN_OBJECT(obj);
 }
 

@@ -54,8 +54,8 @@
     #define OPERATOR_AND    6
     #define OPERATOR_OR     7
     #define OPERATOR_XOR    8
-    #define OPERATOR_SL     9
-    #define OPERATOR_SR    10
+    #define OPERATOR_SHL    9
+    #define OPERATOR_SHR   10
 
 
     #define COMPARISON_EQ     1
@@ -78,8 +78,8 @@
         struct _object *(*and)(struct _object *, t_dll *, int );
         struct _object *(*or)(struct _object *, t_dll *, int );
         struct _object *(*xor)(struct _object *, t_dll *, int );
-        struct _object *(*sl)(struct _object *, t_dll *, int );
-        struct _object *(*sr)(struct _object *, t_dll *, int );
+        struct _object *(*shl)(struct _object *, t_dll *, int );
+        struct _object *(*shr)(struct _object *, t_dll *, int );
     } t_object_operators;
 
     // Standard operators
