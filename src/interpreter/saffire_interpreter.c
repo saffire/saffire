@@ -279,28 +279,55 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_OBJECT(obj1);
                     break;
 
+                case T_DO :
+                    do {
+                        // Always execute our inner block at least once
+                        SI0(p);
+
+                        // Check condition
+                        node1 = SI1(p);
+                        obj1 = si_get_object(node1);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+
+                        // False, we can break our do-loop
+                        if (obj1 == Object_False) {
+                            break;
+                        }
+                    } while (1);
+
+                    RETURN_SNODE_NULL();
+                    break;
+
                 case T_WHILE :
                     initial_loop = 1;
                     while (1) {
+                        // Check condition first
                         node1 = SI0(p);
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
                             obj1 = object_call(obj1, "boolean", 0);
                         }
+
+                        // if condition is true, execute our inner block
                         if (obj1 == Object_True) {
                             SI1(p);
                         } else {
-                            // First loop is false, and we've got an else statement, execute it.
+                            // If the first loop is false and we've got an else statement, execute it.
                             if (initial_loop && CNT(p) > 2) {
                                 SI2(p);
                             }
                             break;
                         }
+
                         initial_loop = 0;
                     }
 
                     RETURN_SNODE_NULL();
+                    break;
 
                 case T_IF:
                     node1 = SI0(p);
@@ -312,8 +339,10 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     }
 
                     if (obj1 == Object_True) {
+                        // Execute if-block
                         node2 = SI1(p);
                     } else if (CNT(p) > 2) {
+                        // Execute (optional) else-block
                         node2 = SI2(p);
                     }
 
