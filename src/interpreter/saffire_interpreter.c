@@ -279,11 +279,23 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_OBJECT(obj1);
                     break;
 
-//                case T_WHILE :
-//                    while (svar_true(SI0(p))) {
-//                        SI1(p);
-//                    }
-//                    return svar_temp_alloc(SV_NULL, NULL, 0);
+                case T_WHILE :
+                    while (1) {
+                        node1 = SI0(p);
+
+                        obj1 = si_get_object(node1);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+                        if (obj1 == Object_True) {
+                            SI1(p);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    RETURN_SNODE_NULL();
 
                 case T_IF:
                     node1 = SI0(p);
