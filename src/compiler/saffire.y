@@ -407,17 +407,17 @@ logical_unary_operator:
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        '='                { TRACE $$ = ast_string("=");  }
-    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_string("+="); }
-    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_string("-="); }
-    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_string("*="); }
-    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_string("/="); }
-    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_string("%="); }
-    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_string("&="); }
-    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_string("|="); }
-    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_string("^="); }
-    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_string("<="); }
-    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_string(">="); }
+        T_ASSIGNMENT       { TRACE $$ = ast_opr(T_ASSIGNMENT, 0); }
+    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_opr(T_PLUS_ASSIGNMENT, 0); }
+    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_opr(T_MINUS_ASSIGNMENT, 0); }
+    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_opr(T_MUL_ASSIGNMENT, 0); }
+    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_opr(T_DIV_ASSIGNMENT, 0); }
+    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_opr(T_MOD_ASSIGNMENT, 0); }
+    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_opr(T_AND_ASSIGNMENT, 0); }
+    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_opr(T_OR_ASSIGNMENT, 0); }
+    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_opr(T_XOR_ASSIGNMENT, 0); }
+    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_opr(T_SL_ASSIGNMENT, 0); }
+    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_opr(T_SR_ASSIGNMENT, 0); }
 ;
 
 real_scalar_value:

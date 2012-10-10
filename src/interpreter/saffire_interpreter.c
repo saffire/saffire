@@ -258,8 +258,11 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Left hand side is not writable!");
                     }
 
-                    // @TODO: operator should be =, but we don't check for now.. :/
-//                    node2 = SI1(p);
+                    // Check if we have a normal assignment. We only support this for now...
+                    t_ast_element *e = p->opr.ops[1];
+                    if (e->type != typeOpr || e->opr.oper != T_ASSIGNMENT) {
+                        saffire_error("We only support = assignments (no += etc)");
+                    }
 
                     // Evaluate
                     node3 = SI2(p);

@@ -80,7 +80,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
@@ -102,6 +102,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "<<"        { saffire_push_state(st_regex); return T_SHIFT_LEFT; }
 ">>"        { saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
 
+"="         { saffire_push_state(st_regex); return T_ASSIGNMENT; }
 "+="        { saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
 "-="        { saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
 "*="        { saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
