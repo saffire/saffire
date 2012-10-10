@@ -78,7 +78,7 @@ static void saffire_warning(char *str, ...) {
 
 #define SNODE_NULL          0
 #define SNODE_OBJECT        1
-#define SNODE_METHOD        2
+#define SNODE_IDENTIFIER    2
 #define SNODE_VARIABLE      3
 
 typedef struct _snode {
@@ -88,7 +88,7 @@ typedef struct _snode {
 
 
 #define IS_OBJECT(snode)  (snode->type == SNODE_OBJECT)
-#define IS_METHOD(snode)  (snode->type == SNODE_METHOD)
+#define IS_IDENTIFIER(snode)  (snode->type == SNODE_IDENTIFIER)
 #define IS_VARIABLE(snode)  (snode->type == SNODE_VARIABLE)
 
 #define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
@@ -101,9 +101,9 @@ typedef struct _snode {
                                  ret->data = obj; \
                                  return ret; }
 
-#define RETURN_SNODE_METHOD(method) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_METHOD; \
-                                 ret->data = method; \
+#define RETURN_SNODE_IDENTIFIER(ident) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                 ret->type = SNODE_IDENTIFIER; \
+                                 ret->data = ident; \
                                  return ret; }
 
 #define RETURN_SNODE_VARIABLE(var) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
@@ -220,7 +220,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             if (p->string.value[0] == '$') {
                 RETURN_SNODE_VARIABLE(htb);
             } else {
-                RETURN_SNODE_METHOD(htb);
+                RETURN_SNODE_IDENTIFIER(htb);
             }
 
         case typeOpr :
@@ -387,6 +387,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 //
                 case T_FQMN :
+
                     if (CNT(p) > 1) {
                         saffire_error("FQMN can only have 1 operand");
                     }
