@@ -46,6 +46,7 @@ extern char *get_token_string(int token);
 #define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
 #define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
 #define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
+#define SI3(p)  (_saffire_interpreter(p->opr.ops[3]))
 
 t_hash_table *vars;
 
@@ -329,6 +330,34 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_NULL();
                     break;
 
+                case T_FOR :
+                    // Evaluate first part
+                    node1 = SI0(p);
+
+                    while (1) {
+                        // Check condition first
+                        node2 = SI1(p);
+                        obj1 = si_get_object(node2);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+
+                        // if condition is not true, break our loop
+                        if (obj1 != Object_True) {
+                            break;
+                        }
+
+                        // Condition is true, execute our inner loop
+                        SI3(p);
+
+                        // Finally, evaluate our last block
+                        SI2(p);
+                    }
+
+                    // All done
+                    break;
+
                 case T_IF:
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
@@ -345,7 +374,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         // Execute (optional) else-block
                         node2 = SI2(p);
                     }
-
                     break;
 
                 case T_METHOD_CALL :
@@ -451,7 +479,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     object_inc_ref(obj3);
                     RETURN_SNODE_OBJECT(obj3);
                     break;
-
 
 
                 default:
