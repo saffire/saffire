@@ -367,51 +367,92 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 
                 case '<' :
-                        return si_cmp(p, COMPARISON_LT);
-                        break;
+                    return si_cmp(p, COMPARISON_LT);
+                    break;
                 case '>' :
-                        return si_cmp(p, COMPARISON_GT);
-                        break;
+                    return si_cmp(p, COMPARISON_GT);
+                    break;
                 case T_GE :
-                        return si_cmp(p, COMPARISON_GE);
-                        break;
+                    return si_cmp(p, COMPARISON_GE);
+                    break;
                 case T_LE :
-                        return si_cmp(p, COMPARISON_LE);
-                        break;
+                    return si_cmp(p, COMPARISON_LE);
+                    break;
                 case T_NE :
-                        return si_cmp(p, COMPARISON_NE);
-                        break;
+                    return si_cmp(p, COMPARISON_NE);
+                    break;
                 case T_EQ :
-                        return si_cmp(p, COMPARISON_EQ);
-                        break;
+                    return si_cmp(p, COMPARISON_EQ);
+                    break;
 
                 case '+' :
-                        return si_opr(p, OPERATOR_ADD);
-                        break;
+                    return si_opr(p, OPERATOR_ADD);
+                    break;
                 case '-' :
-                        return si_opr(p, OPERATOR_SUB);
-                        break;
+                    return si_opr(p, OPERATOR_SUB);
+                    break;
                 case '*' :
-                        return si_opr(p, OPERATOR_MUL);
-                        break;
+                    return si_opr(p, OPERATOR_MUL);
+                    break;
                 case '/' :
-                        return si_opr(p, OPERATOR_DIV);
-                        break;
+                    return si_opr(p, OPERATOR_DIV);
+                    break;
                 case T_AND :
-                        return si_opr(p, OPERATOR_AND);
-                        break;
+                    return si_opr(p, OPERATOR_AND);
+                    break;
                 case T_OR :
-                        return si_opr(p, OPERATOR_OR);
-                        break;
+                    return si_opr(p, OPERATOR_OR);
+                    break;
                 case '^' :
-                        return si_opr(p, OPERATOR_XOR);
-                        break;
+                    return si_opr(p, OPERATOR_XOR);
+                    break;
                 case T_SHIFT_LEFT :
-                        return si_opr(p, OPERATOR_SHL);
-                        break;
+                    return si_opr(p, OPERATOR_SHL);
+                    break;
                 case T_SHIFT_RIGHT :
-                        return si_opr(p, OPERATOR_SHR);
-                        break;
+                    return si_opr(p, OPERATOR_SHR);
+                    break;
+
+                case T_OP_INC :
+                    // We must be a variable
+                    node1 = SI0(p);
+                    if (! IS_VARIABLE(node1)) {
+                        saffire_error("Left hand side is not writable!");
+                    }
+
+                    obj1 = si_get_object(node1);
+                    object_dec_ref(obj1);
+
+                    obj2 = object_new(Object_Numerical, 1);
+                    obj3 = object_operator(obj1, OPERATOR_ADD, 0, 1, obj2);
+
+                    htb = node1->data;
+                    htb->data = obj3;
+
+                    object_inc_ref(obj3);
+                    RETURN_SNODE_OBJECT(obj3);
+                    break;
+                case T_OP_DEC :
+                    // We must be a variable
+                    node1 = SI0(p);
+                    if (! IS_VARIABLE(node1)) {
+                        saffire_error("Left hand side is not writable!");
+                    }
+
+                    obj1 = si_get_object(node1);
+                    object_dec_ref(obj1);
+
+                    obj2 = object_new(Object_Numerical, 1);
+                    obj3 = object_operator(obj1, OPERATOR_SUB, 0, 1, obj2);
+
+                    htb = node1->data;
+                    htb->data = obj3;
+
+                    object_inc_ref(obj3);
+                    RETURN_SNODE_OBJECT(obj3);
+                    break;
+
+
 
                 default:
                     printf("Unhandled opcode: %d\n", p->opr.oper);
