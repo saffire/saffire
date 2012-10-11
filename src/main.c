@@ -40,6 +40,7 @@
 char    *source_file = "-";     // defaults to stdin
 int     source_args = 0;        // default to no additional arguments
 int     generate_dot = 0;
+int     lint_check = 0;
 char    *dot_file = NULL;
 
 /**
@@ -111,7 +112,7 @@ void parse_options(int argc, char *argv[]) {
                 exit(0);
                 break;
             case 'l' :
-                printf("Lint check()");
+                lint_check = 1;
                 break;
             case 'c' :
                 printf("cli");
@@ -159,6 +160,9 @@ int main(int argc, char *argv[]) {
     if (generate_dot) {
         // generate DOT file
         dot_generate(ast_root, dot_file);
+    } else if (lint_check) {
+        // do nothing for lint check
+        printf ("Syntax OK\n");
     } else {
         // Otherwise interpret it
         saffire_interpreter(ast_root);
