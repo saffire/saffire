@@ -28,7 +28,78 @@
 #define __SAFFIRE_INTERPRETER_H__
 
     #include "compiler/ast.h"
+    #include "object/object.h"
 
+
+    // Count number of operands.
+    #define OP_CNT(p) p->opr.nops
+
+    typedef enum { snodeTypeNull, snodeTypeObject, snodeTypeIdentifier, snodeTypeString } snodeTypeEnum;
+
+    struct _snode;
+
+    typedef struct _t_identifier {
+        t_object *obj;                  // Actual object
+        t_hash_table_bucket *id;        // Pointer to hash-table element which holds the object
+    } t_identifier;
+
+    // Snode structure
+    typedef struct _snode {
+        snodeTypeEnum type;           // Type of the snode
+        union {
+            void *data;         // Generic data (@TODO: Used?)
+            t_object *obj;      // Single object
+            t_identifier id;    // An identifier
+            char *str;          // Single string
+        } data;
+    } t_snode;
+
+
+    // Interpretation macros
+    #define SI(p)   (_saffire_interpreter(p))
+    #define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
+    #define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
+    #define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
+    #define SI3(p)  (_saffire_interpreter(p->opr.ops[3]))
+
+
+    // Snode identifier macros
+    #define IS_OBJECT(snode)            (snode->type == snodeTypeObject)
+    #define IS_IDENTIFIER(snode)        (snode->type == snodeTypeIdentifier)
+    #define IS_STRING(snode)            (snode->type == snodeTypeString)
+    #define HAS_IDENTIFIER_ID(snode)    (snode->type == snodeTypeIdentifier && snode->data.id.id != NULL)
+    #define HAS_IDENTIFIER_OBJ(snode)   (snode->type == snodeTypeIdentifier && snode->data.id.obj != NULL)
+
+
+    // Snode return macros
+    #define RETURN_SNODE_STRING(string) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                    ret->type = snodeTypeString; \
+                                    ret->data.str = string; \
+                                    dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
+                                    return ret; }
+
+    #define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                     ret->type = snodeTypeNull; \
+                                     ret->data.data = NULL; \
+                                     dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
+                                     return ret; }
+
+    #define RETURN_SNODE_OBJECT(object) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                     ret->type = snodeTypeObject; \
+                                     ret->data.obj = object; \
+                                     dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
+                                     return ret; }
+
+    #define RETURN_SNODE_IDENTIFIER(ident, object) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                     ret->type = snodeTypeIdentifier; \
+                                     ret->data.id.id = ident; \
+                                     ret->data.id.obj = object; \
+                                     dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
+                                     return ret; }
+
+
+    void saffire_warning(char *str, ...);
+    void saffire_error(char *str, ...);
     void saffire_interpreter(t_ast_element *p);
 
 #endif

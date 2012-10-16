@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "debug.h"
 #include "general/hashtable.h"
 #include "general/svar.h"
 #include "general/smm.h"
@@ -45,19 +45,19 @@ const int SV_DOUBLE = 3;
  * Print debug svar info
  */
 void svar_print(svar *var) {
-    printf("VAR:\n");
-    printf("  Name: %s\n", var->name);
-    printf("  Type: %d\n", var->type);
+    DEBUG_PRINT("VAR:\n");
+    DEBUG_PRINT("  Name: %s\n", var->name);
+    DEBUG_PRINT("  Type: %d\n", var->type);
     if (var->type == SV_LONG) {
-        printf("  Val:  %ld\n", var->val.l);
+        DEBUG_PRINT("  Val:  %ld\n", var->val.l);
     }
     if (var->type == SV_STRING) {
-        printf("  Val:  %s\n", var->val.s);
+        DEBUG_PRINT("  Val:  %s\n", var->val.s);
     }
     if (var->type == SV_DOUBLE) {
-        printf("  Val:  %g\n", var->val.d);
+        DEBUG_PRINT("  Val:  %g\n", var->val.d);
     }
-    printf("\n");
+    DEBUG_PRINT("\n");
 }
 
 /**

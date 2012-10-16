@@ -34,10 +34,11 @@
     #include "lex.yy.h"
     #include "compiler/saffire_compiler.h"
     #include "compiler/ast.h"
+    #include "debug.h"
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(const char *err) { printf("Error in line %d: %s\n", yylineno, err); }
+    void yyerror(const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -84,15 +85,15 @@
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 
 %token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
-%token T_SELF T_PARENT
-%left '=' T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
+%token T_SELF T_PARENT T_NS_SEP
+%left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
 %token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
-%token T_FQMN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
+%token T_FQN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
 
 %token T_YIELD
@@ -104,17 +105,17 @@
 %type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
-%type <nPtr> complex_primary_no_parenthesis not_just_name complex_primary method_call real_postfix_expression
+%type <nPtr> method_call real_postfix_expression
 %type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator assignment_operator
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> relational_expression catch_header conditional_expression assignment_expression real_scalar_value
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
-%type <nPtr> class_method_definition class_property_definition special_name qualified_name calling_method_argument_list
-%type <nPtr> data_structure field_access logical_unary_expression equality_expression and_expression inclusive_or_expression
+%type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
+%type <nPtr> data_structure logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> primary
+%type <nPtr> special_name field_access method_call_pre_parenthesis
 
-%type <sVal> '=' T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
+%type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
 
 %token_table
@@ -183,13 +184,6 @@ top_statement:
  ************************************************************
  */
 
-
-/* A compound statement is a (set of) statement captured by curly brackets */
-compound_statement:
-        '{' '}'                 { TRACE $$ = ast_nop(); }
-    |   '{' statement_list '}'  { TRACE $$ = $2; }
-;
-
 statement_list:
         statement                { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
     |   statement_list statement { TRACE $$ = ast_add($$, $2); }
@@ -205,6 +199,13 @@ statement:
     |   guarding_statement     { TRACE $$ = $1; }
 ;
 
+/* A compound statement is a (set of) statement captured by curly brackets */
+compound_statement:
+        '{' '}'                 { TRACE $$ = ast_nop(); }
+    |   '{' statement_list '}'  { TRACE $$ = $2; }
+;
+
+/* if if/else or switch() statements */
 selection_statement:
         T_IF conditional_expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
     |   T_IF conditional_expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
@@ -212,6 +213,20 @@ selection_statement:
     |   T_SWITCH '(' conditional_expression ')' { sfc_loop_enter(); sfc_switch_begin(); } '{' case_statements '}' { sfc_loop_leave(); sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
 ;
 
+case_statements:
+        case_statement { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+    |   case_statements case_statement { TRACE $$ = ast_add($$, $2); }
+;
+
+case_statement:
+        T_CASE conditional_expression ':'   { sfc_switch_case(); }    statement_list { TRACE $$ = ast_opr(T_CASE, 2, $2, $5); }
+    |   T_CASE conditional_expression ':'   { sfc_switch_case(); }    { TRACE $$ = ast_opr(T_CASE, 2, $2, ast_nop()); }
+    |   T_DEFAULT ':'           { sfc_switch_default(); } statement_list { TRACE $$ = ast_opr(T_DEFAULT, 1, $4); }
+    |   T_DEFAULT ':'           { sfc_switch_default(); } { TRACE $$ = ast_opr(T_DEFAULT, 1, ast_nop()); }
+;
+
+
+/* while, while else, do/while, for and foreach */
 iteration_statement:
         while_statement T_ELSE statement { TRACE $$ = ast_add($1, $3); }
     |   while_statement { TRACE $$ = $1; }
@@ -224,16 +239,19 @@ iteration_statement:
     |   T_FOREACH '(' expression T_AS expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave(); TRACE $$ = ast_opr(T_FOREACH, 3, $3, $5, $8); }
 ;
 
+/* while is separate otherwise we cannot find it's else */
 while_statement:
         T_WHILE '(' conditional_expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave(); TRACE $$ = ast_opr(T_WHILE, 2, $3, $6); }
 ;
 
-
+/* An expression is anything that evaluates something */
 expression_statement:
-        ';'             { TRACE $$ = ast_opr(';', 0); }
-    |   expression ';'  { TRACE $$ = $1; }
+        ';'             { TRACE $$ = ast_opr(';', 0); printf("\n\n"); }
+    |   expression ';'  { TRACE $$ = $1; DEBUG_PRINT("\n\nLine %d:\n", yylineno+1); }
 ;
 
+
+/* Jumps to another part of the code */
 jump_statement:
         T_BREAK ';'                 { saffire_validate_break(); TRACE $$ = ast_opr(T_BREAK, 0); }
     |   T_BREAKELSE ';'             { saffire_validate_breakelse(); TRACE $$ = ast_opr(T_BREAKELSE, 0); }
@@ -245,11 +263,13 @@ jump_statement:
     |   T_GOTO T_LNUM ';'           { TRACE $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }
 ;
 
+/* try/catch try/catch/finally blocks */
 guarding_statement:
         T_TRY compound_statement catch_list                               { TRACE $$ = ast_opr(T_TRY, 2, $2, $3); }
     |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { TRACE $$ = ast_opr(T_FINALLY, 3, $2, $3, $5); }
 ;
 
+/* There can be multiple catches on a try{} block */
 catch_list:
         catch            { TRACE $$ = $1; }
     |   catch_list catch { TRACE $$ = ast_opr(T_LIST, 2, $1, $2); }
@@ -268,24 +288,15 @@ label_statement:
     |   T_LNUM ':'          { TRACE $$ = ast_opr(T_LABEL, 1, ast_numerical($1)); }
 ;
 
-case_statements:
-        case_statement { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
-    |   case_statements case_statement { TRACE $$ = ast_add($$, $2); }
-;
-
-case_statement:
-        T_CASE conditional_expression ':'   { sfc_switch_case(); }    statement_list { TRACE $$ = ast_opr(T_CASE, 2, $2, $5); }
-    |   T_CASE conditional_expression ':'   { sfc_switch_case(); }    { TRACE $$ = ast_opr(T_CASE, 2, $2, ast_nop()); }
-    |   T_DEFAULT ':'           { sfc_switch_default(); } statement_list { TRACE $$ = ast_opr(T_DEFAULT, 1, $4); }
-    |   T_DEFAULT ':'           { sfc_switch_default(); } { TRACE $$ = ast_opr(T_DEFAULT, 1, ast_nop()); }
-;
-
-
 
 /**
  ************************************************************
  *                  ASSIGNMENT & EXPRESSION
  ************************************************************
+ */
+
+/*
+ * Order of precedence is generated by changing expressions instead of using %left %right keywords.
  */
 
 expression:
@@ -390,9 +401,13 @@ logical_unary_expression:
 ;
 
 primary_expression:
-        qualified_name  { TRACE $$ = $1; }
-    |   not_just_name   { TRACE $$ = $1; }
- ;
+        qualified_name          { TRACE $$ = $1; }
+    |   method_call             { TRACE $$ = $1; }
+    |   field_access            { TRACE $$ = $1; }
+    |   data_structure          { TRACE $$ = $1; }
+    |   real_scalar_value       { TRACE $$ = $1; }
+    |   '(' expression ')'      { TRACE $$ = $2; }
+;
 
 arithmic_unary_operator:
         '+' { TRACE $$ = ast_string("+"); }
@@ -420,66 +435,58 @@ assignment_operator:
     |   T_SR_ASSIGNMENT    { TRACE $$ = ast_opr(T_SR_ASSIGNMENT, 0); }
 ;
 
+/* Any number, any string or null|true|false */
 real_scalar_value:
-        T_LNUM   { TRACE $$ = ast_numerical($1); }
-    |   T_STRING { TRACE $$ = ast_string($1); smm_free($1); }
+        T_LNUM        { TRACE $$ = ast_numerical($1); }
+    |   T_STRING      { TRACE $$ = ast_string($1); smm_free($1); }
+    |   T_REGEX       { TRACE $$ = ast_string($1); smm_free($1); }
+//    |   T_IDENTIFIER  { sfc_check_permitted_identifiers($1); TRACE $$ = ast_identifier($1); smm_free($1); }
 ;
-
 
 qualified_name:
-         T_IDENTIFIER                    { TRACE $$ = ast_opr(T_FQMN, 1, ast_identifier($1)); smm_free($1); }
-     |   qualified_name '.' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_identifier($3)); smm_free($3); }
+       T_IDENTIFIER                             { TRACE $$ = ast_identifier($1); }
+    |  T_NS_SEP T_IDENTIFIER                    { TRACE $$ = ast_identifier("::"); ast_concat($$, $2); }
+    |  qualified_name T_NS_SEP T_IDENTIFIER     { TRACE $$ = ast_concat($$, "::"); ast_concat($$, $3); }
 ;
 
+field_access:
+        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
+    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
+;
+
+method_call:
+        method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
+    |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+    |   qualified_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_identifier($3), $5); }
+    |   qualified_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+    |   special_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_identifier($3), $5); }
+    |   special_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+    |   qualified_name '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
+    |   qualified_name '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, ast_nop()); }
+    |   method_call '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
+    |   method_call '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+
+
+;
+
+method_call_pre_parenthesis:
+        T_LNUM                  { TRACE $$ = ast_numerical($1); }
+    |   T_STRING                { TRACE $$ = ast_string($1); smm_free($1); }
+    |   T_REGEX                 { TRACE $$ = ast_string($1); smm_free($1); }
+;
+
+/* Self and parent are processed differently, since they are separate tokens */
+special_name:
+        T_SELF      { TRACE $$ = ast_identifier("self"); }
+    |   T_PARENT    { TRACE $$ = ast_identifier("parent"); }
+;
+
+/* argument list inside a method call*/
 calling_method_argument_list:
         assignment_expression                                     { TRACE $$ = ast_opr(T_ARGUMENT_LIST, 1, $1); }
     |   calling_method_argument_list ',' assignment_expression    { TRACE $$ = ast_add($$, $3); }
     |   /* empty */                                               { TRACE $$ = ast_nop(); }
 ;
-
-
-not_just_name:
-        special_name { TRACE $$ = $1; }
-    |   complex_primary { TRACE $$ = $1; }
-;
-
-complex_primary:
-        '(' expression ')' { TRACE $$ = $2; }
-    |   complex_primary_no_parenthesis { TRACE $$ = $1; }
-;
-
-primary:
-        T_LNUM          { TRACE $$ = ast_numerical($1); }
-    |   T_STRING        { TRACE $$ = ast_string($1); smm_free($1); }
-    |   T_IDENTIFIER    { TRACE $$ = ast_identifier($1); smm_free($1); }
-;
-
-complex_primary_no_parenthesis:
-        T_LNUM          { TRACE $$ = ast_numerical($1); }
-    |   T_STRING        { TRACE $$ = ast_string($1); smm_free($1); }
-    |   T_REGEX         { TRACE $$ = ast_string($1); smm_free($1); }
-    |   field_access    { TRACE $$ = $1; }
-    |   method_call     { TRACE $$ = $1; }
-    |   data_structure  { TRACE $$ = $1; }
-;
-
-field_access:
-        not_just_name '.' T_IDENTIFIER  { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
-    |   qualified_name '.' special_name { TRACE $$ = ast_opr('.', 2, $1, $3); }
-;
-
-method_call:
-        complex_primary_no_parenthesis '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   complex_primary_no_parenthesis '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
-    |   qualified_name                 '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, $3); }
-    |   qualified_name                 '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 1, $1); }
-;
-
-special_name:
-        T_SELF      { TRACE $$ = ast_string("SELF"); }
-    |   T_PARENT    { TRACE $$ = ast_string("PARENT"); }
-;
-
 
 /**
  ************************************************************
@@ -535,10 +542,10 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                     { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); smm_free($1); }
-    |   T_IDENTIFIER '=' primary                         { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
-    |   T_IDENTIFIER T_IDENTIFIER                        { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER '=' primary            { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); smm_free($1); smm_free($2); }
+        T_IDENTIFIER                                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT real_scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
+    |   T_IDENTIFIER T_IDENTIFIER                                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); smm_free($1); smm_free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT real_scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); smm_free($1); smm_free($2); }
 ;
 
 constant_list:
@@ -547,7 +554,7 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER '=' real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); smm_free($2); }
+        T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); smm_free($2); }
 ;
 
 class_definition:
@@ -568,8 +575,8 @@ interface_definition:
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER '=' expression ';'  { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                 { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); smm_free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); smm_free($3); }
 ;
 
 interface_property_definition:
@@ -622,9 +629,6 @@ data_structure:
         qualified_name  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
     |   qualified_name  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
     |   qualified_name  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
-    |   complex_primary '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
-    |   complex_primary '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
-    |   complex_primary '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
 ;
 
 data_structure_elements:

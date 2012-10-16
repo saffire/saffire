@@ -29,6 +29,8 @@
 #include <string.h>
 #include <math.h>
 #include "interpreter/saffire_interpreter.h"
+#include "interpreter/context.h"
+#include "interpreter/errors.h"
 #include "compiler/parser.tab.h"
 #include "general/svar.h"
 #include "general/hashtable.h"
@@ -39,128 +41,139 @@
 #include "object/numerical.h"
 #include "object/null.h"
 #include "object/boolean.h"
+#include "debug.h"
 
 extern char *get_token_string(int token);
+extern char *wctou8(const wchar_t *wstr);
+static t_snode *_saffire_interpreter(t_ast_element *p);
 
-#define SI(p)   (_saffire_interpreter(p))
-#define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
-#define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
-#define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
-#define SI3(p)  (_saffire_interpreter(p->opr.ops[3]))
+// A stack maintained by the AST which holds the current line for the current AST
+t_dll *lineno_stack;
 
-t_hash_table *vars;
-
-
-/**
- * Print out an error and exit
- */
-static void saffire_error(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    printf("Error: ");
-    vprintf(str, args);
-    printf("\n");
-    va_end(args);
-    exit(1);
-}
-
-static void saffire_warning(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    printf("Warning: ");
-    vprintf(str, args);
-    printf("\n");
-    va_end(args);
-}
-
-
-#define CNT(p) p->opr.nops
-
-#define SNODE_NULL          0
-#define SNODE_OBJECT        1
-#define SNODE_IDENTIFIER    2
-#define SNODE_VARIABLE      3
-
-typedef struct _snode {
-    char    type;
-    void    *data;
-} t_snode;
-
-
-#define IS_OBJECT(snode)  (snode->type == SNODE_OBJECT)
-#define IS_IDENTIFIER(snode)  (snode->type == SNODE_IDENTIFIER)
-#define IS_VARIABLE(snode)  (snode->type == SNODE_VARIABLE)
-
-#define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_NULL; \
-                                 ret->data = NULL; \
-                                 return ret; }
-
-#define RETURN_SNODE_OBJECT(obj) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_OBJECT; \
-                                 ret->data = obj; \
-                                 return ret; }
-
-#define RETURN_SNODE_IDENTIFIER(ident) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_IDENTIFIER; \
-                                 ret->data = ident; \
-                                 return ret; }
-
-#define RETURN_SNODE_VARIABLE(var) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
-                                 ret->type = SNODE_VARIABLE; \
-                                 ret->data = var; \
-                                 return ret; }
-
+#ifdef __DEBUG
+extern t_dll *object_dll;
+#endif
 
 
 /**
  *
  */
-static t_object *si_obj(t_ast_element *p, int idx) {
-    if (idx > CNT(p)) {
-        saffire_warning("Warning, want index %d, but max is %d\n", idx, CNT(p));
-    }
+static void si_init(void) {
+    // Create stack for linenumbers
+    lineno_stack = dll_init();
 
-    t_snode *snode = (t_snode *)p->opr.ops[idx];
-    if (snode->type != SNODE_OBJECT) {
-        saffire_warning("Warning, need an object, but got a %d\n", snode->type);
-    }
-    return snode->data;
+    context_init();
 }
 
 
 /**
- * Returns 1 when node is writable (mutable object), 0 otherwise
+ *
  */
-static int si_writable(t_snode *node) {
-    if (IS_OBJECT(node) && ! object_is_immutable((t_object *)node->data)) return 1;
-    return 0;
+static void si_fini(void) {
+    context_fini();
+
+    // @TODO: Something is wrong with freeing this DLL :(
+    //dll_free(lineno_stack);
 }
 
 
 
-static t_snode *si_cmp(t_ast_element *p, int cmp);
-static t_snode *si_opr(t_ast_element *p, int opr);
 
 
+/**
+ * Returns object from a node. If the node points to a variable, return the object where this variable
+ * points to.
+ *
+ * $a    -> returns the object where $a points to
+ * <obj> -> returns plain object
+ */
 static t_object *si_get_object(t_snode *node) {
     t_object *obj;
 
-    if (IS_VARIABLE(node)) {
+    if (IS_OBJECT(node)) {
+        return node->data.obj;
+    }
+
+    if (HAS_IDENTIFIER_OBJ(node)) {
         // Fetch object where this var references to, and add it to the destination var
-        t_hash_table_bucket *htb = node->data;
+        return node->data.id.obj;
+    }
+
+    if (HAS_IDENTIFIER_ID(node)) {
+        // Fetch object where this var references to, and add it to the destination var
+        //t_hash_table_bucket *htb = si_find_in_context(node->data.id.id);
+        t_hash_table_bucket *htb = node->data.id.id;
         obj = (t_object *)htb->data;
         if (obj == NULL) {
             saffire_error("This variable is not initialized!");
         }
-
-    } else {
-        // Fetch object where this var references to, and add it to the destination var
-        obj = (t_object *)node->data;
+        return obj;
     }
 
-    return obj;
+    saffire_error("This identifier does not have any ID nor OBJ");
 }
+
+
+/**
+ * Sets or replaces the object into the variable
+ */
+static void si_set_object(t_snode *node, t_object *dst_obj) {
+    if (! IS_IDENTIFIER(node)) {
+        saffire_error("Trying to set an object to a non-variable");
+    }
+
+    // Decrease source object reference count (if any object is present)
+    if (HAS_IDENTIFIER_OBJ(node)) {
+        t_object *src_obj = si_get_object(node);
+        object_dec_ref(src_obj);
+    }
+
+    // Set new object and increase reference count
+    t_hash_table_bucket *htb = node->data.id.id;
+    htb->data = dst_obj;
+    object_inc_ref(dst_obj);
+}
+
+/**
+ * Compare the objects according to the comparison (returns 0 or 1)
+ */
+static t_snode *si_comparison(t_ast_element *p, int cmp) {
+    t_snode *node1 = SI0(p);
+    t_snode *node2 = SI1(p);
+
+    // Check if the references are to the same object and we are doing a ==. If so, we are always true
+    if (IS_OBJECT(node1) && IS_OBJECT(node2) && cmp == COMPARISON_EQ && node1->data.obj == node2->data.obj) return 0;
+
+    t_object *obj1 = si_get_object(node1);
+    t_object *obj2 = si_get_object(node2);
+    if (obj1->type != obj2->type) {
+        saffire_error("Types on comparison are not equal");
+    }
+
+    t_object *obj = object_comparison(obj1, cmp, obj2);
+    RETURN_SNODE_OBJECT(obj);
+}
+
+
+
+/**
+ * Calls object's operator
+ */
+static t_snode *si_operator(t_ast_element *p, int opr) {
+    t_snode *node1 = SI0(p);
+    t_snode *node2 = SI1(p);
+
+    t_object *obj1 = si_get_object(node1);
+    t_object *obj2 = si_get_object(node2);
+    if (obj1->type != obj2->type) {
+        saffire_error("Types on operator are not equal");
+    }
+
+    t_object *obj = object_operator(obj1, opr, 0, 1, obj2);
+    RETURN_SNODE_OBJECT(obj);
+}
+
+
 
 /**
  *
@@ -169,7 +182,12 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_object *obj, *obj1, *obj2, *obj3;
     t_snode *node1, *node2, *node3;
     t_hash_table_bucket *htb;
-    int ret, initial_loop;
+    int ret, initial_loop, len;
+    t_ast_element *hte;
+    char *str, *method_name;
+
+    // Append to lineno
+    dll_append(lineno_stack, (void *)p->lineno);
 
     if (!p) {
         RETURN_SNODE_OBJECT(Object_Null);
@@ -177,8 +195,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
     wchar_t *wchar_tmp;
     switch (p->type) {
-        case typeString :
-            printf ("new string object: %s\n", p->string.value);
+        case typeAstString :
+            DEBUG_PRINT("new string object: %s\n", p->string.value);
 
             // Allocate enough room to hold string in wchar and convert
             wchar_tmp = (wchar_t *)malloc(strlen(p->string.value)*sizeof(wchar_t));
@@ -191,98 +209,100 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             smm_free(wchar_tmp);
             RETURN_SNODE_OBJECT(obj);
 
-        case typeNumerical :
-            printf ("numerical: %d\n", p->numerical.value);
+        case typeAstNumerical :
+            DEBUG_PRINT("new numerical object: %d\n", p->numerical.value);
             // Create numerical object
             obj = object_new(Object_Numerical, p->numerical.value);
             RETURN_SNODE_OBJECT(obj);
 
-        case typeIdentifier :
+        case typeAstIdentifier :
             // Do constant vars
             if (strcasecmp(p->string.value, "True") == 0) {
-                RETURN_SNODE_OBJECT(Object_True);
+                //RETURN_SNODE_OBJECT(Object_True);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_True);
             }
             if (strcasecmp(p->string.value, "False") == 0) {
-                RETURN_SNODE_OBJECT(Object_False);
+                DEBUG_PRINT("Retuning false!");
+                //RETURN_SNODE_OBJECT(Object_False);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_False);
             }
             if (strcasecmp(p->string.value, "Null") == 0) {
-                RETURN_SNODE_OBJECT(Object_Null);
+                //RETURN_SNODE_OBJECT(Object_Null);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_Null);
             }
 
-            htb = ht_find(vars, p->string.value);
-            if (htb == NULL) {
-                printf("Creating a new entry for %s\n", p->string.value);
-                ht_add(vars, p->string.value, NULL);    // set to NULL by default
-                htb = ht_find(vars, p->string.value);
-            }
+            htb = si_find_in_context(p->string.value);
+            RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
+            break;
 
-            // Return variable, otherwise it's a method (name)
-            if (p->string.value[0] == '$') {
-                RETURN_SNODE_VARIABLE(htb);
-            } else {
-                RETURN_SNODE_IDENTIFIER(htb);
-            }
-
-        case typeOpr :
-            printf ("opr.oper: %s(%d)\n", get_token_string(p->opr.oper), p->opr.oper);
+        case typeAstOpr :
+            DEBUG_PRINT("opr.oper: %s(%d)\n", get_token_string(p->opr.oper), p->opr.oper);
             switch (p->opr.oper) {
                 case T_PROGRAM :
-                    SI0(p);
-                    SI1(p);
+                    SI0(p); // use declarations
+                    SI1(p); // top statements
                     break;
                 case T_TOP_STATEMENTS:
                 case T_USE_STATEMENTS:
                 case T_STATEMENTS :
-                    for (int i=0; i!=CNT(p); i++) {
+                    for (int i=0; i!=OP_CNT(p); i++) {
                         _saffire_interpreter(p->opr.ops[i]);
                     }
+                    // Statements do not return anything
                     RETURN_SNODE_NULL();
                     break;
                 case T_USE :
                     // @TODO: Use statements are not operational
-                    saffire_warning("Use statements are not functional");
+                    saffire_warning("Use statements are not functional (yet)");
                     break;
 
                 case T_EXPRESSIONS :
-                    // Return first expression result
-                    for (int i=0; i!=CNT(p); i++) {
+                    // No expression, just return NULL
+                    if (OP_CNT(p) == 0) {
+                        RETURN_SNODE_NULL();
+                    }
+
+                    // Do all expressions
+                    for (int i=0; i!=OP_CNT(p); i++) {
                         node1 = _saffire_interpreter(p->opr.ops[i]);
+                        // Remember the first node
                         if (i == 0) node2 = node1;
                     }
                     return node2;
                     break;
 
                 case T_ASSIGNMENT :
+                    // Fetch LHS node
                     node1 = SI0(p);
-                    if (! IS_VARIABLE(node1)) {
+
+                    // Not found, create this variable
+                    if (node1 == NULL) {
+                        saffire_error("Left hand side does not exist");
+                    }
+                    // it should be a variable, otherwise we cannot write to it..
+                    if (! HAS_IDENTIFIER_ID(node1)) {
                         saffire_error("Left hand side is not writable!");
                     }
 
                     // Check if we have a normal assignment. We only support this for now...
                     t_ast_element *e = p->opr.ops[1];
-                    if (e->type != typeOpr || e->opr.oper != T_ASSIGNMENT) {
+                    if (e->type != typeAstOpr || e->opr.oper != T_ASSIGNMENT) {
                         saffire_error("We only support = assignments (no += etc)");
                     }
 
-                    // Evaluate
+                    // Evaluate the RHS
                     node3 = SI2(p);
 
-                    // Already something present, since we are loosing this, decrease it's reference count
-                    t_hash_table_bucket *htb = node1->data;
-                    if (htb->data != NULL) {
-                        obj1 = (t_object *)htb->data;
-                        object_dec_ref(obj1);
-                    }
-
-                    // Get the object and save it in our variable hashtable
+                    // Get the object and store it
                     obj1 = si_get_object(node3);
-                    htb->data = obj1;
+                    si_set_object(node1, obj1);
 
-                    // increase it's reference
-                    object_inc_ref(obj1);
                     RETURN_SNODE_OBJECT(obj1);
                     break;
 
+                /**
+                 * Control structures
+                 */
                 case T_DO :
                     do {
                         // Always execute our inner block at least once
@@ -321,7 +341,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                             SI1(p);
                         } else {
                             // If the first loop is false and we've got an else statement, execute it.
-                            if (initial_loop && CNT(p) > 2) {
+                            if (initial_loop && OP_CNT(p) > 2) {
                                 SI2(p);
                             }
                             break;
@@ -361,6 +381,9 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // All done
                     break;
 
+                /**
+                 * Conditional statements
+                 */
                 case T_IF:
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
@@ -373,121 +396,124 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     if (obj1 == Object_True) {
                         // Execute if-block
                         node2 = SI1(p);
-                    } else if (CNT(p) > 2) {
+                    } else if (OP_CNT(p) > 2) {
                         // Execute (optional) else-block
                         node2 = SI2(p);
                     }
                     break;
 
                 case T_METHOD_CALL :
-//                    obj = SI0(p);
-//                    method = SI1(p);
-//                    // @TODO: add Arguments
-//                    return object_call(obj, method, 0);
-                    break;
-//
-                case T_FQMN :
-
-                    if (CNT(p) > 1) {
-                        saffire_error("FQMN can only have 1 operand");
-                    }
                     node1 = SI0(p);
-                    return node1;
-//                    for (int i=0; i!=CNT(p); i++) {
-//                        p->opr.ops[i];
-//                    }
+                    obj1 = si_get_object(node1);
+
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Can only have identifiers here", hte->identifier.name);
+                    }
+
+                    if (hte->identifier.name[0] == '$') {
+                        obj2 = (t_object *)htb->data;
+                        if (! OBJECT_IS_STRING(obj2)) {
+                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
+                        }
+                        method_name = wctou8(((t_string_object *)obj2)->value);
+                    } else {
+                        // We duplicate, so we can always free the string later on
+                        method_name = smm_strdup(hte->identifier.name);
+                    }
+
+                    // @TODO: add Arguments
+                    obj2 = object_call(obj1, method_name, 0);
+
+                    smm_free(method_name);
+
+                    RETURN_SNODE_OBJECT(obj2);
                     break;
 
+                /* Comparisons */
                 case '<' :
-                    return si_cmp(p, COMPARISON_LT);
+                    return si_comparison(p, COMPARISON_LT);
                     break;
                 case '>' :
-                    return si_cmp(p, COMPARISON_GT);
+                    return si_comparison(p, COMPARISON_GT);
                     break;
                 case T_GE :
-                    return si_cmp(p, COMPARISON_GE);
+                    return si_comparison(p, COMPARISON_GE);
                     break;
                 case T_LE :
-                    return si_cmp(p, COMPARISON_LE);
+                    return si_comparison(p, COMPARISON_LE);
                     break;
                 case T_NE :
-                    return si_cmp(p, COMPARISON_NE);
+                    return si_comparison(p, COMPARISON_NE);
                     break;
                 case T_EQ :
-                    return si_cmp(p, COMPARISON_EQ);
+                    return si_comparison(p, COMPARISON_EQ);
                     break;
 
+                /* Operators */
                 case '+' :
-                    return si_opr(p, OPERATOR_ADD);
+                    return si_operator(p, OPERATOR_ADD);
                     break;
                 case '-' :
-                    return si_opr(p, OPERATOR_SUB);
+                    return si_operator(p, OPERATOR_SUB);
                     break;
                 case '*' :
-                    return si_opr(p, OPERATOR_MUL);
+                    return si_operator(p, OPERATOR_MUL);
                     break;
                 case '/' :
-                    return si_opr(p, OPERATOR_DIV);
+                    return si_operator(p, OPERATOR_DIV);
                     break;
                 case T_AND :
-                    return si_opr(p, OPERATOR_AND);
+                    return si_operator(p, OPERATOR_AND);
                     break;
                 case T_OR :
-                    return si_opr(p, OPERATOR_OR);
+                    return si_operator(p, OPERATOR_OR);
                     break;
                 case '^' :
-                    return si_opr(p, OPERATOR_XOR);
+                    return si_operator(p, OPERATOR_XOR);
                     break;
                 case T_SHIFT_LEFT :
-                    return si_opr(p, OPERATOR_SHL);
+                    return si_operator(p, OPERATOR_SHL);
                     break;
                 case T_SHIFT_RIGHT :
-                    return si_opr(p, OPERATOR_SHR);
+                    return si_operator(p, OPERATOR_SHR);
                     break;
 
+                /* Unary operators */
                 case T_OP_INC :
                     // We must be a variable
                     node1 = SI0(p);
-                    if (! IS_VARIABLE(node1)) {
+                    if (! HAS_IDENTIFIER_ID(node1)) {
                         saffire_error("Left hand side is not writable!");
                     }
 
                     obj1 = si_get_object(node1);
-                    object_dec_ref(obj1);
-
                     obj2 = object_new(Object_Numerical, 1);
                     obj3 = object_operator(obj1, OPERATOR_ADD, 0, 1, obj2);
 
-                    htb = node1->data;
-                    htb->data = obj3;
+                    si_set_object(node1, obj3);
 
-                    object_inc_ref(obj3);
                     RETURN_SNODE_OBJECT(obj3);
                     break;
                 case T_OP_DEC :
                     // We must be a variable
                     node1 = SI0(p);
-                    if (! IS_VARIABLE(node1)) {
+                    if (! HAS_IDENTIFIER_ID(node1)) {
                         saffire_error("Left hand side is not writable!");
                     }
 
                     obj1 = si_get_object(node1);
-                    object_dec_ref(obj1);
-
                     obj2 = object_new(Object_Numerical, 1);
                     obj3 = object_operator(obj1, OPERATOR_SUB, 0, 1, obj2);
 
-                    htb = node1->data;
-                    htb->data = obj3;
+                    si_set_object(node1, obj3);
 
-                    object_inc_ref(obj3);
                     RETURN_SNODE_OBJECT(obj3);
                     break;
 
 
                 default:
-                    printf("Unhandled opcode: %d\n", p->opr.oper);
-                    exit(1);
+                    saffire_error("Unhandled opcode: %d\n", p->opr.oper);
                     break;
             }
             break;
@@ -495,66 +521,21 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     RETURN_SNODE_NULL();
 }
 
-/**
- * Compare the objects according to the comparison (returns 0 or 1)
- */
-static t_snode *si_cmp(t_ast_element *p, int cmp) {
-    t_snode *node1 = SI0(p);
-    t_snode *node2 = SI1(p);
-
-    // Check if the references are to the same object and we are doing a ==. If so, we are always true
-    if (node1->data == node2->data && cmp == COMPARISON_EQ) return 0;
-
-    t_object *obj1 = si_get_object(node1);
-    t_object *obj2 = si_get_object(node2);
-    if (obj1->type != obj2->type) {
-        saffire_error("Types on comparison are not equal");
-    }
-
-    t_object *obj = object_comparison(obj1, cmp, obj2);
-    RETURN_SNODE_OBJECT(obj);
-}
-
-
-
-/**
- * Calls object's operator
- */
-static t_snode *si_opr(t_ast_element *p, int opr) {
-    t_snode *node1 = SI0(p);
-    t_snode *node2 = SI1(p);
-
-    t_object *obj1 = si_get_object(node1);
-    t_object *obj2 = si_get_object(node2);
-    if (obj1->type != obj2->type) {
-        saffire_error("Types on operator are not equal");
-    }
-
-    t_object *obj = object_operator(obj1, opr, 0, 1, obj2);
-    RETURN_SNODE_OBJECT(obj);
-}
-
-
-
-#ifdef __DEBUG
-    extern t_dll *object_dll;
-#endif
-
 
 
 /**
  *
  */
 void saffire_interpreter(t_ast_element *p) {
-    vars = ht_create();
+    si_init();
     _saffire_interpreter(p);
-    ht_destroy(vars);
+    si_fini();
 
 #ifdef __DEBUG
     t_dll_element *e = DLL_HEAD(object_dll);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        printf("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
+        DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
         e = DLL_NEXT(e);
     }
 #endif

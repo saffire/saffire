@@ -7,7 +7,7 @@
 
    which can be assigned to either loose variables, or inside one variable:
 
-   foreach $arr as $key, $val, $meta {
+   foreach $arr as $val, $key, $meta {
    }
 
    or

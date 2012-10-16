@@ -102,8 +102,8 @@
     #define OBJECT_FLAG_STATIC        2            /* Do not free memory for this object */
 
 
-    #define OBJECT_IS_BOOLEAN(obj) \
-        (obj->type == objectTypeBoolean)
+    #define OBJECT_IS_STRING(obj)   (obj->type == objectTypeString)
+    #define OBJECT_IS_BOOLEAN(obj)  (obj->type == objectTypeBoolean)
 
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
@@ -183,7 +183,7 @@
 
     // Returns self
     #define RETURN_SELF \
-        { object_inc_ref((t_object *)self); return (t_object *)self; }
+        { return (t_object *)self; }
 
 
     int object_is_immutable(t_object *obj);

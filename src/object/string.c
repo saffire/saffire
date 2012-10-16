@@ -39,6 +39,7 @@
 #include "object/numerical.h"
 #include "general/smm.h"
 #include "general/md5.h"
+#include "debug.h"
 
 extern char *wctou8(const wchar_t *wstr);
 
@@ -65,11 +66,11 @@ static void recalc_hash(t_string_object *obj) {
     }
     md5_finish(&state, obj->hash);
 
-    printf("Recalc_Hash:");
+    DEBUG_PRINT("Recalc_Hash:");
     for (int i=0; i!=16; i++) {
-        printf("%02X", (unsigned char)obj->hash[i]);
+        DEBUG_PRINT("%02X", (unsigned char)obj->hash[i]);
     }
-    printf("\n");
+    DEBUG_PRINT("\n");
 }
 
 

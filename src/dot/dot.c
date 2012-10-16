@@ -71,19 +71,19 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
 
     fprintf(fp, "\tN_%d [", cur_node_nr);
     switch (p->type) {
-        case typeString :
+        case typeAstString :
             fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->string.value);
             break;
 
-        case typeNumerical :
+        case typeAstNumerical :
             fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->numerical.value);
             break;
 
-        case typeIdentifier :
+        case typeAstIdentifier :
             fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.name);
             break;
 
-        case typeOpr :
+        case typeAstOpr :
             fprintf(fp, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
 
             // Plot all the operands
@@ -92,18 +92,18 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
             }
             break;
 
-        case typeNull :
+        case typeAstNull :
             fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{N:%d|Type=NULL}\"]\n", cur_node_nr);
             break;
 
-        case typeInterface :
+        case typeAstInterface :
             fprintf(fp, "fillcolor=darkseagreen,style=\"filled\",label=\"{N:%d|Type=Interface|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->interface.name, show_modifiers(p->interface.modifiers), p->interface.modifiers);
             // Plot implementations and body
             saffire_dot_node_iterate(fp, p->interface.implements, cur_node_nr);
             saffire_dot_node_iterate(fp, p->interface.body, cur_node_nr);
             break;
 
-        case typeClass :
+        case typeAstClass :
             fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{N:%d|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
             // Plot extends, implementations and body
             saffire_dot_node_iterate(fp, p->class.extends, cur_node_nr);
@@ -111,7 +111,7 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
             saffire_dot_node_iterate(fp, p->class.body, cur_node_nr);
             break;
 
-        case typeMethod:
+        case typeAstMethod:
             fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Method|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->method.name, show_modifiers(p->method.modifiers), p->method.modifiers);
             // Plot arguments and body
             saffire_dot_node_iterate(fp, p->method.arguments, cur_node_nr);

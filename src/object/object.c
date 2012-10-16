@@ -34,6 +34,8 @@
 #include "object/regex.h"
 #include "general/smm.h"
 #include "general/dll.h"
+#include "interpreter/errors.h"
+#include "debug.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -65,7 +67,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     // Try and find the correct method (might be found of the bases classes!)
 
     while (htb == NULL) {
-        printf(">>> Finding method '%s' on object %s\n", method, cur_obj->name);
+        DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method, cur_obj->name);
 
         // Find the method in the current object
         htb = ht_find(cur_obj->methods, method);
@@ -73,7 +75,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
-            printf(">>> Cannot call method '%s' on object %s: not found\n", method, obj->name);
+            DEBUG_PRINT(">>> Cannot call method '%s' on object %s: not found\n", method, obj->name);
             return NULL;
         }
 
@@ -81,7 +83,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
         cur_obj = cur_obj->parent;
     }
 
-    printf(">>> Calling method '%s' on object %s\n", method, obj->name);
+    DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method, obj->name);
     t_object *(*func)(t_object *, t_dll *dll) = htb->data;
 
     // Add all arguments to a DLL
@@ -112,7 +114,7 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->operators != NULL) {
-        printf(">>> Finding operator '%d' on object %s\n", operator, cur_obj->name);
+        DEBUG_PRINT(">>> Finding operator '%d' on object %s\n", operator, cur_obj->name);
 
         switch (operator) {
             case OPERATOR_ADD : func = cur_obj->operators->add; break;
@@ -135,7 +137,7 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
     }
 
 
-    printf(">>> Calling operator %d on object %s\n", operator, obj->name);
+    DEBUG_PRINT(">>> Calling operator %d on object %s\n", operator, obj->name);
 
     // Add all arguments to a DLL
     va_start(arg_list, arg_count);
@@ -163,7 +165,7 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->comparisons != NULL) {
-        printf(">>> Finding comparison '%d' on object %s\n", cmp, cur_obj->name);
+        DEBUG_PRINT(">>> Finding comparison '%d' on object %s\n", cmp, cur_obj->name);
 
         switch (cmp) {
             case COMPARISON_EQ : func = cur_obj->comparisons->eq; break;
@@ -184,12 +186,12 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     }
 
 
-    printf(">>> Calling comparison %d on object %s\n", cmp, obj1->name);
+    DEBUG_PRINT(">>> Calling comparison %d on object %s\n", cmp, obj1->name);
 
     // Call the actual equality operator and return the result
     int ret = func(obj1, obj2);
 
-    printf ("Result from the comparison: %d\n", ret);
+    DEBUG_PRINT("Result from the comparison: %d\n", ret);
 
     return ret ? Object_True : Object_False;
 }
@@ -199,7 +201,7 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
  * Clones an object and returns new object
  */
 t_object *object_clone(t_object *obj) {
-    printf("Cloning: %s\n", obj->name);
+    DEBUG_PRINT("Cloning: %s\n", obj->name);
 
     // No clone function, so return same object
     if (! obj || ! obj->funcs || ! obj->funcs->clone) {
@@ -215,7 +217,7 @@ t_object *object_clone(t_object *obj) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-    printf("Increasing reference for: %s (%08X) to %d\n", obj->name, obj, obj->ref_count);
+    DEBUG_PRINT("Increasing reference for: %s (%08X) to %d\n", obj->name, obj, obj->ref_count);
 }
 
 
@@ -224,7 +226,7 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-    printf("Decreasing reference for: %s (%08X) to %d\n", obj->name, obj, obj->ref_count);
+    DEBUG_PRINT("Decreasing reference for: %s (%08X) to %d\n", obj->name, obj, obj->ref_count);
 }
 
 
@@ -245,12 +247,12 @@ void object_free(t_object *obj) {
 //    object_dec_ref(obj);
     if (obj->ref_count > 0) return;
 
-    printf("Freeing object: %08X (%d) %s\n", obj, obj->flags, obj->name);
+    DEBUG_PRINT("Freeing object: %08X (%d) %s\n", obj, obj->flags, obj->name);
 
 
     // Don't free if it's a static object
     if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) {
-        printf("not allowed to free object: %s\n", obj->name);
+        saffire_warning("not allowed to free object: %s\n", obj->name);
         return;
     }
 
@@ -270,7 +272,7 @@ void object_free(t_object *obj) {
 t_object *object_new(t_object *obj, ...) {
     va_list arg_list;
 
-    printf("Instantiating a new object: %s\n", obj->name);
+    DEBUG_PRINT("Instantiating a new object: %s\n", obj->name);
 
     // Return NULL when we cannot 'new' this object
     if (! obj || ! obj->funcs || ! obj->funcs->new) RETURN_NULL;
@@ -348,7 +350,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         ptr++;
     }
     if (cnt < dll->size) {
-        printf("At least %d arguments are needed. Only %d are given", cnt, dll->size);
+        DEBUG_PRINT("At least %d arguments are needed. Only %d are given", cnt, dll->size);
         result = 0;
         goto done;
     }
@@ -382,7 +384,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
                 continue;
                 break;
             default :
-                printf("Cannot parse argument '%c'\n", c);
+                saffire_warning("Cannot parse argument '%c'\n", c);
                 result = 0;
                 goto done;
                 break;
@@ -392,7 +394,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         t_object **storage_obj = va_arg(storage_list, t_object **);
         t_object *argument_obj = e->data;
         if (type != objectTypeAny && type != argument_obj->type) {
-            printf("Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+            saffire_warning("Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
         }

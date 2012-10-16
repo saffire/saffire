@@ -92,8 +92,8 @@ class Color {
 
 
 
-const PMS_GREEN = 2;
+const PMS_BLUE = 2;
 
 $c1 = Color("yellow");
-$c2 = $c1 + Color(PMS_GREEN);
+$c2 = $c1 + Color(PMS_BLUE);
 io.printf("The mixed color is: ", $c2);

@@ -24,7 +24,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#include "debug.h"
 #include "object/object.h"
 #include "object/base.h"
 #include "object/boolean.h"
@@ -32,6 +32,7 @@
 #include "object/string.h"
 #include "object/null.h"
 #include "general/smm.h"
+#include "interpreter/errors.h"
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -87,10 +88,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
-
-    obj->value = abs(self->value);
-
+    t_object *obj = object_new(Object_Numerical, abs(self->value));
     RETURN_OBJECT(obj);
 }
 
@@ -99,10 +97,7 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_numerical_object *obj = (t_numerical_object *)object_clone((t_object *)self);
-
-    obj->value = 0 - self->value;
-
+    t_object *obj = object_new(Object_Numerical, 0 - self->value);
     RETURN_OBJECT(obj);
 }
 
@@ -148,12 +143,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value += other->value;
         RETURN_SELF;
     }
@@ -168,12 +163,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value -= other->value;
         RETURN_SELF;
     }
@@ -193,7 +188,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value *= other->value;
         RETURN_SELF;
     }
@@ -213,7 +208,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value /= other->value;
         RETURN_SELF;
     }
@@ -228,12 +223,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value %= other->value;
         RETURN_SELF;
     }
@@ -248,12 +243,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value &= other->value;
         RETURN_SELF;
     }
@@ -268,12 +263,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value |= other->value;
         RETURN_SELF;
     }
@@ -288,12 +283,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value ^= other->value;
         RETURN_SELF;
     }
@@ -308,12 +303,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value <<= other->value;
         RETURN_SELF;
     }
@@ -328,12 +323,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     if (in_place) {
-        printf("Add to self\n");
+        DEBUG_PRINT("Add to self\n");
         self->value >>= other->value;
         RETURN_SELF;
     }
@@ -348,7 +343,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
-    printf("Numerical EQ called");
+    DEBUG_PRINT("Numerical EQ called");
 
     t_numerical_object *self = (t_numerical_object *)_self;
     t_numerical_object *other = (t_numerical_object *)_other;

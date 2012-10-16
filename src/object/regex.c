@@ -43,6 +43,8 @@
 #include "object/numerical.h"
 #include "general/smm.h"
 #include "general/md5.h"
+#include "debug.h"
+#include "interpreter/errors.h"
 
 
 
@@ -102,7 +104,7 @@ SAFFIRE_METHOD(regex, match) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -114,17 +116,17 @@ SAFFIRE_METHOD(regex, match) {
     if (rc < 0) {
         switch (rc) {
             case PCRE_ERROR_NOMATCH:
-                printf("String didn't match.\n");
+                saffire_warning("String didn't match.\n");
                 break;
             default :
-                printf("Error while matching: %d\n", rc);
+                saffire_warning("Error while matching: %d\n", rc);
                 break;
         }
     }
 
     // Display result
     for (int i=0; i<rc; i++) {
-        printf("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
+        DEBUG_PRINT("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
     }
 
     // Free utf8 string
@@ -251,7 +253,7 @@ static t_object *obj_new(va_list arg_list) {
 
     new_obj->regex = pcre_compile(buf, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
     if (! new_obj->regex) {
-        printf("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
+        saffire_warning("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
     }
 
     smm_free (buf);
