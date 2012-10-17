@@ -91,6 +91,7 @@
     // actual root element
     t_ast_element *ast_root;
 
+    t_ast_element *ast_generate_from_file(char *);
     t_ast_element *ast_generate_tree(FILE *fp);
 
     t_ast_element *ast_string(char *value);

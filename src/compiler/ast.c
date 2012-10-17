@@ -47,7 +47,6 @@ extern int yylineno;
  */
 t_ast_element *ast_generate_tree(FILE *fp) {
     // Initialize system
-//    svar_init_table();
     sfc_init();
 
     // Parse the file input, will return the tree in the global ast_root variable
@@ -56,7 +55,6 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     yylex_destroy();
 
     sfc_fini();
-//    svar_fini_table();
 
     // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
     return ast_root;
@@ -313,4 +311,22 @@ void ast_free_node(t_ast_element *p) {
             break;
     }
     smm_free(p);
+}
+
+
+t_ast_element *ast_generate_from_file(char *source_file) {
+    // Open file, or use stdin if needed
+    FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
+    if (!fp) {
+        fprintf(stderr, "Could not open file: %s\n", source_file);
+        return 1;
+    }
+
+    // Generate source file into an AST tree
+    ast_generate_tree(fp);
+
+    // Close file
+    fclose(fp);
+
+    return ast_root;
 }
