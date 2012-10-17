@@ -39,7 +39,7 @@ noinst_LIBRARIES = libsaffire.a
 
 # Libsaffire is the main core of saffire
 libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
-                  general/svar.c compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
+                  compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
                   general/hashtable.c general/smm.c general/md5.c general/dll.c \
                   interpreter/context.c interpreter/saffire_interpreter.c interpreter/errors.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \

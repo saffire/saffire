@@ -27,7 +27,6 @@
 #ifndef __AST_H__
 #define __AST_H__
 
-    #include "general/svar.h"
     #include "compiler/class.h"
 
     // different kind of nodes we manage
@@ -100,6 +99,7 @@
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_string_concat(t_ast_element *src, char *s);
     t_ast_element *ast_concat(t_ast_element *src, char *s);
     t_ast_element *ast_class(t_class *class, t_ast_element *body);
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);

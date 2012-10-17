@@ -33,48 +33,93 @@
 #include "general/hashtable.h"
 #include "general/smm.h"
 
-t_ns_context *si_create_context(t_ns_context *ctx, char *namespace) {
-    if (strncmp(namespace, "::", strlen("::"))) {
-        saffire_error("Context should start with ::");
+
+#define NS_SEPARATOR "::"
+
+
+t_ns_context *current_context = NULL;
+
+/**
+ * Returns the current (latest) context
+ */
+t_ns_context *si_get_current_context(void) {
+  return current_context;
+}
+
+
+/**
+ * Creates a new context
+ */
+t_ns_context *si_create_context(char *namespace) {
+    char *new_ns;
+    if (strncmp(namespace, NS_SEPARATOR, strlen(NS_SEPARATOR))) {
+        // Relative namespace, concat it
+        t_ns_context *ctx = si_get_current_context();
+
+        int len = strlen(namespace) + strlen(NS_SEPARATOR) + strlen(ctx->namespace) + 1;
+        new_ns = (char *)smm_malloc(len);
+        if (strlen(ctx->namespace)) {
+            strcpy(new_ns, ctx->namespace);
+            strcat(new_ns, namespace);
+            strcat(new_ns, NS_SEPARATOR);
+        } else {
+          strcpy(new_ns, namespace);
+          strcat(new_ns, NS_SEPARATOR);
+        }
+
+    } else {
+        int len = strlen(namespace) + strlen(NS_SEPARATOR) + 1;
+        new_ns = (char *)smm_malloc(len);
+        strcpy(new_ns, namespace + strlen(NS_SEPARATOR));        // Remove the absolute ::
+        strcat(new_ns, NS_SEPARATOR);
     }
 
-    DEBUG_PRINT("Creating context: %s\n", namespace);
+    // Global namespace is a special case, otherwise we get double ::'s
+    // @TODO check for double seperator!
+    if (! strcmp(new_ns, "::::")) {
+        new_ns[3] = '\0';
+    }
+
+
+    DEBUG_PRINT("Creating context: %s\n", new_ns);
     t_ns_context *new_ctx = smm_malloc(sizeof(t_ns_context));
 
     // Populate new context
-    t_dll_element *e = DLL_TAIL(contexts);
-    new_ctx->parent = e == NULL ? NULL : (t_ns_context *)e->data;     // Parent is the last pushed context (or NULL on the first)
-
-    new_ctx->namespace = smm_strdup(namespace+2);       // Remove the :: in the stored namespace
-    new_ctx->vars = ht_create();                        // This context starts with a clean variable slate.
+    new_ctx->namespace = smm_strdup(new_ns);
+    new_ctx->vars = ht_create();                     // This context starts with a clean variable slate.
 
     // Save the namespace in our global namespace list if it does not exists already
-    if (! ht_find(namespaces, namespace)) {
-        ht_add(namespaces, namespace, new_ctx);
+    if (! ht_find(namespaces, new_ns)) {
+        DEBUG_PRINT(">>>>>> Added namespace: '%s'\n", new_ns);
+        ht_add(namespaces, new_ns, new_ctx);     // Save in namespace hash
+        dll_append(contexts, new_ctx);              // Save in DLL as well
     }
 
     return new_ctx;
 }
 
 void context_init(void) {
-    // Create namespace hash
+    // Create namespace hash and DLL for iteration and fast lookups
     namespaces = ht_create();
-
     contexts = dll_init();
 
-    // Create default context
-    t_ns_context *ctx = si_create_context(NULL, "::");
-    dll_append(contexts, ctx);  // Initial context
-
-    // @TODO: Remove these contexts
-    t_ns_context *ioctx = si_create_context(ctx, "::io::");
-    si_create_context(ioctx, "::io::console::");
-    si_create_context(ctx, "::saffire::");
+    // Create default global context
+    current_context = si_create_context(NS_SEPARATOR);
 }
 
 void context_fini(void) {
-    // Free namespaces hash
+#ifdef __DEBUG
+    t_dll_element *e = DLL_HEAD(contexts);
+    while (e) {
+        t_ns_context *ctx = (t_ns_context *)e->data;
+        printf("Context: '%s'\n", ctx->namespace);
+        printf("  Vars : %d\n", ctx->vars->element_count);
+        e = DLL_NEXT(e);
+    }
+#endif
+    // Free namespaces hash and dll
     ht_destroy(namespaces);
+    dll_free(contexts);
 }
 
 
@@ -82,34 +127,36 @@ void context_fini(void) {
  * Splits a fully qualified variable name into namespace and variable separated.
  */
 void si_split_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var) {
-    DEBUG_PRINT("si_split_fqn (::%s) : '%s'\n", current_ctx->namespace, var);
+    DEBUG_PRINT("si_split_fqn (%s) : '%s'\n", current_ctx->namespace, var);
     int fqn_len = 0;
     char *fqn;
 
+    // TODO: Check for separator!
     if (var[0] == ':' && var[1] == ':') {
         // Already a fully qualified name
         fqn_len = strlen(var);
         fqn = smm_malloc(fqn_len);
         strcpy(fqn, var);
     } else {
-        fqn_len = strlen(var) + strlen(current_ctx->namespace) + strlen("::");
+        fqn_len = strlen(var) + strlen(current_ctx->namespace);
         fqn = smm_malloc(fqn_len);
         strcpy(fqn, current_ctx->namespace);
-        strcat(fqn, "::");
         strcat(fqn, var);
     }
 
     // We now have a fully qualified name. We now can split the variable from the namespace, and check for presence
     DEBUG_PRINT("FQN: '%s'\n", fqn);
 
+    // TODO: Check for separator!
     char *ch = strrchr(fqn, ':') + 1;
     if (ch == NULL) {
         saffire_error("Cannot find last : in fully qualified name '%s'!", fqn);
     }
     *fqn_var = smm_strdup(ch);
 
+    // TODO: Check for separator!
     *fqn_ns = smm_strdup(fqn);
-    ch = strrchr(*fqn_ns, ':')+1 ;
+    ch = strrchr(*fqn_ns, ':')+1;
     *ch = '\0';
 
     DEBUG_PRINT("NS  : '%s'\n", *fqn_ns);
@@ -119,17 +166,25 @@ void si_split_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
 }
 
 
+/**
+ * Find namespace, or NULL when does not exist
+ */
+t_ns_context *si_find_namespace(const char *namespace) {
+    printf("t_ns_context *si_find_namespace(%s) {\n", namespace);
+    t_hash_table_bucket *htb = ht_find(namespaces, (char *)namespace);
+    if (!htb) return NULL;
+    return (t_ns_context *)htb->data;
+}
 
 /**
  * Returns t_ns_context of the namespace. Errors when not found
  */
 t_ns_context *si_get_namespace(const char *namespace) {
-    // Find the namespace
-    t_hash_table_bucket *htb = ht_find(namespaces, (char *)namespace);
-    if (htb == NULL) {
+    t_ns_context *ns = si_find_namespace(namespace);
+    if (ns == NULL) {
         saffire_error("Unknown namespace '%s'", namespace);
     }
-    return (t_ns_context *)htb->data;
+    return ns;
 }
 
 /**
@@ -138,10 +193,9 @@ t_ns_context *si_get_namespace(const char *namespace) {
 t_hash_table_bucket *si_find_in_context(char *var) {
     char *fqn_ns, *fqn_var;
 
-    t_dll_element *e = DLL_TAIL(contexts);
-    t_ns_context *ctx = (t_ns_context *)e->data;
+    t_ns_context *ctx = si_get_current_context();
 
-    DEBUG_PRINT("si_find_in_context (::%s) : '%s'\n", ctx->namespace, var);
+    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->namespace, var);
 
     // Create fqn from our variables
     si_split_fqn(ctx, var, &fqn_ns, &fqn_var);

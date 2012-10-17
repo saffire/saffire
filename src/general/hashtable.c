@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "hashtable.h"
-#include "smm.h"
+#include "general/hashtable.h"
+#include "general/smm.h"
 
 #define HT_INITIAL_BUCKET_SIZE   16             // Number of initial buckets
 

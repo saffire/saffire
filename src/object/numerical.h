@@ -27,7 +27,7 @@
 #ifndef __OBJECT_NUMERICAL_H__
 #define __OBJECT_NUMERICAL_H__
 
-    #include "object.h"
+    #include "object/object.h"
 
     #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_new(Object_Numerical, n));
 

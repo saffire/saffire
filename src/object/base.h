@@ -27,7 +27,7 @@
 #ifndef __OBJECT_BASE_H__
 #define __OBJECT_BASE_H__
 
-    #include "object.h"
+    #include "object/object.h"
 
     #define t_base_object t_object
 

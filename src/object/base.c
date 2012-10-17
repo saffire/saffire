@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <string.h>
 #include "object/object.h"
 #include "object/base.h"
 #include "object/string.h"
@@ -32,7 +33,6 @@
 #include "object/boolean.h"
 #include "object/null.h"
 #include "general/smm.h"
-#include <string.h>
 
 
 /* ======================================================================

@@ -25,6 +25,10 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <locale.h>
+#include <stdarg.h>
 #include "object/object.h"
 #include "object/string.h"
 #include "object/boolean.h"
@@ -36,10 +40,6 @@
 #include "general/dll.h"
 #include "interpreter/errors.h"
 #include "debug.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <stdarg.h>
 
 
 #ifdef __DEBUG

@@ -31,7 +31,6 @@
 #include <stdarg.h>
 #include "compiler/saffire_compiler.h"
 #include "compiler/parser.tab.h"
-#include "general/svar.h"
 #include "general/smm.h"
 #include "compiler/ast.h"
 
@@ -48,7 +47,7 @@ extern int yylineno;
  */
 t_ast_element *ast_generate_tree(FILE *fp) {
     // Initialize system
-    svar_init_table();
+//    svar_init_table();
     sfc_init();
 
     // Parse the file input, will return the tree in the global ast_root variable
@@ -57,7 +56,7 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     yylex_destroy();
 
     sfc_fini();
-    svar_fini_table();
+//    svar_fini_table();
 
     // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
     return ast_root;
@@ -87,7 +86,7 @@ t_ast_element *ast_string(char *value) {
 
     p->type = typeAstString;
     p->string.value = smm_strdup(value);
-
+    
     return p;
 }
 
@@ -212,8 +211,14 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
 
 
 t_ast_element *ast_concat(t_ast_element *src, char *s) {
-    src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s));
+    src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s) + 1);
     strcat(src->identifier.name, s);
+    return src;
+}
+
+t_ast_element *ast_string_concat(t_ast_element *src, char *s) {
+    src->string.value = smm_realloc(src->string.value, strlen(src->string.value) + strlen(s) + 1);
+    strcat(src->string.value, s);
     return src;
 }
 

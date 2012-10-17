@@ -32,7 +32,6 @@
 #include "interpreter/context.h"
 #include "interpreter/errors.h"
 #include "compiler/parser.tab.h"
-#include "general/svar.h"
 #include "general/hashtable.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
@@ -44,7 +43,7 @@
 #include "debug.h"
 
 extern char *get_token_string(int token);
-extern char *wctou8(const wchar_t *wstr);
+extern char *wctou8(const wchar_t *wstr, long len);
 static t_snode *_saffire_interpreter(t_ast_element *p);
 
 // A stack maintained by the AST which holds the current line for the current AST
@@ -196,10 +195,12 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     wchar_t *wchar_tmp;
     switch (p->type) {
         case typeAstString :
-            DEBUG_PRINT("new string object: %s\n", p->string.value);
+            DEBUG_PRINT("new string object: '%s'\n", p->string.value);
 
             // Allocate enough room to hold string in wchar and convert
-            wchar_tmp = (wchar_t *)malloc(strlen(p->string.value)*sizeof(wchar_t));
+            int len = strlen(p->string.value)*sizeof(wchar_t);
+            wchar_tmp = (wchar_t *)smm_malloc(len * sizeof(wchar_t));
+            memset(wchar_tmp, 0, len * sizeof(wchar_t));
             mbstowcs(wchar_tmp, p->string.value, strlen(p->string.value));
 
             // create string object
@@ -252,8 +253,17 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_NULL();
                     break;
                 case T_USE :
-                    // @TODO: Use statements are not operational
-                    saffire_warning("Use statements are not functional (yet)");
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
+
+                    char *namespace = wctou8(((t_string_object *)obj1)->value, ((t_string_object *)obj1)->char_length);
+                    if (OP_CNT(p) == 2) {
+                        node2 = SI1(p);
+                        obj2 = si_get_object(node2);
+                        namespace = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+                    }
+
+                    si_create_context(namespace);
                     break;
 
                 case T_EXPRESSIONS :
@@ -416,7 +426,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         if (! OBJECT_IS_STRING(obj2)) {
                             saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
                         }
-                        method_name = wctou8(((t_string_object *)obj2)->value);
+                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
                     } else {
                         // We duplicate, so we can always free the string later on
                         method_name = smm_strdup(hte->identifier.name);
@@ -529,7 +539,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 void saffire_interpreter(t_ast_element *p) {
     si_init();
     _saffire_interpreter(p);
-    si_fini();
 
 #ifdef __DEBUG
     t_dll_element *e = DLL_HEAD(object_dll);
@@ -539,4 +548,6 @@ void saffire_interpreter(t_ast_element *p) {
         e = DLL_NEXT(e);
     }
 #endif
+
+    si_fini();
 }

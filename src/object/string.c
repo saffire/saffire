@@ -41,7 +41,7 @@
 #include "general/md5.h"
 #include "debug.h"
 
-extern char *wctou8(const wchar_t *wstr);
+extern char *wctou8(const wchar_t *wstr, long len);
 
 
 /* ======================================================================
@@ -354,6 +354,8 @@ void object_string_fini(void) {
  * Frees memory for a string object
  */
 static void obj_free(t_object *obj) {
+    if (! obj) return;
+
     t_string_object *str_obj = (t_string_object *)obj;
 
     if (str_obj->value != NULL) {
@@ -362,27 +364,6 @@ static void obj_free(t_object *obj) {
     }
 }
 
-/**
- * Clones a string object into a new object
- */
-static t_object *obj_clone(t_object *obj) {
-    t_string_object *str_obj = (t_string_object *)obj;
-
-    // Create new object and copy all info
-    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
-    memcpy(new_obj, str_obj, sizeof(t_string_object));
-
-    // Newly separated object, so refcount is 1 again
-    new_obj->ref_count = 1;
-
-    // Copy / set internal data
-    new_obj->char_length = str_obj->char_length;
-    new_obj->byte_length = str_obj->byte_length;
-    memcpy(new_obj->hash, str_obj->hash, 16);
-    new_obj->value = wcsdup(str_obj->value);
-
-    return (t_object *)new_obj;
-}
 
 
 static t_object *obj_new(va_list arg_list) {
@@ -393,9 +374,10 @@ static t_object *obj_new(va_list arg_list) {
     // Set internal data
     char utf8_char_buf[MB_LEN_MAX];
 
-    wchar_t value = va_arg(arg_list, wchar_t);
+    wchar_t *value = va_arg(arg_list, wchar_t *);
+    new_obj->char_length = wcslen(value);
 
-    new_obj->value = wcsdup((const wchar_t *)value);
+    new_obj->value = wcsdup(value);
     new_obj->char_length = wcslen(new_obj->value);
 
     // Calculate length for each character, and add to total
@@ -411,7 +393,7 @@ static t_object *obj_new(va_list arg_list) {
 
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
-    char *buf = wctou8(((t_string_object *)obj)->value);
+    char *buf = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
     memcpy(global_buf, buf, 1024);
     global_buf[1023] = 0;
     smm_free(buf);
@@ -424,7 +406,7 @@ static char *obj_debug(struct _object *obj) {
 t_object_funcs string_funcs = {
         obj_new,              // Allocate a new string object
         obj_free,             // Free a string object
-        obj_clone,            // Clone a string object
+        NULL,                 // Clone a string object
         obj_debug
 };
 

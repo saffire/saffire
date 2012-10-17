@@ -54,6 +54,7 @@ void test_fini(void) {
     for (int i=0; i!=MAX_OBJECTS; i++) {
         if (! obj[i]) continue;
         object_free(obj[i]);
+        obj[i] = NULL;
     }
 }
 

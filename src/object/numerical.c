@@ -24,6 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdio.h>
+#include <string.h>
+#include <wchar.h>
+#include <wctype.h>
 #include "debug.h"
 #include "object/object.h"
 #include "object/base.h"
@@ -33,10 +37,6 @@
 #include "object/null.h"
 #include "general/smm.h"
 #include "interpreter/errors.h"
-#include <stdio.h>
-#include <string.h>
-#include <wchar.h>
-#include <wctype.h>
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
 #define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */

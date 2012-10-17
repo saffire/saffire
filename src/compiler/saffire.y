@@ -113,7 +113,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> data_structure logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name field_access method_call_pre_parenthesis
+%type <nPtr> special_name field_access method_call_pre_parenthesis namespace_identifier
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -152,10 +152,18 @@ non_empty_use_statement_list:
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE T_IDENTIFIER T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($4)); smm_free($2); smm_free($4); }
+        T_USE namespace_identifier T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, $2, ast_string($4));  }
         /* use <foo>; */
-    |   T_USE T_IDENTIFIER                   ';' { TRACE $$ = ast_opr(T_USE, 2, ast_string($2), ast_string($2)); smm_free($2); }
+    |   T_USE namespace_identifier                   ';' { TRACE $$ = ast_opr(T_USE, 1, $2); }
 ;
+
+
+namespace_identifier:
+       T_IDENTIFIER                                 { TRACE $$ = ast_string($1); }
+    |  T_NS_SEP T_IDENTIFIER                        { TRACE $$ = ast_string("::"); $$ = ast_string_concat($$, $2); }
+    |  namespace_identifier T_NS_SEP T_IDENTIFIER   { TRACE $$ = ast_string_concat($$, "::"); $$ = ast_string_concat($$, $3); }
+;
+
 
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -445,8 +453,8 @@ real_scalar_value:
 
 qualified_name:
        T_IDENTIFIER                             { TRACE $$ = ast_identifier($1); }
-    |  T_NS_SEP T_IDENTIFIER                    { TRACE $$ = ast_identifier("::"); ast_concat($$, $2); }
-    |  qualified_name T_NS_SEP T_IDENTIFIER     { TRACE $$ = ast_concat($$, "::"); ast_concat($$, $3); }
+    |  T_NS_SEP T_IDENTIFIER                    { TRACE $$ = ast_identifier("::"); $$ = ast_concat($$, $2); }
+    |  qualified_name T_NS_SEP T_IDENTIFIER     { TRACE $$ = ast_concat($$, "::"); $$ = ast_concat($$, $3); }
 ;
 
 field_access:

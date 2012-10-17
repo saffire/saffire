@@ -30,7 +30,6 @@
     #include "general/dll.h"
 
     typedef struct _context {
-        struct _context *parent;        // parent context (NULL if global space)
         t_hash_table *vars;
         char *namespace;                // Pointer to the namespace of this context
     } t_ns_context;
@@ -42,10 +41,12 @@
     void context_fini(void);
     t_ns_context *sfi_push_context(char *namespace);
     void si_pop_context(void);
+    t_ns_context *si_get_current_context(void);
 
     t_hash_table_bucket *si_find_in_context(char *var);
     t_ns_context *si_get_namespace(const char *namespace);
     void si_create_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var);
+    t_ns_context *si_create_context(char *namespace);
 
 
 #endif
