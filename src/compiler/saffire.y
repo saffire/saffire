@@ -113,7 +113,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> data_structure logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name field_access method_call_pre_parenthesis namespace_identifier scalar_value
+%type <nPtr> special_name method_call_pre_parenthesis namespace_identifier scalar_value
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -410,7 +410,6 @@ logical_unary_expression:
 primary_expression:
         qualified_name          { TRACE $$ = $1; }
     |   method_call             { TRACE $$ = $1; }
-    |   field_access            { TRACE $$ = $1; }
     |   special_name            { TRACE $$ = $1; }
     |   data_structure          { TRACE $$ = $1; }
     |   real_scalar_value       { TRACE $$ = $1; }
@@ -463,13 +462,12 @@ qualified_name:
     |  qualified_name T_NS_SEP T_IDENTIFIER     { TRACE $$ = ast_concat($$, "::"); $$ = ast_concat($$, $3); }
 ;
 
-field_access:
-        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
-    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
-;
 
 method_call:
-        method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
+        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
+    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
+
+    |   method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
     |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
     |   qualified_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_identifier($3), $5); }
     |   qualified_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
@@ -645,6 +643,11 @@ data_structure:
         data_structure_name  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
     |   data_structure_name  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
     |   data_structure_name  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
+
+    |   method_call  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   method_call  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   method_call  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
+
 ;
 
 data_structure_name:
