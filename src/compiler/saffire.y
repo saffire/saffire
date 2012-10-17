@@ -105,7 +105,7 @@
 %type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
-%type <nPtr> method_call real_postfix_expression
+%type <nPtr> method_call real_postfix_expression data_structure_name
 %type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator assignment_operator
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> relational_expression catch_header conditional_expression assignment_expression real_scalar_value
@@ -113,7 +113,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> data_structure logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name field_access method_call_pre_parenthesis namespace_identifier
+%type <nPtr> special_name field_access method_call_pre_parenthesis namespace_identifier scalar_value
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -200,11 +200,11 @@ statement_list:
 statement:
         label_statement        { TRACE $$ = $1; }
     |   compound_statement     { TRACE $$ = $1; }
+    |   jump_statement         { TRACE $$ = $1; }
     |   expression_statement   { TRACE $$ = $1; }
     |   selection_statement    { TRACE $$ = $1; }
     |   iteration_statement    { TRACE $$ = $1; }
-    |   jump_statement         { TRACE $$ = $1; }
-    |   guarding_statement     { TRACE $$ = $1; }
+    |   guarding_statement     {  TRACE $$ = $1; }
 ;
 
 /* A compound statement is a (set of) statement captured by curly brackets */
@@ -217,7 +217,6 @@ compound_statement:
 selection_statement:
         T_IF conditional_expression statement                  { TRACE $$ = ast_opr(T_IF, 2, $2, $3); }
     |   T_IF conditional_expression statement T_ELSE statement { TRACE $$ = ast_opr(T_IF, 3, $2, $3, $5); }
-
     |   T_SWITCH '(' conditional_expression ')' { sfc_loop_enter(); sfc_switch_begin(); } '{' case_statements '}' { sfc_loop_leave(); sfc_switch_end(); TRACE $$ = ast_opr(T_SWITCH, 2, $3, $7); }
 ;
 
@@ -412,6 +411,7 @@ primary_expression:
         qualified_name          { TRACE $$ = $1; }
     |   method_call             { TRACE $$ = $1; }
     |   field_access            { TRACE $$ = $1; }
+    |   special_name            { TRACE $$ = $1; }
     |   data_structure          { TRACE $$ = $1; }
     |   real_scalar_value       { TRACE $$ = $1; }
     |   '(' expression ')'      { TRACE $$ = $2; }
@@ -448,8 +448,14 @@ real_scalar_value:
         T_LNUM        { TRACE $$ = ast_numerical($1); }
     |   T_STRING      { TRACE $$ = ast_string($1); smm_free($1); }
     |   T_REGEX       { TRACE $$ = ast_string($1); smm_free($1); }
-//    |   T_IDENTIFIER  { sfc_check_permitted_identifiers($1); TRACE $$ = ast_identifier($1); smm_free($1); }
 ;
+scalar_value:
+        T_LNUM        { TRACE $$ = ast_numerical($1); }
+    |   T_STRING      { TRACE $$ = ast_string($1); smm_free($1); }
+    |   T_REGEX       { TRACE $$ = ast_string($1); smm_free($1); }
+    |   T_IDENTIFIER  { sfc_check_permitted_identifiers($1); TRACE $$ = ast_identifier($1); smm_free($1); }
+;
+
 
 qualified_name:
        T_IDENTIFIER                             { TRACE $$ = ast_identifier($1); }
@@ -473,6 +479,8 @@ method_call:
     |   qualified_name '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 2, $1, ast_nop()); }
     |   method_call '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
     |   method_call '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+    |   '(' expression ')' '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_identifier($5), $7); smm_free($5); }
+    |   '(' expression ')' '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_identifier($5), ast_nop()); smm_free($5); }
 
 
 ;
@@ -551,9 +559,9 @@ non_empty_method_argument_list:
 
 method_argument:
         T_IDENTIFIER                                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), ast_nop()); smm_free($1); }
-    |   T_IDENTIFIER T_ASSIGNMENT real_scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(), ast_identifier($1), $3); smm_free($1); }
     |   T_IDENTIFIER T_IDENTIFIER                                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), ast_nop()); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT real_scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); smm_free($1); smm_free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_identifier($1), ast_identifier($2), $4); smm_free($1); smm_free($2); }
 ;
 
 constant_list:
@@ -634,9 +642,14 @@ class_list:
  */
 
 data_structure:
-        qualified_name  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
-    |   qualified_name  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
-    |   qualified_name  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
+        data_structure_name  '[' data_structure_elements     ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   data_structure_name  '[' data_structure_elements ',' ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 2, $1, $3); }
+    |   data_structure_name  '[' /* empty */                 ']' { TRACE $$ = ast_opr(T_DATA_STRUCTURE, 1, $1); }
+;
+
+data_structure_name:
+        T_STRING        { TRACE $$ = ast_string($1); }
+    |   qualified_name  { TRACE $$ = $1; }
 ;
 
 data_structure_elements:

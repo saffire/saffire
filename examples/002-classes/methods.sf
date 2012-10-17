@@ -49,7 +49,7 @@ $c = Color("yellow") + Color("blue");  // $c == "green"
  * Method overloading?
  */
 class color2 {
-    public method ::+(Color $color) { }
+    public method ::+   (Color $color) { }
 
     public method ::+(String $color) {
         $color = Color($color);
@@ -57,7 +57,7 @@ class color2 {
     }
 
     public method ::+(Integer $pms_color) {
-        $color = Color(self.pmsList[$pms_color]);
+        $color = Color(self.$pmsList[$pms_color]);
         return self + $color;  // calls the +(Color $color) function
     }
 }

@@ -41,7 +41,7 @@ $e = 'This is number $b';   // This is number $b
 // $f is 1.0 (decimal)
 $f = 1.decimal();
 
-// Strings as "arrays" (proxies to .substring())
+// Strings as "arrays" (proxies to .substring()?)
 "bar"[1] == "a";
 
 // strings are UTF8. The method .length() always returns length of actual string,
