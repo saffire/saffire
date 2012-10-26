@@ -31,6 +31,7 @@
     #include <stdarg.h>
     #include "general/hashtable.h"
     #include "general/dll.h"
+    #include "object/method.h"
 
 
     // Forward define

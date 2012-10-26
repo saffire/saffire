@@ -34,7 +34,31 @@
 #include "general/smm.h"
 
 
+char *strrstr(char *x,char *y) {
+    int m = strlen(x);
+    int n = strlen(y);
+    char *X = malloc(m+1);
+    char *Y = malloc(n+1);
+    int i;
+    for (i=0; i<m; i++) X[m-1-i] = x[i];
+    X[m] = 0;
+    for (i=0; i<n; i++) Y[n-1-i] = y[i];
+    Y[n] = 0;
+    char *Z = strstr(X,Y);
+    if (Z) {
+        int ro = Z-X;
+        int lo = ro+n-1;
+        int ol = m-1-lo;
+        Z = x+ol;
+    }
+    free(X);
+    free(Y);
+    return Z;
+}
+
+
 #define NS_SEPARATOR "::"
+#define DOUBLE_NS_SEPARATOR "::::"
 
 
 t_ns_context *current_context = NULL;
@@ -52,33 +76,48 @@ t_ns_context *si_get_current_context(void) {
  */
 t_ns_context *si_create_context(char *namespace) {
     char *new_ns;
-    if (strncmp(namespace, NS_SEPARATOR, strlen(NS_SEPARATOR))) {
-        // Relative namespace, concat it
-        t_ns_context *ctx = si_get_current_context();
+    int prefix = 0;
+    int postfix = 0;
 
-        int len = strlen(namespace) + strlen(NS_SEPARATOR) + strlen(ctx->namespace) + 1;
-        new_ns = (char *)smm_malloc(len);
-        if (strlen(ctx->namespace)) {
-            strcpy(new_ns, ctx->namespace);
-            strcat(new_ns, namespace);
-            strcat(new_ns, NS_SEPARATOR);
-        } else {
-          strcpy(new_ns, namespace);
-          strcat(new_ns, NS_SEPARATOR);
-        }
+    int len = strlen(namespace);
+    t_ns_context *ctx = si_get_current_context();
 
+    // Relative namespace, concat it with the current namespace
+    if (strncmp(namespace, NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
+        prefix = 1;
+    }
+//    if (strncmp(namespace+strlen(namespace)-strlen(NS_SEPARATOR), NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
+//        postfix = 1;
+//    }
+
+    if (prefix) {
+        len =  + strlen(ctx->namespace) + 1;
+    }
+//    if (postfix) {
+//        len += strlen(NS_SEPARATOR);
+//    }
+
+    new_ns = (char *)smm_malloc(len);
+
+    // Add ending namespace separator if needed
+    if (prefix) {
+        strcpy(new_ns, ctx->namespace);
     } else {
-        int len = strlen(namespace) + strlen(NS_SEPARATOR) + 1;
-        new_ns = (char *)smm_malloc(len);
-        strcpy(new_ns, namespace + strlen(NS_SEPARATOR));        // Remove the absolute ::
-        strcat(new_ns, NS_SEPARATOR);
+        strcpy(new_ns, "");
     }
 
-    // Global namespace is a special case, otherwise we get double ::'s
-    // @TODO check for double seperator!
-    if (! strcmp(new_ns, "::::")) {
-        new_ns[3] = '\0';
-    }
+    strcat(new_ns, namespace);
+
+    // Add ending namespace separator if needed
+//    if (postfix) {
+//        strcat(new_ns, NS_SEPARATOR);
+//    }
+
+
+//    // Global namespace is a special case, otherwise we get double ::'s
+//    if (! strcmp(new_ns, DOUBLE_NS_SEPARATOR)) {
+//        new_ns[2] = '\0';
+//    }
 
 
     DEBUG_PRINT("Creating context: %s\n", new_ns);
@@ -126,13 +165,13 @@ void context_fini(void) {
 /**
  * Splits a fully qualified variable name into namespace and variable separated.
  */
-void si_split_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var) {
-    DEBUG_PRINT("si_split_fqn (%s) : '%s'\n", current_ctx->namespace, var);
+void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var) {
+    DEBUG_PRINT("si_split_var (%s) : '%s'\n", current_ctx->namespace, var);
     int fqn_len = 0;
     char *fqn;
 
     // TODO: Check for separator!
-    if (var[0] == ':' && var[1] == ':') {
+    if (strncmp(var, NS_SEPARATOR, 2) == 0) {
         // Already a fully qualified name
         fqn_len = strlen(var);
         fqn = smm_malloc(fqn_len);
@@ -148,16 +187,17 @@ void si_split_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
     DEBUG_PRINT("FQN: '%s'\n", fqn);
 
     // TODO: Check for separator!
-    char *ch = strrchr(fqn, ':') + 1;
-    if (ch == NULL) {
-        saffire_error("Cannot find last : in fully qualified name '%s'!", fqn);
+    char *ch = strrstr(fqn, NS_SEPARATOR);
+    if (ch == NULL || ch == fqn) {
+        saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
     }
-    *fqn_var = smm_strdup(ch);
 
-    // TODO: Check for separator!
+    // Strip namespace and variable
+    int len = ch - fqn;
+    *fqn_var = smm_strdup(ch + strlen(NS_SEPARATOR));
     *fqn_ns = smm_strdup(fqn);
-    ch = strrchr(*fqn_ns, ':')+1;
-    *ch = '\0';
+    (*fqn_ns)[len] = '\0';
+
 
     DEBUG_PRINT("NS  : '%s'\n", *fqn_ns);
     DEBUG_PRINT("VAR : '%s'\n", *fqn_var);
@@ -198,7 +238,7 @@ t_hash_table_bucket *si_find_in_context(char *var) {
     DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->namespace, var);
 
     // Create fqn from our variables
-    si_split_fqn(ctx, var, &fqn_ns, &fqn_var);
+    si_split_var(ctx, var, &fqn_ns, &fqn_var);
 
     DEBUG_PRINT("NS: %s\n", fqn_ns);
 

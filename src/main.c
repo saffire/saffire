@@ -35,6 +35,8 @@
 #include "object/object.h"
 #include "interpreter/saffire_interpreter.h"
 #include "interactive/interactive.h"
+#include "modules/module_api.h"
+#include "interpreter/context.h"
 
 #include "version.h"
 
@@ -144,7 +146,9 @@ void parse_options(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
     setlocale(LC_ALL,"");
+    context_init();
     object_init();
+    module_init();
 
     parse_options(argc, argv);
 
@@ -175,5 +179,8 @@ int main(int argc, char *argv[]) {
         ast_free_node(ast_root);
     }
 
+    module_fini();
+    object_fini();
+    context_fini();
     return 0;
 }

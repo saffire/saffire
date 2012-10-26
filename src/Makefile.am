@@ -44,7 +44,9 @@ libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   interactive/interactive.c \
                   interpreter/context.c interpreter/saffire_interpreter.c interpreter/errors.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \
-                  object/null.c object/regex.c
+                  object/null.c object/regex.c \
+                  modules/module_api.c \
+                  modules/io.c modules/saffire.c
 
 # Link all sources against these libraries
 LDADD = libsaffire.a -lpcre

@@ -60,8 +60,6 @@ extern t_dll *object_dll;
 static void si_init(void) {
     // Create stack for linenumbers
     lineno_stack = dll_init();
-
-    context_init();
 }
 
 
@@ -69,8 +67,6 @@ static void si_init(void) {
  *
  */
 static void si_fini(void) {
-    context_fini();
-
     // @TODO: Something is wrong with freeing this DLL :(
     //dll_free(lineno_stack);
 }

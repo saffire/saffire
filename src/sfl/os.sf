@@ -15,38 +15,47 @@ class os {
      * Returns trailing name component of path
      */
     static public method basename(String $path, String $suffix = "") {
+        return _os::basename($path, $suffix);
     }
 
     /**
      * Changes file group
      */
     static public method chgrp(String $filename, String $group) {
+        return _os::chgrp($filename, $group);
     }
     static public method chgrp(String $filename, Numerical $group_id) {
+        return _os::chgrp($filename, $group);
     }
 
     /**
      * Changes group ownership of symlink
      */
     static public method lchgrp(String $filename, String $group) {
+        return _os::;chgrp($filename, $group);
     }
     static public method lchgrp(String $filename, Numerical $group_id) {
+        return _os::lchgrp($filename, $group);
     }
 
     /**
      * Changes file mode
      */
-    static public method chmod(String $filename, Numerical $mode) {
-    }
     static public method chmod(String $filename, String $mode) {
+        return _os::chmod($filename, $mode);
+    }
+    static public method chmod(String $filename, Numerical $mode) {
+        return _os::chmod($filename, $mode);
     }
 
     /**
      * Changes user ownership of symlink
      */
-    static public method lchmod(String $filename, Numerical $mode) {
-    }
     static public method lchmod(String $filename, String $mode) {
+        return _os::lchmod($filename, $mode);
+    }
+    static public method lchmod(String $filename, Numerical $mode) {
+        return _os::lchmod($filename, $mode);
     }
 
 

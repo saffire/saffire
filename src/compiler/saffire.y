@@ -309,6 +309,8 @@ label_statement:
 expression:
         assignment_expression { TRACE $$ = ast_opr(T_EXPRESSIONS, 1, $1); }
     |   expression ',' assignment_expression { TRACE $$ = ast_add($$, $3); }
+    |   expression ',' ',' assignment_expression { TRACE $$ = ast_add($$, ast_nop()); $$ = ast_add($$, $4); }
+
 ;
 
 assignment_expression:
