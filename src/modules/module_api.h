@@ -29,25 +29,18 @@
 
     #include "object/object.h"
 
-    // Module Method structure
-    typedef struct _method {
-        char *name;
-        struct _object *(*func)(struct _object *self, t_dll *args);
-        int flags;
-    } t_method;
-
     // Module structure
     typedef struct _module {
         char *name;
         char *description;
-        t_method *methods;
-        // Init module  // Called when module is initialized
-        // Fini module  // Called when module is unloaded
-        // Init import  // Called when module is imported (use module)
-        // Fini import  // Called when module is unimported (end of app)
+        t_object **objects;
+        void (*init)(void);     // Called when module is initialized
+        void (*fini)(void);     // Called when module is unloaded
+        // Init import          // Called when module is imported (use module)
+        // Fini import          // Called when module is unimported (end of app)
     } t_module;
 
-
+    // All loaded modules
     t_dll *modules;
 
     int register_module(t_module *ext);

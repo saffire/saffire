@@ -27,6 +27,8 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
+#include <stdio.h>
+
 #if __DEBUG
     #define DEBUG_PRINT printf
 #else

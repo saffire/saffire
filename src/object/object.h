@@ -109,7 +109,7 @@
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[7];
-    typedef enum { objectTypeAny, objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString } objectTypeEnum;
+    typedef enum { objectTypeAny, objectTypeBase, objectTypeBoolean, objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom } objectTypeEnum;
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \

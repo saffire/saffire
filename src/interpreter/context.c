@@ -188,12 +188,13 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
 
     // TODO: Check for separator!
     char *ch = strrstr(fqn, NS_SEPARATOR);
-    if (ch == NULL || ch == fqn) {
+    if (ch == NULL) {
         saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
     }
 
     // Strip namespace and variable
     int len = ch - fqn;
+    if (len == 0) len = strlen(NS_SEPARATOR);
     *fqn_var = smm_strdup(ch + strlen(NS_SEPARATOR));
     *fqn_ns = smm_strdup(fqn);
     (*fqn_ns)[len] = '\0';

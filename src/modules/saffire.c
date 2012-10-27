@@ -29,22 +29,40 @@
 #include "object/object.h"
 #include "object/string.h"
 #include "general/dll.h"
+#include "version.h"
 
 /**
  *
  */
-static t_object *saffire_version(t_object *self, t_dll *args) {
-    RETURN_STRING(saffire_version);
+static t_object *saffire_return_version(t_object *self, t_dll *args) {
+    printf("VERSION '%s'\n", saffire_version);
+    RETURN_STRING(saffire_version_wide);
 }
 
 
-static t_method saffire_methods[] = {
-    { "version", saffire_version, METHOD_VISIBILITY_PUBLIC | METHOD_FLAG_STATIC | METHOD_NOARGS },
-    { NULL, NULL }
+t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
+
+void saffire_init(void) {
+    saffire_struct.methods = ht_create();
+    ht_add(saffire_struct.methods, "version", saffire_return_version);
+    saffire_struct.properties = ht_create();
+}
+void saffire_fini(void) {
+    // Destroy methods and properties
+    ht_destroy(saffire_struct.methods);
+    ht_destroy(saffire_struct.properties);
+}
+
+
+t_object *saffire_objects[] = {
+    &saffire_struct,
+    NULL
 };
 
 t_module module_saffire = {
     "::_saffire",
     "Saffire configuration module",
-    saffire_methods,
+    saffire_objects,
+    saffire_init,
+    saffire_fini
 };

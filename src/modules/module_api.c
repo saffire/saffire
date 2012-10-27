@@ -30,12 +30,16 @@
 #include "modules/io.h"
 #include "modules/saffire.h"
 #include "interpreter/context.h"
+#include "debug.h"
 
+#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
 /**
  * Register an module
  */
 int register_module(t_module *mod) {
+    DEBUG_PRINT("   Registering module: %s\n", mod->name);
+
     t_dll_element *e = DLL_HEAD(modules);
     while (e) {
         t_module *src_mod = (t_module *)e->data;
@@ -46,8 +50,21 @@ int register_module(t_module *mod) {
         e = DLL_NEXT(e);
     }
 
-    si_create_context(mod->name);
+    // Initialize module
+    mod->init();
+
+    t_ns_context *ctx = si_create_context(mod->name);
     dll_append(modules, mod);
+
+    int idx = 0;
+    t_object *obj = (t_object *)mod->objects[idx];
+    while (obj != NULL) {
+        DEBUG_PRINT("   Adding object %s to %s\n", obj->name, ctx->namespace);
+        ht_add(ctx->vars, obj->name, obj);
+
+        idx++;
+        obj = (t_object *)mod->objects[idx];
+    }
     return 1;
 }
 
@@ -60,10 +77,15 @@ int unregister_module(t_module *mod) {
         t_module *src_mod = (t_module *)e->data;
         if (strcmp(src_mod->name, mod->name) == 0) {
             // Found
+
+            // Fini module
+            mod->fini();
+
             dll_remove(modules, e);
         }
         e = DLL_NEXT(e);
     }
+
 
     // Nothing found
     return 0;

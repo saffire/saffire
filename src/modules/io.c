@@ -25,16 +25,17 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include <wchar.h>
 #include "modules/module_api.h"
 #include "object/object.h"
-#include "object/string.h"ok, le
+#include "object/string.h"
 #include "general/dll.h"
 
 /**
  *
  */
 static t_object *io_print(t_object *self, t_dll *args) {
-    printf("self");
+    printf("IO.self\n");
     RETURN_SELF;
 }
 
@@ -42,7 +43,7 @@ static t_object *io_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    printf("blaataap");
+    printf("IO.blaataap\n");
     RETURN_SELF;
 }
 
@@ -50,20 +51,77 @@ static t_object *io_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_sprintf(t_object *self, t_dll *args) {
-    char tmp[] = "blaataap";
+    wchar_t tmp[] = L"IO.blaataap\n";
     RETURN_STRING(tmp);
 }
 
 
-static t_method io_methods[] = {
-    { "print", io_print, METHOD_VISIBILITY_PUBLIC | METHOD_FLAG_STATIC | METHOD_VARARGS },
-    { "printf", io_printf, METHOD_VISIBILITY_PUBLIC | METHOD_FLAG_STATIC | METHOD_VARARGS },
-    { "sprintf", io_sprintf, METHOD_VISIBILITY_PUBLIC | METHOD_FLAG_STATIC | METHOD_VARARGS },
-    { NULL, NULL }
+
+/**
+ *
+ */
+static t_object *console_print(t_object *self, t_dll *args) {
+    printf("console.self\n");
+    RETURN_SELF;
+}
+
+/**
+ *
+ */
+static t_object *console_printf(t_object *self, t_dll *args) {
+    printf("console.blaataap\n");
+    RETURN_SELF;
+}
+
+/**
+ *
+ */
+static t_object *console_sprintf(t_object *self, t_dll *args) {
+    wchar_t tmp[] = L"console.blaataap\n";
+    RETURN_STRING(tmp);
+}
+
+
+
+t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
+t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
+
+
+void io_init(void) {
+    io_struct.methods = ht_create();
+    ht_add(io_struct.methods, "print", io_print);
+    ht_add(io_struct.methods, "printf", io_printf);
+    ht_add(io_struct.methods, "sprintf", io_sprintf);
+    io_struct.properties = ht_create();
+
+    console_struct.methods = ht_create();
+    ht_add(console_struct.methods, "print", console_print);
+    ht_add(console_struct.methods, "printf", console_printf);
+    ht_add(console_struct.methods, "sprintf", console_sprintf);
+    console_struct.properties = ht_create();
+}
+
+void io_fini(void) {
+    // Destroy methods and properties
+    ht_destroy(io_struct.methods);
+    ht_destroy(io_struct.properties);
+
+    ht_destroy(console_struct.methods);
+    ht_destroy(console_struct.properties);
+
+}
+
+
+t_object *io_objects[] = {
+    &io_struct,
+    &console_struct,
+    NULL
 };
 
 t_module module_io = {
     "::_io",
     "Standard I/O module",
-    io_methods,
+    io_objects,
+    io_init,
+    io_fini,
 };
