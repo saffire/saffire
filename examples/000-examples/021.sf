@@ -6,13 +6,13 @@ import io;
 
 class Color {
     /** Available PMS colors */
-    protected property $pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
+    protected property pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
 
     /** Actual stored color */
-    public property $color = Null;
+    public property color = Null;
 
     /** Mix table. We can mix these colors */
-    protected readonly property $mix_table = list[
+    protected readonly property mix_table = list[
                                                 tuple[5, 2, 1],  // Yellow + Blue = Green
                                                 tuple[0, 5, 3],  // Red + Yellow = Orange
                                              ];
@@ -21,59 +21,59 @@ class Color {
     /**
      * Constructor for strings
      */
-    public method ctor(String $color) {
-        if ! $color in self.$pms {
+    public method ctor(String color) {
+        if ! color in self.pms {
             //throw Exception("Color not found!");
-            $a = 1;
+            a = 1;
         }
-        self.$color = $color;
+        self.color = color;
     }
 
     /**
      * Constructor for numericals
      */
-    public method ctor(Numerical $pms) {
+    public method ctor(Numerical pms) {
         // Check if this PMS color exists
-        if (! $pms in self.$pms.keys()) {
+        if (! pms in self.pms.keys()) {
             throw Exception("PMS key not found!");
         }
 
-        self.ctor(self.$pms[$pms]);
+        self.ctor(self.pms[pms]);
     }
 
     /**
      *
      */
-    public method ::+(Color $color) {
-        return self.mix($color);
+    public method ::+(Color color) {
+        return self.mix(color);
     }
 
     /**
      *
      */
-    public method ::+(String $color) {
-        return self.mix(Color($color));
+    public method ::+(String color) {
+        return self.mix(Color(color));
     }
 
     /**
      *
      */
-    public method ::+(Numerical $pms) {
-        return self.mix(Color($pms));
+    public method ::+(Numerical pms) {
+        return self.mix(Color(pms));
     }
 
     /**
      *
      */
-    protected method mix(Color $color) {
-        foreach (self.$mix_table as $t) {
-            $src1, $src2, $dst = $t;
+    protected method mix(Color color) {
+        foreach (self.mix_table as t) {
+            src1, src2, dst = t;
 
-            if (self.getColor() == $src1 && $color.getColor() == $src2) {
-                return Color($dst);
+            if (self.getColor() == src1 && color.getColor() == src2) {
+                return Color(dst);
             }
-            if (self.getColor() == $src2 && $color.getColor() == $src3) {
-                return Color($dst);
+            if (self.getColor() == src2 && color.getColor() == src3) {
+                return Color(dst);
             }
         }
 
@@ -94,6 +94,6 @@ class Color {
 
 const PMS_BLUE = 2;
 
-$c1 = Color("yellow");
-$c2 = $c1 + Color(PMS_BLUE);
-io.printf("The mixed color is: ", $c2);
+c1 = Color("yellow");
+c2 = c1 + Color(PMS_BLUE);
+io.printf("The mixed color is: ", c2);

@@ -2,21 +2,21 @@
  * Standard assignments
  */
 
-$a = 1;
-$b = "foo";
-$c = False;
+a = 1;
+b = "foo";
+c = False;
 
-$a.print();
-$b.print();
-$c.print();
+a.print();
+b.print();
+c.print();
 
-$c = $d || $b;
+c = d || b;
 
-$c = $d * $b;
+c = d * b;
 
-$c = $d * $b || $c ^ $a - -1;
+c = d * b || c ^ a - -1;
 
-$c.print();
+c.print();
 
 /* Output:
 */

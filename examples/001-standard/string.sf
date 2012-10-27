@@ -1,23 +1,23 @@
-$a = "hello";
-$a.concat(" world");        // Since we don't use the return value, it will do nothing
-$b = $a.concat(" world");   // $a = "hello"  $b = "hello world"
+a = "hello";
+a.concat(" world");        // Since we don't use the return value, it will do nothing
+b = a.concat(" world");   // a = "hello"  b = "hello world"
 
 "foobar".slice(0,3);  // No assignment
 
 // .slice() or .substring() ? TBD
-$a = "foobar".slice(0,3);  // foo
-$a = "foobar".slice(3);  // bar
-$a = "foobar".slice(3,2);  // ba
-$a = "foobar".slice(3,2).concat("z");  // baz
-$a = "foobar".slice(3,2).concat("z").uppercase().rev();  // ZAB
+a = "foobar".slice(0,3);  // foo
+a = "foobar".slice(3);  // bar
+a = "foobar".slice(3,2);  // ba
+a = "foobar".slice(3,2).concat("z");  // baz
+a = "foobar".slice(3,2).concat("z").uppercase().rev();  // ZAB
 
-$a = "foo".repeat(3); // foofoofoo
-$a = "foo".uppercase(); // FOO
-$a = "FOO".lowercase(); // foo
-$a = "FOO".tr("FO","BA"); // BAA
-$a = "FOO".regex("/FO+/"); // (bool)true, regex match
+a = "foo".repeat(3); // foofoofoo
+a = "foo".uppercase(); // FOO
+a = "FOO".lowercase(); // foo
+a = "FOO".tr("FO","BA"); // BAA
+a = "FOO".regex("/FO+/"); // (bool)true, regex match
 
-if ("FOO" ~= /fo+/i) { $a = 1; } // (bool)true
+if ("FOO" ~= /fo+/i) { a = 1; } // (bool)true
 
 
 
@@ -29,4 +29,4 @@ if ("FOO" ~= /fo+/i) { $a = 1; } // (bool)true
 
 //.bytes is a method that returns a byte-array of the string
 
-$a = byteArray("bj�rk").length(); // a = 6
+a = byteArray("bj�rk").length(); // a = 6

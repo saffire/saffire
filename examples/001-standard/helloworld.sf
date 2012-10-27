@@ -3,7 +3,7 @@
 */
 import io;
 
-io.print("hello world!", "blaat", $a, 1 + 1);
+io.print("hello world!", "blaat", a, 1 + 1);
 
 
 /*

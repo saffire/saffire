@@ -1,14 +1,14 @@
-if ($a == "5")  { }         // $a equals "5"
+if (a == "5")  { }         // a equals "5"
 
-if ($a != "5")  { }          // $a does not equal "5"
+if (a != "5")  { }          // a does not equal "5"
 
-if ($a < "5")   { }          // $a less than "5"
+if (a < "5")   { }          // a less than "5"
 
-if ($a > "5")   { }          // $a greater than "5"
+if (a > "5")   { }          // a greater than "5"
 
-if ($a >= "5")   { }          // $a greater or equal than "5"
+if (a >= "5")   { }          // a greater or equal than "5"
 
-if ($a <= "5")   { }          // $a less or equal than "5"
+if (a <= "5")   { }          // a less or equal than "5"
 
 if (true)    { }              // Only works
 

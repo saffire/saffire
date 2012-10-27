@@ -2,38 +2,38 @@
  * Simple math stuff
  */
 
-$a = 1;
-$b = 2;
+a = 1;
+b = 2;
 
-$c = $a + $b;   // 3
+c = a + b;   // 3
 
-$c = $a - $b;   // -1
+c = a - b;   // -1
 
-$c = $a * $b;   // 2
+c = a * b;   // 2
 
-$c = $a / $b;   // (double) 0.5
+c = a / b;   // (double) 0.5
 
-$c = ($a / $b).floor(0);  // (int)0;  // Floor
-$c = ($a / $b).ceil(3);   // (int)0;  // Floor
-$c = ($a / $b).round(2);  // (int)0;  // Floor
+c = (a / b).floor(0);  // (int)0;  // Floor
+c = (a / b).ceil(3);   // (int)0;  // Floor
+c = (a / b).round(2);  // (int)0;  // Floor
 
-$c = $a % $b;   // 1  // modulus
+c = a % b;   // 1  // modulus
 
-$c = $a ^ $b;   // 1  1 exp 2
+c = a ^ b;   // 1  1 exp 2
 
-$c = -$a;       // -1
+c = -a;       // -1
 
 // Integers (and doubles) have math methods, or do we use our own math class?
 
-$c = (-$a).abs();   // 1     // which precedence?
-$c = -$a.abs();   // 1     // which precedence?
-$c = $b.sqrt();     // 4
-$c = $b.log($a);
-$c = $b.ln($a);
+c = (-a).abs();   // 1     // which precedence?
+c = -a.abs();   // 1     // which precedence?
+c = b.sqrt();     // 4
+c = b.log(a);
+c = b.ln(a);
 
 // or
 
-$c = math.abs(-$a);
-$c = math.sqrt($b);
-$c = math.log($a);
-$c = math.ln($a);
+c = math.abs(-a);
+c = math.sqrt(b);
+c = math.log(a);
+c = math.ln(a);

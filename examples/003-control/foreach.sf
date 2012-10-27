@@ -7,37 +7,37 @@
 
    which can be assigned to either loose variables, or inside one variable:
 
-   foreach $arr as $val, $key, $meta {
+   foreach arr as val, key, meta {
    }
 
    or
 
-   foreach ($arr as $e) {
-     // $e.key
-     // $e.val
-     // $e.meta
+   foreach (arr as e) {
+     // e.key
+     // e.val
+     // e.meta
    }
 
    if we don't need meta:
 
-   foreach $arr as $val, $key,  {
+   foreach arr as val, key,  {
    }
 
-   Notice the extra comma, this is needed otherwise $key will be filled with a tuple (key, meta).
+   Notice the extra comma, this is needed otherwise key will be filled with a tuple (key, meta).
    The comma actually separates an <undef> variable, so the meta wil be assigned to nothing.
 
 */
 
 
-foreach (string.range("A","Z") as $e) {
-  if ($e.first) {
-    io.printf("Oh hai! this is the first out of %d items!\n", $e.count);
+foreach (string.range("A","Z") as e) {
+  if (e.first) {
+    io.printf("Oh hai! this is the first out of %d items!\n", e.count);
   }
-  if ($e.last) {
+  if (e.last) {
     io.print("This will be the last item. kthnkbai!");
   }
 
-  io.print("Item: " + $e.index + " Key: " + $e.key + " Val: "+ $e.val + "\n");
+  io.print("Item: " + e.index + " Key: " + e.key + " Val: "+ e.val + "\n");
 }
 
 

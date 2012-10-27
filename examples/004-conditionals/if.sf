@@ -1,15 +1,15 @@
-if ($a == 5) {  // Checks for $a == int == 5  (coerse?)
+if (a == 5) {  // Checks for a == int == 5  (coerse?)
 }
 
 
-if ($a == "5") { // checks for $a == string == "5"  (coerse?)
+if (a == "5") { // checks for a == string == "5"  (coerse?)
 }
 
 
 // IF ELSEIF ELSE construction
-if ($a == "foo") {
+if (a == "foo") {
 
-} else if ($a == "bar") {
+} else if (a == "bar") {
 
 } else {
 

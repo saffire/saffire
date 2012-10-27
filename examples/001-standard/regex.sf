@@ -2,15 +2,15 @@
  * Regular expressions
  */
 
-if ($a ~= /^foo/) {
+if (a ~= /^foo/) {
 }
 
 // With optional parameters
-if ($a ~= /foobar/i) {
+if (a ~= /foobar/i) {
 }
 
 // With escaped / in the middle
-if ($a ~= /foo\/bar/) {
+if (a ~= /foo\/bar/) {
 
 }
 
@@ -26,11 +26,11 @@ if ("foo/bar".match(/foo/)) {
 
 
 // THIS IS A REGEX ASSIGNED TO R
-$r = /$b ; $f = $r/m;
+r = /b ; f = r/m;
 
 
 // THESE ARE TWO STATEMENTS, ALMOST IDENTICAL TO THE REGEX ABOVE
-$r = $a/$b ; $f = $r/m;
+r = a/b ; f = r/m;
 
 
 /^[a-z]@blaat/m.match();

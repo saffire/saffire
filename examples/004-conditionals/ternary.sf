@@ -1,18 +1,18 @@
 
-$a = $b ? $b : "default";
+a = b ? b : "default";
 
 // empty means just the value we checked
-// $a = $b ?: "default";
+// a = b ?: "default";
 
 
-// since $b == "5" returns (bool)true, $a = (bool)true, or (string)"yes"
-// $a = ($b == "5") ? $b: "yes";
+// since b == "5" returns (bool)true, a = (bool)true, or (string)"yes"
+// a = (b == "5") ? b: "yes";
 
 
 // Note the precedence!
 
-$a = $b ? $c : $d ? $e : $f;
+a = b ? c : d ? e : f;
 // equals:
-$a = $b ? $c : ($d ? $e : $f);
+a = b ? c : (d ? e : f);
 // not php's:
-$a = ($b ? $c : $d) ? $e : $f;
+a = (b ? c : d) ? e : f;

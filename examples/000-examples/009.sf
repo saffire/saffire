@@ -2,26 +2,26 @@
  * while statement
  */
 
-while ($a <= $b) {
-    bar.printf("A= %d", $a);
-    $b += $a;
+while (a <= b) {
+    bar.printf("A= %d", a);
+    b += a;
 }
 
-while ($a) {
-    bar.printf("A= %d", $a);
-    $b -= 1;
+while (a) {
+    bar.printf("A= %d", a);
+    b -= 1;
 } else {
     foo.print("Nothing ", "to ", "do");
 }
 
-while ($a) {
-    bar.printf("A= %d", $a);
-    $b -= 1;
+while (a) {
+    bar.printf("A= %d", a);
+    b -= 1;
 } else  foo.print("Nothing ", "to ", "do");
 
 
-while ($a)
-    bar.printf("A= %d", $a);
+while (a)
+    bar.printf("A= %d", a);
 else
     foo.print("Nothing ", "to ", "do");
 

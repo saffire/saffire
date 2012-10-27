@@ -1,25 +1,25 @@
 /*
  * function calls
  */
-foo.print($a);
-foo.print($a, "1", $c, "foorbar");
+foo.print(a);
+foo.print(a, "1", c, "foorbar");
 
 // bang methods
-foo.print!($a);
-$a = foo.print?();
+foo.print!(a);
+a = foo.print?();
 
-$a = io.compute();
-$a = io.compute($b, $c);
-$a = io.compute($b, $c, "Foo", 1, $bar);
+a = io.compute();
+a = io.compute(b, c);
+a = io.compute(b, c, "Foo", 1, bar);
 
-$a = io.compute($b, $c, "Foo", 1, $bar, list[ 1, 2, 3 ], hash[ "a" : "Foo" ] );
+a = io.compute(b, c, "Foo", 1, bar, list[ 1, 2, 3 ], hash[ "a" : "Foo" ] );
 
 // assign function output to a variable
-$b = foo.print($a);
-$c, $d = foo.return_double_vals();
+b = foo.print(a);
+c, d = foo.return_double_vals();
 
-$c = $color("yellow");
-$d = Color("blue");
+c = color("yellow");
+d = Color("blue");
 
 /* Output:
 */

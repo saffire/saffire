@@ -1,22 +1,22 @@
 import io;
 
 class foo {
-    public method bar(String $tmp) {
-        if ($tmp == "/[A-Z]+/") {
+    public method bar(String tmp) {
+        if (tmp == "/[A-Z]+/") {
             throw invalidException("This is not ok");
         }
-        return $tmp.rev();
+        return tmp.rev();
     }
 }
 
 
-$tmp = foo();
+tmp = foo();
 try {
-    $tmp.bar("aaaaa");
-    $tmp.bar("1234");
-} catch (invalidException $e) {
+    tmp.bar("aaaaa");
+    tmp.bar("1234");
+} catch (invalidException e) {
     // Invalidexception has been found
-} catch (exception $e) {
+} catch (exception e) {
     // Another exception has been found
 } finally {
     // We always come here
