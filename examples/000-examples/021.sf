@@ -2,7 +2,7 @@
  * Example color class
  */
 
-use io;
+import io;
 
 class Color {
     /** Available PMS colors */

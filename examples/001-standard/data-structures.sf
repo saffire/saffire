@@ -14,9 +14,9 @@
  */
 
 // Everything is a class. No global functions, so print etc should be done through an io class. This could either
-// be loaded explicitly or implicitly. We prefer explicit, so "use io". Some classes like string, int etc should
+// be loaded explicitly or implicitly. We prefer explicit, so "import io". Some classes like string, int etc should
 // always be available and loaded implicitly.
-use io;
+import io;
 
 
 // Lists can hold any kind of object (including lists, hashes or other data structures)
