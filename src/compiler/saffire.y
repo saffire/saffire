@@ -56,9 +56,10 @@
 
     #ifdef __DEBUG
         #define YYDEBUG 1
-        #define TRACE printf("Reduce at line %d\n", __LINE__);
+        //#define TRACE printf("Reduce at line %d\n", __LINE__);
+        #define TRACE
     #else
-        #define YYDEBUG 0
+        //#define YYDEBUG 0
         #define TRACE
     #endif
 
@@ -95,7 +96,9 @@
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
 %token T_FQN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
+%token T_IMPORT T_FROM
 
+/* reserved for later use */
 %token T_YIELD
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
@@ -155,6 +158,14 @@ use_statement:
         T_USE namespace_identifier T_AS T_IDENTIFIER ';' { TRACE $$ = ast_opr(T_USE, 2, $2, ast_string($4));  }
         /* use <foo>; */
     |   T_USE namespace_identifier                   ';' { TRACE $$ = ast_opr(T_USE, 1, $2); }
+        /* import <foo> from <bar> */
+    |   T_IMPORT namespace_identifier                   T_FROM namespace_identifier ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_nop(), $4); }
+        /* import <foo> as <bar> from <baz> */
+    |   T_IMPORT namespace_identifier T_AS T_IDENTIFIER T_FROM namespace_identifier ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), $6); }
+        /* import <foo> as <bar> */
+    |   T_IMPORT namespace_identifier T_AS T_IDENTIFIER                             ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), ast_nop()); }
+        /* import <foo> */
+    |   T_IMPORT namespace_identifier                                               ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_nop(), ast_nop()); }
 ;
 
 

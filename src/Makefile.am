@@ -10,10 +10,17 @@ else
   AM_CXXFLAGS = -O2
 endif
 
+if PARSEDEBUG
+  AM_CFLAGS += -D__PARSEDEBUG
+  AM_YFLAGS = -t -v
+else
+  AM_YFLAGS =
+endif
+
 # Some additional rules for flex/bison file handling
 BUILT_SOURCES=compiler/lex.yy.c
-AM_LFLAGS= --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
-AM_YFLAGS = -d
+AM_LFLAGS = --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
+AM_YFLAGS += -d
 
 # parser.tab.h cannot be used before parser.tab.c
 compiler/parser.tab.h: compiler/parser.tab.c

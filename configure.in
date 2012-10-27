@@ -36,6 +36,21 @@ esac],
 
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
+
+#parsedebug
+AC_ARG_ENABLE(parsedebug,
+AS_HELP_STRING([--enable-parsedebug],
+               [enable debugging of flex/bison, default: no]),
+[case "${enableval}" in
+             yes) parsedebug=true ;;
+             no)  parsedebug=false ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-parsedebug]) ;;
+esac],
+[parsedebug=false])
+
+AM_CONDITIONAL(PARSEDEBUG, test x"$parsedebug" = x"true")
+
+
 #gcov
 AC_ARG_ENABLE(coverage,
 AC_HELP_STRING([--enable-gcov],

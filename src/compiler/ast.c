@@ -41,6 +41,11 @@ extern int yyparse();
 extern FILE *yyin;
 extern int yylineno;
 
+#ifdef __PARSEDEBUG
+extern int yydebug;
+extern int yy_flex_debug;
+#endif
+
 
 /**
  * Compile a a file into an AST (through bison). Returns the AST root node.
@@ -48,6 +53,11 @@ extern int yylineno;
 t_ast_element *ast_generate_tree(FILE *fp) {
     // Initialize system
     sfc_init();
+
+#ifdef __PARSEDEBUG
+    yydebug = 1;
+    yy_flex_debug = 1;
+#endif
 
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;

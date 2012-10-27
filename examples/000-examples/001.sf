@@ -9,9 +9,9 @@ use io;
 use test;
 use tmp as aliased;
 
-import io from io;
 import io;
 import io as io from io;
+import io from io;
 import foo as bar from baz;
 
 /* Output:
