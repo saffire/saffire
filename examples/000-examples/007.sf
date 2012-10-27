@@ -1,31 +1,31 @@
 /*
  * Conditionals
  */
-if ($a == 1) {
-    $a++;
-    $b--;
+if (a == 1) {
+    a++;
+    b--;
 } else {
-    $a--;
-    $b++;
+    a--;
+    b++;
 }
 
 // Conditional with single statements, without curly brackets
-if ($a >= 1) $b++;
-if ($a != 1) $b++; else $c++;
+if (a >= 1) b++;
+if (a != 1) b++; else c++;
 
 
-if ($a != 1) $b++; else {
-    $c++;
-    $b--;
+if (a != 1) b++; else {
+    c++;
+    b--;
 }
 
-if ($a != 1) {
-    $b++;
-} else $b--;
+if (a != 1) {
+    b++;
+} else b--;
 
 
 // Without parentheses
-if $foo $a++;
+if foo a++;
 
 /* Output:
 */

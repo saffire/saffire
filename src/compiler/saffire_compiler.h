@@ -79,6 +79,9 @@
 
     void saffire_check_label(const char *name);
 
+    void sfc_check_permitted_identifiers(char *name);
+    char *sfc_build_var(int argc, ...);
+
     void saffire_validate_return();
     void saffire_validate_break();
     void saffire_validate_continue();

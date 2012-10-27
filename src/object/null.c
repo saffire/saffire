@@ -83,19 +83,19 @@ void object_null_fini(void) {
     ht_destroy(Object_Null_struct.properties);
 }
 
-t_object_operators null_ops = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+static char *obj_debug(struct _object *obj) {
+    return "null";
+}
+
+
+t_object_funcs null_funcs = {
+        NULL,               // Allocate a new bool object
+        NULL,               // Free a bool object
+        NULL,               // Clone a bool object
+        obj_debug
 };
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, &null_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE) };
+
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT2("null", objectTypeNull, NULL, NULL, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &null_funcs) };
 
 

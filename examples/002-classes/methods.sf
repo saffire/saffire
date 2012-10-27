@@ -1,24 +1,24 @@
 /*
  * class examples
  */
-use io;
+import io;
 
 class foo {
-    public method rev_it(string $tmp) {
-        $tmp = $tmp.uppercase();
-        return $tmp.rev();
+    public method rev_it(string tmp) {
+        tmp = tmp.uppercase();
+        return tmp.rev();
     }
 }
 
 
-$tmp = foo();
-$bar = $tmp.rev_it("blaat");
-io.print($bar);                 // TAALB
+tmp = foo();
+bar = tmp.rev_it("blaat");
+io.print(bar);                 // TAALB
 
 // This should work, since 51 will be automatically converted to a string in the argument list?
-$tmp = foo();
-$bar = $tmp.rev_it(51);
-io.print($bar);                 // 15 (string)
+tmp = foo();
+bar = tmp.rev_it(51);
+io.print(bar);                 // 15 (string)
 
 
 /*
@@ -26,22 +26,22 @@ io.print($bar);                 // 15 (string)
  */
 
 class color {
-    public method ::+(Color $color) {
-        return self.mix($color);
+    public method ::+(Color color) {
+        return self.mix(color);
     }
 
-    private method mix(Color $Color) {
-        if (self.color == "yellow" && $color == "blue") {
+    private method mix(Color Color) {
+        if (self.color == "yellow" && color == "blue") {
             self.color = "green";
         }
-        if (self.color == "yellow" && $color == "red") {
+        if (self.color == "yellow" && color == "red") {
             self.color = "orange";
         }
-        return $this;
+        return this;
     }
 }
 
-$c = Color("yellow") + Color("blue");  // $c == "green"
+c = Color("yellow") + Color("blue");  // c == "green"
 
 
 
@@ -49,16 +49,16 @@ $c = Color("yellow") + Color("blue");  // $c == "green"
  * Method overloading?
  */
 class color2 {
-    public method ::+(Color $color) { }
+    public method ::+   (Color color) { }
 
-    public method ::+(String $color) {
-        $color = Color($color);
-        return self + $color;  // calls the +(Color $color) function
+    public method ::+(String color) {
+        color = Color(color);
+        return self + color;  // calls the +(Color color) function
     }
 
-    public method ::+(Integer $pms_color) {
-        $color = Color(self.pmsList[$pms_color]);
-        return self + $color;  // calls the +(Color $color) function
+    public method ::+(Integer pms_color) {
+        color = Color(self.pmsList[pms_color]);
+        return self + color;  // calls the +(Color color) function
     }
 }
 
@@ -67,17 +67,17 @@ class color2 {
 /*
  * Argument calling
  */
-$i = "1234";
-$tmp = foo();
-$tmp.foo1(arg2=$i, arg3="additional argument"); // skips arg1, uses default
+i = "1234";
+tmp = foo();
+tmp.foo1(arg2=i, arg3="additional argument"); // skips arg1, uses default
 
 // This is possible, but how about arg3?
-$tmp.foo1(arg2=$i, arg1="additional argument", arg3 = "qux");
+tmp.foo1(arg2=i, arg1="additional argument", arg3 = "qux");
 
 // This is wrong, since arg2 is read/write, and it's not a variable reference?
-// $tmp.foo1(arg2="5", arg1="additional argument", arg3 = "qux");
+// tmp.foo1(arg2="5", arg1="additional argument", arg3 = "qux");
 
 // Should we also call the .string method in this case for arg1?
-// $tmp.foo1("5", $i, "5");
+// tmp.foo1("5", i, "5");
 
 

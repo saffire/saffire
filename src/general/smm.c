@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-#include "hashtable.h"
-#include "smm.h"
+#include "general/hashtable.h"
+#include "general/smm.h"
 
 
 void *smm_malloc(size_t size) {

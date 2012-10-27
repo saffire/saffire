@@ -2,8 +2,8 @@
  * For loop
  */
 
-for ($i=0; $i!=foo.complete?(); $i++) {
-    io.print($i , "\n");
+for (i=0; i!=foo.complete?(); i++) {
+    io.print(i , "\n");
 }
 
 

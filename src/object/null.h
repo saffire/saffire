@@ -27,7 +27,7 @@
 #ifndef __OBJECT_NULL_H__
 #define __OBJECT_NULL_H__
 
-    #include "object.h"
+    #include "object/object.h"
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER;

@@ -43,6 +43,8 @@
 #include "object/numerical.h"
 #include "general/smm.h"
 #include "general/md5.h"
+#include "debug.h"
+#include "interpreter/errors.h"
 
 
 
@@ -52,12 +54,10 @@
  * ======================================================================
  */
 
-char *wctou8(const wchar_t *wstr) {
-    long len = wcslen(wstr)+1;
-
+char *wctou8(const wchar_t *wstr, long len) {
     char *buf = (char *)smm_malloc(len);
     long conv_len = wcstombs(buf, wstr, len);
-
+    buf[conv_len] = '\0';
     return buf;
 }
 
@@ -102,29 +102,29 @@ SAFFIRE_METHOD(regex, match) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
-        printf("Error while parsing argument list\n");
+        saffire_warning("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
     // Convert to utf8 and execute regex
-    char *s = wctou8(str->value);
+    char *s = wctou8(str->value, wcslen(str->value));
     rc = pcre_exec(self->regex, 0, s, strlen(s), 0, 0, ovector, OVECCOUNT);
 
     // Check result
     if (rc < 0) {
         switch (rc) {
             case PCRE_ERROR_NOMATCH:
-                printf("String didn't match.\n");
+                saffire_warning("String didn't match.\n");
                 break;
             default :
-                printf("Error while matching: %d\n", rc);
+                saffire_warning("Error while matching: %d\n", rc);
                 break;
         }
     }
 
     // Display result
     for (int i=0; i<rc; i++) {
-        printf("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
+        DEBUG_PRINT("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
     }
 
     // Free utf8 string
@@ -244,14 +244,14 @@ static t_object *obj_new(va_list arg_list) {
     memcpy(new_obj, Object_Regex, sizeof(t_regex_object));
 
 
-    wchar_t *value = va_arg(arg_list, wchar_t *);
-    char *buf = wctou8(value);
+    new_obj->regex_string = va_arg(arg_list, wchar_t *);
+    char *buf = wctou8(new_obj->regex_string, wcslen(new_obj->regex_string));
 
     int pcre_options = va_arg(arg_list, int);
 
     new_obj->regex = pcre_compile(buf, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
     if (! new_obj->regex) {
-        printf("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
+        saffire_warning("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
     }
 
     smm_free (buf);
@@ -259,29 +259,26 @@ static t_object *obj_new(va_list arg_list) {
 }
 
 
+char global_buf[1024];
+static char *obj_debug(struct _object *obj) {
+    char *buf = wctou8(((t_regex_object *)obj)->regex_string, wcslen(((t_regex_object *)obj)->regex_string));
+    memcpy(global_buf, buf, 1024);
+    global_buf[1023] = 0;
+    smm_free(buf);
+    return global_buf;
+}
+
 // Regex object management functions
 t_object_funcs regex_funcs = {
         obj_new,              // Allocate a new regex object
         obj_free,             // Free a regex object
-        obj_clone             // Clone a regex object
-};
-
-t_object_operators regex_ops = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+        obj_clone,            // Clone a regex object
+        obj_debug
 };
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectTypeRegex, &regex_ops, OBJECT_NO_FLAGS, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, NULL, NULL, OBJECT_NO_FLAGS, &regex_funcs),
     NULL,
     L'\0',
 };

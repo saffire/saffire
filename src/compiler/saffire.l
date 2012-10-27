@@ -68,7 +68,7 @@ void saffire_pop_state() {
 
 /* Our actual lexemes */
 lnum            [0-9]+
-identifier      (::[\+])|([\$a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
+identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -80,7 +80,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;=,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
@@ -89,6 +89,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_REGEX;
 }
 
+"::"        { saffire_push_state(st_regex); return T_NS_SEP; }
 "~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
 "<="        { saffire_push_state(st_regex); return T_LE; }
@@ -102,6 +103,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "<<"        { saffire_push_state(st_regex); return T_SHIFT_LEFT; }
 ">>"        { saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
 
+"="         { saffire_push_state(st_regex); return T_ASSIGNMENT; }
 "+="        { saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
 "-="        { saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
 "*="        { saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
@@ -121,6 +123,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "else"      { saffire_push_state(st_regex); return T_ELSE; }
 "use"       { saffire_push_state(st_regex); return T_USE; }
 "as"        { saffire_push_state(st_regex); return T_AS; }
+"import"    { saffire_push_state(st_regex); return T_IMPORT; }
+"from"      { saffire_push_state(st_regex); return T_FROM; }
 "do"        { saffire_push_state(st_regex); return T_DO; }
 "for"       { saffire_push_state(st_regex); return T_FOR; }
 "foreach"   { saffire_push_state(st_regex); return T_FOREACH; }

@@ -5,20 +5,20 @@
  */
 
 class bar {
-    public method foo(string $filename) {
+    public method foo(string filename) {
         // Create file and append info
-        $file = io.create($filename, "0644");
-        $file.append("Hello world");
+        file = io.create(filename, "0644");
+        file.append("Hello world");
 
         // Something is wrong here..
-        if ($filename == "foo") {
+        if (filename == "foo") {
             io.print("Something went wrong");
             goto cleanup;
         }
         return true;
 
     cleanup:
-        $file.unlink();
+        file.unlink();
     }
 }
 
@@ -26,15 +26,15 @@ class bar {
  * Goto labels should never be placed inside loops or switch statements, but is the following statement possible?
  */
 
-if ($a == $b) {
+if (a == b) {
 correct:
-    $a = "1";
+    a = "1";
 } else {
 incorrect:
-    $b = "1";
+    b = "1";
 }
 
-if ($a == $b) {
+if (a == b) {
   goto incorrect;
 } else {
   goto correct;

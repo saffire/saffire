@@ -10,9 +10,9 @@ final class Foo extends Bar {
 const item = "foobar";
 
 
-$tmp = item;
-$tmp = Foo.bar;
-$tmp = Foo.foo;
+tmp = item;
+tmp = Foo.bar;
+tmp = Foo.foo;
 
 /* Output:
 */

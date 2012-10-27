@@ -42,9 +42,9 @@ extern int yylineno;
 static void sfc_error(char *str, ...) {
     va_list args;
     va_start(args, str);
-    printf("Error in line %d: ", yylineno);
-    vprintf(str, args);
-    printf("\n");
+    fprintf(stderr, "Error in line %d: ", yylineno);
+    vfprintf(stderr, str, args);
+    fprintf(stderr, "\n");
     va_end(args);
     exit(1);
 }
@@ -73,7 +73,7 @@ void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
     // Right now, this is an abstract method
 
     // Check if we have a body
-    if (body->type != typeNull) {
+    if (body->type != typeAstNull) {
         sfc_error("Abstract methods cannot have a body");
     }
 }
@@ -411,6 +411,14 @@ void saffire_validate_break() {
         sfc_error("We can only break inside a loop");
     }
 }
+
+void sfc_check_permitted_identifiers(char *name) {
+    if (! strcasecmp(name, "null")) return;
+    if (! strcasecmp(name, "false")) return;
+    if (! strcasecmp(name, "true")) return;
+    sfc_error("Incorrect identifier");
+}
+
 
 
 /**

@@ -24,38 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SVAR_H__
-#define __SVAR_H__
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
 
-    /*
-     * svars are comparable with php's zval
-     *
-     */
+#include <stdio.h>
 
-    // Constant defines for different sval types
-    extern const int SV_NULL;
-    extern const int SV_LONG;
-    extern const int SV_STRING;
-    extern const int SV_DOUBLE;
-
-    typedef struct _svar {
-        char type;          // Type of the variable
-        char *name;         // Name of the variable
-        union {
-            long   l;       // Numerical variable
-            double d;       // Double value
-            char*  s;       // String value
-        } val;
-    } svar;
-
-
-
-    void svar_init_table();
-    void svar_fini_table();
-    svar *svar_alloc(char type, char *name, char *s, long l);
-    svar *svar_find(char *name);
-    void svar_print(svar *var);
-
-    int svar_true(svar *var);
+#if __DEBUG
+    #define DEBUG_PRINT printf
+#else
+    #define DEBUG_PRINT(format, args...) ((void)0)
+#endif
 
 #endif
+

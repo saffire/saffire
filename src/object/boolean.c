@@ -191,6 +191,48 @@ SAFFIRE_OPERATOR_METHOD(boolean, sr) {
 
 
 /* ======================================================================
+ *   Standard comparisons
+ * ======================================================================
+ */
+SAFFIRE_COMPARISON_METHOD(boolean, eq) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value == other->value);
+}
+SAFFIRE_COMPARISON_METHOD(boolean, ne) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value != other->value);
+}
+SAFFIRE_COMPARISON_METHOD(boolean, lt) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value < other->value);
+}
+SAFFIRE_COMPARISON_METHOD(boolean, gt) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value > other->value);
+}
+SAFFIRE_COMPARISON_METHOD(boolean, le) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value <= other->value);
+}
+SAFFIRE_COMPARISON_METHOD(boolean, ge) {
+    t_boolean_object *self = (t_boolean_object *)_self;
+    t_boolean_object *other = (t_boolean_object *)_other;
+
+    return (self->value >= other->value);
+}
+
+
+/* ======================================================================
  *   Global object management functions and data
  * ======================================================================
  */
@@ -225,6 +267,18 @@ void object_boolean_fini(void) {
 }
 
 
+static char *obj_debug(struct _object *obj) {
+    if (((t_boolean_object *)obj)->value == 0) return "false";
+    return "true";
+}
+
+t_object_funcs bool_funcs = {
+        NULL,               // Allocate a new bool object
+        NULL,               // Free a bool object
+        NULL,               // Clone a bool object
+        obj_debug
+};
+
 t_object_operators boolean_ops = {
     object_boolean_operator_add,          // F+F=F  F+T=T  T+F=T  T+T=T
     object_boolean_operator_sub,          // F-F=F  F-T=F  T-F=T  T-T=F
@@ -238,6 +292,17 @@ t_object_operators boolean_ops = {
     object_boolean_operator_sr            // F>F=F  F>T=T  T>F=T  T>T=T
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_NO_FLAGS), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("bool", objectTypeBoolean, &boolean_ops, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE), 1 };
+t_object_comparisons boolean_cmps = {
+    object_boolean_comparison_eq,       // T==T, F==F
+    object_boolean_comparison_ne,       // F!=T  T!=F
+    object_boolean_comparison_lt,       // F < T
+    object_boolean_comparison_gt,       // T > F
+    object_boolean_comparison_le,       // F<=T  F<=F T<=T
+    object_boolean_comparison_ge,       // F>=F  T>=F
+    NULL,
+    NULL
+};
+
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_NO_FLAGS, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };

@@ -17,32 +17,32 @@ keywords:
 
 class Foo {
     /**
-     * @aop.before("logger.log", args => ["pre-log", $str], order => 5)
-     * @aop.before("timer.start", when => '$str == "foo"', order => 1)
+     * @aop.before("logger.log", args => ["pre-log", str], order => 5)
+     * @aop.before("timer.start", when => 'str == "foo"', order => 1)
      * @aop.after("timer.stop")
      */
-    method bar($str) {
+    method bar(str) {
     }
 
     /**
      * @aop.around("foo.footer_header_decorator")
      */
-    method typeFunc($str) {
-        return $str.upper;
+    method typeFunc(str) {
+        return str.upper;
     }
 
     /**
      * @aop.around("foo.blink_decorator")
      */
-    method footer_header_decorator(Aop $aop) {
+    method footer_header_decorator(Aop aop) {
         io.print("HEADER");
-        io.print $aop.proceed()
+        io.print aop.proceed()
         io.print("FOOTER");
     }
 
-    method blink_decorator(Aop $aop) {
+    method blink_decorator(Aop aop) {
         io.print("<blink>");
-        io.print $aop.proceed()
+        io.print aop.proceed()
         io.print("</blink>");
     }
 
