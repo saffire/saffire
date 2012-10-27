@@ -15,7 +15,7 @@ class Foo {
         io.print("Static call!");
     }
 
-    public method foo1(String $a, Foo $b) {
+    public method foo1(String a, Foo b) {
         return("foobar");
     }
 
@@ -29,8 +29,8 @@ class Foo {
 
 }
 
-$foo = Foo();       // Auto calls ctor()
-$foo.destroy();     // Auto calls dtor()
+foo = Foo();       // Auto calls ctor()
+foo.destroy();     // Auto calls dtor()
 
 Foo.callme();      // Is this a static call?
 

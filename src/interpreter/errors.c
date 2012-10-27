@@ -24,20 +24,47 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SYMBOL_H__
-#define __SYMBOL_H__
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include "interpreter/errors.h"
+#include "general/dll.h"
 
-    typedef struct symbol_table {
-        t_symbol_table *prev;   // Pointer to previous scope, or NULL when global scope
-        int level;              // Which level is this scope
+extern t_dll *lineno_stack;
 
-        t_hash_table *ht;       // Hash table with actual symbols
-    } t_symbol_table;
+#define STREAM_ERROR stderr
+#define STREAM_WARNING stderr
 
-    t_symbol_table *symbol_init_table(void);
-    t_symbol_table *symbol_new_table(t_symbol_table *prev_st);
-    void symbol_put(t_symbol_table *st, char *s, void *sym);
-    void *symbol_get(t_symbol_table *st, char *s);
 
-#endif
+/**
+ * Print out an error and exit
+ */
+void saffire_error(char *str, ...) {
+    t_dll_element *e = DLL_TAIL(lineno_stack);
+    int lineno = (int)e->data;
 
+    va_list args;
+    va_start(args, str);
+    fprintf(STREAM_ERROR, "Error in line %d: ", lineno);
+    vfprintf(STREAM_ERROR, str, args);
+    fprintf(STREAM_ERROR, "\n");
+    va_end(args);
+    exit(1);
+}
+
+/**
+ * @TODO: make the output stream configurable? Either
+ * Print out an error and exit
+ */
+void saffire_warning(char *str, ...) {
+    t_dll_element *e = DLL_TAIL(lineno_stack);
+    int lineno = (int)e->data;
+
+    va_list args;
+    va_start(args, str);
+    fprintf(STREAM_WARNING, "Warning in line %d: ", lineno);
+    vfprintf(STREAM_WARNING, str, args);
+    fprintf(STREAM_WARNING, "\n");
+    va_end(args);
+}

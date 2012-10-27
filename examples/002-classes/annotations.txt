@@ -22,7 +22,7 @@ class foo {
     }
 }
 
-foo.bar.annoations returns:
+foo.bar.annotations returns:
     {
         "@foo" => Annotation( { "name" => "test",
                                 "id" => "my_id",

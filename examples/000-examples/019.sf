@@ -5,43 +5,43 @@
 
 // Try/Catch
 try {
-    $a = 1;
-} catch (Foo $bar) {
-    $a = 1;
+    a = 1;
+} catch (Foo bar) {
+    a = 1;
 }
 
 
 // Try/Multi catch/Finally
 try {
-    $a = 1;
-} catch (Foo $bar) {
-    $a = 1;
-} catch (Bar $foo) {
-    $a = 1;
+    a = 1;
+} catch (Foo bar) {
+    a = 1;
+} catch (Bar foo) {
+    a = 1;
 } finally {
-    $a = 1;
+    a = 1;
 }
 
 
 // Try/Catch/Finally
 try {
-    $a = 1;
-} catch (Foo $bar) {
-    $a = 1;
+    a = 1;
+} catch (Foo bar) {
+    a = 1;
 } finally {
-    $a = 1;
+    a = 1;
 }
 
 
 // Try/Catch/Finally
 try {
-    $a = 1;
-} catch (Foo $foo) {
-    $a = 1;
-} catch (Bar $bar) {
-    $a = 1;
+    a = 1;
+} catch (Foo foo) {
+    a = 1;
+} catch (Bar bar) {
+    a = 1;
 } finally {
-    $a = 1;
+    a = 1;
 }
 
 

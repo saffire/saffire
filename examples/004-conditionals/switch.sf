@@ -1,11 +1,11 @@
 switch ("foo") {
     case "bar" :
-        $a = 1;
+        a = 1;
         break;
     case "baz" :
-        $a = 1;
+        a = 1;
         // Intentionally fallthrough
     default :
-        $a = 1;
+        a = 1;
         break;
 }

@@ -1,55 +1,55 @@
 /*
  * Data structure examples.
  *
- * $a = list[ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
- * $b = hash[ "a"=>1, "b"=>2, "c"=>3, "d"=>4 ]      // hash a=>1, b=>2, c=>3, d=>4
+ * a = list[ 1, 2, 3, 4 ];                         // List 1, 2, 3, 4
+ * b = hash[ "a"=>1, "b"=>2, "c"=>3, "d"=>4 ]      // hash a=>1, b=>2, c=>3, d=>4
  *
  *
- * // does value exists in list $a?
- * if (1 in $a) { .. }
+ * // does value exists in list a?
+ * if (1 in a) { .. }
  *
- * // Does value (or key) exist in list $b?
- * if (1 in $b) { .. }
- * if ("a" in $b.keys) { .. }
+ * // Does value (or key) exist in list b?
+ * if (1 in b) { .. }
+ * if ("a" in b.keys) { .. }
  */
 
 // Everything is a class. No global functions, so print etc should be done through an io class. This could either
-// be loaded explicitly or implicitly. We prefer explicit, so "use io". Some classes like string, int etc should
+// be loaded explicitly or implicitly. We prefer explicit, so "import io". Some classes like string, int etc should
 // always be available and loaded implicitly.
-use io;
+import io;
 
 
 // Lists can hold any kind of object (including lists, hashes or other data structures)
-$a = list[ "1", 1, "4" ];
-$a = list[ "1", "2", list[ "3", "4", "5"] ];
+a = list[ "1", 1, "4" ];
+a = list[ "1", "2", list[ "3", "4", "5"] ];
 
 // Do hashes ONLY support key=>value's, or can we omit keys like this:
-// $b = list[ "a" : "1", "b" ];      // "a" => "1",  0 => "b"     // ???
+// b = list[ "a" : "1", "b" ];      // "a" => "1",  0 => "b"     // ???
 
 
 /**
  * Lists and/or hashes have a few data structure handling methods:
 
-$a.length()                     number of elements
+a.length()                     number of elements
     Return Integer
 
-$a.has( Object $key)            has $a got key $key
+a.has( Object key)            has a got key key
     Return Bool
     Note: This assumes all objects have a .hash() method
 
-$a.contains( String $key)       has $a got value $s?
+a.contains( String key)       has a got value s?
     Return Bool
 
-$a.remove( String $key)         remove item from the array as identified by the provided key
+a.remove( String key)         remove item from the array as identified by the provided key
     Return self                 Provides fluent interface
-    Throws                      When $key does not exist
+    Throws                      When key does not exist
 
-$a.insert( $value, [ String $key] )      Insert $value into array. If $key
-                                                has not been given, $value.hash() will
+a.insert( value, [ String key] )      Insert value into array. If key
+                                                has not been given, value.hash() will
                                                 be used as key.
 
     Return self                 Provides fluent interface
-    Throws                      When $key already exists
+    Throws                      When key already exists
 
 
 static array.range( Int|String Start, Int|String Stop, [Int Step])
@@ -63,7 +63,7 @@ Choices:
 - no .json() method since it would require all values to have a .json() method as well
 
 
-$alphabet = array.range('a','z');       // create a range ?
+alphabet = array.range('a','z');       // create a range ?
 
 */
 

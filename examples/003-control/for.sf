@@ -1,17 +1,17 @@
-for ($i=0; $i!=5; $i++) {
-    io.print($i);
+for (i=0; i!=5; i++) {
+    io.print(i);
 }
 
-for ( ; $i!=5; ) {
-    io.print($i);
+for ( ; i!=5; ) {
+    io.print(i);
 }
 
-for (; ; $i++) {
-    io.print($i);
+for (; ; i++) {
+    io.print(i);
 }
 
 for (;;) {
-    io.print($i);
+    io.print(i);
 }
 
 

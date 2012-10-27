@@ -10,10 +10,17 @@ else
   AM_CXXFLAGS = -O2
 endif
 
+if PARSEDEBUG
+  AM_CFLAGS += -D__PARSEDEBUG
+  AM_YFLAGS = -t -v
+else
+  AM_YFLAGS =
+endif
+
 # Some additional rules for flex/bison file handling
 BUILT_SOURCES=compiler/lex.yy.c
-AM_LFLAGS= --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
-AM_YFLAGS = -d
+AM_LFLAGS = --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
+AM_YFLAGS += -d
 
 # parser.tab.h cannot be used before parser.tab.c
 compiler/parser.tab.h: compiler/parser.tab.c
@@ -39,11 +46,14 @@ noinst_LIBRARIES = libsaffire.a
 
 # Libsaffire is the main core of saffire
 libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
-                  general/svar.c compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
-                  interpreter/saffire_interpreter.c general/hashtable.c general/smm.c \
-                  general/md5.c general/dll.c \
+                  compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
+                  general/hashtable.c general/smm.c general/md5.c general/dll.c \
+                  interactive/interactive.c \
+                  interpreter/context.c interpreter/saffire_interpreter.c interpreter/errors.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \
-                  object/null.c object/regex.c
+                  object/null.c object/regex.c \
+                  modules/module_api.c \
+                  modules/io.c modules/saffire.c
 
 # Link all sources against these libraries
 LDADD = libsaffire.a -lpcre

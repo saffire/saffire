@@ -27,11 +27,10 @@
 #ifndef __AST_H__
 #define __AST_H__
 
-    #include "general/svar.h"
     #include "compiler/class.h"
 
     // different kind of nodes we manage
-    typedef enum { typeString, typeNumerical, typeNull, typeIdentifier, typeOpr, typeClass, typeInterface, typeMethod } nodeEnum;
+    typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier, typeAstOpr, typeAstClass, typeAstInterface, typeAstMethod } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
@@ -75,6 +74,8 @@
 
     typedef struct ast_element {
         nodeEnum type;              // Type of the node
+        int flags;                  // Current flag (used for interpreting)
+        int lineno;                 // Current line number for this AST element
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
@@ -90,13 +91,17 @@
     // actual root element
     t_ast_element *ast_root;
 
-    t_ast_element *ast_compile_tree(FILE *fp);
+    t_ast_element *ast_generate_from_file(char *);
+    t_ast_element *ast_generate_tree(FILE *fp);
 
     t_ast_element *ast_string(char *value);
     t_ast_element *ast_numerical(int value);
     t_ast_element *ast_identifier(char *var_name);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_string_concat(t_ast_element *src, char *s);
+    t_ast_element *ast_concat(t_ast_element *src, char *s);
     t_ast_element *ast_class(t_class *class, t_ast_element *body);
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);

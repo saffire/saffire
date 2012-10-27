@@ -37,6 +37,20 @@ esac],
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 
+#parsedebug
+AC_ARG_ENABLE(parsedebug,
+AS_HELP_STRING([--enable-parsedebug],
+               [enable debugging of flex/bison, default: no]),
+[case "${enableval}" in
+             yes) parsedebug=true ;;
+             no)  parsedebug=false ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-parsedebug]) ;;
+esac],
+[parsedebug=false])
+
+AM_CONDITIONAL(PARSEDEBUG, test x"$parsedebug" = x"true")
+
+
 #gcov
 AC_ARG_ENABLE(coverage,
 AC_HELP_STRING([--enable-gcov],
@@ -71,6 +85,8 @@ dnl AC_SUBST([ICU_LIBS])
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [main], , [ AC_MSG_ERROR([math library missing])])
+
+AC_CHECK_LIB(edit, el_init, , [ AC_MSG_ERROR([libedit library missing])])
 
 # Checks for header files.
 AC_FUNC_ALLOCA

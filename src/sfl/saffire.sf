@@ -7,8 +7,14 @@ class saffire {
      * Changes the current umask
      */
     static public method umask(Numerical $mask) {
+        return _os.umask($mask);
     }
     static public method umask(String $mask) {
+        return _os.umask($mask);
+    }
+
+    static public method version() {
+        return _saffire.version();
     }
 
 }

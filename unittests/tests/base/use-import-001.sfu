@@ -1,0 +1,22 @@
+title: Use and import tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+use io;
+====
+@@@@
+use io as blaat;
+====
+@@@@
+import foo from bar;
+====
+@@@@
+import foo as baz from bar;
+====
+@@@@
+import foo as baz;
+====
+@@@@
+import foo from bar as baz;
+====
+@@@@

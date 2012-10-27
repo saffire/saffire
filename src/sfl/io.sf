@@ -2,14 +2,20 @@
  * This is the IO class.
  */
 class io {
+    const STDIN  = 0;
+    const STDOUT = 1;
+    const STDERR = 2;
 
-	static public method print(...) {
-	}
+    static public method print(String $format, List *$args) {
+        ::_io.print($format, $args);
+    }
 
-	static public method printf($format, ...) {
-	}
+    static public method printf(String $format, List *$args) {
+        return ::_io.printf($format, $args);
+    }
 
-	static public method fprintf(File $f, $format, ...) {
-	}
+    static public method fprintf(File $f, String $format, List *$args) {
+        return ::_io.fprintf($f, $format, $args);
+    }
 
 }

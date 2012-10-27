@@ -29,178 +29,521 @@
 #include <string.h>
 #include <math.h>
 #include "interpreter/saffire_interpreter.h"
+#include "interpreter/context.h"
+#include "interpreter/errors.h"
 #include "compiler/parser.tab.h"
-#include "general/svar.h"
+#include "general/hashtable.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
+#include "object/object.h"
+#include "object/string.h"
+#include "object/numerical.h"
+#include "object/null.h"
+#include "object/boolean.h"
+#include "debug.h"
 
-#define SI(p)   (saffire_interpreter(p))
-#define SI0(p)  (saffire_interpreter(p->opr.ops[0]))
-#define SI1(p)  (saffire_interpreter(p->opr.ops[1]))
-#define SI2(p)  (saffire_interpreter(p->opr.ops[2]))
+extern char *get_token_string(int token);
+extern char *wctou8(const wchar_t *wstr, long len);
+static t_snode *_saffire_interpreter(t_ast_element *p);
+
+// A stack maintained by the AST which holds the current line for the current AST
+t_dll *lineno_stack;
+
+#ifdef __DEBUG
+extern t_dll *object_dll;
+#endif
 
 
-
-static int svar_idx = 0;
-
-svar *svar_temp_alloc(int type, char *s, long l) {
-    char str[512];
-    sprintf(str, "TMP-%d", svar_idx++);
-    svar *tmp = svar_alloc(type, str, s, l);
-    svar_print(tmp);
-    return tmp;
+/**
+ *
+ */
+static void si_init(void) {
+    // Create stack for linenumbers
+    lineno_stack = dll_init();
 }
 
 
-svar *saffire_interpreter(t_ast_element *p) {
-    svar *var, *var1, *var2, *tmp;
-    long i;
+/**
+ *
+ */
+static void si_fini(void) {
+    // @TODO: Something is wrong with freeing this DLL :(
+    //dll_free(lineno_stack);
+}
 
-    if (!p) return svar_temp_alloc(SV_NULL, NULL, 0);
 
-    printf ("interpreting(%d)\n", p->type);
 
-    if (p->type == 1) {
-        p->type = 1;
+
+
+/**
+ * Returns object from a node. If the node points to a variable, return the object where this variable
+ * points to.
+ *
+ * $a    -> returns the object where $a points to
+ * <obj> -> returns plain object
+ */
+static t_object *si_get_object(t_snode *node) {
+    t_object *obj;
+
+    if (IS_OBJECT(node)) {
+        return node->data.obj;
     }
 
+    if (HAS_IDENTIFIER_OBJ(node)) {
+        // Fetch object where this var references to, and add it to the destination var
+        return node->data.id.obj;
+    }
+
+    if (HAS_IDENTIFIER_ID(node)) {
+        // Fetch object where this var references to, and add it to the destination var
+        //t_hash_table_bucket *htb = si_find_in_context(node->data.id.id);
+        t_hash_table_bucket *htb = node->data.id.id;
+        obj = (t_object *)htb->data;
+        if (obj == NULL) {
+            saffire_error("This variable is not initialized!");
+        }
+        return obj;
+    }
+
+    saffire_error("This identifier does not have any ID nor OBJ");
+}
+
+
+/**
+ * Sets or replaces the object into the variable
+ */
+static void si_set_object(t_snode *node, t_object *dst_obj) {
+    if (! IS_IDENTIFIER(node)) {
+        saffire_error("Trying to set an object to a non-variable");
+    }
+
+    // Decrease source object reference count (if any object is present)
+    if (HAS_IDENTIFIER_OBJ(node)) {
+        t_object *src_obj = si_get_object(node);
+        object_dec_ref(src_obj);
+    }
+
+    // Set new object and increase reference count
+    t_hash_table_bucket *htb = node->data.id.id;
+    htb->data = dst_obj;
+    object_inc_ref(dst_obj);
+}
+
+/**
+ * Compare the objects according to the comparison (returns 0 or 1)
+ */
+static t_snode *si_comparison(t_ast_element *p, int cmp) {
+    t_snode *node1 = SI0(p);
+    t_snode *node2 = SI1(p);
+
+    // Check if the references are to the same object and we are doing a ==. If so, we are always true
+    if (IS_OBJECT(node1) && IS_OBJECT(node2) && cmp == COMPARISON_EQ && node1->data.obj == node2->data.obj) return 0;
+
+    t_object *obj1 = si_get_object(node1);
+    t_object *obj2 = si_get_object(node2);
+    if (obj1->type != obj2->type) {
+        saffire_error("Types on comparison are not equal");
+    }
+
+    t_object *obj = object_comparison(obj1, cmp, obj2);
+    RETURN_SNODE_OBJECT(obj);
+}
+
+
+
+/**
+ * Calls object's operator
+ */
+static t_snode *si_operator(t_ast_element *p, int opr) {
+    t_snode *node1 = SI0(p);
+    t_snode *node2 = SI1(p);
+
+    t_object *obj1 = si_get_object(node1);
+    t_object *obj2 = si_get_object(node2);
+    if (obj1->type != obj2->type) {
+        saffire_error("Types on operator are not equal");
+    }
+
+    t_object *obj = object_operator(obj1, opr, 0, 1, obj2);
+    RETURN_SNODE_OBJECT(obj);
+}
+
+
+
+/**
+ *
+ */
+static t_snode *_saffire_interpreter(t_ast_element *p) {
+    t_object *obj, *obj1, *obj2, *obj3;
+    t_snode *node1, *node2, *node3;
+    t_hash_table_bucket *htb;
+    int ret, initial_loop, len;
+    t_ast_element *hte;
+    char *str, *method_name;
+
+    // Append to lineno
+    dll_append(lineno_stack, (void *)p->lineno);
+
+    if (!p) {
+        RETURN_SNODE_OBJECT(Object_Null);
+    }
+
+    wchar_t *wchar_tmp;
     switch (p->type) {
-        case typeString :
-            printf ("string: %s\n", p->string.value);
-            return svar_temp_alloc(SV_STRING, p->string.value, 0);
+        case typeAstString :
+            DEBUG_PRINT("new string object: '%s'\n", p->string.value);
 
-        case typeNumerical :
-            printf ("numerical: %d\n", p->numerical.value);
-            return svar_temp_alloc(SV_LONG, NULL, p->numerical.value);
+            // Allocate enough room to hold string in wchar and convert
+            int len = strlen(p->string.value)*sizeof(wchar_t);
+            wchar_tmp = (wchar_t *)smm_malloc(len * sizeof(wchar_t));
+            memset(wchar_tmp, 0, len * sizeof(wchar_t));
+            mbstowcs(wchar_tmp, p->string.value, strlen(p->string.value));
 
-        case typeIdentifier :
-            printf ("var: %s\n", p->identifier.name);
-            return svar_temp_alloc(SV_STRING, p->identifier.name, 0);
+            // create string object
+            obj = object_new(Object_String, wchar_tmp);
 
-        case typeNull :
-            /* nop */
+            // Free tmp wide string
+            smm_free(wchar_tmp);
+            RETURN_SNODE_OBJECT(obj);
+
+        case typeAstNumerical :
+            DEBUG_PRINT("new numerical object: %d\n", p->numerical.value);
+            // Create numerical object
+            obj = object_new(Object_Numerical, p->numerical.value);
+            RETURN_SNODE_OBJECT(obj);
+
+        case typeAstIdentifier :
+            // Do constant vars
+            if (strcasecmp(p->string.value, "True") == 0) {
+                //RETURN_SNODE_OBJECT(Object_True);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_True);
+            }
+            if (strcasecmp(p->string.value, "False") == 0) {
+                DEBUG_PRINT("Retuning false!");
+                //RETURN_SNODE_OBJECT(Object_False);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_False);
+            }
+            if (strcasecmp(p->string.value, "Null") == 0) {
+                //RETURN_SNODE_OBJECT(Object_Null);
+                RETURN_SNODE_IDENTIFIER(NULL, Object_Null);
+            }
+
+            htb = si_find_in_context(p->string.value);
+            RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
             break;
 
-        case typeClass :
-        case typeInterface :
-        case typeMethod :
-            break;
-
-        case typeOpr :
-            printf ("opr.oper(%d)\n", p->opr.oper);
+        case typeAstOpr :
+            DEBUG_PRINT("opr.oper: %s(%d)\n", get_token_string(p->opr.oper), p->opr.oper);
             switch (p->opr.oper) {
-                case T_WHILE :
-                    while (svar_true(SI0(p))) {
-                        SI1(p);
+                case T_PROGRAM :
+                    SI0(p); // use declarations
+                    SI1(p); // top statements
+                    break;
+                case T_TOP_STATEMENTS:
+                case T_USE_STATEMENTS:
+                case T_STATEMENTS :
+                    for (int i=0; i!=OP_CNT(p); i++) {
+                        _saffire_interpreter(p->opr.ops[i]);
                     }
-                    return svar_temp_alloc(SV_NULL, NULL, 0);
+                    // Statements do not return anything
+                    RETURN_SNODE_NULL();
+                    break;
+                case T_USE :
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
 
-                case T_IF:
-                    if (svar_true(SI0(p))) {
-                        SI1(p);
-                    } else if (p->opr.nops > 2) {
+                    char *namespace = wctou8(((t_string_object *)obj1)->value, ((t_string_object *)obj1)->char_length);
+                    if (OP_CNT(p) == 2) {
+                        node2 = SI1(p);
+                        obj2 = si_get_object(node2);
+                        namespace = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+                    }
+
+                    si_create_context(namespace);
+                    break;
+
+                case T_EXPRESSIONS :
+                    // No expression, just return NULL
+                    if (OP_CNT(p) == 0) {
+                        RETURN_SNODE_NULL();
+                    }
+
+                    // Do all expressions
+                    for (int i=0; i!=OP_CNT(p); i++) {
+                        node1 = _saffire_interpreter(p->opr.ops[i]);
+                        // Remember the first node
+                        if (i == 0) node2 = node1;
+                    }
+                    return node2;
+                    break;
+
+                case T_ASSIGNMENT :
+                    // Fetch LHS node
+                    node1 = SI0(p);
+
+                    // Not found, create this variable
+                    if (node1 == NULL) {
+                        saffire_error("Left hand side does not exist");
+                    }
+                    // it should be a variable, otherwise we cannot write to it..
+                    if (! HAS_IDENTIFIER_ID(node1)) {
+                        saffire_error("Left hand side is not writable!");
+                    }
+
+                    // Check if we have a normal assignment. We only support this for now...
+                    t_ast_element *e = p->opr.ops[1];
+                    if (e->type != typeAstOpr || e->opr.oper != T_ASSIGNMENT) {
+                        saffire_error("We only support = assignments (no += etc)");
+                    }
+
+                    // Evaluate the RHS
+                    node3 = SI2(p);
+
+                    // Get the object and store it
+                    obj1 = si_get_object(node3);
+                    si_set_object(node1, obj1);
+
+                    RETURN_SNODE_OBJECT(obj1);
+                    break;
+
+                /**
+                 * Control structures
+                 */
+                case T_DO :
+                    do {
+                        // Always execute our inner block at least once
+                        SI0(p);
+
+                        // Check condition
+                        node1 = SI1(p);
+                        obj1 = si_get_object(node1);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+
+                        // False, we can break our do-loop
+                        if (obj1 == Object_False) {
+                            break;
+                        }
+                    } while (1);
+
+                    RETURN_SNODE_NULL();
+                    break;
+
+                case T_WHILE :
+                    initial_loop = 1;
+                    while (1) {
+                        // Check condition first
+                        node1 = SI0(p);
+                        obj1 = si_get_object(node1);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+
+                        // if condition is true, execute our inner block
+                        if (obj1 == Object_True) {
+                            SI1(p);
+                        } else {
+                            // If the first loop is false and we've got an else statement, execute it.
+                            if (initial_loop && OP_CNT(p) > 2) {
+                                SI2(p);
+                            }
+                            break;
+                        }
+
+                        initial_loop = 0;
+                    }
+
+                    RETURN_SNODE_NULL();
+                    break;
+
+                case T_FOR :
+                    // Evaluate first part
+                    node1 = SI0(p);
+
+                    while (1) {
+                        // Check condition first
+                        node2 = SI1(p);
+                        obj1 = si_get_object(node2);
+                        // Check if it's already a boolean. If not, cast this object to boolean
+                        if (! OBJECT_IS_BOOLEAN(obj1)) {
+                            obj1 = object_call(obj1, "boolean", 0);
+                        }
+
+                        // if condition is not true, break our loop
+                        if (obj1 != Object_True) {
+                            break;
+                        }
+
+                        // Condition is true, execute our inner loop
+                        SI3(p);
+
+                        // Finally, evaluate our last block
                         SI2(p);
                     }
-                    return svar_temp_alloc(SV_NULL, NULL, 0);
 
-                case '=' :
-                    // Since we are assigning, we know the first operand is the name (string)
+                    // All done
+                    break;
 
-                    tmp = SI0(p);
-                    var = svar_find(tmp->val.s);
-                    if (var == NULL) {
-                        // Assign value, since it doesn't exist yet or anymore
-                        printf ("Primary allocation for '%s'\n", tmp->val.s);
-                        var = svar_alloc(SV_NULL, tmp->val.s, NULL, 0);
-                    };
+                /**
+                 * Conditional statements
+                 */
+                case T_IF:
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
 
-                    var1 = SI1(p);
-                    if (var1->type == SV_LONG) {
-                        printf("setting long: %ld\n", var1->val.l);
-                        var->type = SV_LONG;
-                        var->val.l = var1->val.l;
-                    } else {
-                        printf("setting string: %s\n", var1->val.s);
-                        var->type = SV_STRING;
-                        var->val.s = smm_strdup(var1->val.s);
+                    // Check if it's already a boolean. If not, cast this object to boolean
+                    if (! OBJECT_IS_BOOLEAN(obj1)) {
+                        obj1 = object_call(obj1, "boolean", 0);
                     }
 
-                    svar_print(var);
-                    return var;
+                    if (obj1 == Object_True) {
+                        // Execute if-block
+                        node2 = SI1(p);
+                    } else if (OP_CNT(p) > 2) {
+                        // Execute (optional) else-block
+                        node2 = SI2(p);
+                    }
+                    break;
 
-                case ';' :
-                    SI0(p);
-                    return SI1(p);
+                case T_METHOD_CALL :
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
 
-                case '+' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Can only have identifiers here", hte->identifier.name);
+                    }
 
-                        svar_print(var1);
-                        svar_print(var2);
+                    if (hte->identifier.name[0] == '$') {
+                        obj2 = (t_object *)htb->data;
+                        if (! OBJECT_IS_STRING(obj2)) {
+                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
+                        }
+                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+                    } else {
+                        // We duplicate, so we can always free the string later on
+                        method_name = smm_strdup(hte->identifier.name);
+                    }
 
-                        i = (var1->val.l + var2->val.l);
-                        printf("ADD: %ld + %ld = %ld\n", var1->val.l, var2->val.l, i);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
+                    // @TODO: add Arguments
+                    obj2 = object_call(obj1, method_name, 0);
 
-                case '-' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        return svar_temp_alloc(SV_LONG, NULL, (var1->val.l - var2->val.l));
+                    smm_free(method_name);
 
-                case '*' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        return svar_temp_alloc(SV_LONG, NULL, (var1->val.l * var2->val.l));
+                    RETURN_SNODE_OBJECT(obj2);
+                    break;
 
-                case '/' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = floor(var1->val.l / var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                /* Comparisons */
                 case '<' :
-                        var1 = SI0(p);
-                        var2 = SI0(p);
-                        i = (var1->val.l < var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                    return si_comparison(p, COMPARISON_LT);
+                    break;
                 case '>' :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l > var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                    return si_comparison(p, COMPARISON_GT);
+                    break;
                 case T_GE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l >= var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                    return si_comparison(p, COMPARISON_GE);
+                    break;
                 case T_LE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l <= var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                    return si_comparison(p, COMPARISON_LE);
+                    break;
                 case T_NE :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l != var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
-
+                    return si_comparison(p, COMPARISON_NE);
+                    break;
                 case T_EQ :
-                        var1 = SI0(p);
-                        var2 = SI1(p);
-                        i = (var1->val.l == var2->val.l);
-                        return svar_temp_alloc(SV_LONG, NULL, i);
+                    return si_comparison(p, COMPARISON_EQ);
+                    break;
+
+                /* Operators */
+                case '+' :
+                    return si_operator(p, OPERATOR_ADD);
+                    break;
+                case '-' :
+                    return si_operator(p, OPERATOR_SUB);
+                    break;
+                case '*' :
+                    return si_operator(p, OPERATOR_MUL);
+                    break;
+                case '/' :
+                    return si_operator(p, OPERATOR_DIV);
+                    break;
+                case T_AND :
+                    return si_operator(p, OPERATOR_AND);
+                    break;
+                case T_OR :
+                    return si_operator(p, OPERATOR_OR);
+                    break;
+                case '^' :
+                    return si_operator(p, OPERATOR_XOR);
+                    break;
+                case T_SHIFT_LEFT :
+                    return si_operator(p, OPERATOR_SHL);
+                    break;
+                case T_SHIFT_RIGHT :
+                    return si_operator(p, OPERATOR_SHR);
+                    break;
+
+                /* Unary operators */
+                case T_OP_INC :
+                    // We must be a variable
+                    node1 = SI0(p);
+                    if (! HAS_IDENTIFIER_ID(node1)) {
+                        saffire_error("Left hand side is not writable!");
+                    }
+
+                    obj1 = si_get_object(node1);
+                    obj2 = object_new(Object_Numerical, 1);
+                    obj3 = object_operator(obj1, OPERATOR_ADD, 0, 1, obj2);
+
+                    si_set_object(node1, obj3);
+
+                    RETURN_SNODE_OBJECT(obj3);
+                    break;
+                case T_OP_DEC :
+                    // We must be a variable
+                    node1 = SI0(p);
+                    if (! HAS_IDENTIFIER_ID(node1)) {
+                        saffire_error("Left hand side is not writable!");
+                    }
+
+                    obj1 = si_get_object(node1);
+                    obj2 = object_new(Object_Numerical, 1);
+                    obj3 = object_operator(obj1, OPERATOR_SUB, 0, 1, obj2);
+
+                    si_set_object(node1, obj3);
+
+                    RETURN_SNODE_OBJECT(obj3);
+                    break;
+
 
                 default:
-                    printf("Unhandled opcode: %d\n", p->opr.oper);
-                    exit(1);
+                    saffire_error("Unhandled opcode: %d\n", p->opr.oper);
                     break;
             }
             break;
     }
-    return 0;
+    RETURN_SNODE_NULL();
+}
+
+
+
+/**
+ *
+ */
+void saffire_interpreter(t_ast_element *p) {
+    si_init();
+    _saffire_interpreter(p);
+
+#ifdef __DEBUG
+    t_dll_element *e = DLL_HEAD(object_dll);
+    while (e) {
+        t_object *obj = (t_object *)e->data;
+        DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
+        e = DLL_NEXT(e);
+    }
+#endif
+
+    si_fini();
 }
