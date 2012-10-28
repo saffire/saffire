@@ -49,13 +49,13 @@ noinst_LIBRARIES = libsaffire.a
 libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
                   general/hashtable.c general/smm.c general/md5.c general/dll.c \
-                  general/levenshtein.c \
                   interactive/interactive.c \
                   interpreter/context.c interpreter/saffire_interpreter.c interpreter/errors.c \
                   object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \
                   object/null.c object/regex.c \
                   modules/module_api.c \
-                  modules/io.c modules/saffire.c
+                  modules/io.c modules/saffire.c \
+                  commands/config.c commands/fastcgi.c commands/lint.c
 
 # Link all sources against these libraries
 LDADD = libsaffire.a -lpcre

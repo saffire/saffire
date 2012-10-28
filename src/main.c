@@ -37,44 +37,49 @@
 #include "interactive/interactive.h"
 #include "modules/module_api.h"
 #include "interpreter/context.h"
-#include "general/levenshtein.h"
 #include "version.h"
 
 int cmd_help(int argc, const char **argv);
 int cmd_version(int argc, const char **argv);
-int cmd_lint(int argc, const char **argv);
-int cmd_fastcgi(int argc, const char **argv);
-int cmd_config(int argc, const char **argv);
+extern int cmd_lint(int argc, const char **argv);
+extern int cmd_fastcgi(int argc, const char **argv);
+extern int cmd_config(int argc, const char **argv);
+extern void cmd_lint_help(void);
+extern void cmd_fastcgi_help(void);
+extern void cmd_config_help(void);
+void print_usage(void);
 
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
+/* Simple command structure */
 struct _command {
     char *name;
     char *description;
     int (*func)(int, const char **);
     int option;
+    void (*help)(void);
 };
 
 static struct _command commands[] = {
-    { "help", "Displays help information", cmd_help, 0 },
-    { "version", "Displays version", cmd_version, 0 },
-    { "lint", "Lint check a file", cmd_lint, 0 },
-    { "fastcgi", "Run the FastCGI server", cmd_fastcgi, 0 },
-    { "config", "Display (or generate) new configuration settings", cmd_config, 0 },
+    { "help",    "Displays help information", cmd_help, 0, print_usage },
+    { "version", "Displays version", cmd_version, 0, NULL },
+    { "lint",    "Lint check a file", cmd_lint, 0, cmd_lint_help },
+    { "fastcgi", "Run the FastCGI server", cmd_fastcgi, 0, cmd_fastcgi_help },
+    { "config",  "Display (or generate) new configuration settings", cmd_config, 0, cmd_config_help },
 };
 
 /**
  * Prints current version number and copyright information
  */
-void print_version() {
+void print_version(void) {
     printf("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
 }
 
 /**
  * Prints usage information
  */
-void print_usage() {
+void print_usage(void) {
     printf("\n"
            "Usage: saffire <command> [options] [script [args]]\n"
            "Available options are:\n"
@@ -89,6 +94,8 @@ void print_usage() {
         printf("%-15s %s\n", p->name, p->description);
     }
     printf("\n");
+
+    printf("Use saffire help <command> to find out more information about the command usage.\n\n");
 }
 
 ///**
@@ -155,72 +162,72 @@ void print_usage() {
 //    }
 //}
 
+
+/**
+ * Display help usage
+ */
 int cmd_help(int argc, const char **argv) {
-    print_usage();
-    return 0;
+    if (argc == 1) {
+        print_usage();
+        return 0;
+    }
+
+    for (int i=0; i < ARRAY_SIZE(commands); i++) {
+        struct _command *p = commands+i;
+        if (strcmp(p->name, argv[2]) != 0) continue;
+        if (p->help) {
+            p->help();
+        } else {
+            // No help available for this command
+            printf("There is no help available for command '%s'.\n", argv[2]);
+        }
+        return 0;
+    }
+
+    // No valid command found
+    printf("Cannot find help on this subject.\n");
+    return 1;
 }
 
+/**
+ * Display version
+ */
 int cmd_version(int argc, const char **argv) {
     print_version();
     return 0;
 }
-int cmd_lint(int argc, const char **argv) {
-    printf("lint check!");
-    return 0;
-}
-int cmd_fastcgi(int argc, const char **argv) {
-    printf("FastCGI mode!");
-    return 0;
-}
-int cmd_config(int argc, const char **argv) {
-    // saffire config set x.y.z 12345
-    // saffire config get x.y.z
-    // saffire config get x
-    // saffire config generate > config.ini
-    return 0;
-}
 
 
-int exec_command(struct _command *cmd, int argc, const char **argv) {
-    printf("Executing: %s\n", cmd->name);
-    return cmd->func(argc, argv);
-}
-
-
+/**
+ * Main saffire entry point
+ */
 int main(int argc, char *argv[]) {
-    char *cmd = argv[1];
+    char *cmd;
     int ret = -1;
 
-    // Turn "saffire cmd --help" into "saffire help cmd"
-    if (argc > 2 && ! strcmp(argv[2], "--help")) {
-        argv[2] = argv[0];
-        argv[1] = cmd = "help";
+    // Turn "./saffire" into "./saffire help"
+    if (argc == 1) {
+        cmd = "help";
     }
+    if (argc >= 2) {
+        // "./saffire --command ..." will become "./saffire command ..."
+        while (argv[1][0] == '-') {
+            argv[1] = (char *)(argv[1])+1;
+        }
+        cmd = argv[1];
+    }
+//    printf("CMD: '%s'\n", cmd);
 
     // Iterate all commands, see if we have a match and run it.
-    for (int i=0; i<ARRAY_SIZE(commands); i++) {
+    for (int i=0; i < ARRAY_SIZE(commands); i++) {
         struct _command *p = commands+i;
         if (strcmp(p->name, cmd) != 0) continue;
-        ret = exec_command(p, argc, (const char **)argv);
+        exit(p->func(argc, (const char **)argv));
     }
 
-    // Did not found or execute a command. Give some help.
-    if (ret == -1) {
-        // Do a levenshtein check to see if we might mistyped a command or so
-        int first = 1;
-        for (int i=0; i<ARRAY_SIZE(commands); i++) {
-            struct _command *p = commands+i;
-            if (levenshtein(p->name, argv[1]) < 4) {
-                if (first) {
-                    printf("Did you mean on of the following commands: \n");
-                    printf("\n");
-                }
-                first = 0;
-                printf("%10s  : %s\n", p->name, p->description);
-            }
-        }
-    }
-    return ret;
+    // Did not found a command. Give some usage help.
+    print_usage();
+    return 1;
 }
 
 

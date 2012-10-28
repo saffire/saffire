@@ -24,10 +24,29 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __LEVENSTHEIN_H__
-#define __LEVENSTHEIN_H__
+#include <stdio.h>
 
-   int levenshtein(char *s, char *t);
+void cmd_config_help(void) {
+    printf("Global settings:\n");
+    printf("    -f, --file <FILE>    File to read/write. Defaults to ~/.saffire.ini\n");
+    printf("\n");
+    printf("Actions:\n");
+    printf("    --generate                 Generates configuration settings\n");
+    printf("    --get <setting>            Returns value (if set)\n");
+    printf("    --set <setting> <value>    Set value in your configuration\n");
+    printf("    --list                     Returns all settings\n");
+    printf("\n");
+}
 
-#endif
-
+int cmd_config(int argc, const char **argv) {
+    printf("ARGC: %d\n", argc);
+    if (argc == 2) {
+        cmd_config_help();
+        return 0;
+    }
+    // saffire config set x.y.z 12345
+    // saffire config get x.y.z
+    // saffire config get x
+    // saffire config generate > config.ini
+    return 0;
+}
