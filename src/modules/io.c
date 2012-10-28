@@ -39,13 +39,19 @@ extern char *wctou8(const wchar_t *wstr, long len);
  *
  */
 static t_object *io_print(t_object *self, t_dll *dll) {
-    t_string_object *str_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj)) {
+    t_object *obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
         saffire_error("Error while parsing argument list\n");
         RETURN_SELF;
     }
 
-    char *str = wctou8(str_obj->value, str_obj->char_length);
+    if (! OBJECT_IS_STRING(obj)) {
+        obj = object_call(obj, "string", 0);
+    }
+
+
+    char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
     printf(ANSI_BRIGHTRED "%s\n" ANSI_RESET, str);
     smm_free(str);
 
