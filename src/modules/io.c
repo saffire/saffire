@@ -87,7 +87,7 @@ t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NUL
 t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
 
 
-void io_init(void) {
+static void _init(void) {
     io_struct.methods = ht_create();
     ht_add(io_struct.methods, "print", io_print);
     ht_add(io_struct.methods, "printf", io_printf);
@@ -101,7 +101,7 @@ void io_init(void) {
     console_struct.properties = ht_create();
 }
 
-void io_fini(void) {
+static void _fini(void) {
     // Destroy methods and properties
     ht_destroy(io_struct.methods);
     ht_destroy(io_struct.properties);
@@ -112,16 +112,16 @@ void io_fini(void) {
 }
 
 
-t_object *io_objects[] = {
+static t_object *_objects[] = {
     &io_struct,
     &console_struct,
     NULL
 };
 
 t_module module_io = {
-    "::_io",
+    "::_sfl::io",
     "Standard I/O module",
-    io_objects,
-    io_init,
-    io_fini,
+    _objects,
+    _init,
+    _fini,
 };

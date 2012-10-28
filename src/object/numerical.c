@@ -183,7 +183,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_error("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -203,7 +203,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-        printf("Error while parsing argument list\n");
+        saffire_error("Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 

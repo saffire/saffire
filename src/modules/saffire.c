@@ -42,27 +42,26 @@ static t_object *saffire_return_version(t_object *self, t_dll *args) {
 
 t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
 
-void saffire_init(void) {
+static void _init(void) {
     saffire_struct.methods = ht_create();
     ht_add(saffire_struct.methods, "version", saffire_return_version);
     saffire_struct.properties = ht_create();
 }
-void saffire_fini(void) {
+static void _fini(void) {
     // Destroy methods and properties
     ht_destroy(saffire_struct.methods);
     ht_destroy(saffire_struct.properties);
 }
 
-
-t_object *saffire_objects[] = {
+static t_object *_objects[] = {
     &saffire_struct,
     NULL
 };
 
 t_module module_saffire = {
-    "::_saffire",
+    "::_sfl::saffire",
     "Saffire configuration module",
-    saffire_objects,
-    saffire_init,
-    saffire_fini
+    _objects,
+    _init,
+    _fini
 };

@@ -5,7 +5,7 @@
 import io;
 
 class Color {
-    /** Available PMS colors */
+    /* Available PMS colors */
     protected property pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
 
     /** Actual stored color */

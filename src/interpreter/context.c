@@ -33,12 +33,14 @@
 #include "general/hashtable.h"
 #include "general/smm.h"
 
-
+/**
+ * Like strstr but backwards search
+ */
 char *strrstr(char *x,char *y) {
     int m = strlen(x);
     int n = strlen(y);
-    char *X = malloc(m+1);
-    char *Y = malloc(n+1);
+    char *X = smm_malloc(m+1);
+    char *Y = smm_malloc(n+1);
     int i;
     for (i=0; i<m; i++) X[m-1-i] = x[i];
     X[m] = 0;
@@ -51,15 +53,14 @@ char *strrstr(char *x,char *y) {
         int ol = m-1-lo;
         Z = x+ol;
     }
-    free(X);
-    free(Y);
+    smm_free(X);
+    smm_free(Y);
     return Z;
 }
 
-
+// There are our namespace
 #define NS_SEPARATOR "::"
-#define DOUBLE_NS_SEPARATOR "::::"
-
+#define DOUBLE_NS_SEPARATOR NS_SEPARATOR NS_SEPARATOR
 
 t_ns_context *current_context = NULL;
 
@@ -77,7 +78,6 @@ t_ns_context *si_get_current_context(void) {
 t_ns_context *si_create_context(char *namespace) {
     char *new_ns;
     int prefix = 0;
-    int postfix = 0;
 
     int len = strlen(namespace);
     t_ns_context *ctx = si_get_current_context();
@@ -85,17 +85,8 @@ t_ns_context *si_create_context(char *namespace) {
     // Relative namespace, concat it with the current namespace
     if (strncmp(namespace, NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
         prefix = 1;
+        len += (strlen(ctx->namespace) + 1);
     }
-//    if (strncmp(namespace+strlen(namespace)-strlen(NS_SEPARATOR), NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
-//        postfix = 1;
-//    }
-
-    if (prefix) {
-        len =  + strlen(ctx->namespace) + 1;
-    }
-//    if (postfix) {
-//        len += strlen(NS_SEPARATOR);
-//    }
 
     new_ns = (char *)smm_malloc(len);
 
@@ -107,18 +98,6 @@ t_ns_context *si_create_context(char *namespace) {
     }
 
     strcat(new_ns, namespace);
-
-    // Add ending namespace separator if needed
-//    if (postfix) {
-//        strcat(new_ns, NS_SEPARATOR);
-//    }
-
-
-//    // Global namespace is a special case, otherwise we get double ::'s
-//    if (! strcmp(new_ns, DOUBLE_NS_SEPARATOR)) {
-//        new_ns[2] = '\0';
-//    }
-
 
     DEBUG_PRINT("Creating context: %s\n", new_ns);
     t_ns_context *new_ctx = smm_malloc(sizeof(t_ns_context));
@@ -151,8 +130,8 @@ void context_fini(void) {
     t_dll_element *e = DLL_HEAD(contexts);
     while (e) {
         t_ns_context *ctx = (t_ns_context *)e->data;
-        printf("Context: '%s'\n", ctx->namespace);
-        printf("  Vars : %d\n", ctx->vars->element_count);
+        DEBUG_PRINT("Context: '%s'\n", ctx->namespace);
+        DEBUG_PRINT("  Vars : %d\n", ctx->vars->element_count);
         e = DLL_NEXT(e);
     }
 #endif
@@ -211,7 +190,7 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
  * Find namespace, or NULL when does not exist
  */
 t_ns_context *si_find_namespace(const char *namespace) {
-    printf("t_ns_context *si_find_namespace(%s) {\n", namespace);
+    DEBUG_PRINT("t_ns_context *si_find_namespace(%s) {\n", namespace);
     t_hash_table_bucket *htb = ht_find(namespaces, (char *)namespace);
     if (!htb) return NULL;
     return (t_ns_context *)htb->data;
