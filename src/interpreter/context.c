@@ -153,11 +153,11 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
     if (strncmp(var, NS_SEPARATOR, 2) == 0) {
         // Already a fully qualified name
         fqn_len = strlen(var);
-        fqn = smm_malloc(fqn_len);
+        fqn = smm_malloc(fqn_len + 1);
         strcpy(fqn, var);
     } else {
         fqn_len = strlen(var) + strlen(current_ctx->namespace);
-        fqn = smm_malloc(fqn_len);
+        fqn = smm_malloc(fqn_len + 1);
         strcpy(fqn, current_ctx->namespace);
         strcat(fqn, var);
     }
