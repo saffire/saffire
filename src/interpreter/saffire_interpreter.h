@@ -29,12 +29,13 @@
 
     #include "compiler/ast.h"
     #include "object/object.h"
+    #include "general/dll.h"
 
 
     // Count number of operands.
     #define OP_CNT(p) p->opr.nops
 
-    typedef enum { snodeTypeNull, snodeTypeObject, snodeTypeIdentifier, snodeTypeString } snodeTypeEnum;
+    typedef enum { snodeTypeNull, snodeTypeObject, snodeTypeIdentifier, snodeTypeString, snodeTypeDll } snodeTypeEnum;
 
     struct _snode;
 
@@ -51,6 +52,7 @@
             t_object *obj;      // Single object
             t_identifier id;    // An identifier
             char *str;          // Single string
+            t_dll *dll;         // DLL
         } data;
     } t_snode;
 
@@ -69,6 +71,8 @@
     #define IS_STRING(snode)            (snode->type == snodeTypeString)
     #define HAS_IDENTIFIER_ID(snode)    (snode->type == snodeTypeIdentifier && snode->data.id.id != NULL)
     #define HAS_IDENTIFIER_OBJ(snode)   (snode->type == snodeTypeIdentifier && snode->data.id.obj != NULL)
+    #define IS_DLL(snode)               (snode->type == snodeTypeDll)
+    #define IS_NULL(snode)              (snode->type == snodeTypeNull)
 
 
     // Snode return macros
@@ -94,6 +98,12 @@
                                      ret->type = snodeTypeIdentifier; \
                                      ret->data.id.id = ident; \
                                      ret->data.id.obj = object; \
+                                     dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
+                                     return ret; }
+
+    #define RETURN_SNODE_DLL(_dll) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
+                                     ret->type = snodeTypeDll; \
+                                     ret->data.dll = _dll; \
                                      dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
                                      return ret; }
 

@@ -158,10 +158,9 @@ void sfc_validate_constant(char *name) {
  * Enter a method, and validate method name
  */
 void sfc_init_method(const char *name) {
-    if (name[0] == '$') {
-        sfc_error("A variable cannot be used as a method name");
-    }
-
+//    if (name[0] == '$') {
+//        sfc_error("A variable cannot be used as a method name");
+//    }
     global_table->in_method = 1;
 }
 
@@ -181,9 +180,9 @@ void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_ele
         sfc_error("You cannot define a class inside another class");
     }
 
-    if (name[0] == '$') {
-        sfc_error("A variable cannot be used as a class name");
-    }
+//    if (name[0] == '$') {
+//        sfc_error("A variable cannot be used as a class name");
+//    }
 
     // Check if the class exists in the class table
     t_hash_table_bucket *htb = ht_find(global_table->classes, name);
@@ -385,9 +384,9 @@ void sfc_switch_default(void) {
  * Make sure a label is not a variable
  */
 void saffire_check_label(const char *name) {
-    if (name[0] == '$') {
-        sfc_error("A variable cannot be used as a label");
-    }
+//    if (name[0] == '$') {
+//        sfc_error("A variable cannot be used as a label");
+//    }
 }
 
 

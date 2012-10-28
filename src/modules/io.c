@@ -31,11 +31,24 @@
 #include "object/string.h"
 #include "general/dll.h"
 
+extern char *wctou8(const wchar_t *wstr, long len);
+
+#define ANSI_BRIGHTRED "\33[41;33;1m"
+#define ANSI_RESET "\33[0m"
 /**
  *
  */
-static t_object *io_print(t_object *self, t_dll *args) {
-    printf("IO.self\n");
+static t_object *io_print(t_object *self, t_dll *dll) {
+    t_string_object *str_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj)) {
+        saffire_error("Error while parsing argument list\n");
+        RETURN_SELF;
+    }
+
+    char *str = wctou8(str_obj->value, str_obj->char_length);
+    printf(ANSI_BRIGHTRED "%s\n" ANSI_RESET, str);
+    smm_free(str);
+
     RETURN_SELF;
 }
 
@@ -43,7 +56,7 @@ static t_object *io_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    printf("IO.blaataap\n");
+    printf(ANSI_BRIGHTRED "IO.printf: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -51,7 +64,7 @@ static t_object *io_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"IO.blaataap\n";
+    wchar_t tmp[] = L"IO.sprintf\n";
     RETURN_STRING(tmp);
 }
 
@@ -61,7 +74,7 @@ static t_object *io_sprintf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_print(t_object *self, t_dll *args) {
-    printf("console.self\n");
+    printf(ANSI_BRIGHTRED "console.print: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -69,7 +82,7 @@ static t_object *console_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_printf(t_object *self, t_dll *args) {
-    printf("console.blaataap\n");
+    printf(ANSI_BRIGHTRED "console.printf: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -77,7 +90,7 @@ static t_object *console_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"console.blaataap\n";
+    wchar_t tmp[] = L"console.sprintf\n";
     RETURN_STRING(tmp);
 }
 

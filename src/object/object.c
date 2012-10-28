@@ -57,14 +57,12 @@ int object_is_immutable(t_object *obj) {
 }
 
 /**
- * Calls a method from specified object. Returns NULL when method is not found.
+ * Checks and returns the correct object that holds the method (if any)
  */
-t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
+static t_hash_table_bucket *_find_method(t_object *obj, char *method) {
+    // Try and find the correct method (might be found of the bases classes!)
     t_hash_table_bucket *htb = NULL;
     t_object *cur_obj = obj;
-    va_list arg_list;
-
-    // Try and find the correct method (might be found of the bases classes!)
 
     while (htb == NULL) {
         DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method, cur_obj->name);
@@ -84,9 +82,40 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     }
 
     DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method, obj->name);
-    t_object *(*func)(t_object *, t_dll *dll) = htb->data;
+    return htb;
+}
+
+
+/**
+ * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
+ */
+t_object *object_call_args(t_object *obj, char *method, t_dll *args) {
+    // Find hash bucket with method // @TODO: Return t_method instead!
+    t_hash_table_bucket *htb = _find_method(obj, method);
+    if (htb == NULL) {
+        return NULL;
+    }
+
+    t_object *(*func)(t_object *, t_dll *) = htb->data;
+    t_object *ret = func(obj, args);
+
+    // Don't free DLL, since it's external
+
+    return ret;
+}
+
+/**
+ * Calls a method from specified object. Returns NULL when method is not found.
+ */
+t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
+    // @TODO: Return t_method instead!
+    t_hash_table_bucket *htb = _find_method(obj, method);
+    if (htb == NULL) {
+        return NULL;
+    }
 
     // Add all arguments to a DLL
+    va_list arg_list;
     va_start(arg_list, arg_count);
     t_dll *dll = dll_init();
     for (int i=0; i!=arg_count; i++) {
@@ -96,6 +125,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     va_end(arg_list);
 
     // Call the actual method and return the result
+    t_object *(*func)(t_object *, t_dll *) = htb->data;
     t_object *ret = func(obj, dll);
 
     // Free dll

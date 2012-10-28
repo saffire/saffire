@@ -35,7 +35,6 @@
  *
  */
 static t_object *saffire_return_version(t_object *self, t_dll *args) {
-    printf("VERSION '%s'\n", saffire_version);
     RETURN_STRING(saffire_version_wide);
 }
 

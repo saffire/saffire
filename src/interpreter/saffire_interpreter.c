@@ -180,6 +180,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     int ret, initial_loop, len;
     t_ast_element *hte;
     char *str, *method_name;
+    t_dll *dll;
 
     // Append to lineno
     dll_append(lineno_stack, (void *)p->lineno);
@@ -408,30 +409,52 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     }
                     break;
 
+                case T_ARGUMENT_LIST:
+                    dll = dll_init();
+                    for (int i=0; i!=OP_CNT(p); i++) {
+                        node1 = _saffire_interpreter(p->opr.ops[i]);
+                        obj1 = si_get_object(node1);
+                        dll_append(dll, obj1);
+                    }
+                    RETURN_SNODE_DLL(dll);
+
                 case T_METHOD_CALL :
+                    // Get called object
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
 
+                    // get method name from object
                     hte = p->opr.ops[1];
                     if (hte->type != typeAstIdentifier) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
-
-                    if (hte->identifier.name[0] == '$') {
-                        obj2 = (t_object *)htb->data;
-                        if (! OBJECT_IS_STRING(obj2)) {
-                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
-                        }
-                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
-                    } else {
+                    method_name = smm_strdup(hte->identifier.name);
+//                    if (hte->identifier.name[0] == '$') {
+//                        obj2 = (t_object *)htb->data;
+//                        if (! OBJECT_IS_STRING(obj2)) {
+//                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
+//                        }
+//                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+//                    } else {
                         // We duplicate, so we can always free the string later on
-                        method_name = smm_strdup(hte->identifier.name);
+
+//                    }
+
+                    // Get arguments (or NULL)
+                    t_dll *dll;
+                    node2 = SI2(p);
+                    if (IS_DLL(node2)) {
+                        dll = node2->data.dll;
+                    } else if (IS_NULL(node2)) {
+                        dll = NULL;
+                    } else {
+                        saffire_error("Expected a DLL (or null)");
                     }
 
-                    // @TODO: add Arguments
-                    obj2 = object_call(obj1, method_name, 0);
+                    obj2 = object_call_args(obj1, method_name, dll);
 
                     smm_free(method_name);
+                    if (dll) dll_free(dll);
 
                     RETURN_SNODE_OBJECT(obj2);
                     break;
