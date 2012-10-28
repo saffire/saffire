@@ -11,6 +11,16 @@ class foo {
 }
 
 
+class bar {
+    public method varargs(string format, string ... args) {
+
+    }
+    public method varargs(string format, ... args) {
+
+    }
+
+}
+
 tmp = foo();
 bar = tmp.rev_it("blaat");
 io.print(bar);                 // TAALB

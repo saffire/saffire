@@ -31,11 +31,30 @@
 #include "object/string.h"
 #include "general/dll.h"
 
+extern char *wctou8(const wchar_t *wstr, long len);
+
+#define ANSI_BRIGHTRED "\33[41;33;1m"
+#define ANSI_RESET "\33[0m"
 /**
  *
  */
-static t_object *io_print(t_object *self, t_dll *args) {
-    printf("IO.self\n");
+static t_object *io_print(t_object *self, t_dll *dll) {
+    t_object *obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
+        saffire_error("Error while parsing argument list\n");
+        RETURN_SELF;
+    }
+
+    if (! OBJECT_IS_STRING(obj)) {
+        obj = object_call(obj, "string", 0);
+    }
+
+
+    char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
+    printf(ANSI_BRIGHTRED "%s\n" ANSI_RESET, str);
+    smm_free(str);
+
     RETURN_SELF;
 }
 
@@ -43,7 +62,7 @@ static t_object *io_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    printf("IO.blaataap\n");
+    printf(ANSI_BRIGHTRED "IO.printf: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -51,7 +70,7 @@ static t_object *io_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"IO.blaataap\n";
+    wchar_t tmp[] = L"IO.sprintf\n";
     RETURN_STRING(tmp);
 }
 
@@ -61,7 +80,7 @@ static t_object *io_sprintf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_print(t_object *self, t_dll *args) {
-    printf("console.self\n");
+    printf(ANSI_BRIGHTRED "console.print: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -69,7 +88,7 @@ static t_object *console_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_printf(t_object *self, t_dll *args) {
-    printf("console.blaataap\n");
+    printf(ANSI_BRIGHTRED "console.printf: %d arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -77,7 +96,7 @@ static t_object *console_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"console.blaataap\n";
+    wchar_t tmp[] = L"console.sprintf\n";
     RETURN_STRING(tmp);
 }
 
@@ -87,7 +106,7 @@ t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NUL
 t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
 
 
-void io_init(void) {
+static void _init(void) {
     io_struct.methods = ht_create();
     ht_add(io_struct.methods, "print", io_print);
     ht_add(io_struct.methods, "printf", io_printf);
@@ -101,7 +120,7 @@ void io_init(void) {
     console_struct.properties = ht_create();
 }
 
-void io_fini(void) {
+static void _fini(void) {
     // Destroy methods and properties
     ht_destroy(io_struct.methods);
     ht_destroy(io_struct.properties);
@@ -112,16 +131,16 @@ void io_fini(void) {
 }
 
 
-t_object *io_objects[] = {
+static t_object *_objects[] = {
     &io_struct,
     &console_struct,
     NULL
 };
 
 t_module module_io = {
-    "::_io",
+    "::_sfl::io",
     "Standard I/O module",
-    io_objects,
-    io_init,
-    io_fini,
+    _objects,
+    _init,
+    _fini,
 };

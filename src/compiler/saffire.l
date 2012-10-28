@@ -89,6 +89,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_REGEX;
 }
 
+"..."       { saffire_push_state(st_regex); return T_ELLIPSIS; }
 "::"        { saffire_push_state(st_regex); return T_NS_SEP; }
 "~="        { saffire_push_state(st_regex); return T_RE; }
 ">="        { saffire_push_state(st_regex); return T_GE; }
