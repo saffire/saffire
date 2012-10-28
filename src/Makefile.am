@@ -1,5 +1,6 @@
 # Define our programs
-bin_PROGRAMS = saffire test
+bin_PROGRAMS = saffire
+check_PROGRAMS = test
 
 # Set our optimization / debug flags
 if DEBUG
