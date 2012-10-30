@@ -27,14 +27,14 @@
 #include <stdio.h>
 #include "command.h"
 
-static int cmd_lint(int argc, char **argv) {
-    printf("lint check!");
+static int cmd_cli(int argc, char **argv) {
+    printf("cli!");
     return 0;
 }
 
-struct _command_info info_lint = {
-                                    "Lint (syntax) check",
-                                    cmd_lint,
+struct _command_info info_cli = {
+                                    "Interactive Interpreter",
+                                    cmd_cli,
                                     NULL,
                                     NULL,
                                     NULL

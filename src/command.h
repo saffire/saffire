@@ -24,18 +24,33 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "command.h"
+#ifndef __COMMAND_H__
+#define __COMMAND_H__
 
-static int cmd_lint(int argc, char **argv) {
-    printf("lint check!");
-    return 0;
-}
+/*
+ * ./saffire <command> [action [options]] [--flags]
+ *
+ * Commands are stored in the commands[] array.
+ * Actions are stored per "command" inside their separate file. The command_info structure has a
+ * pointer to a _argformat structure, which defines the actions that the command accepts.
+ *
+ */
 
-struct _command_info info_lint = {
-                                    "Lint (syntax) check",
-                                    cmd_lint,
-                                    NULL,
-                                    NULL,
-                                    NULL
-                                 };
+struct _argformat {
+    const char *action;                 // Action
+    const char *arglist;                // Argument list
+    int (*func)(int, char **);          // Function to call when format matches
+};
+
+struct _command_info {
+    const char *description;            // Description for this function.
+    int (*func)(int, char **);          // Function to call (NULL when using subcommands)
+    struct _argformat *formats;         // Subcommands plus their formats (or NULL when only one command)
+    char *help;                         // Additional help text (or NULL)
+    void (*options)(int, char **);      // Parser of global command options (or NULL)
+};
+
+
+
+
+#endif

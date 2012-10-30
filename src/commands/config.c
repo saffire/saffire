@@ -25,28 +25,117 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include <getopt.h>
+#include <stdlib.h>
+#include "command.h"
 
-void cmd_config_help(void) {
-    printf("Global settings:\n");
-    printf("    -f, --file <FILE>    File to read/write. Defaults to ~/.saffire.ini\n");
-    printf("\n");
-    printf("Actions:\n");
-    printf("    --generate                 Generates configuration settings\n");
-    printf("    --get <setting>            Returns value (if set)\n");
-    printf("    --set <setting> <value>    Set value in your configuration\n");
-    printf("    --list                     Returns all settings\n");
-    printf("\n");
-}
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-int cmd_config(int argc, const char **argv) {
-    printf("ARGC: %d\n", argc);
-    if (argc == 2) {
-        cmd_config_help();
-        return 0;
+
+/* Usage string */
+static const char help[]   = "Configure Saffire settings.\n"
+                             "\n"
+                             "Global settings:\n"
+                             "    -f, --file <FILE>    File to read/write.\n"
+                             "\n"
+                             "Actions:\n"
+                             "   generate                 Generates configuration settings\n"
+                             "   get <setting>            Returns value (if set)\n"
+                             "   set <setting> <value>    Set value in your configuration\n"
+                             "   list                     Returns all settings\n"
+                             "\n"
+                             "Use * as a wildcard in a setting\n";
+
+
+/* Default INI settings */
+static const char *default_ini[] = {
+    "#",
+    "# Global settings",
+    "#",
+    "[global]",
+    "",
+    "#",
+    "# Settings for the FastCGI daemon",
+    "#",
+    "[fastcgi]",
+    "pid_path = /var/run/saffire.pid",
+    "log.path = /var/log/saffire/fastcgi.log",
+    "log.level = notice",
+    "daemonize = true",
+    "",
+    "listen = 0.0.0.0:80",
+    "listen.backlog = -1",
+    "listen.socket.user = nobody",
+    "listen.socket.group = nobody",
+    "listen.socket.mode = 0666",
+    "",
+    "#status.url = /status",
+    "#ping.url = /ping",
+    "#ping.response = \"pong\"",
+    ""
+};
+
+
+char *ini_file = "/etc/saffire/saffire.ini";
+
+static void do_options(int argc, char *argv[]) {
+    int c;
+    int option_index;
+
+    // Suppress default errors
+    opterr = 0;
+
+    // Long options maps back to short options
+    static struct option long_options[] = {
+            { "file", required_argument, 0, 'f' },
+            { 0, 0, 0, 0 }
+    };
+
+    // Iterate all the options
+    while (1) {
+        c = getopt_long (argc, argv, "f", long_options, &option_index);
+        if (c == -1) break;
+
+        switch (c) {
+            case 'f' :
+                ini_file = argv[optind-1];
+                break;
+            default :
+                printf("saffire: invalid option '%s'\n"
+                       "Try 'saffire help config' for more information\n", argv[optind-1]);
+                exit(1);
+        }
     }
-    // saffire config set x.y.z 12345
-    // saffire config get x.y.z
-    // saffire config get x
-    // saffire config generate > config.ini
-    return 0;
 }
+
+static int do_generate(int argc, char **argv) {
+    for (int i=0; i!=ARRAY_SIZE(default_ini); i++) {
+        printf("%s\n", default_ini[i]);
+    }
+}
+
+static int do_get(int argc, char *argv[]) {
+//    read_ini();
+}
+
+static int do_set(int argc, char *argv[]) {
+}
+
+static int do_list(int argc, char *argv[]) {
+//    read_ini();
+}
+
+static struct _argformat config_subcommands[] = {
+    { "generate", "", do_generate },        // Generate new ini file
+    { "get", "s", do_get },                 // Get a section
+    { "set", "ss", do_set },                // Sets a section value
+    { "list", "", do_list }                 // List section value
+};
+
+struct _command_info info_config = {
+                                        "Reads or writes config settings",
+                                        NULL,
+                                        config_subcommands,
+                                        help,
+                                        do_options
+                                    };

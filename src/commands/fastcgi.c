@@ -24,10 +24,18 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-int cmd_fastcgi(int argc, const char **argv) {
+#include <stdio.h>
+#include "command.h"
+
+static int cmd_fastcgi(int argc, char **argv) {
     printf("FastCGI mode!");
     return 0;
 }
 
-void cmd_fastcgi_help(void) {
-}
+struct _command_info info_fastcgi = {
+                                        "FastCGI module",
+                                        cmd_fastcgi,
+                                        NULL,
+                                        NULL,
+                                        NULL
+                                    };
