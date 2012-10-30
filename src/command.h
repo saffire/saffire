@@ -37,8 +37,8 @@
  */
 
 struct _argformat {
-    const char *action;                 // Action
-    const char *arglist;                // Argument list
+    char *action;                 // Action
+    char *arglist;                // Argument list
     int (*func)(int, char **);          // Function to call when format matches
 };
 
@@ -46,11 +46,9 @@ struct _command_info {
     const char *description;            // Description for this function.
     int (*func)(int, char **);          // Function to call (NULL when using subcommands)
     struct _argformat *formats;         // Subcommands plus their formats (or NULL when only one command)
-    char *help;                         // Additional help text (or NULL)
+    const char *help;                   // Additional help text (or NULL)
     void (*options)(int, char **);      // Parser of global command options (or NULL)
 };
-
-
 
 
 #endif

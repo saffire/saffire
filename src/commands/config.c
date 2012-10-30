@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <time.h>
 #include "command.h"
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
@@ -49,35 +50,38 @@ static const char help[]   = "Configure Saffire settings.\n"
 
 /* Default INI settings */
 static const char *default_ini[] = {
-    "#",
-    "# Global settings",
-    "#",
     "[global]",
+    "  # debug, notice, warning, error",
+    "  log.level = debug",
+    "  log.path = /var/log/saffire/saffire.log"
     "",
-    "#",
-    "# Settings for the FastCGI daemon",
-    "#",
+    "",
     "[fastcgi]",
-    "pid_path = /var/run/saffire.pid",
-    "log.path = /var/log/saffire/fastcgi.log",
-    "log.level = notice",
-    "daemonize = true",
+    "  pid_path = /var/run/saffire.pid",
+    "  log.path = /var/log/saffire/fastcgi.log",
+    "  # debug, notice, warning, error",
+    "  log.level = notice",
+    "  daemonize = true",
     "",
-    "listen = 0.0.0.0:80",
-    "listen.backlog = -1",
-    "listen.socket.user = nobody",
-    "listen.socket.group = nobody",
-    "listen.socket.mode = 0666",
+    "  listen = 0.0.0.0:80",
+    "  listen.backlog = -1",
+    "  listen.socket.user = nobody",
+    "  listen.socket.group = nobody",
+    "  listen.socket.mode = 0666",
     "",
-    "#status.url = /status",
-    "#ping.url = /ping",
-    "#ping.response = \"pong\"",
+    "  #status.url = /status",
+    "  #ping.url = /ping",
+    "  #ping.response = \"pong\"",
     ""
 };
 
-
+// Default INI file
 char *ini_file = "/etc/saffire/saffire.ini";
 
+
+/**
+ * Parse global options for "config" command
+ */
 static void do_options(int argc, char *argv[]) {
     int c;
     int option_index;
@@ -93,7 +97,7 @@ static void do_options(int argc, char *argv[]) {
 
     // Iterate all the options
     while (1) {
-        c = getopt_long (argc, argv, "f", long_options, &option_index);
+        c = getopt_long (argc, argv, "f:", long_options, &option_index);
         if (c == -1) break;
 
         switch (c) {
@@ -108,32 +112,59 @@ static void do_options(int argc, char *argv[]) {
     }
 }
 
+/**
+ * Action: ./saffire config generate
+ */
 static int do_generate(int argc, char **argv) {
+    time_t current_time;
+    struct tm *local_time;
+
+    current_time = time (NULL);
+    local_time = localtime (&current_time);
+
+    printf("#\n");
+    printf("# Default configuration file for saffire. It consists of all configuration settings.\n");
+    printf("# Generated on %s", asctime(local_time));
+    printf("#\n");
+
     for (int i=0; i!=ARRAY_SIZE(default_ini); i++) {
         printf("%s\n", default_ini[i]);
     }
 }
 
+/**
+ * Action: ./saffire config get <setting>
+ */
 static int do_get(int argc, char *argv[]) {
 //    read_ini();
 }
 
+/**
+ * Action: ./saffire config set <setting> <value>
+ */
 static int do_set(int argc, char *argv[]) {
 }
 
+/**
+ * Action: ./saffire config list <setting>
+ */
 static int do_list(int argc, char *argv[]) {
 //    read_ini();
 }
 
-static struct _argformat config_subcommands[] = {
+
+/* Config actions */
+struct _argformat config_subcommands[] = {
     { "generate", "", do_generate },        // Generate new ini file
     { "get", "s", do_get },                 // Get a section
     { "set", "ss", do_set },                // Sets a section value
-    { "list", "", do_list }                 // List section value
+    { "list", "", do_list },                // List section value
+    { NULL, NULL, NULL }
 };
 
+/* Config info structure */
 struct _command_info info_config = {
-                                        "Reads or writes config settings",
+                                        "Reads or writes configuration settings",
                                         NULL,
                                         config_subcommands,
                                         help,

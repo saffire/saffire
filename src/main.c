@@ -72,7 +72,6 @@ static struct _command commands[] = {
                                     };
 
 
-
 /**
  * Prints current version number and copyright information
  */
@@ -144,17 +143,32 @@ int cmd_version(int argc, char **argv) {
  * Execute a command.
  */
 static int _exec_command (struct _command *cmd, int argc, char **argv) {
+    // Set generic options if any
+    if (cmd->info->options) {
+        cmd->info->options(argc, argv);
+    }
+
     // Single command, just execute without any additional checks
     if (cmd->info->func) {
         // Execute function
         return cmd->info->func(argc, argv);
     }
 
-    // Iterate structure, find correct subcommand depending on the argument signature
-    for (int i=0; i!=ARRAY_SIZE(cmd->info->formats); i++) {
-        struct _argformat *format = cmd->info->formats+i;
-    }
+    // Iterate structure, find correct action depending on the argument signature
+    int i=0;
+    struct _argformat *format = cmd->info->formats + i;
+    while (format->action) {
+        if (! strcmp(format->action, argv[2])) {
+            printf("Doing command: %s\n", argv[2]);
 
+            // @TODO: Check signature before calling
+
+            format->func(argc, argv);
+            return 0;
+        }
+        i++;
+        format = cmd->info->formats + i;
+    }
 
     // Nothing was found. Display help if available.
     if (cmd->info->help) {
