@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include "command.h"
+#include "general/parse_options.h"
 
 /* Usage string */
 static const char help[]   = "Executes a saffire script.\n"
@@ -37,48 +38,27 @@ static const char help[]   = "Executes a saffire script.\n"
 
 char *dot_file = NULL;
 
-static void do_options(int argc, char *argv[]) {
-    int c;
-    int option_index;
-
-    // Suppress default errors
-    opterr = 0;
-
-    // Long options maps back to short options
-    static struct option long_options[] = {
-            { "dot", required_argument, 0, 'd' },
-            { 0, 0, 0, 0 }
-    };
-
-    // Iterate all the options
-    while (1) {
-        c = getopt_long (argc, argv, "d", long_options, &option_index);
-        if (c == -1) break;
-
-        switch (c) {
-            case 'd' :
-                dot_file = argv[optind-1];
-                break;
-            default :
-                printf("saffire: invalid option '%s'\n"
-                       "Try 'saffire help config' for more information\n", argv[optind-1]);
-                exit(1);
-        }
-    }
-}
-
-
-static int cmd_exec(int argc, char **argv) {
+static int cmd_exec(void) {
     printf("exec!");
     return 0;
 }
 
+static void opt_dot(void *data) {
+    dot_file = (char *)data;
+}
+
+
+static struct saffire_option global_options[] = {
+        { "dot", "d", required_argument, opt_dot },
+        { 0, 0, 0, 0 }
+};
+
 struct _command_info info_exec = {
                                     "Execute saffire script",
                                     cmd_exec,
+                                    global_options,
                                     NULL,
                                     help,
-                                    do_options
                                  };
 
 

@@ -31,6 +31,7 @@
 #include "dot/dot.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
+#include "general/parse_options.h"
 #include "object/object.h"
 #include "interpreter/saffire_interpreter.h"
 #include "interactive/interactive.h"
@@ -42,14 +43,14 @@
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
 // Some forward defines
-int cmd_help(int argc, char **argv);
-int cmd_version(int argc, char **argv);
+int cmd_help(void);
+int cmd_version(void);
 
 /*
  * Info structures for the Saffire commands
  */
-struct _command_info info_help = { "Displays help information", cmd_help, NULL, "Displays Saffire usage information.", NULL };
-struct _command_info info_version = { "Displays version", cmd_version, NULL, "Displays Saffire version number.", NULL };
+struct _command_info info_help = { "Displays help information", cmd_help, NULL, NULL, "Displays Saffire usage information." };
+struct _command_info info_version = { "Displays version", cmd_version, NULL, NULL, "Displays Saffire version number." };
 extern struct _command_info info_lint;
 extern struct _command_info info_cli;
 extern struct _command_info info_fastcgi;
@@ -106,23 +107,24 @@ void print_usage(void) {
 /**
  * Display help usage
  */
-int cmd_help(int argc, char **argv) {
-    if (argc <= 2) {
-        print_usage();
-        return 0;
-    }
-
-    for (int i=0; i < ARRAY_SIZE(commands); i++) {
-        struct _command *cmd = commands+i;
-        if (strcmp(cmd->name, argv[2]) != 0) continue;
-        if (cmd->info->help) {
-            printf("%s\n", cmd->info->help);
-        } else {
-            // No help available for this command
-            printf("There is no help available for command '%s'.\n", argv[2]);
-        }
-        return 0;
-    }
+int cmd_help(void) {
+    // TODO: fix this
+//    if (argc <= 2) {
+//        print_usage();
+//        return 0;
+//    }
+//
+//    for (int i=0; i < ARRAY_SIZE(commands); i++) {
+//        struct _command *cmd = commands+i;
+//        if (strcmp(cmd->name, argv[2]) != 0) continue;
+//        if (cmd->info->help) {
+//            printf("%s\n", cmd->info->help);
+//        } else {
+//            // No help available for this command
+//            printf("There is no help available for command '%s'.\n", argv[2]);
+//        }
+//        return 0;
+//    }
 
     // No valid command found
     printf("Cannot find help on this subject.\n");
@@ -133,7 +135,7 @@ int cmd_help(int argc, char **argv) {
 /**
  * Display version
  */
-int cmd_version(int argc, char **argv) {
+int cmd_version(void) {
     print_version();
     return 0;
 }
@@ -143,28 +145,34 @@ int cmd_version(int argc, char **argv) {
  * Execute a command.
  */
 static int _exec_command (struct _command *cmd, int argc, char **argv) {
-    // Set generic options if any
-    if (cmd->info->options) {
-        cmd->info->options(argc, argv);
+    for (int i=0; i!=argc; i++) {
+        printf("ARG %d: '%s'\n", i, argv[i]);
     }
 
     // Single command, just execute without any additional checks
     if (cmd->info->func) {
+        // Set generic options (note: this will change around the arguments
+        saffire_parse_options(argc, argv, &cmd->info->options);
+
         // Execute function
-        return cmd->info->func(argc, argv);
+        return cmd->info->func();
     }
 
     // Iterate structure, find correct action depending on the argument signature
     int i=0;
     struct _argformat *format = cmd->info->formats + i;
     while (format->action) {
-        if (! strcmp(format->action, argv[2])) {
-            printf("Doing command: %s\n", argv[2]);
+        printf("Checking '%s' against '%s'\n", format->action, argv[0]);
+        if (! strcmp(format->action, argv[0])) {
+            printf("Doing command: %s\n", argv[0]);
 
-            // @TODO: Check signature before calling
+            // Parse options clears the options as soon as they are processed
+            saffire_parse_options(argc-1, argv+1, &format->options);
 
-            format->func(argc, argv);
-            return 0;
+            printf("We need to check against our remaining signature against: '%s'\n", format->arglist);
+            saffire_parse_signature(argc-1, argv+1, format->arglist);
+
+            return format->func();
         }
         i++;
         format = cmd->info->formats + i;
@@ -192,7 +200,15 @@ int main(int argc, char *argv[]) {
     // Turn "./saffire" into "./saffire help"
     if (argc == 1) {
         cmd = "help";
+        argc = 1;
+        argv[0] = cmd;
+    } else {
+        cmd = argv[1];
+        argv += 2;
+        argc -= 2;
     }
+
+/*
     if (argc >= 2) {
         // "./saffire --command ..." will become "./saffire command ..."
         while (argv[1][0] == '-') {
@@ -200,6 +216,7 @@ int main(int argc, char *argv[]) {
         }
         cmd = argv[1];
     }
+*/
 
     // Iterate all commands, see if we have a match and run it.
     for (int i=0; i < ARRAY_SIZE(commands); i++) {

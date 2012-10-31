@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include "command.h"
 
-static int cmd_cli(int argc, char **argv) {
+static int cmd_cli(void) {
     printf("cli!");
     return 0;
 }

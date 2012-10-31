@@ -37,17 +37,18 @@
  */
 
 struct _argformat {
-    char *action;                 // Action
-    char *arglist;                // Argument list
-    int (*func)(int, char **);          // Function to call when format matches
+    char *action;                       // Action
+    char *arglist;                      // Argument list
+    int (*func)(void);                  // Function to call when format matches
+    struct saffire_option *options;     // Pointer of options handlers
 };
 
 struct _command_info {
     const char *description;            // Description for this function.
-    int (*func)(int, char **);          // Function to call (NULL when using subcommands)
+    int (*func)(void);                  // Function to call (NULL when using subcommands)
+    struct saffire_option *options;     // Pointer of options handlers (NULL when using subcommands)
     struct _argformat *formats;         // Subcommands plus their formats (or NULL when only one command)
     const char *help;                   // Additional help text (or NULL)
-    void (*options)(int, char **);      // Parser of global command options (or NULL)
 };
 
 

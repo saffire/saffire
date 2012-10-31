@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include "command.h"
 
-static int cmd_lint(int argc, char **argv) {
+static int cmd_lint(void) {
     printf("lint check!");
     return 0;
 }

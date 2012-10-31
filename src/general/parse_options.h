@@ -24,18 +24,37 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "command.h"
+#ifndef __PARSE_OPTIONS_H__
+#define __PARSE_OPTIONS_H__
 
-static int cmd_fastcgi(void) {
-    printf("FastCGI mode!");
-    return 0;
-}
+    // Might be already defined if getopt is included
+    #ifndef no_argument
+        #define     no_argument         0
+    #endif
+    #ifndef required_argument
+        #define     required_argument   1
+    #endif
+    #ifndef optional_argument
+        #define     optional_argument   2
+    #endif
 
-struct _command_info info_fastcgi = {
-                                        "FastCGI module",
-                                        cmd_fastcgi,
-                                        NULL,
-                                        NULL,
-                                        NULL
-                                    };
+    char **saffire_params;
+    int saffire_params_count;
+
+    struct saffire_option {
+        const char *longname;
+        const char *shortname;
+        int has_arg;                // no_argument,
+        void(*func)(void *);        // Function to call when this setting is found
+    };
+
+    void saffire_parse_options(int, char **, struct saffire_option *options[]);
+    void saffire_parse_signature(int argc, char **argv, char *signature);
+    char *saffire_getopt_string(int idx);
+    char saffire_getopt_bool(int idx);
+    long saffire_getopt_int(int idx);
+
+    int to_bool(char *value);
+
+#endif
+
