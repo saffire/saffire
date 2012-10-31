@@ -145,10 +145,6 @@ int cmd_version(void) {
  * Execute a command.
  */
 static int _exec_command (struct _command *cmd, int argc, char **argv) {
-    for (int i=0; i!=argc; i++) {
-        printf("ARG %d: '%s'\n", i, argv[i]);
-    }
-
     // Single command, just execute without any additional checks
     if (cmd->info->func) {
         // Set generic options (note: this will change around the arguments
@@ -162,16 +158,15 @@ static int _exec_command (struct _command *cmd, int argc, char **argv) {
     int i=0;
     struct _argformat *format = cmd->info->formats + i;
     while (format->action) {
-        printf("Checking '%s' against '%s'\n", format->action, argv[0]);
         if (! strcmp(format->action, argv[0])) {
-            printf("Doing command: %s\n", argv[0]);
 
             // Parse options clears the options as soon as they are processed
             saffire_parse_options(argc-1, argv+1, &format->options);
 
-            printf("We need to check against our remaining signature against: '%s'\n", format->arglist);
+            // Parse the rest of the arguments, confirming the action's signature
             saffire_parse_signature(argc-1, argv+1, format->arglist);
 
+            // Execute action
             return format->func();
         }
         i++;

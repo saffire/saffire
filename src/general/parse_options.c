@@ -91,19 +91,13 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
 
         struct saffire_option *opt = options[0];
         while (opt && opt->longname != NULL) {
-            printf("Matching '%s' against '%s' or '%s'\n", argv[idx], opt->longname, opt->shortname);
-
             if (argv[idx] && argv[idx][0] == '-' && argv[idx][1] == '-') {
-                printf("Comparing against long\n");
                 if (strcasecmp(argv[idx]+2, opt->longname) == 0) {
-                    printf("LMatch found!\n");
                     proces_optional_arg(idx, argc, argv, opt);
                     found = 1;
                 }
             } else if (argv[idx] && argv[idx][0] == '-' && argv[idx][1] != '-' && argv[idx][2] == '\0') {
-                printf("Comparing against short\n");
                 if (strcasecmp(argv[idx]+1, opt->shortname) == 0) {
-                    printf("SMatch found!\n");
                     proces_optional_arg(idx, argc, argv, opt);
                     found = 1;
                 }
@@ -154,7 +148,7 @@ void saffire_parse_signature(int argc, char **argv, char *signature) {
         // Everything is ok. We have all our required arguments!
     } else if (argc >= strlen(signature)) {
         // Not enough arguments!
-        printf("Too many arguments found. use saffire help <command> for more information\n");
+        printf("Too many arguments found. use saffire help <command> for more information\n");\
         exit(1);
     } else {
         printf("Not enough arguments found. use saffire help <command> for more information\n");

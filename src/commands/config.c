@@ -28,14 +28,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <fnmatch.h>
 #include "command.h"
 #include "config.h"
 #include "general/parse_options.h"
 #include "general/ini.h"
 #include "general/smm.h"
+#include "general/hashtable.h"
+#include "general/dll.h"
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
-
 
 /* Usage string */
 static const char help[]   = "Configure Saffire settings.\n"
@@ -51,7 +53,44 @@ static const char help[]   = "Configure Saffire settings.\n"
                              "\n"
                              "Use * as a wildcard in a setting\n";
 
+
+/* Default INI settings, incuding comments */
+static const char *default_ini[] = {
+    "[global]",
+    "  # debug, notice, warning, error",
+    "  log.level = debug",
+    "  log.path = /var/log/saffire/saffire.log"
+    "",
+    "",
+    "[fastcgi]",
+    "  pid.path = /var/run/saffire.pid",
+    "  log.path = /var/log/saffire/fastcgi.log",
+    "  # debug, notice, warning, error",
+    "  log.level = notice",
+    "  daemonize = true",
+    "",
+    "  listen = 0.0.0.0:80",
+    "  listen.backlog = -1",
+    "  listen.socket.user = nobody",
+    "  listen.socket.group = nobody",
+    "  listen.socket.mode = 0666",
+    "",
+    "  #status.url = /status",
+    "  #ping.url = /ping",
+    "  #ping.response = \"pong\"",
+    ""
+};
+
+// Default INI file @TODO: platform specific!
+char global_ini_file[] = "/etc/saffire/saffire.ini";
+char user_ini_file[] = "~/saffire.ini";
+
 char *ini_file = global_ini_file;
+
+
+static t_hash_table *config;                // Global configuration settings
+static t_dll *dll_config;                   // Same config, but in DLL form
+static int ini_read = 0;                    // 0 when ini is not yet read, 1 otherwise
 
 
 /**
@@ -76,40 +115,74 @@ static int do_generate(void) {
 
 
 static int ini_parse_handler(void *user, const char *section, const char *name, const char *value) {
-    t_config *config = (t_config *)config;
+    char key[255+1];
+    snprintf(key, 255, "%s.%s", section, name);
 
-    #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-
-    if (MATCH("global", "log.level")) {
-        config->global.log_level = smm_strdup(value);
-    } else if (MATCH("global", "log.path")) {
-        config->global.log_path = smm_strdup(value);
-    } else if (MATCH("fastcgi", "pid_path")) {
-        config->fastcgi.pid_path = smm_strdup(value);
-    } else if (MATCH("fastcgi", "log.path")) {
-        config->fastcgi.log_path = smm_strdup(value);
-    } else if (MATCH("fastcgi", "daemonize")) {
-        config->fastcgi.daemonize = to_bool((char *)value);
-        if (config->fastcgi.daemonize == -1) config->fastcgi.daemonize = 0;
-    } else {
-        return 0;  /* unknown section/name, error */
-    }
+    ht_add(config, key, smm_strdup(value));
+    dll_append(dll_config, smm_strdup(key));
     return 1;
 }
 
 
-void read_ini(void) {
-    if (ini_parse(ini_file, ini_parse_handler, &config) < 0) {
+static void read_ini(void) {
+    // Already processed
+    if (ini_read) return;
+
+    // Create configuration hash
+    config = ht_create();
+    dll_config = dll_init();
+
+    // Parse ini into hash
+    if (ini_parse(ini_file, ini_parse_handler, NULL) < 0) {
         printf("Cannot read ini settings from %s", ini_file);
         exit(1);
     }
+
+    // ini has been read
+    ini_read = 1;
 }
+
+char *config_get_string(const char *key) {
+    read_ini();
+
+    t_hash_table_bucket *htb = ht_find(config, (char *)key);
+    if (htb == NULL) return NULL;
+
+    return (char *)htb->data;
+}
+
+char config_get_bool(const char *key) {
+    read_ini();
+
+    t_hash_table_bucket *htb = ht_find(config, (char *)key);
+    if (htb == NULL) return 0;
+
+    return to_bool((char *)htb->data);
+}
+
+long config_get_long(const char *key) {
+    read_ini();
+
+    t_hash_table_bucket *htb = ht_find(config, (char *)key);
+    if (htb == NULL) return 0;
+
+    return atol((char *)htb->data);
+}
+
+
 
 /**
  * Action: ./saffire config get <setting>
  */
 static int do_get(void) {
-    char *setting = saffire_getopt_string(0);
+    char *key = saffire_getopt_string(0);
+
+    char *val = config_get_string(key);
+    if (val) {
+        printf("%s", val);
+        return 0;
+    }
+    return 1;
 }
 
 /**
@@ -124,13 +197,28 @@ static int do_set(void) {
  * Action: ./saffire config list <setting>
  */
 static int do_list(void) {
-//    read_ini();
+    int ret = 1;
+    char *searchkey = saffire_getopt_string(0);
+    read_ini();
+
+    t_dll_element *e = DLL_HEAD(dll_config);
+    while (e) {
+        char *key = (char *)e->data;
+        // Yeah, fnmatch(),.. so sue me...
+        if (! fnmatch(searchkey, key, FNM_NOESCAPE)) {
+            printf("%s = %s\n", key, config_get_string(key));
+            ret = 0;
+        }
+        e = DLL_NEXT(e);
+    }
+
+    // Return 0 when at least 1 item is shown, 1 otherwise
+    return ret;
 }
 
 
 
 static void opt_file(void *data) {
-    printf("Setting ini file to :%s\n", (char *)data);
     ini_file = (char *)data;
 }
 
@@ -144,9 +232,9 @@ static struct saffire_option global_options[] = {
 /* Config actions */
 struct _argformat config_subcommands[] = {
     { "generate", "", do_generate, global_options },        // Generate new ini file
-    { "get", "sslb", do_get, global_options },                 // Get a section
+    { "get", "s", do_get, global_options },                 // Get a section
     { "set", "ss", do_set, global_options },                // Sets a section value
-    { "list", "", do_list, global_options },                // List section value
+    { "list", "s", do_list, global_options },               // List section value
     { 0, 0, 0, 0 }
 };
 

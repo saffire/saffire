@@ -27,62 +27,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-    /* Default INI settings, incuding comments */
-    const char *default_ini[] = {
-        "[global]",
-        "  # debug, notice, warning, error",
-        "  log.level = debug",
-        "  log.path = /var/log/saffire/saffire.log"
-        "",
-        "",
-        "[fastcgi]",
-        "  pid.path = /var/run/saffire.pid",
-        "  log.path = /var/log/saffire/fastcgi.log",
-        "  # debug, notice, warning, error",
-        "  log.level = notice",
-        "  daemonize = true",
-        "",
-        "  listen = 0.0.0.0:80",
-        "  listen.backlog = -1",
-        "  listen.socket.user = nobody",
-        "  listen.socket.group = nobody",
-        "  listen.socket.mode = 0666",
-        "",
-        "  #status.url = /status",
-        "  #ping.url = /ping",
-        "  #ping.response = \"pong\"",
-        ""
-    };
-
-    // Default INI file @TODO: platform specific!
-    char global_ini_file[] = "/etc/saffire/saffire.ini";
-    char user_ini_file[] = "~/saffire.ini";
-
-
-    typedef struct {
-        const char *log_level;
-        const char *log_path;
-    } t_config_global;
-
-    typedef struct {
-        const char *pid_path;
-        const char *log_path;
-        const char *log_level;
-        int daemonize;
-        const char *listen;
-        const char *listen_backlog;
-        const char *listen_socket_user;
-        const char *listen_socket_group;
-        const char *listen_socket_mode;
-    } t_config_fastcgi;
-
-    typedef struct {
-        t_config_global global;
-        t_config_fastcgi fastcgi;
-    } t_config;
-
-
-    // Global configuration settings
-    t_config config;
+    char *config_get_string(const char *key);
+    char config_get_bool(const char *key);
+    long config_get_long(const char *key);
 
 #endif
