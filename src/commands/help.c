@@ -24,10 +24,70 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#include <stdio.h>
+#include <string.h>
+#include "command.h"
 
-    int interactive(void);
+extern int original_argc;
+extern char **original_argv;
+extern void print_usage(void);
+extern struct command commands[];
+
+/**
+ * Display help usage
+ */
+static int do_help(void) {
+    if (original_argc <= 2) {
+        print_usage();
+        return 0;
+    }
+
+    for (int i=0; i!=original_argc; i++) {
+        printf("ARG %d : '%s'\n", i, original_argv[i]);
+    }
+
+    struct command *cmd = commands;
+    while (cmd->name) {
+        printf("Check '%s' against '%s'\n", cmd->name, original_argv[2]);
+
+        if (! strcasecmp(cmd->name, original_argv[2])) {
+            if (cmd->info->help) {
+                printf("%s\n", cmd->info->help);
+            } else {
+                // No help available for this command
+                printf("There is no help available for command '%s'.\n", original_argv[2]);
+            }
+            return 0;
+        }
+
+        cmd++;
+    }
+
+    // No valid command found
+    printf("Cannot find help on this subject.\n");
+    return 1;
+}
 
 
-#endif
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Display help information\n"
+                             "\n";
+
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_help, NULL },
+    { 0, 0, 0, 0 }
+};
+
+/* Config info structure */
+struct command_info info_help = {
+    "help",
+    command_actions,
+    help
+};

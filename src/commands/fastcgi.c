@@ -24,10 +24,33 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#include <stdio.h>
+#include "command.h"
 
-    int interactive(void);
+static int do_fastcgi(void) {
+    printf("FastCGI mode!");
+    return 0;
+}
 
 
-#endif
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Spawns the Saffire FastCGI Daemon\n"
+                             "\n";
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_fastcgi, NULL },
+    { 0, 0, 0, 0 }
+};
+
+/* Config info structure */
+struct command_info info_fastcgi = {
+    "FastCGI daemon",
+    command_actions,
+    help
+};

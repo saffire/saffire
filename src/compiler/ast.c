@@ -329,7 +329,7 @@ t_ast_element *ast_generate_from_file(char *source_file) {
     FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
     if (!fp) {
         fprintf(stderr, "Could not open file: %s\n", source_file);
-        return 1;
+        return NULL;
     }
 
     // Generate source file into an AST tree

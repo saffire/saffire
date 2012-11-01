@@ -24,10 +24,36 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
-
-    int interactive(void);
+#include <stdio.h>
+#include "command.h"
 
 
-#endif
+/**
+ * Display version information
+ */
+static int do_lint(void) {
+    printf("Lint check");
+    return 0;
+}
+
+
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Lint check a Saffire source file or directory\n"
+                             "\n";
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "s", do_lint, NULL },
+    { 0, 0, 0, 0 }
+};
+
+struct command_info info_lint = {
+    "Perform lint check",
+    command_actions,
+    help
+};

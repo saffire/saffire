@@ -27,13 +27,13 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#include <stdio.h>
+    #include <stdio.h>
 
-#if __DEBUG
-    #define DEBUG_PRINT printf
-#else
-    #define DEBUG_PRINT(format, args...) ((void)0)
-#endif
+    #if __DEBUG
+        #define DEBUG_PRINT printf
+    #else
+        #define DEBUG_PRINT(format, args...) ((void)0)
+    #endif
 
 #endif
 
