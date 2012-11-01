@@ -110,6 +110,6 @@
 
     void saffire_warning(char *str, ...);
     void saffire_error(char *str, ...);
-    void saffire_interpreter(t_ast_element *p);
+    int saffire_interpreter(t_ast_element *p);
 
 #endif

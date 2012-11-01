@@ -39,7 +39,7 @@ char *prompt(EditLine *el) {
     return cur_prompt;
 }
 
-void interactive(void) {
+int interactive(void) {
     EditLine *el;
     History *hist;
     HistEvent ev;
@@ -75,4 +75,6 @@ void interactive(void) {
 
     history_end(hist);
     el_end(el);
+
+    return 0;
 }

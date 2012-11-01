@@ -555,9 +555,11 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 /**
  *
  */
-void saffire_interpreter(t_ast_element *p) {
+int saffire_interpreter(t_ast_element *p) {
     si_init();
-    _saffire_interpreter(p);
+    t_snode *node = _saffire_interpreter(p);
+
+    // @TODO: Check output of this node. Return the result
 
 #ifdef __DEBUG
     t_dll_element *e = DLL_HEAD(object_dll);

@@ -27,9 +27,11 @@
 #include <stdio.h>
 #include <wchar.h>
 #include "modules/module_api.h"
+#include "interpreter/errors.h"
 #include "object/object.h"
 #include "object/string.h"
 #include "general/dll.h"
+#include "general/smm.h"
 
 extern char *wctou8(const wchar_t *wstr, long len);
 

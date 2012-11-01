@@ -24,10 +24,11 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
 
-    int interactive(void);
-
+    char *config_get_string(const char *key);
+    char config_get_bool(const char *key);
+    long config_get_long(const char *key);
 
 #endif

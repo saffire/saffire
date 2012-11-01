@@ -24,10 +24,34 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#include <stdio.h>
+#include "command.h"
+#include "interactive/interactive.h"
 
-    int interactive(void);
+static int do_cli(void) {
+    return (interactive());
+}
 
 
-#endif
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+/* Usage string */
+static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
+                             "\n"
+                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
+
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_cli, NULL },
+    { 0, 0, 0, 0 }
+};
+
+/* Config info structure */
+struct command_info info_cli = {
+    "Interactive Interpreter",
+    command_actions,
+    help
+};

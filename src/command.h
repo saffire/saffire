@@ -24,10 +24,40 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#ifndef __COMMAND_H__
+#define __COMMAND_H__
 
-    int interactive(void);
+    /*
+     * Saffire uses a non-posix argument structure, but something similar
+     * like git, which uses command arguments and optional flags.
+     *
+     * ./saffire <command> [action [options]] [--flags]
+     *
+     * There are a few exceptions:
+     *
+     *  - running ./saffire without options will trigger the cli mode
+     *  - running ./saffire <file> will trigger the exec, if the file exists
+     *  - running ./saffire --<arg> will strip away the dashes and use it as a command. This allows ./saffire -h  etc..
+     *
+     */
+
+    struct command {
+        char *name;                         // Command name
+        struct command_info *info;          // Details for the command (including the actions)
+    };
+
+    struct command_action {
+        char *name;                         // Action
+        char *arglist;                      // Argument list
+        int (*func)(void);                  // Function to call when format matches
+        struct saffire_option *options;     // Pointer of options handlers
+    };
+
+    struct command_info {
+        const char *description;            // Description for this command.
+        struct command_action *actions;     // Defined actions
+        const char *help;                   // Additional help text (or NULL)
+    };
 
 
 #endif

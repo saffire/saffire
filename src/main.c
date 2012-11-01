@@ -27,37 +27,43 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <getopt.h>
-#include <locale.h>
-#include "dot/dot.h"
-#include "compiler/ast.h"
-#include "general/smm.h"
-#include "object/object.h"
-#include "interpreter/saffire_interpreter.h"
-#include "interactive/interactive.h"
-#include "modules/module_api.h"
-#include "interpreter/context.h"
-
+#include <sys/stat.h>
+#include "general/parse_options.h"
 #include "version.h"
+#include "command.h"
 
-#define OPMODE_CLI          1
-#define OPMODE_LINT         2
-#define OPMODE_BYTECODE     4
-#define OPMODE_DOTFILE      8
+/*
+ * Info structures for the Saffire commands
+ */
+extern struct command_info info_version;
+extern struct command_info info_help;
+extern struct command_info info_lint;
+extern struct command_info info_cli;
+extern struct command_info info_fastcgi;
+extern struct command_info info_config;
+extern struct command_info info_exec;
 
-int     op_mode = OPMODE_CLI;       // Defaults to CLI/interactive mode
+// Each saffire "command" must have a entry here, otherwise it's not known.
+struct command commands[] = {
+                                        { "help",    &info_help },
+                                        { "version", &info_version },
+                                        { "lint",    &info_lint },
+                                        { "cli",     &info_cli },
+                                        { "fastcgi", &info_fastcgi },
+                                        { "config",  &info_config },
+                                        { "exec",    &info_exec },
+                                        { NULL, NULL }
+                                    };
 
-char    *source_file;               // Initial source file
-int     saffire_argc = 0;           // Defaults to no additional arguments
-char    **saffire_args;             // pointer to pointer of arguments
-
-char    *dot_file = NULL;           // Target dot file
+// Original argc and argv. Since we are moving around the argument pointers.
+int original_argc;
+char **original_argv;
 
 
 /**
  * Prints current version number and copyright information
  */
-void print_version() {
+void print_version(void) {
     printf("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
 }
 
@@ -65,122 +71,129 @@ void print_version() {
 /**
  * Prints usage information
  */
-void print_usage() {
+void print_usage(void) {
     printf("\n"
-           "Usage: saffire [options] [script [args]]\n"
+           "Usage: saffire <command> [options] [script [args]]\n"
            "Available options are:\n"
            "  -v, --version         Show version information \n"
            "  -h, --help            This usage information \n"
-           "  -l, --lint            Lint check script\n"
-           "      --dot <output>    Generate an AST in .dot format\n"
            "\n"
-           "With no FILE, or FILE is -, read standard input.\n"
-           "\n");
+           "Available commands:\n");
+
+    struct command *p = commands;
+    while (p->name) {
+        printf("%-15s %s\n", p->name, p->info->description);
+        p++;
+    }
+    printf("\n");
+
+    printf("Use saffire help <command> to find out more information about the command usage.\n\n");
 }
 
 
 /**
- * parses options and set some (global) variables if needed
+ * Execute a command.
  */
-void parse_options(int argc, char *argv[]) {
-    int c;
-    int option_index;
+static int _exec_command (struct command *cmd, int argc, char **argv) {
+    // argv[0] points to action
+    char *dst_action = argv[0];
 
-    // Suppress default errors
-    opterr = 0;
+    // Iterate structure, find correct action depending on the argument signature
+    int i=0;
+    struct command_action *action = cmd->info->actions + i;
+    while (action->name) {
+        // Match action or an empty action
+        if (! strcmp(action->name, dst_action) || ! strcmp(action->name, "")) {
 
-    // Long options maps back to short options
-    static struct option long_options[] = {
-            { "version", no_argument, 0, 'v' },
-            { "help",    no_argument, 0, 'h' },
-            { "lint",    no_argument, 0, 'l' },
-            { "dot",     required_argument, 0, 0 },
-            { 0, 0, 0, 0 }
-        };
+            if (strcmp(action->name, "")) {
+                // Remove action if one was present. Not needed from this point on
+                argv += 1;
+                argc -= 1;
+            }
 
-    // Iterate all the options
-    while (1) {
-        c = getopt_long (argc, argv, "vhl", long_options, &option_index);
-        if (c == -1) break;
+            // Parse options clears the options as soon as they are processed
+            if (action->options) {
+                saffire_parse_options(argc, argv, &action->options);
+            }
 
-        switch (c) {
-            case 0 :
-                // Long option without any short alias is called. Have to strcmp the string itself
-                if (strcmp(long_options[option_index].name, "dot") == 0) {
-                    op_mode |= OPMODE_DOTFILE;
-                    dot_file = optarg;
-                    break;
-                }
-            case 'h' :
-                print_version();
-                print_usage();
-                exit(0);
-                break;
-            case 'v' :
-                print_version();
-                exit(0);
-                break;
-            case 'l' :
-                op_mode |= OPMODE_LINT;
-                break;
+            // Parse the rest of the arguments, confirming the action's signature
+            saffire_parse_signature(argc, argv, action->arglist);
 
-            case '?' :
-            default :
-                printf("saffire: invalid option '%s'\n"
-                       "Try 'saffire --help' for more information\n", argv[optind-1]);
-                exit(1);
+            // Execute action
+            return action->func();
         }
+        i++;
+        action = cmd->info->actions + i;
     }
 
-    // All options done, check for additional options like source filename and optional arguments
-    if (optind < argc) {
-        op_mode &= ~OPMODE_CLI;
-        source_file = argv[optind++];
-        if (optind < argc) {
-            // Source args points to the FIRST saffire script argument (./saffire script.sf first second third)
-            saffire_argc = optind;
-        }
+    // Nothing was found. Display help if available.
+    if (cmd->info->help) {
+        printf(cmd->info->help);
+        printf("\n");
+    } else {
+        printf("No additional help is available. Use 'saffire help' for more information.\n");
     }
+    return 1;
 }
 
 
+/**
+ * Main Saffire entry point
+ */
 int main(int argc, char *argv[]) {
-    setlocale(LC_ALL,"");
-    context_init();
-    object_init();
-    module_init();
+    char *command;
 
-    parse_options(argc, argv);
+    // Save originals. Commands like 'help' will need them..
+    original_argc = argc;
+    original_argv = argv;
 
-    // Opmode CLI is easy enough
-    if ((op_mode & OPMODE_CLI) == OPMODE_CLI) {
-        print_version();
-        interactive();
-        return 0;
+
+    // Find command, and set the argc & argv to point to the item AFTER the command
+    if (argc == 1) {
+        // Turn "./saffire" into "./saffire cli"
+        command = "cli";
+        argc = 0;
+    } else if (argc >= 2) {
+        // If the action is 'dashed', remote the dashes. This will change
+        // "saffire --help", into "saffire help"
+        while (argv[1][0] == '-') argv[1]++;
+        command = argv[1];
+        argv += 2;
+        argc -= 2;
     }
 
-    // Otherwise we can run from a file
-    ast_root = ast_generate_from_file(source_file);
 
-    if ((op_mode & OPMODE_DOTFILE) == OPMODE_DOTFILE) {
-        // generate DOT file
-        dot_generate(ast_root, dot_file);
-    }
-    if ((op_mode & OPMODE_LINT) == OPMODE_LINT) {
-        // Do nothing for lint check. It's ok, since there is an AST
-        printf ("Syntax OK\n");
-    } else {
-        // Otherwise, just interpret it
-        saffire_interpreter(ast_root);
+    // Iterate commands and see if we have a match and run it.
+    struct command *p = commands;
+    while (p->name) {
+        if (! strcmp(p->name, command)) {
+            exit(_exec_command(p, argc, argv));
+        }
+        p++;
     }
 
-    // Release memory of ast_root
-    if (ast_root != NULL) {
-        ast_free_node(ast_root);
+
+    /* No correct command found. We do a simple test to see our "command"
+     * actually matches a file. If so, we do a "exec" instead
+     */
+    struct stat buf;
+    int status = stat(command, &buf);
+    if (status == 0) {
+        command = "exec";
+
+        // Rescan commands for "Exec", and run
+        struct command *p = commands;
+        while (p->name) {
+            if (! strcmp(p->name, command)) {
+                // "push" back the filename and execute
+                exit(_exec_command(p, argc+1, argv-1));
+            }
+            p++;
+        }
     }
 
-    module_fini();
-    object_fini();
-    context_fini();
-    return 0;
+
+    // Did not found anything to execute. Give some usage help.
+    print_usage();
+    return 1;
 }
