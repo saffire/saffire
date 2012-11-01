@@ -26,16 +26,32 @@
 */
 #include <stdio.h>
 #include "command.h"
+#include "interactive/interactive.h"
 
-static int cmd_cli(void) {
-    printf("cli!");
-    return 0;
+static int do_cli(void) {
+    return (interactive());
 }
 
-struct _command_info info_cli = {
-                                    "Interactive Interpreter",
-                                    cmd_cli,
-                                    NULL,
-                                    NULL,
-                                    NULL
-                                 };
+
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+/* Usage string */
+static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
+                             "\n"
+                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
+
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_cli, NULL },
+    { 0, 0, 0, 0 }
+};
+
+/* Config info structure */
+struct command_info info_cli = {
+    "Interactive Interpreter",
+    command_actions,
+    help
+};

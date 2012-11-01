@@ -39,21 +39,6 @@
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-/* Usage string */
-static const char help[]   = "Configure Saffire settings.\n"
-                             "\n"
-                             "Global settings:\n"
-                             "    -f, --file <FILE>    File to read/write.\n"
-                             "\n"
-                             "Actions:\n"
-                             "   generate                 Generates configuration settings\n"
-                             "   get <setting>            Returns value (if set)\n"
-                             "   set <setting> <value>    Set value in your configuration\n"
-                             "   list                     Returns all settings\n"
-                             "\n"
-                             "Use * as a wildcard in a setting\n";
-
-
 /* Default INI settings, incuding comments */
 static const char *default_ini[] = {
     "[global]",
@@ -88,9 +73,9 @@ char user_ini_file[] = "~/saffire.ini";
 char *ini_file = global_ini_file;
 
 
-static t_hash_table *config;                // Global configuration settings
-static t_dll *dll_config;                   // Same config, but in DLL form
-static int ini_read = 0;                    // 0 when ini is not yet read, 1 otherwise
+static t_hash_table *config = NULL;                // Global configuration settings
+static t_dll *dll_config = NULL;                   // Same config, but in DLL form
+static int ini_read = 0;                           // 0 when ini is not yet read, 1 otherwise
 
 
 /**
@@ -114,19 +99,44 @@ static int do_generate(void) {
 }
 
 
+/**
+ * Handler that is called when parsing an INI line.
+ */
 static int ini_parse_handler(void *user, const char *section, const char *name, const char *value) {
+    // Combine the section and the name
     char key[255+1];
     snprintf(key, 255, "%s.%s", section, name);
 
+    // Add to both the hash and the DLL
     ht_add(config, key, smm_strdup(value));
     dll_append(dll_config, smm_strdup(key));
+
+    // Return 1 for ok
     return 1;
 }
 
 
+/**
+ * Free memory from config
+ */
+static void read_ini_fini(void) {
+    if (config) ht_destroy(config);
+    if (dll_config) dll_free(dll_config);
+
+    config = NULL;
+    dll_config = NULL;
+}
+
+
+/**
+ * Read INI file into our hash and dll. Will return immediately when already processed
+ */
 static void read_ini(void) {
     // Already processed
     if (ini_read) return;
+
+    // Register shutdown function
+    atexit(read_ini_fini);
 
     // Create configuration hash
     config = ht_create();
@@ -142,6 +152,10 @@ static void read_ini(void) {
     ini_read = 1;
 }
 
+
+/**
+ * Return a string from the configuration
+ */
 char *config_get_string(const char *key) {
     read_ini();
 
@@ -151,6 +165,9 @@ char *config_get_string(const char *key) {
     return (char *)htb->data;
 }
 
+/**
+ * Return a boolean from the configuration
+ */
 char config_get_bool(const char *key) {
     read_ini();
 
@@ -160,6 +177,9 @@ char config_get_bool(const char *key) {
     return to_bool((char *)htb->data);
 }
 
+/**
+ * Return a long from the configuration
+ */
 long config_get_long(const char *key) {
     read_ini();
 
@@ -172,6 +192,8 @@ long config_get_long(const char *key) {
 
 
 /**
+ * Get a value from the configuration file
+ *
  * Action: ./saffire config get <setting>
  */
 static int do_get(void) {
@@ -179,13 +201,15 @@ static int do_get(void) {
 
     char *val = config_get_string(key);
     if (val) {
-        printf("%s", val);
+        printf("%s\n", val);
         return 0;
     }
     return 1;
 }
 
 /**
+ * Set a value into the configuration file
+ *
  * Action: ./saffire config set <setting> <value>
  */
 static int do_set(void) {
@@ -194,13 +218,15 @@ static int do_set(void) {
 }
 
 /**
- * Action: ./saffire config list <setting>
+ * Returns a list of settings that matches the search argument
+ * Action: ./saffire config list <search>
  */
 static int do_list(void) {
     int ret = 1;
     char *searchkey = saffire_getopt_string(0);
     read_ini();
 
+    // We use the DLL here, since we cannot iterate a hash
     t_dll_element *e = DLL_HEAD(dll_config);
     while (e) {
         char *key = (char *)e->data;
@@ -218,19 +244,38 @@ static int do_list(void) {
 
 
 
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
 static void opt_file(void *data) {
     ini_file = (char *)data;
 }
 
+/* Usage string */
+static const char help[]   = "Configure Saffire settings.\n"
+                             "\n"
+                             "Global settings:\n"
+                             "    -f, --file <FILE>    File to read/write.\n"
+                             "\n"
+                             "Actions:\n"
+                             "   generate                 Generates configuration settings\n"
+                             "   get <setting>            Returns value (if set)\n"
+                             "   set <setting> <value>    Set value in your configuration\n"
+                             "   list                     Returns all settings\n"
+                             "\n"
+                             "Use * as a wildcard in a setting\n";
+
 
 static struct saffire_option global_options[] = {
-        { "file", "f", required_argument, opt_file },
-        { "dot", "d", required_argument, opt_file },
-        { 0, 0, 0, 0 }
+    { "file", "f", required_argument, opt_file },
+    { "dot", "d", required_argument, opt_file },
+    { 0, 0, 0, 0 }
 };
 
 /* Config actions */
-struct _argformat config_subcommands[] = {
+static struct command_action command_actions[] = {
     { "generate", "", do_generate, global_options },        // Generate new ini file
     { "get", "s", do_get, global_options },                 // Get a section
     { "set", "ss", do_set, global_options },                // Sets a section value
@@ -239,10 +284,8 @@ struct _argformat config_subcommands[] = {
 };
 
 /* Config info structure */
-struct _command_info info_config = {
-                                        "Reads or writes configuration settings",
-                                        NULL,
-                                        NULL,
-                                        config_subcommands,
-                                        help,
-                                    };
+struct command_info info_config = {
+    "Reads or writes configuration settings",
+    command_actions,
+    help,
+};

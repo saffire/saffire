@@ -27,81 +27,78 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <locale.h>
+#include "interpreter/context.h"
+#include "object/object.h"
+#include "modules/module_api.h"
+#include "compiler/ast.h"
+#include "dot/dot.h"
+#include "interpreter/saffire_interpreter.h"
 #include "command.h"
 #include "general/parse_options.h"
 
-/* Usage string */
-static const char help[]   = "Executes a saffire script.\n"
-                             "\n"
-                             "Global settings:\n"
-                             "    --dot, -d <FILE>        Generate a DOT file\n";
-
 char *dot_file = NULL;
 
-static int cmd_exec(void) {
-    printf("exec!");
-    return 0;
+static int do_exec(void) {
+    char *source_file = saffire_getopt_string(0);
+
+    setlocale(LC_ALL,"");
+    context_init();
+    object_init();
+    module_init();
+
+    ast_root = ast_generate_from_file(source_file);
+
+    dot_generate(ast_root, dot_file);
+
+    int ret = saffire_interpreter(ast_root);
+
+    // Release memory of ast_root
+    if (ast_root != NULL) {
+        ast_free_node(ast_root);
+    }
+
+    module_fini();
+    object_fini();
+    context_fini();
+
+    return ret;
 }
+
+
+/****
+ * Argument Parsing and action definitions
+ ***/
 
 static void opt_dot(void *data) {
     dot_file = (char *)data;
 }
 
 
+/* Usage string */
+static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
+                             "\n"
+                             "Global settings:\n"
+                             "    --dot, -d <FILE>        Generate a DOT file\n"
+                             "\n"
+                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
+
+
 static struct saffire_option global_options[] = {
-        { "dot", "d", required_argument, opt_dot },
-        { 0, 0, 0, 0 }
+    { "dot", "d", required_argument, opt_dot },
+    { 0, 0, 0, 0 }
 };
 
-struct _command_info info_exec = {
-                                    "Execute saffire script",
-                                    cmd_exec,
-                                    global_options,
-                                    NULL,
-                                    help,
-                                 };
 
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "s", do_exec, global_options },
+    { 0, 0, 0, 0 }
+};
 
-
-//  Init stuff:
-//    setlocale(LC_ALL,"");
-//    context_init();
-//    object_init();
-//    module_init();
-//
-//    parse_options(argc, argv);
-//
-//    // Opmode CLI is easy enough
-//    if ((op_mode & OPMODE_CLI) == OPMODE_CLI) {
-//        print_version();
-//        interactive();
-//        return 0;
-//    }
-//
-//    // Otherwise we can run from a file
-//    ast_root = ast_generate_from_file(source_file);
-//
-//    if ((op_mode & OPMODE_DOTFILE) == OPMODE_DOTFILE) {
-//        // generate DOT file
-//        dot_generate(ast_root, dot_file);
-//    }
-//    if ((op_mode & OPMODE_LINT) == OPMODE_LINT) {
-//        // Do nothing for lint check. It's ok, since there is an AST
-//        printf ("Syntax OK\n");
-//    } else {
-//        // Otherwise, just interpret it
-//        saffire_interpreter(ast_root);
-//    }
-//
-
-//  Fini Stuff:
-//    // Release memory of ast_root
-//    if (ast_root != NULL) {
-//        ast_free_node(ast_root);
-//    }
-//
-//    module_fini();
-//    object_fini();
-//    context_fini();
-//    return 0;
-//}
+/* Config info structure */
+struct command_info info_exec = {
+    "Execute saffire script",
+    command_actions,
+    help
+};

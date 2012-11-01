@@ -27,15 +27,33 @@
 #include <stdio.h>
 #include "command.h"
 
-static int cmd_lint(void) {
-    printf("lint check!");
+
+/**
+ * Display version information
+ */
+static int do_lint(void) {
+    printf("Lint check");
     return 0;
 }
 
-struct _command_info info_lint = {
-                                    "Lint (syntax) check",
-                                    cmd_lint,
-                                    NULL,
-                                    NULL,
-                                    NULL
-                                 };
+
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Lint check a Saffire source file or directory\n"
+                             "\n";
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "s", do_lint, NULL },
+    { 0, 0, 0, 0 }
+};
+
+struct command_info info_lint = {
+    "Perform lint check",
+    command_actions,
+    help
+};

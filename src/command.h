@@ -27,29 +27,37 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
-/*
- * ./saffire <command> [action [options]] [--flags]
- *
- * Commands are stored in the commands[] array.
- * Actions are stored per "command" inside their separate file. The command_info structure has a
- * pointer to a _argformat structure, which defines the actions that the command accepts.
- *
- */
+    /*
+     * Saffire uses a non-posix argument structure, but something similar
+     * like git, which uses command arguments and optional flags.
+     *
+     * ./saffire <command> [action [options]] [--flags]
+     *
+     * There are a few exceptions:
+     *
+     *  - running ./saffire without options will trigger the cli mode
+     *  - running ./saffire <file> will trigger the exec, if the file exists
+     *  - running ./saffire --<arg> will strip away the dashes and use it as a command. This allows ./saffire -h  etc..
+     *
+     */
 
-struct _argformat {
-    char *action;                       // Action
-    char *arglist;                      // Argument list
-    int (*func)(void);                  // Function to call when format matches
-    struct saffire_option *options;     // Pointer of options handlers
-};
+    struct command {
+        char *name;                         // Command name
+        struct command_info *info;          // Details for the command (including the actions)
+    };
 
-struct _command_info {
-    const char *description;            // Description for this function.
-    int (*func)(void);                  // Function to call (NULL when using subcommands)
-    struct saffire_option *options;     // Pointer of options handlers (NULL when using subcommands)
-    struct _argformat *formats;         // Subcommands plus their formats (or NULL when only one command)
-    const char *help;                   // Additional help text (or NULL)
-};
+    struct command_action {
+        char *name;                         // Action
+        char *arglist;                      // Argument list
+        int (*func)(void);                  // Function to call when format matches
+        struct saffire_option *options;     // Pointer of options handlers
+    };
+
+    struct command_info {
+        const char *description;            // Description for this command.
+        struct command_action *actions;     // Defined actions
+        const char *help;                   // Additional help text (or NULL)
+    };
 
 
 #endif

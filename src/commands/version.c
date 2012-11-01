@@ -24,10 +24,38 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
-
-    int interactive(void);
+#include <stdio.h>
+#include "command.h"
 
 
-#endif
+extern void print_version(void);
+
+/**
+ * Display version information
+ */
+static int do_version(void) {
+    print_version();
+    return 0;
+}
+
+
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Displays version information about Saffire.\n"
+                             "\n";
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_version, NULL },
+    { 0, 0, 0, 0 }
+};
+
+struct command_info info_version = {
+    "Displays version information",
+    command_actions,
+    help
+};

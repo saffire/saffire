@@ -27,15 +27,30 @@
 #include <stdio.h>
 #include "command.h"
 
-static int cmd_fastcgi(void) {
+static int do_fastcgi(void) {
     printf("FastCGI mode!");
     return 0;
 }
 
-struct _command_info info_fastcgi = {
-                                        "FastCGI module",
-                                        cmd_fastcgi,
-                                        NULL,
-                                        NULL,
-                                        NULL
-                                    };
+
+/****
+ * Argument Parsing and action definitions
+ ***/
+
+
+/* Usage string */
+static const char help[]   = "Spawns the Saffire FastCGI Daemon\n"
+                             "\n";
+
+/* Config actions */
+static struct command_action command_actions[] = {
+    { "", "", do_fastcgi, NULL },
+    { 0, 0, 0, 0 }
+};
+
+/* Config info structure */
+struct command_info info_fastcgi = {
+    "FastCGI daemon",
+    command_actions,
+    help
+};
