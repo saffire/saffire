@@ -41,6 +41,10 @@
 #include "command.h"
 #include "config.h"
 
+/**
+ * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
+ */
+
 // Environment will be overwritten by the the FASTCGI environment.
 extern char **environ;
 
@@ -80,7 +84,7 @@ static int fcgi_loop(void) {
     while (ret = FCGI_Accept(), ret >= 0) {
         FCGI_printf("Content-type: text/html\r\n"
                "\r\n"
-               "<html><head><title>FastCGI</title></head>\n"
+               "<html><head><title>Saffire FastCGI Server</title></head>\n"
                "<body>\n"
                "<h1><blink><marquee>Hello world</marquee></blink></h1>\n");
 
@@ -99,14 +103,12 @@ static int fcgi_loop(void) {
         }
         FCGI_printf("</table>");
 
-        FCGI_printf("<address>This page is powered by the Saffire FastCGI worker</address>");
+        FCGI_printf("<br><br><address>This page is powered by the Saffire FastCGI daemon.</address>");
 
         FCGI_printf("</body>"
                "</html>"
                );
     }
-    printf("FCGI_Acceppt: %d: %s", ret, strerror(0-ret));
-    printf("CHILD %d EXITED", getpid());
     exit(0);
 }
 
@@ -124,9 +126,8 @@ static int drop_privileges(char *user, char *group) {
 
 
 static int setup_socket(char *socket_name) {
+    // If the socketname starts with a /, it's a (absolute) path and thus a unix socket
     if (socket_name[0] == '/') {
-        printf("Setting up UNIX socket...\n");
-
         // Set socket info
         memset(&sockdata, 0, sizeof(struct sockaddr_un));
         sockdata.data.un.sun_family = AF_UNIX;
@@ -290,7 +291,6 @@ static int daemonize(void) {
     int status;
 waitforchild:
     ret = waitpid(child_pid, &status, WNOHANG);
-    printf("ret(%d): %d\n", child_pid, ret);
     if (ret == -1) {
         if (errno == EINTR) goto waitforchild;
         printf("Unknown error occured: %s\n", strerror(errno));
@@ -301,7 +301,6 @@ waitforchild:
         return child_pid;
     }
     if (WIFEXITED(status)) {
-        printf("itexected");
         return -1;
     }
 }
@@ -345,7 +344,6 @@ static int do_fastcgi(void) {
     int need_daemonizing = config_get_bool("fastcgi.daemonize");
 
     if (! need_daemonizing) {
-        printf("Running in foreground\n");
         // Don't daemonize
         fcgi_loop();
     }
@@ -354,10 +352,8 @@ static int do_fastcgi(void) {
     int sc = config_get_long("fastcgi.spawn_children");
     if (sc <= 0) sc = 1;
 
-    printf("Spawning %d processes in background\n", sc);
     for (int i=0; i!=sc; i++) {
         pid_t child_pid = daemonize();
-        printf("MAINRET: %d\n", child_pid);
         if (child_pid == -1) return 1;
         if (child_pid == 0) fcgi_loop();
 
