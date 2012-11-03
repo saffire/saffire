@@ -103,7 +103,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
     struct command_action *action = cmd->info->actions + i;
     while (action->name) {
         // Match action or an empty action
-        if (! strcmp(action->name, dst_action) || ! strcmp(action->name, "")) {
+        if (! strcmp(action->name, "") || ! strcmp(action->name, dst_action)) {
 
             if (strcmp(action->name, "")) {
                 // Remove action if one was present. Not needed from this point on
