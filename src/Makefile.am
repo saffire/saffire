@@ -60,7 +60,7 @@ libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   general/ini.c general/parse_options.c
 
 # Link all sources against these libraries
-LDADD = libsaffire.a -lpcre
+LDADD = libsaffire.a -lpcre -lfcgi
 
 # Define different sources for our targets
 saffire_SOURCES = main.c
