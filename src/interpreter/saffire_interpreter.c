@@ -315,9 +315,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     obj2 = si_get_object(node2);
                     alias = OBJ2STR(obj2);
 
-                    printf("NAME : '%s'\n", name);
-                    printf("ALIAS: '%s'\n", alias);
-
                     // Check if variable is free
                     ctx = si_find_context(alias);
                     if (ctx != NULL) {
