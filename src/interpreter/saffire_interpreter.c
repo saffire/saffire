@@ -43,7 +43,6 @@
 #include "debug.h"
 
 extern char *get_token_string(int token);
-extern char *wctou8(const wchar_t *wstr, long len);
 static t_snode *_saffire_interpreter(t_ast_element *p);
 
 // A stack maintained by the AST which holds the current line for the current AST
@@ -53,7 +52,7 @@ t_dll *lineno_stack;
 extern t_dll *object_dll;
 #endif
 
-
+extern char *wctou8(const wchar_t *wstr, long len);
 #define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
 
 
@@ -183,7 +182,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_hash_table_bucket *htb;
     int ret, initial_loop, len;
     t_ast_element *hte;
-    char *str, *method_name, *namespace;
+    char *str, *method_name, *ctx_name, *name;
     t_dll *dll;
 
     // Append to lineno
@@ -255,57 +254,82 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 
                 case T_IMPORT :
-                    node1 = SI0(p);     // Class to import
+                    // Class to import
+                    node1 = SI0(p);
                     obj1 = si_get_object(node1);
                     char *classname = OBJ2STR(obj1);
-                    node2 = SI1(p);     // Null or alias
+
+                    // Fetch alias
+                    node2 = SI1(p);
                     if (IS_NULL(node2)) {
-                        node2 = node1;  // Alias X as X
+                        node2 = node1;  // Alias X as X if needed
                     }
                     obj2 = si_get_object(node2);
                     char *alias = OBJ2STR(obj2);
 
-                    node3 = SI2(p);     // Namespace to import from
+                    // context to import from
+                    node3 = SI2(p);
                     obj3 = si_get_object(node3);
-                    namespace = OBJ2STR(obj3);
+                    ctx_name = OBJ2STR(obj3);
 
 
                     // Check if variable is free
                     t_ns_context *ctx = si_get_current_context();
-                    t_hash_table_bucket *htb = ht_find(ctx->vars, alias);
+                    t_hash_table_bucket *htb = ht_find(ctx->data.vars, alias);
                     if (htb) {
                         saffire_error("A variable named %s is already present or imported.", alias);
                     }
 
                     // Find class in context
-                    ctx = si_get_namespace(namespace);
+                    ctx = si_get_context(ctx_name);
                     if (ctx == NULL) {
-                        saffire_error("Cannot find namespace: %s", namespace);
+                        saffire_error("Cannot find context: %s", ctx_name);
                     }
-                    htb = ht_find(ctx->vars, classname);
+                    htb = ht_find(ctx->data.vars, classname);
                     if (htb == NULL) {
-                        saffire_error("Cannot find class %s inside namespace: %s", classname, namespace);
+                        saffire_error("Cannot find class %s inside context: %s", classname, ctx_name);
                     }
                     obj = (t_object *)htb->data;
 
-                    // Add to the current namespace as the cu
+                    // Add to the current context as the cu
                     ctx = si_get_current_context();
-                    ht_add(ctx->vars, alias, obj);
+                    ht_add(ctx->data.vars, alias, obj);
 
-                    DEBUG_PRINT("Imported class %s as %s from %s into %s\n", classname, alias, namespace, ctx->namespace);
+                    DEBUG_PRINT("Imported class %s as %s from %s into %s\n", classname, alias, ctx_name, ctx->name);
                     break;
                 case T_USE :
+                    // Class to use
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
+                    name = OBJ2STR(obj1);
 
-                    namespace = OBJ2STR(obj1);
-                    if (OP_CNT(p) == 2) {
+                    if (OP_CNT(p) > 1) {
+                        // Fetch alias
                         node2 = SI1(p);
-                        obj2 = si_get_object(node2);
-                        namespace = OBJ2STR(obj2);
+                        if (IS_NULL(node2)) {
+                            node2 = node1;  // Alias X as X
+                        }
+                    } else {
+                        node2 = node1;  // Alias X as X
+                    }
+                    obj2 = si_get_object(node2);
+                    alias = OBJ2STR(obj2);
+
+                    printf("NAME : '%s'\n", name);
+                    printf("ALIAS: '%s'\n", alias);
+
+                    // Check if variable is free
+                    ctx = si_find_context(alias);
+                    if (ctx != NULL) {
+                        saffire_error("A context named %s is already present or imported.", alias);
                     }
 
-                    si_create_context(namespace);
+                    ctx = si_find_context(name);
+                    if (ctx == NULL) {
+                        saffire_error("Context %s was not found.", name);
+                    }
+
+                    si_create_context_alias(alias, ctx);
                     break;
 
                 case T_EXPRESSIONS :
