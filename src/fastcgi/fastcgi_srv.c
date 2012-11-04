@@ -38,7 +38,7 @@
 #include <sys/socket.h>
 #include <pwd.h>
 #include <grp.h>
-#include "config.h"
+#include "commands/config.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/

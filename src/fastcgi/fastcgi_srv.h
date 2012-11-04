@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __FASTCGI_H__
-#define __FASTCGI_H__
+#ifndef __FASTCGI_SRV_H__
+#define __FASTCGI_SRV_H__
 
     int fastcgi_start(void);
     int fastcgi_stop(void);

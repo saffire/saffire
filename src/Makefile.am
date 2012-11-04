@@ -57,7 +57,8 @@ libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
                   modules/io.c modules/saffire.c \
                   commands/config.c commands/fastcgi.c commands/lint.c commands/exec.c commands/cli.c \
                   commands/help.c commands/version.c \
-                  general/ini.c general/parse_options.c
+                  general/ini.c general/parse_options.c \
+                  fastcgi/fastcgi_srv.c
 
 # Link all sources against these libraries
 LDADD = libsaffire.a -lpcre -lfcgi
