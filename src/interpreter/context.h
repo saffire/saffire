@@ -43,7 +43,7 @@
     void si_pop_context(void);
     t_ns_context *si_get_current_context(void);
 
-    t_hash_table_bucket *si_find_in_context(char *var);
+    t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx);
     t_ns_context *si_get_namespace(const char *namespace);
     void si_create_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var);
     t_ns_context *si_create_context(char *namespace);

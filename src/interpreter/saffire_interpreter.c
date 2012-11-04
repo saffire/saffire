@@ -54,6 +54,10 @@ extern t_dll *object_dll;
 #endif
 
 
+#define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
+
+
+
 /**
  *
  */
@@ -179,7 +183,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_hash_table_bucket *htb;
     int ret, initial_loop, len;
     t_ast_element *hte;
-    char *str, *method_name;
+    char *str, *method_name, *namespace;
     t_dll *dll;
 
     // Append to lineno
@@ -229,7 +233,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 RETURN_SNODE_IDENTIFIER(NULL, Object_Null);
             }
 
-            htb = si_find_in_context(p->string.value);
+            htb = si_find_in_context(p->string.value, NULL);
             RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
             break;
 
@@ -249,15 +253,56 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Statements do not return anything
                     RETURN_SNODE_NULL();
                     break;
+
+                case T_IMPORT :
+                    node1 = SI0(p);     // Class to import
+                    obj1 = si_get_object(node1);
+                    char *classname = OBJ2STR(obj1);
+                    node2 = SI1(p);     // Null or alias
+                    if (IS_NULL(node2)) {
+                        node2 = node1;  // Alias X as X
+                    }
+                    obj2 = si_get_object(node2);
+                    char *alias = OBJ2STR(obj2);
+
+                    node3 = SI2(p);     // Namespace to import from
+                    obj3 = si_get_object(node3);
+                    namespace = OBJ2STR(obj3);
+
+
+                    // Check if variable is free
+                    t_ns_context *ctx = si_get_current_context();
+                    t_hash_table_bucket *htb = ht_find(ctx->vars, alias);
+                    if (htb) {
+                        saffire_error("A variable named %s is already present or imported.", alias);
+                    }
+
+                    // Find class in context
+                    ctx = si_get_namespace(namespace);
+                    if (ctx == NULL) {
+                        saffire_error("Cannot find namespace: %s", namespace);
+                    }
+                    htb = ht_find(ctx->vars, classname);
+                    if (htb == NULL) {
+                        saffire_error("Cannot find class %s inside namespace: %s", classname, namespace);
+                    }
+                    obj = (t_object *)htb->data;
+
+                    // Add to the current namespace as the cu
+                    ctx = si_get_current_context();
+                    ht_add(ctx->vars, alias, obj);
+
+                    DEBUG_PRINT("Imported class %s as %s from %s into %s\n", classname, alias, namespace, ctx->namespace);
+                    break;
                 case T_USE :
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
 
-                    char *namespace = wctou8(((t_string_object *)obj1)->value, ((t_string_object *)obj1)->char_length);
+                    namespace = OBJ2STR(obj1);
                     if (OP_CNT(p) == 2) {
                         node2 = SI1(p);
                         obj2 = si_get_object(node2);
-                        namespace = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+                        namespace = OBJ2STR(obj2);
                     }
 
                     si_create_context(namespace);
@@ -429,16 +474,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
                     method_name = smm_strdup(hte->identifier.name);
-//                    if (hte->identifier.name[0] == '$') {
-//                        obj2 = (t_object *)htb->data;
-//                        if (! OBJECT_IS_STRING(obj2)) {
-//                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
-//                        }
-//                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
-//                    } else {
-                        // We duplicate, so we can always free the string later on
-
-//                    }
 
                     // Get arguments (or NULL)
                     t_dll *dll;
@@ -540,6 +575,22 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_OBJECT(obj3);
                     break;
 
+                case '.' :
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
+
+                    // get method name from object
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Can only have identifiers here", hte->identifier.name);
+                    }
+                    method_name = smm_strdup(hte->identifier.name);
+
+                    printf("Figuring out: '%s' in object '%s'", method_name, obj1->name);
+
+                    smm_free(method_name);
+
+                    break;
 
                 default:
                     saffire_error("Unhandled opcode: %d\n", p->opr.oper);

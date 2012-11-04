@@ -210,10 +210,12 @@ t_ns_context *si_get_namespace(const char *namespace) {
 /**
  * Returns the bucket of the variable. Will take care of namespacing depending on the given context
  */
-t_hash_table_bucket *si_find_in_context(char *var) {
+t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx) {
     char *fqn_ns, *fqn_var;
 
-    t_ns_context *ctx = si_get_current_context();
+    if (ctx == NULL) {
+        ctx = si_get_current_context();
+    }
 
     DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->namespace, var);
 
