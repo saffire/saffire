@@ -37,7 +37,7 @@
 //extern void yylex_destroy
 extern int yylex_destroy();
 extern void yyerror(const char *err);
-extern int yyparse();
+extern int yyparse(t_ast_element *ast_root);
 extern FILE *yyin;
 extern int yylineno;
 
@@ -45,6 +45,7 @@ extern int yylineno;
 extern int yydebug;
 extern int yy_flex_debug;
 #endif
+
 
 
 /**
@@ -59,15 +60,17 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     yy_flex_debug = 1;
 #endif
 
+    t_ast_element *ast = smm_malloc(sizeof(t_ast_element));
+
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
-    yyparse();
+    yyparse(ast);
     yylex_destroy();
 
     sfc_fini();
 
     // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
-    return ast_root;
+    return ast;
 }
 
 
@@ -158,6 +161,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
     return src;
 }
 
+
 /**
  * Add all the children of a node to the src node.
  */
@@ -218,12 +222,19 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
 }
 
 
+/**
+ * Concatenates an identifier node onto an existing identifier node
+ */
 t_ast_element *ast_concat(t_ast_element *src, char *s) {
     src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s) + 1);
     strcat(src->identifier.name, s);
     return src;
 }
 
+
+/**
+ * Concatenates an string node onto an existing string node
+ */
 t_ast_element *ast_string_concat(t_ast_element *src, char *s) {
     src->string.value = smm_realloc(src->string.value, strlen(src->string.value) + strlen(s) + 1);
     strcat(src->string.value, s);
@@ -324,6 +335,9 @@ void ast_free_node(t_ast_element *p) {
 }
 
 
+/**
+ * Generate an AST from a source file
+ */
 t_ast_element *ast_generate_from_file(char *source_file) {
     // Open file, or use stdin if needed
     FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
@@ -333,10 +347,10 @@ t_ast_element *ast_generate_from_file(char *source_file) {
     }
 
     // Generate source file into an AST tree
-    ast_generate_tree(fp);
+    t_ast_element *ast = ast_generate_tree(fp);
 
     // Close file
     fclose(fp);
 
-    return ast_root;
+    return ast;
 }

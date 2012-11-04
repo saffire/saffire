@@ -26,10 +26,10 @@
 */
 #include <stdio.h>
 #include "command.h"
-#include "interactive/interactive.h"
+#include "repl/repl.h"
 
-static int do_cli(void) {
-    return (interactive());
+static int do_repl(void) {
+    return (repl());
 }
 
 
@@ -45,7 +45,7 @@ static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "", do_cli, NULL },
+    { "", "", do_repl, NULL },
     { 0, 0, 0, 0 }
 };
 

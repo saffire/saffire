@@ -387,10 +387,10 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Fetch LHS node
                     node1 = SI0(p);
 
-                    // Not found (@TODO: is this possible, doesn't it create automatically?)
-                    if (node1 == NULL) {
-                        saffire_error("Left hand side does not exist");
-                    }
+//                    // Not found (@TODO: is this possible, doesn't it create automatically?)
+//                    if (node1 == NULL) {
+//                        saffire_error("Left hand side does not exist");
+//                    }
                     // it should be a variable, otherwise we cannot write to it..
                     if (! HAS_IDENTIFIER_ID(node1)) {
                         saffire_error("Left hand side is not writable!");
@@ -728,7 +728,7 @@ int saffire_interpreter(t_ast_element *p) {
     si_init();
     t_snode *node = _saffire_interpreter(p);
 
-    // @TODO: Check output of this node. Return the result
+    // @TODO: Check output of this node. Return the result as an object (?)
 
 #ifdef __DEBUG
     t_dll_element *e = DLL_HEAD(object_dll);

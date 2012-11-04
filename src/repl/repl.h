@@ -24,10 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#ifndef __REPL_H__
+#define __REPL_H__
 
-    int interactive(void);
+    int repl(void);
 
 
 #endif

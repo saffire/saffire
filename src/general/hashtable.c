@@ -68,6 +68,8 @@ unsigned int ht_hash(t_hash_table *ht, char *str) {
 
 
 /*
+ * @TODO: This should reutrn our data, not a bucket!
+ *
  * Find key in hash table
  */
 t_hash_table_bucket *ht_find(t_hash_table *ht, char *str) {

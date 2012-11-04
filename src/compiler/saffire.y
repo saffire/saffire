@@ -38,7 +38,7 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
+    void yyerror(t_ast_element *ast, const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -67,10 +67,10 @@
 %}
 
 %union {
-    char          *sVal;
-    long          lVal;
-    double        dVal;
-    struct ast_element *nPtr;
+    char                *sVal;
+    long                lVal;
+    double              dVal;
+    struct ast_element  *nPtr;
 }
 
 %token END 0 "end of file"
@@ -125,6 +125,8 @@
 %error-verbose
 
 %start saffire
+
+%parse-param { t_ast_element *ast_root }
 
 %% /* rules */
 

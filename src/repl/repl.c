@@ -31,22 +31,27 @@
 
 #define HIST_FILE ".saffire_history"
 
-char cur_prompt[40];        // @TODO: Fixed length is not good!
+#define MAX_PROMPT_SIZE 40
+char cur_prompt[MAX_PROMPT_SIZE];
+
 static int statement_count = 1;
 
+// @TODO: saffire.prompt will actually set the current prompt.. saffire.prompt("%n>");  %n == current stament count?
+
 char *prompt(EditLine *el) {
-    sprintf(cur_prompt, "%d> ", statement_count++);
+    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count++);
     return cur_prompt;
 }
 
-int interactive(void) {
+int repl(void) {
     EditLine *el;
     History *hist;
     HistEvent ev;
     const char *line;
     int count;
 
-    printf("Interactive/CLI mode is not supported. However, you can type text here.. use CTRL-C to quit.\n");
+
+    printf("Interactive/CLI mode is not yet supported. However, you can type text here.. use CTRL-C to quit.\n");
 
     // initialize EditLine library
     el = el_init("saffire", stdin, stdout, stderr);

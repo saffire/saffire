@@ -211,7 +211,6 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **f
     // We now have a fully qualified name. We now can split the variable from the name, and check for presence
     DEBUG_PRINT("FQN: '%s'  ", fqn);
 
-    // TODO: Check for separator!
     char *ch = strrstr(fqn, NS_SEPARATOR);
     if (ch == NULL) {
         saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
