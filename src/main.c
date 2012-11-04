@@ -131,7 +131,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
 
     // Nothing was found. Display help if available.
     if (cmd->info->help) {
-        printf(cmd->info->help);
+        printf("%s", cmd->info->help);
         printf("\n");
     } else {
         printf("No additional help is available. Use 'saffire help' for more information.\n");

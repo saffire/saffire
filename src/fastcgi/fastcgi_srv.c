@@ -361,9 +361,9 @@ int fastcgi_start(void) {
             char strpid[10];
             sprintf(strpid, "%d\n", child_pid);
             if (i == sc- - 1) {
-                write(pid_fd, strpid, strlen(strpid)-1);
+                i = write(pid_fd, strpid, strlen(strpid)-1);
             } else {
-                write(pid_fd, strpid, strlen(strpid));
+                i = write(pid_fd, strpid, strlen(strpid));
             }
         }
     }

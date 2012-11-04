@@ -69,7 +69,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "IO.printf: %d arguments" ANSI_RESET "\n", args->size);
+    printf(ANSI_BRIGHTRED "IO.printf: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -87,7 +87,7 @@ static t_object *io_sprintf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_print(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "console.print: %d arguments" ANSI_RESET "\n", args->size);
+    printf(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -95,7 +95,7 @@ static t_object *console_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_printf(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "console.printf: %d arguments" ANSI_RESET "\n", args->size);
+    printf(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
