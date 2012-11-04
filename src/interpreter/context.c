@@ -200,11 +200,11 @@ char *si_create_fqn(const char *var) {
  * Splits a fully qualified variable name into context and variable separated.
  */
 void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **fqn_var) {
-    DEBUG_PRINT("si_split_var : '%s'\n", var);
+    DEBUG_PRINT("si_split_var : '%s' ", var);
     char *fqn = si_create_fqn(var);
 
     // We now have a fully qualified name. We now can split the variable from the name, and check for presence
-    DEBUG_PRINT("FQN: '%s'\n", fqn);
+    DEBUG_PRINT("FQN: '%s'  ", fqn);
 
     // TODO: Check for separator!
     char *ch = strrstr(fqn, NS_SEPARATOR);
@@ -219,10 +219,12 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **f
     *fqn_ctx = smm_strdup(fqn);
     (*fqn_ctx)[len] = '\0';
 
-    DEBUG_PRINT("CTX : '%s'\n", *fqn_ctx);
-    DEBUG_PRINT("VAR : '%s'\n", *fqn_var);
+    DEBUG_PRINT("CTX : '%s' ", *fqn_ctx);
+    DEBUG_PRINT("VAR : '%s' ", *fqn_var);
 
     smm_free(fqn);
+
+    DEBUG_PRINT("\n");
 }
 
 
@@ -269,6 +271,28 @@ t_ns_context *si_get_context(const char *name) {
     return ns;
 }
 
+    t_hash_table_bucket *si_create_in_context(char *var, t_ns_context *ctx) {
+    char *fqn_ctx, *fqn_var;
+
+    if (ctx == NULL) {
+        ctx = si_get_current_context();
+    }
+    si_split_var(ctx, var, &fqn_ctx, &fqn_var);
+
+    t_ns_context *ns_ctx = si_get_context(fqn_ctx);
+    if (ns_ctx == NULL) {
+        saffire_error("Cannot find context '%s'", fqn_ctx);
+    }
+
+    t_hash_table_bucket *htb = ht_find(ns_ctx->data.vars, fqn_var);
+    if (htb) {
+        saffire_error("Variable %s already exists inside %s", fqn_var, ns_ctx->name);
+    }
+
+    DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
+    return ht_add(ns_ctx->data.vars, fqn_var, NULL);
+}
+
 /**
  * Returns the bucket of the variable. Will take care of namespacing depending on the given context
  */
@@ -293,13 +317,9 @@ t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx) {
 
     // Find variable in name
     t_hash_table_bucket *htb = ht_find(ns_ctx->data.vars, fqn_var);
-
     if (! htb) {
-        DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
-        ht_add(ns_ctx->data.vars, fqn_var, NULL);                            // set to NULL by default
-        htb = ht_find(ns_ctx->data.vars, fqn_var);
+        htb = si_create_in_context(fqn_var, ns_ctx);
     }
-
 
     // Free temp vars
     smm_free(fqn_var);

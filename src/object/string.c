@@ -346,20 +346,21 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.methods = ht_create();
-    ht_add(Object_String_struct.methods, "ctor", object_string_method_ctor);
-    ht_add(Object_String_struct.methods, "dtor", object_string_method_dtor);
+    object_add_internal_method(&Object_String_struct, "ctor", object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "ctor", object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "dtor", object_string_method_dtor);
 
-    ht_add(Object_String_struct.methods, "boolean", object_string_method_conv_boolean);
-    ht_add(Object_String_struct.methods, "null", object_string_method_conv_null);
-    ht_add(Object_String_struct.methods, "numerical", object_string_method_conv_numerical);
-    ht_add(Object_String_struct.methods, "string", object_string_method_conv_string);
+    object_add_internal_method(&Object_String_struct, "boolean", object_string_method_conv_boolean);
+    object_add_internal_method(&Object_String_struct, "null", object_string_method_conv_null);
+    object_add_internal_method(&Object_String_struct, "numerical", object_string_method_conv_numerical);
+    object_add_internal_method(&Object_String_struct, "string", object_string_method_conv_string);
 
-    ht_add(Object_String_struct.methods, "byte_length", object_string_method_byte_length);
-    ht_add(Object_String_struct.methods, "length", object_string_method_length);
-    ht_add(Object_String_struct.methods, "upper", object_string_method_upper);
-    ht_add(Object_String_struct.methods, "lower", object_string_method_lower);
-    ht_add(Object_String_struct.methods, "reverse", object_string_method_reverse);
-    ht_add(Object_String_struct.methods, "print", object_string_method_print);
+    object_add_internal_method(&Object_String_struct, "byte_length", object_string_method_byte_length);
+    object_add_internal_method(&Object_String_struct, "length", object_string_method_length);
+    object_add_internal_method(&Object_String_struct, "upper", object_string_method_upper);
+    object_add_internal_method(&Object_String_struct, "lower", object_string_method_lower);
+    object_add_internal_method(&Object_String_struct, "reverse", object_string_method_reverse);
+    object_add_internal_method(&Object_String_struct, "print", object_string_method_print);
 
     Object_String_struct.properties = ht_create();
 
@@ -403,11 +404,9 @@ static t_object *obj_new(va_list arg_list) {
     // Create a hash from the string
     char strhash[33];
     hash_widestring_text(value, len, strhash);
-    DEBUG_PRINT("\n\n\nHASH WE WILL BE USING: '%s'\n\n\n", strhash);
 
     t_hash_table_bucket *htb = ht_find(string_cache, strhash);
     if (htb) {
-        DEBUG_PRINT("\n\n\n\n\n **** Found inside the cache! ***** \n\n\n\n\n");
         // Found cached object!
         return (t_object *)htb->data;
     }

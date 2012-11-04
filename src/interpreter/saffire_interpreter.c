@@ -173,6 +173,10 @@ static t_snode *si_operator(t_ast_element *p, int opr) {
 
 
 
+// Pointer to the current object
+t_object *current_obj = NULL;
+
+
 /**
  *
  */
@@ -234,6 +238,41 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
             htb = si_find_in_context(p->string.value, NULL);
             RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
+            break;
+
+        case typeAstClass :
+            obj = (t_object *)smm_malloc(sizeof(t_object));
+            obj->ref_count = 0;
+            obj->type = objectTypeAny;
+            obj->name = smm_strdup(p->class.name);
+            obj->flags = p->class.modifiers;
+            obj->parent = NULL;
+            obj->implement_count = 0;
+            obj->implements = NULL;
+            obj->methods = ht_create();
+            obj->properties = ht_create();
+            obj->constants = ht_create();
+            obj->operators = NULL;
+            obj->comparisons = NULL;
+            obj->funcs = NULL;
+
+            // Interpret body.
+            t_object *saved_obj = current_obj;
+            current_obj = obj;
+            _saffire_interpreter(p->class.body);
+            current_obj = saved_obj;
+
+            // Add the object to the current context
+            t_ns_context *ctx = si_get_current_context();
+            si_context_add_object(ctx, obj);
+            break;
+
+        case typeAstMethod :
+            if (current_obj == NULL) {
+                saffire_error("Trying to define a method outside a class. This should be caught by the parser!");
+            }
+            DEBUG_PRINT("Adding method: %s to %s\n", p->method.name, current_obj->name);
+            object_add_external_method(current_obj, p->method.name, p->method.body);
             break;
 
         case typeAstOpr :
@@ -348,7 +387,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Fetch LHS node
                     node1 = SI0(p);
 
-                    // Not found, create this variable
+                    // Not found (@TODO: is this possible, doesn't it create automatically?)
                     if (node1 == NULL) {
                         saffire_error("Left hand side does not exist");
                     }
@@ -605,12 +644,58 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     if (hte->type != typeAstIdentifier) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
-                    method_name = smm_strdup(hte->identifier.name);
 
-                    printf("Figuring out: '%s' in object '%s'", method_name, obj1->name);
+                    printf("Figuring out: '%s' in object '%s'", hte->identifier.name, obj1->name);
+                    htb = ht_find(obj1->constants, hte->identifier.name);
+                    if (htb == NULL) {
+                        htb = ht_find(obj1->properties, hte->identifier.name);
+                        if (htb == NULL) {
+                            saffire_error("Cannot find identifier '%s' from '%s'", hte->identifier.name, obj1->name);
+                        }
+                    }
 
-                    smm_free(method_name);
+                    obj1 = (t_object *)htb->data;
+                    RETURN_SNODE_OBJECT(obj1);
+                    break;
 
+                case T_CONST :
+                    if (current_obj == NULL) {
+                        // @TODO: We could create constants OUTSIDE a class!
+                        saffire_error("Defining constants outside classes is not yet supported!");
+                    }
+
+                    hte = p->opr.ops[0];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Constant name needs to be an identifier");
+                    }
+
+                    node2 = SI1(p);
+                    obj2 = si_get_object(node2);
+
+                    DEBUG_PRINT("Added constant %s to %s\n", hte->identifier.name, current_obj->name);
+                    ht_add(current_obj->constants, hte->identifier.name, obj2);
+                    break;
+
+                case T_PROPERTY :
+                    if (current_obj == NULL) {
+                        saffire_error("Cannot define properties outside classes. This should be caught by the parser!");
+                    }
+
+                    hte = p->opr.ops[0];
+                    if (hte->type != typeAstNumerical) {
+                        saffire_error("Flags name needs to be numerical");
+                    }
+
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Property name needs to be an identifier");
+                    }
+
+                    node2 = SI2(p);
+                    obj2 = si_get_object(node2);
+
+                    DEBUG_PRINT("Added property %s to %s\n", hte->identifier.name, current_obj->name);
+                    ht_add(current_obj->properties, hte->identifier.name, obj2);
                     break;
 
                 default:
@@ -622,6 +707,18 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     RETURN_SNODE_NULL();
 }
 
+
+/**
+ *
+ */
+t_object *saffire_interpreter_leaf(t_ast_element *p) {
+    t_snode *node = _saffire_interpreter(p);
+    if (IS_OBJECT(node)) {
+        RETURN_OBJECT(node->data.obj);
+    }
+
+    RETURN_NULL;
+}
 
 
 /**

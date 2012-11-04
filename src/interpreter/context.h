@@ -52,5 +52,6 @@
     t_ns_context *si_create_context(char *name);
     t_ns_context *si_create_context_alias(char *alias, t_ns_context *ctx);
     void si_context_add_object(t_ns_context *ctx, t_object *obj);
+    t_hash_table_bucket *si_create_in_context(char *var, t_ns_context *ctx);
 
 #endif

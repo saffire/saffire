@@ -115,15 +115,16 @@ t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL
 
 static void _init(void) {
     io_struct.methods = ht_create();
-    ht_add(io_struct.methods, "print", io_print);
-    ht_add(io_struct.methods, "printf", io_printf);
-    ht_add(io_struct.methods, "sprintf", io_sprintf);
+    object_add_internal_method(&io_struct, "printf", io_print);
+    object_add_internal_method(&io_struct, "print", io_print);
+    object_add_internal_method(&io_struct, "printf", io_printf);
+    object_add_internal_method(&io_struct, "sprintf", io_sprintf);
     io_struct.properties = ht_create();
 
     console_struct.methods = ht_create();
-    ht_add(console_struct.methods, "print", console_print);
-    ht_add(console_struct.methods, "printf", console_printf);
-    ht_add(console_struct.methods, "sprintf", console_sprintf);
+    object_add_internal_method(&console_struct, "print", console_print);
+    object_add_internal_method(&console_struct, "printf", console_printf);
+    object_add_internal_method(&console_struct, "sprintf", console_sprintf);
     console_struct.properties = ht_create();
 }
 

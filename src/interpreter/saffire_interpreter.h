@@ -111,5 +111,6 @@
     void saffire_warning(char *str, ...);
     void saffire_error(char *str, ...);
     int saffire_interpreter(t_ast_element *p);
+    t_object *saffire_interpreter_leaf(t_ast_element *p);
 
 #endif

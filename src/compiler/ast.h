@@ -28,6 +28,7 @@
 #define __AST_H__
 
     #include "compiler/class.h"
+    #include <stdio.h>
 
     // different kind of nodes we manage
     typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier, typeAstOpr, typeAstClass, typeAstInterface, typeAstMethod } nodeEnum;
