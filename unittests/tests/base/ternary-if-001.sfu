@@ -3,19 +3,19 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 // Normal notation
-$a = $a ? $b : $c;
+a = a ? b : c;
 ====
 @@@@
 // No short notation
-$a = $a ?: $c
+a = a ?: c
 ====
 Error in line 3: syntax error, unexpected ':'
 @@@@
 // invalid compound statement
-$a = "foo" ? "bar" : { "baz" }
+a = "foo" ? "bar" : { "baz" }
 ====
 Error in line 3: syntax error, unexpected '{'
 @@@@
 // Ternary inside ternary
-$a = "foo" ? "bar" ? "baz" : "qux"
+a = "foo" ? "bar" ? "baz" : "qux"
 ====

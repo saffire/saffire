@@ -2,40 +2,40 @@ title: data structure tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
 // Normal lists
-$a = list[1, 2, 3, 4];
-$a = list[1, 2, 3,  ];
-$a = list[ , 2, 3, 4];
-$a = list[];
+a = list[1, 2, 3, 4];
+a = list[1, 2, 3,  ];
+a = list[ , 2, 3, 4];
+a = list[];
 ====
 @@@@
 // Normal hashes
-$a = hash["a":1, "b":2, "c":3, "d":4];
-$a = hash["a":1, "b":2, "c":3,      ];
-$a = hash[     , "b":2, "c":3, "d":4];
-$a = hash[];
+a = hash["a":1, "b":2, "c":3, "d":4];
+a = hash["a":1, "b":2, "c":3,      ];
+a = hash[     , "b":2, "c":3, "d":4];
+a = hash[];
 ====
 @@@@
 // Can have multiple values per element
-$a = datastruct["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
+a = datastruct["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 @@@@
 // Cannot use numerics
-$a = 1["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
+a = 1["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 @@@@
 // Cannot use variables
-$a = $foo["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
+a = foo["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 @@@@
 // Return item of the data structure
-$a = $foo["a"];
-$a = $foo[1];
+a = foo["a"];
+a = foo[1];
 ====
 @@@@
 // Return a slice of the data structure
-$a = $foo[1..5];
+a = foo[1..5];
 ====
 @@@@
 // Return whole set?
-$a = $foo[];
+a = foo[];
 ====

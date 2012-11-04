@@ -2,7 +2,7 @@ title: for control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-for ($i=0; $i!=10; $i++) {
+for (i=0; i!=10; i++) {
 }
 
 ====
@@ -11,39 +11,39 @@ for (;;) ;
 
 ====
 @@@@
-for ($i=0,$b=1; ; $i++) {
+for (i=0,b=1; ; i++) {
 }
 
 ====
 @@@@
-for ($i=0; "foo"; ) {
+for (i=0; "foo"; ) {
 }
 
 ====
 @@@@
-for ($i=0; $i!=10; $i++,$j++) {
+for (i=0; i!=10; i++,j++) {
 }
 
 ====
 @@@@
-for ($i) {
+for (i) {
 }
 
 ====
 Error in line 2: syntax error, unexpected ')', expecting ';' or ','
 @@@@
-for ($i;) {
+for (i;) {
 }
 
 ====
 Error in line 2: syntax error, unexpected ')'
 @@@@
-for $i;$j;$i++ {
+for i;j;i++ {
 }
 
 ====
 Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
-for ($i;$j;$i++);
+for (i;j;i++);
 
 ====
