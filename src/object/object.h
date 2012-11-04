@@ -44,7 +44,9 @@
         struct _object *(*new)(va_list arg_list);       // Allocates a new object
         void (*free)(struct _object *);                 // Frees objects internal data
         struct _object *(*clone)(struct _object *);     // Clones the object
+#ifdef __DEBUG
         char *(*debug)(struct _object *);               // Return debug string (value and info)
+#endif
     } t_object_funcs;
 
     // Operator defines

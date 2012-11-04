@@ -264,12 +264,14 @@ void object_dec_ref(t_object *obj) {
 }
 
 
+#ifdef __DEBUG
 char *object_debug(t_object *obj) {
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
     }
     return "";
 }
+#endif
 
 /**
  * Free an object (if needed)

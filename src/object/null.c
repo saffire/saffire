@@ -83,16 +83,20 @@ void object_null_fini(void) {
     ht_destroy(Object_Null_struct.properties);
 }
 
+#ifdef __DEBUG
 static char *obj_debug(struct _object *obj) {
     return "null";
 }
+#endif
 
 
 t_object_funcs null_funcs = {
         NULL,               // Allocate a new bool object
         NULL,               // Free a bool object
         NULL,               // Clone a bool object
+#ifdef __DEBUG
         obj_debug
+#endif
 };
 
 

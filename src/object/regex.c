@@ -259,7 +259,7 @@ static t_object *obj_new(va_list arg_list) {
     return (t_object *)new_obj;
 }
 
-
+#ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
     char *buf = wctou8(((t_regex_object *)obj)->regex_string, wcslen(((t_regex_object *)obj)->regex_string));
@@ -268,13 +268,16 @@ static char *obj_debug(struct _object *obj) {
     smm_free(buf);
     return global_buf;
 }
+#endif
 
 // Regex object management functions
 t_object_funcs regex_funcs = {
         obj_new,              // Allocate a new regex object
         obj_free,             // Free a regex object
         obj_clone,            // Clone a regex object
+#ifdef __DEBUG
         obj_debug
+#endif
 };
 
 // Intial object

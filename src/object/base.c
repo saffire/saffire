@@ -209,7 +209,9 @@ t_object_funcs base_funcs = {
         NULL,               // Allocate a new string object
         NULL,               // Free a string object
         obj_clone,          // Clone a string object
+#ifdef __DEBUG
         NULL
+#endif
 };
 
 

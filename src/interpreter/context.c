@@ -162,12 +162,14 @@ static t_ns_context *_si_create_ctx(char *name, int aliased, t_ns_context *ctx) 
     return new_ctx;
 }
 
+
 /**
  * Creates a new context
  */
 t_ns_context *si_create_context(char *name) {
     return _si_create_ctx(name, 0, NULL);
 }
+
 
 /**
  * Creates a new alias to an existing context
@@ -177,6 +179,9 @@ t_ns_context *si_create_context_alias(char *alias, t_ns_context *ctx) {
 }
 
 
+/**
+ *
+ */
 char *si_create_fqn(const char *var) {
     char *fqn;
     t_ns_context *ctx = si_get_current_context();
@@ -260,6 +265,7 @@ t_ns_context *si_find_context(const char *name) {
     saffire_error("Context nesting too deep!");
 }
 
+
 /**
  * Returns t_ns_context of the name. Errors when not found
  */
@@ -271,7 +277,11 @@ t_ns_context *si_get_context(const char *name) {
     return ns;
 }
 
-    t_hash_table_bucket *si_create_in_context(char *var, t_ns_context *ctx) {
+
+/**
+ *
+ */
+t_hash_table_bucket *si_create_in_context(char *var, t_ns_context *ctx) {
     char *fqn_ctx, *fqn_var;
 
     if (ctx == NULL) {
@@ -290,7 +300,9 @@ t_ns_context *si_get_context(const char *name) {
     }
 
     DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
-    return ht_add(ns_ctx->data.vars, fqn_var, NULL);
+    ht_add(ns_ctx->data.vars, fqn_var, NULL);
+
+    return ht_find(ns_ctx->data.vars, fqn_var);
 }
 
 /**

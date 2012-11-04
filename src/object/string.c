@@ -68,12 +68,6 @@ static void hash_widestring(wchar_t *value, int len, md5_byte_t *hash) {
         md5_append(&state, utf8_char_buf, utf8_char_len);
     }
     md5_finish(&state, hash);
-
-    DEBUG_PRINT("Recalc_Hash:");
-    for (int i=0; i!=16; i++) {
-        DEBUG_PRINT("%02X", (unsigned char)hash[i]);
-    }
-    DEBUG_PRINT("\n");
 }
 
 /**
@@ -411,11 +405,6 @@ static t_object *obj_new(va_list arg_list) {
         return (t_object *)htb->data;
     }
 
-    DEBUG_PRINT("NOT Found in cache");
-
-
-
-
     // Create new object and copy all info
     t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
     memcpy(new_obj, Object_String, sizeof(t_string_object));
@@ -442,6 +431,8 @@ static t_object *obj_new(va_list arg_list) {
     return (t_object *)new_obj;
 }
 
+
+#ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
     char *buf = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
@@ -451,6 +442,7 @@ static char *obj_debug(struct _object *obj) {
 
     return global_buf;
 }
+#endif
 
 
 // String object management functions
@@ -458,7 +450,9 @@ t_object_funcs string_funcs = {
         obj_new,              // Allocate a new string object
         obj_free,             // Free a string object
         NULL,                 // Clone a string object
+#ifdef __DEBUG
         obj_debug
+#endif
 };
 
 t_object_operators string_ops = {

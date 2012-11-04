@@ -266,17 +266,20 @@ void object_boolean_fini(void) {
     ht_destroy(Object_Boolean_struct.properties);
 }
 
-
+#ifdef __DEBUG
 static char *obj_debug(struct _object *obj) {
     if (((t_boolean_object *)obj)->value == 0) return "false";
     return "true";
 }
+#endif
 
 t_object_funcs bool_funcs = {
         NULL,               // Allocate a new bool object
         NULL,               // Free a bool object
         NULL,               // Clone a bool object
+#ifdef __DEBUG
         obj_debug
+#endif
 };
 
 t_object_operators boolean_ops = {

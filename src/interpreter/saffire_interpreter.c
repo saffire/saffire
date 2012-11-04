@@ -645,7 +645,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
 
-                    printf("Figuring out: '%s' in object '%s'", hte->identifier.name, obj1->name);
+                    DEBUG_PRINT("Figuring out: '%s' in object '%s'", hte->identifier.name, obj1->name);
                     htb = ht_find(obj1->constants, hte->identifier.name);
                     if (htb == NULL) {
                         htb = ht_find(obj1->properties, hte->identifier.name);
