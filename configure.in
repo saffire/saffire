@@ -90,7 +90,7 @@ AC_CHECK_LIB(edit, el_init, , [ AC_MSG_ERROR([libedit library missing])])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h unistd.h histedit.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h unistd.h histedit.h prce.h])
 AC_HEADER_STDC
 
 # Checks for typedefs, structures, and compiler characteristics.
