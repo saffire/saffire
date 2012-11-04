@@ -24,67 +24,11 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "command.h"
+#ifndef __FASTCGI_H__
+#define __FASTCGI_H__
 
-/**
- *
- */
-static int do_start(void) {
-    if (fastcgi_running()) {
-        printf("FastCGI server is already running!\n");
-        return 1;
-    }
+    int fastcgi_start(void);
+    int fastcgi_stop(void);
+    int fastcgi_running(void);
 
-    return fastcgi_start();
-}
-
-static int do_stop(void) {
-    if (! fastcgi_running()) {
-        printf("FastCGI server is not running!\n");
-        return 1;
-    }
-
-    return fastcgi_stop();
-}
-
-static int do_status(void) {
-    if (fastcgi_running()) {
-        printf("Status: running\n");
-        return 0;
-    }
-
-    printf("Status: stopped\n");
-    return 1;
-}
-
-
-/****
- * Argument Parsing and action definitions
- ***/
-
-
-/* Usage string */
-static const char help[]   = "Controls the Saffire FastCGI Daemon\n"
-                             "\n";
-                             "Actions:\n"
-                             "  start     Starts the daemon\n"
-                             "  stop      Stops the daemon\n"
-                             "  status    Display daemon status\n";
-                             "  info      Returns information \n";
-
-/* Config actions */
-static struct command_action command_actions[] = {
-    { "start", "", do_start, NULL },
-    { "stop", "", do_stop, NULL },
-    { "status", "", do_status, NULL },
-    { "info", "", do_info, NULL },
-    { 0, 0, 0, 0 }
-};
-
-/* Config info structure */
-struct command_info info_fastcgi = {
-    "FastCGI daemon",
-    command_actions,
-    help
-};
+#endif
