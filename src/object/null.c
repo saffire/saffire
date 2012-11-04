@@ -67,10 +67,10 @@ SAFFIRE_METHOD(null, conv_string) {
 void object_null_init(void) {
     Object_Null_struct.methods = ht_create();
 
-    ht_add(Object_Null_struct.methods, "boolean", object_null_method_conv_boolean);
-    ht_add(Object_Null_struct.methods, "null", object_null_method_conv_null);
-    ht_add(Object_Null_struct.methods, "numerical", object_null_method_conv_numerical);
-    ht_add(Object_Null_struct.methods, "string", object_null_method_conv_string);
+    object_add_internal_method(&Object_Null_struct, "boolean", object_null_method_conv_boolean);
+    object_add_internal_method(&Object_Null_struct, "null", object_null_method_conv_null);
+    object_add_internal_method(&Object_Null_struct, "numerical", object_null_method_conv_numerical);
+    object_add_internal_method(&Object_Null_struct, "string", object_null_method_conv_string);
 
     Object_Null_struct.properties = ht_create();
 }

@@ -244,10 +244,10 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
 void object_boolean_init(void) {
     Object_Boolean_struct.methods = ht_create();
 
-    ht_add(Object_Boolean_struct.methods, "boolean", object_boolean_method_conv_boolean);
-    ht_add(Object_Boolean_struct.methods, "null", object_boolean_method_conv_null);
-    ht_add(Object_Boolean_struct.methods, "numerical", object_boolean_method_conv_numerical);
-    ht_add(Object_Boolean_struct.methods, "string", object_boolean_method_conv_string);
+    object_add_internal_method(&Object_Boolean_struct, "boolean", object_boolean_method_conv_boolean);
+    object_add_internal_method(&Object_Boolean_struct, "null", object_boolean_method_conv_null);
+    object_add_internal_method(&Object_Boolean_struct, "numerical", object_boolean_method_conv_numerical);
+    object_add_internal_method(&Object_Boolean_struct, "string", object_boolean_method_conv_string);
 
     Object_Boolean_struct.properties = ht_create();
 

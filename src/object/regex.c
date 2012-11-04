@@ -181,16 +181,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.methods = ht_create();
-    ht_add(Object_Regex_struct.methods, "ctor", object_regex_method_ctor);
-    ht_add(Object_Regex_struct.methods, "dtor", object_regex_method_dtor);
+    object_add_internal_method(&Object_Regex_struct, "ctor", object_regex_method_ctor);
+    object_add_internal_method(&Object_Regex_struct, "dtor", object_regex_method_dtor);
 
-    ht_add(Object_Regex_struct.methods, "boolean", object_regex_method_conv_boolean);
-    ht_add(Object_Regex_struct.methods, "null", object_regex_method_conv_null);
-    ht_add(Object_Regex_struct.methods, "numerical", object_regex_method_conv_numerical);
-    ht_add(Object_Regex_struct.methods, "string", object_regex_method_conv_string);
+    object_add_internal_method(&Object_Regex_struct, "boolean", object_regex_method_conv_boolean);
+    object_add_internal_method(&Object_Regex_struct, "null", object_regex_method_conv_null);
+    object_add_internal_method(&Object_Regex_struct, "numerical", object_regex_method_conv_numerical);
+    object_add_internal_method(&Object_Regex_struct, "string", object_regex_method_conv_string);
 
-    ht_add(Object_Regex_struct.methods, "match", object_regex_method_match);
-    ht_add(Object_Regex_struct.methods, "regex", object_regex_method_regex);
+    object_add_internal_method(&Object_Regex_struct, "match", object_regex_method_match);
+    object_add_internal_method(&Object_Regex_struct, "regex", object_regex_method_regex);
 
     Object_Regex_struct.properties = ht_create();
 }
