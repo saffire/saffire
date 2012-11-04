@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include "general/parse_options.h"
 #include "version.h"
-#include "command.h"
+#include "commands/command.h"
 
 
 #include "general/hashtable.h"

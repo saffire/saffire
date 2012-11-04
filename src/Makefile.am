@@ -23,6 +23,8 @@ BUILT_SOURCES=compiler/lex.yy.c
 AM_LFLAGS = --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
 AM_YFLAGS += -d
 
+AM_CFLAGS += -Iinclude
+
 # parser.tab.h cannot be used before parser.tab.c
 compiler/parser.tab.h: compiler/parser.tab.c
 

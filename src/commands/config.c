@@ -29,8 +29,8 @@
 #include <string.h>
 #include <time.h>
 #include <fnmatch.h>
-#include "command.h"
-#include "config.h"
+#include "commands/command.h"
+#include "commands/config.h"
 #include "general/parse_options.h"
 #include "general/ini.h"
 #include "general/smm.h"

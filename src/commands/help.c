@@ -26,7 +26,7 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "command.h"
+#include "commands/command.h"
 
 extern int original_argc;
 extern char **original_argv;
