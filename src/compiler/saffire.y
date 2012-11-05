@@ -38,7 +38,7 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(t_ast_element *ast, const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
+    void yyerror(int *ast, const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -126,7 +126,8 @@
 
 %start saffire
 
-%parse-param { t_ast_element *ast_root }
+
+%parse-param { int *ast_root }
 
 %% /* rules */
 
@@ -138,7 +139,7 @@
  */
 
 saffire:
-        program { TRACE ast_root = $1; }
+        program { TRACE *ast_root = (int)$1; }
 ;
 
 program:

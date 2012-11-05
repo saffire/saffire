@@ -37,7 +37,7 @@
 //extern void yylex_destroy
 extern int yylex_destroy();
 extern void yyerror(const char *err);
-extern int yyparse(t_ast_element *ast_root);
+extern int yyparse(int *ptr);
 extern FILE *yyin;
 extern int yylineno;
 
@@ -60,12 +60,14 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     yy_flex_debug = 1;
 #endif
 
-    t_ast_element *ast = smm_malloc(sizeof(t_ast_element));
-
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
-    yyparse(ast);
+
+    int ptr = 0;
+    yyparse(&ptr);
     yylex_destroy();
+
+    t_ast_element *ast = (t_ast_element *)ptr;
 
     sfc_fini();
 
@@ -97,7 +99,7 @@ t_ast_element *ast_string(char *value) {
 
     p->type = typeAstString;
     p->string.value = smm_strdup(value);
-    
+
     return p;
 }
 
