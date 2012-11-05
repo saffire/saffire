@@ -58,111 +58,152 @@ char *strrstr(char *x,char *y) {
     return Z;
 }
 
-// There are our namespace
+// These are our context separators
 #define NS_SEPARATOR "::"
 #define DOUBLE_NS_SEPARATOR NS_SEPARATOR NS_SEPARATOR
 
+// What context are we at this moment inside    (does this even make sense? Probably need the top context from a stack?)
 t_ns_context *current_context = NULL;
+
 
 /**
  * Returns the current (latest) context
  */
 t_ns_context *si_get_current_context(void) {
-  return current_context;
+    return current_context;
 }
 
 
 /**
- * Creates a new context
+ * Initializes the context engine
  */
-t_ns_context *si_create_context(char *namespace) {
-    char *new_ns;
-    int prefix = 0;
-
-    int len = strlen(namespace);
-    t_ns_context *ctx = si_get_current_context();
-
-    // Relative namespace, concat it with the current namespace
-    if (strncmp(namespace, NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
-        prefix = 1;
-        len += (strlen(ctx->namespace) + 1);
-    }
-
-    new_ns = (char *)smm_malloc(len);
-
-    // Add ending namespace separator if needed
-    if (prefix) {
-        strcpy(new_ns, ctx->namespace);
-    } else {
-        strcpy(new_ns, "");
-    }
-
-    strcat(new_ns, namespace);
-
-    DEBUG_PRINT("Creating context: %s\n", new_ns);
-    t_ns_context *new_ctx = smm_malloc(sizeof(t_ns_context));
-
-    // Populate new context
-    new_ctx->namespace = smm_strdup(new_ns);
-    new_ctx->vars = ht_create();                     // This context starts with a clean variable slate.
-
-    // Save the namespace in our global namespace list if it does not exists already
-    if (! ht_find(namespaces, new_ns)) {
-        DEBUG_PRINT(">>>>>> Added namespace: '%s'\n", new_ns);
-        ht_add(namespaces, new_ns, new_ctx);     // Save in namespace hash
-        dll_append(contexts, new_ctx);              // Save in DLL as well
-    }
-
-    return new_ctx;
-}
-
 void context_init(void) {
-    // Create namespace hash and DLL for iteration and fast lookups
-    namespaces = ht_create();
-    contexts = dll_init();
+    // Create context hash and DLL for iteration and fast lookups
+    ht_contexts = ht_create();
+    dll_contexts = dll_init();
 
     // Create default global context
     current_context = si_create_context(NS_SEPARATOR);
 }
 
+
+/**
+ * Destroys the context engine
+ */
 void context_fini(void) {
 #ifdef __DEBUG
-    t_dll_element *e = DLL_HEAD(contexts);
+    t_dll_element *e = DLL_HEAD(dll_contexts);
     while (e) {
         t_ns_context *ctx = (t_ns_context *)e->data;
-        DEBUG_PRINT("Context: '%s'\n", ctx->namespace);
-        DEBUG_PRINT("  Vars : %d\n", ctx->vars->element_count);
+        DEBUG_PRINT("Context: '%s'\n", ctx->name);
+        DEBUG_PRINT("Aliased: '%s'", ctx->aliased ? "yes" : "no");
+        if (ctx->aliased) {
+            t_ns_context *actx = ctx->data.alias;
+            DEBUG_PRINT(" => '%s'",  actx->name);
+        }
+        DEBUG_PRINT("\n");
+
+        DEBUG_PRINT("  Vars : %d\n", ctx->data.vars->element_count);
         e = DLL_NEXT(e);
     }
 #endif
-    // Free namespaces hash and dll
-    ht_destroy(namespaces);
-    dll_free(contexts);
+    // Free context hash and dll
+    ht_destroy(ht_contexts);
+    dll_free(dll_contexts);
 }
 
 
 /**
- * Splits a fully qualified variable name into namespace and variable separated.
+ * Creates a new context or alias to the context
  */
-void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var) {
-    DEBUG_PRINT("si_split_var (%s) : '%s'\n", current_ctx->namespace, var);
-    int fqn_len = 0;
-    char *fqn;
+static t_ns_context *_si_create_ctx(char *name, int aliased, t_ns_context *ctx) {
+    char *new_ctx_name;
+    int prefix = 0;
 
-    // TODO: Check for separator!
-    if (strncmp(var, NS_SEPARATOR, 2) == 0) {
-        // Already a fully qualified name
-        fqn_len = strlen(var);
-        fqn = smm_malloc(fqn_len + 1);
-        strcpy(fqn, var);
-    } else {
-        fqn_len = strlen(var) + strlen(current_ctx->namespace);
-        fqn = smm_malloc(fqn_len + 1);
-        strcpy(fqn, current_ctx->namespace);
-        strcat(fqn, var);
+    int len = strlen(name);
+    t_ns_context *cur_ctx = si_get_current_context();
+
+    // Relative name, concat it with the current context
+    if (strncmp(name, NS_SEPARATOR, strlen(NS_SEPARATOR)) != 0) {
+        prefix = 1;
+        len += (strlen(cur_ctx->name) + 1);
     }
 
-    // We now have a fully qualified name. We now can split the variable from the namespace, and check for presence
+    new_ctx_name = (char *)smm_malloc(len);
+
+    // Add ending name separator if needed
+    if (prefix) {
+        strcpy(new_ctx_name, cur_ctx->name);
+    } else {
+        strcpy(new_ctx_name, "");
+    }
+
+    strcat(new_ctx_name, name);
+
+    DEBUG_PRINT("Creating context: %s\n", new_ctx_name);
+    t_ns_context *new_ctx = smm_malloc(sizeof(t_ns_context));
+
+    // Populate new context
+    new_ctx->name = smm_strdup(new_ctx_name);
+    new_ctx->aliased = aliased;
+    if (aliased) {
+        new_ctx->data.alias = ctx;
+    } else {
+        new_ctx->data.vars = ht_create();                     // This context starts with a clean variable slate.
+    }
+
+    // Save the name in our global context list if it does not exists already
+    if (! ht_find(ht_contexts, new_ctx_name)) {
+        DEBUG_PRINT(">>>>>> Added context: '%s'\n", new_ctx_name);
+        ht_add(ht_contexts, new_ctx_name, new_ctx);     // Save in context hash
+        dll_append(dll_contexts, new_ctx);        // Save in DLL as well
+    }
+
+    return new_ctx;
+}
+
+/**
+ * Creates a new context
+ */
+t_ns_context *si_create_context(char *name) {
+    return _si_create_ctx(name, 0, NULL);
+}
+
+/**
+ * Creates a new alias to an existing context
+ */
+t_ns_context *si_create_context_alias(char *alias, t_ns_context *ctx) {
+    return _si_create_ctx(alias, 1, ctx);
+}
+
+
+char *si_create_fqn(const char *var) {
+    char *fqn;
+    t_ns_context *ctx = si_get_current_context();
+
+    if (strncmp(var, NS_SEPARATOR, 2) == 0) {
+        // Qualified
+        fqn = smm_strdup(var);
+        return fqn;
+    }
+
+    // Unqualified
+    int fqn_len = strlen(var) + strlen(ctx->name);
+    fqn = smm_malloc(fqn_len + 1);
+    strcpy(fqn, ctx->name);
+    strcat(fqn, var);
+    return fqn;
+}
+
+
+/**
+ * Splits a fully qualified variable name into context and variable separated.
+ */
+void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **fqn_var) {
+    DEBUG_PRINT("si_split_var : '%s'\n", var);
+    char *fqn = si_create_fqn(var);
+
+    // We now have a fully qualified name. We now can split the variable from the name, and check for presence
     DEBUG_PRINT("FQN: '%s'\n", fqn);
 
     // TODO: Check for separator!
@@ -171,15 +212,14 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
         saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
     }
 
-    // Strip namespace and variable
+    // Strip context and variable
     int len = ch - fqn;
     if (len == 0) len = strlen(NS_SEPARATOR);
     *fqn_var = smm_strdup(ch + strlen(NS_SEPARATOR));
-    *fqn_ns = smm_strdup(fqn);
-    (*fqn_ns)[len] = '\0';
+    *fqn_ctx = smm_strdup(fqn);
+    (*fqn_ctx)[len] = '\0';
 
-
-    DEBUG_PRINT("NS  : '%s'\n", *fqn_ns);
+    DEBUG_PRINT("CTX : '%s'\n", *fqn_ctx);
     DEBUG_PRINT("VAR : '%s'\n", *fqn_var);
 
     smm_free(fqn);
@@ -187,22 +227,44 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fq
 
 
 /**
- * Find namespace, or NULL when does not exist
+ * Find context, or NULL when does not exist
  */
-t_ns_context *si_find_namespace(const char *namespace) {
-    DEBUG_PRINT("t_ns_context *si_find_namespace(%s) {\n", namespace);
-    t_hash_table_bucket *htb = ht_find(namespaces, (char *)namespace);
-    if (!htb) return NULL;
-    return (t_ns_context *)htb->data;
+t_ns_context *si_find_context(const char *name) {
+    char *ctx_name = si_create_fqn(name);
+
+    DEBUG_PRINT("t_ns_context *si_find_context(%s) {\n", ctx_name);
+    t_hash_table_bucket *htb = ht_find(ht_contexts, (char *)ctx_name);
+    if (!htb) {
+        smm_free(ctx_name);
+        return NULL;
+    }
+    t_ns_context *ctx = (t_ns_context *)htb->data;
+
+
+    // Check if context is aliased, if so, goto the alias
+    int i=10;
+    while (i--) {
+        if (! ctx->aliased) {
+            smm_free(ctx_name);
+            return ctx;
+        }
+        ctx = ctx->data.alias;
+        DEBUG_PRINT("CTX aliased to '%s'\n", ctx->name);
+    }
+
+
+    // Prevent endless loops:    context1 -> context2 -> context1
+    smm_free(ctx_name);
+    saffire_error("Context nesting too deep!");
 }
 
 /**
- * Returns t_ns_context of the namespace. Errors when not found
+ * Returns t_ns_context of the name. Errors when not found
  */
-t_ns_context *si_get_namespace(const char *namespace) {
-    t_ns_context *ns = si_find_namespace(namespace);
+t_ns_context *si_get_context(const char *name) {
+    t_ns_context *ns = si_find_context(name);
     if (ns == NULL) {
-        saffire_error("Unknown namespace '%s'", namespace);
+        saffire_error("Unknown context '%s'", name);
     }
     return ns;
 }
@@ -210,36 +272,46 @@ t_ns_context *si_get_namespace(const char *namespace) {
 /**
  * Returns the bucket of the variable. Will take care of namespacing depending on the given context
  */
-t_hash_table_bucket *si_find_in_context(char *var) {
-    char *fqn_ns, *fqn_var;
+t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx) {
+    char *fqn_ctx, *fqn_var;
 
-    t_ns_context *ctx = si_get_current_context();
-
-    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->namespace, var);
-
-    // Create fqn from our variables
-    si_split_var(ctx, var, &fqn_ns, &fqn_var);
-
-    DEBUG_PRINT("NS: %s\n", fqn_ns);
-
-    t_ns_context *ns_ctx = si_get_namespace(fqn_ns);
-    if (ns_ctx == NULL) {
-        saffire_error("Cannot find namespace '%s'", fqn_ns);
+    if (ctx == NULL) {
+        ctx = si_get_current_context();
     }
 
-    // Find variable in namespace
-    t_hash_table_bucket *htb = ht_find(ns_ctx->vars, fqn_var);
+    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->name, var);
+
+    // Create fqn from our variables
+    si_split_var(ctx, var, &fqn_ctx, &fqn_var);
+
+    DEBUG_PRINT("CTX: %s\n", fqn_ctx);
+
+    t_ns_context *ns_ctx = si_get_context(fqn_ctx);
+    if (ns_ctx == NULL) {
+        saffire_error("Cannot find context '%s'", fqn_ctx);
+    }
+
+    // Find variable in name
+    t_hash_table_bucket *htb = ht_find(ns_ctx->data.vars, fqn_var);
 
     if (! htb) {
-        DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ns);
-        ht_add(ns_ctx->vars, fqn_var, NULL);                            // set to NULL by default
-        htb = ht_find(ns_ctx->vars, fqn_var);
+        DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
+        ht_add(ns_ctx->data.vars, fqn_var, NULL);                            // set to NULL by default
+        htb = ht_find(ns_ctx->data.vars, fqn_var);
     }
 
 
     // Free temp vars
     smm_free(fqn_var);
-    smm_free(fqn_ns);
+    smm_free(fqn_ctx);
 
     return htb;
 }
+
+
+void si_context_add_object(t_ns_context *ctx, t_object *obj) {
+    DEBUG_PRINT("   Adding object %s to %s\n", obj->name, ctx->name);
+    ht_add(ctx->data.vars, obj->name, obj);
+}
+
+

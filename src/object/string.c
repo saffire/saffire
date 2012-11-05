@@ -38,10 +38,13 @@
 #include "object/base.h"
 #include "object/numerical.h"
 #include "general/smm.h"
+#include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
 
 extern char *wctou8(const wchar_t *wstr, long len);
+
+t_hash_table *string_cache;
 
 
 /* ======================================================================
@@ -50,29 +53,49 @@ extern char *wctou8(const wchar_t *wstr, long len);
  */
 
 /**
- * Recalculate MD5 hash for current string in object.
+ * Returns a byte[16] md5 hash of the given widestring
  */
-static void recalc_hash(t_string_object *obj) {
+static void hash_widestring(wchar_t *value, int len, md5_byte_t *hash) {
     char utf8_char_buf[MB_LEN_MAX];
     md5_state_t state;
 
     md5_init(&state);
-    for (int i=0; i!=obj->char_length; i++) {
+    for (int i=0; i!=len; i++) {
         // Convert wide character to UTF8 character
-        int utf8_char_len = wctomb(utf8_char_buf, obj->value[i]);
+        int utf8_char_len = wctomb(utf8_char_buf, value[i]);
 
         // Add character to md5
         md5_append(&state, utf8_char_buf, utf8_char_len);
     }
-    md5_finish(&state, obj->hash);
+    md5_finish(&state, hash);
 
     DEBUG_PRINT("Recalc_Hash:");
     for (int i=0; i!=16; i++) {
-        DEBUG_PRINT("%02X", (unsigned char)obj->hash[i]);
+        DEBUG_PRINT("%02X", (unsigned char)hash[i]);
     }
     DEBUG_PRINT("\n");
 }
 
+/**
+ * Returns a char[32] (+\0) md5 hash of the given widestring in text.
+ */
+static void hash_widestring_text(wchar_t *value, int len, char *strhash) {
+    md5_byte_t hash[16];
+
+    hash_widestring(value, len, hash);
+
+    for (int i=0; i!=16; i++) {
+        sprintf(strhash+(i*2), "%02X", (unsigned char)hash[i]);
+    }
+    strhash[32] = '\0';
+}
+
+/**
+ * Recalculate MD5 hash for current string in object.
+ */
+static void recalc_hash(t_string_object *obj) {
+    hash_widestring(obj->value, obj->char_length, obj->hash);
+}
 
 
 /* ======================================================================
@@ -339,6 +362,9 @@ void object_string_init(void) {
     ht_add(Object_String_struct.methods, "print", object_string_method_print);
 
     Object_String_struct.properties = ht_create();
+
+    // Create string cache
+    string_cache = ht_create();
 }
 
 /**
@@ -347,6 +373,9 @@ void object_string_init(void) {
 void object_string_fini(void) {
     ht_destroy(Object_String_struct.methods);
     ht_destroy(Object_String_struct.properties);
+
+    // Destroy string cache
+    ht_destroy(string_cache);
 }
 
 
@@ -367,6 +396,27 @@ static void obj_free(t_object *obj) {
 
 
 static t_object *obj_new(va_list arg_list) {
+    // Get the widestring from the argument list
+    wchar_t *value = va_arg(arg_list, wchar_t *);
+    int len = wcslen(value);
+
+    // Create a hash from the string
+    char strhash[33];
+    hash_widestring_text(value, len, strhash);
+    DEBUG_PRINT("\n\n\nHASH WE WILL BE USING: '%s'\n\n\n", strhash);
+
+    t_hash_table_bucket *htb = ht_find(string_cache, strhash);
+    if (htb) {
+        DEBUG_PRINT("\n\n\n\n\n **** Found inside the cache! ***** \n\n\n\n\n");
+        // Found cached object!
+        return (t_object *)htb->data;
+    }
+
+    DEBUG_PRINT("NOT Found in cache");
+
+
+
+
     // Create new object and copy all info
     t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
     memcpy(new_obj, Object_String, sizeof(t_string_object));
@@ -374,7 +424,6 @@ static t_object *obj_new(va_list arg_list) {
     // Set internal data
     char utf8_char_buf[MB_LEN_MAX];
 
-    wchar_t *value = va_arg(arg_list, wchar_t *);
     new_obj->char_length = wcslen(value);
 
     new_obj->value = wcsdup(value);
@@ -387,6 +436,9 @@ static t_object *obj_new(va_list arg_list) {
         new_obj->byte_length += l;
     }
     recalc_hash(new_obj);
+
+    // Add to string cache
+    ht_add(string_cache, strhash, new_obj);
 
     return (t_object *)new_obj;
 }

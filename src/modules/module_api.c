@@ -59,8 +59,7 @@ int register_module(t_module *mod) {
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        DEBUG_PRINT("   Adding object %s to %s\n", obj->name, ctx->namespace);
-        ht_add(ctx->vars, obj->name, obj);
+        si_context_add_object(ctx, obj);
 
         idx++;
         obj = (t_object *)mod->objects[idx];

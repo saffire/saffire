@@ -49,7 +49,9 @@ static int do_exec(void) {
 
     ast_root = ast_generate_from_file(source_file);
 
-    dot_generate(ast_root, dot_file);
+    if (dot_file) {
+        dot_generate(ast_root, dot_file);
+    }
 
     int ret = saffire_interpreter(ast_root);
 

@@ -55,9 +55,10 @@
  */
 
 char *wctou8(const wchar_t *wstr, long len) {
-    char *buf = (char *)smm_malloc(len);
+    char *buf = (char *)smm_malloc(len+1);
+    bzero(buf, len+1);
     long conv_len = wcstombs(buf, wstr, len);
-    buf[conv_len] = '\0';
+    if (conv_len == -1) return NULL;
     return buf;
 }
 
