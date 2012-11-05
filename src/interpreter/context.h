@@ -28,25 +28,29 @@
 #define __CONTEXT_H__
     #include "general/hashtable.h"
     #include "general/dll.h"
+    #include "object/object.h"
 
-    typedef struct _context {
-        t_hash_table *vars;
-        char *namespace;                // Pointer to the namespace of this context
+    typedef struct _ns_context {
+        char *name;                     // Name (or alias) of the context
+        int aliased;                    // 0 not aliased, 1 if it is
+        union {
+            struct _ns_context *alias;  // Pointer to the context that is aliased
+            t_hash_table *vars;         // Variables (when not aliased)
+        } data;
     } t_ns_context;
 
-    t_hash_table *namespaces;           // Hash of all namespaces available (in all contexts)
-    t_dll *contexts;                    // Stack based contexts
+    t_hash_table *ht_contexts;         // Hash of all contexts
+    t_dll *dll_contexts;               // DLL of all contexts
 
     void context_init(void);
     void context_fini(void);
-    t_ns_context *sfi_push_context(char *namespace);
-    void si_pop_context(void);
     t_ns_context *si_get_current_context(void);
 
-    t_hash_table_bucket *si_find_in_context(char *var);
-    t_ns_context *si_get_namespace(const char *namespace);
-    void si_create_fqn(t_ns_context *current_ctx, char *var, char **fqn_ns, char **fqn_var);
-    t_ns_context *si_create_context(char *namespace);
-
+    t_ns_context *si_find_context(const char *name);
+    t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx);
+    t_ns_context *si_get_context(const char *name);
+    t_ns_context *si_create_context(char *name);
+    t_ns_context *si_create_context_alias(char *alias, t_ns_context *ctx);
+    void si_context_add_object(t_ns_context *ctx, t_object *obj);
 
 #endif

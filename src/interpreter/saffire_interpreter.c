@@ -43,7 +43,6 @@
 #include "debug.h"
 
 extern char *get_token_string(int token);
-extern char *wctou8(const wchar_t *wstr, long len);
 static t_snode *_saffire_interpreter(t_ast_element *p);
 
 // A stack maintained by the AST which holds the current line for the current AST
@@ -52,6 +51,10 @@ t_dll *lineno_stack;
 #ifdef __DEBUG
 extern t_dll *object_dll;
 #endif
+
+extern char *wctou8(const wchar_t *wstr, long len);
+#define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
+
 
 
 /**
@@ -179,7 +182,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_hash_table_bucket *htb;
     int ret, initial_loop, len;
     t_ast_element *hte;
-    char *str, *method_name;
+    char *str, *method_name, *ctx_name, *name;
     t_dll *dll;
 
     // Append to lineno
@@ -229,7 +232,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 RETURN_SNODE_IDENTIFIER(NULL, Object_Null);
             }
 
-            htb = si_find_in_context(p->string.value);
+            htb = si_find_in_context(p->string.value, NULL);
             RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
             break;
 
@@ -249,18 +252,84 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Statements do not return anything
                     RETURN_SNODE_NULL();
                     break;
-                case T_USE :
+
+                case T_IMPORT :
+                    // Class to import
                     node1 = SI0(p);
                     obj1 = si_get_object(node1);
+                    char *classname = OBJ2STR(obj1);
 
-                    char *namespace = wctou8(((t_string_object *)obj1)->value, ((t_string_object *)obj1)->char_length);
-                    if (OP_CNT(p) == 2) {
-                        node2 = SI1(p);
-                        obj2 = si_get_object(node2);
-                        namespace = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
+                    // Fetch alias
+                    node2 = SI1(p);
+                    if (IS_NULL(node2)) {
+                        node2 = node1;  // Alias X as X if needed
+                    }
+                    obj2 = si_get_object(node2);
+                    char *alias = OBJ2STR(obj2);
+
+                    // context to import from
+                    node3 = SI2(p);
+                    obj3 = si_get_object(node3);
+                    ctx_name = OBJ2STR(obj3);
+
+
+                    // Check if variable is free
+                    t_ns_context *ctx = si_get_current_context();
+                    t_hash_table_bucket *htb = ht_find(ctx->data.vars, alias);
+                    if (htb) {
+                        saffire_error("A variable named %s is already present or imported.", alias);
                     }
 
-                    si_create_context(namespace);
+                    // Find class in context
+                    ctx = si_get_context(ctx_name);
+                    if (ctx == NULL) {
+                        saffire_error("Cannot find context: %s", ctx_name);
+                    }
+                    htb = ht_find(ctx->data.vars, classname);
+                    if (htb == NULL) {
+                        saffire_error("Cannot find class %s inside context: %s", classname, ctx_name);
+                    }
+                    obj = (t_object *)htb->data;
+
+                    // Add to the current context as the cu
+                    ctx = si_get_current_context();
+                    ht_add(ctx->data.vars, alias, obj);
+
+                    DEBUG_PRINT("Imported class %s as %s from %s into %s\n", classname, alias, ctx_name, ctx->name);
+                    break;
+                case T_USE :
+                    // Class to use
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
+                    name = OBJ2STR(obj1);
+
+                    if (OP_CNT(p) > 1) {
+                        // Fetch alias
+                        node2 = SI1(p);
+                        if (IS_NULL(node2)) {
+                            node2 = node1;  // Alias X as X
+                        }
+                    } else {
+                        node2 = node1;  // Alias X as X
+                    }
+                    obj2 = si_get_object(node2);
+                    alias = OBJ2STR(obj2);
+
+                    printf("NAME : '%s'\n", name);
+                    printf("ALIAS: '%s'\n", alias);
+
+                    // Check if variable is free
+                    ctx = si_find_context(alias);
+                    if (ctx != NULL) {
+                        saffire_error("A context named %s is already present or imported.", alias);
+                    }
+
+                    ctx = si_find_context(name);
+                    if (ctx == NULL) {
+                        saffire_error("Context %s was not found.", name);
+                    }
+
+                    si_create_context_alias(alias, ctx);
                     break;
 
                 case T_EXPRESSIONS :
@@ -429,16 +498,6 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
                     method_name = smm_strdup(hte->identifier.name);
-//                    if (hte->identifier.name[0] == '$') {
-//                        obj2 = (t_object *)htb->data;
-//                        if (! OBJECT_IS_STRING(obj2)) {
-//                            saffire_error("This variable does not point to a string object: '%s'", hte->identifier.name);
-//                        }
-//                        method_name = wctou8(((t_string_object *)obj2)->value, ((t_string_object *)obj2)->char_length);
-//                    } else {
-                        // We duplicate, so we can always free the string later on
-
-//                    }
 
                     // Get arguments (or NULL)
                     t_dll *dll;
@@ -540,6 +599,22 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_OBJECT(obj3);
                     break;
 
+                case '.' :
+                    node1 = SI0(p);
+                    obj1 = si_get_object(node1);
+
+                    // get method name from object
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Can only have identifiers here", hte->identifier.name);
+                    }
+                    method_name = smm_strdup(hte->identifier.name);
+
+                    printf("Figuring out: '%s' in object '%s'", method_name, obj1->name);
+
+                    smm_free(method_name);
+
+                    break;
 
                 default:
                     saffire_error("Unhandled opcode: %d\n", p->opr.oper);
