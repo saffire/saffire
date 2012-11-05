@@ -1,11 +1,15 @@
 include $(top_srcdir)/Makefile.frag
 
+SUBDIRS = object general interpreter modules compiler
 
 # Define our programs
 bin_PROGRAMS = saffire
 #dnl check_PROGRAMS = test
 
-SAFFIRE_LIBS=general/libgeneral.a interactive/libinteractive.a modules/libmodules.a object/libobjects.a
+SAFFIRE_LIBS=interactive/libinteractive.a \
+             modules/libmodules.a \
+             objects/libobjects.a \
+             src/general/libgeneral.a
 
 # Don't install libsaffire. It's only for static linking
 noinst_LIBRARIES = libsaffire.a $(SAFFIRE_LIBS)
@@ -18,9 +22,10 @@ libsaffire_a_SOURCES = \
                   fastcgi/fastcgi_srv.c dot/dot.c
 
 # Link all sources against these libraries
-saffire_LIBDADD = libsaffire.a $(SAFFIRE_LIBS) -lpcre -lfcgi
+libsaffire_a_LIBADD = $(SAFFIRE_LIBS)
+
+saffire_LDADD = libsaffire.a -lpcre -lfcgi
 
 # Define different sources for our targets
 saffire_SOURCES = main.c
 #dnl test_SOURCES = test.c
-

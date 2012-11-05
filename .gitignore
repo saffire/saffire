@@ -10,6 +10,7 @@ src/compiler/parser.output
 src/saffire
 /docs/spec/build
 *.o
+*.a
 *.~*
 Makefile
 Makefile.in

@@ -122,4 +122,4 @@ AC_CONFIG_FILES([
                  src/compiler/Makefile
                 ])
 
-AC_OUTPUT()
+AC_OUTPUT
