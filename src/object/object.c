@@ -43,7 +43,7 @@
 #include "debug.h"
 
 
-// @TODO: in_place, is this really needed?
+// @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
 #ifdef __DEBUG
     t_dll *object_dll;
@@ -64,15 +64,15 @@ int object_is_immutable(t_object *obj) {
  */
 static t_method_caller *_find_method(t_object *obj, char *method_name) {
     // Try and find the correct method (might be found of the bases classes!)
-    t_hash_table_bucket *htb = NULL;
+    t_method_caller *caller = NULL;
     t_object *cur_obj = obj;
 
-    while (htb == NULL) {
+    while (caller == NULL) {
         DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method_name, cur_obj->name);
 
         // Find the method in the current object
-        htb = ht_find(cur_obj->methods, method_name);
-        if (htb != NULL) break;
+        caller = ht_find(cur_obj->methods, method_name);
+        if (caller != NULL) break;
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
@@ -85,7 +85,7 @@ static t_method_caller *_find_method(t_object *obj, char *method_name) {
     }
 
     DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method_name, obj->name);
-    return htb->data;
+    return caller;
 }
 
 

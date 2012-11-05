@@ -27,26 +27,76 @@
 #ifndef __HASHTABLE_H__
 #define __HASHTABLE_H__
 
+    // Hashd value
+    typedef unsigned long hash_t;
+
+
+    // Hash table bucket
     typedef struct _hash_table_bucket {
         char *key;                              // Key of the variable
-        void *data;                             // Actual variable stored
-        struct _hash_table_bucket *next;        // Link to next variable in bucket (if any)
-        struct _hash_table_bucket *prev;        // Link to previous variable in bucket (if any)
+        void *value;                            // Actual variable stored
+
+        hash_t hash;                            // The calculated hash for the item (for rehashing)
+
+        struct _hash_table_bucket *prev_element; // Link to next element (any bucket)
+        struct _hash_table_bucket *next_element; // Link to next element (any bucket)
+
+        struct _hash_table_bucket *next_in_list; // Link to next entry in this bucket
     } t_hash_table_bucket;
 
+
+    struct _hashfuncs;
+
+    // Hash table structure
     typedef struct _hash_table {
-        int bucket_size;                        // Number of available buckets
-        int element_count;                      // Number of elements in the hashtable
+        int bucket_count;                       // Number of available buckets
+        int element_count;                      // Number of elements in the hash table
+        float load_factor;                      // ratio that has to be filled before resizing
+        float resize_factor;                    // Resize factor
+
+        struct _hashfuncs *hashfuncs;           // Pointer to actual hash functions
+        t_hash_table_bucket *head;              // DLL head (for iteration)
+        t_hash_table_bucket *tail;              // DLL head (for appending elements)
+
         t_hash_table_bucket **bucket_list;      // Actual bucket list array
     } t_hash_table;
 
 
+    // Actual hash functions
+    typedef struct _hashfuncs {
+        hash_t (*hash)(t_hash_table *ht, const char *str);                  // Returns hash of string (0..bucket_count)
+        void *(*find)(t_hash_table *ht, const char *key);                   // Find value for key in hashtable
+        int (*add)(t_hash_table *ht, const char *key, void *value);         // Add value to key
+        int (*replace)(t_hash_table *ht, const char *key, void *value);     // Replace value to key
+        int (*remove)(t_hash_table *ht, const char *key);                   // Remove key
+        void (*resize)(t_hash_table *ht, int new_bucket_count);             // Resize (and rehash) hashtable to new size
+    } t_hashfuncs;
+
+
     t_hash_table *ht_create(void);
-    unsigned int ht_hash(t_hash_table *ht, char *str);
-    t_hash_table_bucket *ht_find(t_hash_table *ht, char *str);
-    int ht_add(t_hash_table *ht, char *str, void *data);
-    void ht_remove(t_hash_table *ht, char *str);
+    t_hash_table *ht_create_custom(int bucket_count, float load_factor, float resize_factor, t_hashfuncs *hashfuncs);
+
+    int ht_exists(t_hash_table *ht, const char *key);
+    void *ht_find(t_hash_table *ht, const char *key);
+    int ht_add(t_hash_table *ht, const char *key, void *value);
+    int ht_replace(t_hash_table *ht, const char *key, void *value);
+    int ht_remove(t_hash_table *ht, const char *key);
     void ht_destroy(t_hash_table *ht);
+
+
+    // Functionality for iterating a hash table (forward only)
+    typedef struct _hash_iter {
+        t_hash_table *ht;
+        long bucket_idx;
+        t_hash_table_bucket *bucket;
+    } t_hash_iter;
+
+    int ht_iter_rewind(t_hash_iter *iter, t_hash_table *ht);
+    int ht_iter_valid(t_hash_iter *iter);
+    int ht_iter_next(t_hash_iter *iter);
+    char *ht_iter_key(t_hash_iter *iter);
+    void *ht_iter_value(t_hash_iter *iter);
+
 
 #endif
 

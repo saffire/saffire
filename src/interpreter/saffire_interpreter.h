@@ -41,8 +41,8 @@
     // An identifier has a "name" (pointed by ID) and a pointer to the actual object it holds.
     // Obj can be empty, ID should never be empty.
     typedef struct _t_identifier {
-        t_object *obj;                  // Actual object
-        t_hash_table_bucket *id;        // Pointer to hash-table element which holds the object
+        char *id;            // "key" of the variable (cannot be NULL)
+        t_object *obj;       // Actual object that is stored (can be NULL if nothing is set for this ID)
     } t_identifier;
 
     // Snode structure
@@ -94,7 +94,7 @@
 
     #define RETURN_SNODE_IDENTIFIER(ident, object) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
                                      ret->type = snodeTypeIdentifier; \
-                                     ret->data.id.id = ident; \
+                                     ret->data.id.id = smm_strdup(ident); \
                                      ret->data.id.obj = object; \
                                      dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
                                      return ret; }
@@ -106,8 +106,6 @@
                                      return ret; }
 
 
-    void saffire_warning(char *str, ...);
-    void saffire_error(char *str, ...);
     int saffire_interpreter(t_ast_element *p);
     t_object *saffire_interpreter_leaf(t_ast_element *p);
 

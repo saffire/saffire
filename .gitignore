@@ -34,3 +34,7 @@ src/test
 .coverage.*
 .deps
 .dirstamp
+config.guess
+config.sub
+compile
+.saffire_history

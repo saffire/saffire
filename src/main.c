@@ -32,6 +32,9 @@
 #include "version.h"
 #include "command.h"
 
+
+#include "general/hashtable.h"
+
 /*
  * Info structures for the Saffire commands
  */

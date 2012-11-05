@@ -24,44 +24,15 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __CONTEXT_H__
-#define __CONTEXT_H__
+#ifndef __HASH_HASHFUNCS_H__
+#define __HASH_HASHFUNCS_H__
+
     #include "general/hashtable.h"
-    #include "general/dll.h"
-    #include "object/object.h"
 
-    #define CTX_CREATE_ONLY         0
-    #define CTX_UPDATE_ONLY         1
-    #define CTX_CREATE_OR_UPDATE    2
-
-    typedef struct _ns_context {
-        char *name;                     // Name (or alias) of the context
-        int aliased;                    // 0 not aliased, 1 if it is
-        union {
-            struct _ns_context *alias;  // Pointer to the context that is aliased
-            t_hash_table *vars;         // Variables (when not aliased)
-        } data;
-    } t_ns_context;
-
-    t_hash_table *ht_contexts;         // Hash of all contexts
-
-    // @TODO: We can iterate hashes. Remove this
-    t_dll *dll_contexts;               // DLL of all contexts
-
-
-    void context_init(void);
-    void context_fini(void);
-
-    t_ns_context *si_get_current_context(void);
-    t_ns_context *si_find_context(const char *name);
-
-    int si_create_var_in_context(const char *var, t_ns_context *cur_ctx, t_object *obj, int mode);
-    t_object *si_find_var_in_context(const char *var, t_ns_context *cur_ctx);
-
-    t_ns_context *si_get_context(const char *name);
-    t_ns_context *si_create_context(const char *name);
-    t_ns_context *si_create_context_alias(const char *alias, t_ns_context *ctx);
-
-    void si_context_add_object(t_ns_context *ctx, t_object *obj);
+    /**
+     * Different hashing methods. Just add them to a hashfunc structure to use
+     */
+    hash_t hash_native(t_hash_table *ht, const char *key);
+    hash_t hash_djbx33a(t_hash_table *ht, const char *key);
 
 #endif

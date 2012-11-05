@@ -30,146 +30,50 @@
 #include "general/hashtable.h"
 #include "general/smm.h"
 
-#define HT_INITIAL_BUCKET_SIZE   16             // Number of initial buckets
+extern t_hashfuncs chained_hf;
+
+#define HT_INITIAL_BUCKET_COUNT    16           // Initial hash size
+#define HT_LOAD_FACTOR           1.25           // Above this load, we will increase the hash size (it's above 1.00
+                                                // because we use chaining instead of linear probing or other means)
+#define HT_RESIZE_FACTOR         1.75           // Factor to resize to (current size * ht_resize_factor)
+
+#define DEFAULT_HASHFUNCS        &chained_hf     // Default hashtable functionality
+
 
 
 /**
- * Create a new hash table of initial size
+ * Creates new hash table
  */
-t_hash_table *ht_create(void) {
+static t_hash_table *_ht_create(int bucket_count, float load_factor, float resize_factor, t_hashfuncs *hashfuncs) {
     // Allocate memory for table and buckets
     t_hash_table *ht = (t_hash_table *)smm_malloc(sizeof(t_hash_table));
-    ht->bucket_list = (t_hash_table_bucket **)smm_malloc(sizeof(t_hash_table_bucket *) * HT_INITIAL_BUCKET_SIZE);
 
-    // Initialize buckets
-    for (int i=0; i != HT_INITIAL_BUCKET_SIZE; i++) {
-        ht->bucket_list[i] = NULL;
-    }
-    ht->bucket_size = HT_INITIAL_BUCKET_SIZE;
+    ht->bucket_count = 0;
     ht->element_count = 0;
+    ht->load_factor = load_factor;
+    ht->resize_factor = resize_factor;
+    ht->hashfuncs = hashfuncs;
+    ht->head = NULL;
+    ht->tail = NULL;
 
+    ht->hashfuncs->resize(ht, bucket_count);
     return ht;
 }
 
 
-/*
- * Create a hash from a specific string. Will return a value between 0 and ht->bucket_size
+/**
+ * Create a new hash table with all default value
  */
-unsigned int ht_hash(t_hash_table *ht, char *str) {
-    unsigned int hash_value = 0;
-
-    for (; *str; str++) {
-        hash_value = *str + (hash_value << 5) - hash_value;
-    }
-
-    return hash_value % ht->bucket_size;
+t_hash_table *ht_create(void) {
+    return _ht_create(HT_INITIAL_BUCKET_COUNT, HT_LOAD_FACTOR, HT_RESIZE_FACTOR, DEFAULT_HASHFUNCS);
 }
 
 
-
-/*
- * @TODO: This should reutrn our data, not a bucket!
- *
- * Find key in hash table
+/**
+ * Create a new hash table with customized values
  */
-t_hash_table_bucket *ht_find(t_hash_table *ht, char *str) {
-    if (! ht) return NULL;      // Not a hash table
-
-    unsigned int hash_value = ht_hash(ht, str);
-
-    // Locate the hash value in the bucket list.
-    if (ht->bucket_list[hash_value] == NULL) {
-        // Not found
-        return NULL;
-    }
-
-    // Found bucket. Try and find the key. Traverse linked list if needed.
-    t_hash_table_bucket *htb = ht->bucket_list[hash_value];
-    while (htb && strcmp(str, htb->key)) htb = htb->next;
-
-    // Traversed list, nothing left so not found.
-    if (! htb) return NULL;
-
-    return htb;
-}
-
-/*
- * @TODO: When we have more elements, we should resize our array.
- */
-int ht_add(t_hash_table *ht, char *str, void *data) {
-    unsigned int hash_value = ht_hash(ht, str);
-
-    // Create bucket for new variable
-    t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(sizeof(t_hash_table_bucket));
-    htb->key = smm_strdup(str);
-    htb->data = data;
-    htb->next = NULL;
-    htb->prev = NULL;
-
-    // Locate the hash value in the bucket list.
-    if (ht->bucket_list[hash_value] == NULL) {
-        // Unallocated yet. Insert bucket here
-        ht->bucket_list[hash_value] = htb;
-    } else {
-        // Allocated, add to end
-        t_hash_table_bucket *cur_htb = ht->bucket_list[hash_value];
-        while (cur_htb->next) cur_htb = cur_htb->next;
-
-        // Make sure prev / next links are correct
-        cur_htb->next = htb;
-        htb->prev = cur_htb;
-    }
-
-    // Increase element count
-    ht->element_count++;
-    return 0;
-}
-
-/*
- *
- */
-void ht_remove(t_hash_table *ht, char *str) {
-    t_hash_table_bucket *prev, *next;
-    unsigned int hash_value = ht_hash(ht, str);
-
-    // Return when hash is null
-    if (ht->bucket_list[hash_value] == NULL) return;
-
-    // Traverse list to find actual element
-    t_hash_table_bucket *htb = ht->bucket_list[hash_value];
-    while (htb && strcmp(str, htb->key)) htb = htb->next;
-
-    // Key still not found
-    if (!htb) return;
-
-    prev = htb->prev;
-    next = htb->next;
-
-    if (! prev && ! next) {
-        // Only one item
-        ht->bucket_list[hash_value] = NULL;
-    } else if (! htb->prev && htb->next) {
-        // First item
-        ht->bucket_list[hash_value] = next;
-        htb->next->prev = NULL;
-    } else if (htb->prev && ! htb->next) {
-        // Last item
-        htb->prev->next = NULL;
-    } else if (htb->prev && htb->next) {
-        // Middle item
-        htb->prev->next = htb->next;
-        htb->next->prev = htb->prev;
-    }
-
-    // Free key and bucket
-    smm_free(htb->key);
-    smm_free(htb);
-
-
-    // Decrease element count
-    ht->element_count--;
-
-    return;
+t_hash_table *ht_create_custom(int bucket_count, float load_factor, float resize_factor, t_hashfuncs *hashfuncs) {
+    return _ht_create(bucket_count, load_factor, resize_factor, hashfuncs);
 }
 
 
@@ -177,32 +81,23 @@ void ht_remove(t_hash_table *ht, char *str) {
  * Free a hash table
  */
 void ht_destroy(t_hash_table *ht) {
-    t_hash_table_bucket *htb;
+    t_hash_table_bucket *bucket, *next_bucket;
 
     // Nothing to free
     if (! ht) return;
 
     // Destroy buckets
-    for (int i=0; i!=ht->bucket_size; i++) {
-        // Unallocated, so continue with the next one
-        if (! ht->bucket_list[i]) continue;
+    bucket = ht->head;
+    while (bucket) {
+        // Find next bucket
+        next_bucket = bucket->next_element;
 
-        if (ht->bucket_list[i]->next) {
-            // Seek end of linked list
-            htb = ht->bucket_list[i];
-            while (htb->next) htb = htb->next;
+        // Now, we can safely remove bucket
+        smm_free(bucket->key); // strdupped
+        smm_free(bucket);
 
-            // Free items in reverse order
-            while (htb->prev) {
-                htb = htb->prev;
-
-                smm_free(htb->next->key); // strdupped
-                smm_free(htb->next);
-            }
-        }
-
-        smm_free(ht->bucket_list[i]->key); // strdupped
-        smm_free(ht->bucket_list[i]);
+        // goto next bucket
+        bucket = next_bucket;
     }
 
     // Free bucket list array
@@ -211,4 +106,112 @@ void ht_destroy(t_hash_table *ht) {
     // Destroy hash table
     smm_free(ht);
     return;
+}
+
+
+///**
+// * Return the hash of a certain key
+// */
+//unsigned int ht_hash(t_hash_table *ht, const char *key) {
+//    return ht->hashfuncs.hash(ht, key);
+//}
+
+/**
+ * Return value of key, or NULL when nothing found
+ */
+void *ht_find(t_hash_table *ht, const char *key) {
+    return ht->hashfuncs->find(ht, key);
+}
+
+/**
+ * Return 0 when key is not found, 1 otherwise
+ */
+int ht_exists(t_hash_table *ht, const char *key) {
+    return (ht->hashfuncs->find(ht, key) != NULL);
+}
+
+/**
+ * Add key/value into hashtable
+ */
+int ht_add(t_hash_table *ht, const char *key, void *value) {
+    return ht->hashfuncs->add(ht, key, value);
+}
+
+
+/**
+ * Replace key/value into hashtable
+ */
+int ht_replace(t_hash_table *ht, const char *key, void *value) {
+    return ht->hashfuncs->replace(ht, key, value);
+}
+
+
+/**
+ * Removes key from hashtable
+ */
+int ht_remove(t_hash_table *ht, const char *key) {
+    return ht->hashfuncs->remove(ht, key);
+}
+
+
+
+/*
+ * ITERATOR FUNCTIONALITY
+ */
+
+
+/**
+ * Rewind hash table (or initialize a new table)
+ */
+int ht_iter_rewind(t_hash_iter *iter, t_hash_table *ht) {
+    if (iter == NULL) return 0;
+
+    // No hash table set, and no hash table given
+    if (iter->ht == NULL && ht == NULL) return 0;
+
+    // Set hash table
+    if (ht != NULL) iter->ht = ht;
+
+    iter->bucket_idx = 0;
+    iter->bucket = ht->head;
+
+    return 1;
+}
+
+
+/**
+ * Return 0 when iterator is not valid (no more elements)
+ */
+int ht_iter_valid(t_hash_iter *iter) {
+    return (iter->bucket != NULL);
+}
+
+
+/**
+ * Goto next element (either inside the bucket, or the next bucket)
+ */
+int ht_iter_next(t_hash_iter *iter) {
+    // Nothing found (or no more items)
+    if (iter->bucket == NULL) return 0;
+
+    iter->bucket = iter->bucket->next_element;
+    return (iter->bucket != NULL);
+}
+
+
+/**
+ * Fetch key from current element
+ */
+char *ht_iter_key(t_hash_iter *iter) {
+    if (iter->bucket == NULL) return NULL;
+    return iter->bucket->key;
+}
+
+
+/**
+ * Fetch value from current element
+ */
+void *ht_iter_value(t_hash_iter *iter) {
+    if (iter->bucket == NULL) return NULL;
+    return iter->bucket->value;
 }

@@ -399,11 +399,10 @@ static t_object *obj_new(va_list arg_list) {
     char strhash[33];
     hash_widestring_text(value, len, strhash);
 
-    t_hash_table_bucket *htb = ht_find(string_cache, strhash);
-    if (htb) {
-        // Found cached object!
-        return (t_object *)htb->data;
-    }
+    // Check for and return cached object
+    t_object *obj = ht_find(string_cache, strhash);
+    if (obj) return obj;
+
 
     // Create new object and copy all info
     t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
