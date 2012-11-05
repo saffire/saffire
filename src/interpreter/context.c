@@ -182,9 +182,11 @@ t_ns_context *si_create_context_alias(const char *alias, t_ns_context *ctx) {
 /**
  *
  */
-char *si_create_fqn(const char *var) {
+char *si_create_fqn(const char *var, t_ns_context *ctx) {
     char *fqn;
-    t_ns_context *ctx = si_get_current_context();
+    if (ctx == NULL) {
+        ctx = si_get_current_context();
+    }
 
     if (strncmp(var, NS_SEPARATOR, 2) == 0) {
         // Qualified
@@ -194,8 +196,17 @@ char *si_create_fqn(const char *var) {
 
     // Unqualified
     int fqn_len = strlen(var) + strlen(ctx->name);
-    fqn = smm_malloc(fqn_len + 1);
-    strcpy(fqn, ctx->name);
+
+    if (strlen(ctx->name) > strlen(NS_SEPARATOR)) {
+        // Add separator in between
+        fqn = smm_malloc(fqn_len + strlen(NS_SEPARATOR) + 1);
+        strcpy(fqn, ctx->name);
+        strcat(fqn, NS_SEPARATOR);
+    } else {
+        // "root", so don't add separator
+        fqn = smm_malloc(fqn_len + 1);
+        strcpy(fqn, ctx->name);
+    }
     strcat(fqn, var);
     return fqn;
 }
@@ -206,7 +217,7 @@ char *si_create_fqn(const char *var) {
  */
 void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, char **fqn_var) {
     DEBUG_PRINT("si_split_var : '%s' ", var);
-    char *fqn = si_create_fqn(var);
+    char *fqn = si_create_fqn(var, current_ctx);
 
     // We now have a fully qualified name. We now can split the variable from the name, and check for presence
     DEBUG_PRINT("FQN: '%s'  ", fqn);
@@ -236,7 +247,7 @@ void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, ch
  * Find context, or NULL when does not exist
  */
 t_ns_context *si_find_context(const char *name) {
-    char *ctx_name = si_create_fqn(name);
+    char *ctx_name = si_create_fqn(name, NULL);
 
     DEBUG_PRINT("t_ns_context *si_find_context(%s) {\n", ctx_name);
     t_ns_context *ctx = ht_find(ht_contexts, (char *)ctx_name);
