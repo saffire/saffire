@@ -29,6 +29,12 @@
 
     #include <stdio.h>
 
+    #if __PARSEDEBUG
+        #define DEBUG_PARSEPRINT printf
+    #else
+        #define DEBUG_PARSEPRINT(format, args...) ((void)0)
+    #endif
+
     #if __DEBUG
         #define DEBUG_PRINT printf
     #else

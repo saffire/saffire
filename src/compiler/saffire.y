@@ -268,7 +268,7 @@ while_statement:
 /* An expression is anything that evaluates something */
 expression_statement:
         ';'             { TRACE $$ = ast_opr(';', 0); printf("\n\n"); }
-    |   expression ';'  { TRACE $$ = $1; DEBUG_PRINT("\n\nLine %d:\n", yylineno+1); }
+    |   expression ';'  { TRACE $$ = $1; DEBUG_PARSEPRINT("\n\nLine %d:\n", yylineno+1); }
 ;
 
 
