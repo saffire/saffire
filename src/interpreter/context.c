@@ -80,7 +80,6 @@ t_ns_context *si_get_current_context(void) {
 void context_init(void) {
     // Create context hash and DLL for iteration and fast lookups
     ht_contexts = ht_create();
-    dll_contexts = dll_init();
 
     // Create default global context
     current_context = si_create_context(NS_SEPARATOR);
@@ -91,25 +90,8 @@ void context_init(void) {
  * Destroys the context engine
  */
 void context_fini(void) {
-#ifdef __DEBUG
-    t_dll_element *e = DLL_HEAD(dll_contexts);
-    while (e) {
-        t_ns_context *ctx = (t_ns_context *)e->data;
-        DEBUG_PRINT("Context: '%s'\n", ctx->name);
-        DEBUG_PRINT("Aliased: '%s'", ctx->aliased ? "yes" : "no");
-        if (ctx->aliased) {
-            t_ns_context *actx = ctx->data.alias;
-            DEBUG_PRINT(" => '%s'",  actx->name);
-        }
-        DEBUG_PRINT("\n");
-
-        DEBUG_PRINT("  Vars : %d\n", ctx->data.vars->element_count);
-        e = DLL_NEXT(e);
-    }
-#endif
     // Free context hash and dll
     ht_destroy(ht_contexts);
-    dll_free(dll_contexts);
 }
 
 
@@ -140,7 +122,6 @@ static t_ns_context *_si_create_ctx(const char *name, int aliased, t_ns_context 
 
     strcat(new_ctx_name, name);
 
-    DEBUG_PRINT("Creating context: %s\n", new_ctx_name);
     t_ns_context *new_ctx = smm_malloc(sizeof(t_ns_context));
 
     // Populate new context
@@ -154,9 +135,7 @@ static t_ns_context *_si_create_ctx(const char *name, int aliased, t_ns_context 
 
     // Save the name in our global context list if it does not exists already
     if (! ht_find(ht_contexts, new_ctx_name)) {
-        DEBUG_PRINT(">>>>>> Added context: '%s'\n", new_ctx_name);
         ht_add(ht_contexts, new_ctx_name, new_ctx);     // Save in context hash
-        dll_append(dll_contexts, new_ctx);        // Save in DLL as well
     }
 
     return new_ctx;
@@ -216,12 +195,9 @@ char *si_create_fqn(const char *var, t_ns_context *ctx) {
  * Splits a fully qualified variable name into context and variable separated.
  */
 void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, char **fqn_var) {
-    DEBUG_PRINT("si_split_var : '%s' ", var);
     char *fqn = si_create_fqn(var, current_ctx);
 
     // We now have a fully qualified name. We now can split the variable from the name, and check for presence
-    DEBUG_PRINT("FQN: '%s'  ", fqn);
-
     char *ch = strrstr(fqn, NS_SEPARATOR);
     if (ch == NULL) {
         saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
@@ -234,12 +210,7 @@ void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, ch
     *fqn_ctx = smm_strdup(fqn);
     (*fqn_ctx)[len] = '\0';
 
-    DEBUG_PRINT("CTX : '%s' ", *fqn_ctx);
-    DEBUG_PRINT("VAR : '%s' ", *fqn_var);
-
     smm_free(fqn);
-
-    DEBUG_PRINT("\n");
 }
 
 
@@ -249,7 +220,6 @@ void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, ch
 t_ns_context *si_find_context(const char *name) {
     char *ctx_name = si_create_fqn(name, NULL);
 
-    DEBUG_PRINT("t_ns_context *si_find_context(%s) {\n", ctx_name);
     t_ns_context *ctx = ht_find(ht_contexts, (char *)ctx_name);
     if (!ctx) {
         smm_free(ctx_name);
@@ -264,7 +234,6 @@ t_ns_context *si_find_context(const char *name) {
             return ctx;
         }
         ctx = ctx->data.alias;
-        DEBUG_PRINT("CTX aliased to '%s'\n", ctx->name);
     }
 
 
@@ -315,7 +284,6 @@ int si_create_var_in_context(const char *var, t_ns_context *cur_ctx, t_object *o
         saffire_error("Variable %s does not exist inside %s", fqn_var, ctx->name);
     }
 
-    DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
     if (var_exists) {
         ht_replace(ctx->data.vars, fqn_var, obj);
     } else {
@@ -336,12 +304,8 @@ t_object *si_find_var_in_context(const char *var, t_ns_context *cur_ctx) {
         cur_ctx = si_get_current_context();
     }
 
-    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", cur_ctx->name, var);
-
     // Create fqn from our variable
     si_split_var(cur_ctx, var, &fqn_ctx, &fqn_var);
-
-    DEBUG_PRINT("CTX: %s\n", fqn_ctx);
 
     t_ns_context *ctx = si_get_context(fqn_ctx);
     if (ctx == NULL) {
@@ -360,7 +324,6 @@ t_object *si_find_var_in_context(const char *var, t_ns_context *cur_ctx) {
 
 
 void si_context_add_object(t_ns_context *ctx, t_object *obj) {
-    DEBUG_PRINT("   Adding object %s to %s\n", obj->name, ctx->name);
     ht_add(ctx->data.vars, obj->name, obj);
 }
 

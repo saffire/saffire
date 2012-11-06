@@ -28,5 +28,5 @@
 #define __REPL_H__
 
     int repl(void);
-    
+
 #endif

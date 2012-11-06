@@ -50,7 +50,6 @@ int repl(void) {
     const char *line;
     int count;
 
-
     printf("Interactive/CLI mode is not yet supported. However, you can type text here.. use CTRL-C to quit.\n");
 
     // initialize EditLine library
