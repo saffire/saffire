@@ -32,6 +32,7 @@
 #include "interpreter/context.h"
 #include "interpreter/errors.h"
 #include "compiler/parser.tab.h"
+#include "compiler/saffire_compiler.h"
 #include "general/hashtable.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
@@ -253,7 +254,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             obj->ref_count = 0;
             obj->type = objectTypeAny;
             obj->name = smm_strdup(p->class.name);
-            obj->flags = p->class.modifiers;
+            obj->flags = OBJECT_TYPE_CLASS;
             obj->parent = NULL;
             obj->implement_count = 0;
             obj->implements = NULL;
@@ -263,6 +264,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             obj->operators = NULL;
             obj->comparisons = NULL;
             obj->funcs = NULL;
+
+            // @TODO: Add modifier flags to obj->flags
 
 
             // Check extends
@@ -286,7 +289,17 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             DEBUG_PRINT("Adding method: %s to %s\n", p->method.name, current_obj->name);
 
             // @TODO: ADD FLAGS AND VISIBILITY
-            object_add_external_method(current_obj, p->method.name, METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, p->method.body);
+            int vis = 0;
+            if (p->method.modifiers & MODIFIER_PUBLIC) vis |= METHOD_VISIBILITY_PUBLIC;
+            if (p->method.modifiers & MODIFIER_PROTECTED) vis |= METHOD_VISIBILITY_PROTECTED;
+            if (p->method.modifiers & MODIFIER_PRIVATE) vis |= METHOD_VISIBILITY_PRIVATE;
+
+            int flags = 0;
+            if (p->method.modifiers & MODIFIER_FINAL) flags |= METHOD_FLAG_FINAL;
+            if (p->method.modifiers & MODIFIER_ABSTRACT) flags |= METHOD_FLAG_ABSTRACT;
+            if (p->method.modifiers & MODIFIER_STATIC) flags |= METHOD_FLAG_STATIC;
+
+            object_add_external_method(current_obj, p->method.name, flags, vis, p->method.body);
             break;
 
         case typeAstOpr :
@@ -749,7 +762,9 @@ int saffire_interpreter(t_ast_element *p) {
     ht_iter_rewind(&iter, object_hash);
     while (ht_iter_valid(&iter)) {
         t_object *obj = ht_iter_value(&iter);
-        DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
+        if (obj->type != objectTypeCode && obj->type != objectTypeMethod) {
+            DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
+        }
         ht_iter_next(&iter);
     }
 #endif

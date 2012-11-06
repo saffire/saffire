@@ -108,8 +108,8 @@ static t_object *console_sprintf(t_object *self, t_dll *args) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
-t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
+t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
+t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
 
 
 static void _init(void) {

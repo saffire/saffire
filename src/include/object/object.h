@@ -126,7 +126,7 @@
 //    #define INTERNAL_METHOD(func) { func, 1 }
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
-    const char *objectTypeNames[7];
+    const char *objectTypeNames[10];
     typedef enum {
                    objectTypeAny, objectTypeCode, objectTypeMethod, objectTypeBase, objectTypeBoolean,
                    objectTypeNull,objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom

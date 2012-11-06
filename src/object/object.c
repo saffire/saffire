@@ -53,7 +53,7 @@
 
 
 // Object type string constants
-const char *objectTypeNames[7] = { "object", "base", "boolean", "null", "numerical", "regex", "string" };
+const char *objectTypeNames[10] = { "object", "code", "method", "base", "boolean", "null", "numerical", "regex", "string" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -108,22 +108,52 @@ t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
     t_method_object *method = (t_method_object *)_find_method(obj, method_name);
     if (! method) RETURN_NULL;
 
+
+    /*
+     * Lots of method checks before we can actually call this
+     */
+
     // @TODO: Maybe check just for callable?
     if (! OBJECT_IS_METHOD(method)) {
         saffire_error("Object returned in this method is not a method, so I cannot call this!");
     }
 
-    // @TODO:
-    //   If object is abstract or interface, we cannot call
-    //   If object is instance AND method is static, we cannot call
-    //   If object is class AND method is not static, we cannot call
-    //  Otherwise, call
+    DEBUG_PRINT("MFLAGS: %d\n", method->mflags);
+    DEBUG_PRINT("OFLAGS: %d\n", obj->flags);
 
+    if ((method->mflags & METHOD_FLAG_CONSTRUCTOR) == METHOD_FLAG_CONSTRUCTOR) {
+        saffire_error("Cannot call constructor");
+    }
+    if ((method->mflags & METHOD_FLAG_DESTRUCTOR) == METHOD_FLAG_DESTRUCTOR) {
+        saffire_error("Cannot call destructor");
+    }
+    if ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT) {
+        saffire_error("Cannot call an abstract class");
+    }
+    if ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE) {
+        saffire_error("Cannot call an interface");
+    }
+
+    if ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE &&
+        (method->mflags & METHOD_FLAG_STATIC) == METHOD_FLAG_STATIC) {
+        saffire_error("Cannot call a static method from an instance. Hint: use %s.%s()", obj->name, method_name);
+    }
+    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS &&
+        (method->mflags & METHOD_FLAG_STATIC) != METHOD_FLAG_STATIC) {
+        saffire_error("Cannot call a non-static method directly from a class. Hint: instantiate first");
+    }
+
+    // Code object present inside method?
     t_code_object *code = (t_code_object *)method->code;
     if (! code) {
         saffire_error("Code object from method is not present!");
     }
 
+    /*
+     * Everything is hunky-dory. Make the call
+     */
+
+    // @TODO: move this to the code-object
     if (code->f) {
         // Internal function
         ret = code->f(obj, args);
@@ -132,7 +162,7 @@ t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
         // @TODO: How do we send our arguments?
         ret = saffire_interpreter_leaf(code->p);
     } else {
-        saffire_error("Calling method, but no code found!");
+        saffire_error("Sanity error: code object has no code");
     }
 
     return ret;
