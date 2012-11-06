@@ -391,7 +391,7 @@ static void obj_free(t_object *obj) {
 
 
 
-static t_object *obj_new(va_list arg_list) {
+static t_object *obj_new(t_object *obj, va_list arg_list) {
     // Get the widestring from the argument list
     wchar_t *value = va_arg(arg_list, wchar_t *);
     int len = wcslen(value);
@@ -401,8 +401,8 @@ static t_object *obj_new(va_list arg_list) {
     hash_widestring_text(value, len, strhash);
 
     // Check for and return cached object
-    t_object *obj = ht_find(string_cache, strhash);
-    if (obj) return obj;
+    t_object *cache_obj = ht_find(string_cache, strhash);
+    if (cache_obj) return cache_obj;
 
 
     // Create new object and copy all info

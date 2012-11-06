@@ -157,7 +157,7 @@ static void obj_free(t_object *obj) {
 
 
 
-static t_object *obj_new(va_list arg_list) {
+static t_object *obj_new(t_object *obj, va_list arg_list) {
     // Create new object and copy all info
     t_code_object *new_obj = smm_malloc(sizeof(t_code_object));
     memcpy(new_obj, Object_Code, sizeof(t_code_object));

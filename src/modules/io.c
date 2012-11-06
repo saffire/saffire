@@ -56,7 +56,8 @@ static t_object *io_print(t_object *self, t_dll *dll) {
 
     // Implied conversion to string
     if (! OBJECT_IS_STRING(obj)) {
-        obj = object_call(obj, "string", 0);
+        obj = object_find_method(obj, "string");
+        obj = object_call(obj, 0);
     }
 
     char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);

@@ -459,7 +459,7 @@ static t_object *obj_clone(t_object *obj) {
 /**
  * Creates a new numerical object by "cloning" the original one
  */
-static t_object *obj_new(va_list arg_list) {
+static t_object *obj_new(t_object *obj, va_list arg_list) {
     long value = va_arg(arg_list, long);
 
 

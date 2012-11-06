@@ -35,6 +35,7 @@
 #include "compiler/saffire_compiler.h"
 #include "general/hashtable.h"
 #include "compiler/ast.h"
+#include "general/stack.h"
 #include "general/smm.h"
 #include "object/object.h"
 #include "object/method.h"
@@ -55,6 +56,29 @@ extern char *wctou8(const wchar_t *wstr, long len);
 #define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
 
 
+t_stack *scope_stack;
+
+t_scope *get_current_scope(void) {
+    t_dll_element *e = DLL_TAIL(scope_stack->dll);
+    return e->data;
+}
+void leave_scope(void) {
+    t_scope *last_scope = stack_pop(scope_stack);
+    DEBUG_PRINT(">>>>>>> Leaving scope level %d\n", last_scope->depth);
+    smm_free(last_scope);
+}
+void enter_scope(t_ast_element *p) {
+    t_scope *current_scope = get_current_scope();
+
+    t_scope *new_scope = smm_malloc(sizeof(t_scope));
+    new_scope->context = si_get_current_context();
+    new_scope->entrypoint = p;
+    new_scope->depth = current_scope->depth + 1;
+    stack_push(scope_stack, new_scope);
+
+    DEBUG_PRINT(">>>>>>> Entering scope level %d\n", new_scope->depth);
+}
+
 extern t_hash_table *object_hash;
 
 /**
@@ -63,6 +87,16 @@ extern t_hash_table *object_hash;
 static void si_init(void) {
     // Create stack for linenumbers
     lineno_stack = dll_init();
+
+    // Initialize scope
+    scope_stack = stack_init();
+
+    // Add global scope
+    t_scope *tmp = smm_malloc(sizeof(t_scope));
+    tmp->context = NULL;
+    tmp->depth = 0;
+    tmp->entrypoint = NULL;
+    stack_push(scope_stack, tmp);
 }
 
 
@@ -72,6 +106,8 @@ static void si_init(void) {
 static void si_fini(void) {
     // @TODO: Something is wrong with freeing this DLL :(
     //dll_free(lineno_stack);
+
+    stack_free(scope_stack);
 }
 
 
@@ -183,6 +219,45 @@ static t_snode *si_operator(t_ast_element *p, int opr) {
 t_object *current_obj = NULL;
 
 
+
+
+
+struct _object *object_user_new(t_object *obj, va_list arg_list) {
+    DEBUG_PRINT("object_create_new_instance called");
+
+    t_object *new_obj = smm_malloc(sizeof(t_object));
+    memcpy(new_obj, obj, sizeof(t_object));
+
+    // Reset refcount for new object
+    new_obj->ref_count = 0;
+
+    // These are instances
+    new_obj->flags &= ~OBJECT_TYPE_MASK;
+    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return new_obj;
+}
+
+#ifdef __DEBUG
+char global_buf[1024];
+static char *object_user_debug(struct _object *obj) {
+    sprintf(global_buf, "User object[%s]", obj->name);
+    return global_buf;
+}
+#endif
+
+// String object management functions
+t_object_funcs user_funcs = {
+        object_user_new,              // Allocate a new string object
+        NULL,             // Free a string object
+        NULL,                 // Clone a string object
+#ifdef __DEBUG
+        object_user_debug
+#endif
+};
+
+
+
 /**
  *
  */
@@ -263,7 +338,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             obj->constants = ht_create();
             obj->operators = NULL;
             obj->comparisons = NULL;
-            obj->funcs = NULL;
+            obj->funcs = &user_funcs;
 
             // @TODO: Add modifier flags to obj->flags
 
@@ -392,6 +467,12 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     break;
 
                 case T_RETURN :
+                    // Check the current scope.
+                    t_scope *scope = get_current_scope();
+                    if (scope->depth == 1) {
+                        DEBUG_PRINT("Cannot leave the global scope!");
+                    }
+                    
                     node1 = SI0(p);
                     obj = si_get_object(node1);
                     RETURN_SNODE_OBJECT(obj);
@@ -452,7 +533,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_call(obj1, "boolean", 0);
+                            obj1 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, 0);
                         }
 
                         // False, we can break our do-loop
@@ -472,7 +554,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_call(obj1, "boolean", 0);
+                            obj1 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, 0);
                         }
 
                         // if condition is true, execute our inner block
@@ -502,7 +585,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node2);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_call(obj1, "boolean", 0);
+                            obj1 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, 0);
                         }
 
                         // if condition is not true, break our loop
@@ -529,7 +613,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                     // Check if it's already a boolean. If not, cast this object to boolean
                     if (! OBJECT_IS_BOOLEAN(obj1)) {
-                        obj1 = object_call(obj1, "boolean", 0);
+                        obj1 = object_find_method(obj1, "boolean");
+                        obj1 = object_call(obj1, 0);
                     }
 
                     if (obj1 == Object_True) {
@@ -551,16 +636,23 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     RETURN_SNODE_DLL(dll);
 
                 case T_METHOD_CALL :
-                    // Get called object
+                    // Get object
                     node1 = SI0(p);
-                    obj1 = si_get_object(node1);
+                    obj1 = IS_NULL(node1) ? NULL : si_get_object(node1);
 
-                    // get method name from object
-                    hte = p->opr.ops[1];
-                    if (hte->type != typeAstIdentifier) {
-                        saffire_error("Can only have identifiers here", hte->identifier.name);
+                    if (obj1 != NULL) {
+                        hte = p->opr.ops[1];
+                        obj2 = object_find_method(obj1,  hte->identifier.name);
+                        if (! obj2) {
+                            saffire_error("Cannot find method or property named '%s' in '%s'", hte->identifier.name, obj1->name);
+                        }
+                    } else {
+                        // Get object
+                        node2 = SI1(p);
+                        obj2 = si_get_object(node2);
                     }
-                    method_name = smm_strdup(hte->identifier.name);
+
+
 
                     // Get arguments (or NULL)
                     t_dll *dll;
@@ -573,12 +665,104 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Expected a DLL (or null)");
                     }
 
-                    obj2 = object_call_args(obj1, method_name, dll);
 
-                    smm_free(method_name);
+                    if (OBJECT_IS_METHOD(obj2)) {
+                        /*
+                         * Lots of method checks before we can actually call this
+                         */
+                        t_method_object *method = (t_method_object *)obj2;
+                        if (METHOD_IS_CONSTRUCTOR(method)) {
+                            saffire_error("Cannot call constructor");
+                        }
+                        if (METHOD_IS_DESTRUCTOR(method)) {
+                            saffire_error("Cannot call destructor");
+                        }
+                        if (OBJECT_TYPE_IS_ABSTRACT(obj1)) {
+                            saffire_error("Cannot call an abstract class");
+                        }
+                        if (OBJECT_TYPE_IS_INTERFACE(obj1)) {
+                            saffire_error("Cannot call an interface");
+                        }
+
+                        if (OBJECT_TYPE_IS_INSTANCE(obj1) && METHOD_IS_STATIC(method)) {
+                            saffire_error("Cannot call a static method from an instance. Hint: use %s.%s()", obj1->name, obj2->name);
+                        }
+                        if (OBJECT_TYPE_IS_CLASS(obj1) && ! METHOD_IS_STATIC(method)) {
+                            saffire_error("Cannot call a non-static method directly from a class. Hint: instantiate first");
+                        }
+
+
+                        // Set new scope
+                        enter_scope(p);
+
+                        // We need to do a method call
+                        DEBUG_PRINT("+++ Calling method %s \n", obj2->name);
+                        obj3 = object_call_args(obj2, dll);
+
+                        leave_scope();
+
+                    } else if (OBJECT_TYPE_IS_CLASS(obj2)) {
+                        // We need to instantiate
+                        DEBUG_PRINT("+++ Instantiating a new class for %s\n", obj2->name);
+
+                        enter_scope(p);
+
+                        obj3 = object_new(obj2, dll);
+                        if (! obj3) {
+                            saffire_error("Cannot instantiate class %s", obj2->name);
+                        }
+
+                        leave_scope();
+                    } else {
+                        saffire_error("Cannot call or instantiate %s", obj2->name);
+                    }
+
+//                    } else {
+//
+//                        // get class or method name
+//                        hte = p->opr.ops[1];
+//                        if (hte->type != typeAstIdentifier) {
+//                            saffire_error("Can only have identifiers here", hte->identifier.name);
+//                        }
+//
+//                        method_name = smm_strdup(hte->identifier.name);
+//                    }
+//
+//                    // At this point we need to fetch the objec,
+//
+//
+//
+////                    if (hte->type == typeAstNull && (obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) {
+//
+//                    if (instantiation) {
+//                        // Instantiating
+//                        DEBUG_PRINT("+++ Instantiating a new class for %s\n", obj1->name);
+//
+//                        if (! OBJECT_TYPE_IS_CLASS(obj1)) {
+//                            saffire_error("Can only instantiate classes");
+//                        }
+//
+//                        obj2 = object_new(obj1, dll);
+//                        if (! obj2) {
+//                            saffire_error("Cannot instantiate class %s", obj1->name);
+//                        }
+//
+//                    } else {
+//
+//                        if (hte->type != typeAstIdentifier) {
+//                            saffire_error("Can only have identifiers here", hte->identifier.name);
+//                        }
+//                        method_name = smm_strdup(hte->identifier.name);
+//
+//                        obj2 = object_call_args(obj1, method_name, dll);
+//
+//                        smm_free(method_name);
+//                    }
+
+
                     if (dll) dll_free(dll);
 
-                    RETURN_SNODE_OBJECT(obj2);
+                    RETURN_SNODE_OBJECT(obj3);
                     break;
 
                 /* Comparisons */

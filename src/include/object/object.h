@@ -34,13 +34,19 @@
     #include "compiler/ast.h"
 
 
+    #define OBJECT_TYPE_IS_CLASS(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_CLASS)
+    #define OBJECT_TYPE_IS_INTERFACE(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_INTERFACE)
+    #define OBJECT_TYPE_IS_ABSTRACT(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_ABSTRACT)
+    #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_INSTANCE)
+
+
     // Forward define
     struct _object;
     struct _saffire_result;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        struct _object *(*new)(va_list arg_list);       // Allocates a new object
+        struct _object *(*new)(struct _object *, va_list arg_list);       // Allocates a new object
         void (*free)(struct _object *);                 // Frees objects internal data
         struct _object *(*clone)(struct _object *);     // Clones the object
 #ifdef __DEBUG
@@ -109,6 +115,7 @@
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
     #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
 
+    #define OBJECT_IS_NULL(obj)     (obj->type == objectTypeNull)
     #define OBJECT_IS_STRING(obj)   (obj->type == objectTypeString)
     #define OBJECT_IS_BOOLEAN(obj)  (obj->type == objectTypeBoolean)
     #define OBJECT_IS_METHOD(obj)   (obj->type == objectTypeMethod)
@@ -212,8 +219,9 @@
 
     void object_init(void);
     void object_fini(void);
-    t_object *object_call_args(t_object *obj, char *method, t_dll *dll);
-    t_object *object_call(t_object *obj, char *method, int arg_count, ...);
+    t_object *object_find_method(t_object *obj, char *method_name);
+    t_object *object_call_args(t_object *obj, t_dll *dll);
+    t_object *object_call(t_object *obj, int arg_count, ...);
     t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...);
     t_object *object_comparison(t_object *obj1, int comparison, t_object *obj2);
     void object_free(t_object *obj);

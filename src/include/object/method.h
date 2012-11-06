@@ -35,12 +35,24 @@
     #define METHOD_FLAG_FINAL               4      /* Final method */
     #define METHOD_FLAG_CONSTRUCTOR         8      /* Constructor */
     #define METHOD_FLAG_DESTRUCTOR         16      /* Destructor */
+    #define METHOD_FLAG_MASK               31
 
     #define METHOD_VISIBILITY_PUBLIC        1      /* Public visibility */
     #define METHOD_VISIBILITY_PROTECTED     2      /* Protected visibility */
     #define METHOD_VISIBILITY_PRIVATE       3      /* Private visibility */
 
     #define RETURN_METHOD(f, v, cl, co)   RETURN_OBJECT(object_new(Object_Method, f, v, cl, co));
+
+    #define METHOD_IS_STATIC(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_STATIC)
+    #define METHOD_IS_ABSTRACT(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_ABSTRACT)
+    #define METHOD_IS_FINAL(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_FINAL)
+    #define METHOD_IS_CONSTRUCTOR(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_CONSTRUCTOR)
+    #define METHOD_IS_DESTRUCTOR(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_DESTRUCTOR)
+
+    #define METHOD_IS_PUBLIC(method) ((method->visibility == METHOD_VISIBILITY_PUBLIC)
+    #define METHOD_IS_PROTECTED(method) ((method->visibility == METHOD_VISIBILITY_PROTECTED)
+    #define METHOD_IS_PRIVATE(method) ((method->visibility == METHOD_VISIBILITY_PRIVATE)
+
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

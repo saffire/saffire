@@ -87,11 +87,10 @@ static t_object *_find_method(t_object *obj, char *method_name) {
 
     DEBUG_PRINT(">>> Calling method '%s' on object %s, actually: %s\n", method_name, obj->name, cur_obj->name);
 
-    int f = cur_obj->flags & OBJECT_TYPE_MASK;
-    if (f & OBJECT_TYPE_CLASS) {
+    if (OBJECT_TYPE_IS_CLASS(cur_obj)) {
         DEBUG_PRINT(">>> This is a CLASS\n");
     }
-    if (f & OBJECT_TYPE_INSTANCE) {
+    if (OBJECT_TYPE_IS_INSTANCE(cur_obj)) {
         DEBUG_PRINT(">>> This is a INSTANCE\n");
     }
 
@@ -100,48 +99,33 @@ static t_object *_find_method(t_object *obj, char *method_name) {
 
 
 /**
+ *
+ */
+t_object *object_find_method(t_object *obj, char *method_name) {
+    t_object *method = _find_method(obj, method_name);
+    if (! method) return NULL;
+    return method;
+}
+
+/**
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
-t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
+t_object *object_call_args(t_object *obj, t_dll *args) {
     t_object *ret;
 
-    t_method_object *method = (t_method_object *)_find_method(obj, method_name);
-    if (! method) RETURN_NULL;
+    // @TODO: It should be a callable method
 
-
-    /*
-     * Lots of method checks before we can actually call this
-     */
 
     // @TODO: Maybe check just for callable?
-    if (! OBJECT_IS_METHOD(method)) {
+    if (! OBJECT_IS_METHOD(obj)) {
         saffire_error("Object returned in this method is not a method, so I cannot call this!");
     }
 
+    t_method_object *method = (t_method_object *)obj;
+
     DEBUG_PRINT("MFLAGS: %d\n", method->mflags);
-    DEBUG_PRINT("OFLAGS: %d\n", obj->flags);
+    DEBUG_PRINT("OFLAGS: %d\n", method->class->flags);
 
-    if ((method->mflags & METHOD_FLAG_CONSTRUCTOR) == METHOD_FLAG_CONSTRUCTOR) {
-        saffire_error("Cannot call constructor");
-    }
-    if ((method->mflags & METHOD_FLAG_DESTRUCTOR) == METHOD_FLAG_DESTRUCTOR) {
-        saffire_error("Cannot call destructor");
-    }
-    if ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT) {
-        saffire_error("Cannot call an abstract class");
-    }
-    if ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE) {
-        saffire_error("Cannot call an interface");
-    }
-
-    if ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE &&
-        (method->mflags & METHOD_FLAG_STATIC) == METHOD_FLAG_STATIC) {
-        saffire_error("Cannot call a static method from an instance. Hint: use %s.%s()", obj->name, method_name);
-    }
-    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS &&
-        (method->mflags & METHOD_FLAG_STATIC) != METHOD_FLAG_STATIC) {
-        saffire_error("Cannot call a non-static method directly from a class. Hint: instantiate first");
-    }
 
     // Code object present inside method?
     t_code_object *code = (t_code_object *)method->code;
@@ -156,7 +140,7 @@ t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
     // @TODO: move this to the code-object
     if (code->f) {
         // Internal function
-        ret = code->f(obj, args);
+        ret = code->f(method->class, args);
     } else if (code->p) {
         // External function found in AST
         // @TODO: How do we send our arguments?
@@ -171,7 +155,7 @@ t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_call(t_object *obj, char *method_name, int arg_count, ...) {
+t_object *object_call(t_object *obj, int arg_count, ...) {
     // Add all arguments to a DLL
     va_list arg_list;
     va_start(arg_list, arg_count);
@@ -182,7 +166,7 @@ t_object *object_call(t_object *obj, char *method_name, int arg_count, ...) {
     }
     va_end(arg_list);
 
-    t_object *ret = object_call_args(obj, method_name, dll);
+    t_object *ret = object_call_args(obj, dll);
 
     // Free dll
     dll_free(dll);
@@ -360,13 +344,13 @@ void object_free(t_object *obj) {
 t_object *object_new(t_object *obj, ...) {
     va_list arg_list;
 
-    DEBUG_PRINT("Instantiating a new object: %s\n", obj->name);
+    DEBUG_PRINT("Creating a new instance: %s\n", obj->name);
 
     // Return NULL when we cannot 'new' this object
-    if (! obj || ! obj->funcs || ! obj->funcs->new) RETURN_NULL;
+    if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
 
     va_start(arg_list, obj);
-    t_object *res = obj->funcs->new(arg_list);
+    t_object *res = obj->funcs->new(obj, arg_list);
     va_end(arg_list);
 
 #ifdef __DEBUG

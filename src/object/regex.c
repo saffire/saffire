@@ -237,7 +237,7 @@ static t_object *obj_clone(t_object *obj) {
 }
 
 
-static t_object *obj_new(va_list arg_list) {
+static t_object *obj_new(t_object *obj, va_list arg_list) {
     const char *error;
     int erroffset;
 
