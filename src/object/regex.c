@@ -41,6 +41,7 @@
 #include "object/numerical.h"
 #include "object/base.h"
 #include "object/numerical.h"
+#include "object/method.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
@@ -181,16 +182,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.methods = ht_create();
-    object_add_internal_method(&Object_Regex_struct, "ctor", object_regex_method_ctor);
-    object_add_internal_method(&Object_Regex_struct, "dtor", object_regex_method_dtor);
+    object_add_internal_method(&Object_Regex_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_ctor);
+    object_add_internal_method(&Object_Regex_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_dtor);
 
-    object_add_internal_method(&Object_Regex_struct, "boolean", object_regex_method_conv_boolean);
-    object_add_internal_method(&Object_Regex_struct, "null", object_regex_method_conv_null);
-    object_add_internal_method(&Object_Regex_struct, "numerical", object_regex_method_conv_numerical);
-    object_add_internal_method(&Object_Regex_struct, "string", object_regex_method_conv_string);
+    object_add_internal_method(&Object_Regex_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
+    object_add_internal_method(&Object_Regex_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_conv_null);
+    object_add_internal_method(&Object_Regex_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
+    object_add_internal_method(&Object_Regex_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_conv_string);
 
-    object_add_internal_method(&Object_Regex_struct, "match", object_regex_method_match);
-    object_add_internal_method(&Object_Regex_struct, "regex", object_regex_method_regex);
+    object_add_internal_method(&Object_Regex_struct, "match", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_match);
+    object_add_internal_method(&Object_Regex_struct, "regex", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     Object_Regex_struct.properties = ht_create();
 }
@@ -282,7 +283,7 @@ t_object_funcs regex_funcs = {
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectTypeRegex, NULL, NULL, OBJECT_NO_FLAGS, &regex_funcs),
+    OBJECT_HEAD_INIT2("regex", objectTypeRegex, NULL, NULL, OBJECT_TYPE_CLASS, &regex_funcs),
     NULL,
     L'\0',
 };

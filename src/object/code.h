@@ -24,44 +24,29 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "modules/module_api.h"
-#include "object/object.h"
-#include "object/method.h"
-#include "object/string.h"
-#include "general/dll.h"
-#include "version.h"
+#ifndef __CODE_H__
+#define __CODE_H__
 
-/**
- *
- */
-static t_object *saffire_return_version(t_object *self, t_dll *args) {
-    RETURN_STRING(saffire_version_wide);
-}
+    #include "object/object.h"
 
+    #define RETURN_CODE(p, f)   RETURN_OBJECT(object_new(Object_Code, p, f));
 
-t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
 
-static void _init(void) {
-    saffire_struct.methods = ht_create();
-    ht_add(saffire_struct.methods, "version", saffire_return_version);
-    saffire_struct.properties = ht_create();
-}
-static void _fini(void) {
-    // Destroy methods and properties
-    ht_destroy(saffire_struct.methods);
-    ht_destroy(saffire_struct.properties);
-}
+        t_ast_element *p;                        // external defined method (by AST leaf)
+        t_object *(*f)(t_object *, t_dll *);     // internal method (by method call)
 
-static t_object *_objects[] = {
-    &saffire_struct,
-    NULL
-};
+//        // Additional information for code
+//        int calls;                  // Number of calls made to this code
+//        int time_spent;             // Time spend in this code
+    } t_code_object;
 
-t_module module_saffire = {
-    "::_sfl::saffire",
-    "Saffire configuration module",
-    _objects,
-    _init,
-    _fini
-};
+    t_code_object Object_Code_struct;
+
+    #define Object_Code   (t_object *)&Object_Code_struct
+
+    void object_code_init(void);
+    void object_code_fini(void);
+
+#endif

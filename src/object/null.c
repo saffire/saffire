@@ -30,6 +30,7 @@
 #include "object/null.h"
 #include "object/numerical.h"
 #include "object/string.h"
+#include "object/method.h"
 #include "general/smm.h"
 
 /* ======================================================================
@@ -67,10 +68,10 @@ SAFFIRE_METHOD(null, conv_string) {
 void object_null_init(void) {
     Object_Null_struct.methods = ht_create();
 
-    object_add_internal_method(&Object_Null_struct, "boolean", object_null_method_conv_boolean);
-    object_add_internal_method(&Object_Null_struct, "null", object_null_method_conv_null);
-    object_add_internal_method(&Object_Null_struct, "numerical", object_null_method_conv_numerical);
-    object_add_internal_method(&Object_Null_struct, "string", object_null_method_conv_string);
+    object_add_internal_method(&Object_Null_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
+    object_add_internal_method(&Object_Null_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_null);
+    object_add_internal_method(&Object_Null_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
+    object_add_internal_method(&Object_Null_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_string);
 
     Object_Null_struct.properties = ht_create();
 }

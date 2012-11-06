@@ -36,6 +36,8 @@
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "object/object.h"
+#include "object/method.h"
+#include "object/base.h"
 #include "object/string.h"
 #include "object/numerical.h"
 #include "object/null.h"
@@ -48,14 +50,11 @@ static t_snode *_saffire_interpreter(t_ast_element *p);
 // A stack maintained by the AST which holds the current line for the current AST
 t_dll *lineno_stack;
 
-#ifdef __DEBUG
-extern t_dll *object_dll;
-#endif
-
 extern char *wctou8(const wchar_t *wstr, long len);
 #define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
 
 
+extern t_hash_table *object_hash;
 
 /**
  *
@@ -265,6 +264,10 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             obj->comparisons = NULL;
             obj->funcs = NULL;
 
+
+            // Check extends
+            obj->parent = Object_Base;
+
             // Interpret body.
             t_object *saved_obj = current_obj;
             current_obj = obj;
@@ -281,7 +284,9 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 saffire_error("Trying to define a method outside a class. This should be caught by the parser!");
             }
             DEBUG_PRINT("Adding method: %s to %s\n", p->method.name, current_obj->name);
-            object_add_external_method(current_obj, p->method.name, p->method.body);
+
+            // @TODO: ADD FLAGS AND VISIBILITY
+            object_add_external_method(current_obj, p->method.name, METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, p->method.body);
             break;
 
         case typeAstOpr :
@@ -371,6 +376,12 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     }
 
                     si_create_context_alias(alias, ctx);
+                    break;
+
+                case T_RETURN :
+                    node1 = SI0(p);
+                    obj = si_get_object(node1);
+                    RETURN_SNODE_OBJECT(obj);
                     break;
 
                 case T_EXPRESSIONS :
@@ -648,7 +659,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
 
-                    DEBUG_PRINT("Figuring out: '%s' in object '%s'", hte->identifier.name, obj1->name);
+                    DEBUG_PRINT("Figuring out: '%s' in object '%s'\n", hte->identifier.name, obj1->name);
                     obj = ht_find(obj1->properties, hte->identifier.name);
                     if (obj == NULL) {
                         obj = ht_find(obj1->constants, hte->identifier.name);
@@ -734,11 +745,12 @@ int saffire_interpreter(t_ast_element *p) {
     // @TODO: What should we do with the output of this node? Somehow, return it to the caller or somethign?
 
 #ifdef __DEBUG
-    t_dll_element *e = DLL_HEAD(object_dll);
-    while (e) {
-        t_object *obj = (t_object *)e->data;
+    t_hash_iter iter;
+    ht_iter_rewind(&iter, object_hash);
+    while (ht_iter_valid(&iter)) {
+        t_object *obj = ht_iter_value(&iter);
         DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
-        e = DLL_NEXT(e);
+        ht_iter_next(&iter);
     }
 #endif
 

@@ -34,6 +34,7 @@
 #include "object/boolean.h"
 #include "object/numerical.h"
 #include "object/string.h"
+#include "object/method.h"
 #include "object/null.h"
 #include "general/smm.h"
 #include "interpreter/errors.h"
@@ -394,17 +395,17 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  */
 void object_numerical_init(void) {
     Object_Numerical_struct.methods = ht_create();
-    object_add_internal_method(&Object_Numerical_struct, "ctor", object_numerical_method_ctor);
-    object_add_internal_method(&Object_Numerical_struct, "dtor", object_numerical_method_dtor);
+    object_add_internal_method(&Object_Numerical_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_ctor);
+    object_add_internal_method(&Object_Numerical_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_dtor);
 
-    object_add_internal_method(&Object_Numerical_struct, "boolean", object_numerical_method_conv_boolean);
-    object_add_internal_method(&Object_Numerical_struct, "null", object_numerical_method_conv_null);
-    object_add_internal_method(&Object_Numerical_struct, "numerical", object_numerical_method_conv_numerical);
-    object_add_internal_method(&Object_Numerical_struct, "string", object_numerical_method_conv_string);
+    object_add_internal_method(&Object_Numerical_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
+    object_add_internal_method(&Object_Numerical_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
+    object_add_internal_method(&Object_Numerical_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
+    object_add_internal_method(&Object_Numerical_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
 
-    object_add_internal_method(&Object_Numerical_struct, "neg", object_numerical_method_neg);
-    object_add_internal_method(&Object_Numerical_struct, "abs", object_numerical_method_abs);
-    object_add_internal_method(&Object_Numerical_struct, "print", object_numerical_method_print);
+    object_add_internal_method(&Object_Numerical_struct, "neg", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_neg);
+    object_add_internal_method(&Object_Numerical_struct, "abs", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_abs);
+    object_add_internal_method(&Object_Numerical_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_print);
 
     Object_Numerical_struct.properties = ht_create();
 
@@ -415,7 +416,12 @@ void object_numerical_init(void) {
         numerical_cache[i] = smm_malloc(sizeof(t_numerical_object));
         memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
         numerical_cache[i]->value = value;
+
         numerical_cache[i]->flags |= OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_STATIC;
+
+        // These are instances
+        numerical_cache[i]->flags &= ~OBJECT_TYPE_MASK;
+        numerical_cache[i]->flags |= OBJECT_TYPE_INSTANCE;
     }
 }
 
@@ -515,6 +521,6 @@ t_object_comparisons numerical_cmps = {
 
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, &numerical_cmps, OBJECT_NO_FLAGS, &numerical_funcs),
+    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, &numerical_cmps, OBJECT_TYPE_CLASS, &numerical_funcs),
     0
 };

@@ -31,8 +31,32 @@
 #include "object/string.h"
 #include "object/numerical.h"
 #include "object/boolean.h"
+#include "object/method.h"
 #include "object/null.h"
 #include "general/smm.h"
+
+
+/*
+
+ class base {
+    public method ctor();
+    public method dtor();
+    public method properties();
+    public method methods();
+    public method parents();
+    public method name();
+    public method implements();
+    public method memory();
+    public method annotations();
+    public method clone();
+    public method immutable();
+    public method is_immutable();
+    public method destroy();
+    public method refcount();
+    public method id();
+ }
+
+ */
 
 
 /* ======================================================================
@@ -150,6 +174,13 @@ SAFFIRE_METHOD(base, refcount) {
     RETURN_NUMERICAL(self->ref_count);
 }
 
+/**
+ * Returns id for this object
+ */
+SAFFIRE_METHOD(base, id) {
+    RETURN_NUMERICAL((long)self);
+}
+
 
 /* ======================================================================
  *   Global object management functions and data
@@ -162,20 +193,20 @@ SAFFIRE_METHOD(base, refcount) {
 void object_base_init() {
     Object_Base_struct.methods = ht_create();
 
-    object_add_internal_method(&Object_Base_struct, "ctor", object_base_method_ctor);
-    object_add_internal_method(&Object_Base_struct, "dtor", object_base_method_ctor);
-    object_add_internal_method(&Object_Base_struct, "properties", object_base_method_properties);
-    object_add_internal_method(&Object_Base_struct, "methods", object_base_method_methods);
-    object_add_internal_method(&Object_Base_struct, "parents", object_base_method_parents);
-    object_add_internal_method(&Object_Base_struct, "name", object_base_method_name);
-    object_add_internal_method(&Object_Base_struct, "implements", object_base_method_implements);
-    object_add_internal_method(&Object_Base_struct, "memory", object_base_method_memory);
-    object_add_internal_method(&Object_Base_struct, "annotations", object_base_method_annotations);
-    object_add_internal_method(&Object_Base_struct, "clone", object_base_method_clone);
-    object_add_internal_method(&Object_Base_struct, "immutable", object_base_method_immutable);
-    object_add_internal_method(&Object_Base_struct, "immutable?", object_base_method_is_immutable);
-    object_add_internal_method(&Object_Base_struct, "destroy", object_base_method_destroy);
-    object_add_internal_method(&Object_Base_struct, "refcount", object_base_method_refcount);
+    object_add_internal_method(&Object_Base_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_ctor);
+    object_add_internal_method(&Object_Base_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_ctor);
+    object_add_internal_method(&Object_Base_struct, "properties", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_properties);
+    object_add_internal_method(&Object_Base_struct, "methods", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_methods);
+    object_add_internal_method(&Object_Base_struct, "parents", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_parents);
+    object_add_internal_method(&Object_Base_struct, "name", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method(&Object_Base_struct, "implements", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method(&Object_Base_struct, "memory", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_memory);
+    object_add_internal_method(&Object_Base_struct, "annotations", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_annotations);
+    object_add_internal_method(&Object_Base_struct, "clone", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_clone);
+    object_add_internal_method(&Object_Base_struct, "immutable?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_is_immutable);
+    object_add_internal_method(&Object_Base_struct, "destroy", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_destroy);
+    object_add_internal_method(&Object_Base_struct, "refcount", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_refcount);
+    object_add_internal_method(&Object_Base_struct, "id", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_id);
 
     Object_Base_struct.properties = ht_create();
 }
@@ -217,6 +248,6 @@ t_object_funcs base_funcs = {
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", objectTypeBase, NULL, NULL, OBJECT_NO_FLAGS, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, NULL, NULL, OBJECT_TYPE_CLASS, &base_funcs, NULL)
 };
 

@@ -36,6 +36,8 @@
 #include "object/base.h"
 #include "object/numerical.h"
 #include "object/regex.h"
+#include "object/method.h"
+#include "object/code.h"
 #include "general/smm.h"
 #include "general/dll.h"
 #include "interpreter/errors.h"
@@ -46,7 +48,6 @@
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
 #ifdef __DEBUG
-    t_dll *object_dll;
     t_hash_table *object_hash;
 #endif
 
@@ -62,17 +63,17 @@ int object_is_immutable(t_object *obj) {
 /**
  * Checks and returns the correct object that holds the method (if any)
  */
-static t_method_caller *_find_method(t_object *obj, char *method_name) {
+static t_object *_find_method(t_object *obj, char *method_name) {
     // Try and find the correct method (might be found of the bases classes!)
-    t_method_caller *caller = NULL;
+    t_object *method = NULL;
     t_object *cur_obj = obj;
 
-    while (caller == NULL) {
+    while (method == NULL) {
         DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method_name, cur_obj->name);
 
         // Find the method in the current object
-        caller = ht_find(cur_obj->methods, method_name);
-        if (caller != NULL) break;
+        method = ht_find(cur_obj->methods, method_name);
+        if (method != NULL) break;
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
@@ -84,36 +85,55 @@ static t_method_caller *_find_method(t_object *obj, char *method_name) {
         cur_obj = cur_obj->parent;
     }
 
-    DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method_name, obj->name);
-    return caller;
+    DEBUG_PRINT(">>> Calling method '%s' on object %s, actually: %s\n", method_name, obj->name, cur_obj->name);
+
+    int f = cur_obj->flags & OBJECT_TYPE_MASK;
+    if (f & OBJECT_TYPE_CLASS) {
+        DEBUG_PRINT(">>> This is a CLASS\n");
+    }
+    if (f & OBJECT_TYPE_INSTANCE) {
+        DEBUG_PRINT(">>> This is a INSTANCE\n");
+    }
+
+    return method;
 }
 
 
 /**
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
-t_object *object_call_args(t_object *obj, char *method, t_dll *args) {
+t_object *object_call_args(t_object *obj, char *method_name, t_dll *args) {
     t_object *ret;
 
-    t_method_caller *mc = _find_method(obj, method);
-    if (! mc) RETURN_NULL;
+    t_method_object *method = (t_method_object *)_find_method(obj, method_name);
+    if (! method) RETURN_NULL;
 
-#ifdef __DEBUG
-    if (mc->marker != 0xDEADBEEF) {
-        saffire_error("Incorrect marker detected on '%s'.'%s'\n", obj->name, method);
+    // @TODO: Maybe check just for callable?
+    if (! OBJECT_IS_METHOD(method)) {
+        saffire_error("Object returned in this method is not a method, so I cannot call this!");
     }
-#endif
 
+    // @TODO:
+    //   If object is abstract or interface, we cannot call
+    //   If object is instance AND method is static, we cannot call
+    //   If object is class AND method is not static, we cannot call
+    //  Otherwise, call
 
-    if (mc->internal) {
-        t_object *(*func)(t_object *, t_dll *) = mc->data;
-        ret = func(obj, args);
+    t_code_object *code = (t_code_object *)method->code;
+    if (! code) {
+        saffire_error("Code object from method is not present!");
+    }
+
+    if (code->f) {
+        // Internal function
+        ret = code->f(obj, args);
+    } else if (code->p) {
+        // External function found in AST
+        // @TODO: How do we send our arguments?
+        ret = saffire_interpreter_leaf(code->p);
     } else {
-        ret = saffire_interpreter_leaf((t_ast_element *)mc->data);
+        saffire_error("Calling method, but no code found!");
     }
-
-
-    // Don't free DLL, since it's external
 
     return ret;
 }
@@ -121,7 +141,7 @@ t_object *object_call_args(t_object *obj, char *method, t_dll *args) {
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
+t_object *object_call(t_object *obj, char *method_name, int arg_count, ...) {
     // Add all arguments to a DLL
     va_list arg_list;
     va_start(arg_list, arg_count);
@@ -132,7 +152,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     }
     va_end(arg_list);
 
-    t_object *ret = object_call_args(obj, method, dll);
+    t_object *ret = object_call_args(obj, method_name, dll);
 
     // Free dll
     dll_free(dll);
@@ -143,16 +163,16 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...) {
+t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, ...) {
     t_object *cur_obj = obj;
     va_list arg_list;
     t_object *(*func)(t_object *, t_dll *dll, int in_place);
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->operators != NULL) {
-        DEBUG_PRINT(">>> Finding operator '%d' on object %s\n", operator, cur_obj->name);
+        DEBUG_PRINT(">>> Finding operator '%d' on object %s\n", opr, cur_obj->name);
 
-        switch (operator) {
+        switch (opr) {
             case OPERATOR_ADD : func = cur_obj->operators->add; break;
             case OPERATOR_SUB : func = cur_obj->operators->sub; break;
             case OPERATOR_MUL : func = cur_obj->operators->mul; break;
@@ -173,7 +193,7 @@ t_object *object_operator(t_object *obj, int operator, int in_place, int arg_cou
     }
 
 
-    DEBUG_PRINT(">>> Calling operator %d on object %s\n", operator, obj->name);
+    DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
 
     // Add all arguments to a DLL
     va_start(arg_list, arg_count);
@@ -323,8 +343,7 @@ t_object *object_new(t_object *obj, ...) {
     char addr[10];
     sprintf(addr, "%08X", res);
     if (! ht_find(object_hash, (char *)&addr)) {
-        dll_append(object_dll, res);
-        ht_add(object_hash, (char *)&addr, (void *)1);
+        ht_add(object_hash, (char *)&addr, res);
     }
 #endif
 
@@ -336,19 +355,29 @@ t_object *object_new(t_object *obj, ...) {
  * Initialize all the (scalar) objects
  */
 void object_init() {
+#ifdef __DEBUG
+    object_hash = ht_create();
+#endif
+
     object_base_init();
     object_boolean_init();
     object_null_init();
     object_numerical_init();
     object_string_init();
     object_regex_init();
+    object_code_init();
+    object_method_init();
 
 #ifdef __DEBUG
-    object_dll = dll_init();
-    object_hash = ht_create();
-    dll_append(object_dll, Object_True);
-    dll_append(object_dll, Object_False);
-    dll_append(object_dll, Object_Null);
+    char addr[10];
+    sprintf(addr, "%08X", Object_True);
+    ht_add(object_hash, (char *)&addr, Object_True);
+
+    sprintf(addr, "%08X", Object_False);
+    ht_add(object_hash, (char *)&addr, Object_False);
+
+    sprintf(addr, "%08X", Object_Null);
+    ht_add(object_hash, (char *)&addr, Object_Null);
 #endif
 
 }
@@ -364,6 +393,8 @@ void object_fini() {
     object_numerical_fini();
     object_string_fini();
     object_regex_fini();
+    object_code_fini();
+    object_method_fini();
 }
 
 
@@ -371,7 +402,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
     const char *ptr = speclist;
     int optional_argument = 0;
     va_list storage_list;
-    objectTypeEnum type;
+    t_objectype_enum type;
     int result = 0;
     t_object *obj;
 
@@ -457,32 +488,24 @@ done:
 /**
  *
  */
-void object_add_external_method(void *obj, char *name, t_ast_element *p) {
+void object_add_external_method(void *obj, char *method_name, int flags, int visibility, t_ast_element *p) {
     t_object *the_obj = (t_object *)obj;
 
-    t_method_caller *method = smm_malloc(sizeof(t_method_caller));
+    t_code_object *code = (t_code_object *)object_new(Object_Code, p, NULL);
+    t_method_object *method = (t_method_object *)object_new(Object_Method, flags, visibility, obj, code);
 
-#ifdef __DEBUG
-     method->marker = 0xDEADBEEF;
-#endif
-     method->internal = 0;
-     method->data = p;
-     ht_add(the_obj->methods, name, method);
+    ht_add(the_obj->methods, method_name, method);
 }
 
 
 /**
  *
  */
-void object_add_internal_method(void *obj, char *name, void *func) {
+void object_add_internal_method(void *obj, char *method_name, int flags, int visibility, void *func) {
     t_object *the_obj = (t_object *)obj;
 
-    t_method_caller *method = smm_malloc(sizeof(t_method_caller));
+    t_code_object *code = (t_code_object *)object_new(Object_Code, NULL, func);
+    t_method_object *method = (t_method_object *)object_new(Object_Method, flags, visibility, obj, code);
 
-#ifdef __DEBUG
-     method->marker = 0xDEADBEEF;
-#endif
-     method->internal = 1;
-     method->data = func;
-     ht_add(the_obj->methods, name, method);
+    ht_add(the_obj->methods, method_name, method);
 }

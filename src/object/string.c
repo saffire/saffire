@@ -37,6 +37,7 @@
 #include "object/null.h"
 #include "object/base.h"
 #include "object/numerical.h"
+#include "object/method.h"
 #include "general/smm.h"
 #include "general/smm.h"
 #include "general/md5.h"
@@ -340,21 +341,21 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.methods = ht_create();
-    object_add_internal_method(&Object_String_struct, "ctor", object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "ctor", object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "dtor", object_string_method_dtor);
+    object_add_internal_method(&Object_String_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method(&Object_String_struct, "boolean", object_string_method_conv_boolean);
-    object_add_internal_method(&Object_String_struct, "null", object_string_method_conv_null);
-    object_add_internal_method(&Object_String_struct, "numerical", object_string_method_conv_numerical);
-    object_add_internal_method(&Object_String_struct, "string", object_string_method_conv_string);
+    object_add_internal_method(&Object_String_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method(&Object_String_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method(&Object_String_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method(&Object_String_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method(&Object_String_struct, "byte_length", object_string_method_byte_length);
-    object_add_internal_method(&Object_String_struct, "length", object_string_method_length);
-    object_add_internal_method(&Object_String_struct, "upper", object_string_method_upper);
-    object_add_internal_method(&Object_String_struct, "lower", object_string_method_lower);
-    object_add_internal_method(&Object_String_struct, "reverse", object_string_method_reverse);
-    object_add_internal_method(&Object_String_struct, "print", object_string_method_print);
+    object_add_internal_method(&Object_String_struct, "byte_length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_byte_length);
+    object_add_internal_method(&Object_String_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method(&Object_String_struct, "upper", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method(&Object_String_struct, "lower", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method(&Object_String_struct, "reverse", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method(&Object_String_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_print);
 
     Object_String_struct.properties = ht_create();
 
@@ -427,6 +428,11 @@ static t_object *obj_new(va_list arg_list) {
     // Add to string cache
     ht_add(string_cache, strhash, new_obj);
 
+
+    // These are instances
+    new_obj->flags &= ~OBJECT_TYPE_MASK;
+    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+
     return (t_object *)new_obj;
 }
 
@@ -478,9 +484,10 @@ t_object_comparisons string_cmps = {
     object_string_comparison_ni
 };
 
+
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_NO_FLAGS, &string_funcs),
+    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_TYPE_CLASS, &string_funcs),
     0,
     0,
     '\0',

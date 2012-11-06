@@ -27,16 +27,40 @@
 #ifndef __METHOD_H__
 #define __METHOD_H__
 
+    #include "object/object.h"
+
     #define METHOD_NO_FLAGS                 0      /* No flags */
     #define METHOD_FLAG_STATIC              1      /* Static method */
     #define METHOD_FLAG_ABSTRACT            2      /* Abstract method */
     #define METHOD_FLAG_FINAL               4      /* Final method */
+    #define METHOD_FLAG_CONSTRUCTOR         8      /* Constructor */
+    #define METHOD_FLAG_DESTRUCTOR         16      /* Destructor */
 
-    #define METHOD_VISIBILITY_PUBLIC        8      /* Public visibility */
-    #define METHOD_VISIBILITY_PROTECTED    16      /* Protected visibility */
-    #define METHOD_VISIBILITY_PRIVATE      32      /* Private visiblity */
+    #define METHOD_VISIBILITY_PUBLIC        1      /* Public visibility */
+    #define METHOD_VISIBILITY_PROTECTED     2      /* Protected visibility */
+    #define METHOD_VISIBILITY_PRIVATE       3      /* Private visibility */
 
-    #define METHOD_VARARGS                 64      /* Variable amount of arguments */
-    #define METHOD_NOARGS                 128      /* No arguments */
+    #define RETURN_METHOD(f, v, cl, co)   RETURN_OBJECT(object_new(Object_Method, f, v, cl, co));
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        int mflags;                 // Method flags
+        int visibility;             // Method visibility
+
+        t_object *class;            // Bound to a class (or NULL)
+        struct _code_object *code;        // Code for this method
+
+//        // Additional information for methods
+//        int calls;                  // Number of calls made to this method
+//        int time_spent;             // Time spend in this method
+    } t_method_object;
+
+    t_method_object Object_Method_struct;
+
+    #define Object_Method   (t_object *)&Object_Method_struct
+
+    void object_method_init(void);
+    void object_method_fini(void);
 
 #endif

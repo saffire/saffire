@@ -30,6 +30,7 @@
 #include "object/null.h"
 #include "object/numerical.h"
 #include "object/string.h"
+#include "object/method.h"
 #include "general/smm.h"
 
 
@@ -244,10 +245,10 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
 void object_boolean_init(void) {
     Object_Boolean_struct.methods = ht_create();
 
-    object_add_internal_method(&Object_Boolean_struct, "boolean", object_boolean_method_conv_boolean);
-    object_add_internal_method(&Object_Boolean_struct, "null", object_boolean_method_conv_null);
-    object_add_internal_method(&Object_Boolean_struct, "numerical", object_boolean_method_conv_numerical);
-    object_add_internal_method(&Object_Boolean_struct, "string", object_boolean_method_conv_string);
+    object_add_internal_method(&Object_Boolean_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
+    object_add_internal_method(&Object_Boolean_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
+    object_add_internal_method(&Object_Boolean_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
+    object_add_internal_method(&Object_Boolean_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
 
     Object_Boolean_struct.properties = ht_create();
 
@@ -306,6 +307,6 @@ t_object_comparisons boolean_cmps = {
     NULL
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_NO_FLAGS, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_CLASS, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };

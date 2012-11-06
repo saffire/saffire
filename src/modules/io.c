@@ -29,6 +29,7 @@
 #include "modules/module_api.h"
 #include "interpreter/errors.h"
 #include "object/object.h"
+#include "object/method.h"
 #include "object/string.h"
 #include "general/dll.h"
 #include "general/smm.h"
@@ -53,13 +54,13 @@ static t_object *io_print(t_object *self, t_dll *dll) {
         RETURN_SELF;
     }
 
+    // Implied conversion to string
     if (! OBJECT_IS_STRING(obj)) {
         obj = object_call(obj, "string", 0);
     }
 
-
     char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
-    printf(ANSI_BRIGHTRED "%s\n" ANSI_RESET, str);
+    printf(ANSI_BRIGHTRED "%s" ANSI_RESET "\n", str);
     smm_free(str);
 
     RETURN_SELF;
@@ -80,8 +81,6 @@ static t_object *io_sprintf(t_object *self, t_dll *args) {
     wchar_t tmp[] = L"IO.sprintf\n";
     RETURN_STRING(tmp);
 }
-
-
 
 /**
  *
@@ -109,22 +108,22 @@ static t_object *console_sprintf(t_object *self, t_dll *args) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
-t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_NO_FLAGS, NULL) };
+t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
+t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
 
 
 static void _init(void) {
     io_struct.methods = ht_create();
-    object_add_internal_method(&io_struct, "printf", io_print);
-    object_add_internal_method(&io_struct, "print", io_print);
-    object_add_internal_method(&io_struct, "printf", io_printf);
-    object_add_internal_method(&io_struct, "sprintf", io_sprintf);
+    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_print);
+    object_add_internal_method(&io_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_print);
+    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_printf);
+    object_add_internal_method(&io_struct, "sprintf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_sprintf);
     io_struct.properties = ht_create();
 
     console_struct.methods = ht_create();
-    object_add_internal_method(&console_struct, "print", console_print);
-    object_add_internal_method(&console_struct, "printf", console_printf);
-    object_add_internal_method(&console_struct, "sprintf", console_sprintf);
+    object_add_internal_method(&console_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_print);
+    object_add_internal_method(&console_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_printf);
+    object_add_internal_method(&console_struct, "sprintf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_sprintf);
     console_struct.properties = ht_create();
 }
 
