@@ -269,6 +269,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
     char *str, *method_name, *ctx_name, *name;
     wchar_t *wchar_tmp;
     t_dll *dll;
+    t_scope *scope;
 
     // Append to lineno
     dll_append(lineno_stack, (void *)p->lineno);
@@ -468,7 +469,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                 case T_RETURN :
                     // Check the current scope.
-                    t_scope *scope = get_current_scope();
+                    scope = get_current_scope();
                     if (scope->depth == 1) {
                         DEBUG_PRINT("Cannot leave the global scope!");
                     }
