@@ -75,64 +75,64 @@ static void _bytecode_parse_constants(t_ast_element *p, t_bytecode *bc) {
     if (!p) return;
 
     switch (p->type) {
-        case typeString :
-            printf("STRING: '%s'\n", p->string.value);
-            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->string.value)) {
-                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-                constant->hdr.type = BYTECODE_CONST_STRING;
-                constant->hdr.length = strlen(p->string.value);
-                constant->data.s = smm_strdup(p->string.value);
-                dll_append(bc->constant_dll, constant);
-            }
-            break;
-        case typeNumerical :
-            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NUMERICAL, (void *)p->numerical.value)) {
-                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-                constant->hdr.type = BYTECODE_CONST_NUMERICAL;
-                constant->hdr.length = sizeof(long);
-                constant->data.l = p->numerical.value;
-                dll_append(bc->constant_dll, constant);
-            }
-            break;
-        case typeIdentifier :
-            if (p->string.value[0] == '$') break;
-            printf("IDENT: '%s'\n", p->string.value);
-            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->identifier.name)) {
-                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-                constant->hdr.type = BYTECODE_CONST_STRING;
-                constant->hdr.length = strlen(p->identifier.name);
-                constant->data.s = smm_strdup(p->identifier.name);
-                dll_append(bc->constant_dll, constant);
-            }
-            break;
-        case typeNull :
-            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NULL, NULL)) {
-                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
-                constant->hdr.type = BYTECODE_CONST_NULL;
-                constant->hdr.length = 0;
-                constant->data.l = 0;
-                dll_append(bc->constant_dll, constant);
-            }
-            break;
-        case typeOpr :
-            // Plot all the operands
-            for (int i=0; i!=p->opr.nops; i++) {
-                _bytecode_parse_constants(p->opr.ops[i], bc);
-            }
-            break;
-        case typeInterface :
-            _bytecode_parse_constants(p->interface.implements, bc);
-            _bytecode_parse_constants(p->interface.body, bc);
-            break;
-        case typeClass :
-            _bytecode_parse_constants(p->class.extends, bc);
-            _bytecode_parse_constants(p->class.implements, bc);
-            _bytecode_parse_constants(p->class.body, bc);
-            break;
-        case typeMethod:
-            _bytecode_parse_constants(p->method.arguments, bc);
-            _bytecode_parse_constants(p->method.body, bc);
-            break;
+//        case typeAstString :
+//            printf("STRING: '%s'\n", p->string.value);
+//            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->string.value)) {
+//                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+//                constant->hdr.type = BYTECODE_CONST_STRING;
+//                constant->hdr.length = strlen(p->string.value);
+//                constant->data.s = smm_strdup(p->string.value);
+//                dll_append(bc->constant_dll, constant);
+//            }
+//            break;
+//        case typeAstNumerical :
+//            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NUMERICAL, (void *)p->numerical.value)) {
+//                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+//                constant->hdr.type = BYTECODE_CONST_NUMERICAL;
+//                constant->hdr.length = sizeof(long);
+//                constant->data.l = p->numerical.value;
+//                dll_append(bc->constant_dll, constant);
+//            }
+//            break;
+//        case typeAstIdentifier :
+//            if (p->string.value[0] == '$') break;
+//            printf("IDENT: '%s'\n", p->string.value);
+//            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_STRING, p->identifier.name)) {
+//                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+//                constant->hdr.type = BYTECODE_CONST_STRING;
+//                constant->hdr.length = strlen(p->identifier.name);
+//                constant->data.s = smm_strdup(p->identifier.name);
+//                dll_append(bc->constant_dll, constant);
+//            }
+//            break;
+//        case typeNull :
+//            if (! _bytecode_constant_exists(bc, BYTECODE_CONST_NULL, NULL)) {
+//                constant = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+//                constant->hdr.type = BYTECODE_CONST_NULL;
+//                constant->hdr.length = 0;
+//                constant->data.l = 0;
+//                dll_append(bc->constant_dll, constant);
+//            }
+//            break;
+//        case typeOpr :
+//            // Plot all the operands
+//            for (int i=0; i!=p->opr.nops; i++) {
+//                _bytecode_parse_constants(p->opr.ops[i], bc);
+//            }
+//            break;
+//        case typeInterface :
+//            _bytecode_parse_constants(p->interface.implements, bc);
+//            _bytecode_parse_constants(p->interface.body, bc);
+//            break;
+//        case typeClass :
+//            _bytecode_parse_constants(p->class.extends, bc);
+//            _bytecode_parse_constants(p->class.implements, bc);
+//            _bytecode_parse_constants(p->class.body, bc);
+//            break;
+//        case typeMethod:
+//            _bytecode_parse_constants(p->method.arguments, bc);
+//            _bytecode_parse_constants(p->method.body, bc);
+//            break;
         default :
             printf("Unknown type!");
             exit(1);
