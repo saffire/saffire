@@ -28,10 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "interpreter/saffire_interpreter.h"
+#include "interpreter/interpreter.h"
 #include "interpreter/context.h"
 #include "interpreter/errors.h"
-#include "../compiler/parser.tab.h"
+#include "compiler/parser.tab.h"
 #include "compiler/saffire_compiler.h"
 #include "general/hashtable.h"
 #include "compiler/ast.h"
@@ -47,7 +47,7 @@
 #include "debug.h"
 
 extern char *get_token_string(int token);
-static t_snode *_saffire_interpreter(t_ast_element *p);
+static t_snode *_interpreter(t_ast_element *p);
 
 // A stack maintained by the AST which holds the current line for the current AST
 t_dll *lineno_stack;
@@ -262,7 +262,7 @@ t_object_funcs user_funcs = {
 /**
  *
  */
-static t_snode *_saffire_interpreter(t_ast_element *p) {
+static t_snode *_interpreter(t_ast_element *p) {
     t_object *obj, *obj1, *obj2, *obj3;
     t_snode *node1, *node2, *node3;
     int initial_loop;
@@ -358,7 +358,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             // Interpret body.
             t_object *saved_obj = current_obj;
             current_obj = obj;
-            _saffire_interpreter(p->class.body);
+            _interpreter(p->class.body);
             current_obj = saved_obj;
 
             // Add the object to the current context
@@ -397,7 +397,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 case T_USE_STATEMENTS:
                 case T_STATEMENTS :
                     for (int i=0; i!=OP_CNT(p); i++) {
-                        _saffire_interpreter(p->opr.ops[i]);
+                        _interpreter(p->opr.ops[i]);
                     }
                     // Statements do not return anything
                     RETURN_SNODE_NULL(); // (well, it should)
@@ -495,7 +495,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                     // Do all expressions
                     for (int i=0; i!=OP_CNT(p); i++) {
-                        node1 = _saffire_interpreter(p->opr.ops[i]);
+                        node1 = _interpreter(p->opr.ops[i]);
                         // Remember the first node
                         if (i == 0) node2 = node1;
                     }
@@ -638,7 +638,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 case T_ARGUMENT_LIST:
                     dll = dll_init();
                     for (int i=0; i!=OP_CNT(p); i++) {
-                        node1 = _saffire_interpreter(p->opr.ops[i]);
+                        node1 = _interpreter(p->opr.ops[i]);
                         obj1 = si_get_object(node1);
                         dll_append(dll, obj1);
                     }
@@ -932,8 +932,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 /**
  * Interpret a leaf. Returns the last object encountered, or a NULL object.
  */
-t_object *saffire_interpreter_leaf(t_ast_element *p) {
-    t_snode *node = _saffire_interpreter(p);
+t_object *interpreter_leaf(t_ast_element *p) {
+    t_snode *node = _interpreter(p);
     if (IS_OBJECT(node)) {
         RETURN_OBJECT(node->data.obj);
     }
@@ -945,12 +945,12 @@ t_object *saffire_interpreter_leaf(t_ast_element *p) {
 /**
  * Interpret a tree. Will deal with initialiazation etc
  */
-int saffire_interpreter(t_ast_element *p) {
+int interpreter(t_ast_element *p) {
     int ret = 0;
 
     si_init();
 
-    t_object *obj = saffire_interpreter_leaf(p);
+    t_object *obj = interpreter_leaf(p);
 
     if (OBJECT_IS_NUMERICAL(obj)) {
         ret = ((t_numerical_object *)(obj))->value;
@@ -964,7 +964,7 @@ int saffire_interpreter(t_ast_element *p) {
     while (ht_iter_valid(&iter)) {
         t_object *obj = ht_iter_value(&iter);
         if (obj->type != objectTypeCode && obj->type != objectTypeMethod) {
-            DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, obj, obj->ref_count, object_debug(obj));
+            DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
         }
         ht_iter_next(&iter);
     }

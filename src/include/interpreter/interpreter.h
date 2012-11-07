@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SAFFIRE_INTERPRETER_H__
-#define __SAFFIRE_INTERPRETER_H__
+#ifndef __INTERPRETER_H__
+#define __INTERPRETER_H__
 
     #include "compiler/ast.h"
     #include "objects/object.h"
@@ -58,10 +58,10 @@
 
 
     // Interpretation macros. If we need more, just add them here. But we probably won't.
-    #define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
-    #define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
-    #define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
-    #define SI3(p)  (_saffire_interpreter(p->opr.ops[3]))
+    #define SI0(p)  (_interpreter(p->opr.ops[0]))
+    #define SI1(p)  (_interpreter(p->opr.ops[1]))
+    #define SI2(p)  (_interpreter(p->opr.ops[2]))
+    #define SI3(p)  (_interpreter(p->opr.ops[3]))
 
 
     // Snode identifier macros
@@ -106,7 +106,7 @@
                                      return ret; }
 
 
-    int saffire_interpreter(t_ast_element *p);
-    t_object *saffire_interpreter_leaf(t_ast_element *p);
+    int interpreter(t_ast_element *p);
+    t_object *interpreter_leaf(t_ast_element *p);
 
 #endif

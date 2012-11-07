@@ -32,7 +32,7 @@
 
 #include "general/smm.h"
 #include "compiler/ast.h"
-#include "parser.tab.h"
+#include "compiler/parser.tab.h"
 
 #define YY_NO_INPUT 1
 #define YYPRINT 1

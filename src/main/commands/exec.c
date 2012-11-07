@@ -33,7 +33,7 @@
 #include "modules/module_api.h"
 #include "compiler/ast.h"
 #include "dot/dot.h"
-#include "interpreter/saffire_interpreter.h"
+#include "interpreter/interpreter.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
 
@@ -53,7 +53,7 @@ static int do_exec(void) {
         dot_generate(ast, dot_file);
     }
 
-    int ret = saffire_interpreter(ast);
+    int ret = interpreter(ast);
 
     // Release memory of ast root
     if (ast != NULL) {

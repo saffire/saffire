@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "debug.h"
-#include "interpreter/saffire_interpreter.h"
+#include "interpreter/interpreter.h"
 #include "interpreter/context.h"
 #include "interpreter/errors.h"
 #include "general/hashtable.h"

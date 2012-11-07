@@ -41,7 +41,7 @@
 #include "general/smm.h"
 #include "general/dll.h"
 #include "interpreter/errors.h"
-#include "interpreter/saffire_interpreter.h"
+#include "interpreter/interpreter.h"
 #include "debug.h"
 
 
@@ -144,7 +144,7 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
     } else if (code->p) {
         // External function found in AST
         // @TODO: How do we send our arguments?
-        ret = saffire_interpreter_leaf(code->p);
+        ret = interpreter_leaf(code->p);
     } else {
         saffire_error("Sanity error: code object has no code");
     }

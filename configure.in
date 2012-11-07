@@ -113,18 +113,8 @@ AC_CHECK_LIB([edit],[el_init], [
         ])
 
 AC_CONFIG_FILES([
-                 Makefile
-                 src/Makefile
-                 src/main/Makefile
-                 src/components/Makefile
-                 src/components/objects/Makefile
-                 src/components/modules/Makefile
-                 src/components/compiler/Makefile
-                 src/components/fastcgi/Makefile
-                 src/components/general/Makefile
-                 src/components/interpreter/Makefile
-                 src/components/repl/Makefile
-                 src/components/vm/Makefile
+                    Makefile
+                    src/Makefile
                 ])
 
 AC_OUTPUT

@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "compiler/saffire_compiler.h"
-#include "parser.tab.h"
+#include "compiler/parser.tab.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
 

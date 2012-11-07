@@ -48,7 +48,7 @@
  */
 
 #ifndef md5_INCLUDED
-#  define md5_INCLUDED
+#define md5_INCLUDED
 
 /*
  * This package supports both compile-time and run-time determination of CPU
