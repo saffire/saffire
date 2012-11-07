@@ -26,6 +26,7 @@ saffire/Makefile
 saffire/Makefile.in
 saffire/config.h
 saffire/config.h.in
+saffire/config.h.in~
 saffire/stamp-h1
 saffire/libsaffire.a
 saffire/test
