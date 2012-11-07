@@ -8,8 +8,8 @@ $header = unpack ("Vmagic/".
                   "Vversion/".
                   "Vconst_count/".
                   "Vconst_off/".
-                  "Vclass_count/".
-                  "Vclass_off", $data);
+                  "Vvariable_count/".
+                  "Vvariable_off", $data);
 
 print_r($header);
 
@@ -23,8 +23,8 @@ printf("Magic                : 0x%08X\n", $header['magic']);
 printf("Sourcefile timestamp : ". date("d-m-Y h:i:s", $header['timestamp'])."\n");
 printf("Constant count       : ". $header['const_count']." (0x%08X)\n", $header['const_count']);
 printf("Constant offset      : ". $header['const_off']." (0x%08X)\n", $header['const_off']);
-printf("Class count          : ". $header['class_count']." (0x%08X)\n", $header['class_count']);
-printf("Class offset         : ". $header['class_off']." (0x%08X)\n", $header['class_off']);
+printf("Variable count       : ". $header['variable_count']." (0x%08X)\n", $header['variable_count']);
+printf("Variable offset      : ". $header['variable_off']." (0x%08X)\n", $header['variable_off']);
 
 printf("------------------------------\n");
 for ($i=0; $i!=$header['const_count']; $i++) {

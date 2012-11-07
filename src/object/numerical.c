@@ -107,7 +107,7 @@ SAFFIRE_METHOD(numerical, neg) {
  * Saffire method: output numerical value
  */
 SAFFIRE_METHOD(numerical, print) {
-    printf("%ld\n", self->value);
+    printf("THE VALUE: %ld\n", self->value);
     RETURN_SELF;
 }
 

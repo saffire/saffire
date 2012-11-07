@@ -35,74 +35,53 @@
 
     #define MAGIC_HEADER 0x43424653     // big-endian SFBC (saffire bytecode)
 
-    #define BYTECODE_CONST_NULL          0
-    #define BYTECODE_CONST_STRING        1
-    #define BYTECODE_CONST_NUMERICAL     2
-    #define BYTECODE_CONST_BOOLEAN       3
-    #define BYTECODE_CONST_REGEX         4
+    #define BYTECODE_CONST_STRING        0
+    #define BYTECODE_CONST_NUMERICAL     1
+    #define BYTECODE_CONST_CODE          2
 
-    typedef struct _bytecode_header {
-        uint32_t   magic;              // magic number 0x53464243 (SFBC)
-        uint32_t   timestamp;          // Modified timestamp for source file
-        uint32_t   version;            // Version
 
-        uint32_t   constant_count;     // Number of constants in this file
-        uint32_t   constant_offset;    // Start of the first constant
+    typedef struct _bytecode_binary_header {
+        uint32_t   magic;               // magic number 0x53464243 (SFBC)
+        uint32_t   timestamp;           // Modified timestamp for source file
+        uint32_t   crc;                 // Simple CRC check on the file
+    } PACKED t_bytecode_binary_header;
 
-        uint32_t   class_count;        // Number of classes in this file
-        uint32_t   class_offset;       // Start of the first classes
-    } PACKED t_bytecode_header;
 
-    typedef struct _bytecode_class {
-        uint32_t   name_index;         // Index to the name of the class
-        uint32_t   class_flags;        // Class type flags
-        uint32_t   extend_index;       // Offset in this file to the extend class (or NULL when not extended)
-        uint16_t   interface_count;    // Number of interfaces
-        uint32_t   interface_offset;   // Start of the first interface (or NULL when no interfaces)
-        uint16_t   constant_count;     // Number of constants
-        uint32_t   constant_offset;    // Start of the first constant (or NULL when no constants)
-        uint16_t   property_count;     // Number of properties
-        uint32_t   property_offset;    // Start of the first property (or NULL when no properties)
-        uint16_t   method_count;       // Number of properties
-        uint32_t   method_offset;      // Start of the first method (or NULL when no methods)
-    } PACKED t_bytecode_class;
-
+    struct _bytecode;
     typedef struct _bytecode_constant_header {
-        uint32_t   length;          // Length of data
-        uint8_t    type;            // Type of the constant
-    } PACKED t_bytecode_constant_header;
+        char type;          // Type of the constant
+        int  len;           // Length of data
 
-    typedef struct _bytecode_constant {
-        t_bytecode_constant_header hdr;
         union {
             char *s;
             long l;
+            struct _bytecode *code;
+            void *ptr;
         } data;
     } t_bytecode_constant;
 
+
+    typedef struct _bytecode_variable_header {
+        int  len;           // Length of data
+        char *s;
+    } t_bytecode_variable;
+
+
     typedef struct _bytecode {
-        long length;                // Lenght of the complete structure (0 is not known yet)
-        char *buffer;               // Binary buffer
-        t_bytecode_header *header;
-        t_dll *constant_dll;
-        t_dll *class_dll;
+        int stack_size;         // Maximum stack size for this bytecode
+
+        int code_len;
+        char *code;
+
+        int constants_len;
+        t_bytecode_constant **constants;
+
+        int variables_len;
+        t_bytecode_variable **variables;
     } t_bytecode;
 
 
-//    typedef struct _bytecode_property {
-//    } t_bytecode_property;
-//
-//    typedef struct _bytecode_method {
-//    } t_bytecode_method;
-
-//    typedef struct _bytecode_line {
-//        char *filename;     // Which file in the source does this bytecode represent
-//        int line;           // Which line in the source does this bytecode represent
-//
-//        // @TODO: Add bytecode stuff
-//    } t_bytecode_line;
-
-
+    t_bytecode *generate_dummy_bytecode(void);
     t_bytecode *bytecode_generate(t_ast_element *p, char *source_file);
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);

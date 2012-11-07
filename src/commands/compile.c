@@ -29,11 +29,12 @@
 #include <stdlib.h>
 #include <locale.h>
 #include "interpreter/context.h"
-#include "object/object.h"
+//#include "object/object.h"
 #include "modules/module_api.h"
-#include "compiler/ast.h"
-#include "dot/dot.h"
-#include "interpreter/saffire_interpreter.h"
+#include "vm/vm.h"
+//#include "compiler/ast.h"
+//#include "dot/dot.h"
+//#include "interpreter/saffire_interpreter.h"
 #include "command.h"
 #include "general/parse_options.h"
 
@@ -46,26 +47,25 @@ static int do_compile(void) {
     object_init();
     module_init();
 
+
+    t_bytecode *bc = generate_dummy_bytecode();
+    vm_execute(bc);
+    return 0;
+
     t_ast_element *ast = ast_generate_from_file(source_file);
-
-    if (dot_file) {
-        dot_generate(ast, dot_file);
-    }
-
-    int len = 0;
-
-    char *dest_file = bytecode_generate_destfile(source_file);
-    t_bytecode *bc = bytecode_generate(ast_root, source_file);
-    if (bc && bc->length) {
-        printf("Dumping %d bytes into '%s'\n", bc->length, dest_file);
-        FILE *f = fopen(dest_file, "w+");
-        if (f) {
-            fwrite(bc->buffer, 1, bc->length, f);
-            fclose(f);
-        }
-    }
-    bytecode_free(bc);
-    smm_free(dest_file);        // free dest file name
+//    char *dest_file = bytecode_generate_destfile(source_file);
+//    t_bytecode *bc = bytecode_generate(ast_root, source_file);
+//    if (bc && bc->length) {
+//        printf("Dumping %d bytes into '%s'\n", bc->length, dest_file);
+//        FILE *f = fopen(dest_file, "w+");
+//        if (f) {
+//            fwrite(bc->buffer, 1, bc->length, f);
+//            fclose(f);
+//        }
+//    }
+//
+//    bytecode_free(bc);
+//    smm_free(dest_file);        // free dest file name
 
     // Release memory of ast root
     if (ast != NULL) {
@@ -76,7 +76,7 @@ static int do_compile(void) {
     object_fini();
     context_fini();
 
-    return ret;
+    return 0;
 }
 
 
