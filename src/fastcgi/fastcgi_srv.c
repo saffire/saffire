@@ -367,6 +367,7 @@ int fastcgi_start(void) {
             }
         }
     }
+    return 0;
 }
 
 

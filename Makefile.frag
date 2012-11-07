@@ -14,5 +14,8 @@ else
   AM_YFLAGS =
 endif
 
-
+# Add top include dir
 AM_CFLAGS += -I$(top_srcdir)/src/include
+
+# Complain about everything, except unused functions
+AM_CFLAGS += -Wall -Wno-unused-function

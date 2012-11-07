@@ -96,6 +96,7 @@ static int do_generate(void) {
     for (int i=0; i!=ARRAY_SIZE(default_ini); i++) {
         printf("%s\n", default_ini[i]);
     }
+    return 0;
 }
 
 
@@ -211,8 +212,11 @@ static int do_get(void) {
  * Action: ./saffire config set <setting> <value>
  */
 static int do_set(void) {
-    char *setting = saffire_getopt_string(0);
-    char *value = saffire_getopt_string(1);
+//    char *setting = saffire_getopt_string(0);
+//    char *value = saffire_getopt_string(1);
+
+    // @TODO: Set the value inside the ini file (augeas??)
+    return 1;
 }
 
 /**

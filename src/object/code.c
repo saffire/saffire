@@ -73,6 +73,7 @@ SAFFIRE_METHOD(code, dtor) {
  */
 SAFFIRE_METHOD(code, call) {
     // @TODO: Will do a call to the code object
+    RETURN_NULL;
 }
 
 /**

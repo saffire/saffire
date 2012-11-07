@@ -302,6 +302,12 @@ void ast_free_node(t_ast_element *p) {
     if (!p) return;
 
     switch (p->type) {
+        case typeAstNull :
+            // Nothing to free
+            break;
+        case typeAstNumerical :
+            // Nothing to free
+            break;
         case typeAstString :
             smm_free(p->string.value);
             break;

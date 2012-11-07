@@ -183,4 +183,6 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
     tmp = element->next;
     element->next = element->prev;
     element->prev = tmp;
+
+    return 1;
 }

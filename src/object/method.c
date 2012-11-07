@@ -71,9 +71,10 @@ SAFFIRE_METHOD(method, dtor) {
 /**
  *
  */
-SAFFIRE_METHOD(method, call) {
-    // Will do a call to the code object
-}
+//SAFFIRE_METHOD(method, call) {
+//    // Will do a call to the code object
+//    RETURN_SELF();
+//}
 
 /**
  *
@@ -227,6 +228,13 @@ void object_method_init(void) {
     object_add_internal_method(&Object_Method_struct, "final?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_final);
 
     object_add_internal_method(&Object_Method_struct, "visibility", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_visibility);
+    object_add_internal_method(&Object_Method_struct, "public?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_public);
+    object_add_internal_method(&Object_Method_struct, "private?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_private);
+    object_add_internal_method(&Object_Method_struct, "protected?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_protected);
+
+    object_add_internal_method(&Object_Method_struct, "class", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_class);
+    object_add_internal_method(&Object_Method_struct, "code", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_method_method_code);
+
 
     Object_Method_struct.properties = ht_create();
 }

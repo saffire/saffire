@@ -115,11 +115,12 @@
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
     #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
 
-    #define OBJECT_IS_NULL(obj)     (obj->type == objectTypeNull)
-    #define OBJECT_IS_STRING(obj)   (obj->type == objectTypeString)
-    #define OBJECT_IS_BOOLEAN(obj)  (obj->type == objectTypeBoolean)
-    #define OBJECT_IS_METHOD(obj)   (obj->type == objectTypeMethod)
-    #define OBJECT_IS_CODE(obj)     (obj->type == objectTypeCode)
+    #define OBJECT_IS_NULL(obj)         (obj->type == objectTypeNull)
+    #define OBJECT_IS_NUMERICAL(obj)    (obj->type == objectTypeNumerical)
+    #define OBJECT_IS_STRING(obj)       (obj->type == objectTypeString)
+    #define OBJECT_IS_BOOLEAN(obj)      (obj->type == objectTypeBoolean)
+    #define OBJECT_IS_METHOD(obj)       (obj->type == objectTypeMethod)
+    #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
 
 
 //    // A object's method hash table stores method_caller structures

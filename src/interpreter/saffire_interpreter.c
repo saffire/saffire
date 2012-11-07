@@ -142,6 +142,7 @@ static t_object *si_get_object(t_snode *node) {
     }
 
     saffire_error("This identifier does not have any ID nor OBJ");
+    return NULL;
 }
 
 
@@ -264,9 +265,9 @@ t_object_funcs user_funcs = {
 static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_object *obj, *obj1, *obj2, *obj3;
     t_snode *node1, *node2, *node3;
-    int ret, initial_loop, len;
+    int initial_loop;
     t_ast_element *hte;
-    char *str, *method_name, *ctx_name, *name;
+    char *ctx_name, *name;
     wchar_t *wchar_tmp;
     t_dll *dll;
     t_scope *scope;
@@ -281,6 +282,13 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
 
     switch (p->type) {
+        case typeAstNull :
+            RETURN_SNODE_NULL();
+            break;
+        case typeAstInterface:
+            // @TODO
+            RETURN_SNODE_NULL();
+            break;
         case typeAstString :
             DEBUG_PRINT("new string object: '%s'\n", p->string.value);
 
@@ -586,8 +594,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node2);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_find_method(obj1, "boolean");
-                            obj2 = object_call(obj1, obj2, 0);
+                            obj2 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, obj2, 0);
                         }
 
                         // if condition is not true, break our loop
@@ -614,8 +622,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                     // Check if it's already a boolean. If not, cast this object to boolean
                     if (! OBJECT_IS_BOOLEAN(obj1)) {
-                        obj1 = object_find_method(obj1, "boolean");
-                        obj2 = object_call(obj1, obj2, 0);
+                        obj2 = object_find_method(obj1, "boolean");
+                        obj1 = object_call(obj1, obj2, 0);
                     }
 
                     if (obj1 == Object_True) {
@@ -656,7 +664,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
 
                     // Get arguments (or NULL)
-                    t_dll *dll;
+                    t_dll *dll = NULL;
                     node2 = SI2(p);
                     if (IS_DLL(node2)) {
                         dll = node2->data.dll;
@@ -666,6 +674,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         saffire_error("Expected a DLL (or null)");
                     }
 
+                    // assume nothing found
+                    obj3 = Object_Null;
 
                     if (OBJECT_IS_METHOD(obj2)) {
                         /*
@@ -936,9 +946,15 @@ t_object *saffire_interpreter_leaf(t_ast_element *p) {
  * Interpret a tree. Will deal with initialiazation etc
  */
 int saffire_interpreter(t_ast_element *p) {
+    int ret = 0;
+
     si_init();
 
     t_object *obj = saffire_interpreter_leaf(p);
+
+    if (OBJECT_IS_NUMERICAL(obj)) {
+        ret = ((t_numerical_object *)(obj))->value;
+    }
 
     // @TODO: What should we do with the output of this node? Somehow, return it to the caller or somethign?
 
@@ -955,4 +971,6 @@ int saffire_interpreter(t_ast_element *p) {
 #endif
 
     si_fini();
+
+    return ret;
 }

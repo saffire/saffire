@@ -32,6 +32,7 @@
 #include "object/object.h"
 #include "object/string.h"
 #include "object/numerical.h"
+#include "interpreter/errors.h"
 
 #define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
 
@@ -184,7 +185,7 @@ static t_object *get_constant(int idx) {
             break;
 
         default :
-            printf("Cannot convert constant type %d to an object\n");
+            printf("Cannot convert constant type %d to an object\n", idx);
             exit(1);
     }
 

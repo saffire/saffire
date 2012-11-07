@@ -240,6 +240,7 @@ t_ns_context *si_find_context(const char *name) {
     // Prevent endless loops:    context1 -> context2 -> context1
     smm_free(ctx_name);
     saffire_error("Context nesting too deep!");
+    return NULL;
 }
 
 

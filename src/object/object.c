@@ -111,7 +111,7 @@ t_object *object_find_method(t_object *obj, char *method_name) {
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
 t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
-    t_object *ret;
+    t_object *ret = NULL;
 
     // @TODO: It should be a callable method
 
@@ -180,7 +180,7 @@ t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) 
 t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, ...) {
     t_object *cur_obj = obj;
     va_list arg_list;
-    t_object *(*func)(t_object *, t_dll *dll, int in_place);
+    t_object *(*func)(t_object *, t_dll *dll, int in_place) = NULL;
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->operators != NULL) {
@@ -206,6 +206,11 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
         cur_obj = cur_obj->parent;
     }
 
+    if (!func) {
+        // No comparison found for this method
+        saffire_error("Cannot find operator method");
+        return Object_False;
+    }
 
     DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
 
@@ -231,7 +236,7 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
  */
 t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     t_object *cur_obj = obj1;
-    int (*func)(t_object *, t_object *);
+    int (*func)(t_object *, t_object *) = NULL;
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->comparisons != NULL) {
@@ -253,6 +258,12 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
         // Try again in the parent object
         cur_obj = cur_obj->parent;
+    }
+
+    if (!func) {
+        // No comparison found for this method
+        saffire_error("Cannot find compare method");
+        return Object_False;
     }
 
 
@@ -418,7 +429,6 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
     va_list storage_list;
     t_objectype_enum type;
     int result = 0;
-    t_object *obj;
 
     va_start(storage_list, speclist);
 

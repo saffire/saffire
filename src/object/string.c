@@ -66,7 +66,7 @@ static void hash_widestring(wchar_t *value, int len, md5_byte_t *hash) {
         int utf8_char_len = wctomb(utf8_char_buf, value[i]);
 
         // Add character to md5
-        md5_append(&state, utf8_char_buf, utf8_char_len);
+        md5_append(&state, (md5_byte_t *)utf8_char_buf, utf8_char_len);
     }
     md5_finish(&state, hash);
 }
@@ -321,13 +321,13 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    if (wcsstr(self->value, other->value) != NULL);
+    return (wcsstr(self->value, other->value) != NULL);
 }
 SAFFIRE_COMPARISON_METHOD(string, ni) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    if (wcsstr(self->value, other->value) == NULL);
+    return (wcsstr(self->value, other->value) == NULL);
 }
 
 
@@ -488,8 +488,8 @@ t_object_comparisons string_cmps = {
 // Intial object
 t_string_object Object_String_struct = {
     OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_TYPE_CLASS, &string_funcs),
+    L'\0',
     0,
     0,
-    '\0',
-    L'\0'
+    ""
 };
