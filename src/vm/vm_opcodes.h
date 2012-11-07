@@ -28,7 +28,7 @@
 #define __VM_OPCODES_H__
 
     #define VM_STOP_CODE            0x00
-    #define VM_PRINT_VAR            0x00        // @TODO: REMOVE ME
+    #define VM_PRINT_VAR            0x59        // @TODO: REMOVE ME
 
     #define VM_POP_TOP              0x01
     #define VM_ROT_TWO              0x02

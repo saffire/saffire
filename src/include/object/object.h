@@ -220,8 +220,8 @@
     void object_init(void);
     void object_fini(void);
     t_object *object_find_method(t_object *obj, char *method_name);
-    t_object *object_call_args(t_object *obj, t_dll *dll);
-    t_object *object_call(t_object *obj, int arg_count, ...);
+    t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *dll);
+    t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...);
     t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...);
     t_object *object_comparison(t_object *obj1, int comparison, t_object *obj2);
     void object_free(t_object *obj);

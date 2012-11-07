@@ -88,10 +88,12 @@ static char get_next_opcode(void) {
         exit(1);
     }
 
+    if (ctx->ip == ctx->bc->code_len) {
+        return VM_STOP_CODE;
+    }
+
     char op = ctx->bc->code[ctx->ip];
     ctx->ip++;
-
-    printf("IP: %08d\n", ctx->ip);
 
     return op;
 }
@@ -246,6 +248,8 @@ dispatch:
 
         // Get opcode and additional argument
         opcode = get_next_opcode();
+        if (opcode  == VM_STOP_CODE) break;
+
         oparg = (opcode >= HAVE_ARGUMENT) ? get_operand() : 0;
         printf("Opcode: %02X (%02X)\n", opcode, oparg);
 
@@ -254,7 +258,7 @@ dispatch:
             case VM_PRINT_VAR :
                 obj1 = stack_pop();
                 obj2 = object_find_method(obj1, "print");
-                object_call(obj2, 0);
+                object_call(obj1, obj2, 0);
                 goto dispatch;
                 break;
 

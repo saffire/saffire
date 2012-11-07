@@ -47,7 +47,7 @@ extern char *wctou8(const wchar_t *wstr, long len);
  *
  */
 static t_object *io_print(t_object *self, t_dll *dll) {
-    t_object *obj;
+    t_object *obj, *obj2;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
         saffire_error("Error while parsing argument list\n");
@@ -56,8 +56,8 @@ static t_object *io_print(t_object *self, t_dll *dll) {
 
     // Implied conversion to string
     if (! OBJECT_IS_STRING(obj)) {
-        obj = object_find_method(obj, "string");
-        obj = object_call(obj, 0);
+        obj2 = object_find_method(obj, "string");
+            obj = object_call(obj, obj2, 0);
     }
 
     char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);

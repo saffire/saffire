@@ -534,8 +534,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_find_method(obj1, "boolean");
-                            obj1 = object_call(obj1, 0);
+                            obj2 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, obj2, 0);
                         }
 
                         // False, we can break our do-loop
@@ -555,8 +555,8 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         obj1 = si_get_object(node1);
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
-                            obj1 = object_find_method(obj1, "boolean");
-                            obj1 = object_call(obj1, 0);
+                            obj2 = object_find_method(obj1, "boolean");
+                            obj1 = object_call(obj1, obj2, 0);
                         }
 
                         // if condition is true, execute our inner block
@@ -587,7 +587,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         // Check if it's already a boolean. If not, cast this object to boolean
                         if (! OBJECT_IS_BOOLEAN(obj1)) {
                             obj1 = object_find_method(obj1, "boolean");
-                            obj1 = object_call(obj1, 0);
+                            obj2 = object_call(obj1, obj2, 0);
                         }
 
                         // if condition is not true, break our loop
@@ -615,7 +615,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Check if it's already a boolean. If not, cast this object to boolean
                     if (! OBJECT_IS_BOOLEAN(obj1)) {
                         obj1 = object_find_method(obj1, "boolean");
-                        obj1 = object_call(obj1, 0);
+                        obj2 = object_call(obj1, obj2, 0);
                     }
 
                     if (obj1 == Object_True) {
@@ -698,7 +698,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
                         // We need to do a method call
                         DEBUG_PRINT("+++ Calling method %s \n", obj2->name);
-                        obj3 = object_call_args(obj2, dll);
+                        obj3 = object_call_args(obj1, obj2, dll);
 
                         leave_scope();
 

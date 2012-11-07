@@ -336,18 +336,19 @@ t_bytecode *generate_dummy_bytecode(void) {
                         "\x64\x01\x00\x00\x00"      // LOAD_CONST   1 (0x5678)
                         "\x5a\x01\x00\x00\x00"      // STORE_VAR    1 (b)
                         "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
-                        "\x00"                      // PRINT_VAR
+                        "\x59"                      // PRINT_VAR
                         "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
-                        "\x00"                      // PRINT_VAR
+                        "\x59"                      // PRINT_VAR
                         "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
                         "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
                         "\x02"                      // ROT_TWO
                         "\x5a\x00\x00\x00\x00"      // STORE_VAR    0 (a)
                         "\x5a\x01\x00\x00\x00"      // STORE_VAR    1 (b)
                         "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
-                        "\x00"                      // PRINT_VAR
+                        "\x59"                      // PRINT_VAR
                         "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
-                        "\x00"                      // PRINT_VAR
+                        "\x59"                      // PRINT_VAR
+                        "\x00"                      // STOP
                        ;
 
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));

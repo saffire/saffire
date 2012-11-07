@@ -110,18 +110,18 @@ t_object *object_find_method(t_object *obj, char *method_name) {
 /**
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
-t_object *object_call_args(t_object *obj, t_dll *args) {
+t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
     t_object *ret;
 
     // @TODO: It should be a callable method
 
 
     // @TODO: Maybe check just for callable?
-    if (! OBJECT_IS_METHOD(obj)) {
+    if (! OBJECT_IS_METHOD(method_obj)) {
         saffire_error("Object returned in this method is not a method, so I cannot call this!");
     }
 
-    t_method_object *method = (t_method_object *)obj;
+    t_method_object *method = (t_method_object *)method_obj;
 
     DEBUG_PRINT("MFLAGS: %d\n", method->mflags);
     DEBUG_PRINT("OFLAGS: %d\n", method->class->flags);
@@ -140,7 +140,7 @@ t_object *object_call_args(t_object *obj, t_dll *args) {
     // @TODO: move this to the code-object
     if (code->f) {
         // Internal function
-        ret = code->f(method->class, args);
+        ret = code->f(self, args);
     } else if (code->p) {
         // External function found in AST
         // @TODO: How do we send our arguments?
@@ -155,7 +155,7 @@ t_object *object_call_args(t_object *obj, t_dll *args) {
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_call(t_object *obj, int arg_count, ...) {
+t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
     // Add all arguments to a DLL
     va_list arg_list;
     va_start(arg_list, arg_count);
@@ -166,7 +166,7 @@ t_object *object_call(t_object *obj, int arg_count, ...) {
     }
     va_end(arg_list);
 
-    t_object *ret = object_call_args(obj, dll);
+    t_object *ret = object_call_args(self, method_obj, dll);
 
     // Free dll
     dll_free(dll);
