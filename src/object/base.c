@@ -162,20 +162,20 @@ SAFFIRE_METHOD(base, refcount) {
 void object_base_init() {
     Object_Base_struct.methods = ht_create();
 
-    ht_add(Object_Base_struct.methods, "ctor", object_base_method_ctor);
-    ht_add(Object_Base_struct.methods, "dtor", object_base_method_ctor);
-    ht_add(Object_Base_struct.methods, "properties", object_base_method_properties);
-    ht_add(Object_Base_struct.methods, "methods", object_base_method_methods);
-    ht_add(Object_Base_struct.methods, "parents", object_base_method_parents);
-    ht_add(Object_Base_struct.methods, "name", object_base_method_name);
-    ht_add(Object_Base_struct.methods, "implements", object_base_method_implements);
-    ht_add(Object_Base_struct.methods, "memory", object_base_method_memory);
-    ht_add(Object_Base_struct.methods, "annotations", object_base_method_annotations);
-    ht_add(Object_Base_struct.methods, "clone", object_base_method_clone);
-    ht_add(Object_Base_struct.methods, "immutable", object_base_method_immutable);
-    ht_add(Object_Base_struct.methods, "immutable?", object_base_method_is_immutable);
-    ht_add(Object_Base_struct.methods, "destroy", object_base_method_destroy);
-    ht_add(Object_Base_struct.methods, "refcount", object_base_method_refcount);
+    object_add_internal_method(&Object_Base_struct, "ctor", object_base_method_ctor);
+    object_add_internal_method(&Object_Base_struct, "dtor", object_base_method_ctor);
+    object_add_internal_method(&Object_Base_struct, "properties", object_base_method_properties);
+    object_add_internal_method(&Object_Base_struct, "methods", object_base_method_methods);
+    object_add_internal_method(&Object_Base_struct, "parents", object_base_method_parents);
+    object_add_internal_method(&Object_Base_struct, "name", object_base_method_name);
+    object_add_internal_method(&Object_Base_struct, "implements", object_base_method_implements);
+    object_add_internal_method(&Object_Base_struct, "memory", object_base_method_memory);
+    object_add_internal_method(&Object_Base_struct, "annotations", object_base_method_annotations);
+    object_add_internal_method(&Object_Base_struct, "clone", object_base_method_clone);
+    object_add_internal_method(&Object_Base_struct, "immutable", object_base_method_immutable);
+    object_add_internal_method(&Object_Base_struct, "immutable?", object_base_method_is_immutable);
+    object_add_internal_method(&Object_Base_struct, "destroy", object_base_method_destroy);
+    object_add_internal_method(&Object_Base_struct, "refcount", object_base_method_refcount);
 
     Object_Base_struct.properties = ht_create();
 }
@@ -209,7 +209,9 @@ t_object_funcs base_funcs = {
         NULL,               // Allocate a new string object
         NULL,               // Free a string object
         obj_clone,          // Clone a string object
+#ifdef __DEBUG
         NULL
+#endif
 };
 
 

@@ -39,8 +39,11 @@
 #include "general/smm.h"
 #include "general/dll.h"
 #include "interpreter/errors.h"
+#include "interpreter/saffire_interpreter.h"
 #include "debug.h"
 
+
+// @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
 #ifdef __DEBUG
     t_dll *object_dll;
@@ -59,21 +62,21 @@ int object_is_immutable(t_object *obj) {
 /**
  * Checks and returns the correct object that holds the method (if any)
  */
-static t_hash_table_bucket *_find_method(t_object *obj, char *method) {
+static t_method_caller *_find_method(t_object *obj, char *method_name) {
     // Try and find the correct method (might be found of the bases classes!)
-    t_hash_table_bucket *htb = NULL;
+    t_method_caller *caller = NULL;
     t_object *cur_obj = obj;
 
-    while (htb == NULL) {
-        DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method, cur_obj->name);
+    while (caller == NULL) {
+        DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method_name, cur_obj->name);
 
         // Find the method in the current object
-        htb = ht_find(cur_obj->methods, method);
-        if (htb != NULL) break;
+        caller = ht_find(cur_obj->methods, method_name);
+        if (caller != NULL) break;
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
-            DEBUG_PRINT(">>> Cannot call method '%s' on object %s: not found\n", method, obj->name);
+            DEBUG_PRINT(">>> Cannot call method '%s' on object %s: not found\n", method_name, obj->name);
             return NULL;
         }
 
@@ -81,8 +84,8 @@ static t_hash_table_bucket *_find_method(t_object *obj, char *method) {
         cur_obj = cur_obj->parent;
     }
 
-    DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method, obj->name);
-    return htb;
+    DEBUG_PRINT(">>> Calling method '%s' on object %s\n", method_name, obj->name);
+    return caller;
 }
 
 
@@ -90,14 +93,25 @@ static t_hash_table_bucket *_find_method(t_object *obj, char *method) {
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
 t_object *object_call_args(t_object *obj, char *method, t_dll *args) {
-    // Find hash bucket with method // @TODO: Return t_method instead!
-    t_hash_table_bucket *htb = _find_method(obj, method);
-    if (htb == NULL) {
-        return NULL;
+    t_object *ret;
+
+    t_method_caller *mc = _find_method(obj, method);
+    if (! mc) RETURN_NULL;
+
+#ifdef __DEBUG
+    if (mc->marker != 0xDEADBEEF) {
+        saffire_error("Incorrect marker detected on '%s'.'%s'\n", obj->name, method);
+    }
+#endif
+
+
+    if (mc->internal) {
+        t_object *(*func)(t_object *, t_dll *) = mc->data;
+        ret = func(obj, args);
+    } else {
+        ret = saffire_interpreter_leaf((t_ast_element *)mc->data);
     }
 
-    t_object *(*func)(t_object *, t_dll *) = htb->data;
-    t_object *ret = func(obj, args);
 
     // Don't free DLL, since it's external
 
@@ -108,12 +122,6 @@ t_object *object_call_args(t_object *obj, char *method, t_dll *args) {
  * Calls a method from specified object. Returns NULL when method is not found.
  */
 t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
-    // @TODO: Return t_method instead!
-    t_hash_table_bucket *htb = _find_method(obj, method);
-    if (htb == NULL) {
-        return NULL;
-    }
-
     // Add all arguments to a DLL
     va_list arg_list;
     va_start(arg_list, arg_count);
@@ -124,9 +132,7 @@ t_object *object_call(t_object *obj, char *method, int arg_count, ...) {
     }
     va_end(arg_list);
 
-    // Call the actual method and return the result
-    t_object *(*func)(t_object *, t_dll *) = htb->data;
-    t_object *ret = func(obj, dll);
+    t_object *ret = object_call_args(obj, method, dll);
 
     // Free dll
     dll_free(dll);
@@ -260,12 +266,14 @@ void object_dec_ref(t_object *obj) {
 }
 
 
+#ifdef __DEBUG
 char *object_debug(t_object *obj) {
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
     }
     return "";
 }
+#endif
 
 /**
  * Free an object (if needed)
@@ -445,3 +453,36 @@ done:
     return result;
 }
 
+
+/**
+ *
+ */
+void object_add_external_method(void *obj, char *name, t_ast_element *p) {
+    t_object *the_obj = (t_object *)obj;
+
+    t_method_caller *method = smm_malloc(sizeof(t_method_caller));
+
+#ifdef __DEBUG
+     method->marker = 0xDEADBEEF;
+#endif
+     method->internal = 0;
+     method->data = p;
+     ht_add(the_obj->methods, name, method);
+}
+
+
+/**
+ *
+ */
+void object_add_internal_method(void *obj, char *name, void *func) {
+    t_object *the_obj = (t_object *)obj;
+
+    t_method_caller *method = smm_malloc(sizeof(t_method_caller));
+
+#ifdef __DEBUG
+     method->marker = 0xDEADBEEF;
+#endif
+     method->internal = 1;
+     method->data = func;
+     ht_add(the_obj->methods, name, method);
+}

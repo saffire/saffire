@@ -28,6 +28,7 @@
 #define __AST_H__
 
     #include "compiler/class.h"
+    #include <stdio.h>
 
     // different kind of nodes we manage
     typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier, typeAstOpr, typeAstClass, typeAstInterface, typeAstMethod } nodeEnum;
@@ -87,9 +88,6 @@
         };
     } t_ast_element;
 
-
-    // actual root element
-    t_ast_element *ast_root;
 
     t_ast_element *ast_generate_from_file(char *);
     t_ast_element *ast_generate_tree(FILE *fp);

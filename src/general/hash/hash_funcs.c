@@ -24,34 +24,37 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "command.h"
-#include "repl/repl.h"
+#include "general/hash/hash_funcs.h"
 
-static int do_repl(void) {
-    return (repl());
+
+/*
+ * Hash functions taken from
+ * http://en.literateprograms.org/Hash_function_comparison_%28C,_sh%29
+ *
+ */
+
+/*
+ * SDBM hash
+ */
+hash_t hash_native(t_hash_table *ht, const char *key) {
+	hash_t h = 0;
+
+	while (*key) h = *key++ + (h<<6) + (h<<16) - h;
+
+	return h;
 }
 
 
-/****
- * Argument Parsing and action definitions
- ***/
+/**
+ * Bernstein DJB33A hash
+ */
+hash_t hash_djbx33a(t_hash_table *ht, const char *key) {
+    hash_t h = 0;
 
-/* Usage string */
-static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
-                             "\n"
-                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
+    for (; *key; key++) {
+        h = *key + (h << 5) + h;
+    }
 
+    return h;
 
-/* Config actions */
-static struct command_action command_actions[] = {
-    { "", "", do_repl, NULL },
-    { 0, 0, 0, 0 }
-};
-
-/* Config info structure */
-struct command_info info_cli = {
-    "Interactive Interpreter",
-    command_actions,
-    help
-};
+}
