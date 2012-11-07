@@ -35,7 +35,7 @@
 //#include "compiler/ast.h"
 //#include "dot/dot.h"
 //#include "interpreter/saffire_interpreter.h"
-#include "command.h"
+#include "commands/command.h"
 #include "general/parse_options.h"
 
 

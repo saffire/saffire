@@ -35,11 +35,7 @@
     #define CTX_UPDATE_ONLY         1
     #define CTX_CREATE_OR_UPDATE    2
 
-    typedef struct _scope {
-        t_ns_context *context;
-        t_ast_element *entrypoint;
-        int depth;
-    } t_scope;
+
 
     t_hash_table *ht_contexts;         // Hash of all contexts
 
@@ -57,6 +53,11 @@
     // @TODO: We can iterate hashes. Remove this
     t_dll *dll_contexts;               // DLL of all contexts
 
+    typedef struct _scope {
+        t_ns_context *context;
+        t_ast_element *entrypoint;
+        int depth;
+    } t_scope;
 
     void context_init(void);
     void context_fini(void);
