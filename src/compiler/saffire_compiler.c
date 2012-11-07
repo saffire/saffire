@@ -133,8 +133,8 @@ void sfc_validate_constant(char *name) {
     // Check if the class exists in the class table
     if (global_table->active_class) {
         // inside the current class
-        t_hash_table_bucket *htb = ht_find(global_table->active_class->constants, name);
-        if (htb != NULL) {
+
+        if (ht_exists(global_table->active_class->constants, name)) {
             sfc_error("Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
         }
 
@@ -143,8 +143,7 @@ void sfc_validate_constant(char *name) {
 
     } else {
         // Global scope
-        t_hash_table_bucket *htb = ht_find(global_table->constants, name);
-        if (htb != NULL) {
+        if (ht_exists(global_table->constants, name)) {
             sfc_error("Constant '%s' has already be defined in the global scope", name);
         }
 
@@ -180,13 +179,8 @@ void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_ele
         sfc_error("You cannot define a class inside another class");
     }
 
-//    if (name[0] == '$') {
-//        sfc_error("A variable cannot be used as a class name");
-//    }
-
     // Check if the class exists in the class table
-    t_hash_table_bucket *htb = ht_find(global_table->classes, name);
-    if (htb != NULL) {
+    if (ht_exists(global_table->classes, name)) {
         sfc_error("This class is already defined");
     }
 
@@ -270,23 +264,21 @@ static void sfc_init_global_table(void) {
 static void sfc_fini_global_table(void) {
     // Iterate over classes and remove all info
     t_hash_table *ht = global_table->classes;
-    for (int i=0; i!=ht->bucket_size; i++) {
-        if (ht->bucket_list[i] == NULL) continue;    // Empty bucket
 
-        t_hash_table_bucket *htb = ht->bucket_list[i];
-        while (htb) {
-            t_class *class = htb->data;
+    t_hash_iter iter;
+    ht_iter_rewind(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        t_class *class = ht_iter_value(&iter);
 
-            smm_free(class->name);  // Strdupped
+        smm_free(class->name);  // Strdupped
 
-            ht_destroy(class->methods);
-            ht_destroy(class->constants);
-            ht_destroy(class->properties);
+        ht_destroy(class->methods);
+        ht_destroy(class->constants);
+        ht_destroy(class->properties);
 
-            smm_free(class);
+        smm_free(class);
 
-            htb = htb->next;
-        }
+        ht_iter_next(&iter);
     }
 
     // Destroy global constant and classes tables

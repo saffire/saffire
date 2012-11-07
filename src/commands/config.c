@@ -159,10 +159,8 @@ static void read_ini(void) {
 char *config_get_string(const char *key) {
     read_ini();
 
-    t_hash_table_bucket *htb = ht_find(config, (char *)key);
-    if (htb == NULL) return NULL;
-
-    return (char *)htb->data;
+    char *val = ht_find(config, (char *)key);
+    return val;
 }
 
 /**
@@ -171,10 +169,10 @@ char *config_get_string(const char *key) {
 char config_get_bool(const char *key) {
     read_ini();
 
-    t_hash_table_bucket *htb = ht_find(config, (char *)key);
-    if (htb == NULL) return 0;
+    char *val = ht_find(config, (char *)key);
+    if (val == NULL) return 0;
 
-    return to_bool((char *)htb->data);
+    return to_bool(val);
 }
 
 /**
@@ -183,10 +181,10 @@ char config_get_bool(const char *key) {
 long config_get_long(const char *key) {
     read_ini();
 
-    t_hash_table_bucket *htb = ht_find(config, (char *)key);
-    if (htb == NULL) return 0;
+    char *val = ht_find(config, (char *)key);
+    if (val == NULL) return 0;
 
-    return atol((char *)htb->data);
+    return atol(val);
 }
 
 

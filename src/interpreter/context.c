@@ -116,7 +116,7 @@ void context_fini(void) {
 /**
  * Creates a new context or alias to the context
  */
-static t_ns_context *_si_create_ctx(char *name, int aliased, t_ns_context *ctx) {
+static t_ns_context *_si_create_ctx(const char *name, int aliased, t_ns_context *ctx) {
     char *new_ctx_name;
     int prefix = 0;
 
@@ -162,24 +162,31 @@ static t_ns_context *_si_create_ctx(char *name, int aliased, t_ns_context *ctx) 
     return new_ctx;
 }
 
+
 /**
  * Creates a new context
  */
-t_ns_context *si_create_context(char *name) {
+t_ns_context *si_create_context(const char *name) {
     return _si_create_ctx(name, 0, NULL);
 }
+
 
 /**
  * Creates a new alias to an existing context
  */
-t_ns_context *si_create_context_alias(char *alias, t_ns_context *ctx) {
+t_ns_context *si_create_context_alias(const char *alias, t_ns_context *ctx) {
     return _si_create_ctx(alias, 1, ctx);
 }
 
 
-char *si_create_fqn(const char *var) {
+/**
+ *
+ */
+char *si_create_fqn(const char *var, t_ns_context *ctx) {
     char *fqn;
-    t_ns_context *ctx = si_get_current_context();
+    if (ctx == NULL) {
+        ctx = si_get_current_context();
+    }
 
     if (strncmp(var, NS_SEPARATOR, 2) == 0) {
         // Qualified
@@ -189,8 +196,17 @@ char *si_create_fqn(const char *var) {
 
     // Unqualified
     int fqn_len = strlen(var) + strlen(ctx->name);
-    fqn = smm_malloc(fqn_len + 1);
-    strcpy(fqn, ctx->name);
+
+    if (strlen(ctx->name) > strlen(NS_SEPARATOR)) {
+        // Add separator in between
+        fqn = smm_malloc(fqn_len + strlen(NS_SEPARATOR) + 1);
+        strcpy(fqn, ctx->name);
+        strcat(fqn, NS_SEPARATOR);
+    } else {
+        // "root", so don't add separator
+        fqn = smm_malloc(fqn_len + 1);
+        strcpy(fqn, ctx->name);
+    }
     strcat(fqn, var);
     return fqn;
 }
@@ -199,14 +215,13 @@ char *si_create_fqn(const char *var) {
 /**
  * Splits a fully qualified variable name into context and variable separated.
  */
-void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **fqn_var) {
-    DEBUG_PRINT("si_split_var : '%s'\n", var);
-    char *fqn = si_create_fqn(var);
+void si_split_var(t_ns_context *current_ctx, const char *var, char **fqn_ctx, char **fqn_var) {
+    DEBUG_PRINT("si_split_var : '%s' ", var);
+    char *fqn = si_create_fqn(var, current_ctx);
 
     // We now have a fully qualified name. We now can split the variable from the name, and check for presence
-    DEBUG_PRINT("FQN: '%s'\n", fqn);
+    DEBUG_PRINT("FQN: '%s'  ", fqn);
 
-    // TODO: Check for separator!
     char *ch = strrstr(fqn, NS_SEPARATOR);
     if (ch == NULL) {
         saffire_error("Cannot find last %s in fully qualified name '%s'!", NS_SEPARATOR, fqn);
@@ -219,10 +234,12 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **f
     *fqn_ctx = smm_strdup(fqn);
     (*fqn_ctx)[len] = '\0';
 
-    DEBUG_PRINT("CTX : '%s'\n", *fqn_ctx);
-    DEBUG_PRINT("VAR : '%s'\n", *fqn_var);
+    DEBUG_PRINT("CTX : '%s' ", *fqn_ctx);
+    DEBUG_PRINT("VAR : '%s' ", *fqn_var);
 
     smm_free(fqn);
+
+    DEBUG_PRINT("\n");
 }
 
 
@@ -230,16 +247,14 @@ void si_split_var(t_ns_context *current_ctx, char *var, char **fqn_ctx, char **f
  * Find context, or NULL when does not exist
  */
 t_ns_context *si_find_context(const char *name) {
-    char *ctx_name = si_create_fqn(name);
+    char *ctx_name = si_create_fqn(name, NULL);
 
     DEBUG_PRINT("t_ns_context *si_find_context(%s) {\n", ctx_name);
-    t_hash_table_bucket *htb = ht_find(ht_contexts, (char *)ctx_name);
-    if (!htb) {
+    t_ns_context *ctx = ht_find(ht_contexts, (char *)ctx_name);
+    if (!ctx) {
         smm_free(ctx_name);
         return NULL;
     }
-    t_ns_context *ctx = (t_ns_context *)htb->data;
-
 
     // Check if context is aliased, if so, goto the alias
     int i=10;
@@ -258,6 +273,7 @@ t_ns_context *si_find_context(const char *name) {
     saffire_error("Context nesting too deep!");
 }
 
+
 /**
  * Returns t_ns_context of the name. Errors when not found
  */
@@ -269,43 +285,77 @@ t_ns_context *si_get_context(const char *name) {
     return ns;
 }
 
+
+/**
+ *
+ */
+int si_create_var_in_context(const char *var, t_ns_context *cur_ctx, t_object *obj, int mode) {
+    char *fqn_ctx, *fqn_var;
+
+    if (cur_ctx == NULL) {
+        cur_ctx = si_get_current_context();
+    }
+
+    // Create fqn from our variable
+    si_split_var(cur_ctx, var, &fqn_ctx, &fqn_var);
+
+    t_ns_context *ctx = si_get_context(fqn_ctx);
+    if (ctx == NULL) {
+        saffire_error("Cannot find context '%s'", fqn_ctx);
+    }
+
+    // Check if var exists
+    int var_exists = ht_exists(ctx->data.vars, fqn_var);
+
+    if (mode == CTX_CREATE_ONLY && var_exists) {
+        saffire_error("Variable %s already exists inside %s", fqn_var, ctx->name);
+    }
+
+    if (mode == CTX_UPDATE_ONLY && ! var_exists) {
+        saffire_error("Variable %s does not exist inside %s", fqn_var, ctx->name);
+    }
+
+    DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
+    if (var_exists) {
+        ht_replace(ctx->data.vars, fqn_var, obj);
+    } else {
+        ht_add(ctx->data.vars, fqn_var, obj);
+    }
+
+    return 1;
+}
+
+
 /**
  * Returns the bucket of the variable. Will take care of namespacing depending on the given context
  */
-t_hash_table_bucket *si_find_in_context(char *var, t_ns_context *ctx) {
+t_object *si_find_var_in_context(const char *var, t_ns_context *cur_ctx) {
     char *fqn_ctx, *fqn_var;
 
-    if (ctx == NULL) {
-        ctx = si_get_current_context();
+    if (cur_ctx == NULL) {
+        cur_ctx = si_get_current_context();
     }
 
-    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", ctx->name, var);
+    DEBUG_PRINT("si_find_in_context (%s) : '%s'\n", cur_ctx->name, var);
 
-    // Create fqn from our variables
-    si_split_var(ctx, var, &fqn_ctx, &fqn_var);
+    // Create fqn from our variable
+    si_split_var(cur_ctx, var, &fqn_ctx, &fqn_var);
 
     DEBUG_PRINT("CTX: %s\n", fqn_ctx);
 
-    t_ns_context *ns_ctx = si_get_context(fqn_ctx);
-    if (ns_ctx == NULL) {
+    t_ns_context *ctx = si_get_context(fqn_ctx);
+    if (ctx == NULL) {
         saffire_error("Cannot find context '%s'", fqn_ctx);
     }
 
     // Find variable in name
-    t_hash_table_bucket *htb = ht_find(ns_ctx->data.vars, fqn_var);
-
-    if (! htb) {
-        DEBUG_PRINT("Creating a new entry for '%s' in '%s'\n", fqn_var, fqn_ctx);
-        ht_add(ns_ctx->data.vars, fqn_var, NULL);                            // set to NULL by default
-        htb = ht_find(ns_ctx->data.vars, fqn_var);
-    }
-
+    t_object *obj = ht_find(ctx->data.vars, fqn_var);
 
     // Free temp vars
     smm_free(fqn_var);
     smm_free(fqn_ctx);
 
-    return htb;
+    return obj;
 }
 
 

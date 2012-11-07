@@ -35,30 +35,29 @@
     // Count number of operands.
     #define OP_CNT(p) p->opr.nops
 
+    // Different type of snodes
     typedef enum { snodeTypeNull, snodeTypeObject, snodeTypeIdentifier, snodeTypeString, snodeTypeDll } snodeTypeEnum;
 
-    struct _snode;
-
+    // An identifier has a "name" (pointed by ID) and a pointer to the actual object it holds.
+    // Obj can be empty, ID should never be empty.
     typedef struct _t_identifier {
-        t_object *obj;                  // Actual object
-        t_hash_table_bucket *id;        // Pointer to hash-table element which holds the object
+        char *id;            // "key" of the variable (cannot be NULL)
+        t_object *obj;       // Actual object that is stored (can be NULL if nothing is set for this ID)
     } t_identifier;
 
     // Snode structure
     typedef struct _snode {
-        snodeTypeEnum type;           // Type of the snode
+        snodeTypeEnum type;             // Type of the snode
         union {
-            void *data;         // Generic data (@TODO: Used?)
-            t_object *obj;      // Single object
-            t_identifier id;    // An identifier
-            char *str;          // Single string
-            t_dll *dll;         // DLL
+            t_object *obj;              // Single object
+            t_identifier id;            // An identifier
+            char *str;                  // Single string
+            t_dll *dll;                 // DLL
         } data;
     } t_snode;
 
 
-    // Interpretation macros
-    #define SI(p)   (_saffire_interpreter(p))
+    // Interpretation macros. If we need more, just add them here. But we probably won't.
     #define SI0(p)  (_saffire_interpreter(p->opr.ops[0]))
     #define SI1(p)  (_saffire_interpreter(p->opr.ops[1]))
     #define SI2(p)  (_saffire_interpreter(p->opr.ops[2]))
@@ -84,7 +83,6 @@
 
     #define RETURN_SNODE_NULL() { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
                                      ret->type = snodeTypeNull; \
-                                     ret->data.data = NULL; \
                                      dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
                                      return ret; }
 
@@ -96,7 +94,7 @@
 
     #define RETURN_SNODE_IDENTIFIER(ident, object) { t_snode *ret = (t_snode *)smm_malloc(sizeof(t_snode)); \
                                      ret->type = snodeTypeIdentifier; \
-                                     ret->data.id.id = ident; \
+                                     ret->data.id.id = smm_strdup(ident); \
                                      ret->data.id.obj = object; \
                                      dll_remove(lineno_stack, DLL_TAIL(lineno_stack)); \
                                      return ret; }
@@ -108,8 +106,7 @@
                                      return ret; }
 
 
-    void saffire_warning(char *str, ...);
-    void saffire_error(char *str, ...);
     int saffire_interpreter(t_ast_element *p);
+    t_object *saffire_interpreter_leaf(t_ast_element *p);
 
 #endif

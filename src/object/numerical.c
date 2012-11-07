@@ -394,18 +394,17 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  */
 void object_numerical_init(void) {
     Object_Numerical_struct.methods = ht_create();
-    ht_add(Object_Numerical_struct.methods, "ctor", object_numerical_method_ctor);
-    ht_add(Object_Numerical_struct.methods, "dtor", object_numerical_method_dtor);
+    object_add_internal_method(&Object_Numerical_struct, "ctor", object_numerical_method_ctor);
+    object_add_internal_method(&Object_Numerical_struct, "dtor", object_numerical_method_dtor);
 
-    ht_add(Object_Numerical_struct.methods, "boolean", object_numerical_method_conv_boolean);
-    ht_add(Object_Numerical_struct.methods, "null", object_numerical_method_conv_null);
-    ht_add(Object_Numerical_struct.methods, "numerical", object_numerical_method_conv_numerical);
-    ht_add(Object_Numerical_struct.methods, "string", object_numerical_method_conv_string);
+    object_add_internal_method(&Object_Numerical_struct, "boolean", object_numerical_method_conv_boolean);
+    object_add_internal_method(&Object_Numerical_struct, "null", object_numerical_method_conv_null);
+    object_add_internal_method(&Object_Numerical_struct, "numerical", object_numerical_method_conv_numerical);
+    object_add_internal_method(&Object_Numerical_struct, "string", object_numerical_method_conv_string);
 
-
-    ht_add(Object_Numerical_struct.methods, "neg", object_numerical_method_neg);
-    ht_add(Object_Numerical_struct.methods, "abs", object_numerical_method_abs);
-    ht_add(Object_Numerical_struct.methods, "print", object_numerical_method_print);
+    object_add_internal_method(&Object_Numerical_struct, "neg", object_numerical_method_neg);
+    object_add_internal_method(&Object_Numerical_struct, "abs", object_numerical_method_abs);
+    object_add_internal_method(&Object_Numerical_struct, "print", object_numerical_method_print);
 
     Object_Numerical_struct.properties = ht_create();
 
@@ -471,14 +470,13 @@ static t_object *obj_new(va_list arg_list) {
     return (t_object *)new_obj;
 }
 
-
+#ifdef __DEBUG
 char tmp[100];
 static char *obj_debug(struct _object *obj) {
     sprintf(tmp, "%ld", ((t_numerical_object *)obj)->value);
     return tmp;
 }
-
-
+#endif
 
 
 // String object management functions
@@ -486,7 +484,9 @@ t_object_funcs numerical_funcs = {
         obj_new,            // Allocate a new numerical object
         NULL,               // Free a numerical object
         obj_clone,          // Clone a numerical object
+#ifdef __DEBUG
         obj_debug
+#endif
 };
 
 t_object_operators numerical_ops = {

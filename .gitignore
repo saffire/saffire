@@ -32,3 +32,9 @@ src/test
 *.gcno
 *.gcda
 .coverage.*
+.deps
+.dirstamp
+config.guess
+config.sub
+compile
+.saffire_history

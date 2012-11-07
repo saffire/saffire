@@ -32,6 +32,7 @@
     #include "general/hashtable.h"
     #include "general/dll.h"
     #include "object/method.h"
+    #include "compiler/ast.h"
 
 
     // Forward define
@@ -43,7 +44,9 @@
         struct _object *(*new)(va_list arg_list);       // Allocates a new object
         void (*free)(struct _object *);                 // Frees objects internal data
         struct _object *(*clone)(struct _object *);     // Clones the object
+#ifdef __DEBUG
         char *(*debug)(struct _object *);               // Return debug string (value and info)
+#endif
     } t_object_funcs;
 
     // Operator defines
@@ -106,6 +109,18 @@
     #define OBJECT_IS_STRING(obj)   (obj->type == objectTypeString)
     #define OBJECT_IS_BOOLEAN(obj)  (obj->type == objectTypeBoolean)
 
+
+    // A object's method hash table stores method_caller structures
+    typedef struct _method_caller {
+#ifdef __DEBUG
+        int  marker;            // @TODO: Remove me
+#endif
+        void *data;              // either t_ast_element OR a pointer to a method
+        char internal;           // The method is an internal method (1) or not (0)
+    } t_method_caller;
+
+    // For easy definition during internal object creation
+    #define INTERNAL_METHOD(func) { func, 1 }
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[7];
@@ -203,6 +218,7 @@
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);
 
-    void test(void);
+    void object_add_internal_method(void *obj, char *name, void *func);
+    void object_add_external_method(void *obj, char *name, t_ast_element *p);
 
 #endif

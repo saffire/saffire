@@ -75,9 +75,6 @@ static void si_fini(void) {
 }
 
 
-
-
-
 /**
  * Returns object from a node. If the node points to a variable, return the object where this variable
  * points to.
@@ -100,9 +97,9 @@ static t_object *si_get_object(t_snode *node) {
     if (HAS_IDENTIFIER_ID(node)) {
         // Fetch object where this var references to, and add it to the destination var
         //t_hash_table_bucket *htb = si_find_in_context(node->data.id.id);
-        t_hash_table_bucket *htb = node->data.id.id;
-        obj = (t_object *)htb->data;
-        if (obj == NULL) {
+        char *key = node->data.id.id;
+        obj = si_find_var_in_context(key, NULL);
+        if (! obj) {
             saffire_error("This variable is not initialized!");
         }
         return obj;
@@ -116,21 +113,30 @@ static t_object *si_get_object(t_snode *node) {
  * Sets or replaces the object into the variable
  */
 static void si_set_object(t_snode *node, t_object *dst_obj) {
+    t_object *src_obj = NULL;
+
     if (! IS_IDENTIFIER(node)) {
         saffire_error("Trying to set an object to a non-variable");
     }
 
     // Decrease source object reference count (if any object is present)
     if (HAS_IDENTIFIER_OBJ(node)) {
-        t_object *src_obj = si_get_object(node);
-        object_dec_ref(src_obj);
+        src_obj = si_get_object(node);
+        if (src_obj != dst_obj) {
+            // Only decrease when they are not equal (ie: when changing objects)
+            object_dec_ref(src_obj);
+        }
     }
 
-    // Set new object and increase reference count
-    t_hash_table_bucket *htb = node->data.id.id;
-    htb->data = dst_obj;
-    object_inc_ref(dst_obj);
+    // Add or replace the object
+    si_create_var_in_context(node->data.id.id, NULL, dst_obj, CTX_CREATE_OR_UPDATE);
+
+    if (src_obj != dst_obj) {
+        // Only increase when they are not equal (ie: when changed)
+        object_inc_ref(dst_obj);
+    }
 }
+
 
 /**
  * Compare the objects according to the comparison (returns 0 or 1)
@@ -173,32 +179,37 @@ static t_snode *si_operator(t_ast_element *p, int opr) {
 
 
 
+// Pointer to the current object
+t_object *current_obj = NULL;
+
+
 /**
  *
  */
 static t_snode *_saffire_interpreter(t_ast_element *p) {
     t_object *obj, *obj1, *obj2, *obj3;
     t_snode *node1, *node2, *node3;
-    t_hash_table_bucket *htb;
     int ret, initial_loop, len;
     t_ast_element *hte;
     char *str, *method_name, *ctx_name, *name;
+    wchar_t *wchar_tmp;
     t_dll *dll;
 
     // Append to lineno
     dll_append(lineno_stack, (void *)p->lineno);
 
+    // No element found, return NULL object
     if (!p) {
         RETURN_SNODE_OBJECT(Object_Null);
     }
 
-    wchar_t *wchar_tmp;
+
     switch (p->type) {
         case typeAstString :
             DEBUG_PRINT("new string object: '%s'\n", p->string.value);
 
             // Allocate enough room to hold string in wchar and convert
-            int len = strlen(p->string.value)*sizeof(wchar_t);
+            int len = strlen(p->string.value) * sizeof(wchar_t);
             wchar_tmp = (wchar_t *)smm_malloc(len * sizeof(wchar_t));
             memset(wchar_tmp, 0, len * sizeof(wchar_t));
             mbstowcs(wchar_tmp, p->string.value, strlen(p->string.value));
@@ -209,12 +220,14 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
             // Free tmp wide string
             smm_free(wchar_tmp);
             RETURN_SNODE_OBJECT(obj);
+            break;
 
         case typeAstNumerical :
             DEBUG_PRINT("new numerical object: %d\n", p->numerical.value);
             // Create numerical object
             obj = object_new(Object_Numerical, p->numerical.value);
             RETURN_SNODE_OBJECT(obj);
+            break;
 
         case typeAstIdentifier :
             // Do constant vars
@@ -232,16 +245,51 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                 RETURN_SNODE_IDENTIFIER(NULL, Object_Null);
             }
 
-            htb = si_find_in_context(p->string.value, NULL);
-            RETURN_SNODE_IDENTIFIER(htb, (t_object *)htb->data);
+            obj = si_find_var_in_context(p->string.value, NULL);
+            RETURN_SNODE_IDENTIFIER(p->string.value, obj);
+            break;
+
+        case typeAstClass :
+            obj = (t_object *)smm_malloc(sizeof(t_object));
+            obj->ref_count = 0;
+            obj->type = objectTypeAny;
+            obj->name = smm_strdup(p->class.name);
+            obj->flags = p->class.modifiers;
+            obj->parent = NULL;
+            obj->implement_count = 0;
+            obj->implements = NULL;
+            obj->methods = ht_create();
+            obj->properties = ht_create();
+            obj->constants = ht_create();
+            obj->operators = NULL;
+            obj->comparisons = NULL;
+            obj->funcs = NULL;
+
+            // Interpret body.
+            t_object *saved_obj = current_obj;
+            current_obj = obj;
+            _saffire_interpreter(p->class.body);
+            current_obj = saved_obj;
+
+            // Add the object to the current context
+            t_ns_context *ctx = si_get_current_context();
+            si_context_add_object(ctx, obj);
+            break;
+
+        case typeAstMethod :
+            if (current_obj == NULL) {
+                saffire_error("Trying to define a method outside a class. This should be caught by the parser!");
+            }
+            DEBUG_PRINT("Adding method: %s to %s\n", p->method.name, current_obj->name);
+            object_add_external_method(current_obj, p->method.name, p->method.body);
             break;
 
         case typeAstOpr :
             DEBUG_PRINT("opr.oper: %s(%d)\n", get_token_string(p->opr.oper), p->opr.oper);
             switch (p->opr.oper) {
                 case T_PROGRAM :
-                    SI0(p); // use declarations
-                    SI1(p); // top statements
+                    SI0(p); // parse use declarations
+                    SI1(p); // parse top statements
                     break;
                 case T_TOP_STATEMENTS:
                 case T_USE_STATEMENTS:
@@ -250,7 +298,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                         _saffire_interpreter(p->opr.ops[i]);
                     }
                     // Statements do not return anything
-                    RETURN_SNODE_NULL();
+                    RETURN_SNODE_NULL(); // (well, it should)
                     break;
 
                 case T_IMPORT :
@@ -274,9 +322,7 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 
 
                     // Check if variable is free
-                    t_ns_context *ctx = si_get_current_context();
-                    t_hash_table_bucket *htb = ht_find(ctx->data.vars, alias);
-                    if (htb) {
+                    if (si_find_var_in_context(alias, NULL)) {
                         saffire_error("A variable named %s is already present or imported.", alias);
                     }
 
@@ -285,15 +331,13 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     if (ctx == NULL) {
                         saffire_error("Cannot find context: %s", ctx_name);
                     }
-                    htb = ht_find(ctx->data.vars, classname);
-                    if (htb == NULL) {
+                    obj = si_find_var_in_context(classname, ctx);
+                    if (! obj) {
                         saffire_error("Cannot find class %s inside context: %s", classname, ctx_name);
                     }
-                    obj = (t_object *)htb->data;
 
-                    // Add to the current context as the cu
-                    ctx = si_get_current_context();
-                    ht_add(ctx->data.vars, alias, obj);
+                    // Add the object to the current context as the alias variable
+                    si_create_var_in_context(alias, NULL, obj, CTX_CREATE_ONLY);
 
                     DEBUG_PRINT("Imported class %s as %s from %s into %s\n", classname, alias, ctx_name, ctx->name);
                     break;
@@ -348,11 +392,9 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     // Fetch LHS node
                     node1 = SI0(p);
 
-                    // Not found, create this variable
-                    if (node1 == NULL) {
-                        saffire_error("Left hand side does not exist");
-                    }
                     // it should be a variable, otherwise we cannot write to it..
+
+                    // @TODO: THIS IS WRONG. AN ID ALWAYS HAS AN KEY?
                     if (! HAS_IDENTIFIER_ID(node1)) {
                         saffire_error("Left hand side is not writable!");
                     }
@@ -605,12 +647,57 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
                     if (hte->type != typeAstIdentifier) {
                         saffire_error("Can only have identifiers here", hte->identifier.name);
                     }
-                    method_name = smm_strdup(hte->identifier.name);
 
-                    printf("Figuring out: '%s' in object '%s'", method_name, obj1->name);
+                    DEBUG_PRINT("Figuring out: '%s' in object '%s'", hte->identifier.name, obj1->name);
+                    obj = ht_find(obj1->properties, hte->identifier.name);
+                    if (obj == NULL) {
+                        obj = ht_find(obj1->constants, hte->identifier.name);
+                        if (obj == NULL) {
+                            saffire_error("Cannot find constant or property '%s' from '%s'", hte->identifier.name, obj1->name);
+                        }
+                    }
+                    RETURN_SNODE_OBJECT(obj);
 
-                    smm_free(method_name);
+                    break;
 
+                case T_CONST :
+                    if (current_obj == NULL) {
+                        // @TODO: We could create constants OUTSIDE a class!
+                        saffire_error("Defining constants outside classes is not yet supported!");
+                    }
+
+                    hte = p->opr.ops[0];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Constant name needs to be an identifier");
+                    }
+
+                    node2 = SI1(p);
+                    obj2 = si_get_object(node2);
+
+                    DEBUG_PRINT("Added constant %s to %s\n", hte->identifier.name, current_obj->name);
+                    ht_add(current_obj->constants, hte->identifier.name, obj2);
+                    break;
+
+                case T_PROPERTY :
+                    if (current_obj == NULL) {
+                        saffire_error("Cannot define properties outside classes. This should be caught by the parser!");
+                    }
+
+                    hte = p->opr.ops[0];
+                    if (hte->type != typeAstNumerical) {
+                        saffire_error("Flags name needs to be numerical");
+                    }
+
+                    hte = p->opr.ops[1];
+                    if (hte->type != typeAstIdentifier) {
+                        saffire_error("Property name needs to be an identifier");
+                    }
+
+                    node2 = SI2(p);
+                    obj2 = si_get_object(node2);
+
+                    DEBUG_PRINT("Added property %s to %s\n", hte->identifier.name, current_obj->name);
+                    ht_add(current_obj->properties, hte->identifier.name, obj2);
                     break;
 
                 default:
@@ -623,15 +710,28 @@ static t_snode *_saffire_interpreter(t_ast_element *p) {
 }
 
 
+/**
+ * Interpret a leaf. Returns the last object encountered, or a NULL object.
+ */
+t_object *saffire_interpreter_leaf(t_ast_element *p) {
+    t_snode *node = _saffire_interpreter(p);
+    if (IS_OBJECT(node)) {
+        RETURN_OBJECT(node->data.obj);
+    }
+
+    RETURN_NULL;
+}
+
 
 /**
- *
+ * Interpret a tree. Will deal with initialiazation etc
  */
 int saffire_interpreter(t_ast_element *p) {
     si_init();
-    t_snode *node = _saffire_interpreter(p);
 
-    // @TODO: Check output of this node. Return the result
+    t_object *obj = saffire_interpreter_leaf(p);
+
+    // @TODO: What should we do with the output of this node? Somehow, return it to the caller or somethign?
 
 #ifdef __DEBUG
     t_dll_element *e = DLL_HEAD(object_dll);

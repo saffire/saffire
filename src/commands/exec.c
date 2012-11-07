@@ -47,17 +47,17 @@ static int do_exec(void) {
     object_init();
     module_init();
 
-    ast_root = ast_generate_from_file(source_file);
+    t_ast_element *ast = ast_generate_from_file(source_file);
 
     if (dot_file) {
-        dot_generate(ast_root, dot_file);
+        dot_generate(ast, dot_file);
     }
 
-    int ret = saffire_interpreter(ast_root);
+    int ret = saffire_interpreter(ast);
 
-    // Release memory of ast_root
-    if (ast_root != NULL) {
-        ast_free_node(ast_root);
+    // Release memory of ast root
+    if (ast != NULL) {
+        ast_free_node(ast);
     }
 
     module_fini();
@@ -78,7 +78,7 @@ static void opt_dot(void *data) {
 
 
 /* Usage string */
-static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
+static const char help[]   = "Executes a Saffire script.\n"
                              "\n"
                              "Global settings:\n"
                              "    --dot, -d <FILE>        Generate a DOT file\n"

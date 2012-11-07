@@ -24,57 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <histedit.h>
+#ifndef __REPL_H__
+#define __REPL_H__
 
-#define HIST_FILE ".saffire_history"
+    int repl(void);
 
-char cur_prompt[40];        // @TODO: Fixed length is not good!
-static int statement_count = 1;
 
-char *prompt(EditLine *el) {
-    sprintf(cur_prompt, "%d> ", statement_count++);
-    return cur_prompt;
-}
-
-int interactive(void) {
-    EditLine *el;
-    History *hist;
-    HistEvent ev;
-    const char *line;
-    int count;
-
-    printf("Interactive/CLI mode is not supported. However, you can type text here.. use CTRL-C to quit.\n");
-
-    // initialize EditLine library
-    el = el_init("saffire", stdin, stdout, stderr);
-    el_set(el, EL_PROMPT, &prompt);
-    el_set(el, EL_EDITOR, "emacs");
-
-    // Initialize history
-    hist = history_init();
-    if (! hist) {
-        fprintf(stderr, "Warning: cannot initialize history\n");
-    }
-    history(hist, &ev, H_SETSIZE, 800);
-    el_set(el, EL_HIST, history, hist);
-
-    // Load history file
-    history(hist, &ev, H_LOAD, HIST_FILE);
-
-    while (1) {
-        const char *line = el_gets(el, &count);
-        if (count > 0) {
-            history(hist, &ev, H_ENTER, line);
-            history(hist, &ev, H_SAVE, HIST_FILE);
-//            printf("LINE: %s", line);
-        }
-    }
-
-    history_end(hist);
-    el_end(el);
-
-    return 0;
-}
+#endif
