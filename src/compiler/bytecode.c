@@ -365,4 +365,6 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_constant(bc, BYTECODE_CONST_NUMERICAL, 4, (void *)0x5678);
     _new_variable(bc, "a");
     _new_variable(bc, "b");
+
+    return bc;
 }
