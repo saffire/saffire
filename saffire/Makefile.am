@@ -1,12 +1,12 @@
 include $(top_srcdir)/Makefile.frag
 
-SUBDIRS = object general interpreter modules compiler
+SUBDIRS = main general 
 
 # Define our programs
 bin_PROGRAMS = saffire
 #dnl check_PROGRAMS = test
 
-SAFFIRE_LIBS=interactive/libinteractive.a \
+SAFFIRE_LIBS=repl/librepl.a \
              modules/libmodules.a \
              objects/libobjects.a \
              src/general/libgeneral.a
@@ -17,7 +17,6 @@ noinst_LIBRARIES = libsaffire.a $(SAFFIRE_LIBS)
 # Libsaffire is the main core of saffire
 
 libsaffire_a_SOURCES = \
-                  repl/repl.c \
                   commands/config.c commands/fastcgi.c commands/lint.c commands/exec.c commands/cli.c \
                   commands/help.c commands/version.c commands/compile.c \
                   general/ini.c general/parse_options.c \

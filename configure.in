@@ -4,8 +4,8 @@
 AC_PREREQ([2.65])
 AC_INIT([saffire], [0.1], [build@saffire-lang.org])
 AM_INIT_AUTOMAKE([subdir-objects])
-AC_CONFIG_SRCDIR([src/main.c])
-AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_SRCDIR([saffire/config.h])
+AC_CONFIG_HEADERS([saffire/config.h])
 
 # Clear CFLAGS (they are set to "-O2 -g" by default)
 if test -z "$CFLAGS"; then
@@ -114,12 +114,18 @@ AC_CHECK_LIB([edit],[el_init], [
 
 AC_CONFIG_FILES([
                  Makefile
-                 src/Makefile
-                 src/interpreter/Makefile
-                 src/modules/Makefile
-                 src/object/Makefile
-                 src/general/Makefile
-                 src/compiler/Makefile
+                 saffire/Makefile
+                 saffire/main/Makefile
+                 saffire/objects/Makefile
+                 saffire/modules/Makefile
+                 saffire/components/Makefile
+                 saffire/components/compiler/Makefile
+                 saffire/components/dot/Makefile
+                 saffire/components/fastcgi/Makefile
+                 saffire/components/general/Makefile
+                 saffire/components/interpreter/Makefile
+                 saffire/components/repl/Makefile
+                 saffire/components/vm/Makefile
                 ])
 
 AC_OUTPUT
