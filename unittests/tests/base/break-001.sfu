@@ -21,13 +21,13 @@ do {
 
 ====
 @@@@
-foreach ($a as $b) {
+foreach (a as b) {
     break;
 }
 ====
 @@@@
-foreach ($a as $b) {
-    foreach ($a as $b) {
+foreach (a as b) {
+    foreach (a as b) {
         break;
     }
     break;

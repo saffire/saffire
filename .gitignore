@@ -4,12 +4,13 @@
 .cproject
 .settings
 nbproject/*
-src/compiler/lex.yy.*
-src/compiler/parser.tab.*
-src/compiler/parser.output
+lex.yy.*
+parser.tab.*
+parser.output
 src/saffire
 /docs/spec/build
 *.o
+*.a
 *.~*
 Makefile
 Makefile.in
@@ -21,13 +22,12 @@ configure
 depcomp
 install-sh
 missing
-src/.deps/
 src/Makefile
 src/Makefile.in
 src/config.h
 src/config.h.in
+src/config.h.in~
 src/stamp-h1
-src/libsaffire.a
 src/test
 *.gcno
 *.gcda
@@ -38,3 +38,4 @@ config.guess
 config.sub
 compile
 .saffire_history
+*.sfc

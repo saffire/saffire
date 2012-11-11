@@ -39,7 +39,7 @@ class UnitTester {
         }
 
         // Execute (and thus: find) the binary to find version
-        exec($this->_saffireBinary." -v", $output, $result);
+        exec($this->_saffireBinary." --version", $output, $result);
         if ($result != 0) {
             print "Cannot find the test binary set by the SAFFIRE_TEST_BIN environment, or error while fetching its version.\n\n";
             exit(1);

@@ -1,6 +1,6 @@
-# Define our programs
-bin_PROGRAMS = saffire
-check_PROGRAMS = test
+########################################################################
+# INIT
+########################################################################
 
 # Set our optimization / debug flags
 if DEBUG
@@ -18,53 +18,150 @@ else
   AM_YFLAGS =
 endif
 
+# Add top include dir
+AM_CFLAGS += -I$(top_srcdir)/src/include
+
+# Complain about everything, except unused functions
+AM_CFLAGS += -Wall -Wno-unused-function
+
+noinst_LIBRARIES =
+
+########################################################################
+# components/compiler
+########################################################################
+
 # Some additional rules for flex/bison file handling
-BUILT_SOURCES=compiler/lex.yy.c
-AM_LFLAGS = --outfile=compiler/$(LEX_OUTPUT_ROOT).c --header-file=compiler/$(LEX_OUTPUT_ROOT).h
+BUILT_SOURCES=components/compiler/lex.yy.c
+AM_LFLAGS = --outfile=components/compiler/$(LEX_OUTPUT_ROOT).c --header-file=include/compiler/$(LEX_OUTPUT_ROOT).h
 AM_YFLAGS += -d
 
 # parser.tab.h cannot be used before parser.tab.c
-compiler/parser.tab.h: compiler/parser.tab.c
+include/compiler/parser.tab.h: components/compiler/parser.tab.c
+	mv compiler/parser.tab.h include/compiler/parser.tab.h
 
 # parser.tab.c is created by bison
-compiler/parser.tab.c: compiler/saffire.y
+components/compiler/parser.tab.c: components/compiler/saffire.y
 	$(YACC) $(AM_YFLAGS) -o $@ $<
+	mv components/compiler/parser.tab.h include/compiler/parser.tab.h
 
 # lex.yy.c is created by lex
-compiler/lex.yy.c: compiler/saffire.l
+components/compiler/lex.yy.c: components/compiler/saffire.l
 	$(LEX) $(AM_LFLAGS) $<
 
 # Cleanup these files on a "make clean"
-CLEANFILES = compiler/parser.tab.c compiler/parser.tab.h compiler/lex.yy.c compiler/lex.yy.h \
-             compiler/*.o \
-             dot/*.o \
-             general/*.o \
-             interpreter/*.o \
-             object/*.o
+CLEANFILES = components/compiler/parser.tab.c \
+             include/compiler/parser.tab.h \
+             components/compiler/lex.yy.c \
+             include/compiler/lex.yy.h
 
-# Don't install libsaffire. It's only for static linking
-noinst_LIBRARIES = libsaffire.a
 
-# Libsaffire is the main core of saffire
-libsaffire_a_SOURCES = compiler/parser.tab.c compiler/lex.yy.c \
-                  compiler/ast.c dot/dot.c compiler/saffire_compiler.c \
-                  general/hashtable.c general/smm.c general/md5.c general/dll.c \
-                  general/hash/chained.c general/hash/hash_funcs.c \
-                  repl/repl.c \
-                  interpreter/context.c interpreter/saffire_interpreter.c interpreter/errors.c \
-                  object/object.c object/base.c object/string.c object/numerical.c object/boolean.c \
-                  object/null.c object/regex.c \
-                  modules/module_api.c \
-                  modules/io.c modules/saffire.c \
-                  commands/config.c commands/fastcgi.c commands/lint.c commands/exec.c commands/cli.c \
-                  commands/help.c commands/version.c \
-                  general/ini.c general/parse_options.c \
-                  fastcgi/fastcgi_srv.c
+noinst_LIBRARIES += libcompiler.a
+libcompiler_a_SOURCES = components/compiler/parser.tab.c \
+                        components/compiler/lex.yy.c \
+                        components/compiler/ast.c \
+                        components/compiler/dot.c \
+                        components/compiler/bytecode.c \
+                        components/compiler/saffire_compiler.c
 
-# Link all sources against these libraries
-LDADD = libsaffire.a -lpcre -lfcgi
 
-# Define different sources for our targets
-saffire_SOURCES = main.c
-test_SOURCES = test.c
+########################################################################
+# components/fastcgi
+########################################################################
+
+noinst_LIBRARIES += libfastcgi.a
+libfastcgi_a_SOURCES = components/fastcgi/fastcgi_srv.c
+
+
+########################################################################
+# components/general
+########################################################################
+
+noinst_LIBRARIES += libgeneral.a
+libgeneral_a_SOURCES = components/general/hashtable.c \
+                       components/general/hash/chained.c \
+                       components/general/hash/hash_funcs.c \
+                       components/general/smm.c \
+                       components/general/md5.c \
+                       components/general/dll.c \
+                       components/general/ini.c \
+                       components/general/stack.c \
+                       components/general/parse_options.c
+
+
+########################################################################
+# components/interpreter
+########################################################################
+
+noinst_LIBRARIES += libinterpreter.a
+libinterpreter_a_SOURCES = components/interpreter/interpreter.c \
+                           components/interpreter/context.c \
+                           components/interpreter/errors.c
+
+
+########################################################################
+# components/modules
+########################################################################
+
+noinst_LIBRARIES += libmodules.a
+libmodules_a_SOURCES = components/modules/module_api.c \
+                       components/modules/io.c \
+                       components/modules/saffire.c
+
+
+########################################################################
+# components/objects
+########################################################################
+
+noinst_LIBRARIES += libobjects.a
+libobjects_a_SOURCES = components/objects/object.c \
+                       components/objects/base.c \
+                       components/objects/null.c \
+                       components/objects/boolean.c \
+                       components/objects/numerical.c \
+                       components/objects/string.c \
+                       components/objects/regex.c \
+                       components/objects/code.c \
+                       components/objects/method.c
+
+
+########################################################################
+# components/repl
+########################################################################
+
+noinst_LIBRARIES += librepl.a
+librepl_a_SOURCES = components/repl/repl.c
+
+
+########################################################################
+# components/vm
+########################################################################
+
+noinst_LIBRARIES += libvm.a
+libvm_a_SOURCES = components/vm/vm.c
+
+
+########################################################################
+# main/saffire
+########################################################################
+
+SAFFIRE_LIBS = \
+                 libinterpreter.a \
+                 libobjects.a \
+                 libcompiler.a \
+                 libfastcgi.a \
+                 librepl.a \
+                 libvm.a \
+                 libmodules.a \
+                 libgeneral.a
+
+
+
+bin_PROGRAMS = saffire
+
+saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi
+
+saffire_SOURCES = main/saffire.c \
+                  main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
+                  main/commands/exec.c main/commands/cli.c main/commands/help.c \
+                  main/commands/version.c main/commands/compile.c
 
