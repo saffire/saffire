@@ -59,6 +59,10 @@
     #define VM_STORE_GLOBAL         0x89
     #define VM_DELETE_GLOBAL        0x8A
 
+
+    // Two operand opcodes
+    #define VM_CALL_METHOD          0xC0
+
     // Two operand opcodes
     // Three operand opcodes
     // Four operand opcodes

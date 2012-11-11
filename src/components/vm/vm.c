@@ -103,7 +103,7 @@ static t_vm_context *create_context(t_bytecode *bc) {
 /**
  * Returns the next opcode
  */
-static char get_next_opcode(void) {
+static unsigned char get_next_opcode(void) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (ctx->ip < 0 || ctx->ip > ctx->bc->code_len) {
@@ -198,6 +198,21 @@ static t_object *stack_fetch(int idx) {
 
 
 /**
+ * Return a constant literal, without converting to an object
+ */
+static void *get_constant_literal(int idx) {
+    t_vm_context *ctx = get_current_vm_context();
+
+    if (idx < 0 || idx >= ctx->bc->constants_len) {
+        saffire_error("Trying to fetch from outside constant range");
+    }
+
+    t_bytecode_constant *c = ctx->bc->constants[idx];
+    return c->data.ptr;
+}
+
+
+/**
   *
   */
 static t_object *get_constant(int idx) {
@@ -209,6 +224,10 @@ static t_object *get_constant(int idx) {
 
     t_bytecode_constant *c = ctx->bc->constants[idx];
     switch (c->type) {
+        case BYTECODE_CONST_OBJECT :
+            return ctx->bc->constants[idx]->data.obj;
+            break;
+
         case BYTECODE_CONST_STRING :
             RETURN_STRING(ctx->bc->constants[idx]->data.s);
             break;
@@ -216,11 +235,10 @@ static t_object *get_constant(int idx) {
         case BYTECODE_CONST_NUMERICAL :
             RETURN_NUMERICAL(ctx->bc->constants[idx]->data.l);
             break;
-
-        default :
-            saffire_error("Cannot convert constant type %d to an object\n", idx);
     }
 
+    saffire_error("Cannot convert constant type %d to an object\n", idx);
+    return NULL;
 }
 
 
@@ -287,7 +305,7 @@ static t_object *get_name(int idx) {
  */
 int vm_execute(t_bytecode *source_bc) {
     register t_object *obj1, *obj2, *obj3, *obj4;
-    register int opcode, oparg1;
+    register unsigned int opcode, oparg1, oparg2;
 
     // Create global context
     contexts = dll_init();
@@ -312,10 +330,11 @@ dispatch:
         }
 
         // If high bit is set, get operand
-        oparg1 = (opcode & 0x80) ? get_operand() : 0;
+        oparg1 = ((opcode & 0x80) == 0x80) ? get_operand() : 0;
+        oparg2 = ((opcode & 0xC0) == 0xC0) ? get_operand() : 0;
 
 #ifdef __DEBUG
-        printf("Opcode: %02X (%02X)\n", opcode, oparg1);
+        printf("Opcode: 0x%02X (0x%02X, 0x%02X)\n", opcode, oparg1, oparg2);
 #endif
 
         switch (opcode) {
@@ -391,14 +410,14 @@ dispatch:
             // store SP+0 as a global variable
             case VM_STORE_GLOBAL :
                 obj1 = stack_pop();
-                obj_dec_ref(obj1);
+                object_dec_ref(obj1);
                 set_global_variable(oparg1, obj1);
                 goto dispatch;
                 break;
 
             // Remove global variable
             case VM_DELETE_GLOBAL :
-                set_global(oparg1, NULL);
+                set_global_variable(oparg1, NULL);
                 goto dispatch;
                 break;
 
@@ -470,7 +489,7 @@ dispatch:
             // Conditional jump on SP-0 is true
             case VM_JUMP_IF_TRUE :
                 obj1 = stack_pop();
-                if (! OBJECT_IS_BOOL(obj1)) {
+                if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
                     obj1 = object_call(obj1, obj2, 0);
@@ -486,7 +505,7 @@ dispatch:
             // Conditional jump on SP-0 is false
             case VM_JUMP_IF_FALSE :
                 obj1 = stack_pop();
-                if (! OBJECT_IS_BOOL(obj1)) {
+                if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
                     obj1 = object_call(obj1, obj2, 0);
@@ -511,6 +530,29 @@ dispatch:
                     object_inc_ref(obj1);
                     stack_push(obj1);
                 }
+                goto dispatch;
+                break;
+
+            // Calls method SP+0 from object SP+1 with OP+0 args starting from SP+2
+            case VM_CALL_METHOD :
+                obj1 = stack_fetch_top();   // Self
+                obj2 = object_find_method(obj1, (char *)get_constant_literal(oparg1));
+
+                // Create argument list
+                t_dll *dll = dll_init();
+                for (int i=0; i!=oparg1; i++) {
+                    obj3 = stack_fetch_top();
+                    object_dec_ref(obj3);
+                    dll_append(dll, obj3);
+                }
+
+                // Call object and push result onto stack
+                obj3 = object_call_args(obj1, obj2, dll);
+                object_inc_ref(obj3);
+                stack_push(obj3);
+
+                dll_free(dll);
+
                 goto dispatch;
                 break;
 
