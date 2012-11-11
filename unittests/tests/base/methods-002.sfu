@@ -3,41 +3,41 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 class Foo {
-    public method Bar($a) {
+    public method Bar(a) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar($a, $b) {
+    public method Bar(a, b) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $a) {
+    public method Bar(String a) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $a, String $b) {
+    public method Bar(String a, String b) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $a, $b) {
+    public method Bar(String a, b) {
     }
 }
 ====
 @@@@
 class Foo {
-    public method Bar($a, String $b) {
+    public method Bar(a, String b) {
     }
 }
 
@@ -60,21 +60,21 @@ class Foo {
 Error in line 3: syntax error, unexpected T_LNUM, expecting ')'
 @@@@
 class Foo {
-    public method Bar($arg = 1) {
+    public method Bar(arg = 1) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $arg = "foo") {
+    public method Bar(String arg = "foo") {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $arg = $blaat) {
+    public method Bar(String arg = blaat) {
     }
 }
 
@@ -82,14 +82,14 @@ class Foo {
 Error in line 3: syntax error, unexpected T_IDENTIFIER, expecting T_LNUM or T_STRING
 @@@@
 class Foo {
-    public method Bar(String $arg = 1) {
+    public method Bar(String arg = 1) {
     }
 }
 
 ====
 @@@@
 class Foo {
-    public method Bar(String $arg = 5+1) {
+    public method Bar(String arg = 5+1) {
     }
 }
 
@@ -97,7 +97,7 @@ class Foo {
 Error in line 3: syntax error, unexpected '+', expecting ')'
 @@@@
 class Foo {
-    public method Bar($a,) {
+    public method Bar(a,) {
     }
 }
 

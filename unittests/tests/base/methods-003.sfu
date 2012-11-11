@@ -19,7 +19,7 @@ class Foo {
 Error in line 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
 @@@@
 class Foo {
-    public method $bar() {
+    public method bar() {
     }
 }
 

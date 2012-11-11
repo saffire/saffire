@@ -22,7 +22,7 @@ label:
 ====
 @@@@
 // incorrect label
-$foo:
+foo:
 ====
 Error in line 3: A variable cannot be used as a label
 @@@@

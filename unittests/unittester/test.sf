@@ -1,0 +1,13 @@
+import io as blaat from ::_sfl::io;
+use ::_sfl::io as blaat;
+use ::_sfl::io as io;
+use ::_sfl::io as io2;
+use io as blaat3;
+
+io.print("foo");
+blaat.print("bar");
+
+::_sfl::io::io.print("baz");
+::io::io.print("qux");
+io::io.print("woq");
+blaat::io.print("nef");

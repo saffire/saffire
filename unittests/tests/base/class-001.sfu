@@ -44,13 +44,6 @@ class goto {
 ====
 Error in line 3: syntax error, unexpected T_GOTO, expecting T_IDENTIFIER
 @@@@
-// var class
-class $foo {
-}
-
-====
-Error in line 3: A variable cannot be used as a class name
-@@@@
 // scalar class
 class "foo" {
 }
