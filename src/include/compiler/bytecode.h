@@ -30,6 +30,7 @@
     #include <stdint.h>
     #include "compiler/ast.h"
     #include "general/dll.h"
+    #include "objects/object.h"
 
     #define PACKED  __attribute__((packed))
 
@@ -38,6 +39,7 @@
     #define BYTECODE_CONST_STRING        0
     #define BYTECODE_CONST_NUMERICAL     1
     #define BYTECODE_CONST_CODE          2
+    #define BYTECODE_CONST_OBJECT        3
 
 
     typedef struct _bytecode_binary_header {
@@ -57,6 +59,7 @@
             long l;
             struct _bytecode *code;
             void *ptr;
+            t_object *obj;
         } data;
     } t_bytecode_constant;
 

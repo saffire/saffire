@@ -331,24 +331,36 @@ static void _new_variable(t_bytecode *bc, char *var) {
  */
 t_bytecode *generate_dummy_bytecode(void) {
     char dummy_code[] =
-                        "\x64\x00\x00\x00\x00"      // LOAD_CONST   0 (0x1234)
-                        "\x5a\x00\x00\x00\x00"      // STORE_VAR    0 (a)
-                        "\x64\x01\x00\x00\x00"      // LOAD_CONST   1 (0x5678)
-                        "\x5a\x01\x00\x00\x00"      // STORE_VAR    1 (b)
-                        "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
-                        "\x59"                      // PRINT_VAR
-                        "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
-                        "\x59"                      // PRINT_VAR
-                        "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
-                        "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
-                        "\x02"                      // ROT_TWO
-                        "\x5a\x00\x00\x00\x00"      // STORE_VAR    0 (a)
-                        "\x5a\x01\x00\x00\x00"      // STORE_VAR    1 (b)
-                        "\x65\x00\x00\x00\x00"      // LOAD_VAR     0 (a)
-                        "\x59"                      // PRINT_VAR
-                        "\x65\x01\x00\x00\x00"      // LOAD_VAR     1 (b)
-                        "\x59"                      // PRINT_VAR
-                        "\x00"                      // STOP
+                        // a = 0x1234;
+                        "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST   0 (0x1234)
+                        "\x80\x00\x00\x00\x00"      //    5  STORE_VAR    0 (a)
+                        // b = 0x5678;
+                        "\x81\x01\x00\x00\x00"      //   10  LOAD_CONST   1 (0x5678)
+                        "\x80\x01\x00\x00\x00"      //   15  STORE_VAR    1 (b)
+                        // a.print();
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_VAR     0 (a)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+                        // b.print();
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_VAR     1 (b)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+                        // (a, b) = (b, a)
+                        "\x82\x00\x00\x00\x00"      //   36  LOAD_VAR     0 (a)
+                        "\x82\x01\x00\x00\x00"      //   41  LOAD_VAR     1 (b)
+                        "\x02"                      //   46  ROT_TWO
+                        "\x80\x00\x00\x00\x00"      //   47  STORE_VAR    0 (a)
+                        "\x80\x01\x00\x00\x00"      //   52  STORE_VAR    1 (b)
+                        // a.print()
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_VAR     0 (a)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+                        // b.print()
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_VAR     1 (b)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+
+                        "\x00"                      //   69  STOP
                        ;
 
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
@@ -363,6 +375,7 @@ t_bytecode *generate_dummy_bytecode(void) {
     // constants
     _new_constant(bc, BYTECODE_CONST_NUMERICAL, 4, (void *)0x1234);
     _new_constant(bc, BYTECODE_CONST_NUMERICAL, 4, (void *)0x5678);
+    _new_constant(bc, BYTECODE_CONST_OBJECT, 4, "print");
     _new_variable(bc, "a");
     _new_variable(bc, "b");
 
