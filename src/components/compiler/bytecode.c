@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
+#include <bzlib.h>
 #include "compiler/bytecode.h"
 #include "compiler/ast.h"
 #include "general/dll.h"
@@ -165,7 +166,7 @@ t_bytecode *convert_binary_to_bytecode(int bincode_len, char *bincode) {
         // Variable strings do not have a trailing \0 on disk.
         s = smm_malloc(j+1);
         _read_buffer(bincode, &pos, j, s);
-        s[len] = '\0';
+        s[j] = '\0';
         _new_variable(bytecode, s);
     }
 
@@ -225,6 +226,30 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
     fseek(f, header.bytecode_offset, SEEK_SET);
     fread(bincode, header.bytecode_len, 1, f);
 
+    // Uncompress bincode block if needed
+    if ((header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED) {
+        // Allocate uncompressed size buffer based on info from the header
+        char *bzipblock = smm_malloc(header.bytecode_uncompressed_len);
+        unsigned int bzipblock_len;
+        int ret = BZ2_bzBuffToBuffDecompress(bzipblock, &bzipblock_len, bincode, header.bytecode_len, 0, 0);
+        if (ret != BZ_OK) {
+            saffire_error("Error while compressing data.");
+        }
+
+        // Sanity check. These should match
+        if (bzipblock_len != header.bytecode_uncompressed_len) {
+            saffire_error("Header information does not match with the size of the uncompressed data block");
+        }
+
+        // Free unpacked binary code
+        smm_free(bincode);
+
+        // Set data to uncompressed block
+        bincode = bzipblock;
+        header.bytecode_len = bzipblock_len;
+    }
+
+
     if (verify_signature == 0 && header.signature_offset != 0) {
         saffire_warning("A signature is present, but verification is disabled");
     }
@@ -255,7 +280,7 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
 /**
  * Save a bytecode from disk, optionally sign and add signature
  */
-void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign) {
+void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign, int compress) {
     // Convert
     int bincode_len = 0;
     char *bincode = NULL;
@@ -275,6 +300,36 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
         header.timestamp = 0;
     }
 
+    // Set header flags
+    header.flags = 0;
+    if (sign) header.flags |= BYTECODE_FLAG_SIGNED;
+    if (compress) header.flags |= BYTECODE_FLAG_COMPRESSED;
+
+    // Save lengths of the bytecode
+    header.bytecode_len = bincode_len;
+    header.bytecode_uncompressed_len = bincode_len;
+
+
+    // Need to compress bincode block?
+    if (compress) {
+        // http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
+        char *bzipblock = smm_malloc(bincode_len + (bincode_len / 100) + 600);
+        unsigned int bzipblock_len;
+        int ret = BZ2_bzBuffToBuffCompress(bzipblock, &bzipblock_len, bincode, bincode_len, 9, 0, 30);
+        if (ret != BZ_OK) {
+            saffire_error("Error while compressing data.");
+        }
+
+        // Forget about the original bincode and replace it with out bzip2 data
+        smm_free(bincode);
+        bincode = bzipblock;
+        bincode_len = bzipblock_len;
+
+        header.bytecode_len = bzipblock_len;
+    }
+
+
+
     // Create file
     FILE *f = fopen(dest_filename, "wb");
 
@@ -282,7 +337,6 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
     fwrite("\0", 1, sizeof(header), f);
 
     // Write bytecode
-    header.bytecode_len = bincode_len;
     header.bytecode_offset = ftell(f);
     fwrite(bincode, bincode_len, 1, f);
 
@@ -302,6 +356,9 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
     fwrite(&header, sizeof(header), 1, f);
 
     fclose(f);
+
+    // Free up our binary code
+    smm_free(bincode);
 }
 
 
@@ -359,7 +416,7 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_variable(bc, "a");
     _new_variable(bc, "b");
 
-    save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 0);
+    save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 0, 1);
 
 
     t_bytecode *new_bc = load_bytecode_from_disk("bytecode.sfc", 0);

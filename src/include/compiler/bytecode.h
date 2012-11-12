@@ -42,10 +42,16 @@
     #define BYTECODE_CONST_OBJECT        3
 
 
+    #define BYTECODE_FLAG_SIGNED           0        // Code is signed
+    #define BYTECODE_FLAG_COMPRESSED       1        // Code is compressed
+
+
     typedef struct _bytecode_binary_header {
         uint32_t   magic;                       // Magic number 0x53464243 (SFBC)
         uint32_t   timestamp;                   // Modified timestamp for source file
+        uint32_t   flags;                       // Optional flags
         uint32_t   bytecode_len;                // Length of the bytecode
+        uint32_t   bytecode_uncompressed_len;   // Length of the bytecode uncompressed
         uint32_t   bytecode_offset;             // Offset of the bytecode
         uint32_t   signature_len;               // Length of the GPG check (NULL of none)
         uint32_t   signature_offset;            // Offset of the GPG signature (NULL if none)
