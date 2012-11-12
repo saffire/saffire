@@ -37,14 +37,9 @@
 
 
 /**
- * Add a new constant to the bytecode structure
+ * Add constant to a bytecode structure
  */
-static void _new_constant(t_bytecode *bc, int type, int len, void *data) {
-    t_bytecode_constant *c = smm_malloc(sizeof(t_bytecode_constant));
-    c->type = type;
-    c->len = len;
-    c->data.ptr = (void *)data;
-
+static void _add_constant(t_bytecode *bc, t_bytecode_constant *c) {
     bc->constants = smm_realloc(bc->constants, sizeof(t_bytecode_constant *) * (bc->constants_len + 1));
     bc->constants[bc->constants_len] = c;
     bc->constants_len++;
@@ -52,26 +47,67 @@ static void _new_constant(t_bytecode *bc, int type, int len, void *data) {
 
 
 /**
+ * Add a new string constant to the bytecode structure
+ */
+static void _new_constant_string(t_bytecode *bc, char *s) {
+    // Setup constant
+    t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+    c->type = BYTECODE_CONST_STRING;
+    c->len = strlen(s);
+    c->data.s = s;  // @TODO: strdupped?
+
+    _add_constant(bc, c);
+}
+
+
+/**
+ * Add a new constant to the bytecode structure
+ */
+static void _new_constant_long(t_bytecode *bc, long l) {
+    // Setup constant
+    t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+    c->type = BYTECODE_CONST_NUMERICAL ;
+    c->len = sizeof(long);
+    c->data.l = l;
+
+    _add_constant(bc, c);
+}
+
+
+/**
  * Add a new variable to the bytecode structure
  */
 static void _new_variable(t_bytecode *bc, char *var) {
+    // Setup variable
     t_bytecode_variable *c = smm_malloc(sizeof(t_bytecode_variable));
     c->len = strlen(var);
-    c->s = var;
+    c->s = var;  // @TODO: strdupped?
 
+    // Add variable
     bc->variables = smm_realloc(bc->variables, sizeof(t_bytecode_variable *) * (bc->variables_len + 1));
     bc->variables[bc->variables_len] = c;
     bc->variables_len++;
 }
 
 
+/**
+ * Read from "buffer" on offset "*bufptr". Read "size" bytes and store inside "data".
+ * Bufptr will be automatically increased to the next offset.
+ */
 static void _read_buffer(char *buf, int *bufptr, int size, void *data) {
     memcpy(data, buf+*bufptr, size);
     *bufptr += size;
 }
 
-static void _write_buffer(char *buf, int *bufptr, int size, void *data) {
-    memcpy(buf+*bufptr, data, size);
+
+/**
+ * Write "size" bytes from "data" into "buffer" on offset "*bufptr". Note that "buffer" can point to a NULL value, in
+ * which case a new buffer will be allocated. This method takes care of enough space in the buffer through reallocs
+ * Bufptr will be automatically increased to the next offset.
+ */
+static void _write_buffer(char **buf, int *bufptr, int size, void *data) {
+    *buf = smm_realloc(*buf, *bufptr + size);
+    memcpy(*buf + *bufptr, data, size);
     *bufptr += size;
 }
 
@@ -79,55 +115,97 @@ static void _write_buffer(char *buf, int *bufptr, int size, void *data) {
 /**
  * Convert binary stream to a bytecode structure (NOTE: bytecode is an unallocated pointer!)
  */
-int convert_binary_to_bytecode(int bincode_len, char *bincode, t_bytecode *bytecode) {
+t_bytecode *convert_binary_to_bytecode(int bincode_len, char *bincode) {
     int pos = 0;
+    char *s; long l; int j;
+    int clen, vlen;
 
-    bytecode = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
+    // Initialize new bytecode structure
+    t_bytecode *bytecode = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
     bzero(bytecode, sizeof(bytecode));
 
-    _read_buffer(bincode, &pos, sizeof(int), (void *)bytecode->stack_size);
-    _read_buffer(bincode, &pos, sizeof(int), (void *)bytecode->code_len);
-    _read_buffer(bincode, &pos, bytecode->code_len, (void *)bytecode->code);
+    // Read headers
+    _read_buffer(bincode, &pos, sizeof(uint32_t), &bytecode->stack_size);
+    _read_buffer(bincode, &pos, sizeof(uint32_t), &bytecode->code_len);
 
-    _read_buffer(bincode, &pos, sizeof(int), (void *)bytecode->constants_len);
-    for (int i=0; i!=bytecode->constants_len; i++) {
-        char type; int len; char *ptr;
+    // Allocate memory for code and store
+    bytecode->code = smm_malloc(bytecode->code_len);
+    _read_buffer(bincode, &pos, bytecode->code_len, bytecode->code);
+
+    // Read constants
+    _read_buffer(bincode, &pos, sizeof(uint32_t), &clen);
+    for (int i=0; i!=clen; i++) {
+        char type; int len;
         _read_buffer(bincode, &pos, sizeof(char), &type);
         _read_buffer(bincode, &pos, sizeof(int), &len);
-        _read_buffer(bincode, &pos, len, ptr);
-        _new_constant(bytecode, type, len, ptr);
+        switch (type) {
+            case BYTECODE_CONST_STRING :
+                // Constant strings do not have a trailing \0 on disk.
+                s = smm_malloc(len+1);
+                _read_buffer(bincode, &pos, len, s);
+                s[len] = '\0';
+                _new_constant_string(bytecode, s);
+                break;
+            case BYTECODE_CONST_NUMERICAL :
+                _read_buffer(bincode, &pos, len, &l);
+                _new_constant_long(bytecode, l);
+                break;
+            default :
+                saffire_error("Unknown constant type %d\n", type);
+                break;
+        }
+
     }
 
-    _read_buffer(bincode, &pos, sizeof(int), (void *)bytecode->variables_len);
-    for (int i=0; i!=bytecode->variables_len; i++) {
-        int len; char *ptr;
-        _read_buffer(bincode, &pos, sizeof(int), (void *)&len);
-        _read_buffer(bincode, &pos, len, (void *)ptr);
-        _new_variable(bytecode, ptr);
+    // Read all variables
+    _read_buffer(bincode, &pos, sizeof(int), &vlen);
+    for (int i=0; i!=vlen; i++) {
+        _read_buffer(bincode, &pos, sizeof(int), &j);
+
+        // Variable strings do not have a trailing \0 on disk.
+        s = smm_malloc(j+1);
+        _read_buffer(bincode, &pos, j, s);
+        s[len] = '\0';
+        _new_variable(bytecode, s);
     }
 
-    return 1;
+    return bytecode;
 }
 
 
 /**
  * Convert bytecode structure into a binary stream (NOTE: bincode is an unallocated pointer!)
  */
-int convert_bytecode_to_binary(t_bytecode *bytecode, int *bincode_len, char *bincode) {
-    _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->stack_size);
-    _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->code_len);
-    _write_buffer(bincode, bincode_len, bytecode->code_len, (void *)bytecode->code);
-    _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->constants_len);
+int convert_bytecode_to_binary(t_bytecode *bytecode, int *bincode_len, char **bincode) {
+
+    // Write headers and codeblock
+    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->stack_size);
+    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->code_len);
+    _write_buffer(bincode, bincode_len, bytecode->code_len, bytecode->code);
+    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->constants_len);
+
+    // Write constants
     for (int i=0; i!=bytecode->constants_len; i++) {
-        _write_buffer(bincode, bincode_len, sizeof(char), (void *)bytecode->constants[i]->type);
-        _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->constants[i]->len);
-        _write_buffer(bincode, bincode_len, bytecode->constants[i]->len, (void *)bytecode->constants[i]->data.ptr);
+        _write_buffer(bincode, bincode_len, sizeof(char), &bytecode->constants[i]->type);
+        _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->constants[i]->len);
+        switch (bytecode->constants[i]->type) {
+            case BYTECODE_CONST_STRING :
+                _write_buffer(bincode, bincode_len, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
+                break;
+            case BYTECODE_CONST_NUMERICAL :
+                _write_buffer(bincode, bincode_len, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
+                break;
+            default :
+                saffire_error("Unknown constant type %d\n", bytecode->constants[i]->type);
+                break;
+        }
     }
 
-    _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->variables_len);
+    // Write variables
+    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->variables_len);
     for (int i=0; i!=bytecode->variables_len; i++) {
-        _write_buffer(bincode, bincode_len, sizeof(int), (void *)bytecode->variables[i]->len);
-        _write_buffer(bincode, bincode_len, bytecode->variables[i]->len, (void *)bytecode->variables[i]->s);
+        _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->variables[i]->len);
+        _write_buffer(bincode, bincode_len, bytecode->variables[i]->len, bytecode->variables[i]->s);
     }
 
     return 1;
@@ -164,8 +242,8 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
     fclose(f);
 
     // Convert binary to bytecode
-    t_bytecode *bc = NULL;
-    if (! convert_binary_to_bytecode(header.bytecode_len, bincode, bc)) {
+    t_bytecode *bc = convert_binary_to_bytecode(header.bytecode_len, bincode);
+    if (! bc) {
         saffire_error("Could not convert bytecode data");
     }
 
@@ -179,13 +257,14 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
  */
 void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign) {
     // Convert
-    int bincode_len;
+    int bincode_len = 0;
     char *bincode = NULL;
-    if (! convert_bytecode_to_binary(bc, &bincode_len, bincode)) {
+    if (! convert_bytecode_to_binary(bc, &bincode_len, &bincode)) {
         saffire_error("Could not convert bytecode data");
     }
 
     t_bytecode_binary_header header;
+    bzero(&header, sizeof(header));
     header.magic = MAGIC_HEADER;
 
     // Fetch modification time from source file and fill into header
@@ -224,7 +303,6 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
 
     fclose(f);
 }
-
 
 
 /**
@@ -271,18 +349,19 @@ t_bytecode *generate_dummy_bytecode(void) {
     bc->code = smm_malloc(bc->code_len);
     memcpy(bc->code, dummy_code, bc->code_len);
 
-    bc->constants = NULL;
+    bc->constants = NULL;   // Important to start constants and variables on NULL
     bc->variables = NULL;
 
     // constants
-    _new_constant(bc, BYTECODE_CONST_NUMERICAL, 4, (void *)0x1234);
-    _new_constant(bc, BYTECODE_CONST_NUMERICAL, 4, (void *)0x5678);
-    _new_constant(bc, BYTECODE_CONST_OBJECT, 4, "print");
+    _new_constant_long(bc, 0x1234);
+    _new_constant_long(bc, 0x5678);
+    _new_constant_string(bc, "print");
     _new_variable(bc, "a");
     _new_variable(bc, "b");
 
-
     save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 0);
 
-    return bc;
+
+    t_bytecode *new_bc = load_bytecode_from_disk("bytecode.sfc", 0);
+    return new_bc;
 }

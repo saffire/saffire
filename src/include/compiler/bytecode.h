@@ -51,7 +51,6 @@
         uint32_t   signature_offset;            // Offset of the GPG signature (NULL if none)
     } PACKED t_bytecode_binary_header;
 
-
     struct _bytecode;
     typedef struct _bytecode_constant_header {
         char type;          // Type of the constant
