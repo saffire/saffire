@@ -28,49 +28,109 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <locale.h>
-#include "interpreter/context.h"
-#include "modules/module_api.h"
-#include "vm/vm.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fnmatch.h>
+//#include "interpreter/context.h"
+//#include "modules/module_api.h"
+//#include "vm/vm.h"
 #include "commands/command.h"
+#include "general/smm.h"
 #include "general/parse_options.h"
+#include "general/path_handling.h"
+#include "compiler/bytecode.h"
+
+#include "commands/config.h"
 
 
-static int do_compile(void) {
-    char *source_file = saffire_getopt_string(0);
+int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
+int flag_compress = 0;  // 0 = default config setting, 1 = force compress, 2 = force uncompressed
 
-    setlocale(LC_ALL,"");
-    context_init();
-    object_init();
-    module_init();
 
+/**
+ * Compiles single file
+ */
+static void _compile_file(const char *source_file, int sign, int compress) {
+    char *dest_file = replace_extension(source_file, ".sf", ".sfc");
+
+    printf("Compiling: '%s'\n", source_file);
 
     t_bytecode *bc = generate_dummy_bytecode();
-    vm_execute(bc);
-    return 0;
+    save_bytecode_to_disk(dest_file, source_file, bc, sign, compress);
 
-    t_ast_element *ast = ast_generate_from_file(source_file);
-//    char *dest_file = bytecode_generate_destfile(source_file);
-//    t_bytecode *bc = bytecode_generate(ast_root, source_file);
-//    if (bc && bc->length) {
-//        printf("Dumping %d bytes into '%s'\n", bc->length, dest_file);
-//        FILE *f = fopen(dest_file, "w+");
-//        if (f) {
-//            fwrite(bc->buffer, 1, bc->length, f);
-//            fclose(f);
-//        }
-//    }
-//
-//    bytecode_free(bc);
-//    smm_free(dest_file);        // free dest file name
+    smm_free(dest_file);
+}
 
-    // Release memory of ast root
-    if (ast != NULL) {
-        ast_free_node(ast);
+
+/**
+ * Scans recursively a directory structure for files with *.sf matching
+ */
+static void _compile_directory(const char *path, int sign, int compress) {
+    DIR *dirp;
+    struct dirent *dp;
+    char new_path[PATH_MAX];
+    int path_length;
+
+    dirp = opendir(path);
+    do {
+        if ((dp = readdir(dirp)) != NULL) {
+            // Explicitly skip "hidden" files
+            if (dp->d_name[0] == '.') continue;
+
+            // Add current path to name
+            path_length = snprintf(new_path, PATH_MAX, "%s/%s", path, dp->d_name);
+            if (path_length >= PATH_MAX) {
+                printf("Path too long");
+                return;
+            }
+
+            if (dp->d_type & DT_DIR) {
+                // Found directory. Create new path and recurse
+                _compile_directory(new_path, sign, compress);
+            } else {
+                // Check if file match *.sf
+                if (fnmatch("*.sf", dp->d_name, 0) != 0) continue;
+
+                _compile_file(new_path, sign, compress);
+            }
+
+        }
+    } while (dp);
+
+    closedir(dirp);
+}
+
+
+/**
+ *
+ */
+static int do_compile(void) {
+    char *source_path = saffire_getopt_string(0);
+
+    struct stat st;
+    if (stat(source_path, &st) != 0) {
+        printf("File not found");
+        return 1;
     }
 
-    module_fini();
-    object_fini();
-    context_fini();
+    // Get default sign flag and override if needed
+    char sign = config_get_bool("compile.sign");
+    if (flag_sign == 1) sign = 1;
+    if (flag_sign == 2) sign = 0;
+
+    // Get default compress flag and override if needed
+    char compress = config_get_bool("compile.compress");
+    if (flag_compress == 1) compress = 1;
+    if (flag_compress == 2) compress = 0;
+
+
+    // Compile directory if path matches a directory
+    if (S_ISDIR(st.st_mode)) {
+        _compile_directory(source_path, sign, compress);
+    } else {
+        _compile_file(source_path, sign, compress);
+    }
 
     return 0;
 }
@@ -82,13 +142,64 @@ static int do_compile(void) {
 
 
 /* Usage string */
-static const char help[]   = "Compiles a Saffire script.\n";
+static const char help[]  = "Compiles a Saffire script or scripts without running.\n"
+                            "\n"
+                            "Usage: saffire compile <dir>|<file> [options]\n"
+                            "\n"
+                            "Global settings:\n"
+                            "    --sign           Sign the bytecode\n"
+                            "    --no-sign        Don't sign the bytecode\n"
+                            "    --compress       Compress the bytecode\n"
+                            "    --no-compress    Don't compress the bytecode\n"
+                            "\n"
+                            "If the --[no-]sign and --[no-]compress options aren't given, the bytecode is compressed and signed\n"
+                            "according to the configuration settings.\n"
+                            "\n"
+                            "This command compiles a saffire script or directory into bytecode files. The output file will be\n"
+                            "the source file with a .sfc extension\n";
 
+
+static void opt_sign(void *data) {
+    if (flag_sign > 0) {
+        printf("Cannot have both the --no-sign and --sign options");
+        exit(1);
+    }
+    flag_sign = 1;
+}
+static void opt_no_sign(void *data) {
+    if (flag_sign > 0) {
+        printf("Cannot have both the --no-sign and --sign options");
+        exit(1);
+    }
+    flag_sign = 2;
+}
+static void opt_compress(void *data) {
+    if (flag_compress > 0) {
+        printf("Cannot have both the --no-compress and --compress options");
+        exit(1);
+    }
+    flag_compress = 1;
+}
+static void opt_no_compress(void *data) {
+    if (flag_compress > 0) {
+        printf("Cannot have both the --no-compress and --compress options");
+        exit(1);
+    }
+    flag_compress = 2;
+}
+
+static struct saffire_option global_options[] = {
+    { "sign", "", no_argument, opt_sign },
+    { "no-sign", "", no_argument, opt_no_sign },
+    { "compress", "", no_argument, opt_compress },
+    { "no-compress", "", no_argument, opt_no_compress },
+    { 0, 0, 0, 0 }
+};
 
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_compile, NULL },
+    { "", "s", do_compile, global_options },
     { 0, 0, 0, 0 }
 };
 
