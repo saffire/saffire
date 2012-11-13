@@ -85,7 +85,10 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/dll.c \
                        components/general/ini.c \
                        components/general/stack.c \
-                       components/general/parse_options.c
+                       components/general/parse_options.c \
+                       components/general/popen2.c \
+                       components/general/gpg.c \
+                       components/general/path_handling.c
 
 
 ########################################################################
@@ -158,7 +161,7 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi
+saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi -lbz2
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
