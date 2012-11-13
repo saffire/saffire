@@ -35,6 +35,10 @@
 #include "general/parse_options.h"
 
 
+int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
+int flag_compress = 0;  // 0 = default config setting, 1 = force compress, 2 = force uncompressed
+
+
 static int do_compile(void) {
     char *source_file = saffire_getopt_string(0);
 
@@ -82,8 +86,55 @@ static int do_compile(void) {
 
 
 /* Usage string */
-static const char help[]   = "Compiles a Saffire script.\n";
+static const char help[]  = "Compiles a Saffire script or scripts without running.\n"
+                             "\n"
+                             "Global settings:\n"
+                             "    --sign           Sign the bytecode\n"
+                             "    --no-sign        Don't sign the bytecode\n"
+                             "    --compress       Compress the bytecode\n"
+                             "    --no-compress    Don't compress the bytecode\n"
+                             "\n"
+                             "If the --[no-]sign and --[no-]compress options aren't given, the bytecode is compressed and signed\n"
+                             "according to the configuration settings.\n"
+                             "\n"
+                             "This command compiles a saffire script or directory into bytecode files.\n";
 
+static void opt_sign(void *data) {
+    if (flag_sign > 0) {
+        printf("Cannot have both the --no-sign and --sign options");
+        exit(1);
+    }
+    flag_sign = 1;
+}
+static void opt_no_sign(void *data) {
+    if (flag_sign > 0) {
+        printf("Cannot have both the --no-sign and --sign options");
+        exit(1);
+    }
+    flag_sign = 2;
+}
+static void opt_compress(void *data) {
+    if (flag_compress > 0) {
+        printf("Cannot have both the --no-compress and --compress options");
+        exit(1);
+    }
+    flag_compress = 1;
+}
+static void opt_no_compress(void *data) {
+    if (flag_compress > 0) {
+        printf("Cannot have both the --no-compress and --compress options");
+        exit(1);
+    }
+    flag_compress = 2;
+}
+
+static struct saffire_option global_options[] = {
+    { "sign", "", no_argument, opt_sign },
+    { "no-sign", "", no_argument, opt_no_sign },
+    { "compress", "", no_argument, opt_compress },
+    { "no-compress", "", no_argument, opt_no_compress },
+    { 0, 0, 0, 0 }
+};
 
 
 /* Config actions */

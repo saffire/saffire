@@ -28,13 +28,35 @@
 #include <string.h>
 #include <stdlib.h>
 #include <bzlib.h>
+#include <unistd.h>
 #include "compiler/bytecode.h"
 #include "compiler/ast.h"
 #include "general/dll.h"
 #include "general/smm.h"
 #include "version.h"
 #include "vm/vm_opcodes.h"
-#include "interpreter/errors.h"
+#include "general/gpg.h"
+
+#define BZIP_BLOCKSIZE               9
+#define BZIP_WORK_FACTOR            30
+
+static void saffire_compile_warning(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    fprintf(stderr, "Warning: ");
+    vfprintf(stderr, str, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
+static void saffire_compile_error(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    fprintf(stderr, "Error: ");
+    vfprintf(stderr, str, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+    exit(1);
+}
 
 
 /**
@@ -116,7 +138,7 @@ static void _write_buffer(char **buf, int *bufptr, int size, void *data) {
 /**
  * Convert binary stream to a bytecode structure (NOTE: bytecode is an unallocated pointer!)
  */
-t_bytecode *convert_binary_to_bytecode(int bincode_len, char *bincode) {
+t_bytecode *convert_binary_to_bytecode(int bincode_off, char *bincode) {
     int pos = 0;
     char *s; long l; int j;
     int clen, vlen;
@@ -152,7 +174,7 @@ t_bytecode *convert_binary_to_bytecode(int bincode_len, char *bincode) {
                 _new_constant_long(bytecode, l);
                 break;
             default :
-                saffire_error("Unknown constant type %d\n", type);
+                saffire_compile_error("Unknown constant type %d\n", type);
                 break;
         }
 
@@ -177,36 +199,36 @@ t_bytecode *convert_binary_to_bytecode(int bincode_len, char *bincode) {
 /**
  * Convert bytecode structure into a binary stream (NOTE: bincode is an unallocated pointer!)
  */
-int convert_bytecode_to_binary(t_bytecode *bytecode, int *bincode_len, char **bincode) {
+int convert_bytecode_to_binary(t_bytecode *bytecode, int *bincode_off, char **bincode) {
 
     // Write headers and codeblock
-    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->stack_size);
-    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->code_len);
-    _write_buffer(bincode, bincode_len, bytecode->code_len, bytecode->code);
-    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->constants_len);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->stack_size);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->code_len);
+    _write_buffer(bincode, bincode_off, bytecode->code_len, bytecode->code);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants_len);
 
     // Write constants
     for (int i=0; i!=bytecode->constants_len; i++) {
-        _write_buffer(bincode, bincode_len, sizeof(char), &bytecode->constants[i]->type);
-        _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->constants[i]->len);
+        _write_buffer(bincode, bincode_off, sizeof(char), &bytecode->constants[i]->type);
+        _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
         switch (bytecode->constants[i]->type) {
             case BYTECODE_CONST_STRING :
-                _write_buffer(bincode, bincode_len, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
+                _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
-                _write_buffer(bincode, bincode_len, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
+                _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
-                saffire_error("Unknown constant type %d\n", bytecode->constants[i]->type);
+                saffire_compile_error("Unknown constant type %d\n", bytecode->constants[i]->type);
                 break;
         }
     }
 
     // Write variables
-    _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->variables_len);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->variables_len);
     for (int i=0; i!=bytecode->variables_len; i++) {
-        _write_buffer(bincode, bincode_len, sizeof(int), &bytecode->variables[i]->len);
-        _write_buffer(bincode, bincode_len, bytecode->variables[i]->len, bytecode->variables[i]->s);
+        _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->variables[i]->len);
+        _write_buffer(bincode, bincode_off, bytecode->variables[i]->len, bytecode->variables[i]->s);
     }
 
     return 1;
@@ -217,51 +239,64 @@ int convert_bytecode_to_binary(t_bytecode *bytecode, int *bincode_len, char **bi
  * Load a bytecode from disk, optionally verify signature
  */
 t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) {
-    FILE *f = fopen(filename, "rb");
-
     t_bytecode_binary_header header;
+
+    // Read header
+    FILE *f = fopen(filename, "rb");
     fread(&header, sizeof(header), 1, f);
 
+    // Allocate room and read binary code
     char *bincode = (char *)smm_malloc(header.bytecode_len);
     fseek(f, header.bytecode_offset, SEEK_SET);
     fread(bincode, header.bytecode_len, 1, f);
 
     // Uncompress bincode block if needed
     if ((header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED) {
+
         // Allocate uncompressed size buffer based on info from the header
         char *bzipblock = smm_malloc(header.bytecode_uncompressed_len);
         unsigned int bzipblock_len;
+
+        // Decompress (slowly)
         int ret = BZ2_bzBuffToBuffDecompress(bzipblock, &bzipblock_len, bincode, header.bytecode_len, 0, 0);
         if (ret != BZ_OK) {
-            saffire_error("Error while compressing data.");
+            saffire_compile_error("Error while decompressing data: %d", ret);
         }
 
         // Sanity check. These should match
         if (bzipblock_len != header.bytecode_uncompressed_len) {
-            saffire_error("Header information does not match with the size of the uncompressed data block");
+            saffire_compile_error("Header information does not match with the size of the uncompressed data block");
         }
 
-        // Free unpacked binary code
+        // Free unpacked binary code. We don't need it anymore
         smm_free(bincode);
 
-        // Set data to uncompressed block
+        // Set bincode data to the uncompressed block
         bincode = bzipblock;
         header.bytecode_len = bzipblock_len;
     }
 
-
-    if (verify_signature == 0 && header.signature_offset != 0) {
-        saffire_warning("A signature is present, but verification is disabled");
+    // There is a signature present. Give warning when the user does not want to check it
+    if (verify_signature == 0 &&
+        (header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED &&
+        header.signature_offset != 0) {
+        saffire_compile_warning("A signature is present, but verification is disabled");
     }
 
-    if (header.signature_offset != 0 && verify_signature) {
+    // We need to check signature, and there is one present
+    if (verify_signature == 1 &&
+        (header.flags & BYTECODE_FLAG_SIGNED) == BYTECODE_FLAG_SIGNED &&
+        header.signature_offset != 0) {
+
         // Read signature
         char *signature = (char *)smm_malloc(header.signature_len);
         fseek(f, header.signature_offset, SEEK_SET);
         fread(signature, header.signature_len, 1, f);
 
-        // @TODO: Verify!
-        printf("@TODO: verify the signature!");
+        // Verify signature
+        if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
+            saffire_compile_error("The signature for this bytecode is INVALID!");
+        }
     }
 
     fclose(f);
@@ -269,7 +304,7 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
     // Convert binary to bytecode
     t_bytecode *bc = convert_binary_to_bytecode(header.bytecode_len, bincode);
     if (! bc) {
-        saffire_error("Could not convert bytecode data");
+        saffire_compile_error("Could not convert bytecode data");
     }
 
     // Return bytecode
@@ -280,16 +315,22 @@ t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature) 
 /**
  * Save a bytecode from disk, optionally sign and add signature
  */
-void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign, int compress) {
-    // Convert
-    int bincode_len = 0;
+void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign_code, int compress_code) {
+    char *gpg_signature = NULL;
+    unsigned int gpg_signature_len = 0;
     char *bincode = NULL;
+    int bincode_len = 0;
+
+    // Convert bytecode to bincode
     if (! convert_bytecode_to_binary(bc, &bincode_len, &bincode)) {
-        saffire_error("Could not convert bytecode data");
+        saffire_compile_error("Could not convert bytecode data");
     }
 
+    // Let header point to the reserved header position
     t_bytecode_binary_header header;
-    bzero(&header, sizeof(header));
+    bzero(&header, sizeof(t_bytecode_binary_header));
+
+    // Set header fields
     header.magic = MAGIC_HEADER;
 
     // Fetch modification time from source file and fill into header
@@ -302,32 +343,42 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
 
     // Set header flags
     header.flags = 0;
-    if (sign) header.flags |= BYTECODE_FLAG_SIGNED;
-    if (compress) header.flags |= BYTECODE_FLAG_COMPRESSED;
+    if (sign_code) header.flags |= BYTECODE_FLAG_SIGNED;
+    if (compress_code) header.flags |= BYTECODE_FLAG_COMPRESSED;
 
-    // Save lengths of the bytecode
-    header.bytecode_len = bincode_len;
+    // Save lengths of the bytecode (assume we save it uncompressed for now)
     header.bytecode_uncompressed_len = bincode_len;
+    header.bytecode_len = bincode_len;
 
 
-    // Need to compress bincode block?
-    if (compress) {
-        // http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
-        char *bzipblock = smm_malloc(bincode_len + (bincode_len / 100) + 600);
-        unsigned int bzipblock_len;
-        int ret = BZ2_bzBuffToBuffCompress(bzipblock, &bzipblock_len, bincode, bincode_len, 9, 0, 30);
+    // Need to compress the bincode block?
+    if (compress_code) {
+        /*
+         * http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
+         */
+        unsigned int bzipblock_len = (bincode_len * 1.1) + 600;
+        char *bzipblock = smm_malloc(bzipblock_len);
+
+        int ret = BZ2_bzBuffToBuffCompress(bzipblock, &bzipblock_len, bincode, bincode_len, BZIP_BLOCKSIZE, 0, BZIP_WORK_FACTOR);
         if (ret != BZ_OK) {
-            saffire_error("Error while compressing data.");
+            saffire_compile_error("Error while compressing data: %d", ret);
         }
 
-        // Forget about the original bincode and replace it with out bzip2 data
+        // Forget about the original bincode and replace it with out bzip2 data.
         smm_free(bincode);
         bincode = bzipblock;
         bincode_len = bzipblock_len;
 
+        // The actual bytecode binary length will differ from it's uncompressed length.
         header.bytecode_len = bzipblock_len;
     }
 
+
+    // Add signature at the end of the file
+    if (sign_code == 1) {
+        // Create signature
+        gpg_sign("0xFABA426A", bincode, bincode_len, &gpg_signature, &gpg_signature_len);
+    }
 
 
     // Create file
@@ -340,12 +391,7 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
     header.bytecode_offset = ftell(f);
     fwrite(bincode, bincode_len, 1, f);
 
-    // Add signature at the end of the file
-    if (sign == 1) {
-        // Create signature
-        int gpg_signature_len = 0;
-        char *gpg_signature = "blaat";
-
+    if (sign_code == 1) {
         header.signature_offset = ftell(f);
         header.signature_len = gpg_signature_len;
         fwrite(gpg_signature, gpg_signature_len, 1, f);
@@ -356,6 +402,7 @@ void save_bytecode_to_disk(const char *dest_filename, const char *source_filenam
     fwrite(&header, sizeof(header), 1, f);
 
     fclose(f);
+
 
     // Free up our binary code
     smm_free(bincode);
@@ -416,9 +463,8 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_variable(bc, "a");
     _new_variable(bc, "b");
 
-    save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 0, 1);
+//    save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 1, 0);
 
-
-    t_bytecode *new_bc = load_bytecode_from_disk("bytecode.sfc", 0);
+    t_bytecode *new_bc = load_bytecode_from_disk("bytecode.sfc", 1);
     return new_bc;
 }
