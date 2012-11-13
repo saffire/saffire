@@ -87,7 +87,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/stack.c \
                        components/general/parse_options.c \
                        components/general/popen2.c \
-                       components/general/gpg.c
+                       components/general/gpg.c \
+                       components/general/path_handling.c
 
 
 ########################################################################

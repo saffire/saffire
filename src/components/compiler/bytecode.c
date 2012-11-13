@@ -448,6 +448,7 @@ t_bytecode *generate_dummy_bytecode(void) {
                        ;
 
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
+    bzero(bc, sizeof(t_bytecode));
     bc->stack_size = 10;
     bc->code_len = sizeof(dummy_code);
     bc->code = smm_malloc(bc->code_len);
@@ -463,8 +464,5 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_variable(bc, "a");
     _new_variable(bc, "b");
 
-//    save_bytecode_to_disk("bytecode.sfc", "bytecode.sf", bc, 1, 0);
-
-    t_bytecode *new_bc = load_bytecode_from_disk("bytecode.sfc", 1);
-    return new_bc;
+    return bc;
 }
