@@ -122,24 +122,6 @@ static int do_generate(void) {
 
 
 /**
- * Handler that is called when parsing an INI line.
- */
-/*
-static int ini_parse_handler(void *user, const char *section, const char *name, const char *value) {
-    // Combine the section and the name
-    char key[255+1];
-    snprintf(key, 255, "%s.%s", section, name);
-
-    // Add to both the hash and the DLL
-    ht_add(config, key, smm_strdup(value));
-    dll_append(dll_config, smm_strdup(key));
-
-    // Return 1 for ok
-    return 1;
-}
-*/
-
-/**
  * Get a value from the configuration file
  *
  * Action: ./saffire config get <setting>
@@ -149,11 +131,12 @@ static int do_get(void) {
 
     char *val = config_get_string(key);
     if (val) {
-        printf("%s: %s\n", key, val);
+        printf("%s : %s\n", key, val);
         return 0;
     }
     return 1;
 }
+
 
 /**
  * Set a value into the configuration file
@@ -166,6 +149,7 @@ static int do_set(void) {
 
     return config_set_string(setting, value);
 }
+
 
 /**
  * Returns a list of settings that matches the search argument
