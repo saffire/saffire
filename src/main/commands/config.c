@@ -39,21 +39,21 @@ static const char *default_ini[] = {
     "[global]",
     "# Global log information",
     "log.level = debug     # debug, notice, warning, error",
-    "log.path = /var/log/saffire/saffire.log"
+    "log.path = /var/log/saffire/saffire.log",
     "",
     "",
     "[gpg]",
-    "# Path to the GPG application"
+    "# Path to the GPG application",
     "path = /usr/bin/gpg",
-    "# Your GPG key to sign any modules or bytecode"
-    "key = 0xFFFFFFFF"
+    "# Your GPG key to sign any modules or bytecode",
+    "key = 0xFFFFFFFF",
     "",
     "",
-    "[compile]"
-    "# True when bytecode automatically needs to be signed"
-    "sign = true"
-    "# True when bytecode automatically needs to be compressed"
-    "compress = true"
+    "[compile]",
+    "# True when bytecode automatically needs to be signed",
+    "sign = true",
+    "# True when bytecode automatically needs to be compressed",
+    "compress = true",
     "",
     "",
     "[fastcgi]",
@@ -62,30 +62,30 @@ static const char *default_ini[] = {
     "# Log information",
     "log.path = /var/log/saffire/fastcgi.log",
     "log.level = notice       # debug, notice, warning, error",
-    ""
-    "# When true, the FastCGI server will deamonize into the background"
+    "",
+    "# When true, the FastCGI server will deamonize into the background",
     "daemonize = true",
-    "# Number of children to spawn when daemonized"
+    "# Number of children to spawn when daemonized",
     "spawn_children = 10",
     "",
-    "# When ran as root, drop privileges to this user or uid"
-    "user = -1"
-    "# When ran as root, drop privileges to this group or gid"
-    "group = -1"
+    "# When ran as root, drop privileges to this user or uid",
+    "user = -1",
+    "# When ran as root, drop privileges to this group or gid",
+    "group = -1",
     "",
-    "# Listen to either an IP address or a Unix-socket"
+    "# Listen to either an IP address or a Unix-socket",
     "listen = 0.0.0.0:80",
     "#listen = /tmp/saffire.socket",
     "",
-    "# Number of backlogs for select(). Use -1 for default value"
+    "# Number of backlogs for select(). Use -1 for default value",
     "listen.backlog = -1",
     "",
-    "# Groups and permissions for Unix socket"
+    "# Groups and permissions for Unix socket",
     "listen.socket.user = nobody",
     "listen.socket.group = nobody",
     "listen.socket.mode = 0666",
     "",
-    "# FastCGI status and control URLs"
+    "# FastCGI status and control URLs",
     "#status.url = /status",
     "#ping.url = /ping",
     "#ping.response = \"pong\"",
