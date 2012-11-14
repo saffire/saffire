@@ -35,12 +35,14 @@
 #include "general/popen2.h"
 #include "general/config.h"
 
+#define TEMP_SAFFIRE_SIGN_PATH "/tmp/.sf_gpg_XXXXXX"
+
 
 /**
  * Verifies a buffer block. Returns 1 on valid. 0 when not valid.
  */
 int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len) {
-    char tmp_path[] = "/tmp/.sf_gpg_XXXXXX";
+    char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
 
     // Open temp file (and modify tmp_path with generated filename)
     int fd = mkstemp(tmp_path);
@@ -103,8 +105,11 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
 /**
  * Signs a buffer block. *signature should be NULL to allocate a new buffer, and *signature_len returns the length of the signature
  */
-int gpg_sign(char *gpg_key, char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len) {
+int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len) {
+    char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
+
     // Find GPG path
+    // @TODO config_get_X should have default values
     char *gpg_path = config_get_string("gpg.path");
     if (gpg_path == NULL) {
         gpg_path = "/usr/bin/gpg";
@@ -113,10 +118,9 @@ int gpg_sign(char *gpg_key, char *buffer, unsigned int buffer_len, char **signat
     char *args[] = {
             gpg_path,
             "-bsu",
-            gpg_key,
+            (char *)gpg_key,
             NULL
     };
-
 
     // Open GPG as child
     int pipe[3];
@@ -127,7 +131,9 @@ int gpg_sign(char *gpg_key, char *buffer, unsigned int buffer_len, char **signat
     write(pipe[0], buffer, buffer_len);
     close(pipe[0]);
 
-    FILE *f = fopen("/tmp/ggpsig", "w");
+    // Open temp file (and modify tmp_path with generated filename)
+    int fd = mkstemp(tmp_path);
+    FILE *f = fdopen(fd, "wb");
 
     // Read back the actual (binary) GPG signature
     int len;

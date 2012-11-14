@@ -68,7 +68,6 @@ int popenRWE(int *rwepipe, const char *exe, char * argv[])
 		goto error_err;
 
 	pid = fork();
-    printf("PID: %d\n", pid);
 	if (pid > 0) { // parent
 		close(in[0]);
 		close(out[1]);
@@ -118,35 +117,3 @@ int pcloseRWE(int pid, int *rwepipe)
 	rc = waitpid(pid, &status, 0);
 	return status;
 }
-
-//
-//int popen2(const char *cmd, struct popen2 *info) {
-//    int pipe_stdin[2];
-//    int pipe_stdout[2];
-//
-//    if (pipe(pipe_stdin)) return -1;
-//    if (pipe(pipe_stdout)) return -1;
-//
-//    pid_t pid = fork();
-//    if (pid < 0) return pid;
-//
-//    if (pid == 0) {
-//        // Child
-////        close(pipe_stdin[1]);
-////        dup2(pipe_stdin[0], 0);
-////        close(pipe_stdout[0]);
-////        dup2(pipe_stdout[1], 1);
-//
-//        printf("PIPE IN: %d %d\n", pipe_stdin[0], pipe_stdin[1]);
-//        printf("PIPE OUT: %d %d\n", pipe_stdout[0], pipe_stdout[1]);
-//        execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
-//
-//        perror("execl");
-//        exit(1);
-//    }
-//
-//    info->child_pid = pid;
-//    info->to = pipe_stdin[1];
-//    info->from = pipe_stdout[0];
-//    return 0;
-//}

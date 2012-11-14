@@ -46,6 +46,7 @@ extern struct command_info info_fastcgi;
 extern struct command_info info_config;
 extern struct command_info info_exec;
 extern struct command_info info_compile;
+extern struct command_info info_sign;
 
 // Each saffire "command" must have a entry here, otherwise it's not known.
 struct command commands[] = {
@@ -57,6 +58,7 @@ struct command commands[] = {
                                         { "config",  &info_config },
                                         { "exec",    &info_exec },
                                         { "compile", &info_compile },
+                                        { "sign",    &info_sign },
                                         { NULL, NULL }
                                     };
 

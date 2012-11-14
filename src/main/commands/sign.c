@@ -49,13 +49,13 @@ static int _sign_module(const char *path) {
 static int _sign_bytecode(const char *path) {
 
     if (! bytecode_is_valid_file(path)) {
-        printf("This is not a valid saffire bytecode file.");
+        printf("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
     if (flag_remove == 1) {
         if (! bytecode_is_signed(path)) {
-            printf("This bytecode file is not signed.");
+            printf("Sign error: This bytecode file is not signed.\n");
             return 1;
         }
         // Remove signature
@@ -64,7 +64,7 @@ static int _sign_bytecode(const char *path) {
 
     if (flag_remove == 0) {
         if (bytecode_is_signed(path)) {
-            printf("This bytecode file is already signed.");
+            printf("Sign error: This bytecode file is already signed.\n");
             return 1;
         }
         // add signature
@@ -83,7 +83,7 @@ static int do_sign(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("File not found");
+        printf("Cannot sign: File not found\n");
         return 1;
     }
 
@@ -108,7 +108,10 @@ static const char help[]  = "Signs a saffire bytecode file or module.\n"
                             "\n"
                             "Usage: saffire sign <dir>|<file> [options]\n"
                             "\n"
-                            "This command signs a saffire bytecode file or module.\n";
+                            "Global options:\n"
+                            "    --remove        Removes the signature from bytecode or module\n"
+                            "\n"
+                            "This command signs or unsigns a saffire bytecode file or module.\n";
 
 static void opt_remove(void *data) {
     flag_remove = 1;

@@ -147,7 +147,7 @@ static const char help[]  = "Compiles a Saffire script or scripts without runnin
                             "\n"
                             "Usage: saffire compile <dir>|<file> [options]\n"
                             "\n"
-                            "Global settings:\n"
+                            "Global options:\n"
                             "    --sign           Sign the bytecode\n"
                             "    --no-sign        Don't sign the bytecode\n"
                             "    --compress       Compress the bytecode\n"

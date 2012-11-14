@@ -26,15 +26,10 @@
 */
 #include <sys/stat.h>
 #include <string.h>
-//#include <stdlib.h>
 #include <stdarg.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include "compiler/bytecode.h"
-//#include "compiler/ast.h"
-//#include "general/dll.h"
 #include "general/smm.h"
-//#include "version.h"
-//#include "vm/vm_opcodes.h"
 #include "general/gpg.h"
 #include "general/bzip2.h"
 #include "general/config.h"
@@ -520,6 +515,28 @@ int bytecode_is_compressed(const char *path) {
  *
  */
 int bytecode_remove_signature(const char *path) {
+    t_bytecode_binary_header header;
+
+    // Sanity check
+    if (! bytecode_is_signed(path)) return 1;
+
+    // Read header
+    FILE *f = fopen(path, "r+b");
+    fread(&header, sizeof(header), 1, f);
+
+    int sigpos = header.signature_offset;
+    header.signature_offset = 0;
+    header.signature_len = 0;
+    header.flags &= ~BYTECODE_FLAG_SIGNED;
+
+    // Write new header
+    fseek(f, 0, SEEK_SET);
+    fwrite(&header, sizeof(header), 1, f);
+
+    // Strip away the signature (@TODO: assume signature is at end of file)
+    ftruncate(fileno(f), sigpos);
+    fclose(f);
+
     return 0;
 }
 
@@ -528,9 +545,45 @@ int bytecode_remove_signature(const char *path) {
  * Add a new signature to the
  */
 int bytecode_add_signature(const char *path) {
-    char *gpg_key = config_get_string("gpg.key");
+    t_bytecode_binary_header header;
 
-//    gpg_sign(gpg_key, bincode, bincode_len, &gpg_signature, &gpg_signature_len);
+    // Sanity check
+    if (bytecode_is_signed(path)) return 1;
+
+    // Read header
+    FILE *f = fopen(path, "r+b");
+    fread(&header, sizeof(header), 1, f);
+
+    // Allocate room and read bincode from file
+    char *bincode = smm_malloc(header.bytecode_len);
+    fseek(f, header.bytecode_offset, SEEK_SET);
+    fread(bincode, header.bytecode_len, 1, f);
+
+    // Create signature from bincode
+    char *gpg_signature = NULL;
+    unsigned int gpg_signature_len = 0;
+    char *gpg_key = config_get_string("gpg.key");
+    if (gpg_key == NULL) {
+        printf("Cannot find GPG key. Please set the correct GPG key inside your INI file");
+        return 1;
+    }
+    gpg_sign(gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);
+
+    // Set new header values
+    fseek(f, 0, SEEK_END);
+    header.signature_offset = ftell(f);
+    header.signature_len = gpg_signature_len;
+    header.flags |= BYTECODE_FLAG_SIGNED;
+
+    // Write new header
+    fseek(f, 0, SEEK_SET);
+    fwrite(&header, sizeof(header), 1, f);
+
+    // Write signature to the end of the file (signature offset)
+    fseek(f, header.signature_offset, SEEK_SET);
+    fwrite(gpg_signature, gpg_signature_len, 1, f);
+
+    fclose(f);
 
     return 0;
 }
