@@ -152,73 +152,77 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
  *  "s"  needs (any) string (including ints)
  *  "l"  needs (long) integer
  *  "b"  needs boolean (true, false, yes, no, 0, 1)
- * // Not yet implemented | : All items beghind this are optional.
+ *  "|"  all items behind are optional
  */
 void saffire_parse_signature(int argc, char **argv, char *signature) {
-    int correct = 0;
+    int argp, idx;
+    int optional = 0;
 
-    // Shift all remaining settings to the front.
-    int open_spot = 0;
-    while (argv[open_spot]) open_spot++;
+    // Shift all remaining non-parsed arguments to the front of the arglist
+    int open_slot = 0;
+    while (argv[open_slot]) open_slot++;
 
-    for (int i=open_spot+1; i<argc; i++) {
+    for (int i=open_slot+1; i<argc; i++) {
         // Set initial open spot
-        if (argv[i] && open_spot < i) {
-            argv[open_spot] = argv[i];
+        if (argv[i] && open_slot < i) {
+            argv[open_slot] = argv[i];
             argv[i] = NULL;
-            while (argv[open_spot]) open_spot++;
+            while (argv[open_slot]) open_slot++;
         }
     }
+    // We can "shrink" the argument count, since there are no open slots in between.
+    argc = open_slot;
 
 
-    // We can "shrink" the argument count, since there are no open spots in between.
-    argc = open_spot;
-
-    // Quick signature sanity check
-    if (argc == strlen(signature)) {
-        // Everything is ok. We have all our required arguments!
-    } else if (argc >= strlen(signature)) {
-        // Not enough arguments!
-        printf("Too many arguments found. use saffire help <command> for more information\n");\
-        exit(1);
-    } else {
+    if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
         printf("Not enough arguments found. use saffire help <command> for more information\n");
         exit(1);
     }
 
-
     // Process each character in the signature
-    for (int idx=0; idx!=strlen(signature); idx++) {
-        correct = 0;
+    for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
+        // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
+        if (argp > argc && ! optional) {
+            printf("Not enough arguments found. use saffire help <command> for more information\n");
+            exit(1);
+        }
 
         switch (signature[idx]) {
+            case '|' :
+                // Use the same argument for next signature char.
+                argp--;
+                // Set optional flag. Everything afterwards is optional
+                optional = 1;
+                break;
             case 's' :
                 // Strings are "as-is"
                 break;
             case 'b' :
                 // Try and convert to boolean
-                correct = to_bool(argv[idx]) != -1;
-
-                if (! correct) {
-                  printf("Found '%s', but expected a boolean value\n", argv[idx]);
+                if (to_bool(argv[argp]) == -1) {
+                  printf("Found '%s', but expected a boolean value\n", argv[argp]);
                   exit(1);
                 }
 
                 break;
             case 'l' :
                 // Convert to long. string("0") should be ok too!
-                if (! strcasecmp(argv[idx], "0") || atol(argv[idx])) correct = 1;
-
-                if (! correct) {
-                  printf("Found '%s', but expected a numerical value\n", argv[idx]);
+                if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
+                  printf("Found '%s', but expected a numerical value\n", argv[argp]);
                   exit(1);
                 }
+
                 break;
           default :
                 printf("Incorrect signature command '%c' found.\n", signature[idx]);
                 exit(1);
         }
+    }
 
+    // Not enough arguments!
+    if (argc > argp) {
+        printf("Too many arguments found. use saffire help <command> for more information\n");
+        exit(1);
     }
 
     // All parameters are shifted to the front, and checked for type. From now on, we can safely use them

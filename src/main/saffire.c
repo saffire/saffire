@@ -102,18 +102,18 @@ void print_usage(void) {
  * Execute a command.
  */
 static int _exec_command (struct command *cmd, int argc, char **argv) {
-    // argv[0] points to action
-    char *dst_action = argv[0];
+    // argv[0] points to action (or start of parameter list, or NULL when no actions/params are given)
+    char *dst_action = argv[0] ? argv[0] : "";
 
-    // Iterate structure, find correct action depending on the argument signature
-    int i=0;
-    struct command_action *action = cmd->info->actions + i;
+    // Iterate structure and find correct action depending on the argument signature
+    struct command_action *action = cmd->info->actions;
     while (action->name) {
+        
         // Match action or an empty action
         if (! strcmp(action->name, "") || ! strcmp(action->name, dst_action)) {
 
+            // Remove the action from the argument list, if we found an action
             if (strcmp(action->name, "")) {
-                // Remove action if one was present. Not needed from this point on
                 argv += 1;
                 argc -= 1;
             }
@@ -129,8 +129,8 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             // Execute action
             return action->func();
         }
-        i++;
-        action = cmd->info->actions + i;
+
+        action++;
     }
 
     // Nothing was found. Display help if available.
@@ -167,8 +167,8 @@ int main(int argc, char *argv[]) {
 
     // Find command, and set the argc & argv to point to the item AFTER the command
     if (argc == 1) {
-        // Turn "./saffire" into "./saffire cli"
-        command = "cli";
+        // Turn "./saffire" into "./saffire help"
+        command = "help";
         argc = 0;
     } else if (argc >= 2) {
         // If the action is 'dashed', remote the dashes. This will change

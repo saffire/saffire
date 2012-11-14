@@ -76,7 +76,7 @@ static const char help[]   = "Display help information\n"
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_help, NULL },
+    { "", "|s", do_help, NULL },
     { 0, 0, 0, 0 }
 };
 

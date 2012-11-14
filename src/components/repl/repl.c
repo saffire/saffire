@@ -49,7 +49,7 @@ int repl(void) {
     HistEvent ev;
     int count;
 
-    printf("Interactive/CLI mode is not yet supported. However, you can type text here.. use CTRL-C to quit.\n");
+    printf("Interactive/REPL mode is not yet implemented. Use CTRL-C to quit.\n");
 
     // initialize EditLine library
     el = el_init("saffire", stdin, stdout, stderr);
