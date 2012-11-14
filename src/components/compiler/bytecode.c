@@ -562,7 +562,7 @@ int bytecode_add_signature(const char *path) {
     // Create signature from bincode
     char *gpg_signature = NULL;
     unsigned int gpg_signature_len = 0;
-    char *gpg_key = config_get_string("gpg.key");
+    char *gpg_key = config_get_string("gpg.key", NULL);
     if (gpg_key == NULL) {
         printf("Cannot find GPG key. Please set the correct GPG key inside your INI file");
         return 1;

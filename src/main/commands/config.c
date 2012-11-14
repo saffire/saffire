@@ -129,7 +129,7 @@ static int do_generate(void) {
 static int do_get(void) {
     char *key = saffire_getopt_string(0);
 
-    char *val = config_get_string(key);
+    char *val = config_get_string(key, NULL);
     if (val) {
         printf("%s : %s\n", key, val);
         return 0;
@@ -167,7 +167,7 @@ static int do_list(void) {
         // Skip comments
         if (strstr(matches[i], "#comment") != 0) goto free_up;
 
-        char *val = config_get_string(matches[i]);
+        char *val = config_get_string(matches[i], NULL);
         printf("  %s : %s\n", matches[i], val);
 free_up:
         free(matches[i]);

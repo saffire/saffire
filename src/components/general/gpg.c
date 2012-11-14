@@ -52,10 +52,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     fclose(f);
 
     // Find GPG path
-    char *gpg_path = config_get_string("gpg.path");
-    if (gpg_path == NULL) {
-        gpg_path = "/usr/bin/gpg";
-    }
+    char *gpg_path = config_get_string("gpg.path", "/usr/bin/gpg");
 
     // Arguments passed to GPG
     char *args[] = {
@@ -109,11 +106,7 @@ int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, c
     char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
 
     // Find GPG path
-    // @TODO config_get_X should have default values
-    char *gpg_path = config_get_string("gpg.path");
-    if (gpg_path == NULL) {
-        gpg_path = "/usr/bin/gpg";
-    }
+    char *gpg_path = config_get_string("gpg.path", "/usr/bin/gpg");
 
     char *args[] = {
             gpg_path,

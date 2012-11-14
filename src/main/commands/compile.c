@@ -116,12 +116,12 @@ static int do_compile(void) {
     }
 
     // Get default sign flag and override if needed
-    char sign = config_get_bool("compile.sign");
+    char sign = config_get_bool("compile.sign", 0);
     if (flag_sign == 1) sign = 1;
     if (flag_sign == 2) sign = 0;
 
     // Get default compress flag and override if needed
-    char compress = config_get_bool("compile.compress");
+    char compress = config_get_bool("compile.compress", 1);
     if (flag_compress == 1) compress = 1;
     if (flag_compress == 2) compress = 0;
 

@@ -101,7 +101,7 @@ int config_set_string(char *key, char *val) {
 /**
  * Return a string from the configuration
  */
-char *config_get_string(const char *key) {
+char *config_get_string(const char *key, const char *default_value) {
     read_ini();
 
     char *fqn_key = config_generate_augeas_key(key);
@@ -109,16 +109,18 @@ char *config_get_string(const char *key) {
     int ret = aug_get(aug, fqn_key, &val);
     smm_free(fqn_key);
 
-    return (ret == 1) ? (char *)val : NULL;
+    return (ret == 1) ? (char *)val : (char *)default_value;
 }
 
 
 /**
  * Return a boolean from the configuration
  */
-char config_get_bool(const char *key) {
+char config_get_bool(const char *key, char default_value) {
     read_ini();
-    char *val = config_get_string(key);
+    char *val = config_get_string(key, NULL);
+    if (val == NULL) return default_value;
+
     return to_bool(val);
 }
 
@@ -126,9 +128,11 @@ char config_get_bool(const char *key) {
 /**
  * Return a long from the configuration
  */
-long config_get_long(const char *key) {
+long config_get_long(const char *key, long default_value) {
     read_ini();
-    char *val = config_get_string(key);
+    char *val = config_get_string(key, NULL);
+    if (val == NULL) return default_value;
+
     return atol(val);
 }
 
