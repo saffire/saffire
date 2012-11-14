@@ -47,6 +47,7 @@ static int _sign_module(const char *path) {
  * Add or remove signature from a bytecode file
  */
 static int _sign_bytecode(const char *path) {
+    int ret;
 
     if (! bytecode_is_valid_file(path)) {
         printf("Sign error: This is not a valid saffire bytecode file.\n");
@@ -58,8 +59,15 @@ static int _sign_bytecode(const char *path) {
             printf("Sign error: This bytecode file is not signed.\n");
             return 1;
         }
+
         // Remove signature
-        return bytecode_remove_signature(path);
+        ret = bytecode_remove_signature(path);
+        if (ret == 0) {
+            printf("Removed signature from bytecode file %s\n", path);
+        } else {
+            printf("Sign error: Error while removing signature from bytecode file %s\n", path);
+        }
+        return ret;
     }
 
     if (flag_remove == 0) {
@@ -67,8 +75,15 @@ static int _sign_bytecode(const char *path) {
             printf("Sign error: This bytecode file is already signed.\n");
             return 1;
         }
+
         // add signature
-        return bytecode_add_signature(path);
+        ret = bytecode_add_signature(path);
+        if (ret == 0) {
+            printf("Added signature to bytecode file %s\n", path);
+        } else {
+            printf("Sign error: Error while adding signature from bytecode file %s\n", path);
+        }
+        return ret;
     }
 
     return 0;

@@ -256,7 +256,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
         // Compress buffer
         unsigned int bzip_buf_len = 0;
         char *bzip_buf = NULL;
-        if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
+        if (! bzip2_decompress(&bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
             saffire_compile_error("Error while decompressing data");
         }
 
@@ -313,8 +313,6 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
  * Save a bytecode from disk, optionally sign and add signature
  */
 void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign_code, int compress_code) {
-    char *gpg_signature = NULL;
-    unsigned int gpg_signature_len = 0;
     char *bincode = NULL;
     int bincode_len = 0;
 
@@ -340,7 +338,6 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
 
     // Set header flags
     header.flags = 0;
-    if (sign_code) header.flags |= BYTECODE_FLAG_SIGNED;
     if (compress_code) header.flags |= BYTECODE_FLAG_COMPRESSED;
 
     // Save lengths of the bytecode (assume we save it uncompressed for now)
@@ -353,7 +350,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
         // Compress buffer
         unsigned int bzip_buf_len = 0;
         char *bzip_buf = NULL;
-        if (! bzip2_compress(bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
+        if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
             saffire_compile_error("Error while compressing data");
         }
 
@@ -376,11 +373,11 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     header.bytecode_offset = ftell(f);
     fwrite(bincode, bincode_len, 1, f);
 
-    if (sign_code == 1) {
-        header.signature_offset = ftell(f);
-        header.signature_len = gpg_signature_len;
-        fwrite(gpg_signature, gpg_signature_len, 1, f);
-    }
+//    if (sign_code == 1) {
+//        header.signature_offset = ftell(f);
+//        header.signature_len = gpg_signature_len;
+//        fwrite(gpg_signature, gpg_signature_len, 1, f);
+//    }
 
     // Reset to the start of the file and write header
     fseek(f, 0, SEEK_SET);

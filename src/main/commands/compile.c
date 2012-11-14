@@ -54,7 +54,7 @@ int flag_compress = 0;  // 0 = default config setting, 1 = force compress, 2 = f
 static void _compile_file(const char *source_file, int sign, int compress) {
     char *dest_file = replace_extension(source_file, ".sf", ".sfc");
 
-    printf("Compiling: %s into %s\n", source_file, dest_file);
+    printf("Compiling %s into %s%s%s\n", source_file, sign ? "signed " : "", compress ? "compressed " : "", dest_file);
 
     t_bytecode *bc = generate_dummy_bytecode();
     bytecode_save(dest_file, source_file, bc, sign, compress);

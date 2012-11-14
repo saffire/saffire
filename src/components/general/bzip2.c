@@ -35,14 +35,14 @@
 /**
  * Compresses source into dest. Dest is newly allocated and it's length recorded inside dest_len
  */
-int bzip2_compress(char *dest, unsigned int *dest_len, char *source, unsigned int source_len) {
+int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
     /*
      * http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
      */
     *dest_len = (source_len * 1.1) + 600;
-    dest = smm_malloc(*dest_len);
+    *dest = smm_malloc(*dest_len);
 
-    int ret = BZ2_bzBuffToBuffCompress(dest, dest_len, source, source_len, BZIP_BLOCKSIZE, 0, BZIP_WORK_FACTOR);
+    int ret = BZ2_bzBuffToBuffCompress(*dest, dest_len, (char *)source, source_len, BZIP_BLOCKSIZE, 0, BZIP_WORK_FACTOR);
 
     return (ret == BZ_OK);
 }
@@ -51,10 +51,10 @@ int bzip2_compress(char *dest, unsigned int *dest_len, char *source, unsigned in
 /**
  * Decompresses source into dest. Dest is newly allocated and it's length recorded inside dest_len
  */
-int bzip2_decompress(char *dest, unsigned int *dest_len, char *source, unsigned int source_len) {
-    dest = smm_malloc(source_len);
+int bzip2_decompress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
+    *dest = smm_malloc(source_len);
 
     // Decompress (slowly)
-    int ret = BZ2_bzBuffToBuffDecompress(dest, dest_len, source, source_len, 0, 0);
+    int ret = BZ2_bzBuffToBuffDecompress(*dest, dest_len, (char *)source, source_len, 0, 0);
     return (ret == BZ_OK);
 }
