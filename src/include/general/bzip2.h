@@ -24,34 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "commands/command.h"
-#include "repl/repl.h"
+#ifndef __BZIP2_H__
+#define __BZIP2_H__
 
-static int do_repl(void) {
-    return (repl());
-}
+    int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
+    int bzip2_decompress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
 
-
-/****
- * Argument Parsing and action definitions
- ***/
-
-/* Usage string */
-static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
-                             "\n"
-                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
-
-
-/* Config actions */
-static struct command_action command_actions[] = {
-    { "", "", do_repl, NULL },
-    { 0, 0, 0, 0 }
-};
-
-/* Config info structure */
-struct command_info info_cli = {
-    "Interactive Interpreter",
-    command_actions,
-    help
-};
+#endif

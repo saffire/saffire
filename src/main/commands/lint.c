@@ -32,7 +32,7 @@
  * Display version information
  */
 static int do_lint(void) {
-    printf("Lint check");
+    printf("Lint checking is not yet implemented\n");
     return 0;
 }
 
