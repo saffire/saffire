@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "compiler/saffire_compiler.h"
+#include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "compiler/ast.h"
 #include "general/smm.h"

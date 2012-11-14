@@ -61,7 +61,7 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/ast.c \
                         components/compiler/dot.c \
                         components/compiler/bytecode.c \
-                        components/compiler/saffire_compiler.c
+                        components/compiler/compiler.c
 
 
 ########################################################################
