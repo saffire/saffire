@@ -24,60 +24,37 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <histedit.h>
+#include "general/smm.h"
+#include <bzlib.h>
 
-#define HIST_FILE ".saffire_history"
 
-#define MAX_PROMPT_SIZE 40
-char cur_prompt[MAX_PROMPT_SIZE];
+#define BZIP_BLOCKSIZE               9
+#define BZIP_WORK_FACTOR            30
 
-static int statement_count = 1;
 
-// @TODO: saffire.prompt will actually set the current prompt.. saffire.prompt("%n>");  %n == current stament count?
+/**
+ * Compresses source into dest. Dest is newly allocated and it's length recorded inside dest_len
+ */
+int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
+    /*
+     * http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
+     */
+    *dest_len = (source_len * 1.1) + 600;
+    *dest = smm_malloc(*dest_len);
 
-char *prompt(EditLine *el) {
-    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count++);
-    return cur_prompt;
+    int ret = BZ2_bzBuffToBuffCompress(*dest, dest_len, (char *)source, source_len, BZIP_BLOCKSIZE, 0, BZIP_WORK_FACTOR);
+
+    return (ret == BZ_OK);
 }
 
-int repl(void) {
-    EditLine *el;
-    History *hist;
-    HistEvent ev;
-    int count;
 
-    printf("Interactive/REPL mode is not yet implemented. Use CTRL-C to quit.\n");
+/**
+ * Decompresses source into dest. Dest is newly allocated and it's length recorded inside dest_len
+ */
+int bzip2_decompress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
+    *dest = smm_malloc(source_len);
 
-    // initialize EditLine library
-    el = el_init("saffire", stdin, stdout, stderr);
-    el_set(el, EL_PROMPT, &prompt);
-    el_set(el, EL_EDITOR, "emacs");
-
-    // Initialize history
-    hist = history_init();
-    if (! hist) {
-        fprintf(stderr, "Warning: cannot initialize history\n");
-    }
-    history(hist, &ev, H_SETSIZE, 800);
-    el_set(el, EL_HIST, history, hist);
-
-    // Load history file
-    history(hist, &ev, H_LOAD, HIST_FILE);
-
-    while (1) {
-        const char *line = el_gets(el, &count);
-        if (count > 0) {
-            history(hist, &ev, H_ENTER, line);
-            history(hist, &ev, H_SAVE, HIST_FILE);
-//            printf("LINE: %s", line);
-        }
-    }
-
-    history_end(hist);
-    el_end(el);
-
-    return 0;
+    // Decompress (slowly)
+    int ret = BZ2_bzBuffToBuffDecompress(*dest, dest_len, (char *)source, source_len, 0, 0);
+    return (ret == BZ_OK);
 }

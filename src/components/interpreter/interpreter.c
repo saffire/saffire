@@ -32,7 +32,7 @@
 #include "interpreter/context.h"
 #include "interpreter/errors.h"
 #include "compiler/parser.tab.h"
-#include "compiler/saffire_compiler.h"
+#include "compiler/compiler.h"
 #include "general/hashtable.h"
 #include "compiler/ast.h"
 #include "general/stack.h"

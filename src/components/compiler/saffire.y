@@ -32,7 +32,7 @@
     #include <stdio.h>
     #include "general/smm.h"
     #include "lex.yy.h"
-    #include "compiler/saffire_compiler.h"
+    #include "compiler/compiler.h"
     #include "compiler/ast.h"
     #include "debug.h"
 

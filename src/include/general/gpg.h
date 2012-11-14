@@ -28,6 +28,6 @@
 #define __GPG_H__
 
     int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len);
-    int gpg_sign(char *gpg_key, char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len);
+    int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len);
 
 #endif

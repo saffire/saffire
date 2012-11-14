@@ -38,7 +38,7 @@
 #include <sys/socket.h>
 #include <pwd.h>
 #include <grp.h>
-#include "commands/config.h"
+#include "general/config.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
@@ -170,7 +170,7 @@ static int setup_socket(char *socket_name) {
     }
 
     // Listen to the socket
-    int backlog = config_get_long("fastcgi.listen.backlog");
+    int backlog = config_get_long("fastcgi.listen.backlog", -1);
     if (backlog <= 0) backlog = 1024;
     if (listen (sock_fd, backlog) == -1) {
         close(sock_fd);
@@ -180,9 +180,9 @@ static int setup_socket(char *socket_name) {
 
     if (socket_name[0] == '/') {
         // Set socket permissions, user and group
-        char *socket_user = config_get_string("fastcgi.listen.socket.user");
-        char *socket_group = config_get_string("fastcgi.listen.socket.group");
-        char *mode = config_get_string("fastcgi.listen.socket.mode");
+        char *socket_user = config_get_string("fastcgi.listen.socket.user", "-1");
+        char *socket_group = config_get_string("fastcgi.listen.socket.group", "-1");
+        char *mode = config_get_string("fastcgi.listen.socket.mode", "0666");
 
         char *endptr;
 
@@ -327,20 +327,20 @@ int fastcgi_start(void) {
     if (check_suidroot() == -1) return 1;
 
     // Setup listening socket
-    char *listen_dst = config_get_string("fastcgi.listen");
+    char *listen_dst = config_get_string("fastcgi.listen", "0.0.0.0:8000");
     if (setup_socket(listen_dst) == -1) return 1;
 
     // Setup PID
-    char *pid_path = config_get_string("fastcgi.pid.path");
+    char *pid_path = config_get_string("fastcgi.pid.path", "/tmp/saffire.pid");
     if (open_pid(pid_path) == -1) return 1;
 
     // Drop privileges
-    char *user = config_get_string("fastcgi.user");
-    char *group = config_get_string("fastcgi.group");
+    char *user = config_get_string("fastcgi.user", "-1");
+    char *group = config_get_string("fastcgi.group", "-1");
     if (drop_privileges(user, group) == -1) return 1;
 
     // Check if we need to daemonize
-    int need_daemonizing = config_get_bool("fastcgi.daemonize");
+    int need_daemonizing = config_get_bool("fastcgi.daemonize", 1);
 
     if (! need_daemonizing) {
         // Don't daemonize
@@ -348,7 +348,7 @@ int fastcgi_start(void) {
     }
 
     // Spawn process backgrounds
-    int sc = config_get_long("fastcgi.spawn_children");
+    int sc = config_get_long("fastcgi.spawn_children", 10);
     if (sc <= 0) sc = 1;
 
     for (int i=0; i!=sc; i++) {

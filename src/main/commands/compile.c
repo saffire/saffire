@@ -41,7 +41,7 @@
 #include "general/path_handling.h"
 #include "compiler/bytecode.h"
 
-#include "commands/config.h"
+#include "general/config.h"
 
 
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
@@ -54,10 +54,11 @@ int flag_compress = 0;  // 0 = default config setting, 1 = force compress, 2 = f
 static void _compile_file(const char *source_file, int sign, int compress) {
     char *dest_file = replace_extension(source_file, ".sf", ".sfc");
 
-    printf("Compiling: '%s'\n", source_file);
+    printf("Compiling %s into %s%s%s\n", source_file, sign ? "signed " : "", compress ? "compressed " : "", dest_file);
 
     t_bytecode *bc = generate_dummy_bytecode();
-    save_bytecode_to_disk(dest_file, source_file, bc, sign, compress);
+    bytecode_save(dest_file, source_file, bc, sign, compress);
+    bytecode_free(bc);
 
     smm_free(dest_file);
 }
@@ -110,17 +111,17 @@ static int do_compile(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("File not found");
+        printf("Cannot compile: file not found\n");
         return 1;
     }
 
     // Get default sign flag and override if needed
-    char sign = config_get_bool("compile.sign");
+    char sign = config_get_bool("compile.sign", 0);
     if (flag_sign == 1) sign = 1;
     if (flag_sign == 2) sign = 0;
 
     // Get default compress flag and override if needed
-    char compress = config_get_bool("compile.compress");
+    char compress = config_get_bool("compile.compress", 1);
     if (flag_compress == 1) compress = 1;
     if (flag_compress == 2) compress = 0;
 
@@ -146,7 +147,7 @@ static const char help[]  = "Compiles a Saffire script or scripts without runnin
                             "\n"
                             "Usage: saffire compile <dir>|<file> [options]\n"
                             "\n"
-                            "Global settings:\n"
+                            "Global options:\n"
                             "    --sign           Sign the bytecode\n"
                             "    --no-sign        Don't sign the bytecode\n"
                             "    --compress       Compress the bytecode\n"
