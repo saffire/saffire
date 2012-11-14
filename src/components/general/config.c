@@ -42,17 +42,21 @@ char prefix[] = "/files/etc/saffire/saffire.ini/";
  * Convert key into a augeas-key
  */
 static char *config_generate_augeas_key(const char *key) {
+    char *tmp_key = smm_strdup(key);
+
     // Make sure the first dot is changed to /
-    char *p = strchr(key, '.');
-    if (p == NULL) return NULL;
+    char *p = strchr(tmp_key, '.');
+    if (p == NULL) {
+        smm_free(tmp_key);
+        return NULL;
+    }
     *p = '/';
 
-    char *fqn_key = smm_malloc(strlen((char *)key) + strlen(prefix));
+    char *fqn_key = smm_malloc(strlen((char *)tmp_key) + strlen(prefix));
     strcpy(fqn_key, prefix);
-    strcat(fqn_key, key);
+    strcat(fqn_key, tmp_key);
 
-    *p = '.';
-
+    smm_free(tmp_key);
     return fqn_key;
 
 }

@@ -38,6 +38,7 @@ int saffire_params_count;
  * Converts a string value into a boolean 0 or 1. Returns -1 if cannot be converted.
  */
 int to_bool(char *value) {
+    if (value == NULL) return 0;
     if (strlen(value) == 0) return 0;
     if (! strcasecmp(value, "disabled")) return 0;
     if (! strcasecmp(value, "false")) return 0;
