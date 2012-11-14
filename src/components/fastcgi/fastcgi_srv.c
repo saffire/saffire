@@ -180,8 +180,8 @@ static int setup_socket(char *socket_name) {
 
     if (socket_name[0] == '/') {
         // Set socket permissions, user and group
-        char *socket_user = config_get_string("fastcgi.listen.socket.user", -1);
-        char *socket_group = config_get_string("fastcgi.listen.socket.group", -1);
+        char *socket_user = config_get_string("fastcgi.listen.socket.user", "-1");
+        char *socket_group = config_get_string("fastcgi.listen.socket.group", "-1");
         char *mode = config_get_string("fastcgi.listen.socket.mode", "0666");
 
         char *endptr;

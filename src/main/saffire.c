@@ -41,7 +41,7 @@
 extern struct command_info info_version;
 extern struct command_info info_help;
 extern struct command_info info_lint;
-extern struct command_info info_cli;
+extern struct command_info info_repl;
 extern struct command_info info_fastcgi;
 extern struct command_info info_config;
 extern struct command_info info_exec;
@@ -53,7 +53,7 @@ struct command commands[] = {
                                         { "help",    &info_help },
                                         { "version", &info_version },
                                         { "lint",    &info_lint },
-                                        { "cli",     &info_cli },
+                                        { "repl",    &info_repl },
                                         { "fastcgi", &info_fastcgi },
                                         { "config",  &info_config },
                                         { "exec",    &info_exec },

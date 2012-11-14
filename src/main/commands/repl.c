@@ -50,8 +50,8 @@ static struct command_action command_actions[] = {
 };
 
 /* Config info structure */
-struct command_info info_cli = {
-    "Interactive Interpreter",
+struct command_info info_repl = {
+    "Interactive saffire interface",
     command_actions,
     help
 };
