@@ -97,7 +97,12 @@
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);
 
-    void save_bytecode_to_disk(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign_code, int compress_code);
-    t_bytecode *load_bytecode_from_disk(const char *filename, int verify_signature);
+    void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign_code, int compress_code);
+    t_bytecode *bytecode_load(const char *filename, int verify_signature);
+
+    int bytecode_is_valid_file(const char *path);
+    int bytecode_is_signed(const char *path);
+    int bytecode_remove_signature(const char *path);
+    int bytecode_add_signature(const char *path);
 
 #endif

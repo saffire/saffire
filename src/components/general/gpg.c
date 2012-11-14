@@ -33,6 +33,7 @@
 #include "general/smm.h"
 #include "general/gpg.h"
 #include "general/popen2.h"
+#include "general/config.h"
 
 
 /**
@@ -48,9 +49,15 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     fwrite(signature, signature_len, 1, f);
     fclose(f);
 
+    // Find GPG path
+    char *gpg_path = config_get_string("gpg.path");
+    if (gpg_path == NULL) {
+        gpg_path = "/usr/bin/gpg";
+    }
+
     // Arguments passed to GPG
     char *args[] = {
-            "/usr/bin/gpg",
+            gpg_path,
             "--no-armor",
             "--verify",
             tmp_path,
@@ -58,7 +65,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
             NULL
     };
 
-    // open GPG
+    // Open GPG as child
     int pipe[3];
     int pid = popenRWE(pipe, args[0], args);
     if (pid < 0) return 0;
@@ -97,15 +104,21 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
  * Signs a buffer block. *signature should be NULL to allocate a new buffer, and *signature_len returns the length of the signature
  */
 int gpg_sign(char *gpg_key, char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len) {
+    // Find GPG path
+    char *gpg_path = config_get_string("gpg.path");
+    if (gpg_path == NULL) {
+        gpg_path = "/usr/bin/gpg";
+    }
+
     char *args[] = {
-            "/usr/bin/gpg",
+            gpg_path,
             "-bsu",
             gpg_key,
             NULL
     };
 
-    // @TODO: use path from configuration
 
+    // Open GPG as child
     int pipe[3];
     int pid = popenRWE(pipe, args[0], args);
     if (pid < 0) return 0;

@@ -24,11 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __GENERAL_CONFIG_H__
+#define __GENERAL_CONFIG_H__
 
+    #include "general/hashtable.h"
+
+    int config_set_string(const char *key, const char *value);
     char *config_get_string(const char *key);
     char config_get_bool(const char *key);
     long config_get_long(const char *key);
+
+    int config_get_matches(const char *pattern, char ***matches);
 
 #endif

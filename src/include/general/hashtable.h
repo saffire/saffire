@@ -30,7 +30,6 @@
     // Hashd value
     typedef unsigned long hash_t;
 
-
     // Hash table bucket
     typedef struct _hash_table_bucket {
         char *key;                              // Key of the variable

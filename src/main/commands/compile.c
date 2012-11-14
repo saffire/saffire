@@ -41,7 +41,7 @@
 #include "general/path_handling.h"
 #include "compiler/bytecode.h"
 
-#include "commands/config.h"
+#include "general/config.h"
 
 
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
@@ -57,7 +57,8 @@ static void _compile_file(const char *source_file, int sign, int compress) {
     printf("Compiling: '%s'\n", source_file);
 
     t_bytecode *bc = generate_dummy_bytecode();
-    save_bytecode_to_disk(dest_file, source_file, bc, sign, compress);
+    bytecode_save(dest_file, source_file, bc, sign, compress);
+    bytecode_free(bc);
 
     smm_free(dest_file);
 }

@@ -25,44 +25,70 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <fnmatch.h>
 #include "commands/command.h"
-#include "commands/config.h"
-#include "general/parse_options.h"
-#include "general/ini.h"
+#include "general/config.h"
 #include "general/smm.h"
-#include "general/hashtable.h"
-#include "general/dll.h"
+#include "general/parse_options.h"
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-/* Default INI settings, incuding comments */
+/* Default INI settings, including comments */
 static const char *default_ini[] = {
     "[global]",
-    "  # debug, notice, warning, error",
-    "  log.level = debug",
-    "  log.path = /var/log/saffire/saffire.log"
+    "# Global log information",
+    "log.level = debug     # debug, notice, warning, error",
+    "log.path = /var/log/saffire/saffire.log"
+    "",
+    "",
+    "[gpg]",
+    "# Path to the GPG application"
+    "path = /usr/bin/gpg",
+    "# Your GPG key to sign any modules or bytecode"
+    "key = 0xFFFFFFFF"
+    "",
+    "",
+    "[compile]"
+    "# True when bytecode automatically needs to be signed"
+    "sign = true"
+    "# True when bytecode automatically needs to be compressed"
+    "compress = true"
     "",
     "",
     "[fastcgi]",
-    "  pid.path = /var/run/saffire.pid",
-    "  log.path = /var/log/saffire/fastcgi.log",
-    "  # debug, notice, warning, error",
-    "  log.level = notice",
-    "  daemonize = true",
+    "pid.path = /var/run/saffire.pid",
     "",
-    "  listen = 0.0.0.0:80",
-    "  listen.backlog = -1",
-    "  listen.socket.user = nobody",
-    "  listen.socket.group = nobody",
-    "  listen.socket.mode = 0666",
+    "# Log information",
+    "log.path = /var/log/saffire/fastcgi.log",
+    "log.level = notice       # debug, notice, warning, error",
+    ""
+    "# When true, the FastCGI server will deamonize into the background"
+    "daemonize = true",
+    "# Number of children to spawn when daemonized"
+    "spawn_children = 10",
     "",
-    "  #status.url = /status",
-    "  #ping.url = /ping",
-    "  #ping.response = \"pong\"",
+    "# When ran as root, drop privileges to this user or uid"
+    "user = -1"
+    "# When ran as root, drop privileges to this group or gid"
+    "group = -1"
+    "",
+    "# Listen to either an IP address or a Unix-socket"
+    "listen = 0.0.0.0:80",
+    "#listen = /tmp/saffire.socket",
+    "",
+    "# Number of backlogs for select(). Use -1 for default value"
+    "listen.backlog = -1",
+    "",
+    "# Groups and permissions for Unix socket"
+    "listen.socket.user = nobody",
+    "listen.socket.group = nobody",
+    "listen.socket.mode = 0666",
+    "",
+    "# FastCGI status and control URLs"
+    "#status.url = /status",
+    "#ping.url = /ping",
+    "#ping.response = \"pong\"",
     ""
 };
 
@@ -71,11 +97,6 @@ char global_ini_file[] = "/etc/saffire/saffire.ini";
 char user_ini_file[] = "~/saffire.ini";
 
 char *ini_file = global_ini_file;
-
-
-static t_hash_table *config = NULL;                // Global configuration settings
-static t_dll *dll_config = NULL;                   // Same config, but in DLL form
-static int ini_read = 0;                           // 0 when ini is not yet read, 1 otherwise
 
 
 /**
@@ -103,6 +124,7 @@ static int do_generate(void) {
 /**
  * Handler that is called when parsing an INI line.
  */
+/*
 static int ini_parse_handler(void *user, const char *section, const char *name, const char *value) {
     // Combine the section and the name
     char key[255+1];
@@ -115,80 +137,7 @@ static int ini_parse_handler(void *user, const char *section, const char *name, 
     // Return 1 for ok
     return 1;
 }
-
-
-/**
- * Free memory from config
- */
-static void read_ini_fini(void) {
-    if (config) ht_destroy(config);
-    if (dll_config) dll_free(dll_config);
-
-    config = NULL;
-    dll_config = NULL;
-}
-
-
-/**
- * Read INI file into our hash and dll. Will return immediately when already processed
- */
-static void read_ini(void) {
-    // Already processed
-    if (ini_read) return;
-
-    // Register shutdown function
-    atexit(read_ini_fini);
-
-    // Create configuration hash
-    config = ht_create();
-    dll_config = dll_init();
-
-    // Parse ini into hash
-    if (ini_parse(ini_file, ini_parse_handler, NULL) < 0) {
-        printf("Cannot read ini settings from %s", ini_file);
-        exit(1);
-    }
-
-    // ini has been read
-    ini_read = 1;
-}
-
-
-/**
- * Return a string from the configuration
- */
-char *config_get_string(const char *key) {
-    read_ini();
-
-    char *val = ht_find(config, (char *)key);
-    return val;
-}
-
-/**
- * Return a boolean from the configuration
- */
-char config_get_bool(const char *key) {
-    read_ini();
-
-    char *val = ht_find(config, (char *)key);
-    if (val == NULL) return 0;
-
-    return to_bool(val);
-}
-
-/**
- * Return a long from the configuration
- */
-long config_get_long(const char *key) {
-    read_ini();
-
-    char *val = ht_find(config, (char *)key);
-    if (val == NULL) return 0;
-
-    return atol(val);
-}
-
-
+*/
 
 /**
  * Get a value from the configuration file
@@ -200,7 +149,7 @@ static int do_get(void) {
 
     char *val = config_get_string(key);
     if (val) {
-        printf("%s\n", val);
+        printf("%s: %s\n", key, val);
         return 0;
     }
     return 1;
@@ -212,11 +161,10 @@ static int do_get(void) {
  * Action: ./saffire config set <setting> <value>
  */
 static int do_set(void) {
-//    char *setting = saffire_getopt_string(0);
-//    char *value = saffire_getopt_string(1);
+    char *setting = saffire_getopt_string(0);
+    char *value = saffire_getopt_string(1);
 
-    // @TODO: Set the value inside the ini file (augeas??)
-    return 1;
+    return config_set_string(setting, value);
 }
 
 /**
@@ -224,24 +172,25 @@ static int do_set(void) {
  * Action: ./saffire config list <search>
  */
 static int do_list(void) {
-    int ret = 1;
-    char *searchkey = saffire_getopt_string(0);
-    read_ini();
+    char **matches;
+    char *pattern = saffire_getopt_string(0);
 
-    // We use the DLL here, since we cannot iterate a hash
-    t_dll_element *e = DLL_HEAD(dll_config);
-    while (e) {
-        char *key = (char *)e->data;
-        // Yeah, fnmatch(),.. so sue me...
-        if (! fnmatch(searchkey, key, FNM_NOESCAPE)) {
-            printf("%s = %s\n", key, config_get_string(key));
-            ret = 0;
-        }
-        e = DLL_NEXT(e);
+    int count = config_get_matches(pattern, &matches);
+    if (count <= 0) return 1;
+
+    printf("Found %d matches:\n", count);
+    for (int i=0; i!=count; i++) {
+        // Skip comments
+        if (strstr(matches[i], "#comment") != 0) goto free_up;
+
+        char *val = config_get_string(matches[i]);
+        printf("  %s : %s\n", matches[i], val);
+free_up:
+        free(matches[i]);
     }
+    free(matches);
 
-    // Return 0 when at least 1 item is shown, 1 otherwise
-    return ret;
+    return 0;
 }
 
 
