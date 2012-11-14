@@ -242,6 +242,10 @@ static int bytecode_bin2bc(t_bytecode *bytecode, int *bincode_off, char **bincod
 t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     t_bytecode_binary_header header;
 
+    if (! bytecode_is_valid_file(filename)) {
+        return NULL;
+    }
+
     // Read header
     FILE *f = fopen(filename, "rb");
     fread(&header, sizeof(header), 1, f);
@@ -251,31 +255,29 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     fseek(f, header.bytecode_offset, SEEK_SET);
     fread(bincode, header.bytecode_len, 1, f);
 
-    // Uncompress bincode block if needed
-    if ((header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED) {
-        // Compress buffer
-        unsigned int bzip_buf_len = 0;
-        char *bzip_buf = NULL;
-        if (! bzip2_decompress(&bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-            saffire_compile_error("Error while decompressing data");
-        }
-
-        // Sanity check. These should match
-        if (bzip_buf_len != header.bytecode_uncompressed_len) {
-            saffire_compile_error("Header information does not match with the size of the uncompressed data block");
-        }
-
-        // Free unpacked binary code. We don't need it anymore
-        smm_free(bincode);
-
-        // Set bincode data to the uncompressed block
-        bincode = bzip_buf;
-        header.bytecode_len = bzip_buf_len;
+    // Uncompress bincode block
+    unsigned int bzip_buf_len = 0;
+    char *bzip_buf = NULL;
+    if (! bzip2_decompress(&bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
+        saffire_compile_error("Error while decompressing data");
     }
+
+    // Sanity check. These should match
+    if (bzip_buf_len != header.bytecode_uncompressed_len) {
+        saffire_compile_error("Header information does not match with the size of the uncompressed data block");
+    }
+
+    // Free unpacked binary code. We don't need it anymore
+    smm_free(bincode);
+
+    // Set bincode data to the uncompressed block
+    bincode = bzip_buf;
+    header.bytecode_len = bzip_buf_len;
+
 
     // There is a signature present. Give warning when the user does not want to check it
     if (verify_signature == 0 &&
-        (header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED &&
+        (header.flags & BYTECODE_FLAG_SIGNED) == BYTECODE_FLAG_SIGNED &&
         header.signature_offset != 0) {
         saffire_compile_warning("A signature is present, but verification is disabled");
     }
@@ -312,7 +314,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 /**
  * Save a bytecode from disk, optionally sign and add signature
  */
-void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc, int sign_code, int compress_code) {
+void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc) {
     char *bincode = NULL;
     int bincode_len = 0;
 
@@ -327,6 +329,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
 
     // Set header fields
     header.magic = MAGIC_HEADER;
+    header.flags = 0;
 
     // Fetch modification time from source file and fill into header
     struct stat sb;
@@ -336,32 +339,27 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
         header.timestamp = 0;
     }
 
-    // Set header flags
-    header.flags = 0;
-    if (compress_code) header.flags |= BYTECODE_FLAG_COMPRESSED;
 
     // Save lengths of the bytecode (assume we save it uncompressed for now)
     header.bytecode_uncompressed_len = bincode_len;
     header.bytecode_len = bincode_len;
 
 
-    // Need to compress the bincode block?
-    if (compress_code) {
-        // Compress buffer
-        unsigned int bzip_buf_len = 0;
-        char *bzip_buf = NULL;
-        if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
-            saffire_compile_error("Error while compressing data");
-        }
-
-        // Forget about the original bincode and replace it with out bzip2 data.
-        smm_free(bincode);
-        bincode = bzip_buf;
-        bincode_len = bzip_buf_len;
-
-        // The actual bytecode binary length will differ from it's uncompressed length.
-        header.bytecode_len = bzip_buf_len;
+    // Compress the bincode block
+    // Compress buffer
+    unsigned int bzip_buf_len = 0;
+    char *bzip_buf = NULL;
+    if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
+        saffire_compile_error("Error while compressing data");
     }
+
+    // Forget about the original bincode and replace it with out bzip2 data.
+    smm_free(bincode);
+    bincode = bzip_buf;
+    bincode_len = bzip_buf_len;
+
+    // The actual bytecode binary length will differ from it's uncompressed length.
+    header.bytecode_len = bzip_buf_len;
 
     // Create file
     FILE *f = fopen(dest_filename, "wb");
@@ -373,22 +371,11 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     header.bytecode_offset = ftell(f);
     fwrite(bincode, bincode_len, 1, f);
 
-//    if (sign_code == 1) {
-//        header.signature_offset = ftell(f);
-//        header.signature_len = gpg_signature_len;
-//        fwrite(gpg_signature, gpg_signature_len, 1, f);
-//    }
-
     // Reset to the start of the file and write header
     fseek(f, 0, SEEK_SET);
     fwrite(&header, sizeof(header), 1, f);
 
     fclose(f);
-
-    // Add signature at the end of the file
-    if (sign_code == 1) {
-        bytecode_add_signature(dest_filename);
-    }
 
     // Free up our binary code
     smm_free(bincode);
@@ -496,21 +483,6 @@ int bytecode_is_signed(const char *path) {
 /**
  *
  */
-int bytecode_is_compressed(const char *path) {
-    t_bytecode_binary_header header;
-
-    // Read header
-    FILE *f = fopen(path, "rb");
-    fread(&header, sizeof(header), 1, f);
-    fclose(f);
-
-    return ((header.flags & BYTECODE_FLAG_COMPRESSED) == BYTECODE_FLAG_COMPRESSED);
-}
-
-
-/**
- *
- */
 int bytecode_remove_signature(const char *path) {
     t_bytecode_binary_header header;
 
@@ -541,7 +513,7 @@ int bytecode_remove_signature(const char *path) {
 /**
  * Add a new signature to the
  */
-int bytecode_add_signature(const char *path) {
+int bytecode_add_signature(const char *path, char *gpg_key) {
     t_bytecode_binary_header header;
 
     // Sanity check
@@ -559,12 +531,17 @@ int bytecode_add_signature(const char *path) {
     // Create signature from bincode
     char *gpg_signature = NULL;
     unsigned int gpg_signature_len = 0;
-    char *gpg_key = config_get_string("gpg.key", NULL);
+    char *_gpg_key;
     if (gpg_key == NULL) {
+        _gpg_key = config_get_string("gpg.key", NULL);
+    } else {
+        _gpg_key = gpg_key;
+    }
+    if (_gpg_key == NULL) {
         printf("Cannot find GPG key. Please set the correct GPG key inside your INI file");
         return 1;
     }
-    gpg_sign(gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);
+    gpg_sign(_gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);
 
     // Set new header values
     fseek(f, 0, SEEK_END);

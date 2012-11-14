@@ -32,9 +32,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fnmatch.h>
-//#include "interpreter/context.h"
-//#include "modules/module_api.h"
-//#include "vm/vm.h"
+#include "vm/vm.h"
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
@@ -44,21 +42,25 @@
 #include "general/config.h"
 
 
+char *gpg_key = NULL;
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
-int flag_compress = 0;  // 0 = default config setting, 1 = force compress, 2 = force uncompressed
-
 
 /**
  * Compiles single file
  */
-static void _compile_file(const char *source_file, int sign, int compress) {
+static void _compile_file(const char *source_file, int sign, char *gpg_key) {
     char *dest_file = replace_extension(source_file, ".sf", ".sfc");
 
-    printf("Compiling %s into %s%s%s\n", source_file, sign ? "signed " : "", compress ? "compressed " : "", dest_file);
+    printf("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
     t_bytecode *bc = generate_dummy_bytecode();
-    bytecode_save(dest_file, source_file, bc, sign, compress);
+    bytecode_save(dest_file, source_file, bc);
     bytecode_free(bc);
+
+    // Add signature at the end of the file
+    if (sign == 1) {
+        bytecode_add_signature(dest_file, gpg_key);
+    }
 
     smm_free(dest_file);
 }
@@ -67,7 +69,7 @@ static void _compile_file(const char *source_file, int sign, int compress) {
 /**
  * Scans recursively a directory structure for files with *.sf matching
  */
-static void _compile_directory(const char *path, int sign, int compress) {
+static void _compile_directory(const char *path, int sign, char *gpg_key) {
     DIR *dirp;
     struct dirent *dp;
     char new_path[PATH_MAX];
@@ -88,12 +90,12 @@ static void _compile_directory(const char *path, int sign, int compress) {
 
             if (dp->d_type & DT_DIR) {
                 // Found directory. Create new path and recurse
-                _compile_directory(new_path, sign, compress);
+                _compile_directory(new_path, sign, gpg_key);
             } else {
                 // Check if file match *.sf
                 if (fnmatch("*.sf", dp->d_name, 0) != 0) continue;
 
-                _compile_file(new_path, sign, compress);
+                _compile_file(new_path, sign, gpg_key);
             }
 
         }
@@ -102,6 +104,121 @@ static void _compile_directory(const char *path, int sign, int compress) {
     closedir(dirp);
 }
 
+
+/**
+ * Add signature to a bytecode file
+ */
+static int _sign_bytecode(const char *path, char *gpg_key) {
+    int ret;
+
+    if (! bytecode_is_valid_file(path)) {
+        printf("Sign error: This is not a valid saffire bytecode file.\n");
+        return 1;
+    }
+
+    if (bytecode_is_signed(path)) {
+        printf("Sign error: This bytecode file is already signed.\n");
+        return 1;
+    }
+
+    // add signature
+    ret = bytecode_add_signature(path, gpg_key);
+    if (ret == 0) {
+        printf("Added signature to bytecode file %s\n", path);
+    } else {
+        printf("Sign error: Error while adding signature from bytecode file %s\n", path);
+    }
+    return ret;
+}
+
+
+/**
+ * Remove signature from a bytecode file
+ */
+static int _unsign_bytecode(const char *path) {
+    int ret;
+
+    if (! bytecode_is_valid_file(path)) {
+        printf("Sign error: This is not a valid saffire bytecode file.\n");
+        return 1;
+    }
+
+    if (! bytecode_is_signed(path)) {
+        printf("Sign error: This bytecode file is not signed.\n");
+        return 1;
+    }
+
+    // Remove signature
+    ret = bytecode_remove_signature(path);
+    if (ret == 0) {
+        printf("Removed signature from bytecode file %s\n", path);
+    } else {
+        printf("Sign error: Error while removing signature from bytecode file %s\n", path);
+    }
+    return ret;
+}
+
+
+/**
+ *
+ */
+static int do_sign(void) {
+    char *source_path = saffire_getopt_string(0);
+
+    struct stat st;
+    if (stat(source_path, &st) != 0) {
+        printf("Cannot sign: File not found\n");
+        return 1;
+    }
+
+    // sign file
+    if (S_ISREG(st.st_mode)) {
+        return _sign_bytecode(source_path, gpg_key);
+    }
+
+    return 0;
+}
+
+
+/**
+ *
+ */
+static int do_unsign(void) {
+    char *source_path = saffire_getopt_string(0);
+
+    struct stat st;
+    if (stat(source_path, &st) != 0) {
+        printf("Cannot sign: File not found\n");
+        return 1;
+    }
+
+    // Unsign file
+    if (S_ISREG(st.st_mode)) {
+        return _unsign_bytecode(source_path);
+    }
+
+    return 0;
+}
+
+/**
+ *
+ */
+static int do_info(void) {
+    char *source_path = saffire_getopt_string(0);
+
+    struct stat st;
+    if (stat(source_path, &st) != 0) {
+        printf("File not found\n");
+        return 1;
+    }
+
+    // sign file
+    if (S_ISREG(st.st_mode)) {
+        printf("Displaying information for bytecode files is not supported yet.");
+    }
+
+    return 0;
+}
 
 /**
  *
@@ -120,17 +237,11 @@ static int do_compile(void) {
     if (flag_sign == 1) sign = 1;
     if (flag_sign == 2) sign = 0;
 
-    // Get default compress flag and override if needed
-    char compress = config_get_bool("compile.compress", 1);
-    if (flag_compress == 1) compress = 1;
-    if (flag_compress == 2) compress = 0;
-
-
     // Compile directory if path matches a directory
     if (S_ISDIR(st.st_mode)) {
-        _compile_directory(source_path, sign, compress);
+        _compile_directory(source_path, sign, gpg_key);
     } else {
-        _compile_file(source_path, sign, compress);
+        _compile_file(source_path, sign, gpg_key);
     }
 
     return 0;
@@ -145,21 +256,21 @@ static int do_compile(void) {
 /* Usage string */
 static const char help[]  = "Compiles a Saffire script or scripts without running.\n"
                             "\n"
-                            "Usage: saffire compile <dir>|<file> [options]\n"
+                            "Actions:\n"
+                            "   compile              Compile saffire script or directory into bytecode\n"
+                            "       --sign           Sign the bytecode\n"
+                            "       --no-sign        Don't sign the bytecode\n"
+                            "   sign                 Sign bytecode file or directory\n"
+                            "       --key <key>      Use this key for signing the code\n"
+                            "   unsign               Remove signature from bytecode file or directory\n"
+                            "   info                 Display information on bytecode file\n"
                             "\n"
-                            "Global options:\n"
-                            "    --sign           Sign the bytecode\n"
-                            "    --no-sign        Don't sign the bytecode\n"
-                            "    --compress       Compress the bytecode\n"
-                            "    --no-compress    Don't compress the bytecode\n"
-                            "\n"
-                            "If the --[no-]sign and --[no-]compress options aren't given, the bytecode is compressed and signed\n"
-                            "according to the configuration settings.\n"
-                            "\n"
-                            "This command compiles a saffire script or directory into bytecode files. The output file will be\n"
-                            "the source file with a .sfc extension\n";
+                            "If the --[no-]sign option isn't given, the bytecode is signed according to the configuration settings.\n"
+                            "\n";
 
-
+static void opt_key(void *data) {
+    gpg_key = data;
+}
 static void opt_sign(void *data) {
     if (flag_sign > 0) {
         printf("Cannot have both the --no-sign and --sign options");
@@ -174,38 +285,30 @@ static void opt_no_sign(void *data) {
     }
     flag_sign = 2;
 }
-static void opt_compress(void *data) {
-    if (flag_compress > 0) {
-        printf("Cannot have both the --no-compress and --compress options");
-        exit(1);
-    }
-    flag_compress = 1;
-}
-static void opt_no_compress(void *data) {
-    if (flag_compress > 0) {
-        printf("Cannot have both the --no-compress and --compress options");
-        exit(1);
-    }
-    flag_compress = 2;
-}
 
-static struct saffire_option global_options[] = {
+static struct saffire_option compile_options[] = {
     { "sign", "", no_argument, opt_sign },
     { "no-sign", "", no_argument, opt_no_sign },
-    { "compress", "", no_argument, opt_compress },
-    { "no-compress", "", no_argument, opt_no_compress },
+    { "key", "", required_argument, opt_key },
     { 0, 0, 0, 0 }
 };
 
+static struct saffire_option sign_options[] = {
+    { "key", "", required_argument, opt_key },
+    { 0, 0, 0, 0 }
+};
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_compile, global_options },
+    { "compile", "s", do_compile, compile_options },
+    { "sign", "s", do_sign, sign_options },
+    { "unsign", "s", do_unsign, NULL },
+    { "info", "s", do_info, NULL },
     { 0, 0, 0, 0 }
 };
 
 /* Config info structure */
-struct command_info info_compile = {
+struct command_info info_bytecode = {
     "Compiles saffire script",
     command_actions,
     help

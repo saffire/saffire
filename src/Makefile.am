@@ -167,5 +167,5 @@ saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi -lbz2 -laugeas
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
                   main/commands/exec.c main/commands/repl.c main/commands/help.c \
-                  main/commands/version.c main/commands/compile.c main/commands/sign.c
+                  main/commands/version.c main/commands/bytecode.c
 
