@@ -66,7 +66,10 @@ To install these packages on Ubuntu or Debian, please use the following commands
 On RedHat/CentOS systems, the library development packages are probably ends with -devel.
 
 After installation of the packages, clone the github repository (either your own, or from the Saffire github repo):
+    
     git clone https://github.com/saffire/saffire.git
+
+After this, you can compile and install Saffire:
 
     cd saffire
     sh autogen.sh
