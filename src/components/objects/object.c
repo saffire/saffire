@@ -299,7 +299,7 @@ t_object *object_clone(t_object *obj) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-    DEBUG_PRINT("Increasing reference for: %s (%08X) to %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -308,7 +308,7 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-    DEBUG_PRINT("Decreasing reference for: %s (%08X) to %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -331,7 +331,7 @@ void object_free(t_object *obj) {
 //    object_dec_ref(obj);
     if (obj->ref_count > 0) return;
 
-    DEBUG_PRINT("Freeing object: %08X (%d) %s\n", (unsigned int)obj, obj->flags, obj->name);
+    DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, obj->name);
 
 
     // Don't free if it's a static object
@@ -366,8 +366,8 @@ t_object *object_new(t_object *obj, ...) {
     va_end(arg_list);
 
 #ifdef __DEBUG
-    if (! ht_num_find(object_hash, (unsigned int)res)) {
-        ht_num_add(object_hash, (unsigned int)res, res);
+    if (! ht_num_find(object_hash, (unsigned long)res)) {
+        ht_num_add(object_hash, (unsigned long)res, res);
     }
 #endif
 
@@ -394,15 +394,9 @@ void object_init() {
     object_hash_init();
 
 #ifdef __DEBUG
-    char addr[10];
-    sprintf(addr, "%08X", (unsigned int)Object_True);
-    ht_add(object_hash, (char *)&addr, Object_True);
-
-    sprintf(addr, "%08X", (unsigned int)Object_False);
-    ht_add(object_hash, (char *)&addr, Object_False);
-
-    sprintf(addr, "%08X", (unsigned int)Object_Null);
-    ht_add(object_hash, (char *)&addr, Object_Null);
+    ht_num_add(object_hash, (unsigned long)Object_True, Object_True);
+    ht_num_add(object_hash, (unsigned long)Object_False, Object_False);
+    ht_num_add(object_hash, (unsigned long)Object_Null, Object_Null);
 #endif
 
 }

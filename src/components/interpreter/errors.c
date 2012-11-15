@@ -42,11 +42,11 @@ extern t_dll *lineno_stack;
  */
 void saffire_error(char *str, ...) {
     t_dll_element *e = DLL_TAIL(lineno_stack);
-    int lineno = (int)e->data;
+    unsigned long lineno = (unsigned long)e->data;
 
     va_list args;
     va_start(args, str);
-    fprintf(STREAM_ERROR, "Error in line %d: ", lineno);
+    fprintf(STREAM_ERROR, "Error in line %lu: ", (unsigned long)lineno);
     vfprintf(STREAM_ERROR, str, args);
     fprintf(STREAM_ERROR, "\n");
     va_end(args);
@@ -59,11 +59,11 @@ void saffire_error(char *str, ...) {
  */
 void saffire_warning(char *str, ...) {
     t_dll_element *e = DLL_TAIL(lineno_stack);
-    int lineno = (int)e->data;
+    unsigned long lineno = (unsigned long)e->data;
 
     va_list args;
     va_start(args, str);
-    fprintf(STREAM_WARNING, "Warning in line %d: ", lineno);
+    fprintf(STREAM_WARNING, "Warning in line %lu: ", (unsigned long)lineno);
     vfprintf(STREAM_WARNING, str, args);
     fprintf(STREAM_WARNING, "\n");
     va_end(args);

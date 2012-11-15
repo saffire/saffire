@@ -952,7 +952,7 @@ int interpreter(t_ast_element *p) {
     while (ht_iter_valid(&iter)) {
         t_object *obj = ht_iter_value(&iter);
         if (obj->type != objectTypeCode && obj->type != objectTypeMethod) {
-            DEBUG_PRINT("Object: %20s (%08X) Refcount: %d : %s \n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+            DEBUG_PRINT("Object: %20s (%08lX) Refcount: %d : %s \n", obj->name, (unsigned long)obj, obj->ref_count, object_debug(obj));
         }
         ht_iter_next(&iter);
     }
