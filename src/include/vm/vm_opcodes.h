@@ -27,8 +27,8 @@
 #ifndef __VM_OPCODES_H__
 #define __VM_OPCODES_H__
 
-    #define VM_STOP_CODE            0x00
-    #define VM_PRINT_VAR            0x59        // @TODO: REMOVE ME
+    // No operand opcodes
+    #define VM_STOP                 0x00        // Stops VM
 
     #define VM_POP_TOP              0x01
     #define VM_ROT_TWO              0x02
@@ -39,14 +39,54 @@
     #define VM_NOP                  0x09
 
     #define VM_BINARY_ADD           0x17
-    #define VM_BINARY_SUBTRACT      0x18
+    #define VM_BINARY_SUB           0x18
+    #define VM_BINARY_MUL           0x19
+    #define VM_BINARY_DIV           0x1A
+    #define VM_BINARY_SHL           0x1B
+    #define VM_BINARY_SHR           0x1C
+    #define VM_BINARY_AND           0x1D
+    #define VM_BINARY_OR            0x1E
+    #define VM_BINARY_XOR           0x1F
+
+    #define VM_INPLACE_ADD           0x20
+    #define VM_INPLACE_SUB           0x21
+    #define VM_INPLACE_MUL           0x22
+    #define VM_INPLACE_DIV           0x23
+    #define VM_INPLACE_SHL           0x24
+    #define VM_INPLACE_SHR           0x25
+    #define VM_INPLACE_AND           0x26
+    #define VM_INPLACE_OR            0x27
+    #define VM_INPLACE_XOR           0x28
+
+    #define VM_USE                  0x7E
+    #define VM_IMPORT               0x7F
+
+    // One operand opcodes
+    #define VM_STORE_ID             0x80
+    #define VM_LOAD_CONST           0x81
+    #define VM_LOAD_ID              0x82
+
+    #define VM_JUMP_FORWARD         0x83
+    #define VM_JUMP_IF_TRUE         0x84
+    #define VM_JUMP_IF_FALSE        0x85
+    #define VM_JUMP_ABSOLUTE        0x86
+
+    #define VM_DUP_TOPX             0x87
+
+    #define VM_LOAD_GLOBAL          0x88
+    #define VM_STORE_GLOBAL         0x89
+    #define VM_DELETE_GLOBAL        0x8A
 
 
-#define HAVE_ARGUMENT 0x5a
 
-    #define VM_STORE_VAR            0x5a
+    // Two operand opcodes
+    #define VM_CALL_METHOD          0xC0
 
-    #define VM_LOAD_CONST           0x64
-    #define VM_LOAD_VAR             0x65
+    // Two operand opcodes
+    // Three operand opcodes
+    // Four operand opcodes
+
+    // Reserved opcodes
+    #define VM_RESERVED             0xFF
 
 #endif

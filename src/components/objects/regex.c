@@ -29,9 +29,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <wchar.h>
-#include <wctype.h>
-#include <limits.h>
 #include <pcre.h>
 #include "objects/object.h"
 #include "objects/regex.h"
@@ -54,14 +51,6 @@
  *   Supporting functions
  * ======================================================================
  */
-
-char *wctou8(const wchar_t *wstr, long len) {
-    char *buf = (char *)smm_malloc(len+1);
-    bzero(buf, len+1);
-    long conv_len = wcstombs(buf, wstr, len);
-    if (conv_len == -1) return NULL;
-    return buf;
-}
 
 
 /* ======================================================================
@@ -109,8 +98,7 @@ SAFFIRE_METHOD(regex, match) {
     }
 
     // Convert to utf8 and execute regex
-    char *s = wctou8(str->value, wcslen(str->value));
-    rc = pcre_exec(self->regex, 0, s, strlen(s), 0, 0, ovector, OVECCOUNT);
+    rc = pcre_exec(self->regex, 0, str->value, strlen(str->value), 0, 0, ovector, OVECCOUNT);
 
     // Check result
     if (rc < 0) {
@@ -126,11 +114,8 @@ SAFFIRE_METHOD(regex, match) {
 
     // Display result
     for (int i=0; i<rc; i++) {
-        DEBUG_PRINT("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], s + ovector[2*i]);
+        DEBUG_PRINT("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], str->value + ovector[2*i]);
     }
-
-    // Free utf8 string
-    smm_free(s);
 
     // Return number of matches
     RETURN_NUMERICAL(rc);
@@ -141,7 +126,7 @@ SAFFIRE_METHOD(regex, match) {
  *
  */
 SAFFIRE_METHOD(regex, conv_boolean) {
-    if (wcslen(self->regex_string) == 0) {
+    if (strlen(self->regex_string) == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -231,7 +216,7 @@ static t_object *obj_clone(t_object *obj) {
     new_obj->ref_count = 1;
 
     // Copy / set internal data
-    new_obj->regex_string = wcsdup(re_obj->regex_string);
+    new_obj->regex_string = smm_strdup(re_obj->regex_string);
 
     return (t_object *)new_obj;
 }
@@ -245,28 +230,23 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
     t_regex_object *new_obj = smm_malloc(sizeof(t_regex_object));
     memcpy(new_obj, Object_Regex, sizeof(t_regex_object));
 
-
-    new_obj->regex_string = va_arg(arg_list, wchar_t *);
-    char *buf = wctou8(new_obj->regex_string, wcslen(new_obj->regex_string));
-
+    new_obj->regex_string = va_arg(arg_list, char *);
     int pcre_options = va_arg(arg_list, int);
 
-    new_obj->regex = pcre_compile(buf, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
+    new_obj->regex = pcre_compile(new_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
     if (! new_obj->regex) {
         saffire_warning("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
     }
 
-    smm_free (buf);
     return (t_object *)new_obj;
 }
 
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
-    char *buf = wctou8(((t_regex_object *)obj)->regex_string, wcslen(((t_regex_object *)obj)->regex_string));
-    memcpy(global_buf, buf, 1024);
+    char *s = ((t_regex_object *)obj)->regex_string;
+    strncpy(global_buf, s, 1023);
     global_buf[1023] = 0;
-    smm_free(buf);
     return global_buf;
 }
 #endif

@@ -28,9 +28,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <wchar.h>
-#include <wctype.h>
-#include <limits.h>
 #include "objects/object.h"
 #include "objects/boolean.h"
 #include "objects/string.h"
@@ -43,8 +40,6 @@
 #include "general/md5.h"
 #include "debug.h"
 
-extern char *wctou8(const wchar_t *wstr, long len);
-
 t_hash_table *string_cache;
 
 
@@ -54,30 +49,38 @@ t_hash_table *string_cache;
  */
 
 /**
+ * Returns the number of characters inside a (UTF8) string
+ */
+static int utf8_len(char *s) {
+    int i = 0;
+    int j = 0;
+
+    while (s[i]) {
+        if ((s[i] & 0xC0) != 0x80) j++;
+        i++;
+    }
+    return j;
+}
+
+
+/**
  * Returns a byte[16] md5 hash of the given widestring
  */
-static void hash_widestring(wchar_t *value, int len, md5_byte_t *hash) {
-    char utf8_char_buf[MB_LEN_MAX];
+static void hash_string(char *str, md5_byte_t *hash) {
     md5_state_t state;
 
     md5_init(&state);
-    for (int i=0; i!=len; i++) {
-        // Convert wide character to UTF8 character
-        int utf8_char_len = wctomb(utf8_char_buf, value[i]);
-
-        // Add character to md5
-        md5_append(&state, (md5_byte_t *)utf8_char_buf, utf8_char_len);
-    }
+    md5_append(&state, (md5_byte_t *)str, strlen(str));
     md5_finish(&state, hash);
 }
 
 /**
  * Returns a char[32] (+\0) md5 hash of the given widestring in text.
  */
-static void hash_widestring_text(wchar_t *value, int len, char *strhash) {
+static void hash_string_text(char *str, char *strhash) {
     md5_byte_t hash[16];
 
-    hash_widestring(value, len, hash);
+    hash_string(str, hash);
 
     for (int i=0; i!=16; i++) {
         sprintf(strhash+(i*2), "%02X", (unsigned char)hash[i]);
@@ -89,7 +92,7 @@ static void hash_widestring_text(wchar_t *value, int len, char *strhash) {
  * Recalculate MD5 hash for current string in object.
  */
 static void recalc_hash(t_string_object *obj) {
-    hash_widestring(obj->value, obj->char_length, obj->hash);
+    hash_string(obj->value, obj->hash);
 }
 
 
@@ -132,69 +135,31 @@ SAFFIRE_METHOD(string, byte_length) {
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
-
-    for (int i=0; i!=obj->char_length; i++) {
-        obj->value[i] = towupper(obj->value[i]);
-    }
-    recalc_hash(obj);
-
-    RETURN_OBJECT(obj);
+    // @TODO: UTF8 - UPPER!
+    RETURN_SELF;
 }
 
 /**
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
-
-    for (int i=0; i!=obj->char_length; i++) {
-        obj->value[i] = towlower(obj->value[i]);
-    }
-    recalc_hash(obj);
-
-    RETURN_OBJECT(obj);
+    // @TODO: UTF8 - LOWER!
+    RETURN_SELF;
 }
 
 /**
  * Saffire method: Returns reversed string object
  */
 SAFFIRE_METHOD(string, reverse) {
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
-
-    wchar_t *str = obj->value;
-    wchar_t *p1, *p2;
-
-    if (! str || ! *str) {
-        RETURN_OBJECT(obj);
-    }
-
-    wchar_t p3;
-    for (p1 = str, p2 = str + obj->char_length - 1; p2 > p1; ++p1, --p2) {
-        p3 = *p2;
-        *p2 = *p1;
-        *p1 = p3;
-    }
-
-    recalc_hash(obj);
-
-    RETURN_OBJECT(obj);
+    // @TODO: UTF8 - REVERSE!
+    RETURN_SELF;
 }
 
 /**
  * Saffire method: output strings
  */
 SAFFIRE_METHOD(string, print) {
-    char utf8_char_buf[MB_LEN_MAX];
-
-    for (int i=0; i!=self->char_length; i++) {
-        int l = wctomb(utf8_char_buf, self->value[i]);
-        for (int j=0; j!=l; j++) {
-            printf("%c", utf8_char_buf[j]);
-        }
-    }
-    printf("\n");
-
+    printf("%s\n", self->value);
     RETURN_SELF;
 }
 
@@ -221,7 +186,7 @@ SAFFIRE_METHOD(string, conv_null) {
  */
 SAFFIRE_METHOD(string, conv_numerical) {
     // Convert wide into char
-    long value = wcstol(self->value, NULL, 0);
+    long value = strtol(self->value, NULL, 0);
 
     RETURN_NUMERICAL(value);
 }
@@ -285,49 +250,49 @@ SAFFIRE_COMPARISON_METHOD(string, eq) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) == 0);
+    return (strcmp(self->value, other->value) == 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, ne) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) != 0);
+    return (strcmp(self->value, other->value) != 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, lt) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) == -1);
+    return (strcmp(self->value, other->value) == -1);
 }
 SAFFIRE_COMPARISON_METHOD(string, gt) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) == 1);
+    return (strcmp(self->value, other->value) == 1);
 }
 SAFFIRE_COMPARISON_METHOD(string, le) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) <= 0);
+    return (strcmp(self->value, other->value) <= 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, ge) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcscmp(self->value, other->value) >= 0);
+    return (strcmp(self->value, other->value) >= 0);
 }
 SAFFIRE_COMPARISON_METHOD(string, in) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcsstr(self->value, other->value) != NULL);
+    return (strstr(self->value, other->value) != NULL);
 }
 SAFFIRE_COMPARISON_METHOD(string, ni) {
     t_string_object *self = (t_string_object *)_self;
     t_string_object *other = (t_string_object *)_other;
 
-    return (wcsstr(self->value, other->value) == NULL);
+    return (strstr(self->value, other->value) == NULL);
 }
 
 
@@ -391,14 +356,14 @@ static void obj_free(t_object *obj) {
 
 
 
+
 static t_object *obj_new(t_object *obj, va_list arg_list) {
     // Get the widestring from the argument list
-    wchar_t *value = va_arg(arg_list, wchar_t *);
-    int len = wcslen(value);
+    char *value = va_arg(arg_list, char *);
 
     // Create a hash from the string
     char strhash[33];
-    hash_widestring_text(value, len, strhash);
+    hash_string_text(value, strhash);
 
     // Check for and return cached object
     t_object *cache_obj = ht_find(string_cache, strhash);
@@ -410,19 +375,11 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
     memcpy(new_obj, Object_String, sizeof(t_string_object));
 
     // Set internal data
-    char utf8_char_buf[MB_LEN_MAX];
-
-    new_obj->char_length = wcslen(value);
-
-    new_obj->value = wcsdup(value);
-    new_obj->char_length = wcslen(new_obj->value);
+    new_obj->value = smm_strdup(value);
+    new_obj->char_length = strlen(value);
 
     // Calculate length for each character, and add to total
-    new_obj->byte_length = 0;
-    for (int i=0; i!=new_obj->char_length; i++) {
-        int l = wctomb(utf8_char_buf, new_obj->value[i]);
-        new_obj->byte_length += l;
-    }
+    new_obj->byte_length = utf8_len(value);
     recalc_hash(new_obj);
 
     // Add to string cache
@@ -440,10 +397,9 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
-    char *buf = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
-    memcpy(global_buf, buf, 1024);
+    char *s = ((t_string_object *)obj)->value;
+    strncpy(global_buf, s, 1023);
     global_buf[1023] = 0;
-    smm_free(buf);
 
     return global_buf;
 }

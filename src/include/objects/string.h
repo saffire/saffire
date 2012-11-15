@@ -27,7 +27,6 @@
 #ifndef __OBJECT_STRING_H__
 #define __OBJECT_STRING_H__
 
-    #include <wchar.h>
     #include "general/md5.h"
     #include "objects/object.h"
 
@@ -37,7 +36,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        wchar_t *value;         // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
+        char *value;            // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
         size_t char_length;     // length of the string in characters
         size_t byte_length;     // length of the string in bytes
         md5_byte_t hash[16];    // (MD5) hash of the string

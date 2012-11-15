@@ -39,3 +39,4 @@ config.sub
 compile
 .saffire_history
 *.sfc
+*.sf

@@ -24,60 +24,96 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include "general/popen2.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <histedit.h>
+#include <wait.h>
+#include <signal.h>
+#include <unistd.h>
 
-#define HIST_FILE ".saffire_history"
 
-#define MAX_PROMPT_SIZE 40
-char cur_prompt[MAX_PROMPT_SIZE];
+/**
+ * Copyright 2009-2010 Bart Trojanowski <bart@jukie.net>
+ * Licensed under GPLv2, or later, at your choosing.
+ *
+ * bidirectional popen() call
+ *
+ * @param rwepipe - int array of size three
+ * @param exe - program to run
+ * @param argv - argument list
+ * @return pid or -1 on error
+ *
+ * The caller passes in an array of three integers (rwepipe), on successful
+ * execution it can then write to element 0 (stdin of exe), and read from
+ * element 1 (stdout) and 2 (stderr).
+ */
+int popenRWE(int *rwepipe, const char *exe, char * argv[])
+{
+	int in[2];
+	int out[2];
+	int err[2];
+	int pid;
+	int rc;
 
-static int statement_count = 1;
+	rc = pipe(in);
+	if (rc<0)
+		goto error_in;
 
-// @TODO: saffire.prompt will actually set the current prompt.. saffire.prompt("%n>");  %n == current stament count?
+	rc = pipe(out);
+	if (rc<0)
+		goto error_out;
 
-char *prompt(EditLine *el) {
-    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count++);
-    return cur_prompt;
+	rc = pipe(err);
+	if (rc<0)
+		goto error_err;
+
+	pid = fork();
+	if (pid > 0) { // parent
+		close(in[0]);
+		close(out[1]);
+		close(err[1]);
+		rwepipe[0] = in[1];
+		rwepipe[1] = out[0];
+		rwepipe[2] = err[0];
+		return pid;
+	} else if (pid == 0) { // child
+		close(in[1]);
+		close(out[0]);
+		close(err[0]);
+		close(0);
+		dup(in[0]);
+		close(1);
+		dup(out[1]);
+		close(2);
+		dup(err[1]);
+
+		execvp(exe, (char**)argv);
+		exit(1);
+	} else
+		goto error_fork;
+
+	return pid;
+
+error_fork:
+	close(err[0]);
+	close(err[1]);
+error_err:
+	close(out[0]);
+	close(out[1]);
+error_out:
+	close(in[0]);
+	close(in[1]);
+error_in:
+	return -1;
 }
 
-int repl(void) {
-    EditLine *el;
-    History *hist;
-    HistEvent ev;
-    int count;
+int pcloseRWE(int pid, int *rwepipe)
+{
+	int rc, status;
+	close(rwepipe[0]);
+	close(rwepipe[1]);
+	close(rwepipe[2]);
 
-    printf("Interactive/REPL mode is not yet implemented. Use CTRL-C to quit.\n");
-
-    // initialize EditLine library
-    el = el_init("saffire", stdin, stdout, stderr);
-    el_set(el, EL_PROMPT, &prompt);
-    el_set(el, EL_EDITOR, "emacs");
-
-    // Initialize history
-    hist = history_init();
-    if (! hist) {
-        fprintf(stderr, "Warning: cannot initialize history\n");
-    }
-    history(hist, &ev, H_SETSIZE, 800);
-    el_set(el, EL_HIST, history, hist);
-
-    // Load history file
-    history(hist, &ev, H_LOAD, HIST_FILE);
-
-    while (1) {
-        const char *line = el_gets(el, &count);
-        if (count > 0) {
-            history(hist, &ev, H_ENTER, line);
-            history(hist, &ev, H_SAVE, HIST_FILE);
-//            printf("LINE: %s", line);
-        }
-    }
-
-    history_end(hist);
-    el_end(el);
-
-    return 0;
+	rc = waitpid(pid, &status, 0);
+	return status;
 }

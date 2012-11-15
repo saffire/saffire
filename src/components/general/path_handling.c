@@ -24,34 +24,38 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include "general/path_handling.h"
+#include "general/smm.h"
+#include <string.h>
 #include <stdio.h>
-#include "commands/command.h"
-#include "repl/repl.h"
 
-static int do_repl(void) {
-    return (repl());
+
+/**
+ * Replaces or adds an extension on a path. Returns path with new extension.
+ */
+char *replace_extension(const char *path, const char *source_ext, const char *dest_ext) {
+    char *dest_path, *ptr;
+    int len;
+
+    // Allocate enough room for path + complete extension
+    dest_path = smm_malloc(strlen(path) + sizeof(dest_ext));
+    bzero(dest_path, strlen(path) + sizeof(dest_ext));
+
+    // Seek last .
+    ptr = strrchr(path, '.');
+
+    // Check if the last part is the actual source extension
+    if (ptr != NULL && ! strcmp(ptr, source_ext)) {
+        // Only copy until the extension
+        len = ptr - path;
+    } else {
+        // Copy whole source
+        len = strlen(path);
+    }
+
+    // Copy required part of path and add extension
+    strncpy(dest_path, path, len);
+    strcat(dest_path, dest_ext);
+
+    return dest_path;
 }
-
-
-/****
- * Argument Parsing and action definitions
- ***/
-
-/* Usage string */
-static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
-                             "\n"
-                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
-
-
-/* Config actions */
-static struct command_action command_actions[] = {
-    { "", "", do_repl, NULL },
-    { 0, 0, 0, 0 }
-};
-
-/* Config info structure */
-struct command_info info_cli = {
-    "Interactive Interpreter",
-    command_actions,
-    help
-};

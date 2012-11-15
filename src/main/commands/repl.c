@@ -25,54 +25,11 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <getopt.h>
-#include <stdlib.h>
-#include <locale.h>
-#include "interpreter/context.h"
-#include "modules/module_api.h"
-#include "vm/vm.h"
 #include "commands/command.h"
-#include "general/parse_options.h"
+#include "repl/repl.h"
 
-
-static int do_compile(void) {
-    char *source_file = saffire_getopt_string(0);
-
-    setlocale(LC_ALL,"");
-    context_init();
-    object_init();
-    module_init();
-
-
-    t_bytecode *bc = generate_dummy_bytecode();
-    vm_execute(bc);
-    return 0;
-
-    t_ast_element *ast = ast_generate_from_file(source_file);
-//    char *dest_file = bytecode_generate_destfile(source_file);
-//    t_bytecode *bc = bytecode_generate(ast_root, source_file);
-//    if (bc && bc->length) {
-//        printf("Dumping %d bytes into '%s'\n", bc->length, dest_file);
-//        FILE *f = fopen(dest_file, "w+");
-//        if (f) {
-//            fwrite(bc->buffer, 1, bc->length, f);
-//            fclose(f);
-//        }
-//    }
-//
-//    bytecode_free(bc);
-//    smm_free(dest_file);        // free dest file name
-
-    // Release memory of ast root
-    if (ast != NULL) {
-        ast_free_node(ast);
-    }
-
-    module_fini();
-    object_fini();
-    context_fini();
-
-    return 0;
+static int do_repl(void) {
+    return (repl());
 }
 
 
@@ -80,21 +37,21 @@ static int do_compile(void) {
  * Argument Parsing and action definitions
  ***/
 
-
 /* Usage string */
-static const char help[]   = "Compiles a Saffire script.\n";
-
+static const char help[]   = "Run the interactive Saffire interpreter (REPL).\n"
+                             "\n"
+                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
 
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_compile, NULL },
+    { "", "", do_repl, NULL },
     { 0, 0, 0, 0 }
 };
 
 /* Config info structure */
-struct command_info info_compile = {
-    "Compiles saffire script",
+struct command_info info_repl = {
+    "Interactive saffire interface",
     command_actions,
     help
 };
