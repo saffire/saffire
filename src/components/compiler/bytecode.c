@@ -398,51 +398,52 @@ void bytecode_free(t_bytecode *bc) {
 t_bytecode *generate_dummy_bytecode(void) {
     char dummy_code[] =
 //                        // import io as io from io; (or: import io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
 //                        "\x7F"                      //    IMPORT
-//                        "\x80\x03\x00\x00\x00"      //    STORE_ID       3 (io)
+//                        "\x80\x03\x00\x00\x00"      //    STORE_ID      3 (io)
 //
 //
 //                        // import console as the_con, io as io from io;
-//                        "\x81\x04\x00\x00\x00"      //    LOAD_CONST     4 (console)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
-//                        "\x80\x04\x00\x00\x00"      //    STORE_ID       4 (the_con)
+//                        "\x81\x04\x00\x00\x00"      //    LOAD_CONST    4 (console)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+//                        "\x80\x04\x00\x00\x00"      //    STORE_ID      4 (the_con)
 //
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
-//                        "\x80\x04\x00\x00\x00"      //    STORE_ID       4 (the_con)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+//                        "\x80\x04\x00\x00\x00"      //    STORE_ID      4 (the_con)
 //                        "\x7F"                      //    IMPORT
 
                         // a = 0x1234;
-                        "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST    0 (0x1234)
-                        "\x80\x00\x00\x00\x00"      //    5  STORE_ID      0 (a)
+                        "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST   0 (0x1234)
+                        "\x80\x00\x00\x00\x00"      //    5  STORE_ID     0 (a)
                         // b = 0x5678;
                         "\x81\x01\x00\x00\x00"      //   10  LOAD_CONST   1 (0x5678)
                         "\x80\x01\x00\x00\x00"      //   15  STORE_ID     1 (b)
 
                         // c = a + b;
-                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
-                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID       0 (b)
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID      0 (a)
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID      0 (b)
                         "\x17"                      //   20  BINARY_ADD
                         "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
 
                         // c = c + c;
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
                         "\x17"                      //   20  BINARY_ADD
                         "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
 
 
                         // c.print();
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x00\x00\x00\x00"
 
 
-                        "\x82\x05\x00\x00\x00"      //       LOAD_ID      4 (::_sfl::io)
+                        "\x82\x02\x00\x00\x00"      //       LOAD_ID      2 (c)
+                        "\x82\x05\x00\x00\x00"      //       LOAD_CONST   5 (::_sfl::io)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00\x00\x00"
+                            "\x01\x00\x00\x00"
 
                         "\x00"                      //   69  STOP
 
@@ -514,7 +515,7 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_name(bc, "c");
     _new_name(bc, "io");
     _new_name(bc, "the_con");
-    _new_name(bc, "::_sfl::io");
+    _new_name(bc, "::_sfl::io::io");
 
     return bc;
 }
