@@ -19,7 +19,13 @@ AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_YACC
+if test "x$YACC" = xyacc; then
+  AC_MSG_ERROR([Bison not found. Please install the 'bison'-package.])
+fi
 AC_PROG_LEX
+if test "x$LEX" = x; then
+  AC_MSG_ERROR([Flex not found. Please install the 'flex'-package.])
+fi
 AC_PROG_RANLIB
 
 
@@ -84,9 +90,32 @@ dnl AC_SUBST([ICU_LIBS])
 
 
 # Checks for libraries.
-AC_CHECK_LIB([m], [main], , [ AC_MSG_ERROR([math library missing])])
 
-AC_CHECK_LIB(edit, el_init, , [ AC_MSG_ERROR([libedit library missing])])
+PKG_PROG_PKG_CONFIG
+PKG_CHECK_MODULES(LIBAUGEAS, augeas >= 0.5.0)
+PKG_CHECK_MODULES(LIBEDIT, libedit)
+
+AC_CHECK_LIB([m], [main], , [ AC_MSG_ERROR([*** Math library is required, install match development files (libm)])])
+AC_CHECK_LIB(bz2, BZ2_bzDecompressInit, [], [AC_MSG_ERROR([*** BZip2 is required, install bzip2 development files (libbz2)])])
+AC_CHECK_LIB(fcgi, FCGI_Accept, [], [AC_MSG_ERROR([*** FastCGI is required, install libfcgi development files (libfcgi)])])
+
+# Check for PCRE
+have_pcre_lib=no
+have_pcre_h=no
+AC_CHECK_LIB([pcre], [pcre_compile], [
+    have_pcre_lib=yes
+    LIBS="$LIBS -lpcre"
+])
+AC_CHECK_HEADER([pcre.h], [have_pcre_h=yes])
+if test "$have_pcre_lib" = "no" -o "$have_pcre_h" = "no"; then
+    PKG_PROG_PKG_CONFIG
+    PKG_CHECK_MODULES([libpcre], [libpcre], [], [
+        AC_MSG_ERROR([*** PCRE is required, install libpcre development files (libpcre3)])
+    ])
+    LIBS="$LIBS $libpcre_LIBS"
+    CFLAGS="$CFLAGS $libpcre_CFLAGS"
+fi
+
 
 # Checks for header files.
 AC_FUNC_ALLOCA
