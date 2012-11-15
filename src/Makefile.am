@@ -163,7 +163,7 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi -lbz2 -laugeas
+saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi -lbz2 -laugeas -ledit
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \

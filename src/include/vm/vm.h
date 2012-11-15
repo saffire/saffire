@@ -32,6 +32,7 @@
 
     t_hash_object *builtin_identifiers;
 
+    void vm_init(void);
     int vm_execute(t_bytecode *source_bc);
 
 #endif

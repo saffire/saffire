@@ -39,7 +39,7 @@
 #include "modules/module_api.h"
 
 static t_object *_import(char *module, char *class, char *alias) {
-    t_object *obj;
+    t_object *obj = NULL;
 
 //    // Check if variable is free
 //    if (si_find_var_in_context(s2, NULL)) {
@@ -132,7 +132,7 @@ t_dll *contexts;
 /**
  *
  */
-void vm_init() {
+void vm_init(void) {
     object_init();
     builtin_identifiers = (t_hash_object *)object_new(Object_Hash);
     module_init();

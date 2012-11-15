@@ -136,11 +136,6 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([floor memset strdup strtol])
 
-AC_CHECK_LIB([edit],[el_init], [
-        AC_SUBST([EDIT_LIBS],["-ledit"])
-        AC_DEFINE(HAVE_EDIT, [1], [Edit is enabled])
-        ])
-
 AC_CONFIG_FILES([
                     Makefile
                     src/Makefile

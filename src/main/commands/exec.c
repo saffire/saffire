@@ -36,6 +36,7 @@
 #include "interpreter/interpreter.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
+#include "vm/vm.h"
 
 char *dot_file = NULL;
 
