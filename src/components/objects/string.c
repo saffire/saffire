@@ -52,7 +52,9 @@ t_hash_table *string_cache;
  * Returns the number of characters inside a (UTF8) string
  */
 static int utf8_len(char *s) {
-    register int i,j;
+    int i = 0;
+    int j = 0;
+
     while (s[i]) {
         if ((s[i] & 0xC0) != 0x80) j++;
         i++;
