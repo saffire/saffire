@@ -24,11 +24,11 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __BZIP2_H__
+#define __BZIP2_H__
 
-    char *config_get_string(const char *key);
-    char config_get_bool(const char *key);
-    long config_get_long(const char *key);
+    int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
+    int bzip2_decompress(char *dest, unsigned int *dest_len, const char *source, unsigned int source_len);
+    //int bzip2_decompress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
 
 #endif

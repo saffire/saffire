@@ -24,32 +24,9 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/hashtable.h"
-#include "general/smm.h"
+#ifndef __PATH_HANDLING_H__
+#define __PATH_HANDLING_H__
 
+    char *replace_extension(const char *path, const char *source_ext, const char *dest_ext);
 
-void *smm_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-        exit(1);
-    }
-    return ptr;
-}
-
-void *smm_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
-
-void smm_free(void *ptr) {
-    return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+#endif

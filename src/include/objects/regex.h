@@ -27,7 +27,6 @@
 #ifndef __OBJECT_REGEX_H__
 #define __OBJECT_REGEX_H__
 
-    #include <wchar.h>
     #include <pcre.h>
     #include "general/md5.h"
     #include "objects/object.h"
@@ -40,7 +39,7 @@
         SAFFIRE_OBJECT_HEADER
 
         pcre *regex;
-        wchar_t *regex_string;
+        char *regex_string;
     } t_regex_object;
 
     t_regex_object Object_Regex_struct;

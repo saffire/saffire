@@ -42,13 +42,8 @@ static int do_help(void) {
         return 0;
     }
 
-    for (int i=0; i!=original_argc; i++) {
-        printf("ARG %d : '%s'\n", i, original_argv[i]);
-    }
-
     struct command *cmd = commands;
     while (cmd->name) {
-        printf("Check '%s' against '%s'\n", cmd->name, original_argv[2]);
 
         if (! strcasecmp(cmd->name, original_argv[2])) {
             if (cmd->info->help) {
@@ -81,7 +76,7 @@ static const char help[]   = "Display help information\n"
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "", do_help, NULL },
+    { "", "|s", do_help, NULL },
     { 0, 0, 0, 0 }
 };
 

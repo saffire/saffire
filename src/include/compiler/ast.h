@@ -76,7 +76,7 @@
     typedef struct ast_element {
         nodeEnum type;              // Type of the node
         int flags;                  // Current flag (used for interpreting)
-        int lineno;                 // Current line number for this AST element
+        unsigned long lineno;                 // Current line number for this AST element
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string

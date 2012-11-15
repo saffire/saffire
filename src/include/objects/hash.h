@@ -24,32 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/hashtable.h"
-#include "general/smm.h"
+#ifndef __OBJECT_HASH_H__
+#define __OBJECT_HASH_H__
 
+    #include "objects/object.h"
+    #include "general/hashtable.h"
 
-void *smm_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-        exit(1);
-    }
-    return ptr;
-}
+    #define RETURN_HASH(h)   RETURN_OBJECT(object_new(Object_Hash, h));
 
-void *smm_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
 
-void smm_free(void *ptr) {
-    return free(ptr);
-}
+        t_hash_table *ht;
+    } t_hash_object;
 
-char *smm_strdup(const char *s) {
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+    t_hash_object Object_Hash_struct;
+
+    #define Object_Hash   (t_object *)&Object_Hash_struct
+
+    void object_hash_init(void);
+    void object_hash_fini(void);
+
+#endif

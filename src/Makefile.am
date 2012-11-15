@@ -61,7 +61,7 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/ast.c \
                         components/compiler/dot.c \
                         components/compiler/bytecode.c \
-                        components/compiler/saffire_compiler.c
+                        components/compiler/compiler.c
 
 
 ########################################################################
@@ -83,9 +83,13 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/smm.c \
                        components/general/md5.c \
                        components/general/dll.c \
-                       components/general/ini.c \
                        components/general/stack.c \
-                       components/general/parse_options.c
+                       components/general/parse_options.c \
+                       components/general/popen2.c \
+                       components/general/gpg.c \
+                       components/general/path_handling.c \
+                       components/general/bzip2.c \
+                       components/general/config.c
 
 
 ########################################################################
@@ -121,7 +125,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/string.c \
                        components/objects/regex.c \
                        components/objects/code.c \
-                       components/objects/method.c
+                       components/objects/method.c \
+                       components/objects/hash.c
 
 
 ########################################################################
@@ -158,10 +163,10 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi
+saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS)
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
-                  main/commands/exec.c main/commands/cli.c main/commands/help.c \
-                  main/commands/version.c main/commands/compile.c
+                  main/commands/exec.c main/commands/repl.c main/commands/help.c \
+                  main/commands/version.c main/commands/bytecode.c
 

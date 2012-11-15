@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "compiler/saffire_compiler.h"
+#include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "general/smm.h"
 #include "compiler/ast.h"
@@ -37,7 +37,7 @@
 //extern void yylex_destroy
 extern int yylex_destroy();
 extern void yyerror(const char *err);
-extern int yyparse(int *ptr);
+extern int yyparse(unsigned long *ptr);
 extern FILE *yyin;
 extern int yylineno;
 
@@ -63,7 +63,7 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     // Parse the file input, will return the tree in the global ast_root variable
     yyin = fp;
 
-    int ptr = 0;
+    unsigned long ptr = 0;
     yyparse(&ptr);
     yylex_destroy();
 

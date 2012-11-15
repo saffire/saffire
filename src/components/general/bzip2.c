@@ -24,32 +24,34 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/hashtable.h"
 #include "general/smm.h"
+#include <bzlib.h>
 
 
-void *smm_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-        exit(1);
-    }
-    return ptr;
+#define BZIP_BLOCKSIZE               9
+#define BZIP_WORK_FACTOR            30
+
+
+/**
+ * Compresses source into dest. Dest is newly allocated and it's length recorded inside dest_len
+ */
+int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
+    /*
+     * http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#hl-interface recommends 101% of uncompressed size + 600 bytes
+     */
+    *dest_len = (source_len * 1.1) + 600;
+    *dest = smm_malloc(*dest_len);
+
+    int ret = BZ2_bzBuffToBuffCompress(*dest, dest_len, (char *)source, source_len, BZIP_BLOCKSIZE, 0, BZIP_WORK_FACTOR);
+    return (ret == BZ_OK);
 }
 
-void *smm_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
 
-void smm_free(void *ptr) {
-    return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
+/**
+ * Decompresses source into dest. Dest should be allocated and dest_len the length of that buffer.
+ */
+int bzip2_decompress(char *dest, unsigned int *dest_len, const char *source, unsigned int source_len) {
+    // Decompress (slowly)
+    int ret = BZ2_bzBuffToBuffDecompress(dest, dest_len, (char *)source, source_len, 0, 0);
+    return (ret == BZ_OK);
 }

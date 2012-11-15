@@ -24,32 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/hashtable.h"
-#include "general/smm.h"
+#ifndef __GENERAL_CONFIG_H__
+#define __GENERAL_CONFIG_H__
 
+    #include "general/hashtable.h"
 
-void *smm_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-        exit(1);
-    }
-    return ptr;
-}
+    int config_set_string(const char *key, const char *value);
+    char *config_get_string(const char *key, const char *default_value);
+    char config_get_bool(const char *key, char default_value);
+    long config_get_long(const char *key, long default_value);
 
-void *smm_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
+    int config_get_matches(const char *pattern, char ***matches);
 
-void smm_free(void *ptr) {
-    return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+#endif

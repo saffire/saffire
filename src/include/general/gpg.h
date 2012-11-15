@@ -24,32 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/hashtable.h"
-#include "general/smm.h"
+#ifndef __GPG_H__
+#define __GPG_H__
 
+    int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len);
+    int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len);
 
-void *smm_malloc(size_t size) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-        exit(1);
-    }
-    return ptr;
-}
-
-void *smm_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
-
-void smm_free(void *ptr) {
-    return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+#endif
