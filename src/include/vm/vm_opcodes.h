@@ -39,14 +39,32 @@
     #define VM_NOP                  0x09
 
     #define VM_BINARY_ADD           0x17
-    #define VM_BINARY_SUBTRACT      0x18
+    #define VM_BINARY_SUB           0x18
+    #define VM_BINARY_MUL           0x19
+    #define VM_BINARY_DIV           0x1A
+    #define VM_BINARY_SHL           0x1B
+    #define VM_BINARY_SHR           0x1C
+    #define VM_BINARY_AND           0x1D
+    #define VM_BINARY_OR            0x1E
+    #define VM_BINARY_XOR           0x1F
 
-    #define VM_PRINT_VAR            0x7F        // @TODO: REMOVE ME
+    #define VM_INPLACE_ADD           0x20
+    #define VM_INPLACE_SUB           0x21
+    #define VM_INPLACE_MUL           0x22
+    #define VM_INPLACE_DIV           0x23
+    #define VM_INPLACE_SHL           0x24
+    #define VM_INPLACE_SHR           0x25
+    #define VM_INPLACE_AND           0x26
+    #define VM_INPLACE_OR            0x27
+    #define VM_INPLACE_XOR           0x28
+
+    #define VM_USE                  0x7E
+    #define VM_IMPORT               0x7F
 
     // One operand opcodes
-    #define VM_STORE_VAR            0x80
+    #define VM_STORE_ID             0x80
     #define VM_LOAD_CONST           0x81
-    #define VM_LOAD_VAR             0x82
+    #define VM_LOAD_ID              0x82
 
     #define VM_JUMP_FORWARD         0x83
     #define VM_JUMP_IF_TRUE         0x84
@@ -58,6 +76,7 @@
     #define VM_LOAD_GLOBAL          0x88
     #define VM_STORE_GLOBAL         0x89
     #define VM_DELETE_GLOBAL        0x8A
+
 
 
     // Two operand opcodes

@@ -31,14 +31,14 @@
 
     #include <stdio.h>
     #include "general/smm.h"
-    #include "lex.yy.h"
+    #include "compiler/lex.yy.h"
     #include "compiler/compiler.h"
     #include "compiler/ast.h"
     #include "debug.h"
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(int *ast, const char *err) { printf("Error in line %d: %s\n", yylineno, err); exit(1); }
+    void yyerror(unsigned long *ast, const char *err) { printf("Error in line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -127,7 +127,7 @@
 %start saffire
 
 
-%parse-param { int *ast_root }
+%parse-param { unsigned long *ast_root }
 
 %% /* rules */
 
@@ -139,7 +139,7 @@
  */
 
 saffire:
-        program { TRACE *ast_root = (int)$1; }
+        program { TRACE *ast_root = (unsigned long)$1; }
 ;
 
 program:

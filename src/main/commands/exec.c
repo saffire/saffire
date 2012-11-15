@@ -36,6 +36,7 @@
 #include "interpreter/interpreter.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
+#include "vm/vm.h"
 
 char *dot_file = NULL;
 
@@ -44,8 +45,7 @@ static int do_exec(void) {
 
     setlocale(LC_ALL,"");
     context_init();
-    object_init();
-    module_init();
+    vm_init();
 
     t_ast_element *ast = ast_generate_from_file(source_file);
 

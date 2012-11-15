@@ -52,8 +52,6 @@ static const char *default_ini[] = {
     "[compile]",
     "# True when bytecode automatically needs to be signed",
     "sign = true",
-    "# True when bytecode automatically needs to be compressed",
-    "compress = true",
     "",
     "",
     "[fastcgi]",

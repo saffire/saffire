@@ -16,9 +16,6 @@
    */
 #define HAVE_ALLOCA_H 1
 
-/* Edit is enabled */
-#define HAVE_EDIT 1
-
 /* Define to 1 if you have the `floor' function. */
 #define HAVE_FLOOR 1
 
@@ -28,8 +25,11 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `edit' library (-ledit). */
-#define HAVE_LIBEDIT 1
+/* Define to 1 if you have the `bz2' library (-lbz2). */
+#define HAVE_LIBBZ2 1
+
+/* Define to 1 if you have the `fcgi' library (-lfcgi). */
+#define HAVE_LIBFCGI 1
 
 /* Define to 1 if you have the <libintl.h> header file. */
 #define HAVE_LIBINTL_H 1

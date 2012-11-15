@@ -31,8 +31,11 @@
 #include "modules/saffire.h"
 #include "interpreter/context.h"
 #include "debug.h"
+#include "general/hashtable.h"
+#include "vm/vm.h"
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
+
 
 /**
  * Register an module
@@ -40,26 +43,30 @@
 int register_module(t_module *mod) {
     DEBUG_PRINT("   Registering module: %s\n", mod->name);
 
-    t_dll_element *e = DLL_HEAD(modules);
-    while (e) {
-        t_module *src_mod = (t_module *)e->data;
-        if (strcmp(src_mod->name, mod->name) == 0) {
-            // Already registered
-            return 0;
-        }
-        e = DLL_NEXT(e);
-    }
+//    t_dll_element *e = DLL_HEAD(modules);
+//    while (e) {
+//        t_module *src_mod = (t_module *)e->data;
+//        if (strcmp(src_mod->name, mod->name) == 0) {
+//            // Already registered
+//            return 0;
+//        }
+//        e = DLL_NEXT(e);
+//    }
 
     // Initialize module
     mod->init();
 
-    t_ns_context *ctx = si_create_context(mod->name);
-    dll_append(modules, mod);
+//    t_ns_context *ctx = si_create_context(mod->name);
+//    dll_append(modules, mod);
 
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        si_context_add_object(ctx, obj);
+        char key[100]; // @TODO: fixme
+        sprintf(key, "%s::%s", mod->name, obj->name);
+
+        ht_add(builtin_identifiers->ht, key, obj);
+        printf("Added object to builtins: %s\n", key);
 
         idx++;
         obj = (t_object *)mod->objects[idx];
@@ -71,20 +78,13 @@ int register_module(t_module *mod) {
  * Unregister
  */
 int unregister_module(t_module *mod) {
-    t_dll_element *e = DLL_HEAD(modules);
-    while (e) {
-        t_module *src_mod = (t_module *)e->data;
-        if (strcmp(src_mod->name, mod->name) == 0) {
-            // Found
+    printf("Not implemented");
+    exit(1);
 
-            // Fini module
-            mod->fini();
+    // Fini module
+    mod->fini();
 
-            dll_remove(modules, e);
-        }
-        e = DLL_NEXT(e);
-    }
-
+    // Remove from builtins
 
     // Nothing found
     return 0;
