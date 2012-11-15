@@ -82,6 +82,8 @@
     int ht_remove(t_hash_table *ht, const char *key);
     void ht_destroy(t_hash_table *ht);
 
+    void *ht_num_find(t_hash_table *ht, int index);
+    int ht_num_add(t_hash_table *ht, int index, void *value);
 
     // Functionality for iterating a hash table (forward only)
     typedef struct _hash_iter {

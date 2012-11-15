@@ -33,7 +33,79 @@
 #include "objects/boolean.h"
 #include "objects/string.h"
 #include "objects/numerical.h"
+#include "objects/hash.h"
+#include "objects/null.h"
 #include "interpreter/errors.h"
+#include "modules/module_api.h"
+
+static t_object *_import(char *module, char *class, char *alias) {
+    t_object *obj;
+
+//    // Check if variable is free
+//    if (si_find_var_in_context(s2, NULL)) {
+//        saffire_error("A variable named %s is already present or imported.", alias);
+//    }
+//
+//    // Find class in context
+//    ctx = si_get_context(ctx_name);
+//    if (ctx == NULL) {
+//        saffire_error("Cannot find context: %s", ctx_name);
+//    }
+//    obj = si_find_var_in_context(classname, ctx);
+//    if (! obj) {
+//        saffire_error("Cannot find class %s inside context: %s", classname, ctx_name);
+//    }
+
+    return obj;
+
+//    // Add the object to the current context as the alias variable
+//    si_create_var_in_context(alias, NULL, obj, CTX_CREATE_ONLY);
+}
+
+
+
+#define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+
+/**
+ *
+ */
+static void saffire_vm_warning(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    fprintf(stderr, "Warning: ");
+    vfprintf(stderr, str, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+}
+
+/**
+ *
+ */
+static void saffire_vm_error(char *str, ...) {
+    va_list args;
+    va_start(args, str);
+    fprintf(stderr, "Error: ");
+    vfprintf(stderr, str, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+    exit(1);
+}
+
+
+#define CALL_OP(opr, in_place, err_str) \
+                obj1 = stack_pop(); \
+                object_dec_ref(obj1); \
+                obj2 = stack_pop(); \
+                object_dec_ref(obj2); \
+                \
+                if (obj1->type != obj2->type) { \
+                    saffire_vm_error(err_str); \
+                } \
+                obj3 = object_operator(obj2, opr, in_place, 1, obj1); \
+                \
+                object_inc_ref(obj3);   \
+                stack_push(obj3);   \
+
 
 #define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
 
@@ -43,14 +115,29 @@ typedef struct _vm_context {
 
     t_object **stack;                 // Local context stack
     unsigned int sp;                  // Stack pointer
-    t_object **local_variables;       // Local variables
-    t_object **global_variables;
+    t_hash_object *local_identifiers;     // Local identifiers
+    t_hash_object *global_identifiers;    // Global identifiers
+    t_hash_object *builtin_identifiers;   // Builtin identifiers
 
     unsigned int time;                // Total time spend in this bytecode block
     unsigned int executions;          // Number of total executions (opcodes processed)
 } t_vm_context;
 
+
+t_hash_object *global_identifiers = NULL;
+t_hash_object *builtin_identifiers = NULL;
 t_dll *contexts;
+
+
+/**
+ *
+ */
+void vm_init() {
+    object_init();
+    builtin_identifiers = (t_hash_object *)object_new(Object_Hash);
+    module_init();
+}
+
 
 /**
  * Adds a context onto the context-stack
@@ -92,9 +179,12 @@ static t_vm_context *create_context(t_bytecode *bc) {
     bzero(ctx->stack, bc->stack_size * sizeof(t_object *));
     ctx->sp = bc->stack_size-1;
 
-    // Variables
-    ctx->local_variables = smm_malloc(bc->variables_len * sizeof(t_object *));
-    bzero(ctx->local_variables, bc->variables_len * sizeof(t_object *));
+    // Identifiers
+    ctx->local_identifiers = (t_hash_object *)object_new(Object_Hash);
+
+    // Set global and builtin identifiers
+    ctx->global_identifiers = global_identifiers;
+    ctx->builtin_identifiers = builtin_identifiers;
 
     return ctx;
 }
@@ -107,7 +197,7 @@ static unsigned char get_next_opcode(void) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (ctx->ip < 0 || ctx->ip > ctx->bc->code_len) {
-        saffire_error("Trying to reach outside code length!");
+        saffire_vm_error("Trying to reach outside code length!");
     }
 
     if (ctx->ip == ctx->bc->code_len) {
@@ -146,7 +236,7 @@ static t_object *stack_pop(void) {
     printf("STACK POP(%d)\n", ctx->sp);
 
     if (ctx->sp == ctx->bc->stack_size) {
-        saffire_error("Trying to pop from an empty stack");
+        saffire_vm_error("Trying to pop from an empty stack");
     }
     t_object *ret = ctx->stack[ctx->sp];
     ctx->sp++;
@@ -164,7 +254,7 @@ static void stack_push(t_object *obj) {
     printf("STACK PUSH(%d)\n", ctx->sp);
 
     if (ctx->sp < 0) {
-        saffire_error("Trying to push to a full stack");
+        saffire_vm_error("Trying to push to a full stack");
 
     }
     ctx->sp--;
@@ -190,7 +280,7 @@ static t_object *stack_fetch(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (idx < 0 || idx >= ctx->bc->stack_size) {
-        saffire_error("Trying to fetch from outside stack range");
+        saffire_vm_error("Trying to fetch from outside stack range");
     }
 
     return ctx->stack[idx];
@@ -204,7 +294,7 @@ static void *get_constant_literal(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (idx < 0 || idx >= ctx->bc->constants_len) {
-        saffire_error("Trying to fetch from outside constant range");
+        saffire_vm_error("Trying to fetch from outside constant range");
     }
 
     t_bytecode_constant *c = ctx->bc->constants[idx];
@@ -219,7 +309,7 @@ static t_object *get_constant(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (idx < 0 || idx >= ctx->bc->constants_len) {
-        saffire_error("Trying to fetch from outside constant range");
+        saffire_vm_error("Trying to fetch from outside constant range");
     }
 
     t_bytecode_constant *c = ctx->bc->constants[idx];
@@ -237,53 +327,57 @@ static t_object *get_constant(int idx) {
             break;
     }
 
-    saffire_error("Cannot convert constant type %d to an object\n", idx);
+    saffire_vm_error("Cannot convert constant type %d to an object\n", idx);
     return NULL;
 }
 
 
 /**
- * Store object into the global variable table
+ * Store object into the global identifier table
  */
-static void set_global_variable(int idx, t_object *obj) {
+static void set_global_identifier(int idx, t_object *obj) {
     t_vm_context *ctx = get_current_vm_context();
-    ctx->global_variables[idx] = obj;
+
+    ht_num_add(ctx->global_identifiers->ht, idx, obj);
 }
 
 
 /**
- * Return object from the global variable table
+ * Return object from the global identifier table
  */
-static t_object *get_global_variable(int idx) {
+static t_object *get_global_identifier(int idx) {
     t_vm_context *ctx = get_current_vm_context();
-    return ctx->global_variables[idx];
+    t_object *obj = ht_num_find(ctx->global_identifiers->ht, idx);
+    if (obj == NULL) RETURN_NULL;
+    return obj;
 }
 
 
 /**
- * Store object into either the local or global variable table
+ * Store object into either the local or global identifier table
  */
-static void set_variable(int idx, t_object *obj) {
+static void set_identifier(int idx, t_object *obj) {
     t_vm_context *ctx = get_current_vm_context();
 
-    if (idx < 0 || idx >= ctx->bc->variables_len) {
-        saffire_error("Trying to fetch from outside variable range");
+    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
+        saffire_vm_error("Trying to fetch from outside identifier range");
     }
 
-    ctx->local_variables[idx] = obj;
+    ht_num_add(ctx->local_identifiers->ht, idx, obj);
 }
 
 
 /**
- * Return object from either the local or the global variable table
+ * Return object from either the local or the global identifier table
  */
-static t_object *get_variable(int idx) {
+static t_object *get_identifier(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
-    if (idx < 0 || idx >= ctx->bc->variables_len) {
-        saffire_error("Trying to fetch from outside variable range");
+    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
+        saffire_vm_error("Trying to fetch from outside identifier range");
     }
-    return ctx->local_variables[idx];
+
+    return ht_num_find(ctx->local_identifiers->ht, idx);
 }
 
 
@@ -293,10 +387,10 @@ static t_object *get_variable(int idx) {
 static t_object *get_name(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
-    if (idx < 0 || idx >= ctx->bc->variables_len) {
-        saffire_error("Trying to fetch from outside variable range");
+    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
+        saffire_vm_error("Trying to fetch from outside identifier range");
     }
-    RETURN_STRING(ctx->bc->variables[idx]->s);
+    RETURN_STRING(ctx->bc->identifiers[idx]->s);
 }
 
 
@@ -307,10 +401,15 @@ int vm_execute(t_bytecode *source_bc) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
 
-    // Create global context
+    // Create new context
     contexts = dll_init();
     t_vm_context *tmp = create_context(source_bc);
     push_context(tmp);
+
+    // If we don't have a global_identifier list yet, set this so next contexts will use it as it's globals
+    if (! global_identifiers) {
+        global_identifiers = tmp->local_identifiers;
+    }
 
     // Prefetch the current context
     t_vm_context *ctx = get_current_vm_context();
@@ -326,7 +425,7 @@ dispatch:
         opcode = get_next_opcode();
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
-            saffire_error("VM: Reached reserved (0xFF) opcode. Halting.\n");
+            saffire_vm_error("VM: Reached reserved (0xFF) opcode. Halting.\n");
         }
 
         // If high bit is set, get operand
@@ -338,14 +437,6 @@ dispatch:
 #endif
 
         switch (opcode) {
-            // @TODO: Remove these debug opcodes
-            case VM_PRINT_VAR :
-                obj1 = stack_pop();
-                obj2 = object_find_method(obj1, "print");
-                object_call(obj1, obj2, 0);
-                goto dispatch;
-                break;
-
             // Removes SP-0
             case VM_POP_TOP :
                 obj1 = stack_pop();
@@ -383,10 +474,10 @@ dispatch:
 
             // Rotate SP-0 to SP-3
             case VM_ROT_FOUR :
-                obj1 = stack_fetch_top();
-                obj2 = stack_fetch_top();
-                obj3 = stack_fetch_top();
-                obj4 = stack_fetch_top();
+                obj1 = stack_pop();
+                obj2 = stack_pop();
+                obj3 = stack_pop();
+                obj4 = stack_pop();
                 stack_push(obj1);
                 stack_push(obj2);
                 stack_push(obj3);
@@ -399,25 +490,25 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Load a global variable
+            // Load a global identifier
             case VM_LOAD_GLOBAL :
-                obj1 = get_global_variable(oparg1);
+                obj1 = get_global_identifier(oparg1);
                 object_inc_ref(obj1);
                 stack_push(obj1);
                 goto dispatch;
                 break;
 
-            // store SP+0 as a global variable
+            // store SP+0 as a global identifier
             case VM_STORE_GLOBAL :
                 obj1 = stack_pop();
                 object_dec_ref(obj1);
-                set_global_variable(oparg1, obj1);
+                set_global_identifier(oparg1, obj1);
                 goto dispatch;
                 break;
 
-            // Remove global variable
+            // Remove global identifier
             case VM_DELETE_GLOBAL :
-                set_global_variable(oparg1, NULL);
+                set_global_identifier(oparg1, NULL);
                 goto dispatch;
                 break;
 
@@ -429,18 +520,18 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Store SP+0 into variable (either local or global)
-            case VM_STORE_VAR :
+            // Store SP+0 into identifier (either local or global)
+            case VM_STORE_ID :
                 obj1 = stack_pop();
                 object_dec_ref(obj1);
-                set_variable(oparg1, obj1);
+                set_identifier(oparg1, obj1);
                 goto dispatch;
                 break;
                 // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
 
-            // Load and push variable onto stack (either local or global)
-            case VM_LOAD_VAR :
-                obj1 = get_variable(oparg1);
+            // Load and push identifier onto stack (either local or global)
+            case VM_LOAD_ID :
+                obj1 = get_identifier(oparg1);
                 object_inc_ref(obj1);
                 stack_push(obj1);
                 goto dispatch;
@@ -448,35 +539,91 @@ dispatch:
 
             //
             case VM_BINARY_ADD :
-                obj1 = stack_pop();
-                object_dec_ref(obj1);
-                obj2 = stack_pop();
-                object_dec_ref(obj2);
-
-                if (obj1->type != obj2->type) {
-                    saffire_error("Can only add equal types :/");
-                }
-                obj3 = object_operator(obj2, OPERATOR_ADD, 0, 1, obj1);
-
-                object_inc_ref(obj3);
-                stack_push(obj3);
+                CALL_OP(OPERATOR_ADD, 0, "Can only add equal types");
                 goto dispatch;
                 break;
 
-            //
-            case VM_BINARY_SUBTRACT :
-                obj1 = stack_pop();
-                object_dec_ref(obj1);
-                obj2 = stack_pop();
-                object_dec_ref(obj2);
+            case VM_BINARY_SUB :
+                CALL_OP(OPERATOR_SUB, 0, "Can only subtract equal types");
+                goto dispatch;
+                break;
 
-                if (obj1->type != obj2->type) {
-                    saffire_error("Can only sub equal types :/");
-                }
-                obj3 = object_operator(obj2, OPERATOR_SUB, 0, 1, obj1);
+            case VM_BINARY_MUL :
+                CALL_OP(OPERATOR_MUL, 0, "Can only multiply equal types");
+                goto dispatch;
+                break;
 
-                object_inc_ref(obj3);
-                stack_push(obj3);
+            case VM_BINARY_DIV :
+                CALL_OP(OPERATOR_DIV, 0, "Can only divide equal types");
+                goto dispatch;
+                break;
+
+            case VM_BINARY_SHL :
+                CALL_OP(OPERATOR_SHL, 0, "Can only shift equal types");
+                goto dispatch;
+                break;
+
+            case VM_BINARY_SHR :
+                CALL_OP(OPERATOR_SHR, 0, "Can only shift equal types");
+                goto dispatch;
+                break;
+
+            case VM_BINARY_OR :
+                CALL_OP(OPERATOR_OR, 0, "Can only 'binary or' equal types");
+                goto dispatch;
+                break;
+
+            case VM_BINARY_AND :
+                CALL_OP(OPERATOR_AND, 0, "Can only 'binary and' equal types");
+                goto dispatch;
+                break;
+
+            case VM_BINARY_XOR :
+                CALL_OP(OPERATOR_XOR, 0, "Can only 'binary xor' equal types")
+                goto dispatch;
+                break;
+            case VM_INPLACE_ADD :
+                CALL_OP(OPERATOR_ADD, 1, "Can only add equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_SUB :
+                CALL_OP(OPERATOR_SUB, 1, "Can only subtract equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_MUL :
+                CALL_OP(OPERATOR_MUL, 1, "Can only multiply equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_DIV :
+                CALL_OP(OPERATOR_DIV, 1, "Can only divide equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_SHL :
+                CALL_OP(OPERATOR_SHL, 1, "Can only shift equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_SHR :
+                CALL_OP(OPERATOR_SHR, 1, "Can only shift equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_OR :
+                CALL_OP(OPERATOR_OR, 1, "Can only 'binary or' equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_AND :
+                CALL_OP(OPERATOR_AND, 1, "Can only 'binary and' equal types");
+                goto dispatch;
+                break;
+
+            case VM_INPLACE_XOR :
+                CALL_OP(OPERATOR_XOR, 1, "Can only 'binary xor' equal types")
                 goto dispatch;
                 break;
 
@@ -535,13 +682,13 @@ dispatch:
 
             // Calls method SP+0 from object SP+1 with OP+0 args starting from SP+2
             case VM_CALL_METHOD :
-                obj1 = stack_fetch_top();   // Self
+                obj1 = stack_pop();   // Self
                 obj2 = object_find_method(obj1, (char *)get_constant_literal(oparg1));
 
                 // Create argument list
                 t_dll *dll = dll_init();
-                for (int i=0; i!=oparg1; i++) {
-                    obj3 = stack_fetch_top();
+                for (int i=0; i!=oparg2; i++) {
+                    obj3 = stack_pop();
                     object_dec_ref(obj3);
                     dll_append(dll, obj3);
                 }
@@ -552,6 +699,31 @@ dispatch:
                 stack_push(obj3);
 
                 dll_free(dll);
+
+                goto dispatch;
+                break;
+
+            case VM_IMPORT :
+                // Fetch the module to import
+                obj1 = stack_pop();
+                object_dec_ref(obj1);
+                char *module = OBJ2STR(obj1);
+
+                // Fetch class
+                obj1 = stack_pop();
+                object_dec_ref(obj1);
+                char *class = OBJ2STR(obj1);
+
+                // Fetch class alias
+                obj2 = stack_pop();
+                object_dec_ref(obj2);
+                char *alias = OBJ2STR(obj2);
+
+                printf("Importing %s as %s from %s\n", class, alias, module);
+
+                obj3 = _import(module, class, alias);
+                object_inc_ref(obj3);
+                stack_push(obj3);
 
                 goto dispatch;
                 break;

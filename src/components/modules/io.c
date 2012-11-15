@@ -25,7 +25,6 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <wchar.h>
 #include "modules/module_api.h"
 #include "interpreter/errors.h"
 #include "objects/object.h"
@@ -33,8 +32,6 @@
 #include "objects/string.h"
 #include "general/dll.h"
 #include "general/smm.h"
-
-extern char *wctou8(const wchar_t *wstr, long len);
 
 #ifdef __DEBUG
 #define ANSI_BRIGHTRED "\33[41;33;1m"
@@ -60,9 +57,8 @@ static t_object *io_print(t_object *self, t_dll *dll) {
             obj = object_call(obj, obj2, 0);
     }
 
-    char *str = wctou8(((t_string_object *)obj)->value, ((t_string_object *)obj)->char_length);
+    char *str = ((t_string_object *)obj)->value;
     printf(ANSI_BRIGHTRED "%s" ANSI_RESET "\n", str);
-    smm_free(str);
 
     RETURN_SELF;
 }
@@ -79,8 +75,7 @@ static t_object *io_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *io_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"IO.sprintf\n";
-    RETURN_STRING(tmp);
+    RETURN_STRING("IO.sprintf\n");
 }
 
 /**
@@ -103,8 +98,7 @@ static t_object *console_printf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_sprintf(t_object *self, t_dll *args) {
-    wchar_t tmp[] = L"console.sprintf\n";
-    RETURN_STRING(tmp);
+    RETURN_STRING("console.sprintf\n");
 }
 
 

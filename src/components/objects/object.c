@@ -38,6 +38,7 @@
 #include "objects/regex.h"
 #include "objects/method.h"
 #include "objects/code.h"
+#include "objects/hash.h"
 #include "general/smm.h"
 #include "general/dll.h"
 #include "interpreter/errors.h"
@@ -53,7 +54,7 @@
 
 
 // Object type string constants
-const char *objectTypeNames[10] = { "object", "code", "method", "base", "boolean", "null", "numerical", "regex", "string" };
+const char *objectTypeNames[11] = { "object", "code", "method", "base", "boolean", "null", "numerical", "regex", "string", "hash" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -365,10 +366,8 @@ t_object *object_new(t_object *obj, ...) {
     va_end(arg_list);
 
 #ifdef __DEBUG
-    char addr[10];
-    sprintf(addr, "%08X", (unsigned int)res);
-    if (! ht_find(object_hash, (char *)&addr)) {
-        ht_add(object_hash, (char *)&addr, res);
+    if (! ht_num_find(object_hash, (unsigned int)res)) {
+        ht_num_add(object_hash, (unsigned int)res, res);
     }
 #endif
 
@@ -392,6 +391,7 @@ void object_init() {
     object_regex_init();
     object_code_init();
     object_method_init();
+    object_hash_init();
 
 #ifdef __DEBUG
     char addr[10];
@@ -420,6 +420,7 @@ void object_fini() {
     object_regex_fini();
     object_code_fini();
     object_method_fini();
+    object_hash_fini();
 }
 
 

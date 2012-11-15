@@ -26,8 +26,7 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
-#include <wctype.h>
+#include <stdlib.h>
 #include "debug.h"
 #include "objects/object.h"
 #include "objects/base.h"
@@ -48,20 +47,6 @@
 #define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHED_MIN + 1
 
 t_numerical_object *numerical_cache[NUMERICAL_CACHED_CNT];
-
-
-static wchar_t *itow (unsigned long int val) {
-    static wchar_t buf[30];
-    wchar_t *wcp = &buf[29];
-    *wcp = L'\0';
-    while (val != 0) {
-        *--wcp = btowc ('0' + val % 10);
-        val /= 10;
-    }
-    if (wcp == &buf[29])
-        *--wcp = L'0';
-    return wcp;
-}
 
 
 /* ======================================================================
@@ -129,7 +114,8 @@ SAFFIRE_METHOD(numerical, conv_numerical) {
 }
 
 SAFFIRE_METHOD(numerical, conv_string) {
-    wchar_t *tmp = itow(self->value);
+    char tmp[32];       // @TODO: Should be enough??
+    snprintf(tmp, 31, "%ld", self->value);
     RETURN_STRING(tmp);
 }
 

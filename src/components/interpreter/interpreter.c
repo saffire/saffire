@@ -52,8 +52,7 @@ static t_snode *_interpreter(t_ast_element *p);
 // A stack maintained by the AST which holds the current line for the current AST
 t_dll *lineno_stack;
 
-extern char *wctou8(const wchar_t *wstr, long len);
-#define OBJ2STR(_obj_) wctou8(((t_string_object *)_obj_)->value, ((t_string_object *)_obj_)->char_length)
+#define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
 
 
 t_stack *scope_stack;
@@ -268,7 +267,6 @@ static t_snode *_interpreter(t_ast_element *p) {
     int initial_loop;
     t_ast_element *hte;
     char *ctx_name, *name;
-    wchar_t *wchar_tmp;
     t_dll *dll;
     t_scope *scope;
 
@@ -291,18 +289,8 @@ static t_snode *_interpreter(t_ast_element *p) {
             break;
         case typeAstString :
             DEBUG_PRINT("new string object: '%s'\n", p->string.value);
-
-            // Allocate enough room to hold string in wchar and convert
-            int len = strlen(p->string.value) * sizeof(wchar_t);
-            wchar_tmp = (wchar_t *)smm_malloc(len * sizeof(wchar_t));
-            memset(wchar_tmp, 0, len * sizeof(wchar_t));
-            mbstowcs(wchar_tmp, p->string.value, strlen(p->string.value));
-
             // create string object
-            obj = object_new(Object_String, wchar_tmp);
-
-            // Free tmp wide string
-            smm_free(wchar_tmp);
+            obj = object_new(Object_String, p->string.value);
             RETURN_SNODE_OBJECT(obj);
             break;
 

@@ -99,18 +99,18 @@ static void _new_constant_long(t_bytecode *bc, long l) {
 
 
 /**
- * Add a new variable to the bytecode structure
+ * Add a new identifier to the bytecode structure
  */
-static void _new_variable(t_bytecode *bc, char *var) {
-    // Setup variable
-    t_bytecode_variable *c = smm_malloc(sizeof(t_bytecode_variable));
+static void _new_name(t_bytecode *bc, char *var) {
+    // Setup identifier
+    t_bytecode_identifier *c = smm_malloc(sizeof(t_bytecode_identifier));
     c->len = strlen(var);
     c->s = var;  // @TODO: strdupped?
 
-    // Add variable
-    bc->variables = smm_realloc(bc->variables, sizeof(t_bytecode_variable *) * (bc->variables_len + 1));
-    bc->variables[bc->variables_len] = c;
-    bc->variables_len++;
+    // Add identifier
+    bc->identifiers = smm_realloc(bc->identifiers, sizeof(t_bytecode_identifier *) * (bc->identifiers_len + 1));
+    bc->identifiers[bc->identifiers_len] = c;
+    bc->identifiers_len++;
 }
 
 
@@ -139,14 +139,14 @@ static void _write_buffer(char **buf, int *bufptr, int size, void *data) {
 /**
  * Converts a binary stream to a bytecode structure (NOTE: bytecode must be an unallocated pointer!)
  */
-static t_bytecode *bytecode_bc2bin(int bincode_off, char *bincode) {
+static t_bytecode *bytecode_bc2bin(char *bincode) {
     int pos = 0;
     char *s; long l; int j;
     int clen, vlen;
 
     // Initialize new bytecode structure
     t_bytecode *bytecode = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
-    bzero(bytecode, sizeof(bytecode));
+    bzero(bytecode, sizeof(t_bytecode));
 
     // Read headers
     _read_buffer(bincode, &pos, sizeof(uint32_t), &bytecode->stack_size);
@@ -181,16 +181,16 @@ static t_bytecode *bytecode_bc2bin(int bincode_off, char *bincode) {
         }
     }
 
-    // Read all variables
+    // Read all identifiers
     _read_buffer(bincode, &pos, sizeof(int), &vlen);
     for (int i=0; i!=vlen; i++) {
         _read_buffer(bincode, &pos, sizeof(int), &j);
 
-        // Variable strings do not have a trailing \0 on disk.
+        // identifier strings do not have a trailing \0 on disk.
         s = smm_malloc(j+1);
         _read_buffer(bincode, &pos, j, s);
         s[j] = '\0';
-        _new_variable(bytecode, s);
+        _new_name(bytecode, s);
     }
 
     return bytecode;
@@ -225,11 +225,11 @@ static int bytecode_bin2bc(t_bytecode *bytecode, int *bincode_off, char **bincod
         }
     }
 
-    // Write variables
-    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->variables_len);
-    for (int i=0; i!=bytecode->variables_len; i++) {
-        _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->variables[i]->len);
-        _write_buffer(bincode, bincode_off, bytecode->variables[i]->len, bytecode->variables[i]->s);
+    // Write identifiers
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->identifiers_len);
+    for (int i=0; i!=bytecode->identifiers_len; i++) {
+        _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->identifiers[i]->len);
+        _write_buffer(bincode, bincode_off, bytecode->identifiers[i]->len, bytecode->identifiers[i]->s);
     }
 
     return 1;
@@ -254,25 +254,6 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     char *bincode = (char *)smm_malloc(header.bytecode_len);
     fseek(f, header.bytecode_offset, SEEK_SET);
     fread(bincode, header.bytecode_len, 1, f);
-
-    // Uncompress bincode block
-    unsigned int bzip_buf_len = 0;
-    char *bzip_buf = NULL;
-    if (! bzip2_decompress(&bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-        saffire_compile_error("Error while decompressing data");
-    }
-
-    // Sanity check. These should match
-    if (bzip_buf_len != header.bytecode_uncompressed_len) {
-        saffire_compile_error("Header information does not match with the size of the uncompressed data block");
-    }
-
-    // Free unpacked binary code. We don't need it anymore
-    smm_free(bincode);
-
-    // Set bincode data to the uncompressed block
-    bincode = bzip_buf;
-    header.bytecode_len = bzip_buf_len;
 
 
     // There is a signature present. Give warning when the user does not want to check it
@@ -300,8 +281,27 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
     fclose(f);
 
+    // Uncompress bincode block
+    unsigned int bzip_buf_len = header.bytecode_uncompressed_len;
+    char *bzip_buf = smm_malloc(bzip_buf_len);
+    if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
+        saffire_compile_error("Error while decompressing data");
+    }
+
+    // Sanity check. These should match
+    if (bzip_buf_len != header.bytecode_uncompressed_len) {
+        saffire_compile_error("Header information does not match with the size of the uncompressed data block");
+    }
+
+    // Free unpacked binary code. We don't need it anymore
+    smm_free(bincode);
+
+    // Set bincode data to the uncompressed block
+    bincode = bzip_buf;
+    header.bytecode_len = bzip_buf_len;
+
     // Convert binary to bytecode
-    t_bytecode *bc = bytecode_bc2bin(header.bytecode_len, bincode);
+    t_bytecode *bc = bytecode_bc2bin(bincode);
     if (! bc) {
         saffire_compile_error("Could not convert bytecode data");
     }
@@ -335,6 +335,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     struct stat sb;
     if (! stat(source_filename, &sb)) {
         header.timestamp = sb.st_mtime;
+        printf("TIMESTAMP: %d\n", header.timestamp);
     } else {
         header.timestamp = 0;
     }
@@ -396,32 +397,96 @@ void bytecode_free(t_bytecode *bc) {
  */
 t_bytecode *generate_dummy_bytecode(void) {
     char dummy_code[] =
+//                        // import io as io from io; (or: import io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x7F"                      //    IMPORT
+//                        "\x80\x03\x00\x00\x00"      //    STORE_ID       3 (io)
+//
+//
+//                        // import console as the_con, io as io from io;
+//                        "\x81\x04\x00\x00\x00"      //    LOAD_CONST     4 (console)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x80\x04\x00\x00\x00"      //    STORE_ID       4 (the_con)
+//
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST     3 (io)
+//                        "\x80\x04\x00\x00\x00"      //    STORE_ID       4 (the_con)
+//                        "\x7F"                      //    IMPORT
+
                         // a = 0x1234;
-                        "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST   0 (0x1234)
-                        "\x80\x00\x00\x00\x00"      //    5  STORE_VAR    0 (a)
+                        "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST    0 (0x1234)
+                        "\x80\x00\x00\x00\x00"      //    5  STORE_ID      0 (a)
                         // b = 0x5678;
                         "\x81\x01\x00\x00\x00"      //   10  LOAD_CONST   1 (0x5678)
-                        "\x80\x01\x00\x00\x00"      //   15  STORE_VAR    1 (b)
+                        "\x80\x01\x00\x00\x00"      //   15  STORE_ID     1 (b)
+
+                        // c = a + b;
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID       0 (b)
+                        "\x17"                      //   20  BINARY_ADD
+                        "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
+
+                        // c = c + c;
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
+                        "\x17"                      //   20  BINARY_ADD
+                        "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
+
+
+                        // c.print();
+                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID       0 (c)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+
+
+                        "\x82\x05\x00\x00\x00"      //       LOAD_ID      4 (::_sfl::io)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+
+                        "\x00"                      //   69  STOP
+
                         // a.print();
-                        "\x82\x00\x00\x00\x00"      //   20  LOAD_VAR     0 (a)
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x00\x00\x00\x00"
+
+                        "\x83\x0E\x00\x00\x00"      //   JMP FORWARD
+
                         // b.print();
-                        "\x82\x01\x00\x00\x00"      //   20  LOAD_VAR     1 (b)
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID       1 (b)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x00\x00\x00\x00"
+
+
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
+                        "\x84\x0E\x00\x00\x00"      //   JUMP_IF_TRUE  1:
+
+                        // b.print();
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID       1 (b)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+                        // 1:
+                        // a.print();
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x00\x00\x00\x00"
+
+                        "\x00"                      //   69  STOP
+
+
                         // (a, b) = (b, a)
-                        "\x82\x00\x00\x00\x00"      //   36  LOAD_VAR     0 (a)
-                        "\x82\x01\x00\x00\x00"      //   41  LOAD_VAR     1 (b)
+                        "\x82\x00\x00\x00\x00"      //   36  LOAD_ID       0 (a)
+                        "\x82\x01\x00\x00\x00"      //   41  LOAD_ID       1 (b)
                         "\x02"                      //   46  ROT_TWO
-                        "\x80\x00\x00\x00\x00"      //   47  STORE_VAR    0 (a)
-                        "\x80\x01\x00\x00\x00"      //   52  STORE_VAR    1 (b)
+                        "\x80\x00\x00\x00\x00"      //   47  STORE_ID     0 (a)
+                        "\x80\x01\x00\x00\x00"      //   52  STORE_ID     1 (b)
                         // a.print()
-                        "\x82\x00\x00\x00\x00"      //   20  LOAD_VAR     0 (a)
+                        "\x82\x00\x00\x00\x00"      //   20  LOAD_ID       0 (a)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x00\x00\x00\x00"
                         // b.print()
-                        "\x82\x01\x00\x00\x00"      //   20  LOAD_VAR     1 (b)
+                        "\x82\x01\x00\x00\x00"      //   20  LOAD_ID       1 (b)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x00\x00\x00\x00"
 
@@ -435,19 +500,39 @@ t_bytecode *generate_dummy_bytecode(void) {
     bc->code = smm_malloc(bc->code_len);
     memcpy(bc->code, dummy_code, bc->code_len);
 
-    bc->constants = NULL;   // Important to start constants and variables on NULL
-    bc->variables = NULL;
+    bc->constants = NULL;   // Important to start constants and identifiers on NULL
+    bc->identifiers = NULL;
 
     // constants
     _new_constant_long(bc, 0x1234);
     _new_constant_long(bc, 0x5678);
     _new_constant_string(bc, "print");
-    _new_variable(bc, "a");
-    _new_variable(bc, "b");
+    _new_constant_string(bc, "io");
+    _new_constant_string(bc, "console");
+    _new_name(bc, "a");
+    _new_name(bc, "b");
+    _new_name(bc, "c");
+    _new_name(bc, "io");
+    _new_name(bc, "the_con");
+    _new_name(bc, "::_sfl::io");
 
     return bc;
 }
 
+
+/**
+ *
+ */
+int bytecode_get_timestamp(const char *path) {
+    t_bytecode_binary_header header;
+
+    // Read header
+    FILE *f = fopen(path, "rb");
+    fread(&header, sizeof(header), 1, f);
+    fclose(f);
+
+    return header.timestamp;
+}
 
 /**
  *

@@ -41,7 +41,6 @@
     #define BYTECODE_CONST_CODE          2
     #define BYTECODE_CONST_OBJECT        3
 
-
     #define BYTECODE_FLAG_SIGNED           1        // Code is signed
 
     typedef struct _bytecode_binary_header {
@@ -70,10 +69,10 @@
     } t_bytecode_constant;
 
 
-    typedef struct _bytecode_variable_header {
+    typedef struct _bytecode_identifier_header {
         int  len;           // Length of data
-        char *s;            // Name of the variable
-    } t_bytecode_variable;
+        char *s;            // Name of the identifier
+    } t_bytecode_identifier;
 
 
     typedef struct _bytecode {
@@ -85,8 +84,8 @@
         int constants_len;                  // Number of constants
         t_bytecode_constant **constants;    // Pointer to constant array
 
-        int variables_len;                  // Number of variables
-        t_bytecode_variable **variables;    // Pointer to variables array
+        int identifiers_len;                  // Number of identifiers
+        t_bytecode_identifier **identifiers;  // Pointer to identifier array
     } t_bytecode;
 
 
@@ -98,6 +97,7 @@
     void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
     t_bytecode *bytecode_load(const char *filename, int verify_signature);
 
+    int bytecode_get_timestamp(const char *path);
     int bytecode_is_valid_file(const char *path);
     int bytecode_is_signed(const char *path);
     int bytecode_remove_signature(const char *path);

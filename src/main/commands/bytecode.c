@@ -44,6 +44,7 @@
 
 char *gpg_key = NULL;
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
+int flag_no_verify = 0;
 
 /**
  * Compiles single file
@@ -200,6 +201,7 @@ static int do_unsign(void) {
     return 0;
 }
 
+
 /**
  *
  */
@@ -219,6 +221,7 @@ static int do_info(void) {
 
     return 0;
 }
+
 
 /**
  *
@@ -248,6 +251,64 @@ static int do_compile(void) {
 }
 
 
+/**
+ *
+ */
+static int do_exec(void) {
+    struct stat st_src;
+    struct stat st_dst;
+    char *source_path = saffire_getopt_string(0);
+
+    if (stat(source_path, &st_src) != 0) {
+        printf("Cannot exec: source file not found\n");
+        return 1;
+    }
+
+    // Load BC and execute
+    char *dest_file = replace_extension(source_path, ".sf", ".sfc");
+    printf("Loading file: %s\n", dest_file);
+
+
+    if (stat(dest_file, &st_dst) != 0) {
+        printf("Cannot exec: bytecode file not found\n");
+        return 1;
+    }
+
+    int timestamp = bytecode_get_timestamp(dest_file);
+    if (timestamp != st_src.st_mtime) {
+        printf("Warning: Timestamp recorded in bytecode differs from the sourcefile!\n");
+    }
+
+    // Get verification flag, and override when we have entered --no-verify flag
+    int verify = config_get_bool("bytecode.verify", 1);
+    if (flag_no_verify) verify = 0;
+
+    t_bytecode *bc = bytecode_load(dest_file, verify);
+    smm_free(dest_file);
+
+
+
+    // Init stuff
+    setlocale(LC_ALL,"");
+    context_init();
+    vm_init();
+
+
+    printf("Executing...\n");
+    int ret = vm_execute(bc);
+    bytecode_free(bc);
+
+
+    // Fini stuff
+    module_fini();
+    object_fini();
+    context_fini();
+
+    return ret;
+}
+
+
+
 /****
  * Argument Parsing and action definitions
  ***/
@@ -264,6 +325,7 @@ static const char help[]  = "Compiles a Saffire script or scripts without runnin
                             "       --key <key>      Use this key for signing the code\n"
                             "   unsign               Remove signature from bytecode file or directory\n"
                             "   info                 Display information on bytecode file\n"
+                            "   exec                 Executes bytecode\n"
                             "\n"
                             "If the --[no-]sign option isn't given, the bytecode is signed according to the configuration settings.\n"
                             "\n";
@@ -285,6 +347,13 @@ static void opt_no_sign(void *data) {
     }
     flag_sign = 2;
 }
+static void opt_no_verify(void *data) {
+    flag_no_verify = 1;
+}
+
+static struct saffire_option exec_options[] = {
+    { "no-verify", "", no_argument, opt_no_verify },
+};
 
 static struct saffire_option compile_options[] = {
     { "sign", "", no_argument, opt_sign },
@@ -300,6 +369,7 @@ static struct saffire_option sign_options[] = {
 
 /* Config actions */
 static struct command_action command_actions[] = {
+    { "exec", "s", do_exec, exec_options },
     { "compile", "s", do_compile, compile_options },
     { "sign", "s", do_sign, sign_options },
     { "unsign", "s", do_unsign, NULL },
