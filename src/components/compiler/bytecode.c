@@ -397,22 +397,22 @@ void bytecode_free(t_bytecode *bc) {
  */
 t_bytecode *generate_dummy_bytecode(void) {
     char dummy_code[] =
-//                        // import io as io from io; (or: import io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
-//                        "\x7F"                      //    IMPORT
-//                        "\x80\x03\x00\x00\x00"      //    STORE_ID      3 (io)
-//
-//
-//                        // import console as the_con, io as io from io;
-//                        "\x81\x04\x00\x00\x00"      //    LOAD_CONST    4 (console)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
-//                        "\x80\x04\x00\x00\x00"      //    STORE_ID      4 (the_con)
-//
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
-//                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
-//                        "\x80\x04\x00\x00\x00"      //    STORE_ID      4 (the_con)
-//                        "\x7F"                      //    IMPORT
+                        // import io as io from ::sfl::io; (or: import io)
+                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+                        "\x81\x05\x00\x00\x00"      //    LOAD_CONST    5 (::sfl::io)
+                        "\x7F"                      //    IMPORT
+                        "\x80\x03\x00\x00\x00"      //    STORE_ID      3 (io)
+
+                        // import console as the_con, io as new_io from ::sfl::io;
+                        "\x81\x04\x00\x00\x00"      //    LOAD_CONST    4 (console)
+                        "\x81\x05\x00\x00\x00"      //    LOAD_CONST    5 (::sfl::io)
+                        "\x7F"                      //    IMPORT
+                        "\x80\x04\x00\x00\x00"      //    STORE_ID      4 (the_con)
+
+                        "\x81\x03\x00\x00\x00"      //    LOAD_CONST    3 (io)
+                        "\x81\x05\x00\x00\x00"      //    LOAD_CONST    3 (::sfl::io)
+                        "\x7F"                      //    IMPORT
+                        "\x80\x06\x00\x00\x00"      //    STORE_ID      4 (new_io)
 
                         // a = 0x1234;
                         "\x81\x00\x00\x00\x00"      //    0  LOAD_CONST   0 (0x1234)
@@ -427,23 +427,35 @@ t_bytecode *generate_dummy_bytecode(void) {
                         "\x17"                      //   20  BINARY_ADD
                         "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
 
-                        // c = c + c;
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
-                        "\x17"                      //   20  BINARY_ADD
-                        "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
-
-
-                        // c.print();
-                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
-                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00\x00\x00"
-
-
+                        // newio.print(c);
                         "\x82\x02\x00\x00\x00"      //       LOAD_ID      2 (c)
-                        "\x82\x05\x00\x00\x00"      //       LOAD_CONST   5 (::_sfl::io)
+                        "\x82\x06\x00\x00\x00"      //       LOAD_ID      6 (new_io)
                         "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
                             "\x01\x00\x00\x00"
+
+                        // the_con.print(c);
+                        "\x82\x02\x00\x00\x00"      //       LOAD_ID      2 (c)
+                        "\x82\x04\x00\x00\x00"      //       LOAD_ID      6 (the_con)
+                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+                            "\x01\x00\x00\x00"
+
+
+//                        // c = c + c;
+//                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
+//                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
+//                        "\x17"                      //   20  BINARY_ADD
+//                        "\x80\x02\x00\x00\x00"      //   15  STORE_ID     1 (c)
+//
+//                        // c.print();
+//                        "\x82\x02\x00\x00\x00"      //   20  LOAD_ID      0 (c)
+//                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+//                            "\x00\x00\x00\x00"
+//
+//
+//                        "\x82\x02\x00\x00\x00"      //       LOAD_ID      2 (c)
+//                        "\x82\x05\x00\x00\x00"      //       LOAD_ID      5 (::_sfl::io)
+//                        "\xC0\x02\x00\x00\x00"      //   25  CALL_METHOD  2 (print), 0
+//                            "\x01\x00\x00\x00"
 
                         "\x00"                      //   69  STOP
 
@@ -510,12 +522,15 @@ t_bytecode *generate_dummy_bytecode(void) {
     _new_constant_string(bc, "print");
     _new_constant_string(bc, "io");
     _new_constant_string(bc, "console");
+    _new_constant_string(bc, "::_sfl::io");
+    _new_constant_string(bc, "the_con");
     _new_name(bc, "a");
     _new_name(bc, "b");
     _new_name(bc, "c");
     _new_name(bc, "io");
     _new_name(bc, "the_con");
     _new_name(bc, "::_sfl::io::io");
+    _new_name(bc, "new_io");
 
     return bc;
 }

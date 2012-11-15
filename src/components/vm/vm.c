@@ -38,32 +38,6 @@
 #include "interpreter/errors.h"
 #include "modules/module_api.h"
 
-static t_object *_import(char *module, char *class, char *alias) {
-    t_object *obj = NULL;
-
-//    // Check if variable is free
-//    if (si_find_var_in_context(s2, NULL)) {
-//        saffire_error("A variable named %s is already present or imported.", alias);
-//    }
-//
-//    // Find class in context
-//    ctx = si_get_context(ctx_name);
-//    if (ctx == NULL) {
-//        saffire_error("Cannot find context: %s", ctx_name);
-//    }
-//    obj = si_find_var_in_context(classname, ctx);
-//    if (! obj) {
-//        saffire_error("Cannot find class %s inside context: %s", classname, ctx_name);
-//    }
-
-    return obj;
-
-//    // Add the object to the current context as the alias variable
-//    si_create_var_in_context(alias, NULL, obj, CTX_CREATE_ONLY);
-}
-
-
-
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
 
 /**
@@ -406,6 +380,18 @@ static char *get_name(int idx) {
 /**
  *
  */
+static t_object *_import(char *module, char *class) {
+    char tmp[100];
+    snprintf(tmp, 99, "%s::%s", module, class);
+
+    t_object *obj = get_identifier(tmp);
+    return obj;
+}
+
+
+/**
+ *
+ */
 int vm_execute(t_bytecode *source_bc) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
@@ -728,14 +714,9 @@ dispatch:
                 object_dec_ref(obj1);
                 char *class = OBJ2STR(obj1);
 
-                // Fetch class alias
-                obj2 = stack_pop();
-                object_dec_ref(obj2);
-                char *alias = OBJ2STR(obj2);
+                printf("Importing %s from %s\n", class, module);
 
-                printf("Importing %s as %s from %s\n", class, alias, module);
-
-                obj3 = _import(module, class, alias);
+                obj3 = _import(module, class);
                 object_inc_ref(obj3);
                 stack_push(obj3);
 
