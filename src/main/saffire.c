@@ -45,20 +45,18 @@ extern struct command_info info_repl;
 extern struct command_info info_fastcgi;
 extern struct command_info info_config;
 extern struct command_info info_exec;
-extern struct command_info info_compile;
-extern struct command_info info_sign;
+extern struct command_info info_bytecode;
 
 // Each saffire "command" must have a entry here, otherwise it's not known.
 struct command commands[] = {
-                                        { "help",    &info_help },
-                                        { "version", &info_version },
-                                        { "lint",    &info_lint },
-                                        { "repl",    &info_repl },
-                                        { "fastcgi", &info_fastcgi },
-                                        { "config",  &info_config },
-                                        { "exec",    &info_exec },
-                                        { "compile", &info_compile },
-                                        { "sign",    &info_sign },
+                                        { "help",     &info_help },
+                                        { "version",  &info_version },
+                                        { "lint",     &info_lint },
+                                        { "repl",     &info_repl },
+                                        { "fastcgi",  &info_fastcgi },
+                                        { "config",   &info_config },
+                                        { "exec",     &info_exec },
+                                        { "bytecode", &info_bytecode },
                                         { NULL, NULL }
                                     };
 

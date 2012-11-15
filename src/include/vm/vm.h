@@ -28,7 +28,11 @@
 #define __VM_H__
 
     #include "compiler/bytecode.h"
+    #include "objects/hash.h"
 
+    t_hash_object *builtin_identifiers;
+
+    void vm_init(void);
     int vm_execute(t_bytecode *source_bc);
 
 #endif

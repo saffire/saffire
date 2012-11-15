@@ -73,7 +73,6 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     write(pipe[0], buffer, buffer_len);
     close(pipe[0]);
 
-
     // Output contents from childs STDERR
     char buf[256];
     bzero(buf, 256);

@@ -125,7 +125,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/string.c \
                        components/objects/regex.c \
                        components/objects/code.c \
-                       components/objects/method.c
+                       components/objects/method.c \
+                       components/objects/hash.c
 
 
 ########################################################################
@@ -162,10 +163,10 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD = $(SAFFIRE_LIBS) -lpcre -lfcgi -lbz2 -laugeas
+saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS)
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
                   main/commands/exec.c main/commands/repl.c main/commands/help.c \
-                  main/commands/version.c main/commands/compile.c main/commands/sign.c
+                  main/commands/version.c main/commands/bytecode.c
 

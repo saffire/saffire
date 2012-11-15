@@ -34,7 +34,7 @@
 void *smm_malloc(size_t size) {
     void *ptr = malloc(size);
     if (ptr == NULL) {
-        fprintf(stderr, "Error while allocating memory (%d bytes)!\n", size);
+        fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
         exit(1);
     }
     return ptr;

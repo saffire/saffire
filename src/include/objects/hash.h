@@ -24,11 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __BZIP2_H__
-#define __BZIP2_H__
+#ifndef __OBJECT_HASH_H__
+#define __OBJECT_HASH_H__
 
-    int bzip2_compress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
-    int bzip2_decompress(char *dest, unsigned int *dest_len, const char *source, unsigned int source_len);
-    //int bzip2_decompress(char **dest, unsigned int *dest_len, const char *source, unsigned int source_len);
+    #include "objects/object.h"
+    #include "general/hashtable.h"
+
+    #define RETURN_HASH(h)   RETURN_OBJECT(object_new(Object_Hash, h));
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        t_hash_table *ht;
+    } t_hash_object;
+
+    t_hash_object Object_Hash_struct;
+
+    #define Object_Hash   (t_object *)&Object_Hash_struct
+
+    void object_hash_init(void);
+    void object_hash_fini(void);
 
 #endif
