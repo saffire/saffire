@@ -335,10 +335,14 @@ static t_object *get_constant(int idx) {
 /**
  * Store object into the global identifier table
  */
-static void set_global_identifier(int idx, t_object *obj) {
+static void set_global_identifier(char *id, t_object *obj) {
     t_vm_context *ctx = get_current_vm_context();
 
-    ht_num_add(ctx->global_identifiers->ht, idx, obj);
+    if (obj == NULL) {
+        ht_remove(ctx->global_identifiers->ht, id);
+    } else {
+        ht_add(ctx->global_identifiers->ht, id, obj);
+    }
 }
 
 
@@ -356,41 +360,46 @@ static t_object *get_global_identifier(int idx) {
 /**
  * Store object into either the local or global identifier table
  */
-static void set_identifier(int idx, t_object *obj) {
+static void set_identifier(char *id, t_object *obj) {
     t_vm_context *ctx = get_current_vm_context();
 
-    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
-        saffire_vm_error("Trying to fetch from outside identifier range");
-    }
-
-    ht_num_add(ctx->local_identifiers->ht, idx, obj);
+    ht_add(ctx->local_identifiers->ht, id, obj);
 }
 
 
 /**
  * Return object from either the local or the global identifier table
  */
-static t_object *get_identifier(int idx) {
+static t_object *get_identifier(char *id) {
+    t_object *obj;
     t_vm_context *ctx = get_current_vm_context();
 
-    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
-        saffire_vm_error("Trying to fetch from outside identifier range");
+    obj = ht_find(ctx->local_identifiers->ht, id);
+    if (obj != NULL) return obj;
+
+    if (ctx->global_identifiers && ctx->global_identifiers->ht) {
+        obj = ht_find(ctx->global_identifiers->ht, id);
+        if (obj != NULL) return obj;
     }
 
-    return ht_num_find(ctx->local_identifiers->ht, idx);
+    obj = ht_find(ctx->builtin_identifiers->ht, id);
+    if (obj != NULL) return obj;
+
+    saffire_vm_error("Cannot find variable: %s\n", id);
+    return NULL;
 }
 
 
 /**
  *
  */
-static t_object *get_name(int idx) {
+static char *get_name(int idx) {
     t_vm_context *ctx = get_current_vm_context();
 
     if (idx < 0 || idx >= ctx->bc->identifiers_len) {
         saffire_vm_error("Trying to fetch from outside identifier range");
     }
-    RETURN_STRING(ctx->bc->identifiers[idx]->s);
+    return ctx->bc->identifiers[idx]->s;
 }
 
 
@@ -400,6 +409,7 @@ static t_object *get_name(int idx) {
 int vm_execute(t_bytecode *source_bc) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
+    register char *s1;
 
     // Create new context
     contexts = dll_init();
@@ -502,13 +512,15 @@ dispatch:
             case VM_STORE_GLOBAL :
                 obj1 = stack_pop();
                 object_dec_ref(obj1);
-                set_global_identifier(oparg1, obj1);
+                s1 = get_name(oparg1);
+                set_global_identifier(s1, obj1);
                 goto dispatch;
                 break;
 
             // Remove global identifier
             case VM_DELETE_GLOBAL :
-                set_global_identifier(oparg1, NULL);
+                s1 = get_name(oparg1);
+                set_global_identifier(s1, NULL);
                 goto dispatch;
                 break;
 
@@ -524,14 +536,16 @@ dispatch:
             case VM_STORE_ID :
                 obj1 = stack_pop();
                 object_dec_ref(obj1);
-                set_identifier(oparg1, obj1);
+                s1 = get_name(oparg1);
+                set_identifier(s1, obj1);
                 goto dispatch;
                 break;
                 // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                obj1 = get_identifier(oparg1);
+                s1 = get_name(oparg1);
+                obj1 = get_identifier(s1);
                 object_inc_ref(obj1);
                 stack_push(obj1);
                 goto dispatch;
