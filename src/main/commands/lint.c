@@ -24,16 +24,105 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <getopt.h>
+#include <glob.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 #include "commands/command.h"
+#include "compiler/ast.h"
+#include "general/parse_options.h"
+
+int is_file(char target[]);
+int is_directory(char target[]);
+int is_saffire_file(char filename[]);
 
 
 /**
  * Display version information
  */
 static int do_lint(void) {
-    printf("Lint checking is not yet implemented\n");
+
+	char *target = saffire_getopt_string(0);
+
+	if(is_file(target)) {
+		if ( ! is_saffire_file(target)) {
+			printf("%s is not a saffire file.\n", target);
+		} else {
+			t_ast_element *ast = ast_generate_from_file(target);
+			
+			if (ast == NULL) {
+				printf("%s contains syntax errors.\n", target);
+			} else {
+				printf("%s a syntactically correct saffire file.\n", target);
+			}
+		}
+	} else if (is_directory(target)) {
+		glob_t buffer;
+		int i;
+		int incorrectCount = 0;
+		char *extension = "/*.sfl";
+		char pattern[100];
+		strcat(pattern, target);
+		strcat(pattern, extension);
+		
+		glob(pattern, 0, NULL, &buffer);
+
+		printf("Checking path: %s...\n\n", pattern);
+
+		for (i = 0; i < buffer.gl_pathc; i++) {
+			printf("checking %s...\n", buffer.gl_pathv[i]);
+			t_ast_element *ast = ast_generate_from_file(buffer.gl_pathv[i]);
+			if (ast == NULL) {
+				printf("%s contains syntax errors.\n", target);
+				incorrectCount++;
+			}
+
+		}
+		
+		if (incorrectCount == 0) {
+			printf("No files contained syntax errors.\n");
+		}
+
+	} else {
+		printf("Received neither a file nor a directory.\n");
+	}
+
     return 0;
+}
+
+int is_file(char target[]) {
+
+	struct stat s;
+
+	if(stat(target,&s) == 0) {
+	    if(s.st_mode & S_IFREG) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+int is_directory(char target[]) {
+
+	struct stat s;
+
+	if(stat(target,&s) == 0) {
+		if(s.st_mode & S_IFDIR) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int is_saffire_file(char filename[]) {
+	char *extension = strrchr(filename, '.');
+
+	if (extension && strcmp(extension, ".sfl") == 0) {
+		return 1;
+	}
+	return 0;
 }
 
 
