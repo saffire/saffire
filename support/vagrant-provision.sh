@@ -1,11 +1,13 @@
 #!/bin/sh
 
-apt-get install -y git-core make automake gcc
-apt-get install -y libpcre3-dev libfcgi
+# Install compile tools
+apt-get install -y git-core make automake gcc pkg-config bison flex
 
+# Install mandatory libraries
+apt-get install -y libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev
 
 # Create new MOTD
-cat << 'EOF' > /etc/motd
+cat << 'EOF' > /etc/motd.tail
 Vagrant Development Box. This box runs on ubuntu64 bit server edition. 
 
 All neccessary tools and libraries are installed to compile Saffire. Please run the following:
