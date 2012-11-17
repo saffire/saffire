@@ -43,6 +43,7 @@
  */
 int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len) {
     char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
+    int unused;
 
     // Open temp file (and modify tmp_path with generated filename)
     int fd = mkstemp(tmp_path);
@@ -70,7 +71,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     if (pid < 0) return 0;
 
     // Write our buffer to GPG
-    write(pipe[0], buffer, buffer_len);
+    unused = write(pipe[0], buffer, buffer_len);
     close(pipe[0]);
 
     // Output contents from childs STDERR
@@ -120,7 +121,7 @@ int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, c
     if (pid < 0) return 0;
 
     // Write data to GPG
-    write(pipe[0], buffer, buffer_len);
+    unused = write(pipe[0], buffer, buffer_len);
     close(pipe[0]);
 
     // Open temp file (and modify tmp_path with generated filename)
