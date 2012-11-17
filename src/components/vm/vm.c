@@ -680,7 +680,7 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Calls method SP+0 from object SP+1 with OP+0 args starting from SP+2
+            // Calls method OP+0 SP+0 from object SP+1 with OP+1 args starting from SP+2.
             case VM_CALL_METHOD :
                 obj1 = stack_pop();   // Self
                 obj2 = object_find_method(obj1, (char *)get_constant_literal(oparg1));
