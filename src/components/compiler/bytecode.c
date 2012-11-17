@@ -249,7 +249,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
     // Read header
     FILE *f = fopen(filename, "rb");
-    fread(&header, sizeof(header), 1, f);
+    unused = fread(&header, sizeof(header), 1, f);
 
     // Allocate room and read binary code
     char *bincode = (char *)smm_malloc(header.bytecode_len);
@@ -609,7 +609,7 @@ int bytecode_remove_signature(const char *path) {
     unused = fwrite(&header, sizeof(header), 1, f);
 
     // Strip away the signature (@TODO: assume signature is at end of file)
-    ftruncate(fileno(f), sigpos);
+    unused = ftruncate(fileno(f), sigpos);
     fclose(f);
 
     return 0;
