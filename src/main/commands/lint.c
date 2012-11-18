@@ -115,19 +115,17 @@ void process_file(const char *filename) {
  */
 void process_directory(const char *directory) {
 	glob_t buffer;
-	int i;
 	int incorrectCount = 0;
 	char *extension = "/*.sf";
-	char *pattern = smm_malloc(sizeof(directory) + sizeof(extension));
-	strcat(pattern, directory);
+	char *pattern = smm_malloc(sizeof(directory) + sizeof(extension) + 1);
+	strcpy(pattern, directory);
 	strcat(pattern, extension);
 		
 	glob(pattern, 0, NULL, &buffer);
+	printf("Checking path: %s...\n\n", pattern);
 	smm_free(pattern);
 
-	printf("Checking path: %s...\n\n", pattern);
-
-	for (i = 0; i < buffer.gl_pathc; i++) {
+	for (int i = 0; i < buffer.gl_pathc; i++) {
 		if ( ! check_file(buffer.gl_pathv[i])) {
 			incorrectCount++;
 		}
