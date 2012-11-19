@@ -28,7 +28,7 @@
 #define __VM_OPCODES_H__
 
     // No operand opcodes
-    #define VM_STOP                 0x00        // Stops VM
+    #define VM_STOP                 0x00
 
     #define VM_POP_TOP              0x01
     #define VM_ROT_TWO              0x02
@@ -58,6 +58,11 @@
     #define VM_INPLACE_OR            0x27
     #define VM_INPLACE_XOR           0x28
 
+    #define VM_BUILD_CLASS          0x70
+    #define VM_MAKE_METHOD          0x71
+
+    #define VM_POP_BLOCK            0x72
+
     #define VM_USE                  0x7E
     #define VM_IMPORT               0x7F
 
@@ -77,6 +82,16 @@
     #define VM_STORE_GLOBAL         0x89
     #define VM_DELETE_GLOBAL        0x8A
 
+    #define VM_SETUP_LOOP           0x90
+
+    #define VM_CONTINUE_LOOP        0x92
+    #define VM_BREAK_LOOP           0x93
+    #define VM_BREAKELSE_LOOP       0x94
+    #define VM_COMPARE_OP           0x95
+    #define VM_SETUP_FINALLY        0x96
+    #define VM_SETUP_EXCEPT         0x97
+    #define VM_END_FINALLY          0x98
+    #define VM_RETURN_VALUE         0x99
 
 
     // Two operand opcodes

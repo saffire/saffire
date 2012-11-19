@@ -126,7 +126,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/regex.c \
                        components/objects/code.c \
                        components/objects/method.c \
-                       components/objects/hash.c
+                       components/objects/hash.c \
+                       components/objects/tuple.c
 
 
 ########################################################################
@@ -142,7 +143,9 @@ librepl_a_SOURCES = components/repl/repl.c
 ########################################################################
 
 noinst_LIBRARIES += libvm.a
-libvm_a_SOURCES = components/vm/vm.c
+libvm_a_SOURCES = components/vm/vm.c \
+                  components/vm/block.c \
+                  components/vm/frame.c
 
 
 ########################################################################

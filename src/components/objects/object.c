@@ -54,7 +54,9 @@
 
 
 // Object type string constants
-const char *objectTypeNames[11] = { "object", "code", "method", "base", "boolean", "null", "numerical", "regex", "string", "hash" };
+const char *objectTypeNames[12] = { "object", "code", "method", "base", "boolean",
+                                    "null", "numerical", "regex", "string", "custom",
+                                    "hash", "tuple" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -299,7 +301,7 @@ t_object *object_clone(t_object *obj) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -308,7 +310,7 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -392,6 +394,7 @@ void object_init() {
     object_code_init();
     object_method_init();
     object_hash_init();
+    object_tuple_init();
 
 #ifdef __DEBUG
     ht_num_add(object_hash, (unsigned long)Object_True, Object_True);
@@ -415,6 +418,7 @@ void object_fini() {
     object_code_fini();
     object_method_fini();
     object_hash_fini();
+    object_tuple_fini();
 }
 
 

@@ -465,7 +465,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 #ifdef __DEBUG
 char tmp[100];
 static char *obj_debug(struct _object *obj) {
-    sprintf(tmp, "%ld", ((t_numerical_object *)obj)->value);
+    sprintf(tmp, "Numerical(%ld)", ((t_numerical_object *)obj)->value);
     return tmp;
 }
 #endif

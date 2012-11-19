@@ -398,9 +398,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
     char *s = ((t_string_object *)obj)->value;
-    strncpy(global_buf, s, 1023);
-    global_buf[1023] = 0;
-
+    snprintf(global_buf, 1023, "string(%s)", s);
     return global_buf;
 }
 #endif
