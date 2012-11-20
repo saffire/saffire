@@ -25,9 +25,11 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "general/path_handling.h"
+#include "general/definitions.h"
 #include "general/smm.h"
 #include <string.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 
 /**
@@ -58,4 +60,44 @@ char *replace_extension(const char *path, const char *source_ext, const char *de
     strcat(dest_path, dest_ext);
 
     return dest_path;
+}
+
+/**
+ * Checks if target is a file
+ */
+int is_file(const char *target) {
+	struct stat s;
+
+	if(stat(target,&s) == 0) {
+	    if(s.st_mode & S_IFREG) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Checks if target is a directory
+ */
+int is_directory(const char *target) {
+	struct stat s;
+
+	if(stat(target,&s) == 0) {
+		if(s.st_mode & S_IFDIR) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Checks if filename is a saffire file
+ */
+int is_saffire_file(const char *filename) {
+	char *extension = strrchr(filename, '.');
+
+	if (extension && strcmp(filename, extension) != 0 && strcmp(extension, SAFFIRE_EXTENSION) == 0) {
+		return 1;
+	}
+	return 0;
 }
