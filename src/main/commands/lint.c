@@ -28,16 +28,12 @@
 #include <glob.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include "commands/command.h"
 #include "compiler/ast.h"
 #include "general/parse_options.h"
+#include "general/path_handling.h"
 #include "general/smm.h"
-#include "general/definitions.h"
 
-int is_file(const char *target);
-int is_directory(const char *target);
-int is_saffire_file(const char *filename);
 void process_file(const char *filename);
 void process_directory(const char *directory);
 int check_file(const char *filename);
@@ -51,6 +47,7 @@ static int do_lint(void) {
 	if(is_file(target)) {
 		process_file(target);
 	} else if (is_directory(target)) {
+		printf("Checking directory: %s.\n", target);
 		process_directory(target);
 	} else {
 		printf("Received neither a file nor a directory.\n");
@@ -59,45 +56,6 @@ static int do_lint(void) {
     return 0;
 }
 
-/**
- * Checks if target is a file
- */
-int is_file(const char *target) {
-	struct stat s;
-
-	if(stat(target,&s) == 0) {
-	    if(s.st_mode & S_IFREG) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/**
- * Checks if target is a directory
- */
-int is_directory(const char *target) {
-	struct stat s;
-
-	if(stat(target,&s) == 0) {
-		if(s.st_mode & S_IFDIR) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/**
- * Checks if filename is a saffire file
- */
-int is_saffire_file(const char *filename) {
-	char *extension = strrchr(filename, '.');
-
-	if (extension && strcmp(filename, extension) != 0 && strcmp(extension, SAFFIRE_EXTENSION) == 0) {
-		return 1;
-	}
-	return 0;
-}
 
 /**
  * Perform a syntax check on a single file
@@ -115,24 +73,18 @@ void process_file(const char *filename) {
  */
 void process_directory(const char *directory) {
 	glob_t buffer;
-	int incorrectCount = 0;
-	char *extension = "/*.sf";
+	char *extension = "/*";
 	char *pattern = smm_malloc(sizeof(directory) + sizeof(extension) + 1);
 	strcpy(pattern, directory);
-	strcat(pattern, extension);
-		
+	strcat(pattern, extension);	
 	glob(pattern, 0, NULL, &buffer);
-	printf("Checking path: %s...\n\n", pattern);
-	smm_free(pattern);
 
 	for (int i = 0; i < buffer.gl_pathc; i++) {
-		if ( ! check_file(buffer.gl_pathv[i])) {
-			incorrectCount++;
+		if (is_file(buffer.gl_pathv[i])) {
+			process_file(buffer.gl_pathv[i]);
+		} else if (is_directory(buffer.gl_pathv[i])) {
+			process_directory(buffer.gl_pathv[i]);
 		}
-	}
-		
-	if (incorrectCount == 0) {
-		printf("No files contained syntax errors.\n");
 	}
 }
 

@@ -28,5 +28,8 @@
 #define __PATH_HANDLING_H__
 
     char *replace_extension(const char *path, const char *source_ext, const char *dest_ext);
+	int is_file(const char *target);
+	int is_directory(const char *target);
+	int is_saffire_file(const char *filename);
 
 #endif

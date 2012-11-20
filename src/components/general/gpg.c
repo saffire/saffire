@@ -104,6 +104,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
  */
 int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len) {
     char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
+	int unused;
 
     // Find GPG path
     char *gpg_path = config_get_string("gpg.path", "/usr/bin/gpg");
