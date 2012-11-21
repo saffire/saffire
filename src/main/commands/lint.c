@@ -78,6 +78,7 @@ void process_directory(const char *directory) {
 	strcpy(pattern, directory);
 	strcat(pattern, extension);	
 	glob(pattern, 0, NULL, &buffer);
+	smm_free(pattern);
 
 	for (int i = 0; i < buffer.gl_pathc; i++) {
 		if (is_file(buffer.gl_pathv[i])) {
