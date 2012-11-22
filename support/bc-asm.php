@@ -52,7 +52,7 @@ class Assembler {
              "MAKE_METHOD" => 0x71,
 
              "POP_BLOCK" => 0x72,
-             "RETURN_VALUE" => 0x73,
+             "RETURN" => 0x73,
              "BREAK_LOOP" => 0x74,
              "BREAKELSE_LOOP" => 0x75,
 

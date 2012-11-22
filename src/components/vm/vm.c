@@ -26,6 +26,7 @@
 */
 #include <string.h>
 #include "compiler/bytecode.h"
+#include "vm/vm.h"
 #include "vm/vm_opcodes.h"
 #include "vm/block.h"
 #include "vm/frame.h"
@@ -96,7 +97,7 @@ void saffire_vm_error(char *str, ...) {
 //#define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
 
 // Builtin identifiers (like internal library objects etc)
-t_hash_object *builtin_identifiers = NULL;
+//t_hash_object *builtin_identifiers = NULL;
 
 /**
  *
@@ -105,6 +106,12 @@ void vm_init(void) {
     object_init();
     builtin_identifiers = (t_hash_object *)object_new(Object_Hash);
     module_init();
+}
+
+void vm_fini(void) {
+    module_fini();
+    // @TODO: Implement object-destroy:  object_destroy(builtin_identifiers);
+    object_fini();
 }
 
 
@@ -131,6 +138,9 @@ t_object *vm_execute(t_vm_frame *frame) {
     t_vm_frame *tfr;
     t_vm_frameblock *block;
 
+
+    // Default return value;
+    t_object *ret = Object_Null;
 
     for (;;) {
         // Room for some other stuff
@@ -478,6 +488,7 @@ dispatch:
                 break;
 
             case VM_CONTINUE_LOOP :
+                ret = object_new(Object_Numerical, oparg1);
                 reason = REASON_CONTINUE;
                 goto block_end;
                 break;
@@ -526,8 +537,10 @@ dispatch:
             case VM_MAKE_METHOD :
                 goto dispatch;
                 break;
-            case VM_RETURN_VALUE :
-                // Fetch retval
+            case VM_RETURN :
+                ret = vm_frame_stack_pop(frame);
+                object_dec_ref(ret);
+
                 reason = REASON_RETURN;
                 goto block_end;
                 break;
@@ -536,15 +549,15 @@ dispatch:
 
 
 block_end:
-        // We have reached the end of a frameblock.
+        // We have reached the end of a frameblock or frame. Only use the RET object from here on.
 
         while (reason != REASON_NONE && frame->block_cnt > 0) {
             block = vm_fetch_block(frame);
 
             if (reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
-                DEBUG_PRINT("\n*** Continuing loop at %08X\n\n", oparg1);
+                DEBUG_PRINT("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
                 // Continue block
-                frame->ip = oparg1;
+                frame->ip = OBJ2NUM(ret);
                 break;
             }
 
@@ -565,10 +578,13 @@ block_end:
             }
         }
 
+        if (reason == REASON_RETURN) {
+            // Break from the loop. We're done
+            break;
+        }
+
     } // for (;;)
 
 
-    // Return last entry on the stack
-    obj1 = vm_frame_stack_pop(frame);
-    return obj1;
+    return ret;
 }

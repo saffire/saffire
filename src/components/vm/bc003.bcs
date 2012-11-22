@@ -93,4 +93,6 @@
     CALL_METHOD         "print", $1
     POP_TOP
 
-    STOP
+    ; return a as exit code
+    LOAD_ID             a
+    RETURN

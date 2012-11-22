@@ -34,7 +34,8 @@
     t_hash_object *builtin_identifiers;
 
     void vm_init(void);
-    int vm_execute(t_vm_frame *frame);
+    void vm_fini(void);
+    t_object *vm_execute(t_vm_frame *frame);
 
     void saffire_vm_warning(char *str, ...);
     void saffire_vm_error(char *str, ...);

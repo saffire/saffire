@@ -9,12 +9,12 @@ t_bytecode *generate_dummy_bytecode_bc003_bcs(void) {
         "\x80\x00\x00"         // STORE_ID            io
         "\x81\x02\x00"         // LOAD_CONST          10
         "\x80\x01\x00"         // STORE_ID            a
-        "\x90\x4A\x00"         // SETUP_LOOP          #end_loop1
+        "\x90\x47\x00"         // SETUP_LOOP          #end_loop1
     // #loop1:
         "\x82\x01\x00"         // LOAD_ID             a
         "\x81\x03\x00"         // LOAD_CONST          20
         "\x95\x02\x00"         // COMPARE_OP          OP_NE
-        "\x85\x3D\x00"         // JUMP_IF_FALSE       #end_loop1_pb
+        "\x85\x3A\x00"         // JUMP_IF_FALSE       #end_loop1_pb
         "\x01"                 // POP_TOP
         "\x82\x01\x00"         // LOAD_ID             a
         "\x81\x04\x00"         // LOAD_CONST          1
@@ -31,29 +31,29 @@ t_bytecode *generate_dummy_bytecode_bc003_bcs(void) {
         "\x82\x01\x00"         // LOAD_ID             a
         "\x81\x06\x00"         // LOAD_CONST          18
         "\x95\x01\x00"         // COMPARE_OP          OP_EQ
-        "\x85\x05\x00"         // JUMP_IF_FALSE       #end_if2
+        "\x85\x02\x00"         // JUMP_IF_FALSE       #end_if2
         "\x01"                 // POP_TOP
-        "\x81\x07\x00"         // LOAD_CONST          "aap"
         "\x74"                 // BREAK_LOOP
     // #end_if2:
         "\x01"                 // POP_TOP
         "\x82\x01\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x08\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x07\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
         "\x86\x13\x00"         // JUMP_ABSOLUTE      #loop1
     // #end_loop1_pb:
         "\x72"                 // POP_BLOCK
     // #end_loop1:
-        "\x81\x09\x00"         // LOAD_CONST          "All done!"
+        "\x81\x08\x00"         // LOAD_CONST          "All done!"
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x08\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x07\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
         "\x82\x01\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x08\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x07\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
-        "\x00"                 // STOP
+        "\x82\x01\x00"         // LOAD_ID             a
+        "\x73"                 // RETURN
     ;
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
     bzero(bc, sizeof(t_bytecode));
@@ -73,7 +73,6 @@ t_bytecode *generate_dummy_bytecode_bc003_bcs(void) {
     _new_constant_long(bc, 1);
     _new_constant_long(bc, 15);
     _new_constant_long(bc, 18);
-    _new_constant_string(bc, "aap");
     _new_constant_string(bc, "print");
     _new_constant_string(bc, "All done!");
     // identifier names

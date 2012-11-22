@@ -48,5 +48,7 @@
     CALL_METHOD         "print", $1
     POP_TOP
 
-    STOP
+    ; return exit code 4
+    LOAD_CONST          4
+    RETURN
 

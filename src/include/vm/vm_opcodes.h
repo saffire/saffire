@@ -62,7 +62,7 @@
     #define VM_MAKE_METHOD          0x71
 
     #define VM_POP_BLOCK            0x72
-    #define VM_RETURN_VALUE         0x73
+    #define VM_RETURN               0x73
     #define VM_BREAK_LOOP           0x74
     #define VM_BREAKELSE_LOOP       0x75
 

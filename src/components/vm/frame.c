@@ -233,11 +233,11 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *frame, t_bytecode *bytecode) {
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
 
-    cfr->parent = frame;
+    cfr->parent = parent_frame;
     cfr->bytecode = bytecode;
     cfr->ip = 0;
     cfr->sp = bytecode->stack_size-1;
@@ -247,12 +247,12 @@ t_vm_frame *vm_frame_new(t_vm_frame *frame, t_bytecode *bytecode) {
     bzero(cfr->stack, bytecode->stack_size * sizeof(t_object *));
 
     // Set the variable hashes
-    if (frame == NULL) {
+    if (parent_frame == NULL) {
         // Initial frame, so create a new global identifier hash
         cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash);
     } else {
         // otherwise copy from parent
-        cfr->global_identifiers = frame->global_identifiers;
+        cfr->global_identifiers = parent_frame->global_identifiers;
     }
     cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
     cfr->builtin_identifiers = builtin_identifiers;

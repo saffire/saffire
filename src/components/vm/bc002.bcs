@@ -21,8 +21,8 @@
     JUMP_IF_FALSE       #no_ret
 
     LOAD_CONST          "Jah!"
-    RETURN_VALUE
+    RETURN
 
 #no_ret:
     LOAD_CONST          "Neen"
-    RETURN_VALUE
+    RETURN

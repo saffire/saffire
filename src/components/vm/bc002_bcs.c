@@ -16,10 +16,10 @@ t_bytecode *generate_dummy_bytecode_bc002_bcs(void) {
         "\x95\x03\x00"         // COMPARE_OP          OP_GT
         "\x85\x04\x00"         // JUMP_IF_FALSE       #no_ret
         "\x81\x03\x00"         // LOAD_CONST          "Jah!"
-        "\x73"                 // RETURN_VALUE
+        "\x73"                 // RETURN
     // #no_ret:
         "\x81\x04\x00"         // LOAD_CONST          "Neen"
-        "\x73"                 // RETURN_VALUE
+        "\x73"                 // RETURN
     ;
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
     bzero(bc, sizeof(t_bytecode));

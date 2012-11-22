@@ -32,7 +32,8 @@ t_bytecode *generate_dummy_bytecode_bc001_bcs(void) {
         "\x82\x00\x00"         // LOAD_ID             io
         "\xC0\x04\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
-        "\x00"                 // STOP
+        "\x81\x07\x00"         // LOAD_CONST          4
+        "\x73"                 // RETURN
     ;
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
     bzero(bc, sizeof(t_bytecode));
@@ -52,6 +53,7 @@ t_bytecode *generate_dummy_bytecode_bc001_bcs(void) {
     _new_constant_string(bc, "print");
     _new_constant_long(bc, 1);
     _new_constant_string(bc, "All done!");
+    _new_constant_long(bc, 4);
     // identifier names
     _new_name(bc, "io");
     _new_name(bc, "a");
