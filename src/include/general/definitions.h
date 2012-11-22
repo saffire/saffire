@@ -24,12 +24,5 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __PATH_HANDLING_H__
-#define __PATH_HANDLING_H__
 
-    char *replace_extension(const char *path, const char *source_ext, const char *dest_ext);
-	int is_file(const char *target);
-	int is_directory(const char *target);
-	int is_saffire_file(const char *filename);
-
-#endif
+#define	SAFFIRE_EXTENSION ".sf"
