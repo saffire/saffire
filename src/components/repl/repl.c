@@ -39,7 +39,7 @@ static int statement_count = 1;
 // @TODO: saffire.prompt will actually set the current prompt.. saffire.prompt("%n>");  %n == current stament count?
 
 char *prompt(EditLine *el) {
-    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count++);
+    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count);
     return cur_prompt;
 }
 
@@ -70,6 +70,7 @@ int repl(void) {
     while (1) {
         const char *line = el_gets(el, &count);
         if (count > 0) {
+            statement_count++;
             history(hist, &ev, H_ENTER, line);
             history(hist, &ev, H_SAVE, HIST_FILE);
 //            printf("LINE: %s", line);

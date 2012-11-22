@@ -160,14 +160,13 @@ static int do_list(void) {
     int count = config_get_matches(pattern, &matches);
     if (count <= 0) return 1;
 
-    printf("Found %d matches:\n", count);
+    // Note: the count is always too large. The keys that do not match are NULLed out.
     for (int i=0; i!=count; i++) {
-        // Skip comments
-        if (strstr(matches[i], "#comment") != 0) goto free_up;
+        if (matches[i] == NULL) continue;
 
         char *val = config_get_string(matches[i], NULL);
-        printf("  %s : %s\n", matches[i], val);
-free_up:
+        printf("%s : %s\n", matches[i], val);
+
         free(matches[i]);
     }
     free(matches);

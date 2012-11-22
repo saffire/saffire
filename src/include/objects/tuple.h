@@ -24,22 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __OBJECT_TUPLE_H__
+#define __OBJECT_TUPLE_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
-    #include "vm/frame.h"
+    #include "objects/object.h"
+    #include "general/hashtable.h"
 
-    t_hash_object *builtin_identifiers;
+    #define RETURN_TUPLE(t)   RETURN_OBJECT(object_new(Object_Tuple, t));
 
-    void vm_init(void);
-    void vm_fini(void);
-    t_object *vm_execute(t_vm_frame *frame);
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
 
-    void saffire_vm_warning(char *str, ...);
-    void saffire_vm_error(char *str, ...);
+        t_hash_table *ht;
+    } t_tuple_object;
+
+    t_tuple_object Object_Tuple_struct;
+
+    #define Object_Tuple   (t_object *)&Object_Tuple_struct
+
+    void object_tuple_init(void);
+    void object_tuple_fini(void);
 
 #endif
-
-

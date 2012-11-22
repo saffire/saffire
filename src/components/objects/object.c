@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <stdarg.h>
+#include <string.h>
 #include "objects/object.h"
 #include "objects/string.h"
 #include "objects/boolean.h"
@@ -39,6 +40,7 @@
 #include "objects/method.h"
 #include "objects/code.h"
 #include "objects/hash.h"
+#include "objects/tuple.h"
 #include "general/smm.h"
 #include "general/dll.h"
 #include "interpreter/errors.h"
@@ -54,7 +56,9 @@
 
 
 // Object type string constants
-const char *objectTypeNames[11] = { "object", "code", "method", "base", "boolean", "null", "numerical", "regex", "string", "hash" };
+const char *objectTypeNames[12] = { "object", "code", "method", "base", "boolean",
+                                    "null", "numerical", "regex", "string", "custom",
+                                    "hash", "tuple" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -108,7 +112,10 @@ t_object *object_find_method(t_object *obj, char *method_name) {
     return method;
 }
 
+
 /**
+ * OBJECT_CALL FUNCTIONS ARE ONLY USED IN THE OBSOLETE INTERPRETER CODE! REMOVE THIS!
+ *
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
 t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
@@ -139,13 +146,13 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
      */
 
     // @TODO: move this to the code-object
-    if (code->f) {
+    if (code->native_func) {
         // Internal function
-        ret = code->f(self, args);
-    } else if (code->p) {
+        ret = code->native_func(self, args);
+    } else if (code->bytecode) {
         // External function found in AST
         // @TODO: How do we send our arguments?
-        ret = interpreter_leaf(code->p);
+        //ret = interpreter_leaf(code->p);
     } else {
         saffire_error("Sanity error: code object has no code");
     }
@@ -154,8 +161,8 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
 }
 
 /**
- * Calls a method from specified object. Returns NULL when method is not found.
- */
+* Calls a method from specified object. Returns NULL when method is not found.
+*/
 t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
     // Add all arguments to a DLL
     va_list arg_list;
@@ -299,7 +306,7 @@ t_object *object_clone(t_object *obj) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -308,7 +315,7 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -356,8 +363,6 @@ void object_free(t_object *obj) {
 t_object *object_new(t_object *obj, ...) {
     va_list arg_list;
 
-    DEBUG_PRINT("Creating a new instance: %s\n", obj->name);
-
     // Return NULL when we cannot 'new' this object
     if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
 
@@ -366,6 +371,10 @@ t_object *object_new(t_object *obj, ...) {
     va_end(arg_list);
 
 #ifdef __DEBUG
+    if (strcmp(obj->name, "code") != 0 && strcmp(obj->name, "method") != 0) {
+        DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+    }
+
     if (! ht_num_find(object_hash, (unsigned long)res)) {
         ht_num_add(object_hash, (unsigned long)res, res);
     }
@@ -392,6 +401,7 @@ void object_init() {
     object_code_init();
     object_method_init();
     object_hash_init();
+    object_tuple_init();
 
 #ifdef __DEBUG
     ht_num_add(object_hash, (unsigned long)Object_True, Object_True);
@@ -415,6 +425,7 @@ void object_fini() {
     object_code_fini();
     object_method_fini();
     object_hash_fini();
+    object_tuple_fini();
 }
 
 

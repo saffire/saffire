@@ -26,7 +26,10 @@
 */
 #include <string.h>
 #include "compiler/bytecode.h"
+#include "vm/vm.h"
 #include "vm/vm_opcodes.h"
+#include "vm/block.h"
+#include "vm/frame.h"
 #include "general/dll.h"
 #include "general/smm.h"
 #include "objects/object.h"
@@ -34,16 +37,26 @@
 #include "objects/string.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
+#include "objects/code.h"
+#include "objects/method.h"
 #include "objects/null.h"
 #include "interpreter/errors.h"
 #include "modules/module_api.h"
+#include "debug.h"
 
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+#define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
+
+#define REASON_NONE         0
+#define REASON_RETURN       1
+#define REASON_CONTINUE     2
+#define REASON_BREAK        3
+#define REASON_BREAKELSE    4
 
 /**
  *
  */
-static void saffire_vm_warning(char *str, ...) {
+void saffire_vm_warning(char *str, ...) {
     va_list args;
     va_start(args, str);
     fprintf(stderr, "Warning: ");
@@ -55,7 +68,7 @@ static void saffire_vm_warning(char *str, ...) {
 /**
  *
  */
-static void saffire_vm_error(char *str, ...) {
+void saffire_vm_error(char *str, ...) {
     va_list args;
     va_start(args, str);
     fprintf(stderr, "Error: ");
@@ -67,9 +80,9 @@ static void saffire_vm_error(char *str, ...) {
 
 
 #define CALL_OP(opr, in_place, err_str) \
-                obj1 = stack_pop(); \
+                obj1 = vm_frame_stack_pop(frame); \
                 object_dec_ref(obj1); \
-                obj2 = stack_pop(); \
+                obj2 = vm_frame_stack_pop(frame); \
                 object_dec_ref(obj2); \
                 \
                 if (obj1->type != obj2->type) { \
@@ -78,30 +91,13 @@ static void saffire_vm_error(char *str, ...) {
                 obj3 = object_operator(obj2, opr, in_place, 1, obj1); \
                 \
                 object_inc_ref(obj3);   \
-                stack_push(obj3);   \
+                vm_frame_stack_push(frame, obj3);
 
 
-#define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
+//#define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
 
-typedef struct _vm_context {
-    t_bytecode *bc;                   // Global bytecode array
-    unsigned int ip;                  // Instruction pointer
-
-    t_object **stack;                 // Local context stack
-    unsigned int sp;                  // Stack pointer
-    t_hash_object *local_identifiers;     // Local identifiers
-    t_hash_object *global_identifiers;    // Global identifiers
-    t_hash_object *builtin_identifiers;   // Builtin identifiers
-
-    unsigned int time;                // Total time spend in this bytecode block
-    unsigned int executions;          // Number of total executions (opcodes processed)
-} t_vm_context;
-
-
-t_hash_object *global_identifiers = NULL;
-t_hash_object *builtin_identifiers = NULL;
-t_dll *contexts;
-
+// Builtin identifiers (like internal library objects etc)
+//t_hash_object *builtin_identifiers = NULL;
 
 /**
  *
@@ -112,279 +108,21 @@ void vm_init(void) {
     module_init();
 }
 
-
-/**
- * Adds a context onto the context-stack
- */
-static void push_context(t_vm_context *ctx) {
-    dll_append(contexts, ctx);
-}
-
-/**
- * Pops a context from the context-stack
- */
-static void pop_context(void) {
-    t_dll_element *e = DLL_TAIL(contexts);
-    dll_remove(contexts, e);
-}
-
-
-/**
- * Returns the current context (tail of the context-stack)
- */
-static t_vm_context *get_current_vm_context(void) {
-    t_dll_element *e = DLL_TAIL(contexts);
-    return e->data;
-}
-
-
-/**
- * Creates and initializes a new context
- */
-static t_vm_context *create_context(t_bytecode *bc) {
-    t_vm_context *ctx = smm_malloc(sizeof(t_vm_context));
-    bzero(ctx, sizeof(t_vm_context));
-
-    ctx->bc = bc;
-    ctx->ip = 0;
-
-    //
-    ctx->stack = smm_malloc(bc->stack_size * sizeof(t_object *));
-    bzero(ctx->stack, bc->stack_size * sizeof(t_object *));
-    ctx->sp = bc->stack_size-1;
-
-    // Identifiers
-    ctx->local_identifiers = (t_hash_object *)object_new(Object_Hash);
-
-    // Set global and builtin identifiers
-    ctx->global_identifiers = global_identifiers;
-    ctx->builtin_identifiers = builtin_identifiers;
-
-    return ctx;
-}
-
-
-/**
- * Returns the next opcode
- */
-static unsigned char get_next_opcode(void) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (ctx->ip < 0 || ctx->ip > ctx->bc->code_len) {
-        saffire_vm_error("Trying to reach outside code length!");
-    }
-
-    if (ctx->ip == ctx->bc->code_len) {
-        return VM_STOP;
-    }
-
-    char op = ctx->bc->code[ctx->ip];
-    ctx->ip++;
-
-    return op;
-}
-
-/**
- * Returns he next operand. Does not do any sanity checks if it actually is an operand.
- */
-static int get_operand(void) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    // Read operand
-    char *ptr = ctx->bc->code + ctx->ip;
-
-    uint32_t ret = *ptr;
-    ctx->ip += sizeof(uint32_t);
-
-    int tmp = ret;
-    return tmp;
-}
-
-
-/**
- * Pops an object from the stack. Errors when the stack is empty
- */
-static t_object *stack_pop(void) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    printf("STACK POP(%d)\n", ctx->sp);
-
-    if (ctx->sp == ctx->bc->stack_size) {
-        saffire_vm_error("Trying to pop from an empty stack");
-    }
-    t_object *ret = ctx->stack[ctx->sp];
-    ctx->sp++;
-
-    return ret;
-}
-
-
-/**
- * Pushes an object onto the stack. Errors when the stack is full
- */
-static void stack_push(t_object *obj) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    printf("STACK PUSH(%d)\n", ctx->sp);
-
-    if (ctx->sp < 0) {
-        saffire_vm_error("Trying to push to a full stack");
-
-    }
-    ctx->sp--;
-    ctx->stack[ctx->sp] = obj;
-
-}
-
-
-/**
- * Fetches the top of the stack. Does not pop anything.
- */
-static t_object *stack_fetch_top(void) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    return ctx->stack[ctx->sp];
-}
-
-
-/**
- * Fetches a non-top element form the stack. Does not pop anything.
- */
-static t_object *stack_fetch(int idx) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (idx < 0 || idx >= ctx->bc->stack_size) {
-        saffire_vm_error("Trying to fetch from outside stack range");
-    }
-
-    return ctx->stack[idx];
-}
-
-
-/**
- * Return a constant literal, without converting to an object
- */
-static void *get_constant_literal(int idx) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (idx < 0 || idx >= ctx->bc->constants_len) {
-        saffire_vm_error("Trying to fetch from outside constant range");
-    }
-
-    t_bytecode_constant *c = ctx->bc->constants[idx];
-    return c->data.ptr;
-}
-
-
-/**
-  *
-  */
-static t_object *get_constant(int idx) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (idx < 0 || idx >= ctx->bc->constants_len) {
-        saffire_vm_error("Trying to fetch from outside constant range");
-    }
-
-    t_bytecode_constant *c = ctx->bc->constants[idx];
-    switch (c->type) {
-        case BYTECODE_CONST_OBJECT :
-            return ctx->bc->constants[idx]->data.obj;
-            break;
-
-        case BYTECODE_CONST_STRING :
-            RETURN_STRING(ctx->bc->constants[idx]->data.s);
-            break;
-
-        case BYTECODE_CONST_NUMERICAL :
-            RETURN_NUMERICAL(ctx->bc->constants[idx]->data.l);
-            break;
-    }
-
-    saffire_vm_error("Cannot convert constant type %d to an object\n", idx);
-    return NULL;
-}
-
-
-/**
- * Store object into the global identifier table
- */
-static void set_global_identifier(char *id, t_object *obj) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (obj == NULL) {
-        ht_remove(ctx->global_identifiers->ht, id);
-    } else {
-        ht_add(ctx->global_identifiers->ht, id, obj);
-    }
-}
-
-
-/**
- * Return object from the global identifier table
- */
-static t_object *get_global_identifier(int idx) {
-    t_vm_context *ctx = get_current_vm_context();
-    t_object *obj = ht_num_find(ctx->global_identifiers->ht, idx);
-    if (obj == NULL) RETURN_NULL;
-    return obj;
-}
-
-
-/**
- * Store object into either the local or global identifier table
- */
-static void set_identifier(char *id, t_object *obj) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    ht_add(ctx->local_identifiers->ht, id, obj);
-}
-
-
-/**
- * Return object from either the local or the global identifier table
- */
-static t_object *get_identifier(char *id) {
-    t_object *obj;
-    t_vm_context *ctx = get_current_vm_context();
-
-    obj = ht_find(ctx->local_identifiers->ht, id);
-    if (obj != NULL) return obj;
-
-    if (ctx->global_identifiers && ctx->global_identifiers->ht) {
-        obj = ht_find(ctx->global_identifiers->ht, id);
-        if (obj != NULL) return obj;
-    }
-
-    obj = ht_find(ctx->builtin_identifiers->ht, id);
-    if (obj != NULL) return obj;
-
-    saffire_vm_error("Cannot find variable: %s\n", id);
-    return NULL;
+void vm_fini(void) {
+    module_fini();
+    // @TODO: Implement object-destroy:  object_destroy(builtin_identifiers);
+    object_fini();
 }
 
 
 /**
  *
  */
-static char *get_name(int idx) {
-    t_vm_context *ctx = get_current_vm_context();
-
-    if (idx < 0 || idx >= ctx->bc->identifiers_len) {
-        saffire_vm_error("Trying to fetch from outside identifier range");
-    }
-    return ctx->bc->identifiers[idx]->s;
-}
-
-
-/**
- *
- */
-static t_object *_import(char *module, char *class) {
+static t_object *_import(t_vm_frame *frame, char *module, char *class) {
     char tmp[100];
     snprintf(tmp, 99, "%s::%s", module, class);
 
-    t_object *obj = get_identifier(tmp);
+    t_object *obj = vm_frame_get_identifier(frame, tmp);
     return obj;
 }
 
@@ -392,92 +130,96 @@ static t_object *_import(char *module, char *class) {
 /**
  *
  */
-int vm_execute(t_bytecode *source_bc) {
+t_object *vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
     register char *s1;
+    int reason = REASON_NONE;
+    t_vm_frame *tfr;
+    t_vm_frameblock *block;
 
-    // Create new context
-    contexts = dll_init();
-    t_vm_context *tmp = create_context(source_bc);
-    push_context(tmp);
 
-    // If we don't have a global_identifier list yet, set this so next contexts will use it as it's globals
-    if (! global_identifiers) {
-        global_identifiers = tmp->local_identifiers;
-    }
-
-    // Prefetch the current context
-    t_vm_context *ctx = get_current_vm_context();
-
+    // Default return value;
+    t_object *ret = Object_Null;
 
     for (;;) {
         // Room for some other stuff
 dispatch:
         // Increase number of executions done
-        ctx->executions++;
+        frame->executions++;
+
+
+#ifdef __DEBUG
+        unsigned long cip = frame->ip;
+#endif
 
         // Get opcode and additional argument
-        opcode = get_next_opcode();
+        opcode = vm_frame_get_next_opcode(frame);
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
             saffire_vm_error("VM: Reached reserved (0xFF) opcode. Halting.\n");
         }
 
         // If high bit is set, get operand
-        oparg1 = ((opcode & 0x80) == 0x80) ? get_operand() : 0;
-        oparg2 = ((opcode & 0xC0) == 0xC0) ? get_operand() : 0;
+        oparg1 = ((opcode & 0x80) == 0x80) ? vm_frame_get_operand(frame) : 0;
+        oparg2 = ((opcode & 0xC0) == 0xC0) ? vm_frame_get_operand(frame) : 0;
 
 #ifdef __DEBUG
-        printf("Opcode: 0x%02X (0x%02X, 0x%02X)\n", opcode, oparg1, oparg2);
+        if ((opcode & 0xC0) == 0xC0) {
+            DEBUG_PRINT("%08lX : 0x%02X (0x%02X, 0x%02X)\n", cip, opcode, oparg1, oparg2);
+        } else if ((opcode & 0x80) == 0x80) {
+            DEBUG_PRINT("%08lX : 0x%02X (0x%02X)\n", cip, opcode, oparg1);
+        } else {
+            DEBUG_PRINT("%08lX : 0x%02X\n", cip, opcode);
+        }
 #endif
 
         switch (opcode) {
             // Removes SP-0
             case VM_POP_TOP :
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
                 goto dispatch;
                 break;
 
             // Rotate / swap SP-0 and SP-1
             case VM_ROT_TWO :
-                obj1 = stack_pop();
-                obj2 = stack_pop();
-                stack_push(obj1);
-                stack_push(obj2);
+                obj1 = vm_frame_stack_pop(frame);
+                obj2 = vm_frame_stack_pop(frame);
+                vm_frame_stack_push(frame, obj1);
+                vm_frame_stack_push(frame, obj2);
                 goto dispatch;
                 break;
 
             // Rotate SP-0 to SP-2
             case VM_ROT_THREE :
-                obj1 = stack_pop();
-                obj2 = stack_pop();
-                obj3 = stack_pop();
-                stack_push(obj1);
-                stack_push(obj2);
-                stack_push(obj3);
+                obj1 = vm_frame_stack_pop(frame);
+                obj2 = vm_frame_stack_pop(frame);
+                obj3 = vm_frame_stack_pop(frame);
+                vm_frame_stack_push(frame, obj1);
+                vm_frame_stack_push(frame, obj2);
+                vm_frame_stack_push(frame, obj3);
                 goto dispatch;
                 break;
 
             // Duplicate SP-0
             case VM_DUP_TOP :
-                obj1 = stack_fetch_top();
+                obj1 = vm_frame_stack_fetch_top(frame);
                 object_inc_ref(obj1);
-                stack_push(obj1);
+                vm_frame_stack_push(frame, obj1);
                 goto dispatch;
                 break;
 
             // Rotate SP-0 to SP-3
             case VM_ROT_FOUR :
-                obj1 = stack_pop();
-                obj2 = stack_pop();
-                obj3 = stack_pop();
-                obj4 = stack_pop();
-                stack_push(obj1);
-                stack_push(obj2);
-                stack_push(obj3);
-                stack_push(obj4);
+                obj1 = vm_frame_stack_pop(frame);
+                obj2 = vm_frame_stack_pop(frame);
+                obj3 = vm_frame_stack_pop(frame);
+                obj4 = vm_frame_stack_pop(frame);
+                vm_frame_stack_push(frame, obj1);
+                vm_frame_stack_push(frame, obj2);
+                vm_frame_stack_push(frame, obj3);
+                vm_frame_stack_push(frame, obj4);
                 goto dispatch;
                 break;
 
@@ -488,52 +230,53 @@ dispatch:
 
             // Load a global identifier
             case VM_LOAD_GLOBAL :
-                obj1 = get_global_identifier(oparg1);
+                obj1 = vm_frame_get_global_identifier(frame, oparg1);
                 object_inc_ref(obj1);
-                stack_push(obj1);
+                vm_frame_stack_push(frame, obj1);
                 goto dispatch;
                 break;
 
             // store SP+0 as a global identifier
             case VM_STORE_GLOBAL :
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
-                s1 = get_name(oparg1);
-                set_global_identifier(s1, obj1);
+                s1 = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_global_identifier(frame, s1, obj1);
                 goto dispatch;
                 break;
 
             // Remove global identifier
             case VM_DELETE_GLOBAL :
-                s1 = get_name(oparg1);
-                set_global_identifier(s1, NULL);
+                s1 = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_global_identifier(frame, s1, NULL);
                 goto dispatch;
                 break;
 
             // Load and push constant onto stack
             case VM_LOAD_CONST :
-                obj1 = get_constant(oparg1);
+                obj1 = vm_frame_get_constant(frame, oparg1);
                 object_inc_ref(obj1);
-                stack_push(obj1);
+                vm_frame_stack_push(frame, obj1);
                 goto dispatch;
                 break;
 
             // Store SP+0 into identifier (either local or global)
             case VM_STORE_ID :
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
-                s1 = get_name(oparg1);
-                set_identifier(s1, obj1);
+                s1 = vm_frame_get_name(frame, oparg1);
+                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
+                vm_frame_set_identifier(frame, s1, obj1);
                 goto dispatch;
                 break;
                 // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                s1 = get_name(oparg1);
-                obj1 = get_identifier(s1);
+                s1 = vm_frame_get_name(frame, oparg1);
+                obj1 = vm_frame_get_identifier(frame, s1);
                 object_inc_ref(obj1);
-                stack_push(obj1);
+                vm_frame_stack_push(frame, obj1);
                 goto dispatch;
                 break;
 
@@ -629,13 +372,13 @@ dispatch:
 
             // Unconditional relative jump forward
             case VM_JUMP_FORWARD :
-                ctx->ip += oparg1;
+                frame->ip += oparg1;
                 goto dispatch;
                 break;
 
             // Conditional jump on SP-0 is true
             case VM_JUMP_IF_TRUE :
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
@@ -643,7 +386,7 @@ dispatch:
                 }
 
                 if (IS_TRUE(obj1)) {
-                    ctx->ip += oparg1;
+                    frame->ip += oparg1;
                 }
 
                 goto dispatch;
@@ -651,7 +394,7 @@ dispatch:
 
             // Conditional jump on SP-0 is false
             case VM_JUMP_IF_FALSE :
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
@@ -659,73 +402,189 @@ dispatch:
                 }
 
                 if (IS_FALSE(obj1)) {
-                    ctx->ip += oparg1;
+                    frame->ip += oparg1;
                 }
                 goto dispatch;
                 break;
 
             // Unconditional absolute jump
             case VM_JUMP_ABSOLUTE :
-                ctx->ip = oparg1;
+                frame->ip = oparg1;
                 goto dispatch;
                 break;
 
             // Duplicates the SP+0 a number of times
             case VM_DUP_TOPX :
-                obj1 = stack_fetch_top();
+                obj1 = vm_frame_stack_fetch_top(frame);
                 for (int i=0; i!=oparg1; i++) {
                     object_inc_ref(obj1);
-                    stack_push(obj1);
+                    vm_frame_stack_push(frame, obj1);
                 }
                 goto dispatch;
                 break;
 
             // Calls method OP+0 SP+0 from object SP+1 with OP+1 args starting from SP+2.
             case VM_CALL_METHOD :
-                obj1 = stack_pop();   // Self
-                obj2 = object_find_method(obj1, (char *)get_constant_literal(oparg1));
+                // This object will become "self" in our method call
+                obj1 = vm_frame_stack_pop(frame);
+                // Find the actual method to call inside our object (or parent classes)
+                obj2 = object_find_method(obj1, (char *)vm_frame_get_constant_literal(frame, oparg1));
 
+                // @TODO: Maybe this should just be a tuple object?
                 // Create argument list
-                t_dll *dll = dll_init();
+                t_dll *args = dll_init();
                 for (int i=0; i!=oparg2; i++) {
-                    obj3 = stack_pop();
+                    obj3 = vm_frame_stack_pop(frame);
                     object_dec_ref(obj3);
-                    dll_append(dll, obj3);
+                    dll_append(args, obj3);
                 }
 
-                // Call object and push result onto stack
-                obj3 = object_call_args(obj1, obj2, dll);
-                object_inc_ref(obj3);
-                stack_push(obj3);
+                t_method_object *method = (t_method_object *)obj2;
+                t_code_object *code = (t_code_object *)method->code;
+                if (code->native_func) {
+                    obj3 = code->native_func(obj1, args);
+                } else {
+                    tfr = vm_frame_new(frame, code->bytecode);
+                    obj3 = vm_execute(tfr);
+                }
 
-                dll_free(dll);
+                object_inc_ref(obj3);
+                vm_frame_stack_push(frame, obj3);
+
+                dll_free(args);
 
                 goto dispatch;
                 break;
 
+            // Import X as Y from Z
             case VM_IMPORT :
                 // Fetch the module to import
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
                 char *module = OBJ2STR(obj1);
 
                 // Fetch class
-                obj1 = stack_pop();
+                obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
                 char *class = OBJ2STR(obj1);
 
-                printf("Importing %s from %s\n", class, module);
+                //printf("Importing %s from %s\n", class, module);
 
-                obj3 = _import(module, class);
+                obj3 = _import(frame, module, class);
                 object_inc_ref(obj3);
-                stack_push(obj3);
+                vm_frame_stack_push(frame, obj3);
 
                 goto dispatch;
                 break;
 
+
+            case VM_SETUP_LOOP :
+                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp);
+                goto dispatch;
+                break;
+            case VM_POP_BLOCK :
+                vm_pop_block(frame);
+                goto dispatch;
+                break;
+
+            case VM_CONTINUE_LOOP :
+                ret = object_new(Object_Numerical, oparg1);
+                reason = REASON_CONTINUE;
+                goto block_end;
+                break;
+            case VM_BREAK_LOOP :
+                reason = REASON_BREAK;
+                goto block_end;
+                break;
+            case VM_BREAKELSE_LOOP :
+                reason = REASON_BREAKELSE;
+                goto block_end;
+                break;
+
+            case VM_COMPARE_OP :
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+                obj2 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj2);
+
+                if (obj1->type != obj2->type) {
+                    saffire_vm_error("Cannot compare non-identical object types");
+                }
+                obj3 = object_comparison(obj1, oparg1, obj2);
+
+                object_inc_ref(obj3);
+                vm_frame_stack_push(frame, obj3);
+                goto dispatch;
+                break;
+
+            case VM_SETUP_FINALLY :
+                vm_push_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp);
+                goto dispatch;
+                break;
+            case VM_SETUP_EXCEPT :
+                vm_push_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp);
+                goto dispatch;
+                break;
+            case VM_END_FINALLY :
+                //
+                goto dispatch;
+                break;
+
+
+            case VM_BUILD_CLASS :
+                goto dispatch;
+                break;
+            case VM_MAKE_METHOD :
+                goto dispatch;
+                break;
+            case VM_RETURN :
+                ret = vm_frame_stack_pop(frame);
+                object_dec_ref(ret);
+
+                reason = REASON_RETURN;
+                goto block_end;
+                break;
+
         } // switch(opcode) {
+
+
+block_end:
+        // We have reached the end of a frameblock or frame. Only use the RET object from here on.
+
+        while (reason != REASON_NONE && frame->block_cnt > 0) {
+            block = vm_fetch_block(frame);
+
+            if (reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
+                DEBUG_PRINT("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
+                // Continue block
+                frame->ip = OBJ2NUM(ret);
+                break;
+            }
+
+            // Pop block. Not needed anymore.
+            vm_pop_block(frame);
+
+            // Unwind the stack. Make sure we are at the same level as the caller block.
+            while (frame->sp < block->sp) {
+                DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+            }
+
+            if (reason == REASON_BREAK && block->type == BLOCK_TYPE_LOOP) {
+                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->ip);
+                frame->ip = block->ip;
+                break;
+            }
+        }
+
+        if (reason == REASON_RETURN) {
+            // Break from the loop. We're done
+            break;
+        }
+
     } // for (;;)
 
-    // @TODO: We should return "something"
-    return 0;
+
+    return ret;
 }

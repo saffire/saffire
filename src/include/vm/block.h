@@ -24,21 +24,14 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __VM_BLOCK_H__
+#define __VM_BLOCK_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
     #include "vm/frame.h"
 
-    t_hash_object *builtin_identifiers;
-
-    void vm_init(void);
-    void vm_fini(void);
-    t_object *vm_execute(t_vm_frame *frame);
-
-    void saffire_vm_warning(char *str, ...);
-    void saffire_vm_error(char *str, ...);
+    void vm_push_block(t_vm_frame *frame, int type, int ip, int sp);
+    t_vm_frameblock *vm_pop_block(t_vm_frame *frame);
+    t_vm_frameblock *vm_fetch_block(t_vm_frame *frame);
 
 #endif
 
