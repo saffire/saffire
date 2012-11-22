@@ -14,7 +14,7 @@ t_bytecode *generate_dummy_bytecode_bc002_bcs(void) {
         "\x81\x02\x00"         // LOAD_CONST          25
         "\x82\x02\x00"         // LOAD_ID             c
         "\x95\x03\x00"         // COMPARE_OP          OP_GT
-        "\x85\x07\x00"         // JUMP_IF_FALSE       #no_ret
+        "\x85\x04\x00"         // JUMP_IF_FALSE       #no_ret
         "\x81\x03\x00"         // LOAD_CONST          "Jah!"
         "\x73"                 // RETURN_VALUE
     // #no_ret:

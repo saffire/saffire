@@ -68,3 +68,11 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
     block = &frame->blocks[frame->block_cnt];
     return block;
 }
+
+/**
+ *
+ */
+t_vm_frameblock *vm_fetch_block(t_vm_frame *frame) {
+    DEBUG_PRINT(">>> FETCH BLOCK\n");
+    return &frame->blocks[frame->block_cnt - 1];
+}

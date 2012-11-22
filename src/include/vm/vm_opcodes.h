@@ -63,6 +63,8 @@
 
     #define VM_POP_BLOCK            0x72
     #define VM_RETURN_VALUE         0x73
+    #define VM_BREAK_LOOP           0x74
+    #define VM_BREAKELSE_LOOP       0x75
 
     #define VM_USE                  0x7E
     #define VM_IMPORT               0x7F
@@ -86,8 +88,6 @@
     #define VM_SETUP_LOOP           0x90
 
     #define VM_CONTINUE_LOOP        0x92
-    #define VM_BREAK_LOOP           0x93
-    #define VM_BREAKELSE_LOOP       0x94
     #define VM_COMPARE_OP           0x95
     #define VM_SETUP_FINALLY        0x96
     #define VM_SETUP_EXCEPT         0x97

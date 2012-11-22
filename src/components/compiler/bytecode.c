@@ -392,30 +392,6 @@ void bytecode_free(t_bytecode *bc) {
 }
 
 
-
-t_bytecode *generate_dummy_bytecode_001(void) {
-    char dummy_code[] =
-                        "\x81\x00\x00"      //    0  LOAD_CONST   0 (100)
-                        "\x73"              //   69  RETURN_VALUE
-                       ;
-
-    t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
-    bzero(bc, sizeof(t_bytecode));
-    bc->stack_size = 10;
-    bc->code_len = sizeof(dummy_code);
-    bc->code = smm_malloc(bc->code_len);
-    memcpy(bc->code, dummy_code, bc->code_len);
-
-    bc->constants = NULL;   // Important to start constants and identifiers on NULL
-    bc->identifiers = NULL;
-
-    // constants
-    _new_constant_long(bc, 100);
-
-    return bc;
-}
-
-
 /**
  * @TODO: Temporary bytecode includes
  */

@@ -53,6 +53,9 @@ class Assembler {
 
              "POP_BLOCK" => 0x72,
              "RETURN_VALUE" => 0x73,
+             "BREAK_LOOP" => 0x74,
+             "BREAKELSE_LOOP" => 0x75,
+
 
              "USE" => 0x7E,
              "IMPORT" => 0x7F,
@@ -74,8 +77,6 @@ class Assembler {
 
              "SETUP_LOOP" => 0x90,
              "CONTINUE_LOOP" => 0x92,
-             "BREAK_LOOP" => 0x93,
-             "BREAKELSE_LOOP" => 0x94,
              "COMPARE_OP" => 0x95,
              "SETUP_FINALLY" => 0x96,
              "SETUP_EXCEPT" => 0x97,
@@ -173,7 +174,7 @@ class Assembler {
                         // Loop
                         // Note: We will fill offsets later on, when we actually have parsed ALL the codes
                         $label_pass[count($bc)] = substr($operand[$i], 1);
-                        $operand[$i] = 0xFF;
+                        $operand[$i] = 0xFFFF;
                     } else if ($operand[$i][0] == '"') {
                         // String
                         $operand[$i] = $this->_convert_constant("string", substr($operand[$i], 1, -1));
@@ -213,10 +214,10 @@ class Assembler {
 
             $label_off = $this->labels[$label];
 
-            if ($bc[$off] == 0x86) {  // JUMP_ABSOLUTE
+            if (in_array($bc[$off], array(0x86, 0x92, 0x93))) {  // JUMP_ABSOLUTE
                 $new_offset = $label_off;
             } else {
-                $new_offset = $label_off - $off;
+                $new_offset = $label_off - $off - 2 - 1;
             }
             $bc[$off+1] = $new_offset;
 

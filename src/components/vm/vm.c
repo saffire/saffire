@@ -41,13 +41,16 @@
 #include "objects/null.h"
 #include "interpreter/errors.h"
 #include "modules/module_api.h"
+#include "debug.h"
 
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+#define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
 
-#define REASON_RETURN       0
-#define REASON_CONTINUE     1
-#define REASON_BREAK        2
-#define REASON_BREAKELSE    3
+#define REASON_NONE         0
+#define REASON_RETURN       1
+#define REASON_CONTINUE     2
+#define REASON_BREAK        3
+#define REASON_BREAKELSE    4
 
 /**
  *
@@ -121,11 +124,12 @@ static t_object *_import(t_vm_frame *frame, char *module, char *class) {
  *
  */
 t_object *vm_execute(t_vm_frame *frame) {
-    register t_object *obj1, *obj2, *obj3, *obj4, *ret;
+    register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
     register char *s1;
-    int reason;
+    int reason = REASON_NONE;
     t_vm_frame *tfr;
+    t_vm_frameblock *block;
 
 
     for (;;) {
@@ -135,7 +139,9 @@ dispatch:
         frame->executions++;
 
 
+#ifdef __DEBUG
         unsigned long cip = frame->ip;
+#endif
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
@@ -526,31 +532,38 @@ dispatch:
                 goto block_end;
                 break;
 
-//            case VM_LOAD_LOCALS :
-//                goto dispatch;
-//                break;
-
         } // switch(opcode) {
 
 
 block_end:
-        // A block has ended. We have to "jump" to another place. Figure out why this is, and how to deal with it
-        switch (reason) {
-            case REASON_RETURN :
-                // Return from a function
-                ret = vm_frame_stack_pop(frame);
-                break;
-            case REASON_CONTINUE :
-                // Continue a loop
-                break;
-            case REASON_BREAK :
-                // Break from a loop
-                break;
-            case REASON_BREAKELSE :
-                // Break into the else part of a loop
-                break;
-        }
+        // We have reached the end of a frameblock.
 
+        while (reason != REASON_NONE && frame->block_cnt > 0) {
+            block = vm_fetch_block(frame);
+
+            if (reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
+                DEBUG_PRINT("\n*** Continuing loop at %08X\n\n", oparg1);
+                // Continue block
+                frame->ip = oparg1;
+                break;
+            }
+
+            // Pop block. Not needed anymore.
+            vm_pop_block(frame);
+
+            // Unwind the stack. Make sure we are at the same level as the caller block.
+            while (frame->sp < block->sp) {
+                DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+            }
+
+            if (reason == REASON_BREAK && block->type == BLOCK_TYPE_LOOP) {
+                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->ip);
+                frame->ip = block->ip;
+                break;
+            }
+        }
 
     } // for (;;)
 

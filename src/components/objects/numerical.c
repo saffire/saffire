@@ -330,8 +330,6 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
-    DEBUG_PRINT("Numerical EQ called");
-
     t_numerical_object *self = (t_numerical_object *)_self;
     t_numerical_object *other = (t_numerical_object *)_other;
 

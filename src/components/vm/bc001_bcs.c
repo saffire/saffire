@@ -9,12 +9,12 @@ t_bytecode *generate_dummy_bytecode_bc001_bcs(void) {
         "\x80\x00\x00"         // STORE_ID            io
         "\x81\x02\x00"         // LOAD_CONST          5
         "\x80\x01\x00"         // STORE_ID            a
-        "\x90\x29\x00"         // SETUP_LOOP          #end_loop1
+        "\x90\x26\x00"         // SETUP_LOOP          #end_loop1
     // #loop1:
         "\x82\x01\x00"         // LOAD_ID             a
         "\x81\x03\x00"         // LOAD_CONST          10
         "\x95\x02\x00"         // COMPARE_OP          OP_NE
-        "\x85\x1D\x00"         // JUMP_IF_FALSE       #end_loop1
+        "\x85\x1A\x00"         // JUMP_IF_FALSE       #end_loop1
         "\x01"                 // POP_TOP
         "\x82\x01\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io

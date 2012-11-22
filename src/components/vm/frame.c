@@ -34,6 +34,7 @@
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/null.h"
+#include "debug.h"
 
 
 /**
@@ -74,7 +75,7 @@ int vm_frame_get_operand(t_vm_frame *frame) {
 t_object *vm_frame_stack_pop(t_vm_frame *frame) {
     DEBUG_PRINT("STACK POP(%d): %08lX %s\n", frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
-    if (frame->sp == frame->bytecode->stack_size) {
+    if (frame->sp >= frame->bytecode->stack_size) {
         saffire_vm_error("Trying to pop from an empty stack");
     }
     t_object *ret = frame->stack[frame->sp];

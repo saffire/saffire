@@ -31,6 +31,7 @@
 
     void vm_push_block(t_vm_frame *frame, int type, int ip, int sp);
     t_vm_frameblock *vm_pop_block(t_vm_frame *frame);
+    t_vm_frameblock *vm_fetch_block(t_vm_frame *frame);
 
 #endif
 
