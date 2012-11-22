@@ -80,7 +80,7 @@ SAFFIRE_METHOD(code, call) {
  *
  */
 SAFFIRE_METHOD(code, internal) {
-    if (self->f) {
+    if (self->native_func) {
         RETURN_TRUE;
     }
 
@@ -91,7 +91,7 @@ SAFFIRE_METHOD(code, internal) {
  *
  */
 SAFFIRE_METHOD(code, conv_boolean) {
-    if (self->p || self->f) {
+    if (self->bytecode || self->native_func) {
         RETURN_TRUE;
     }
 
@@ -163,8 +163,8 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
     t_code_object *new_obj = smm_malloc(sizeof(t_code_object));
     memcpy(new_obj, Object_Code, sizeof(t_code_object));
 
-    new_obj->p = va_arg(arg_list, t_ast_element *);
-    new_obj->f = va_arg(arg_list, void *);
+    new_obj->bytecode = va_arg(arg_list, t_bytecode *);
+    new_obj->native_func = va_arg(arg_list, void *);
 
     // These are instances
     new_obj->flags &= ~OBJECT_TYPE_MASK;
@@ -178,7 +178,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 char global_buf[1024];
 static char *obj_debug(struct _object *obj) {
     t_code_object *self = (t_code_object *)obj;
-    sprintf(global_buf, "code object. Internal: %s", self->f ? "yes" : "no");
+    sprintf(global_buf, "code object. Internal: %s", self->native_func ? "yes" : "no");
     return global_buf;
 }
 #endif

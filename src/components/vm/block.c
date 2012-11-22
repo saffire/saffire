@@ -27,7 +27,7 @@
 #include <string.h>
 #include "vm/block.h"
 #include "vm/frame.h"
-
+#include "debug.h"
 
 /**
  *
@@ -35,13 +35,15 @@
 void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
     t_vm_frameblock *block;
 
-    if (frame->block_count >= BLOCK_MAX) {
+    DEBUG_PRINT(">>> PUSH BLOCK\n");
+
+    if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
         printf("Too many blocks!");
         exit(1);
     }
 
-    block = &frame->blocks[frame->block_count];
-    frame->block_count++;
+    block = &frame->blocks[frame->block_cnt];
+    frame->block_cnt++;
 
     block->type = type;
     block->ip = ip;
@@ -52,15 +54,17 @@ void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
 /**
  *
  */
-t_vm_frameblock vm_pop_block(t_vm_frame *frame) {
+t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
     t_vm_frameblock *block;
 
-    if (frame->block_count <= 0) {
+    DEBUG_PRINT(">>> POP BLOCK\n");
+
+    if (frame->block_cnt <= 0) {
         printf("Not enough blocks!");
         exit(1);
     }
 
-    frame->block_count--;
-    blocks = &frame->blocks[frame->block_count];
+    frame->block_cnt--;
+    block = &frame->blocks[frame->block_cnt];
     return block;
 }

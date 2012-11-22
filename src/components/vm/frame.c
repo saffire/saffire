@@ -25,13 +25,21 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include "vm/vm.h"
 #include "vm/frame.h"
+#include "compiler/bytecode.h"
+#include "vm/vm_opcodes.h"
+#include "general/smm.h"
+#include "objects/string.h"
+#include "objects/numerical.h"
+#include "objects/hash.h"
+#include "objects/null.h"
 
 
 /**
  * Returns the next opcode
  */
-static unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
+unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
     if (frame->ip < 0 || frame->ip > frame->bytecode->code_len) {
         saffire_vm_error("Trying to reach outside code length!");
     }
@@ -49,7 +57,7 @@ static unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
 /**
  * Returns he next operand. Does not do any sanity checks if it actually is an operand.
  */
-static int vm_frame_get_operand(t_vm_frame *frame) {
+int vm_frame_get_operand(t_vm_frame *frame) {
     // Read operand
     char *ptr = frame->bytecode->code + frame->ip;
 
@@ -63,8 +71,8 @@ static int vm_frame_get_operand(t_vm_frame *frame) {
 /**
  * Pops an object from the stack. Errors when the stack is empty
  */
-static t_object *vm_frame_stack_pop(t_vm_frame *frame) {
-    //printf("STACK POP(%d)\n", cfr->sp);
+t_object *vm_frame_stack_pop(t_vm_frame *frame) {
+    DEBUG_PRINT("STACK POP(%d): %08lX %s\n", frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp == frame->bytecode->stack_size) {
         saffire_vm_error("Trying to pop from an empty stack");
@@ -79,10 +87,8 @@ static t_object *vm_frame_stack_pop(t_vm_frame *frame) {
 /**
  * Pushes an object onto the stack. Errors when the stack is full
  */
-static void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
-    printf ("DBG: %s\n", object_debug(obj));
-
-    //printf("STACK PUSH(%d)\n", frame->sp);
+void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
+    DEBUG_PRINT("DBG PUSH: %s %08lX \n", object_debug(obj), (unsigned long)obj);
 
     if (frame->sp < 0) {
         saffire_vm_error("Trying to push to a full stack");
@@ -97,7 +103,7 @@ static void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
 /**
  * Fetches the top of the stack. Does not pop anything.
  */
-static t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
+t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
     return frame->stack[frame->sp];
 }
 
@@ -105,7 +111,7 @@ static t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
 /**
  * Fetches a non-top element form the stack. Does not pop anything.
  */
-static t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
+t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->stack_size) {
         saffire_vm_error("Trying to fetch from outside stack range");
     }
@@ -117,7 +123,7 @@ static t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
 /**
  * Return a constant literal, without converting to an object
  */
-static void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
+void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
         saffire_vm_error("Trying to fetch from outside constant range");
     }
@@ -130,7 +136,7 @@ static void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
 /**
   *
   */
-static t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
+t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
         saffire_vm_error("Trying to fetch from outside constant range");
     }
@@ -158,7 +164,7 @@ static t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
 /**
  * Store object into the global identifier table
  */
-static void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     if (obj == NULL) {
         ht_remove(frame->global_identifiers->ht, id);
     } else {
@@ -170,7 +176,7 @@ static void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object
 /**
  * Return object from the global identifier table
  */
-static t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
+t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
     t_object *obj = ht_num_find(frame->global_identifiers->ht, idx);
     if (obj == NULL) RETURN_NULL;
     return obj;
@@ -180,15 +186,19 @@ static t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
 /**
  * Store object into either the local or global identifier table
  */
-static void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    ht_add(frame->local_identifiers->ht, id, obj);
+void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+    if (ht_find(frame->local_identifiers->ht, id)) {
+        ht_replace(frame->local_identifiers->ht, id, obj);
+    } else {
+        ht_add(frame->local_identifiers->ht, id, obj);
+    }
 }
 
 
 /**
  * Return object from either the local or the global identifier table
  */
-static t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
+t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
 
     obj = ht_find(frame->local_identifiers->ht, id);
@@ -210,7 +220,7 @@ static t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 /**
  *
  */
-static char *vm_frame_get_name(t_vm_frame *frame, int idx) {
+char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
         saffire_vm_error("Trying to fetch from outside identifier range");
     }
@@ -222,22 +232,28 @@ static char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_create(t_bytecode *bytecode) {
+t_vm_frame *vm_frame_new(t_vm_frame *frame, t_bytecode *bytecode) {
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
 
+    cfr->parent = frame;
     cfr->bytecode = bytecode;
     cfr->ip = 0;
-
-    cfr->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
-    bzero(cfr->stack, bytecode->stack_size * sizeof(t_object *));
     cfr->sp = bytecode->stack_size-1;
 
-    // Identifiers
-    cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
+    // Setup variable stack
+    cfr->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
+    bzero(cfr->stack, bytecode->stack_size * sizeof(t_object *));
 
-    // Set global and builtin identifiers
-    cfr->global_identifiers = global_identifiers;
+    // Set the variable hashes
+    if (frame == NULL) {
+        // Initial frame, so create a new global identifier hash
+        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash);
+    } else {
+        // otherwise copy from parent
+        cfr->global_identifiers = frame->global_identifiers;
+    }
+    cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
     cfr->builtin_identifiers = builtin_identifiers;
 
     return cfr;
@@ -246,6 +262,5 @@ t_vm_frame *vm_frame_create(t_bytecode *bytecode) {
 /**
  *
  */
-void vm_frame_destroy(t_vm_frame *frame) {
-
+void vm_frame_remove(t_vm_frame *frame) {
 }

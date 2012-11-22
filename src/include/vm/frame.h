@@ -27,11 +27,25 @@
 #ifndef __VM_FRAME_H__
 #define __VM_FRAME_H__
 
-    #include "general/hashtable.h"
     #include "compiler/bytecode.h"
-    #include "vm/block.h"
+    #include "objects/hash.h"
+
+    #define BLOCK_MAX_DEPTH             20          // This is the same depth as defined in python
+
+    #define BLOCK_TYPE_LOOP             1
+    #define BLOCK_TYPE_EXCEPTION        2
+    #define BLOCK_TYPE_FINALLY          3
+    #define BLOCK_TYPE_END_FINALLY      4
+
+    typedef struct _vm_frameblock {
+        int type;       // Type (BLOCK_TYPE_*)
+        int ip;         // IP to set
+        int sp;         // SP to set
+    } t_vm_frameblock;
+
 
     typedef struct _vm_frame {
+        struct _vm_frame *parent;               // Parent frame, or NULL when we reached the initial / global frame.
         char *name;
         t_bytecode *bytecode;                   // Global bytecode array
         unsigned int ip;                        // Instruction pointer
@@ -44,14 +58,14 @@
         t_hash_object *builtin_identifiers;     // Builtin identifiers
 
         int block_cnt;
-        t_vm_frameblock blocks[BLOCK_MAX];
+        t_vm_frameblock blocks[BLOCK_MAX_DEPTH];
 
         //unsigned int time;                      // Total time spend in this bytecode block
         unsigned int executions;                // Number of total executions (opcodes processed)
     } t_vm_frame;
 
 
-    t_vm_frame *vm_frame_create(t_bytecode *bytecode);
+    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode);
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);

@@ -62,6 +62,7 @@
     #define VM_MAKE_METHOD          0x71
 
     #define VM_POP_BLOCK            0x72
+    #define VM_RETURN_VALUE         0x73
 
     #define VM_USE                  0x7E
     #define VM_IMPORT               0x7F
@@ -91,7 +92,7 @@
     #define VM_SETUP_FINALLY        0x96
     #define VM_SETUP_EXCEPT         0x97
     #define VM_END_FINALLY          0x98
-    #define VM_RETURN_VALUE         0x99
+
 
 
     // Two operand opcodes

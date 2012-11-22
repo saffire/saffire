@@ -27,22 +27,10 @@
 #ifndef __VM_BLOCK_H__
 #define __VM_BLOCK_H__
 
-    #define BLOCK_MAX       20          // This is the depth as defined in python
+    #include "vm/frame.h"
 
-    #define BLOCK_TYPE_FUNCTION     1
-    #define BLOCK_TYPE_EXCEPTION    2
-    #define BLOCK_TYPE_FINALLY      3
-    #define BLOCK_TYPE_END_FINALLY  4
-
-    typedef struct _vm_frameblock {
-        int type;       // Type (BLOCK_TYPE_*)
-        int ip;         // IP to set
-        int sp;         // SP to set
-    } t_vm_frameblock;
-
-    struct _vm_frame;
-    vm_push_block(t_vm_frame *frame, int type, int ip, int sp);
-    vm_pop_block(t_vm_frame *frame);
+    void vm_push_block(t_vm_frame *frame, int type, int ip, int sp);
+    t_vm_frameblock *vm_pop_block(t_vm_frame *frame);
 
 #endif
 

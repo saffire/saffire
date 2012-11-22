@@ -33,6 +33,7 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include "vm/vm.h"
+#include "vm/frame.h"
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
@@ -54,7 +55,7 @@ static void _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     printf("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
-    t_bytecode *bc = generate_dummy_bytecode();
+    t_bytecode *bc = generate_dummy_bytecode_bc001_bcs();
     bytecode_save(dest_file, source_file, bc);
     bytecode_free(bc);
 
@@ -286,16 +287,16 @@ static int do_exec(void) {
     t_bytecode *bc = bytecode_load(dest_file, verify);
     smm_free(dest_file);
 
-
-
     // Init stuff
     setlocale(LC_ALL,"");
     context_init();
     vm_init();
 
+    // Create initial frame
+    t_vm_frame *initial_frame = vm_frame_new(NULL, bc);
 
     printf("Executing...\n");
-    int ret = vm_execute(bc);
+    int ret = vm_execute(initial_frame);
     bytecode_free(bc);
 
 

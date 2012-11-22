@@ -29,11 +29,15 @@
 
     #include "compiler/bytecode.h"
     #include "objects/hash.h"
+    #include "vm/frame.h"
 
     t_hash_object *builtin_identifiers;
 
     void vm_init(void);
-    int vm_execute(t_bytecode *source_bc);
+    int vm_execute(t_vm_frame *frame);
+
+    void saffire_vm_warning(char *str, ...);
+    void saffire_vm_error(char *str, ...);
 
 #endif
 

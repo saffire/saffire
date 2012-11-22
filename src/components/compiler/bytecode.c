@@ -392,163 +392,11 @@ void bytecode_free(t_bytecode *bc) {
 }
 
 
-/**
- * Create dummy bytecode instance
- * @TODO remove me
- */
-t_bytecode *generate_dummy_bytecode(void) {
+
+t_bytecode *generate_dummy_bytecode_001(void) {
     char dummy_code[] =
-                        // import io as io from ::sfl::io; (or: import io)
-                        "\x81\x03\x00"      //    LOAD_CONST    3 (io)
-                        "\x81\x05\x00"      //    LOAD_CONST    5 (::sfl::io)
-                        "\x7F"              //    IMPORT
-                        "\x80\x03\x00"      //    STORE_ID      3 (io)
-
-                        // import console as the_con, io as new_io from ::sfl::io;
-                        "\x81\x04\x00"      //    LOAD_CONST    4 (console)
-                        "\x81\x05\x00"      //    LOAD_CONST    5 (::sfl::io)
-                        "\x7F"              //    IMPORT
-                        "\x80\x04\x00"      //    STORE_ID      4 (the_con)
-
-                        "\x81\x03\x00"      //    LOAD_CONST    3 (io)
-                        "\x81\x05\x00"      //    LOAD_CONST    3 (::sfl::io)
-                        "\x7F"              //    IMPORT
-                        "\x80\x06\x00"      //    STORE_ID      4 (new_io)
-
-
-                        // a = 5;
-                        "\x81\x07\x00"      //    LOAD_CONST    7 (5)
-                        "\x80\x00\x00"      //    STORE_ID      0 (a)
-                        // while (a < 10) {
-                        "\x90\x00\x00"      //    SETUP_LOOP
-                        // SOL_1:
-                        "\x82\x00\x00"      //    LOAD_ID       0 (a)
-                        "\x81\x07\x00"      //    LOAD_CONST    8 (10)
-                        "\x95\x02\x00"      //    COMPARE_OP    (NE)
-                        "\x85\x18\x00"      //    JUMP_IF_FALSE (EOL_1)
-
-                         // Print a
-                        "\x82\x00\x00"         //       LOAD_ID      0 (a)
-                        "\x82\x03\x00"         //       LOAD_ID      6 (io)
-                        "\xC0\x02\x00"         //   25  CALL_METHOD  2 (print), 0
-                            "\x01\x00"
-
-                        // a = a + 1
-                        "\x82\x00\x00"      //   20  LOAD_ID      0 (a)
-                        "\x81\x09\x00"      //   20  LOAD_CONST   0 (1)
-                        "\x17"              //   20  BINARY_ADD
-                        "\x80\x00\x00"      //   15  STORE_ID     0 (a)
-
-                        //"\x01"              //    POP_TOP
-                        "\x86\x27\x00"      //    JUMP_ABSOLUTE     (SOL_1)
-
-                        //EOL_1:
-                        "\x72"              // POP_BLOCK
-
-                        // the_con.print("ALL DONE");
-                        "\x82\x0A\x00"         //       LOAD_CONST  10 (ALL DONE)
-                        "\x82\x03\x00"         //       LOAD_ID      6 (io)
-                        "\xC0\x02\x00"         //   25  CALL_METHOD  2 (print), 0
-                            "\x01\x00"
-
-                        "\x00"              // STOP
-
-
-
-
-                        // a = 0x1234;
-                        "\x81\x00\x00"      //    0  LOAD_CONST   0 (0x1234)
-                        "\x80\x00\x00"      //    5  STORE_ID     0 (a)
-                        // b = 0x5678;
-                        "\x81\x01\x00"      //   10  LOAD_CONST   1 (0x5678)
-                        "\x80\x01\x00"      //   15  STORE_ID     1 (b)
-
-                        // c = a + b;
-                        "\x82\x00\x00"      //   20  LOAD_ID      0 (a)
-                        "\x82\x01\x00"      //   20  LOAD_ID      0 (b)
-                        "\x17"              //   20  BINARY_ADD
-                        "\x80\x02\x00"      //   15  STORE_ID     1 (c)
-
-                        // newio.print(c);
-                        "\x82\x02\x00"      //       LOAD_ID      2 (c)
-                        "\x82\x06\x00"      //       LOAD_ID      6 (new_io)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x01\x00"
-
-                        // the_con.print(c);
-                        "\x82\x0A\x00"         //       LOAD_CONST  10 (ALL DONE)
-                        "\x82\x04\x00"         //       LOAD_ID      6 (the_con)
-                        "\xC0\x02\x00"         //   25  CALL_METHOD  2 (print), 0
-                            "\x01\x00"
-
-                        "\x00"              //   69  STOP
-
-
-
-//                        // c = c + c;
-//                        "\x82\x02\x00"      //   20  LOAD_ID      0 (c)
-//                        "\x82\x02\x00"      //   20  LOAD_ID      0 (c)
-//                        "\x17"              //   20  BINARY_ADD
-//                        "\x80\x02\x00"      //   15  STORE_ID     1 (c)
-//
-//                        // c.print();
-//                        "\x82\x02\x00"      //   20  LOAD_ID      0 (c)
-//                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-//                            "\x00\x00"
-//
-//
-//                        "\x82\x02\x00"      //       LOAD_ID      2 (c)
-//                        "\x82\x05\x00"      //       LOAD_ID      5 (::_sfl::io)
-//                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-//                            "\x01\x00"
-
-                        "\x00"              //   69  STOP
-
-                        // a.print();
-                        "\x82\x00\x00"      //   20  LOAD_ID       0 (a)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-
-                        "\x83\x0E\x00"      //   JMP FORWARD
-
-                        // b.print();
-                        "\x82\x01\x00"      //   20  LOAD_ID       1 (b)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-
-
-                        "\x82\x00\x00"      //   20  LOAD_ID       0 (a)
-                        "\x84\x0E\x00"      //   JUMP_IF_TRUE  1:
-
-                        // b.print();
-                        "\x82\x01\x00"      //   20  LOAD_ID       1 (b)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-                        // 1:
-                        // a.print();
-                        "\x82\x00\x00"      //   20  LOAD_ID       0 (a)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-
-                        "\x00"              //   69  STOP
-
-
-                        // (a, b) = (b, a)
-                        "\x82\x00\x00"      //   36  LOAD_ID       0 (a)
-                        "\x82\x01\x00"      //   41  LOAD_ID       1 (b)
-                        "\x02"              //   46  ROT_TWO
-                        "\x80\x00\x00"      //   47  STORE_ID     0 (a)
-                        "\x80\x01\x00"      //   52  STORE_ID     1 (b)
-                        // a.print()
-                        "\x82\x00\x00"      //   20  LOAD_ID       0 (a)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-                        // b.print()
-                        "\x82\x01\x00"      //   20  LOAD_ID       1 (b)
-                        "\xC0\x02\x00"      //   25  CALL_METHOD  2 (print), 0
-                            "\x00\x00"
-
-                        "\x00"              //   69  STOP
+                        "\x81\x00\x00"      //    0  LOAD_CONST   0 (100)
+                        "\x73"              //   69  RETURN_VALUE
                        ;
 
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
@@ -562,27 +410,18 @@ t_bytecode *generate_dummy_bytecode(void) {
     bc->identifiers = NULL;
 
     // constants
-    _new_constant_long(bc, 0x1234);
-    _new_constant_long(bc, 0x5678);
-    _new_constant_string(bc, "print");
-    _new_constant_string(bc, "io");
-    _new_constant_string(bc, "console");
-    _new_constant_string(bc, "::_sfl::io");
-    _new_constant_string(bc, "the_con");
-    _new_constant_long(bc, 5);
-    _new_constant_long(bc, 10);
-    _new_constant_long(bc, 1);
-    _new_constant_string(bc, "ALL DONE");
-    _new_name(bc, "a");
-    _new_name(bc, "b");
-    _new_name(bc, "c");
-    _new_name(bc, "io");
-    _new_name(bc, "the_con");
-    _new_name(bc, "::_sfl::io::io");
-    _new_name(bc, "new_io");
+    _new_constant_long(bc, 100);
 
     return bc;
 }
+
+
+/**
+ * @TODO: Temporary bytecode includes
+ */
+#include "../../src/components/vm/bc001_bcs.c"
+#include "../../src/components/vm/bc002_bcs.c"
+#include "../../src/components/vm/bc003_bcs.c"
 
 
 /**

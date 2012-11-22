@@ -27,8 +27,8 @@
 #include <string.h>
 #include "compiler/bytecode.h"
 #include "vm/vm_opcodes.h"
-#include "vm/frame.h"
 #include "vm/block.h"
+#include "vm/frame.h"
 #include "general/dll.h"
 #include "general/smm.h"
 #include "objects/object.h"
@@ -36,6 +36,8 @@
 #include "objects/string.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
+#include "objects/code.h"
+#include "objects/method.h"
 #include "objects/null.h"
 #include "interpreter/errors.h"
 #include "modules/module_api.h"
@@ -50,7 +52,7 @@
 /**
  *
  */
-static void saffire_vm_warning(char *str, ...) {
+void saffire_vm_warning(char *str, ...) {
     va_list args;
     va_start(args, str);
     fprintf(stderr, "Warning: ");
@@ -62,7 +64,7 @@ static void saffire_vm_warning(char *str, ...) {
 /**
  *
  */
-static void saffire_vm_error(char *str, ...) {
+void saffire_vm_error(char *str, ...) {
     va_list args;
     va_start(args, str);
     fprintf(stderr, "Error: ");
@@ -90,7 +92,7 @@ static void saffire_vm_error(char *str, ...) {
 
 //#define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
 
-t_hash_object *global_identifiers = NULL;
+// Builtin identifiers (like internal library objects etc)
 t_hash_object *builtin_identifiers = NULL;
 
 /**
@@ -116,25 +118,6 @@ static t_object *_import(t_vm_frame *frame, char *module, char *class) {
 
 
 /**
- * Calls a method by creating a new frame.
- */
-t_object *vm_call_method(t_object *object, t_object *method, t_dll *args) {
-    t_vm_frame *method_frame = vm_frame_create(method->bytecode);
-
-    t_object *vm_execute(method_frame);
-
-    vm_push_block(frame, BLOCK_TYPE_FUNCTION, frame->ip + oparg1, frame->sp);
-
-    obj2
-
-    // Call object and push result onto stack
-    obj3 = object_call_args(obj1, obj2, args);
-
-    vm_pop_block();
-}
-
-
-/**
  *
  */
 t_object *vm_execute(t_vm_frame *frame) {
@@ -144,10 +127,6 @@ t_object *vm_execute(t_vm_frame *frame) {
     int reason;
     t_vm_frame *tfr;
 
-    // If we don't have a global_identifier list yet, set this so next frames will use it as it's globals
-    if (! global_identifiers) {
-        global_identifiers = tfr->local_identifiers;
-    }
 
     for (;;) {
         // Room for some other stuff
@@ -171,11 +150,11 @@ dispatch:
 
 #ifdef __DEBUG
         if ((opcode & 0xC0) == 0xC0) {
-            printf("%08lX : 0x%02X (0x%02X, 0x%02X)\n", cip, opcode, oparg1, oparg2);
+            DEBUG_PRINT("%08lX : 0x%02X (0x%02X, 0x%02X)\n", cip, opcode, oparg1, oparg2);
         } else if ((opcode & 0x80) == 0x80) {
-            printf("%08lX : 0x%02X (0x%02X)\n", cip, opcode, oparg1);
+            DEBUG_PRINT("%08lX : 0x%02X (0x%02X)\n", cip, opcode, oparg1);
         } else {
-            printf("%08lX : 0x%02X\n", cip, opcode);
+            DEBUG_PRINT("%08lX : 0x%02X\n", cip, opcode);
         }
 #endif
 
@@ -270,6 +249,7 @@ dispatch:
                 obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
                 s1 = vm_frame_get_name(frame, oparg1);
+                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
                 vm_frame_set_identifier(frame, s1, obj1);
                 goto dispatch;
                 break;
@@ -382,7 +362,7 @@ dispatch:
 
             // Conditional jump on SP-0 is true
             case VM_JUMP_IF_TRUE :
-                obj1 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
@@ -398,7 +378,7 @@ dispatch:
 
             // Conditional jump on SP-0 is false
             case VM_JUMP_IF_FALSE :
-                obj1 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(obj1)) {
                     // Cast to boolean
                     obj2 = object_find_method(obj1, "boolean");
@@ -429,10 +409,12 @@ dispatch:
 
             // Calls method OP+0 SP+0 from object SP+1 with OP+1 args starting from SP+2.
             case VM_CALL_METHOD :
-                obj1 = vm_frame_stack_pop(frame);   // Self
+                // This object will become "self" in our method call
+                obj1 = vm_frame_stack_pop(frame);
+                // Find the actual method to call inside our object (or parent classes)
                 obj2 = object_find_method(obj1, (char *)vm_frame_get_constant_literal(frame, oparg1));
 
-                // TODO: Maybe this should just be a tuple?
+                // @TODO: Maybe this should just be a tuple object?
                 // Create argument list
                 t_dll *args = dll_init();
                 for (int i=0; i!=oparg2; i++) {
@@ -441,7 +423,14 @@ dispatch:
                     dll_append(args, obj3);
                 }
 
-                obj3 = vm_call_method(obj1, obj2, args);
+                t_method_object *method = (t_method_object *)obj2;
+                t_code_object *code = (t_code_object *)method->code;
+                if (code->native_func) {
+                    obj3 = code->native_func(obj1, args);
+                } else {
+                    tfr = vm_frame_new(frame, code->bytecode);
+                    obj3 = vm_execute(tfr);
+                }
 
                 object_inc_ref(obj3);
                 vm_frame_stack_push(frame, obj3);
@@ -474,13 +463,11 @@ dispatch:
 
 
             case VM_SETUP_LOOP :
-                tfr = dup_frame(oparg1);
                 vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp);
-                push_frame(tfr, "loop");
                 goto dispatch;
                 break;
             case VM_POP_BLOCK :
-                pop_frame();
+                vm_pop_block(frame);
                 goto dispatch;
                 break;
 
@@ -514,17 +501,15 @@ dispatch:
                 break;
 
             case VM_SETUP_FINALLY :
-                vm_create_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp);
-                tfr = dup_frame(oparg1);
-                push_frame(tfr, "finally");
+                vm_push_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp);
                 goto dispatch;
                 break;
             case VM_SETUP_EXCEPT :
-                vm_create_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp);
+                vm_push_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp);
                 goto dispatch;
                 break;
             case VM_END_FINALLY :
-                vm_create_block(frame, BLOCK_TYPE_END_FINALLY, frame->ip + oparg1, frame->sp);
+                //
                 goto dispatch;
                 break;
 
@@ -536,8 +521,7 @@ dispatch:
                 goto dispatch;
                 break;
             case VM_RETURN_VALUE :
-                // fetch retval
-                ret = vm_frame_stack_pop(frame);
+                // Fetch retval
                 reason = REASON_RETURN;
                 goto block_end;
                 break;
@@ -554,6 +538,7 @@ block_end:
         switch (reason) {
             case REASON_RETURN :
                 // Return from a function
+                ret = vm_frame_stack_pop(frame);
                 break;
             case REASON_CONTINUE :
                 // Continue a loop
