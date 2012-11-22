@@ -24,22 +24,55 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#include <string.h>
+#include "vm/block.h"
+#include "vm/frame.h"
+#include "debug.h"
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
-    #include "vm/frame.h"
+/**
+ *
+ */
+void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
+    t_vm_frameblock *block;
 
-    t_hash_object *builtin_identifiers;
+    DEBUG_PRINT(">>> PUSH BLOCK\n");
 
-    void vm_init(void);
-    void vm_fini(void);
-    t_object *vm_execute(t_vm_frame *frame);
+    if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
+        printf("Too many blocks!");
+        exit(1);
+    }
 
-    void saffire_vm_warning(char *str, ...);
-    void saffire_vm_error(char *str, ...);
+    block = &frame->blocks[frame->block_cnt];
+    frame->block_cnt++;
 
-#endif
+    block->type = type;
+    block->ip = ip;
+    block->sp = sp;
+}
 
 
+/**
+ *
+ */
+t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
+    t_vm_frameblock *block;
+
+    DEBUG_PRINT(">>> POP BLOCK\n");
+
+    if (frame->block_cnt <= 0) {
+        printf("Not enough blocks!");
+        exit(1);
+    }
+
+    frame->block_cnt--;
+    block = &frame->blocks[frame->block_cnt];
+    return block;
+}
+
+/**
+ *
+ */
+t_vm_frameblock *vm_fetch_block(t_vm_frame *frame) {
+    DEBUG_PRINT(">>> FETCH BLOCK\n");
+    return &frame->blocks[frame->block_cnt - 1];
+}

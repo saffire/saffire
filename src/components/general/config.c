@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <augeas.h>
+#include <fnmatch.h>
 
 #include "general/smm.h"
 #include "general/parse_options.h"
@@ -36,7 +37,7 @@ const char ini_filename[] = "/etc/saffire/saffire.ini";
 
 augeas *aug;
 char prefix[] = "/files/etc/saffire/saffire.ini/";
-
+char allmatch[] = "*/*[label() != '#comment']";
 
 /**
  * Convert key into a augeas-key
@@ -46,11 +47,10 @@ static char *config_generate_augeas_key(const char *key) {
 
     // Make sure the first dot is changed to /
     char *p = strchr(tmp_key, '.');
-    if (p == NULL) {
-        smm_free(tmp_key);
-        return NULL;
+    if (p != NULL) {
+        *p = '/';
     }
-    *p = '/';
+
 
     char *fqn_key = smm_malloc(strlen((char *)tmp_key) + strlen(prefix));
     strcpy(fqn_key, prefix);
@@ -144,7 +144,8 @@ int config_get_matches(const char *pattern, char ***matches) {
     char **tmp_matches;
     read_ini();
 
-    char *fqn_pattern = config_generate_augeas_key(pattern);
+    // Create a fully qualified augeas name (/files/...)
+    char *fqn_pattern = config_generate_augeas_key(allmatch);
     int ret = aug_match(aug, fqn_pattern, &tmp_matches);
     smm_free(fqn_pattern);
 
@@ -152,8 +153,26 @@ int config_get_matches(const char *pattern, char ***matches) {
     // directly into the config_get_*() functions.
     for (int i=0; i!=ret; i++) {
         char *ptr = tmp_matches[i];
+        // Remove the "augeas" part of the matched key
         if (strstr(ptr, prefix) == ptr) {
             memmove(ptr, ptr + strlen(prefix), strlen(ptr) - strlen(prefix)+1);
+        }
+
+        // change section/name to section.name
+        char *ptr2 = strchr(ptr, '/');
+        if (ptr2) *ptr2 = '.';
+
+        // pattern becomes *pattern*
+        char *wc_pattern = smm_malloc(strlen(pattern) + 3);
+        bzero(wc_pattern, strlen(pattern) + 3);
+        strcpy(wc_pattern, "*");
+        strcat(wc_pattern, pattern);
+        strcat(wc_pattern, "*");
+
+        // Check if it matches
+        if (fnmatch(wc_pattern, ptr, 0) != 0) {
+            free(ptr);
+            tmp_matches[i] = NULL;  // Just clear this entry.. not in use
         }
     }
 

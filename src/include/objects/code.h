@@ -28,16 +28,17 @@
 #define __CODE_H__
 
     #include "objects/object.h"
+    #include "compiler/bytecode.h"
 
     #define RETURN_CODE(p, f)   RETURN_OBJECT(object_new(Object_Code, p, f));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        t_ast_element *p;                        // external defined method (by AST leaf)
-        t_object *(*f)(t_object *, t_dll *);     // internal method (by method call)
+        t_bytecode *bytecode;                              // Extenral bytecode
+        t_object *(*native_func)(t_object *, t_dll *);     // internal method (by method call)
 
-//        // Additional information for code
+//        // @TODO: Additional information for code
 //        int calls;                  // Number of calls made to this code
 //        int time_spent;             // Time spend in this code
     } t_code_object;

@@ -33,14 +33,21 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include "vm/vm.h"
+#include "vm/frame.h"
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
 #include "general/path_handling.h"
 #include "compiler/bytecode.h"
+#include "objects/numerical.h"
 
 #include "general/config.h"
 
+
+// @TODO: Remove temp bytecodes
+t_bytecode *generate_dummy_bytecode_bc001_bcs(void);
+t_bytecode *generate_dummy_bytecode_bc002_bcs(void);
+t_bytecode *generate_dummy_bytecode_bc003_bcs(void);
 
 char *gpg_key = NULL;
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
@@ -54,7 +61,7 @@ static void _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     printf("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
-    t_bytecode *bc = generate_dummy_bytecode();
+    t_bytecode *bc = generate_dummy_bytecode_bc003_bcs();
     bytecode_save(dest_file, source_file, bc);
     bytecode_free(bc);
 
@@ -286,25 +293,30 @@ static int do_exec(void) {
     t_bytecode *bc = bytecode_load(dest_file, verify);
     smm_free(dest_file);
 
-
-
     // Init stuff
     setlocale(LC_ALL,"");
-    context_init();
     vm_init();
 
+    // Create initial frame
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *)NULL, bc);
 
     printf("Executing...\n");
-    int ret = vm_execute(bc);
+    t_object *obj1 = vm_execute(initial_frame);
+
+    // Convert returned object to numerical, so we can use it as an error code
+    if (! OBJECT_IS_NUMERICAL(obj1)) {
+        // Cast to numericak
+        t_object *obj2 = object_find_method(obj1, "numerical");
+        obj1 = object_call(obj1, obj2, 0);
+    }
+    int ret = ((t_numerical_object *)obj1)->value;
+
     bytecode_free(bc);
 
-
     // Fini stuff
-    module_fini();
-    object_fini();
-    context_fini();
+    vm_fini();
 
-    return ret;
+    return (ret & 0xFF);    // Make sure ret is a code between 0 and 255
 }
 
 

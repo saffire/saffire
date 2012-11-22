@@ -330,8 +330,6 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
-    DEBUG_PRINT("Numerical EQ called");
-
     t_numerical_object *self = (t_numerical_object *)_self;
     t_numerical_object *other = (t_numerical_object *)_other;
 
@@ -465,7 +463,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 #ifdef __DEBUG
 char tmp[100];
 static char *obj_debug(struct _object *obj) {
-    sprintf(tmp, "%ld", ((t_numerical_object *)obj)->value);
+    sprintf(tmp, "Numerical(%ld)", ((t_numerical_object *)obj)->value);
     return tmp;
 }
 #endif
