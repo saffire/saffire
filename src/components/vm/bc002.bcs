@@ -1,4 +1,7 @@
 ; Byte code assembler file
+;
+; Simple user-defined function
+;
 
     ; a = 10
     LOAD_CONST          10

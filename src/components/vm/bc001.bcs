@@ -1,4 +1,7 @@
 ; Byte code assembler file
+;
+; Simple while-loop example
+;
 
     ; Import io as io from ::_sfl::io
     LOAD_CONST          "io"
@@ -6,11 +9,6 @@
     IMPORT
     STORE_ID            io
 
-    ; Import console as the_con from ::_sfl::io
-    LOAD_CONST          "console"
-    LOAD_CONST          "::_sfl::io"
-    IMPORT
-    STORE_ID            the_con
 
     ; a = 5
     LOAD_CONST          5
@@ -23,11 +21,13 @@
     LOAD_CONST          10
     COMPARE_OP          OP_NE
     JUMP_IF_FALSE       #end_loop1
+    POP_TOP
 
     ; io.print(a)
     LOAD_ID             a
     LOAD_ID             io
-    CALL_METHOD         "print",    1
+    CALL_METHOD         "print", $1
+    POP_TOP
 
     ; a = a + 1
     LOAD_ID             a
@@ -36,16 +36,17 @@
     STORE_ID            a
 
     ; }
-    POP_TOP
     JUMP_ABSOLUTE       #loop1
 
 #end_loop1:
+    POP_TOP
     POP_BLOCK
 
     ; io.print("All done!")
     LOAD_CONST          "All done!"
     LOAD_ID             io
-    CALL_METHOD         "print", 0
+    CALL_METHOD         "print", $1
+    POP_TOP
 
     STOP
 
