@@ -123,13 +123,13 @@ static void _init(void) {
 }
 
 static void _fini(void) {
-    // Destroy methods and properties
+    object_remove_all_internal_methods(&io_struct);
     ht_destroy(io_struct.methods);
     ht_destroy(io_struct.properties);
 
+    object_remove_all_internal_methods(&console_struct);
     ht_destroy(console_struct.methods);
     ht_destroy(console_struct.properties);
-
 }
 
 

@@ -266,7 +266,7 @@ static void sfc_fini_global_table(void) {
     t_hash_table *ht = global_table->classes;
 
     t_hash_iter iter;
-    ht_iter_rewind(&iter, ht);
+    ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
         t_class *class = ht_iter_value(&iter);
 

@@ -332,7 +332,11 @@ void object_string_init(void) {
  * Frees memory for a string object
  */
 void object_string_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_String_struct);
     ht_destroy(Object_String_struct.methods);
+
+    // Free properties
     ht_destroy(Object_String_struct.properties);
 
     // Destroy string cache

@@ -269,6 +269,13 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
  */
 void vm_frame_destroy(t_vm_frame *frame) {
     // @TODO: Remove identifiers in the local_identifiers hash object
+    object_free((t_object *)frame->local_identifiers);
+
+    // Destroy global identifiers when this frame is the initial one
+    if (! frame->parent) {
+        object_free((t_object *)frame->global_identifiers);
+    }
+
     // @TODO: Should we unwind the stack first
     smm_free(frame->stack);
     smm_free(frame);

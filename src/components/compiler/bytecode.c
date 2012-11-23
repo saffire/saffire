@@ -71,6 +71,22 @@ static void _add_constant(t_bytecode *bc, t_bytecode_constant *c) {
 }
 
 
+static void _free_constant(t_bytecode_constant *c) {
+     switch (c->type) {
+         case BYTECODE_CONST_STRING :
+            smm_free(c->data.s);
+            break;
+         case BYTECODE_CONST_NUMERICAL :
+             break;
+         case BYTECODE_CONST_CODE :
+             bytecode_free(c->data.code);
+             break;
+         default :
+             saffire_compile_error("Unknown constant type %d\n", c->type);
+             break;
+     }
+}
+
 /**
  * Add a new string constant to the bytecode structure
  */
@@ -120,7 +136,7 @@ static void _new_name(t_bytecode *bc, char *var) {
     // Setup identifier
     t_bytecode_identifier *c = smm_malloc(sizeof(t_bytecode_identifier));
     c->len = strlen(var);
-    c->s = var;  // @TODO: strdupped?
+    c->s = smm_strdup(var);
 
     // Add identifier
     bc->identifiers = smm_realloc(bc->identifiers, sizeof(t_bytecode_identifier *) * (bc->identifiers_len + 1));
@@ -163,6 +179,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
     // Initialize new bytecode structure
     t_bytecode *bytecode = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
     bzero(bytecode, sizeof(t_bytecode));
+    bytecode->identifiers = NULL;
 
     // Read headers
     _read_buffer(bincode, &pos, sizeof(uint32_t), &bytecode->stack_size);
@@ -213,6 +230,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
         _read_buffer(bincode, &pos, j, s);
         s[j] = '\0';
         _new_name(bytecode, s);
+        smm_free(s);
     }
 
     return bytecode;
@@ -338,6 +356,8 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
         saffire_compile_error("Could not convert bytecode data");
     }
 
+    smm_free(bzip_buf);
+
     // Return bytecode
     return bc;
 }
@@ -417,7 +437,22 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
  * Free allocated bytecode structure
  */
 void bytecode_free(t_bytecode *bc) {
-    // @TODO: Implement this
+    smm_free(bc->code);
+
+    for (int i=0; i!=bc->constants_len; i++) {
+        _free_constant(bc->constants[i]);
+        smm_free(bc->constants[i]);
+    }
+    smm_free(bc->constants);
+
+    for (int i=0; i!=bc->identifiers_len; i++) {
+        t_bytecode_identifier *id = bc->identifiers[i];
+        smm_free(id->s);
+        smm_free(bc->identifiers[i]);
+    }
+    smm_free(bc->identifiers);
+
+    smm_free(bc);
 }
 
 

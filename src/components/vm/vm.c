@@ -150,7 +150,7 @@ void vm_init(void) {
 
 void vm_fini(void) {
     module_fini();
-    // @TODO: Implement object-destroy:  object_destroy(builtin_identifiers);
+    object_free((t_object *)builtin_identifiers);
     object_fini();
 }
 

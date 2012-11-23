@@ -308,9 +308,11 @@ static int do_exec(void) {
     }
     int ret = ((t_numerical_object *)obj1)->value;
 
+    vm_frame_destroy(initial_frame);
     bytecode_free(bc);
 
     // Fini stuff
+    printf("\n\n\nFINI!\n\n\n");
     vm_fini();
 
     return (ret & 0xFF);    // Make sure ret is a code between 0 and 255

@@ -185,7 +185,11 @@ void object_regex_init(void) {
  * Frees memory for a regex object
  */
 void object_regex_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Regex_struct);
     ht_destroy(Object_Regex_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Regex_struct.properties);
 }
 

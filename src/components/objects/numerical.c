@@ -46,7 +46,7 @@
 // Max storage
 #define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHE_OFF + 1
 
-t_numerical_object *numerical_cache[NUMERICAL_CACHED_CNT];
+t_numerical_object **numerical_cache;
 
 
 /* ======================================================================
@@ -395,6 +395,8 @@ void object_numerical_init(void) {
 
 
     // Create a numerical cache
+    numerical_cache = (t_numerical_object **)smm_malloc(sizeof(t_numerical_object *) * (NUMERICAL_CACHED_CNT + 1));
+
     int value = NUMERICAL_CACHED_MIN;
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
         numerical_cache[i] = smm_malloc(sizeof(t_numerical_object));
@@ -414,12 +416,20 @@ void object_numerical_init(void) {
  * Frees memory for a numerical object
  */
 void object_numerical_fini(void) {
-    ht_destroy(Object_Numerical_struct.methods);
-    ht_destroy(Object_Numerical_struct.properties);
-
+    // Free numerical cache
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++) {
+        // We actually should do a object_free(), but we don't because somehow valgrind does not like this (@TODO fix)
+        // Since numericals haven't got any additional info stored, we can just use smm_free (for now)
         smm_free(numerical_cache[i]);
     }
+    smm_free(numerical_cache);
+
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Numerical_struct);
+    ht_destroy(Object_Numerical_struct.methods);
+
+    // Free properties
+    ht_destroy(Object_Numerical_struct.properties);
 }
 
 

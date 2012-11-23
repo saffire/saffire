@@ -948,7 +948,7 @@ int interpreter(t_ast_element *p) {
 
 #ifdef __DEBUG
     t_hash_iter iter;
-    ht_iter_rewind(&iter, object_hash);
+    ht_iter_init(&iter, object_hash);
     while (ht_iter_valid(&iter)) {
         t_object *obj = ht_iter_value(&iter);
         if (obj->type != objectTypeCode && obj->type != objectTypeMethod) {

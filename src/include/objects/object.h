@@ -236,5 +236,6 @@
 
     void object_add_internal_method(void *obj, char *name, int flags, int visibility, void *func);
     void object_add_external_method(void *obj, char *name, int flags, int visibility, t_ast_element *p);
+    void object_remove_all_internal_methods(t_object *obj);
 
 #endif
