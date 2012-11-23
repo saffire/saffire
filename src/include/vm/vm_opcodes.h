@@ -58,7 +58,6 @@
     #define VM_INPLACE_OR            0x27
     #define VM_INPLACE_XOR           0x28
 
-    #define VM_BUILD_CLASS          0x70
     #define VM_MAKE_METHOD          0x71
 
     #define VM_POP_BLOCK            0x72
@@ -88,6 +87,7 @@
     #define VM_SETUP_LOOP           0x90
 
     #define VM_CONTINUE_LOOP        0x92
+    #define VM_BUILD_CLASS          0x93
     #define VM_COMPARE_OP           0x95
     #define VM_SETUP_FINALLY        0x96
     #define VM_SETUP_EXCEPT         0x97

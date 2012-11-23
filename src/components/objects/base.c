@@ -217,7 +217,11 @@ void object_base_init() {
  * Frees memory for a base object
  */
 void object_base_fini() {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Base_struct);
     ht_destroy(Object_Base_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Base_struct.properties);
 }
 

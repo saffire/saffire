@@ -34,6 +34,7 @@
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/null.h"
+#include "objects/code.h"
 #include "debug.h"
 
 
@@ -54,6 +55,7 @@ unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
 
     return op;
 }
+
 
 /**
  * Returns he next operand. Does not do any sanity checks if it actually is an operand.
@@ -135,17 +137,19 @@ void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
 
 
 /**
-  *
-  */
+ * Returns an object from the constant table
+ */
 t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
+    t_object *obj;
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
         saffire_vm_error("Trying to fetch from outside constant range");
     }
 
     t_bytecode_constant *c = frame->bytecode->constants[idx];
     switch (c->type) {
-        case BYTECODE_CONST_OBJECT :
-            return frame->bytecode->constants[idx]->data.obj;
+        case BYTECODE_CONST_CODE :
+            obj = object_new(Object_Code, frame->bytecode->constants[idx]->data.code, NULL);
+            return obj;
             break;
 
         case BYTECODE_CONST_STRING :
@@ -219,7 +223,7 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 
 
 /**
- *
+ * Returns an identifier name as string
  */
 char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
@@ -240,7 +244,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     cfr->parent = parent_frame;
     cfr->bytecode = bytecode;
     cfr->ip = 0;
-    cfr->sp = bytecode->stack_size-1;
+    cfr->sp = bytecode->stack_size;
 
     // Setup variable stack
     cfr->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
@@ -263,5 +267,28 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
 /**
  *
  */
-void vm_frame_remove(t_vm_frame *frame) {
+void vm_frame_destroy(t_vm_frame *frame) {
+    // @TODO: Remove identifiers in the local_identifiers hash object
+    object_free((t_object *)frame->local_identifiers);
+
+    // Destroy global identifiers when this frame is the initial one
+    if (! frame->parent) {
+        object_free((t_object *)frame->global_identifiers);
+    }
+
+    // @TODO: Should we unwind the stack first
+    smm_free(frame->stack);
+    smm_free(frame);
 }
+
+
+#ifdef __DEBUG
+void vm_frame_stack_debug(t_vm_frame *frame) {
+    printf("\nFRAME STACK\n");
+    printf("=======================\n");
+    for (int i=0; i!=frame->bytecode->stack_size; i++) {
+        printf("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
+    }
+    printf("\n");
+}
+#endif

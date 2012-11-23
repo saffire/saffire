@@ -89,7 +89,6 @@
     } t_bytecode;
 
 
-    t_bytecode *generate_dummy_bytecode(void);
     t_bytecode *bytecode_generate(t_ast_element *p, char *source_file);
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);

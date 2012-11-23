@@ -92,6 +92,7 @@
         t_hash_table_bucket *bucket;
     } t_hash_iter;
 
+    int ht_iter_init(t_hash_iter *iter, t_hash_table *ht);
     int ht_iter_rewind(t_hash_iter *iter, t_hash_table *ht);
     int ht_iter_valid(t_hash_iter *iter);
     int ht_iter_next(t_hash_iter *iter);

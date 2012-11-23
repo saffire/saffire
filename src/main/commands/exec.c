@@ -60,7 +60,7 @@ static int do_exec(void) {
         ast_free_node(ast);
     }
 
-    module_fini();
+    vm_fini();
     object_fini();
     context_fini();
 

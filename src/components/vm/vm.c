@@ -35,6 +35,7 @@
 #include "objects/object.h"
 #include "objects/boolean.h"
 #include "objects/string.h"
+#include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/code.h"
@@ -52,6 +53,45 @@
 #define REASON_CONTINUE     2
 #define REASON_BREAK        3
 #define REASON_BREAKELSE    4
+
+
+
+struct _object *object_userland_new(t_object *obj, va_list arg_list) {
+    DEBUG_PRINT("object_create_new_instance called");
+
+    t_object *new_obj = smm_malloc(sizeof(t_object));
+    memcpy(new_obj, obj, sizeof(t_object));
+
+    // Reset refcount for new object
+    new_obj->ref_count = 0;
+
+    // These are instances
+    new_obj->flags &= ~OBJECT_TYPE_MASK;
+    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return new_obj;
+}
+
+#ifdef __DEBUG
+char global_buf[1024];
+static char *object_user_debug(struct _object *obj) {
+    sprintf(global_buf, "User object[%s]", obj->name);
+    return global_buf;
+}
+#endif
+
+// String object management functions
+t_object_funcs userland_funcs = {
+        object_userland_new,              // Allocate a new string object
+        NULL,             // Free a string object
+        NULL,                 // Clone a string object
+#ifdef __DEBUG
+        object_user_debug
+#endif
+};
+
+
+
 
 /**
  *
@@ -110,7 +150,7 @@ void vm_init(void) {
 
 void vm_fini(void) {
     module_fini();
-    // @TODO: Implement object-destroy:  object_destroy(builtin_identifiers);
+    object_free((t_object *)builtin_identifiers);
     object_fini();
 }
 
@@ -263,7 +303,6 @@ dispatch:
             // Store SP+0 into identifier (either local or global)
             case VM_STORE_ID :
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
                 s1 = vm_frame_get_name(frame, oparg1);
                 DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
                 vm_frame_set_identifier(frame, s1, obj1);
@@ -431,27 +470,49 @@ dispatch:
                 obj2 = object_find_method(obj1, (char *)vm_frame_get_constant_literal(frame, oparg1));
 
                 // @TODO: Maybe this should just be a tuple object?
-                // Create argument list
-                t_dll *args = dll_init();
-                for (int i=0; i!=oparg2; i++) {
-                    obj3 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj3);
-                    dll_append(args, obj3);
-                }
 
                 t_method_object *method = (t_method_object *)obj2;
                 t_code_object *code = (t_code_object *)method->code;
                 if (code->native_func) {
+                    // Create argument list
+                    t_dll *args = dll_init();
+                    for (int i=0; i!=oparg2; i++) {
+                        obj3 = vm_frame_stack_pop(frame);
+                        object_dec_ref(obj3);
+                        dll_append(args, obj3);
+                    }
+
                     obj3 = code->native_func(obj1, args);
+                    dll_free(args);
                 } else {
+                    printf("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
                     tfr = vm_frame_new(frame, code->bytecode);
+
+#ifdef __DEBUG
+                    vm_frame_stack_debug(frame);
+                    vm_frame_stack_debug(tfr);
+#endif
+
+                    // Push the arguments in the correct order onto the new stack
+                    //for (int i=0; i!=oparg2; i++) {
+                        // We don't need to push and pop, just copy arguments and set SP.
+                        memcpy(tfr->stack + tfr->sp - oparg2, frame->stack + frame->sp, oparg2 * sizeof(t_object *));
+
+                        frame->sp += oparg2;
+                        tfr->sp -= oparg2;
+                    //}
+
+#ifdef __DEBUG
+                    vm_frame_stack_debug(frame);
+                    vm_frame_stack_debug(tfr);
+#endif
+
                     obj3 = vm_execute(tfr);
+                    vm_frame_destroy(tfr);
                 }
 
                 object_inc_ref(obj3);
                 vm_frame_stack_push(frame, obj3);
-
-                dll_free(args);
 
                 goto dispatch;
                 break;
@@ -503,14 +564,15 @@ dispatch:
 
             case VM_COMPARE_OP :
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
                 obj2 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj2);
 
                 if (obj1->type != obj2->type) {
                     saffire_vm_error("Cannot compare non-identical object types");
                 }
                 obj3 = object_comparison(obj1, oparg1, obj2);
+
+                object_dec_ref(obj1);
+                object_dec_ref(obj2);
 
                 object_inc_ref(obj3);
                 vm_frame_stack_push(frame, obj3);
@@ -532,9 +594,64 @@ dispatch:
 
 
             case VM_BUILD_CLASS :
+                // pop class name
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+
+                // pop flags
+                obj3 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj3);
+
+                obj2 = (t_object *)smm_malloc(sizeof(t_object));
+                obj2->ref_count = 0;
+                obj2->type = objectTypeAny;
+                obj2->name = smm_strdup(OBJ2STR(obj1));
+                obj2->flags = OBJ2NUM(obj3) | OBJECT_TYPE_CLASS;
+                obj2->parent = Object_Base;
+                obj2->implement_count = 0;
+                obj2->implements = NULL;
+                obj2->methods = ht_create();
+                obj2->properties = ht_create();
+                obj2->constants = ht_create();
+                obj2->operators = NULL;
+                obj2->comparisons = NULL;
+                obj2->funcs = &userland_funcs;
+
+                // Iterate all methods
+                for (int i=0; i!=oparg1; i++) {
+                    // pop method name
+                    obj1 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj1);
+
+                    // pop method object
+                    obj3 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj3);
+
+                    printf("Adding method %s to class\n", OBJ2STR(obj1));
+
+                    // add to class
+                    ht_add(obj2->methods, OBJ2STR(obj1), obj3);
+                }
+
+                object_inc_ref(obj2);
+                vm_frame_stack_push(frame, obj2);
+
                 goto dispatch;
                 break;
             case VM_MAKE_METHOD :
+                // pop code object
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+
+                //obj2 = object_new(Object_Code, obj1, NULL);
+
+                // Generate method object
+                obj2 = object_new(Object_Method, 0, 0, NULL, obj1);
+
+                // Push method object
+                object_inc_ref(obj2);
+                vm_frame_stack_push(frame, obj2);
+
                 goto dispatch;
                 break;
             case VM_RETURN :

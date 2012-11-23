@@ -209,7 +209,11 @@ void object_tuple_init(void) {
  * Frees memory for a tuple object
  */
 void object_tuple_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Tuple_struct);
     ht_destroy(Object_Tuple_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Tuple_struct.properties);
 }
 

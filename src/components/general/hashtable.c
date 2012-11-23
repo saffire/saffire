@@ -178,6 +178,13 @@ int ht_remove(t_hash_table *ht, const char *key) {
  */
 
 
+int ht_iter_init(t_hash_iter *iter, t_hash_table *ht) {
+    iter->ht = ht;
+    iter->bucket_idx = 0;
+    iter->bucket = ht->head;
+    return 1;
+}
+
 /**
  * Rewind hash table (or initialize a new table)
  */
