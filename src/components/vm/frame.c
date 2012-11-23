@@ -244,7 +244,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     cfr->parent = parent_frame;
     cfr->bytecode = bytecode;
     cfr->ip = 0;
-    cfr->sp = bytecode->stack_size-1;
+    cfr->sp = bytecode->stack_size;
 
     // Setup variable stack
     cfr->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
@@ -273,3 +273,15 @@ void vm_frame_destroy(t_vm_frame *frame) {
     smm_free(frame->stack);
     smm_free(frame);
 }
+
+
+#ifdef __DEBUG
+void vm_frame_stack_debug(t_vm_frame *frame) {
+    printf("\nFRAME STACK\n");
+    printf("=======================\n");
+    for (int i=0; i!=frame->bytecode->stack_size; i++) {
+        printf("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
+    }
+    printf("\n");
+}
+#endif

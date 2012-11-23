@@ -471,29 +471,45 @@ dispatch:
                 obj2 = object_find_method(obj1, (char *)vm_frame_get_constant_literal(frame, oparg1));
 
                 // @TODO: Maybe this should just be a tuple object?
-                // Create argument list
-                t_dll *args = dll_init();
-                for (int i=0; i!=oparg2; i++) {
-                    obj3 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj3);
-                    dll_append(args, obj3);
-                }
 
                 t_method_object *method = (t_method_object *)obj2;
                 t_code_object *code = (t_code_object *)method->code;
                 if (code->native_func) {
+                    // Create argument list
+                    t_dll *args = dll_init();
+                    for (int i=0; i!=oparg2; i++) {
+                        obj3 = vm_frame_stack_pop(frame);
+                        object_dec_ref(obj3);
+                        dll_append(args, obj3);
+                    }
+
                     obj3 = code->native_func(obj1, args);
+                    dll_free(args);
                 } else {
                     printf("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
                     tfr = vm_frame_new(frame, code->bytecode);
+
+                    vm_frame_stack_debug(frame);
+                    vm_frame_stack_debug(tfr);
+
+                    // Push the arguments in the correct order onto the new stack
+                    //for (int i=0; i!=oparg2; i++) {
+                        // We don't need to push and pop, just copy arguments and set SP.
+                        memcpy(tfr->stack + tfr->sp - oparg2, frame->stack + frame->sp, oparg2 * sizeof(t_object *));
+
+                        frame->sp += oparg2;
+                        tfr->sp -= oparg2;
+                    //}
+
+                    vm_frame_stack_debug(frame);
+                    vm_frame_stack_debug(tfr);
+
                     obj3 = vm_execute(tfr);
                     vm_frame_destroy(tfr);
                 }
 
                 object_inc_ref(obj3);
                 vm_frame_stack_push(frame, obj3);
-
-                dll_free(args);
 
                 goto dispatch;
                 break;

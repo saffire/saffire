@@ -35,41 +35,58 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void) {
         "\x81\x09\x00"         // LOAD_CONST          "myclass"
         "\x93\x03\x00"         // BUILD_CLASS         $3
         "\x80\x04\x00"         // STORE_ID            myclass
+        "\x81\x0A\x00"         // LOAD_CONST          2
+        "\x80\x05\x00"         // STORE_ID            a
+        "\x82\x05\x00"         // LOAD_ID             a
+        "\x81\x0B\x00"         // LOAD_CONST          3
         "\x82\x04\x00"         // LOAD_ID             myclass
-        "\xC0\x06\x00\x00\x00" // CALL_METHOD         "func3", $0
+        "\xC0\x07\x00\x02\x00" // CALL_METHOD         "func2", $2
+        "\x80\x05\x00"         // STORE_ID            a
+        "\x82\x05\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x0A\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
+        "\x82\x05\x00"         // LOAD_ID             a
+        "\x81\x0A\x00"         // LOAD_CONST          2
+        "\x82\x04\x00"         // LOAD_ID             myclass
+        "\xC0\x07\x00\x02\x00" // CALL_METHOD         "func2", $2
+        "\x80\x05\x00"         // STORE_ID            a
+        "\x82\x05\x00"         // LOAD_ID             a
+        "\x82\x00\x00"         // LOAD_ID             io
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\x01"                 // POP_TOP
+        "\x82\x05\x00"         // LOAD_ID             a
+        "\x73"                 // RETURN
         "\x82\x04\x00"         // LOAD_ID             myclass
         "\xC0\x07\x00\x00\x00" // CALL_METHOD         "func2", $0
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x0A\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
-        "\x81\x0B\x00"         // LOAD_CONST          4
+        "\x81\x0D\x00"         // LOAD_CONST          4
         "\x73"                 // RETURN
-        "\x81\x0C\x00"         // LOAD_CONST          10
+        "\x81\x0E\x00"         // LOAD_CONST          10
         "\x80\x05\x00"         // STORE_ID            a
         "\x90\x47\x00"         // SETUP_LOOP          #end_loop1
     // #loop1:
         "\x82\x05\x00"         // LOAD_ID             a
-        "\x81\x0D\x00"         // LOAD_CONST          20
+        "\x81\x0F\x00"         // LOAD_CONST          20
         "\x95\x02\x00"         // COMPARE_OP          OP_NE
         "\x85\x3A\x00"         // JUMP_IF_FALSE       #end_loop1_pb
         "\x01"                 // POP_TOP
         "\x82\x05\x00"         // LOAD_ID             a
-        "\x81\x0E\x00"         // LOAD_CONST          1
+        "\x81\x10\x00"         // LOAD_CONST          1
         "\x17"                 // BINARY_ADD
         "\x80\x05\x00"         // STORE_ID            a
         "\x82\x05\x00"         // LOAD_ID             a
-        "\x81\x0F\x00"         // LOAD_CONST          15
+        "\x81\x11\x00"         // LOAD_CONST          15
         "\x95\x01\x00"         // COMPARE_OP          OP_EQ
         "\x85\x04\x00"         // JUMP_IF_FALSE       #end_if1
         "\x01"                 // POP_TOP
-        "\x92\x6C\x00"         // CONTINUE_LOOP       #loop1
+        "\x92\x9F\x00"         // CONTINUE_LOOP       #loop1
     // #end_if1:
         "\x01"                 // POP_TOP
         "\x82\x05\x00"         // LOAD_ID             a
-        "\x81\x10\x00"         // LOAD_CONST          18
+        "\x81\x12\x00"         // LOAD_CONST          18
         "\x95\x01\x00"         // COMPARE_OP          OP_EQ
         "\x85\x02\x00"         // JUMP_IF_FALSE       #end_if2
         "\x01"                 // POP_TOP
@@ -78,19 +95,19 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void) {
         "\x01"                 // POP_TOP
         "\x82\x05\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x0A\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
-        "\x86\x6C\x00"         // JUMP_ABSOLUTE      #loop1
+        "\x86\x9F\x00"         // JUMP_ABSOLUTE      #loop1
     // #end_loop1_pb:
         "\x72"                 // POP_BLOCK
     // #end_loop1:
-        "\x81\x11\x00"         // LOAD_CONST          "All done!"
+        "\x81\x13\x00"         // LOAD_CONST          "All done!"
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x0A\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
         "\x82\x05\x00"         // LOAD_ID             a
         "\x82\x00\x00"         // LOAD_ID             io
-        "\xC0\x0A\x00\x01\x00" // CALL_METHOD         "print", $1
+        "\xC0\x0C\x00\x01\x00" // CALL_METHOD         "print", $1
         "\x01"                 // POP_TOP
         "\x82\x05\x00"         // LOAD_ID             a
         "\x73"                 // RETURN
@@ -116,6 +133,8 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void) {
     _new_constant_string(bc, "func2");
     _new_constant_long(bc, 0);
     _new_constant_string(bc, "myclass");
+    _new_constant_long(bc, 2);
+    _new_constant_long(bc, 3);
     _new_constant_string(bc, "print");
     _new_constant_long(bc, 4);
     _new_constant_long(bc, 10);
@@ -194,7 +213,11 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_func1(void) {
  */
 t_bytecode *generate_dummy_bytecode_bc004_bcs_func2(void) {
     char byte_code[] = 
-        "\x81\x00\x00"         // LOAD_CONST          "This is Func2!"
+        "\x80\x00\x00"         // STORE_ID            a
+        "\x80\x01\x00"         // STORE_ID            b
+        "\x82\x00\x00"         // LOAD_ID             a
+        "\x82\x01\x00"         // LOAD_ID             b
+        "\x19"                 // BINARY_MUL
         "\x73"                 // RETURN
     ;
     t_bytecode *bc = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
@@ -208,9 +231,10 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_func2(void) {
     bc->identifiers = NULL;
 
     // constants
-    _new_constant_string(bc, "This is Func2!");
 
     // identifier names
+    _new_name(bc, "a");
+    _new_name(bc, "b");
     
     return bc;
 }

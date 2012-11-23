@@ -86,4 +86,8 @@
     void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx);
     char *vm_frame_get_name(t_vm_frame *frame, int idx);
 
+#if __DEBUG
+    void vm_frame_stack_debug(t_vm_frame *frame);
+#endif
+
 #endif

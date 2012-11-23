@@ -7,37 +7,76 @@
     IMPORT
     STORE_ID            io
 
+    ;
+    ; Create object
+    ;
 
+    ; create method
     LOAD_CONST          @func3
     MAKE_METHOD
     STORE_ID            func3
 
+    ; create method
     LOAD_CONST          @func1
     MAKE_METHOD
     STORE_ID            func1
 
+    ; create method
     LOAD_CONST          @func2
     MAKE_METHOD
     STORE_ID            func2
 
+    ; method to name mapping
     LOAD_ID             func1
     LOAD_CONST          "func1"
     LOAD_ID             func3
     LOAD_CONST          "func3"
     LOAD_ID             func2
     LOAD_CONST          "func2"
+    ; flags
     LOAD_CONST          0
+    ; class name
     LOAD_CONST          "myclass"
     BUILD_CLASS         $3
     STORE_ID            myclass
 
 
-    ;  io.print(myclass.func2());
+    ; a = 2;
+    LOAD_CONST          2
+    STORE_ID            a
+
+    ; a = myclass.func(a);
+    LOAD_ID             a
+    LOAD_CONST          3
     LOAD_ID             myclass
-    CALL_METHOD         "func3", $0
+    CALL_METHOD         "func2", $2
+    STORE_ID            a
+
+
+    ; io.print(a);
+    LOAD_ID             a
     LOAD_ID             io
     CALL_METHOD         "print", $1
     POP_TOP
+
+    ; a = myclass.func(a);
+    LOAD_ID             a
+    LOAD_CONST          2
+    LOAD_ID             myclass
+    CALL_METHOD         "func2", $2
+    STORE_ID            a
+
+    ; io.print(a);
+    LOAD_ID             a
+    LOAD_ID             io
+    CALL_METHOD         "print", $1
+    POP_TOP
+
+    ; return a;
+    LOAD_ID             a
+    RETURN
+
+
 
 
     ;  io.print(myclass.func2());
@@ -153,7 +192,11 @@
 
 ; ====================================================================
 @frame func2
-    LOAD_CONST          "This is Func2!"
+    STORE_ID            a
+    STORE_ID            b
+    LOAD_ID             a
+    LOAD_ID             b
+    BINARY_MUL
     RETURN
 
 
