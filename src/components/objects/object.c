@@ -306,7 +306,7 @@ t_object *object_clone(t_object *obj) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -315,7 +315,17 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", obj->name, (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+
+    if(obj->ref_count == 0) {
+        // Free object
+        if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
+            object_free(obj);
+        } else {
+            DEBUG_PRINT(" *** STATIC, SO NOT FREEING");
+        }
+    }
+
 }
 
 
@@ -334,18 +344,10 @@ char *object_debug(t_object *obj) {
 void object_free(t_object *obj) {
     if (! obj) return;
 
-    // Decrease reference count and check if we need to free
-//    object_dec_ref(obj);
+    // Check if we really need to free
     if (obj->ref_count > 0) return;
 
-    DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, obj->name);
-
-
-    // Don't free if it's a static object
-    if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) {
-        saffire_warning("not allowed to free object: %s\n", obj->name);
-        return;
-    }
+    DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
 
     // Need to free, check if free functions exists
     if (obj->funcs && obj->funcs->free) {
@@ -416,6 +418,10 @@ void object_init() {
  * Finalize all the (scalar) objects
  */
 void object_fini() {
+#ifdef __DEBUG
+    ht_destroy(object_hash);
+#endif
+
     object_base_fini();
     object_boolean_fini();
     object_null_fini();
@@ -538,4 +544,19 @@ void object_add_internal_method(void *obj, char *method_name, int flags, int vis
     t_method_object *method = (t_method_object *)object_new(Object_Method, flags, visibility, obj, code);
 
     ht_add(the_obj->methods, method_name, method);
+}
+
+void object_remove_all_internal_methods(t_object *obj) {
+    t_hash_iter iter;
+
+    ht_iter_init(&iter, obj->methods);
+    while (ht_iter_valid(&iter)) {
+        t_method_object *method = ht_iter_value(&iter);
+
+        // @TODO: We assume here that method and method->code are always used once. This does not have to be the case!
+        object_free((t_object *)method->code);
+        object_free((t_object *)method);
+
+        ht_iter_next(&iter);
+    }
 }

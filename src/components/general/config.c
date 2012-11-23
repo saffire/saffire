@@ -52,7 +52,7 @@ static char *config_generate_augeas_key(const char *key) {
     }
 
 
-    char *fqn_key = smm_malloc(strlen((char *)tmp_key) + strlen(prefix));
+    char *fqn_key = smm_malloc(strlen((char *)tmp_key) + strlen(prefix) + 1);
     strcpy(fqn_key, prefix);
     strcat(fqn_key, tmp_key);
 
@@ -61,6 +61,9 @@ static char *config_generate_augeas_key(const char *key) {
 
 }
 
+void read_ini_fini(void) {
+    if (aug) aug_close(aug);
+}
 
 /**
  * Read INI file file
@@ -68,6 +71,8 @@ static char *config_generate_augeas_key(const char *key) {
 static void read_ini(void) {
     // Already initialized
     if (aug) return;
+
+    atexit(read_ini_fini);
 
     // Initialize augeas
     aug = aug_init("/", "/usr/share/augeas/lenses/dist", AUG_NO_STDINC | AUG_NO_MODL_AUTOLOAD);

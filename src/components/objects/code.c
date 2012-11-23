@@ -144,7 +144,11 @@ void object_code_init(void) {
  * Frees memory for a code object
  */
 void object_code_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Code_struct);
     ht_destroy(Object_Code_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Code_struct.properties);
 }
 

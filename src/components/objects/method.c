@@ -243,7 +243,11 @@ void object_method_init(void) {
  * Frees memory for a method object
  */
 void object_method_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Method_struct);
     ht_destroy(Object_Method_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Method_struct.properties);
 }
 
@@ -278,7 +282,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_method_object *self = (t_method_object *)self;
+    t_method_object *self = (t_method_object *)obj;
     sprintf(global_buf, "method %s F: %d  V: %d Obj: %s Code: %s", self->name, self->mflags, self->visibility, self->class ? self->class->name : "no", self->code ? "yes" : "no");
     return global_buf;
 }

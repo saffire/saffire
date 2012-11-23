@@ -78,13 +78,10 @@ int register_module(t_module *mod) {
  * Unregister
  */
 int unregister_module(t_module *mod) {
-    printf("Not implemented");
-    exit(1);
-
     // Fini module
     mod->fini();
 
-    // Remove from builtins
+    // @TODO: Remove from builtins or so
 
     // Nothing found
     return 0;
@@ -103,5 +100,7 @@ void module_init(void) {
  *
  */
 void module_fini(void) {
+    unregister_module(&module_saffire);
+    unregister_module(&module_io);
     dll_free(modules);
 }

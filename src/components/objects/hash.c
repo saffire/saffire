@@ -209,7 +209,11 @@ void object_hash_init(void) {
  * Frees memory for a hash object
  */
 void object_hash_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Hash_struct);
     ht_destroy(Object_Hash_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Hash_struct.properties);
 }
 

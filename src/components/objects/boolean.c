@@ -263,7 +263,11 @@ void object_boolean_init(void) {
  * Frees memory for a string object
  */
 void object_boolean_fini(void) {
+    // Free methods
+    object_remove_all_internal_methods((t_object *)&Object_Boolean_struct);
     ht_destroy(Object_Boolean_struct.methods);
+
+    // Free properties
     ht_destroy(Object_Boolean_struct.properties);
 }
 
