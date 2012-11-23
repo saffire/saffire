@@ -303,7 +303,6 @@ dispatch:
             // Store SP+0 into identifier (either local or global)
             case VM_STORE_ID :
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
                 s1 = vm_frame_get_name(frame, oparg1);
                 DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
                 vm_frame_set_identifier(frame, s1, obj1);
@@ -489,8 +488,10 @@ dispatch:
                     printf("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
                     tfr = vm_frame_new(frame, code->bytecode);
 
+#ifdef __DEBUG
                     vm_frame_stack_debug(frame);
                     vm_frame_stack_debug(tfr);
+#endif
 
                     // Push the arguments in the correct order onto the new stack
                     //for (int i=0; i!=oparg2; i++) {
@@ -501,8 +502,10 @@ dispatch:
                         tfr->sp -= oparg2;
                     //}
 
+#ifdef __DEBUG
                     vm_frame_stack_debug(frame);
                     vm_frame_stack_debug(tfr);
+#endif
 
                     obj3 = vm_execute(tfr);
                     vm_frame_destroy(tfr);
@@ -561,14 +564,15 @@ dispatch:
 
             case VM_COMPARE_OP :
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
                 obj2 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj2);
 
                 if (obj1->type != obj2->type) {
                     saffire_vm_error("Cannot compare non-identical object types");
                 }
                 obj3 = object_comparison(obj1, oparg1, obj2);
+
+                object_dec_ref(obj1);
+                object_dec_ref(obj2);
 
                 object_inc_ref(obj3);
                 vm_frame_stack_push(frame, obj3);

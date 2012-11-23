@@ -44,7 +44,7 @@
 // Offset calculations
 #define NUMERICAL_CACHE_OFF     abs(NUMERICAL_CACHED_MIN)
 // Max storage
-#define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHED_MIN + 1
+#define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHE_OFF + 1
 
 t_numerical_object *numerical_cache[NUMERICAL_CACHED_CNT];
 
@@ -401,7 +401,7 @@ void object_numerical_init(void) {
         memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
         numerical_cache[i]->value = value;
 
-        numerical_cache[i]->flags |= OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_STATIC;
+        numerical_cache[i]->flags |= (OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_STATIC);
 
         // These are instances
         numerical_cache[i]->flags &= ~OBJECT_TYPE_MASK;
