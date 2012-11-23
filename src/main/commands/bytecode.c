@@ -44,14 +44,11 @@
 #include "general/config.h"
 
 
-// @TODO: Remove temp bytecodes
-t_bytecode *generate_dummy_bytecode_bc001_bcs(void);
-t_bytecode *generate_dummy_bytecode_bc002_bcs(void);
-t_bytecode *generate_dummy_bytecode_bc003_bcs(void);
-
 char *gpg_key = NULL;
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
 int flag_no_verify = 0;
+
+t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void);
 
 /**
  * Compiles single file
@@ -61,7 +58,7 @@ static void _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     printf("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
-    t_bytecode *bc = generate_dummy_bytecode_bc003_bcs();
+    t_bytecode *bc = generate_dummy_bytecode_bc004_bcs_main();
     bytecode_save(dest_file, source_file, bc);
     bytecode_free(bc);
 

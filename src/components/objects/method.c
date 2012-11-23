@@ -278,7 +278,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_method_object *self = (t_method_object *)self;
+    t_method_object *self = (t_method_object *)obj;
     sprintf(global_buf, "method %s F: %d  V: %d Obj: %s Code: %s", self->name, self->mflags, self->visibility, self->class ? self->class->name : "no", self->code ? "yes" : "no");
     return global_buf;
 }

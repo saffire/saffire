@@ -46,6 +46,7 @@ static void saffire_compile_warning(char *str, ...) {
     va_end(args);
 }
 
+
 /**
  *
  */
@@ -79,6 +80,20 @@ static void _new_constant_string(t_bytecode *bc, char *s) {
     c->type = BYTECODE_CONST_STRING;
     c->len = strlen(s);
     c->data.s = s;  // @TODO: strdupped?
+
+    _add_constant(bc, c);
+}
+
+
+/**
+ * Add a new string constant to the bytecode structure
+ */
+static void _new_constant_code(t_bytecode *bc, t_bytecode *child_bc) {
+    // Setup constant
+    t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+    c->type = BYTECODE_CONST_CODE;
+    c->len = 0;
+    c->data.code = child_bc;
 
     _add_constant(bc, c);
 }
@@ -137,12 +152,13 @@ static void _write_buffer(char **buf, int *bufptr, int size, void *data) {
 
 
 /**
- * Converts a binary stream to a bytecode structure (NOTE: bytecode must be an unallocated pointer!)
+ * Converts a binary stream to a bytecode structure
  */
-static t_bytecode *bytecode_bc2bin(char *bincode) {
+static t_bytecode *bytecode_bin2bc(char *bincode) {
     int pos = 0;
     char *s; long l; int j;
     int clen, vlen;
+    t_bytecode *child_bytecode;
 
     // Initialize new bytecode structure
     t_bytecode *bytecode = (t_bytecode *)smm_malloc(sizeof(t_bytecode));
@@ -175,6 +191,12 @@ static t_bytecode *bytecode_bc2bin(char *bincode) {
                 _read_buffer(bincode, &pos, len, &l);
                 _new_constant_long(bytecode, l);
                 break;
+            case BYTECODE_CONST_CODE :
+                // Read binary buffer to new bytecode
+                child_bytecode = bytecode_bin2bc(bincode+pos);
+                pos += len; // Skip the just read binary bytecode
+                _new_constant_code(bytecode, child_bytecode);
+                break;
             default :
                 saffire_compile_error("Unknown constant type %d\n", type);
                 break;
@@ -200,7 +222,9 @@ static t_bytecode *bytecode_bc2bin(char *bincode) {
 /**
  * Convert bytecode structure into a binary stream (NOTE: bincode is an unallocated pointer!)
  */
-static int bytecode_bin2bc(t_bytecode *bytecode, int *bincode_off, char **bincode) {
+static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincode) {
+    char *child_bincode = NULL;
+    int child_bincode_len = 0;
 
     // Write headers and codeblock
     _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->stack_size);
@@ -211,12 +235,19 @@ static int bytecode_bin2bc(t_bytecode *bytecode, int *bincode_off, char **bincod
     // Write constants
     for (int i=0; i!=bytecode->constants_len; i++) {
         _write_buffer(bincode, bincode_off, sizeof(char), &bytecode->constants[i]->type);
-        _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
         switch (bytecode->constants[i]->type) {
+            case BYTECODE_CONST_CODE :
+                child_bincode_len = 0;
+                bytecode_bc2bin(bytecode->constants[i]->data.code, &child_bincode_len, &child_bincode);
+                _write_buffer(bincode, bincode_off, sizeof(int), &child_bincode_len);
+                _write_buffer(bincode, bincode_off, child_bincode_len, child_bincode);
+                break;
             case BYTECODE_CONST_STRING :
+                _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
+                _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
@@ -302,7 +333,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     header.bytecode_len = bzip_buf_len;
 
     // Convert binary to bytecode
-    t_bytecode *bc = bytecode_bc2bin(bincode);
+    t_bytecode *bc = bytecode_bin2bc(bincode);
     if (! bc) {
         saffire_compile_error("Could not convert bytecode data");
     }
@@ -320,7 +351,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     int bincode_len = 0;
 
     // Convert bytecode to bincode
-    if (! bytecode_bin2bc(bc, &bincode_len, &bincode)) {
+    if (! bytecode_bc2bin(bc, &bincode_len, &bincode)) {
         saffire_compile_error("Could not convert bytecode data");
     }
 
@@ -336,11 +367,9 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     struct stat sb;
     if (! stat(source_filename, &sb)) {
         header.timestamp = sb.st_mtime;
-        printf("TIMESTAMP: %d\n", header.timestamp);
     } else {
         header.timestamp = 0;
     }
-
 
     // Save lengths of the bytecode (assume we save it uncompressed for now)
     header.bytecode_uncompressed_len = bincode_len;
@@ -391,13 +420,6 @@ void bytecode_free(t_bytecode *bc) {
     // @TODO: Implement this
 }
 
-
-/**
- * @TODO: Temporary bytecode includes
- */
-#include "../../src/components/vm/bc001_bcs.c"
-#include "../../src/components/vm/bc002_bcs.c"
-#include "../../src/components/vm/bc003_bcs.c"
 
 
 /**
@@ -531,5 +553,14 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 
     return 0;
 }
+
+
+/**
+ * @TODO: Temporary bytecode includes
+ */
+#include "../../src/components/vm/bc001_bcs.c"
+#include "../../src/components/vm/bc002_bcs.c"
+#include "../../src/components/vm/bc003_bcs.c"
+#include "../../src/components/vm/bc004_bcs.c"
 
 

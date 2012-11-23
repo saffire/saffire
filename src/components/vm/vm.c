@@ -35,6 +35,7 @@
 #include "objects/object.h"
 #include "objects/boolean.h"
 #include "objects/string.h"
+#include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/code.h"
@@ -52,6 +53,45 @@
 #define REASON_CONTINUE     2
 #define REASON_BREAK        3
 #define REASON_BREAKELSE    4
+
+
+
+struct _object *object_userland_new(t_object *obj, va_list arg_list) {
+    DEBUG_PRINT("object_create_new_instance called");
+
+    t_object *new_obj = smm_malloc(sizeof(t_object));
+    memcpy(new_obj, obj, sizeof(t_object));
+
+    // Reset refcount for new object
+    new_obj->ref_count = 0;
+
+    // These are instances
+    new_obj->flags &= ~OBJECT_TYPE_MASK;
+    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return new_obj;
+}
+
+#ifdef __DEBUG
+char global_buf[1024];
+static char *object_user_debug(struct _object *obj) {
+    sprintf(global_buf, "User object[%s]", obj->name);
+    return global_buf;
+}
+#endif
+
+// String object management functions
+t_object_funcs userland_funcs = {
+        object_userland_new,              // Allocate a new string object
+        NULL,             // Free a string object
+        NULL,                 // Clone a string object
+#ifdef __DEBUG
+        object_user_debug
+#endif
+};
+
+
+
 
 /**
  *
@@ -444,8 +484,10 @@ dispatch:
                 if (code->native_func) {
                     obj3 = code->native_func(obj1, args);
                 } else {
+                    printf("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
                     tfr = vm_frame_new(frame, code->bytecode);
                     obj3 = vm_execute(tfr);
+                    vm_frame_destroy(tfr);
                 }
 
                 object_inc_ref(obj3);
@@ -532,9 +574,64 @@ dispatch:
 
 
             case VM_BUILD_CLASS :
+                // pop class name
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+
+                // pop flags
+                obj3 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj3);
+
+                obj2 = (t_object *)smm_malloc(sizeof(t_object));
+                obj2->ref_count = 0;
+                obj2->type = objectTypeAny;
+                obj2->name = smm_strdup(OBJ2STR(obj1));
+                obj2->flags = OBJ2NUM(obj3) | OBJECT_TYPE_CLASS;
+                obj2->parent = Object_Base;
+                obj2->implement_count = 0;
+                obj2->implements = NULL;
+                obj2->methods = ht_create();
+                obj2->properties = ht_create();
+                obj2->constants = ht_create();
+                obj2->operators = NULL;
+                obj2->comparisons = NULL;
+                obj2->funcs = &userland_funcs;
+
+                // Iterate all methods
+                for (int i=0; i!=oparg1; i++) {
+                    // pop method name
+                    obj1 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj1);
+
+                    // pop method object
+                    obj3 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj3);
+
+                    printf("Adding method %s to class\n", OBJ2STR(obj1));
+
+                    // add to class
+                    ht_add(obj2->methods, OBJ2STR(obj1), obj3);
+                }
+
+                object_inc_ref(obj2);
+                vm_frame_stack_push(frame, obj2);
+
                 goto dispatch;
                 break;
             case VM_MAKE_METHOD :
+                // pop code object
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+
+                //obj2 = object_new(Object_Code, obj1, NULL);
+
+                // Generate method object
+                obj2 = object_new(Object_Method, 0, 0, NULL, obj1);
+
+                // Push method object
+                object_inc_ref(obj2);
+                vm_frame_stack_push(frame, obj2);
+
                 goto dispatch;
                 break;
             case VM_RETURN :
