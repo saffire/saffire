@@ -57,6 +57,8 @@
         t_hash_object *global_identifiers;      // Global identifiers
         t_hash_object *builtin_identifiers;     // Builtin identifiers
 
+        t_object **constants_objects;           // Constants converted to objects
+
         int block_cnt;
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];
 

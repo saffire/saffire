@@ -272,7 +272,7 @@ void object_boolean_fini(void) {
 }
 
 #ifdef __DEBUG
-static char *obj_debug(struct _object *obj) {
+static char *obj_debug(t_object *obj) {
     if (((t_boolean_object *)obj)->value == 0) return "false";
     return "true";
 }

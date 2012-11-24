@@ -100,7 +100,6 @@ t_dll_element *dll_append(t_dll *dll, void *data) {
         dll->tail->next = e;
     }
 
-
     // Set tail element data
     e->prev = dll->tail;
     e->next = NULL;

@@ -56,7 +56,7 @@
 
 
 
-struct _object *object_userland_new(t_object *obj, va_list arg_list) {
+t_object *object_userland_new(t_object *obj, va_list arg_list) {
     DEBUG_PRINT("object_create_new_instance called");
 
     t_object *new_obj = smm_malloc(sizeof(t_object));
@@ -74,7 +74,7 @@ struct _object *object_userland_new(t_object *obj, va_list arg_list) {
 
 #ifdef __DEBUG
 char global_buf[1024];
-static char *object_user_debug(struct _object *obj) {
+static char *object_user_debug(t_object *obj) {
     sprintf(global_buf, "User object[%s]", obj->name);
     return global_buf;
 }
