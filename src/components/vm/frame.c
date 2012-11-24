@@ -140,29 +140,11 @@ void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
  * Returns an object from the constant table
  */
 t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
-    t_object *obj;
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
         saffire_vm_error("Trying to fetch from outside constant range");
     }
 
-    t_bytecode_constant *c = frame->bytecode->constants[idx];
-    switch (c->type) {
-        case BYTECODE_CONST_CODE :
-            obj = object_new(Object_Code, frame->bytecode->constants[idx]->data.code, NULL);
-            return obj;
-            break;
-
-        case BYTECODE_CONST_STRING :
-            RETURN_STRING(frame->bytecode->constants[idx]->data.s);
-            break;
-
-        case BYTECODE_CONST_NUMERICAL :
-            RETURN_NUMERICAL(frame->bytecode->constants[idx]->data.l);
-            break;
-    }
-
-    saffire_vm_error("Cannot convert constant type %d to an object\n", idx);
-    return NULL;
+    return frame->constants_objects[idx];
 }
 
 
@@ -260,6 +242,32 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     }
     cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
     cfr->builtin_identifiers = builtin_identifiers;
+
+
+    cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
+    for (int i=0; i!=bytecode->constants_len; i++) {
+        t_object *obj = Object_Null;
+
+        t_bytecode_constant *c = bytecode->constants[i];
+        switch (c->type) {
+            case BYTECODE_CONST_CODE :
+                obj = object_new(Object_Code, bytecode->constants[i]->data.code, NULL);
+                break;
+            case BYTECODE_CONST_STRING :
+                obj = object_new(Object_String, bytecode->constants[i]->data.s);
+                break;
+            case BYTECODE_CONST_NUMERICAL :
+                obj = object_new(Object_Numerical, bytecode->constants[i]->data.l);
+                break;
+            default :
+                printf("Cannot convert constant type into object!");
+                exit(1);
+                break;
+        }
+        object_inc_ref(obj);
+        cfr->constants_objects[i] = obj;
+    }
+
 
     return cfr;
 }
