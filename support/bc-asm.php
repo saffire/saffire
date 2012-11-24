@@ -12,7 +12,7 @@ class Frame {
     protected $asm;                 // Assembler object
 
     protected $stack_size = 25;     // Stack size for this frame
-    public $name;                // name of the frame
+    public $name;                   // name of the frame
     protected $constants;           // Constant array
     protected $identifiers;         // Identifier array
     protected $linenos;             // ?

@@ -31,7 +31,7 @@
     #include "objects/hash.h"
     #include "vm/frame.h"
 
-    t_hash_object *builtin_identifiers;
+    t_hash_object *builtin_identifiers;         // Builtin identifiers like the _sfl etc
 
     void vm_init(void);
     void vm_fini(void);

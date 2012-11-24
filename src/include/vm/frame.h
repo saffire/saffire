@@ -38,32 +38,32 @@
     #define BLOCK_TYPE_END_FINALLY      4
 
     typedef struct _vm_frameblock {
-        int type;       // Type (BLOCK_TYPE_*)
-        int ip;         // IP to set
-        int sp;         // SP to set
+        int type;       // Type (any of the BLOCK_TYPE_*)
+        int ip;         // Saved instruction pointer
+        int sp;         // Saved stack pointer
     } t_vm_frameblock;
 
 
     typedef struct _vm_frame {
-        struct _vm_frame *parent;               // Parent frame, or NULL when we reached the initial / global frame.
+        struct _vm_frame *parent;                   // Parent frame, or NULL when we reached the initial / global frame.
         char *name;
-        t_bytecode *bytecode;                   // Global bytecode array
-        unsigned int ip;                        // Instruction pointer
+        t_bytecode *bytecode;                       // Global bytecode array
+        unsigned int ip;                            // Instruction pointer
 
-        t_object **stack;                       // Local variable stack
-        unsigned int sp;                        // Stack pointer
+        t_object **stack;                           // Local variable stack
+        unsigned int sp;                            // Stack pointer
 
-        t_hash_object *local_identifiers;       // Local identifiers
-        t_hash_object *global_identifiers;      // Global identifiers
-        t_hash_object *builtin_identifiers;     // Builtin identifiers
+        t_hash_object *local_identifiers;           // Local identifiers
+        t_hash_object *global_identifiers;          // Global identifiers
+        t_hash_object *builtin_identifiers;         // Builtin identifiers
 
-        t_object **constants_objects;           // Constants converted to objects
+        t_object **constants_objects;               // Constants converted to objects
 
-        int block_cnt;
-        t_vm_frameblock blocks[BLOCK_MAX_DEPTH];
+        int block_cnt;                              // Last used block number
+        t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
 
-        //unsigned int time;                      // Total time spend in this bytecode block
-        unsigned int executions;                // Number of total executions (opcodes processed)
+        //unsigned int time;                        // Total time spend in this bytecode block
+        unsigned int executions;                    // Number of total executions (opcodes processed)
     } t_vm_frame;
 
 

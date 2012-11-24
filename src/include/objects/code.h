@@ -35,10 +35,10 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        t_bytecode *bytecode;                              // Extenral bytecode
+        t_bytecode *bytecode;                              // External bytecode
         t_object *(*native_func)(t_object *, t_dll *);     // internal method (by method call)
 
-//        // @TODO: Additional information for code
+        // @TODO: Additional information for code
 //        int calls;                  // Number of calls made to this code
 //        int time_spent;             // Time spend in this code
     } t_code_object;
