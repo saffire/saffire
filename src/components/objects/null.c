@@ -89,7 +89,7 @@ void object_null_fini(void) {
 }
 
 #ifdef __DEBUG
-static char *obj_debug(struct _object *obj) {
+static char *obj_debug(t_object *obj) {
     return "null";
 }
 #endif

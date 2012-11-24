@@ -180,7 +180,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 
 #ifdef __DEBUG
 char global_buf[1024];
-static char *obj_debug(struct _object *obj) {
+static char *obj_debug(t_object *obj) {
     t_code_object *self = (t_code_object *)obj;
     sprintf(global_buf, "code object. Internal: %s", self->native_func ? "yes" : "no");
     return global_buf;

@@ -30,8 +30,12 @@
 #include "general/hashtable.h"
 #include "general/smm.h"
 
+long smm_malloc_calls = 0;
+long smm_realloc_calls = 0;
+long smm_strdup_calls = 0;
 
 void *smm_malloc(size_t size) {
+    smm_malloc_calls++;
     void *ptr = malloc(size);
     if (ptr == NULL) {
         fprintf(stderr, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
@@ -41,6 +45,7 @@ void *smm_malloc(size_t size) {
 }
 
 void *smm_realloc(void *ptr, size_t size) {
+    smm_realloc_calls++;
     return realloc(ptr, size);
 }
 
@@ -49,6 +54,7 @@ void smm_free(void *ptr) {
 }
 
 char *smm_strdup(const char *s) {
+    smm_strdup_calls++;
     char *d = smm_malloc(strlen(s)+1);
     strcpy(d, s);
     return d;

@@ -41,16 +41,16 @@
 
 
     // Forward define
-    struct _object;
+    typedef struct _object t_object;
     struct _saffire_result;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        struct _object *(*new)(struct _object *, va_list arg_list);       // Allocates a new object
-        void (*free)(struct _object *);                 // Frees objects internal data
-        struct _object *(*clone)(struct _object *);     // Clones the object
+        t_object *(*new)(t_object *, va_list arg_list);       // Allocates a new object
+        void (*free)(t_object *);                 // Frees objects internal data
+        t_object *(*clone)(t_object *);     // Clones the object
 #ifdef __DEBUG
-        char *(*debug)(struct _object *);               // Return debug string (value and info)
+        char *(*debug)(t_object *);               // Return debug string (value and info)
 #endif
     } t_object_funcs;
 
@@ -79,28 +79,28 @@
 
     // Standard operators
     typedef struct _object_operators {
-        struct _object *(*add)(struct _object *, t_dll *, int );
-        struct _object *(*sub)(struct _object *, t_dll *, int );
-        struct _object *(*mul)(struct _object *, t_dll *, int );
-        struct _object *(*div)(struct _object *, t_dll *, int );
-        struct _object *(*mod)(struct _object *, t_dll *, int );
-        struct _object *(*and)(struct _object *, t_dll *, int );
-        struct _object *(*or)(struct _object *, t_dll *, int );
-        struct _object *(*xor)(struct _object *, t_dll *, int );
-        struct _object *(*shl)(struct _object *, t_dll *, int );
-        struct _object *(*shr)(struct _object *, t_dll *, int );
+        t_object *(*add)(t_object *, t_object *, int );
+        t_object *(*sub)(t_object *, t_object *, int );
+        t_object *(*mul)(t_object *, t_object *, int );
+        t_object *(*div)(t_object *, t_object *, int );
+        t_object *(*mod)(t_object *, t_object *, int );
+        t_object *(*and)(t_object *, t_object *, int );
+        t_object *(*or )(t_object *, t_object *, int );
+        t_object *(*xor)(t_object *, t_object *, int );
+        t_object *(*shl)(t_object *, t_object *, int );
+        t_object *(*shr)(t_object *, t_object *, int );
     } t_object_operators;
 
     // Standard operators
     typedef struct _object_comparisons {
-        int (*eq)(struct _object *, struct _object *);
-        int (*ne)(struct _object *, struct _object *);
-        int (*lt)(struct _object *, struct _object *);
-        int (*gt)(struct _object *, struct _object *);
-        int (*le)(struct _object *, struct _object *);
-        int (*ge)(struct _object *, struct _object *);
-        int (*in)(struct _object *, struct _object *);
-        int (*ni)(struct _object *, struct _object *);
+        int (*eq)(t_object *, t_object *);
+        int (*ne)(t_object *, t_object *);
+        int (*lt)(t_object *, t_object *);
+        int (*gt)(t_object *, t_object *);
+        int (*le)(t_object *, t_object *);
+        int (*ge)(t_object *, t_object *);
+        int (*in)(t_object *, t_object *);
+        int (*ni)(t_object *, t_object *);
     } t_object_comparisons;
 
 
@@ -150,10 +150,10 @@
         \
         int flags;                     /* object flags */ \
         \
-        struct _object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
+        t_object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
         \
         int implement_count;           /* Number of interfaces */ \
-        struct _object **implements;   /* Actual interfaces */ \
+        t_object **implements;   /* Actual interfaces */ \
         \
         t_hash_table *methods;                  /* Object methods */ \
         t_hash_table *properties;               /* Object properties */  \
@@ -165,9 +165,9 @@
 
 
     // Actual "global" object. Every object is typed on this object.
-    typedef struct _object {
+    struct _object {
         SAFFIRE_OBJECT_HEADER
-    } t_object;
+    }; // forward define has defined this as a t_object.
 
     extern t_object Object_Base_struct;
 
@@ -200,7 +200,7 @@
      */
     #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *dll)
 
-    #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_object *_self, t_dll *dll, int in_place)
+    #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_object *_self, t_object *_other, int in_place)
 
     #define SAFFIRE_COMPARISON_METHOD(obj, cmp) static int object_##obj##_comparison_##cmp(t_object *_self, t_object *_other)
 
