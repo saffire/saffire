@@ -188,7 +188,7 @@ t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) 
 t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, ...) {
     t_object *cur_obj = obj;
     va_list arg_list;
-    t_object *(*func)(t_object *, t_dll *dll, int in_place) = NULL;
+    t_object *(*func)(t_object *, t_object *, int) = NULL;
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->operators != NULL) {
@@ -222,20 +222,27 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 
     DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
 
-    // Add all arguments to a DLL
+//    // Add all arguments to a DLL
+//    va_start(arg_list, arg_count);
+//    t_dll *dll = dll_init();
+//    for (int i=0; i!=arg_count; i++) {
+//        t_object *obj = va_arg(arg_list, t_object *);
+//        dll_append(dll, obj);
+//    }
+//    va_end(arg_list);
+
     va_start(arg_list, arg_count);
-    t_dll *dll = dll_init();
-    for (int i=0; i!=arg_count; i++) {
-        t_object *obj = va_arg(arg_list, t_object *);
-        dll_append(dll, obj);
+    if (arg_count != 1) {
+        saffire_error("Operators must have one argument!");
+        return Object_False;
     }
-    va_end(arg_list);
+    t_object *obj2 = va_arg(arg_list, t_object *);
 
     // Call the actual operator and return the result
-    t_object *ret = func(obj, dll, in_place);
+    t_object *ret = func(obj, obj2, in_place);
 
-    // Free dll
-    dll_free(dll);
+//    // Free dll
+//    dll_free(dll);
     return ret;
 }
 

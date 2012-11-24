@@ -400,7 +400,7 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 
 #ifdef __DEBUG
 char global_buf[1024];
-static char *obj_debug(struct _object *obj) {
+static char *obj_debug(t_object *obj) {
     char *s = ((t_string_object *)obj)->value;
     snprintf(global_buf, 1023, "string(%s)", s);
     return global_buf;
