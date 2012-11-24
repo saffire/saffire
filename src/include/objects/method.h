@@ -43,11 +43,11 @@
 
     #define RETURN_METHOD(f, v, cl, co)   RETURN_OBJECT(object_new(Object_Method, f, v, cl, co));
 
-    #define METHOD_IS_STATIC(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_STATIC)
-    #define METHOD_IS_ABSTRACT(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_ABSTRACT)
-    #define METHOD_IS_FINAL(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_FINAL)
-    #define METHOD_IS_CONSTRUCTOR(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_CONSTRUCTOR)
-    #define METHOD_IS_DESTRUCTOR(method) ((method->mflags & METHOD_FLAG_MASK) == METHOD_FLAG_DESTRUCTOR)
+    #define METHOD_IS_STATIC(method) ((method->mflags & METHOD_FLAG_STATIC) == METHOD_FLAG_STATIC)
+    #define METHOD_IS_ABSTRACT(method) ((method->mflags & METHOD_FLAG_ABSTRACT) == METHOD_FLAG_ABSTRACT)
+    #define METHOD_IS_FINAL(method) ((method->mflags & METHOD_FLAG_FINAL) == METHOD_FLAG_FINAL)
+    #define METHOD_IS_CONSTRUCTOR(method) ((method->mflags & METHOD_FLAG_CONSTRUCTOR) == METHOD_FLAG_CONSTRUCTOR)
+    #define METHOD_IS_DESTRUCTOR(method) ((method->mflags & METHOD_FLAG_DESTRUCTOR) == METHOD_FLAG_DESTRUCTOR)
 
     #define METHOD_IS_PUBLIC(method) ((method->visibility == METHOD_VISIBILITY_PUBLIC)
     #define METHOD_IS_PROTECTED(method) ((method->visibility == METHOD_VISIBILITY_PROTECTED)
@@ -57,13 +57,13 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        int mflags;                 // Method flags
-        int visibility;             // Method visibility
+        int mflags;                         // Method flags
+        int visibility;                     // Method visibility
 
-        t_object *class;            // Bound to a class (or NULL)
-        struct _code_object *code;        // Code for this method
+        t_object *class;                    // Bound to a class (or NULL)
+        struct _code_object *code;          // Code for this method
 
-//        // Additional information for methods
+        // Additional information for methods
 //        int calls;                  // Number of calls made to this method
 //        int time_spent;             // Time spend in this method
     } t_method_object;

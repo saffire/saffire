@@ -30,7 +30,6 @@
     #include "general/md5.h"
     #include "objects/object.h"
 
-
     #define RETURN_STRING(s)   RETURN_OBJECT(object_new(Object_String, s));
 
     typedef struct {

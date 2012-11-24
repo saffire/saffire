@@ -424,7 +424,7 @@ dispatch:
                     obj1 = object_call(obj1, obj2, 0);
                 }
 
-                if (IS_TRUE(obj1)) {
+                if (IS_BOOLEAN_TRUE(obj1)) {
                     frame->ip += oparg1;
                 }
 
@@ -440,7 +440,7 @@ dispatch:
                     obj1 = object_call(obj1, obj2, 0);
                 }
 
-                if (IS_FALSE(obj1)) {
+                if (IS_BOOLEAN_FALSE(obj1)) {
                     frame->ip += oparg1;
                 }
                 goto dispatch;

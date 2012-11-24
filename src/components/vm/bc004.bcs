@@ -1,6 +1,7 @@
 ; Byte code assembler file
 ;
 ;
+
     ; Import io as io from ::_sfl::io
     LOAD_CONST          "io"
     LOAD_CONST          "::_sfl::io"

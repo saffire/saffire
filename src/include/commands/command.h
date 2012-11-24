@@ -27,6 +27,8 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
+    #include "general/parse_options.h"
+
     /*
      * Saffire uses a non-posix argument structure, but something similar
      * like git, which uses command arguments and optional flags.
