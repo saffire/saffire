@@ -94,13 +94,15 @@
     #define VM_END_FINALLY          0x98
 
 
-
     // Two operand opcodes
     #define VM_CALL_METHOD          0xC0
 
-    // Two operand opcodes
+
     // Three operand opcodes
+
+
     // Four operand opcodes
+
 
     // Reserved opcodes
     #define VM_RESERVED             0xFF

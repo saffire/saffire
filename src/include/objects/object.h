@@ -33,13 +33,6 @@
     #include "general/dll.h"
     #include "compiler/ast.h"
 
-
-    #define OBJECT_TYPE_IS_CLASS(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_CLASS)
-    #define OBJECT_TYPE_IS_INTERFACE(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_INTERFACE)
-    #define OBJECT_TYPE_IS_ABSTRACT(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_ABSTRACT)
-    #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_MASK) == OBJECT_TYPE_INSTANCE)
-
-
     // Forward define
     typedef struct _object t_object;
     struct _saffire_result;
@@ -47,10 +40,10 @@
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
         t_object *(*new)(t_object *, va_list arg_list);       // Allocates a new object
-        void (*free)(t_object *);                 // Frees objects internal data
-        t_object *(*clone)(t_object *);     // Clones the object
+        void (*free)(t_object *);                             // Frees objects internal data
+        t_object *(*clone)(t_object *);                       // Clones the object (@TODO: Is thos needed)
 #ifdef __DEBUG
-        char *(*debug)(t_object *);               // Return debug string (value and info)
+        char *(*debug)(t_object *);                           // Return debug string (value and info)
 #endif
     } t_object_funcs;
 
@@ -104,17 +97,31 @@
     } t_object_comparisons;
 
 
-
     // Object flags
-    #define OBJECT_TYPE_CLASS         1
-    #define OBJECT_TYPE_INTERFACE     2
-    #define OBJECT_TYPE_ABSTRACT      3
-    #define OBJECT_TYPE_INSTANCE      4
-    #define OBJECT_TYPE_MASK          7
+    #define OBJECT_TYPE_CLASS         1            /* Object is a class */
+    #define OBJECT_TYPE_INTERFACE     2            /* Object is an interface */
+    #define OBJECT_TYPE_ABSTRACT      4            /* Object is an abstract class */
+    #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance (object) */
+    #define OBJECT_TYPE_MASK         15            /* Object type bitmask */
 
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
     #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
+    #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
+    #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
 
+
+    // Object type and flag checks
+    #define OBJECT_TYPE_IS_CLASS(obj) ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS)
+    #define OBJECT_TYPE_IS_INTERFACE(obj) ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE)
+    #define OBJECT_TYPE_IS_ABSTRACT(obj) ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
+    #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
+
+    #define OBJECT_TYPE_IS_IMMUTABLE(obj) ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
+    #define OBJECT_TYPE_IS_STATIC(obj) ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC)
+    #define OBJECT_TYPE_IS_FINAL(obj) ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
+
+
+    // Simple macro's for object type checks
     #define OBJECT_IS_NULL(obj)         (obj->type == objectTypeNull)
     #define OBJECT_IS_NUMERICAL(obj)    (obj->type == objectTypeNumerical)
     #define OBJECT_IS_STRING(obj)       (obj->type == objectTypeString)
@@ -123,16 +130,6 @@
     #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
 
 
-//    // A object's method hash table stores method_caller structures
-//    typedef struct _method_caller {
-//        long flags;
-//        t_object *class;         // To which class (or instance) is this method bound?
-//        void *data;              // either t_ast_element OR a pointer to a method
-//        char internal;           // The method is an internal method (1) or not (0)
-//    } t_method;
-//    // For easy definition during internal object creation
-//    #define INTERNAL_METHOD(func) { func, 1 }
-
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[12];
     typedef enum {
@@ -140,6 +137,7 @@
                    objectTypeNull,objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom,
                    objectTypeHash, objectTypeTuple
                  } t_objectype_enum;
+
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
@@ -216,8 +214,6 @@
     #define RETURN_SELF \
         { return (t_object *)self; }
 
-
-    int object_is_immutable(t_object *obj);
 
     void object_init(void);
     void object_fini(void);
