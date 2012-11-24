@@ -44,6 +44,11 @@
 #include "general/config.h"
 
 
+extern long smm_malloc_calls;
+extern long smm_realloc_calls;
+extern long smm_strdup_calls;
+
+
 char *gpg_key = NULL;
 int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
 int flag_no_verify = 0;
@@ -314,6 +319,10 @@ static int do_exec(void) {
     // Fini stuff
     printf("\n\n\nFINI!\n\n\n");
     vm_fini();
+
+    printf("SMM Malloc Calls: %ld\n", smm_malloc_calls);
+    printf("SMM Realloc Calls: %ld\n", smm_realloc_calls);
+    printf("SMM Strdup Calls: %ld\n", smm_strdup_calls);
 
     return (ret & 0xFF);    // Make sure ret is a code between 0 and 255
 }
