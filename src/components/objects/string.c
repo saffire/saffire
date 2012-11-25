@@ -155,13 +155,6 @@ SAFFIRE_METHOD(string, reverse) {
     RETURN_SELF;
 }
 
-/**
- * Saffire method: output strings
- */
-SAFFIRE_METHOD(string, print) {
-    printf("%s\n", self->value);
-    RETURN_SELF;
-}
 
 /**
  *
@@ -320,7 +313,6 @@ void object_string_init(void) {
     object_add_internal_method(&Object_String_struct, "upper", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_upper);
     object_add_internal_method(&Object_String_struct, "lower", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_lower);
     object_add_internal_method(&Object_String_struct, "reverse", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_reverse);
-    object_add_internal_method(&Object_String_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_print);
 
     Object_String_struct.properties = ht_create();
 

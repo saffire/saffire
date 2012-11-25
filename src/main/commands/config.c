@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "general/output.h"
 #include "commands/command.h"
 #include "general/config.h"
 #include "general/smm.h"
@@ -107,13 +108,13 @@ static int do_generate(void) {
     current_time = time (NULL);
     local_time = localtime (&current_time);
 
-    printf("#\n");
-    printf("# Default configuration file for saffire. It consists of all configuration settings.\n");
-    printf("# Generated on %s", asctime(local_time));
-    printf("#\n");
+    output("#\n");
+    output("# Default configuration file for saffire. It consists of all configuration settings.\n");
+    output("# Generated on %s", asctime(local_time));
+    output("#\n");
 
     for (int i=0; i!=ARRAY_SIZE(default_ini); i++) {
-        printf("%s\n", default_ini[i]);
+        output("%s\n", default_ini[i]);
     }
     return 0;
 }
@@ -129,7 +130,7 @@ static int do_get(void) {
 
     char *val = config_get_string(key, NULL);
     if (val) {
-        printf("%s : %s\n", key, val);
+        output("%s : %s\n", key, val);
         return 0;
     }
     return 1;
@@ -165,7 +166,7 @@ static int do_list(void) {
         if (matches[i] == NULL) continue;
 
         char *val = config_get_string(matches[i], NULL);
-        printf("%s : %s\n", matches[i], val);
+        output("%s : %s\n", matches[i], val);
 
         free(matches[i]);
     }

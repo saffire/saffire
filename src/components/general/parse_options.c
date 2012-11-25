@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "general/output.h"
 #include "general/parse_options.h"
 
 /* Parameters known to saffire commands. Similar to argc & argv */
@@ -82,8 +83,7 @@ static void process_argument(int idx, int argc, char *argv[], struct saffire_opt
 
     // Need additional argument, but found none
     if (! has_next_arg && opt->has_arg == required_argument) {
-        printf("Option '%s' requires an argument\n", argv[idx]);
-        exit(1);
+        error_and_die(1, "Option '%s' requires an argument\n", argv[idx]);
     }
 
     if (has_next_arg && opt->has_arg == required_argument) {
@@ -139,9 +139,8 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
 
         // Unknown option found
         if (! found) {
-            printf("saffire: invalid option '%s'\n"
-                   "Try 'saffire help config' for more information\n", argv[idx]);
-            exit(1);
+            error_and_die(1, "saffire: invalid option '%s'\n"
+                             "Try 'saffire help config' for more information\n", argv[idx]);
         }
     }
 }
@@ -175,16 +174,14 @@ void saffire_parse_signature(int argc, char **argv, char *signature) {
 
 
     if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        printf("Not enough arguments found. use saffire help <command> for more information\n");
-        exit(1);
+        error_and_die(1, "Not enough arguments found. use saffire help <command> for more information\n");
     }
 
     // Process each character in the signature
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
         if (argp > argc && ! optional) {
-            printf("Not enough arguments found. use saffire help <command> for more information\n");
-            exit(1);
+            error_and_die(1, "Not enough arguments found. use saffire help <command> for more information\n");
         }
 
         switch (signature[idx]) {
@@ -200,29 +197,25 @@ void saffire_parse_signature(int argc, char **argv, char *signature) {
             case 'b' :
                 // Try and convert to boolean
                 if (to_bool(argv[argp]) == -1) {
-                  printf("Found '%s', but expected a boolean value\n", argv[argp]);
-                  exit(1);
+                  error_and_die(1, "Found '%s', but expected a boolean value\n", argv[argp]);
                 }
 
                 break;
             case 'l' :
                 // Convert to long. string("0") should be ok too!
                 if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
-                  printf("Found '%s', but expected a numerical value\n", argv[argp]);
-                  exit(1);
+                  error_and_die(1, "Found '%s', but expected a numerical value\n", argv[argp]);
                 }
 
                 break;
           default :
-                printf("Incorrect signature command '%c' found.\n", signature[idx]);
-                exit(1);
+                error_and_die(1, "Incorrect signature command '%c' found.\n", signature[idx]);
         }
     }
 
     // Not enough arguments!
     if (argc > argp) {
-        printf("Too many arguments found. use saffire help <command> for more information\n");
-        exit(1);
+        error_and_die(1, "Too many arguments found. use saffire help <command> for more information\n");
     }
 
     // All parameters are shifted to the front, and checked for type. From now on, we can safely use them
@@ -247,8 +240,7 @@ char saffire_getopt_bool(int idx) {
     if (idx > saffire_params_count) return 0;
     int ret = to_bool(saffire_params[idx]);
     if (ret == -1) {
-        printf("Incorrect boolean value");
-        exit(1);
+        error_and_die(1, "Incorrect boolean value");
     }
 
     return ret;

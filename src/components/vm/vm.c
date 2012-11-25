@@ -44,6 +44,7 @@
 #include "interpreter/errors.h"
 #include "modules/module_api.h"
 #include "debug.h"
+#include "general/output.h"
 
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
 #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
@@ -92,33 +93,6 @@ t_object_funcs userland_funcs = {
 
 
 
-
-/**
- *
- */
-void saffire_vm_warning(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    fprintf(stderr, "Warning: ");
-    vfprintf(stderr, str, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-}
-
-/**
- *
- */
-void saffire_vm_error(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    fprintf(stderr, "Error: ");
-    vfprintf(stderr, str, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-    exit(1);
-}
-
-
 #define CALL_OP(opr, in_place, err_str) \
                 obj1 = vm_frame_stack_pop(frame); \
                 object_dec_ref(obj1); \
@@ -126,7 +100,7 @@ void saffire_vm_error(char *str, ...) {
                 object_dec_ref(obj2); \
                 \
                 if (obj1->type != obj2->type) { \
-                    saffire_vm_error(err_str); \
+                    error_and_die(1, err_str); \
                 } \
                 obj3 = object_operator(obj2, opr, in_place, 1, obj1); \
                 \
@@ -197,7 +171,7 @@ dispatch:
         opcode = vm_frame_get_next_opcode(frame);
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
-            saffire_vm_error("VM: Reached reserved (0xFF) opcode. Halting.\n");
+            error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
         }
 
         // If high bit is set, get operand
@@ -485,7 +459,7 @@ dispatch:
                     obj3 = code->native_func(obj1, args);
                     dll_free(args);
                 } else {
-                    printf("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
+                    DEBUG_PRINT("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
                     tfr = vm_frame_new(frame, code->bytecode);
 
 #ifdef __DEBUG
@@ -567,7 +541,7 @@ dispatch:
                 obj2 = vm_frame_stack_pop(frame);
 
                 if (obj1->type != obj2->type) {
-                    saffire_vm_error("Cannot compare non-identical object types");
+                    error_and_die(1, "Cannot compare non-identical object types");
                 }
                 obj3 = object_comparison(obj1, oparg1, obj2);
 
@@ -627,7 +601,7 @@ dispatch:
                     obj3 = vm_frame_stack_pop(frame);
                     object_dec_ref(obj3);
 
-                    printf("Adding method %s to class\n", OBJ2STR(obj1));
+                    DEBUG_PRINT("Adding method %s to class\n", OBJ2STR(obj1));
 
                     // add to class
                     ht_add(obj2->methods, OBJ2STR(obj1), obj3);

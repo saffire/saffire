@@ -28,6 +28,7 @@
 #include <glob.h>
 #include <stdio.h>
 #include <string.h>
+#include "general/output.h"
 #include "commands/command.h"
 #include "compiler/ast.h"
 #include "general/parse_options.h"
@@ -42,16 +43,16 @@ int check_file(const char *filename);
  * Start the lint process
  */
 static int do_lint(void) {
-	char *target = saffire_getopt_string(0);
+    char *target = saffire_getopt_string(0);
 
-	if(is_file(target)) {
-		process_file(target);
-	} else if (is_directory(target)) {
-		printf("Checking directory: %s.\n", target);
-		process_directory(target);
-	} else {
-		printf("Received neither a file nor a directory.\n");
-	}
+    if(is_file(target)) {
+        process_file(target);
+    } else if (is_directory(target)) {
+        output("Checking directory: %s.\n", target);
+        process_directory(target);
+    } else {
+        output("Received neither a file nor a directory.\n");
+    }
 
     return 0;
 }
@@ -61,46 +62,46 @@ static int do_lint(void) {
  * Perform a syntax check on a single file
  */
 void process_file(const char *filename) {
-	if ( ! is_saffire_file(filename)) {
-		printf("%s is not a saffire file.\n", filename);
-	} else {
-		check_file(filename);
-	}
+    if ( ! is_saffire_file(filename)) {
+        output("%s is not a saffire file.\n", filename);
+    } else {
+        check_file(filename);
+    }
 }
 
 /**
  * Syntax check the contents of a directory
  */
 void process_directory(const char *directory) {
-	glob_t buffer;
-	char *extension = "/*";
-	char *pattern = smm_malloc(sizeof(directory) + sizeof(extension) + 1);
-	strcpy(pattern, directory);
-	strcat(pattern, extension);	
-	glob(pattern, 0, NULL, &buffer);
-	smm_free(pattern);
+    glob_t buffer;
+    char *extension = "/*";
+    char *pattern = smm_malloc(sizeof(directory) + sizeof(extension) + 1);
+    strcpy(pattern, directory);
+    strcat(pattern, extension);
+    glob(pattern, 0, NULL, &buffer);
+    smm_free(pattern);
 
-	for (int i = 0; i < buffer.gl_pathc; i++) {
-		if (is_file(buffer.gl_pathv[i])) {
-			process_file(buffer.gl_pathv[i]);
-		} else if (is_directory(buffer.gl_pathv[i])) {
-			process_directory(buffer.gl_pathv[i]);
-		}
-	}
+    for (int i = 0; i < buffer.gl_pathc; i++) {
+        if (is_file(buffer.gl_pathv[i])) {
+            process_file(buffer.gl_pathv[i]);
+        } else if (is_directory(buffer.gl_pathv[i])) {
+            process_directory(buffer.gl_pathv[i]);
+        }
+    }
 }
 
 /**
  * perform the actual syntax check
  */
 int check_file(const char *filename) {
-	printf("checking %s.\n", filename);
-	t_ast_element *ast = ast_generate_from_file((char*)filename);
-	
-	if (ast == NULL) {
-		printf(" - %s contains syntax errors.\n", filename);
-		return 0;
-	}
-	return 1;
+    output("checking %s.\n", filename);
+    t_ast_element *ast = ast_generate_from_file((char*)filename);
+
+    if (ast == NULL) {
+        output(" - %s contains syntax errors.\n", filename);
+        return 0;
+    }
+    return 1;
 }
 
 /****
