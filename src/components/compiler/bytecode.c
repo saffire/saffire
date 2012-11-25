@@ -28,38 +28,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include "general/output.h"
 #include "compiler/bytecode.h"
 #include "general/smm.h"
 #include "general/gpg.h"
 #include "general/bzip2.h"
 #include "general/config.h"
-
-/**
- *
- */
-static void saffire_compile_warning(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    fprintf(stderr, "Warning: ");
-    vfprintf(stderr, str, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-}
-
-
-/**
- *
- */
-static void saffire_compile_error(char *str, ...) {
-    va_list args;
-    va_start(args, str);
-    fprintf(stderr, "Error: ");
-    vfprintf(stderr, str, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-    exit(1);
-}
-
 
 /**
  * Add constant to a bytecode structure
@@ -82,7 +56,7 @@ static void _free_constant(t_bytecode_constant *c) {
              bytecode_free(c->data.code);
              break;
          default :
-             saffire_compile_error("Unknown constant type %d\n", c->type);
+             error_and_die(1, "Unknown constant type %d\n", c->type);
              break;
      }
 }
@@ -215,7 +189,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
                 _new_constant_code(bytecode, child_bytecode);
                 break;
             default :
-                saffire_compile_error("Unknown constant type %d\n", type);
+                error_and_die(1, "Unknown constant type %d\n", type);
                 break;
         }
     }
@@ -269,7 +243,7 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
-                saffire_compile_error("Unknown constant type %d\n", bytecode->constants[i]->type);
+                error_and_die(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
                 break;
         }
     }
@@ -310,7 +284,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     if (verify_signature == 0 &&
         (header.flags & BYTECODE_FLAG_SIGNED) == BYTECODE_FLAG_SIGNED &&
         header.signature_offset != 0) {
-        saffire_compile_warning("A signature is present, but verification is disabled");
+        output("A signature is present, but verification is disabled");
     }
 
     // We need to check signature, and there is one present
@@ -325,7 +299,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
         // Verify signature
         if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
-            saffire_compile_error("The signature for this bytecode is INVALID!");
+            error_and_die(1, "The signature for this bytecode is INVALID!");
         }
     }
 
@@ -335,12 +309,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     unsigned int bzip_buf_len = header.bytecode_uncompressed_len;
     char *bzip_buf = smm_malloc(bzip_buf_len);
     if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-        saffire_compile_error("Error while decompressing data");
+        error_and_die(1, "Error while decompressing data");
     }
 
     // Sanity check. These should match
     if (bzip_buf_len != header.bytecode_uncompressed_len) {
-        saffire_compile_error("Header information does not match with the size of the uncompressed data block");
+        error_and_die(1, "Header information does not match with the size of the uncompressed data block");
     }
 
     // Free unpacked binary code. We don't need it anymore
@@ -353,7 +327,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     // Convert binary to bytecode
     t_bytecode *bc = bytecode_bin2bc(bincode);
     if (! bc) {
-        saffire_compile_error("Could not convert bytecode data");
+        error_and_die(1, "Could not convert bytecode data");
     }
 
     smm_free(bzip_buf);
@@ -372,7 +346,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
 
     // Convert bytecode to bincode
     if (! bytecode_bc2bin(bc, &bincode_len, &bincode)) {
-        saffire_compile_error("Could not convert bytecode data");
+        error_and_die(1, "Could not convert bytecode data");
     }
 
     // Let header point to the reserved header position
@@ -401,7 +375,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     unsigned int bzip_buf_len = 0;
     char *bzip_buf = NULL;
     if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
-        saffire_compile_error("Error while compressing data");
+        error_and_die(1, "Error while compressing data");
     }
 
     // Forget about the original bincode and replace it with out bzip2 data.
@@ -565,7 +539,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
         _gpg_key = gpg_key;
     }
     if (_gpg_key == NULL) {
-        printf("Cannot find GPG key. Please set the correct GPG key inside your INI file");
+        error("Cannot find GPG key. Please set the correct GPG key inside your INI file");
         return 1;
     }
     gpg_sign(_gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);

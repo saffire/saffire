@@ -25,40 +25,52 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include "general/output.h"
-#include "general/hashtable.h"
-#include "general/smm.h"
 
-
-// @TODO: Fix this into a better/faster memory manager (slab allocator)
-
-long smm_malloc_calls = 0;
-long smm_realloc_calls = 0;
-long smm_strdup_calls = 0;
-
-void *smm_malloc(size_t size) {
-    smm_malloc_calls++;
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        error_and_die(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-    }
-    return ptr;
+/**
+ *
+ */
+static void _output(FILE *f, const char *format, va_list args) {
+    vfprintf(f, format, args);
 }
 
-void *smm_realloc(void *ptr, size_t size) {
-    smm_realloc_calls++;
-    return realloc(ptr, size);
+/**
+ * Outputs (to stdout)
+ */
+void output(const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    _output(stdout, format, args);
+    va_end(args);
 }
 
-void smm_free(void *ptr) {
-    return free(ptr);
+
+/**
+ * Ouputs error (to stderr)
+ */
+void error(const char *format, ...) {
+    va_list args;
+
+    _output(stderr, "Error: ", NULL);
+    va_start(args, format);
+    _output(stderr, format, args);
+    va_end(args);
+
 }
 
-char *smm_strdup(const char *s) {
-    smm_strdup_calls++;
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
+/**
+ * Ouputs error (to stderr) and exists with code.
+ */
+void error_and_die(int exitcode, const char *format, ...) {
+    va_list args;
+
+    _output(stderr, "Error: ", NULL);
+    va_start(args, format);
+    _output(stderr, format, args);
+    va_end(args);
+
+    exit(exitcode);
 }

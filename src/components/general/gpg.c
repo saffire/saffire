@@ -30,6 +30,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "general/output.h"
 #include "general/smm.h"
 #include "general/gpg.h"
 #include "general/popen2.h"
@@ -78,7 +79,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     char buf[256];
     bzero(buf, 256);
     while (read(pipe[2], buf, 255) > 0) {
-        printf("%s", buf);
+        output("%s", buf);
         bzero(buf, 256);
     }
 

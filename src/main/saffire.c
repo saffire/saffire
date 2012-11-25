@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include "general/output.h"
 #include "general/parse_options.h"
 #include "version.h"
 #include "commands/command.h"
@@ -69,7 +70,7 @@ char **original_argv;
  * Prints current version number and copyright information
  */
 void print_version(void) {
-    printf("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
+    output("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
 }
 
 
@@ -77,7 +78,7 @@ void print_version(void) {
  * Prints usage information
  */
 void print_usage(void) {
-    printf("\n"
+    output("\n"
            "Usage: saffire <command> [options] [script [args]]\n"
            "Available options are:\n"
            "  -v, --version         Show version information \n"
@@ -87,12 +88,12 @@ void print_usage(void) {
 
     struct command *p = commands;
     while (p->name) {
-        printf("%-15s %s\n", p->name, p->info->description);
+        output("%-15s %s\n", p->name, p->info->description);
         p++;
     }
-    printf("\n");
+    output("\n");
 
-    printf("Use saffire help <command> to find out more information about the command usage.\n\n");
+    output("Use saffire help <command> to find out more information about the command usage.\n\n");
 }
 
 
@@ -133,10 +134,10 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
 
     // Nothing was found. Display help if available.
     if (cmd->info->help) {
-        printf("%s", cmd->info->help);
-        printf("\n");
+        output("%s", cmd->info->help);
+        output("\n");
     } else {
-        printf("No additional help is available. Use 'saffire help' for more information.\n");
+        output("No additional help is available. Use 'saffire help' for more information.\n");
     }
     return 1;
 }

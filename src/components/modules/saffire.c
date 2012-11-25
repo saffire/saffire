@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include "general/output.h"
 #include "modules/module_api.h"
 #include "objects/object.h"
 #include "objects/method.h"

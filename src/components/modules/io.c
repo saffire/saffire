@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include "general/output.h"
 #include "modules/module_api.h"
 #include "interpreter/errors.h"
 #include "objects/object.h"
@@ -58,7 +59,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
     }
 
     char *str = ((t_string_object *)obj)->value;
-    printf(ANSI_BRIGHTRED "%s" ANSI_RESET "\n", str);
+    output(ANSI_BRIGHTRED "%s" ANSI_RESET "\n", str);
 
     RETURN_SELF;
 }
@@ -67,7 +68,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "IO.printf: %ld arguments" ANSI_RESET "\n", args->size);
+    output(ANSI_BRIGHTRED "IO.printf: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -82,7 +83,7 @@ static t_object *io_sprintf(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_print(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", args->size);
+    output(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -90,7 +91,7 @@ static t_object *console_print(t_object *self, t_dll *args) {
  *
  */
 static t_object *console_printf(t_object *self, t_dll *args) {
-    printf(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", args->size);
+    output(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
 
@@ -109,7 +110,6 @@ t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL
 
 static void _init(void) {
     io_struct.methods = ht_create();
-    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_print);
     object_add_internal_method(&io_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_print);
     object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_printf);
     object_add_internal_method(&io_struct, "sprintf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_sprintf);

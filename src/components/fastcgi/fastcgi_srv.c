@@ -38,6 +38,7 @@
 #include <sys/socket.h>
 #include <pwd.h>
 #include <grp.h>
+#include "general/output.h"
 #include "general/config.h"
 
 /**
@@ -138,7 +139,7 @@ static int setup_socket(char *socket_name) {
 
         // Create socket
         if ((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-            printf("Cannot create socket\n");
+            error("Cannot create socket\n");
             return -1;
          }
     } else {
@@ -147,7 +148,7 @@ static int setup_socket(char *socket_name) {
         //sockdata.data.in.sin_port
         sockdata.len = 0;
         //
-        printf("Cannot use AF_INET yet");
+        error("Cannot use AF_INET yet");
         return -1;
 
     }
@@ -158,14 +159,14 @@ static int setup_socket(char *socket_name) {
     int val = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0) {
         close(sock_fd);
-        printf("Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
+        error("Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
         return -1;
     }
 
     // Bind
     if (! bind(sock_fd, (struct sockaddr *) &sockdata.data, sockdata.len) < 0) {
         close(sock_fd);
-        printf("Cannot bind() socket: %s\n", strerror(errno));
+        error("Cannot bind() socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -174,7 +175,7 @@ static int setup_socket(char *socket_name) {
     if (backlog <= 0) backlog = 1024;
     if (listen (sock_fd, backlog) == -1) {
         close(sock_fd);
-        printf("Cannot listen() on socket: %s\n", strerror(errno));
+        error("Cannot listen() on socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -191,7 +192,7 @@ static int setup_socket(char *socket_name) {
         if (*endptr != '\0') {
             pwd = getpwnam(socket_user);
             if (pwd == NULL) {
-                printf("Cannot find user: %s: %s", socket_user, strerror(errno));
+                error("Cannot find user: %s: %s", socket_user, strerror(errno));
                 return -1;
             }
             uid = pwd->pw_uid;
@@ -203,7 +204,7 @@ static int setup_socket(char *socket_name) {
             grp = getgrnam(socket_group);
             if (grp == NULL) {
                 close(sock_fd);
-                printf("Cannot find group: %s: %s", socket_group, strerror(errno));
+                error("Cannot find group: %s: %s", socket_group, strerror(errno));
                 return -1;
             }
             gid = grp->gr_gid;
@@ -212,7 +213,7 @@ static int setup_socket(char *socket_name) {
         // Change owner of socket
         if (chown(socket_name, uid, gid) == -1) {
             close(sock_fd);
-            printf("Cannot chown(): %s\n", strerror(errno));
+            error("Cannot chown(): %s\n", strerror(errno));
             return -1;
         }
 
@@ -221,7 +222,7 @@ static int setup_socket(char *socket_name) {
         if (modei == 0) modei = 0600;  // RW for user if not correct settings
         if (chmod(socket_name, modei) == -1) {
             close(sock_fd);
-            printf("Cannot chmod(): %s\n", strerror(errno));
+            error("Cannot chmod(): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -242,22 +243,22 @@ static int open_pid(char *pid_path) {
     }
 
     if (errno != EEXIST) {
-        printf("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
+        error("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
         return -1;
     }
 
     if (stat(pid_path, &st) != 0) {
-        printf("Cannot stat PID file: %s: %s\n", pid_path, strerror(errno));
+        error("Cannot stat PID file: %s: %s\n", pid_path, strerror(errno));
         return -1;
     }
 
     if (!S_ISREG(st.st_mode)) {
-        printf("PID is not a regular file: %s\n", pid_path);
+        error("PID is not a regular file: %s\n", pid_path);
     }
 
     pid_fd = open(pid_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (pid_fd == -1) {
-        printf("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
+        error("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
         return -1;
     }
 
@@ -272,7 +273,7 @@ static int daemonize(void) {
     pid_t child_pid = fork();
 
     if (child_pid == -1) {
-        printf("Cannot fork(): %s", strerror(errno));
+        error("Cannot fork(): %s", strerror(errno));
         return -1;
     }
 
@@ -292,11 +293,11 @@ waitforchild:
     ret = waitpid(child_pid, &status, WNOHANG);
     if (ret == -1) {
         if (errno == EINTR) goto waitforchild;
-        printf("Unknown error occured: %s\n", strerror(errno));
+        error("Unknown error occured: %s\n", strerror(errno));
         return -1;
     }
     if (ret == 0) {
-        printf("Child spawned: %d\n", child_pid);
+        error("Child spawned: %d\n", child_pid);
         return child_pid;
     }
     if (WIFEXITED(status)) {
@@ -311,7 +312,7 @@ waitforchild:
 static int check_suidroot(void) {
     // Make sure we don't run as SUID root
     if (geteuid() == 0 || getegid() == 0) {
-        printf("Please do not run this app with SUID root.\n");
+        error("Please do not run this app with SUID root.\n");
         return -1;
     }
 

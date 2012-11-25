@@ -88,15 +88,6 @@ SAFFIRE_METHOD(numerical, neg) {
 }
 
 
-/**
- * Saffire method: output numerical value
- */
-SAFFIRE_METHOD(numerical, print) {
-    printf("THE VALUE: %ld\n", self->value);
-    RETURN_SELF;
-}
-
-
 SAFFIRE_METHOD(numerical, conv_boolean) {
     if (self->value == 0) {
         RETURN_FALSE;
@@ -389,7 +380,6 @@ void object_numerical_init(void) {
 
     object_add_internal_method(&Object_Numerical_struct, "neg", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_neg);
     object_add_internal_method(&Object_Numerical_struct, "abs", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_abs);
-    object_add_internal_method(&Object_Numerical_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_print);
 
     Object_Numerical_struct.properties = ht_create();
 

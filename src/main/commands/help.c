@@ -26,6 +26,7 @@
 */
 #include <stdio.h>
 #include <string.h>
+#include "general/output.h"
 #include "commands/command.h"
 
 extern int original_argc;
@@ -47,10 +48,10 @@ static int do_help(void) {
 
         if (! strcasecmp(cmd->name, original_argv[2])) {
             if (cmd->info->help) {
-                printf("%s\n", cmd->info->help);
+                output("%s\n", cmd->info->help);
             } else {
                 // No help available for this command
-                printf("There is no help available for command '%s'.\n", original_argv[2]);
+                output("There is no help available for command '%s'.\n", original_argv[2]);
             }
             return 0;
         }
@@ -59,7 +60,7 @@ static int do_help(void) {
     }
 
     // No valid command found
-    printf("Cannot find help on this subject.\n");
+    output("Cannot find help on this subject.\n");
     return 1;
 }
 

@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "general/output.h"
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "general/smm.h"
@@ -350,7 +351,7 @@ t_ast_element *ast_generate_from_file(char *source_file) {
     // Open file, or use stdin if needed
     FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
     if (!fp) {
-        fprintf(stderr, "Could not open file: %s\n", source_file);
+        error("Could not open file: %s\n", source_file);
         return NULL;
     }
 

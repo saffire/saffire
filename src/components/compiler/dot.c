@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "general/output.h"
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "compiler/ast.h"
@@ -133,7 +134,7 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
 void dot_generate(t_ast_element *ast, const char *outputfile) {
     FILE *fp = fopen(outputfile, "w");
     if (!fp) {
-        printf("Cannot open %s for writing\n", outputfile);
+        error("Cannot open %s for writing\n", outputfile);
         return;
     }
 

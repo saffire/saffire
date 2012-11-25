@@ -30,6 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "general/output.h"
 #include "general/smm.h"
 #include "compiler/ast.h"
 #include "compiler/parser.tab.h"
@@ -200,7 +201,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 }
 
 . {
-    printf ("Unknown token: '%s'\n", yytext);
+    error("Unknown token: '%s'\n", yytext);
     yyterminate();
 }
 

@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include "general/output.h"
 #include "modules/module_api.h"
 #include "general/dll.h"
 #include "modules/io.h"
@@ -66,7 +67,7 @@ int register_module(t_module *mod) {
         sprintf(key, "%s::%s", mod->name, obj->name);
 
         ht_add(builtin_identifiers->ht, key, obj);
-        printf("Added object to builtins: %s\n", key);
+        DEBUG_PRINT("Added object to builtins: %s\n", key);
 
         idx++;
         obj = (t_object *)mod->objects[idx];

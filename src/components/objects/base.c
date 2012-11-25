@@ -37,7 +37,6 @@
 
 
 /*
-
  class base {
     public method ctor();
     public method dtor();

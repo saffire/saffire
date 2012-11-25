@@ -45,19 +45,19 @@ int scoreboard_init(int workers) {
     // Create shared segment
     shm_id = shmget(IPC_PRIVATE, sizeof(t_scoreboard) + ( sizeof(t_worker_scoreboard) * workers), IPC_CREAT | 0666);
     if (shm_id < 0) {
-        printf("Cannot get shared memory segment: %s\n", strerror(errno));
+        error("Cannot get shared memory segment: %s\n", strerror(errno));
         return -1;
     }
     scoreboard = shmat(shm_id, (void *)0, 0);
     if (scoreboard == -1) {
-        printf("Cannot connect to shared memory: %s\n", strerror(errno));
+        error("Cannot connect to shared memory: %s\n", strerror(errno));
         return -1;
     }
 
     // Create semaphore
     sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
     if (sem_id < 0) {
-        printf("Cannot create semaphore: %s\n", strerror(errno));
+        error("Cannot create semaphore: %s\n", strerror(errno));
         return -1;
     }
 

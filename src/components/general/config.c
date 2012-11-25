@@ -30,6 +30,7 @@
 #include <augeas.h>
 #include <fnmatch.h>
 
+#include "general/output.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
 
@@ -96,7 +97,7 @@ int config_set_string(char *key, char *val) {
     // Save
     int ret = aug_save(aug);
     if (ret == -1) {
-        printf("Error while saving setting: %d\n", aug_error(aug));
+        error("Error while saving setting: %d\n", aug_error(aug));
     }
     return 1;
 
