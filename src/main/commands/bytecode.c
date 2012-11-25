@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include "general/output.h"
 #include "vm/vm.h"
 #include "vm/frame.h"
 #include "commands/command.h"
@@ -40,6 +41,7 @@
 #include "general/path_handling.h"
 #include "compiler/bytecode.h"
 #include "objects/numerical.h"
+#include "debug.h"
 
 #include "general/config.h"
 
@@ -61,7 +63,7 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void);
 static void _compile_file(const char *source_file, int sign, char *gpg_key) {
     char *dest_file = replace_extension(source_file, ".sf", ".sfc");
 
-    printf("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
+    output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
     t_bytecode *bc = generate_dummy_bytecode_bc004_bcs_main();
     bytecode_save(dest_file, source_file, bc);
@@ -94,7 +96,7 @@ static void _compile_directory(const char *path, int sign, char *gpg_key) {
             // Add current path to name
             path_length = snprintf(new_path, PATH_MAX, "%s/%s", path, dp->d_name);
             if (path_length >= PATH_MAX) {
-                printf("Path too long");
+                error("Path too long");
                 return;
             }
 
@@ -122,21 +124,21 @@ static int _sign_bytecode(const char *path, char *gpg_key) {
     int ret;
 
     if (! bytecode_is_valid_file(path)) {
-        printf("Sign error: This is not a valid saffire bytecode file.\n");
+        error("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
     if (bytecode_is_signed(path)) {
-        printf("Sign error: This bytecode file is already signed.\n");
+        error("Sign error: This bytecode file is already signed.\n");
         return 1;
     }
 
     // add signature
     ret = bytecode_add_signature(path, gpg_key);
     if (ret == 0) {
-        printf("Added signature to bytecode file %s\n", path);
+        error("Added signature to bytecode file %s\n", path);
     } else {
-        printf("Sign error: Error while adding signature from bytecode file %s\n", path);
+        error("Sign error: Error while adding signature from bytecode file %s\n", path);
     }
     return ret;
 }
@@ -149,21 +151,21 @@ static int _unsign_bytecode(const char *path) {
     int ret;
 
     if (! bytecode_is_valid_file(path)) {
-        printf("Sign error: This is not a valid saffire bytecode file.\n");
+        error("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
     if (! bytecode_is_signed(path)) {
-        printf("Sign error: This bytecode file is not signed.\n");
+        error("Sign error: This bytecode file is not signed.\n");
         return 1;
     }
 
     // Remove signature
     ret = bytecode_remove_signature(path);
     if (ret == 0) {
-        printf("Removed signature from bytecode file %s\n", path);
+        error("Removed signature from bytecode file %s\n", path);
     } else {
-        printf("Sign error: Error while removing signature from bytecode file %s\n", path);
+        error("Sign error: Error while removing signature from bytecode file %s\n", path);
     }
     return ret;
 }
@@ -177,7 +179,7 @@ static int do_sign(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("Cannot sign: File not found\n");
+        error("Cannot sign: File not found\n");
         return 1;
     }
 
@@ -198,7 +200,7 @@ static int do_unsign(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("Cannot sign: File not found\n");
+        error("Cannot sign: File not found\n");
         return 1;
     }
 
@@ -219,13 +221,13 @@ static int do_info(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("File not found\n");
+        error("File not found\n");
         return 1;
     }
 
     // sign file
     if (S_ISREG(st.st_mode)) {
-        printf("Displaying information for bytecode files is not supported yet.");
+        error("Displaying information for bytecode files is not supported yet.");
     }
 
     return 0;
@@ -240,7 +242,7 @@ static int do_compile(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        printf("Cannot compile: file not found\n");
+        error("Cannot compile: file not found\n");
         return 1;
     }
 
@@ -269,23 +271,23 @@ static int do_exec(void) {
     char *source_path = saffire_getopt_string(0);
 
     if (stat(source_path, &st_src) != 0) {
-        printf("Cannot exec: source file not found\n");
+        error("Cannot exec: source file not found\n");
         return 1;
     }
 
     // Load BC and execute
     char *dest_file = replace_extension(source_path, ".sf", ".sfc");
-    printf("Loading file: %s\n", dest_file);
+    DEBUG_PRINT("Loading file: %s\n", dest_file);
 
 
     if (stat(dest_file, &st_dst) != 0) {
-        printf("Cannot exec: bytecode file not found\n");
+        error("Cannot exec: bytecode file not found\n");
         return 1;
     }
 
     int timestamp = bytecode_get_timestamp(dest_file);
     if (timestamp != st_src.st_mtime) {
-        printf("Warning: Timestamp recorded in bytecode differs from the sourcefile!\n");
+        output("Warning: Timestamp recorded in bytecode differs from the sourcefile!\n");
     }
 
     // Get verification flag, and override when we have entered --no-verify flag
@@ -302,7 +304,6 @@ static int do_exec(void) {
     // Create initial frame
     t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *)NULL, bc);
 
-    printf("Executing...\n");
     t_object *obj1 = vm_execute(initial_frame);
 
     // Convert returned object to numerical, so we can use it as an error code
@@ -317,12 +318,11 @@ static int do_exec(void) {
     bytecode_free(bc);
 
     // Fini stuff
-    printf("\n\n\nFINI!\n\n\n");
     vm_fini();
 
-    printf("SMM Malloc Calls: %ld\n", smm_malloc_calls);
-    printf("SMM Realloc Calls: %ld\n", smm_realloc_calls);
-    printf("SMM Strdup Calls: %ld\n", smm_strdup_calls);
+    DEBUG_PRINT("SMM Malloc Calls: %ld\n", smm_malloc_calls);
+    DEBUG_PRINT("SMM Realloc Calls: %ld\n", smm_realloc_calls);
+    DEBUG_PRINT("SMM Strdup Calls: %ld\n", smm_strdup_calls);
 
     return (ret & 0xFF);    // Make sure ret is a code between 0 and 255
 }
@@ -355,15 +355,13 @@ static void opt_key(void *data) {
 }
 static void opt_sign(void *data) {
     if (flag_sign > 0) {
-        printf("Cannot have both the --no-sign and --sign options");
-        exit(1);
+        error_and_die(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 1;
 }
 static void opt_no_sign(void *data) {
     if (flag_sign > 0) {
-        printf("Cannot have both the --no-sign and --sign options");
-        exit(1);
+        error_and_die(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 2;
 }

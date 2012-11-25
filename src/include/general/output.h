@@ -24,41 +24,14 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "general/output.h"
-#include "general/hashtable.h"
-#include "general/smm.h"
+#ifndef __OUTPUT_H__
+#define __OUTPUT_H__
 
+    #include <stdio.h>
+    #include <stdarg.h>
 
-// @TODO: Fix this into a better/faster memory manager (slab allocator)
+    void output(const char *format, ...);
+    void error(const char *format, ...);
+    void error_and_die(int exitcode, const char *format, ...);
 
-long smm_malloc_calls = 0;
-long smm_realloc_calls = 0;
-long smm_strdup_calls = 0;
-
-void *smm_malloc(size_t size) {
-    smm_malloc_calls++;
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        error_and_die(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
-    }
-    return ptr;
-}
-
-void *smm_realloc(void *ptr, size_t size) {
-    smm_realloc_calls++;
-    return realloc(ptr, size);
-}
-
-void smm_free(void *ptr) {
-    return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    smm_strdup_calls++;
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+#endif

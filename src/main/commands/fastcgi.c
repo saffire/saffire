@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include "general/output.h"
 #include "commands/command.h"
 #include "fastcgi/fastcgi_srv.h"
 
@@ -33,7 +34,7 @@
  */
 static int do_start(void) {
 //    if (fastcgi_running()) {
-//        printf("FastCGI server is already running!\n");
+//        error("FastCGI server is already running!\n");
 //        return 1;
 //    }
 
@@ -42,7 +43,7 @@ static int do_start(void) {
 
 static int do_stop(void) {
 //    if (! fastcgi_running()) {
-//        printf("FastCGI server is not running!\n");
+//        error("FastCGI server is not running!\n");
 //        return 1;
 //    }
 
@@ -51,11 +52,11 @@ static int do_stop(void) {
 
 static int do_status(void) {
 //    if (fastcgi_running()) {
-//        printf("Status: running\n");
+//        error("Status: running\n");
 //        return 0;
 //    }
 
-    printf("Status: stopped\n");
+    output("Status: stopped\n");
     return 1;
 }
 

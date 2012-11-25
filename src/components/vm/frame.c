@@ -36,6 +36,7 @@
 #include "objects/null.h"
 #include "objects/code.h"
 #include "debug.h"
+#include "general/output.h"
 
 
 /**
@@ -43,7 +44,7 @@
  */
 unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
     if (frame->ip < 0 || frame->ip > frame->bytecode->code_len) {
-        saffire_vm_error("Trying to reach outside code length!");
+        error_and_die(1, "Trying to reach outside code length!");
     }
 
     if (frame->ip == frame->bytecode->code_len) {
@@ -78,7 +79,7 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
     DEBUG_PRINT("STACK POP(%d): %08lX %s\n", frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
-        saffire_vm_error("Trying to pop from an empty stack");
+        error_and_die(1, "Trying to pop from an empty stack");
     }
     t_object *ret = frame->stack[frame->sp];
     frame->sp++;
@@ -94,7 +95,7 @@ void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
     DEBUG_PRINT("DBG PUSH: %s %08lX \n", object_debug(obj), (unsigned long)obj);
 
     if (frame->sp < 0) {
-        saffire_vm_error("Trying to push to a full stack");
+        error_and_die(1, "Trying to push to a full stack");
 
     }
     frame->sp--;
@@ -116,7 +117,7 @@ t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
  */
 t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->stack_size) {
-        saffire_vm_error("Trying to fetch from outside stack range");
+        error_and_die(1, "Trying to fetch from outside stack range");
     }
 
     return frame->stack[idx];
@@ -128,7 +129,7 @@ t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
  */
 void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
-        saffire_vm_error("Trying to fetch from outside constant range");
+        error_and_die(1, "Trying to fetch from outside constant range");
     }
 
     t_bytecode_constant *c = frame->bytecode->constants[idx];
@@ -141,7 +142,7 @@ void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
  */
 t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
-        saffire_vm_error("Trying to fetch from outside constant range");
+        error_and_die(1, "Trying to fetch from outside constant range");
     }
 
     return frame->constants_objects[idx];
@@ -199,7 +200,7 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     obj = ht_find(frame->builtin_identifiers->ht, id);
     if (obj != NULL) return obj;
 
-    saffire_vm_error("Cannot find variable: %s\n", id);
+    error_and_die(1, "Cannot find variable: %s\n", id);
     return NULL;
 }
 
@@ -209,7 +210,7 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
  */
 char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
-        saffire_vm_error("Trying to fetch from outside identifier range");
+        error_and_die(1, "Trying to fetch from outside identifier range");
     }
     return frame->bytecode->identifiers[idx]->s;
 }

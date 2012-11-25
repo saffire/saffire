@@ -30,6 +30,7 @@
 #define YY_HEADER_EXPORT_START_CONDITIONS 1
 
     #include <stdio.h>
+    #include "general/output.h"
     #include "general/smm.h"
     #include "compiler/lex.yy.h"
     #include "compiler/compiler.h"
@@ -38,7 +39,7 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(unsigned long *ast, const char *err) { printf("Error in line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
+    void yyerror(unsigned long *ast, const char *err) { error_and_die(1, "Error in line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -56,7 +57,6 @@
 
     #ifdef __DEBUG
         #define YYDEBUG 1
-        //#define TRACE printf("Reduce at line %d\n", __LINE__);
         #define TRACE
     #else
         //#define YYDEBUG 0
@@ -267,7 +267,7 @@ while_statement:
 
 /* An expression is anything that evaluates something */
 expression_statement:
-        ';'             { TRACE $$ = ast_opr(';', 0); printf("\n\n"); }
+        ';'             { TRACE $$ = ast_opr(';', 0); }
     |   expression ';'  { TRACE $$ = $1; DEBUG_PARSEPRINT("\n\nLine %d:\n", yylineno+1); }
 ;
 
