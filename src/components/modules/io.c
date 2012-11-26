@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include "general/output.h"
 #include "modules/module_api.h"
-#include "interpreter/errors.h"
 #include "objects/object.h"
 #include "objects/method.h"
 #include "objects/string.h"
@@ -48,8 +47,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
     t_object *obj, *obj2;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
-        saffire_error("Error while parsing argument list\n");
-        RETURN_SELF;
+        error_and_die(1, "Error while parsing argument list\n");
     }
 
     // Implied conversion to string

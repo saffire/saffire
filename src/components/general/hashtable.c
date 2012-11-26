@@ -152,14 +152,10 @@ int ht_num_add(t_hash_table *ht, long index, void *value) {
     return ht_add(ht, key, value);
 }
 
-
-
-
-
 /**
  * Replace key/value into hashtable
  */
-int ht_replace(t_hash_table *ht, const char *key, void *value) {
+void *ht_replace(t_hash_table *ht, const char *key, void *value) {
     return ht->hashfuncs->replace(ht, key, value);
 }
 
@@ -167,7 +163,7 @@ int ht_replace(t_hash_table *ht, const char *key, void *value) {
 /**
  * Removes key from hashtable
  */
-int ht_remove(t_hash_table *ht, const char *key) {
+void *ht_remove(t_hash_table *ht, const char *key) {
     return ht->hashfuncs->remove(ht, key);
 }
 

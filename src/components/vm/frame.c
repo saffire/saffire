@@ -43,9 +43,9 @@
  * Returns the next opcode
  */
 unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
-    if (frame->ip < 0 || frame->ip > frame->bytecode->code_len) {
-        error_and_die(1, "Trying to reach outside code length!");
-    }
+//    if (frame->ip < 0 || frame->ip > frame->bytecode->code_len) {
+//        error_and_die(1, "Trying to reach outside code length!");
+//    }
 
     if (frame->ip == frame->bytecode->code_len) {
         return VM_STOP;
@@ -175,10 +175,9 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    if (ht_find(frame->local_identifiers->ht, id)) {
-        ht_replace(frame->local_identifiers->ht, id, obj);
-    } else {
-        ht_add(frame->local_identifiers->ht, id, obj);
+    t_object *old_obj = ht_replace(frame->local_identifiers->ht, id, obj);
+    if (old_obj) {
+        object_dec_ref((t_object *)old_obj);
     }
 }
 
@@ -284,6 +283,8 @@ void vm_frame_destroy(t_vm_frame *frame) {
     if (! frame->parent) {
         object_free((t_object *)frame->global_identifiers);
     }
+
+    // @TODO: remove constants objects.
 
     // @TODO: Should we unwind the stack first
     smm_free(frame->stack);

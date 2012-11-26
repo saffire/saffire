@@ -66,8 +66,8 @@
         hash_t (*hash)(t_hash_table *ht, const char *str);                  // Returns hash of string (0..bucket_count)
         void *(*find)(t_hash_table *ht, const char *key);                   // Find value for key in hashtable
         int (*add)(t_hash_table *ht, const char *key, void *value);         // Add value to key
-        int (*replace)(t_hash_table *ht, const char *key, void *value);     // Replace value to key
-        int (*remove)(t_hash_table *ht, const char *key);                   // Remove key
+        void *(*replace)(t_hash_table *ht, const char *key, void *value);   // Replace value to key
+        void *(*remove)(t_hash_table *ht, const char *key);                 // Remove key
         void (*resize)(t_hash_table *ht, int new_bucket_count);             // Resize (and rehash) hashtable to new size
     } t_hashfuncs;
 
@@ -78,8 +78,8 @@
     int ht_exists(t_hash_table *ht, const char *key);
     void *ht_find(t_hash_table *ht, const char *key);
     int ht_add(t_hash_table *ht, const char *key, void *value);
-    int ht_replace(t_hash_table *ht, const char *key, void *value);
-    int ht_remove(t_hash_table *ht, const char *key);
+    void *ht_replace(t_hash_table *ht, const char *key, void *value);
+    void *ht_remove(t_hash_table *ht, const char *key);
     void ht_destroy(t_hash_table *ht);
 
     void *ht_num_find(t_hash_table *ht, long index);

@@ -18,7 +18,7 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void) {
         "\x90\x1B\x00"         // SETUP_LOOP          #end_loop1
     // #loop1:
         "\x82\x01\x00"         // LOAD_ID             a
-        "\x81\x03\x00"         // LOAD_CONST          2500000
+        "\x81\x03\x00"         // LOAD_CONST          10000000
         "\x95\x02\x00"         // COMPARE_OP          OP_NE
         "\x85\x0E\x00"         // JUMP_IF_FALSE       #end_loop1_pb
         "\x01"                 // POP_TOP
@@ -51,7 +51,7 @@ t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void) {
     _new_constant_string(bc, "io");
     _new_constant_string(bc, "::_sfl::io");
     _new_constant_long(bc, 1);
-    _new_constant_long(bc, 2500000);
+    _new_constant_long(bc, 10000000);
     _new_constant_string(bc, "print");
     _new_constant_long(bc, 0);
 

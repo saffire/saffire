@@ -36,7 +36,6 @@
 #include "objects/method.h"
 #include "objects/null.h"
 #include "general/smm.h"
-#include "interpreter/errors.h"
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
 #define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */
@@ -121,7 +120,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 
@@ -141,7 +140,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 
@@ -201,7 +200,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -221,7 +220,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -241,7 +240,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -261,7 +260,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -281,7 +280,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -301,7 +300,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_warning("Error while parsing argument list\n");
+//        error_and_die(1, "Error while parsing argument list\n");
 //        RETURN_NUMERICAL(0);
 //    }
 //
@@ -443,21 +442,32 @@ static t_object *obj_clone(t_object *obj) {
 /**
  * Creates a new numerical object by "cloning" the original one
  */
-static t_object *obj_new(t_object *obj, va_list arg_list) {
+ static t_object *obj_new(void) {
+    t_numerical_object *obj = smm_malloc(sizeof(t_numerical_object));
+    memcpy(obj, Object_Numerical, sizeof(t_numerical_object));
+
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, va_list arg_list) {
+    t_numerical_object *num_obj = (t_numerical_object *)obj;
     long value = va_arg(arg_list, long);
 
+    // @TODO: We cannot use the numerical cache now :/
+//    // Return cached object if it's already present.
+//    if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
+//        return (t_object *)numerical_cache[value + NUMERICAL_CACHE_OFF];
+//    }
 
-    // Return cached object if it's already present.
-    if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
-        return (t_object *)numerical_cache[value + NUMERICAL_CACHE_OFF];
-    }
+    num_obj->value = value;
+}
 
-    t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
-    memcpy(new_obj, Object_Numerical, sizeof(t_numerical_object));
-
-    new_obj->value = value;
-
-    return (t_object *)new_obj;
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 #ifdef __DEBUG
@@ -472,8 +482,10 @@ static char *obj_debug(t_object *obj) {
 // String object management functions
 t_object_funcs numerical_funcs = {
         obj_new,            // Allocate a new numerical object
+        obj_populate,       // Populate a numerical object
         NULL,               // Free a numerical object
-        obj_clone,          // Clone a numerical object
+        obj_destroy,        // Destroy a numerical object
+        NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

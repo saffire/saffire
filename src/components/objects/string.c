@@ -336,24 +336,21 @@ void object_string_fini(void) {
 }
 
 
-/**
- * Frees memory for a string object
- */
-static void obj_free(t_object *obj) {
-    if (! obj) return;
 
-    t_string_object *str_obj = (t_string_object *)obj;
+static t_object *obj_new(void) {
+    t_string_object *obj = smm_malloc(sizeof(t_string_object));
+    memcpy(obj, Object_String, sizeof(t_string_object));
 
-    if (str_obj->value != NULL) {
-        free(str_obj->value);
-        str_obj->value = NULL;
-    }
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return (t_object *)obj;
 }
 
+static void obj_populate(t_object *obj, va_list arg_list) {
+    t_string_object *str_obj = (t_string_object *)obj;
 
-
-
-static t_object *obj_new(t_object *obj, va_list arg_list) {
     // Get the widestring from the argument list
     char *value = va_arg(arg_list, char *);
 
@@ -363,30 +360,34 @@ static t_object *obj_new(t_object *obj, va_list arg_list) {
 
     // Check for and return cached object
     t_object *cache_obj = ht_find(string_cache, strhash);
-    if (cache_obj) return cache_obj;
+    if (cache_obj) {
+        obj = cache_obj;
+    }
 
-
-    // Create new object and copy all info
-    t_string_object *new_obj = smm_malloc(sizeof(t_string_object));
-    memcpy(new_obj, Object_String, sizeof(t_string_object));
+    // No cache, populate the new object
 
     // Set internal data
-    new_obj->value = smm_strdup(value);
-    new_obj->char_length = strlen(value);
+    str_obj->value = smm_strdup(value);
+    str_obj->char_length = strlen(value);
 
     // Calculate length for each character, and add to total
-    new_obj->byte_length = utf8_len(value);
-    recalc_hash(new_obj);
+    str_obj->byte_length = utf8_len(value);
+    recalc_hash(str_obj);
 
     // Add to string cache
-    ht_add(string_cache, strhash, new_obj);
+    ht_add(string_cache, strhash, str_obj);
+}
 
+static void obj_free(t_object *obj) {
+   t_string_object *str_obj = (t_string_object *)obj;
 
-    // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+   if (str_obj->value) {
+       smm_free(str_obj->value);
+   }
+}
 
-    return (t_object *)new_obj;
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 
@@ -403,8 +404,10 @@ static char *obj_debug(t_object *obj) {
 // String object management functions
 t_object_funcs string_funcs = {
         obj_new,              // Allocate a new string object
+        obj_populate,         // Populate a string object
         obj_free,             // Free a string object
-        NULL,                 // Clone a string object
+        obj_destroy,          // Destroy a string object
+        NULL,                 // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

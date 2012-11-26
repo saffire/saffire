@@ -163,21 +163,27 @@ static int add(t_hash_table *ht, const char *key, void *value) {
 /**
  * Add key/value pair to the hash
  */
-static int replace(t_hash_table *ht, const char *key, void *value) {
+static void *replace(t_hash_table *ht, const char *key, void *value) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
-    if (! htb) return 0;
+    if (! htb) {
+        add(ht, key, value);
+        return NULL;
+    }
 
+    void *val = htb->value;
     htb->value = value;
-    return 1;
+    return val;
 }
 
 
 /**
  * Remove key from hash table
  */
-static int remove(t_hash_table *ht, const char *key) {
+static void *remove(t_hash_table *ht, const char *key) {
+    void *val;
+
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *prev, *next;
@@ -194,6 +200,8 @@ static int remove(t_hash_table *ht, const char *key) {
 
     // Key is still not found
     if (!htb) return 0;
+
+    val = htb->value;
 
 
     // If the element was at the head, set the next element to become the head
@@ -227,7 +235,7 @@ static int remove(t_hash_table *ht, const char *key) {
 
     // @TODO: Should we be able to "shrink" as well? For instance, when we drop below a load factor of 0.1, for instance?
 
-    return 1;
+    return val;
 }
 
 

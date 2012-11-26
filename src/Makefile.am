@@ -72,6 +72,7 @@ noinst_LIBRARIES += libfastcgi.a
 libfastcgi_a_SOURCES = components/fastcgi/fastcgi_srv.c
 
 
+
 ########################################################################
 # components/general
 ########################################################################
@@ -90,17 +91,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/path_handling.c \
                        components/general/bzip2.c \
                        components/general/config.c \
-                       components/general/output.c
-
-
-########################################################################
-# components/interpreter
-########################################################################
-
-noinst_LIBRARIES += libinterpreter.a
-libinterpreter_a_SOURCES = components/interpreter/interpreter.c \
-                           components/interpreter/context.c \
-                           components/interpreter/errors.c
+                       components/general/output.c \
+                       components/general/mutex.c
 
 
 ########################################################################
@@ -150,16 +142,24 @@ libvm_a_SOURCES = components/vm/vm.c \
 
 
 ########################################################################
+# components/gc
+########################################################################
+
+noinst_LIBRARIES += libgc.a
+libgc_a_SOURCES = components/gc/gc.c
+
+
+########################################################################
 # main/saffire
 ########################################################################
 
 SAFFIRE_LIBS = \
-                 libinterpreter.a \
                  libobjects.a \
                  libcompiler.a \
                  libfastcgi.a \
                  librepl.a \
                  libvm.a \
+                 libgc.a \
                  libmodules.a \
                  libgeneral.a
 

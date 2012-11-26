@@ -41,10 +41,10 @@
 #include "objects/code.h"
 #include "objects/method.h"
 #include "objects/null.h"
-#include "interpreter/errors.h"
 #include "modules/module_api.h"
 #include "debug.h"
 #include "general/output.h"
+#include "gc/gc.h"
 
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
 #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
@@ -56,22 +56,21 @@
 #define REASON_BREAKELSE    4
 
 
-
-t_object *object_userland_new(t_object *obj, va_list arg_list) {
-    DEBUG_PRINT("object_create_new_instance called");
-
-    t_object *new_obj = smm_malloc(sizeof(t_object));
-    memcpy(new_obj, obj, sizeof(t_object));
-
-    // Reset refcount for new object
-    new_obj->ref_count = 0;
-
-    // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return new_obj;
-}
+//t_object *object_userland_new(void) {
+//    DEBUG_PRINT("object_create_new_instance called");
+//
+//    t_object *new_obj = smm_malloc(sizeof(t_object));
+//    memcpy(new_obj, obj, sizeof(t_object));
+//
+//    // Reset refcount for new object
+//    new_obj->ref_count = 0;
+//
+//    // These are instances
+//    new_obj->flags &= ~OBJECT_TYPE_MASK;
+//    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+//
+//    return new_obj;
+//}
 
 #ifdef __DEBUG
 char global_buf[1024];
@@ -83,9 +82,11 @@ static char *object_user_debug(t_object *obj) {
 
 // String object management functions
 t_object_funcs userland_funcs = {
-        object_userland_new,              // Allocate a new string object
-        NULL,             // Free a string object
-        NULL,                 // Clone a string object
+        NULL,                       // Allocate
+        NULL,                       // Populate
+        NULL,                       // Free
+        NULL,                       // Destroy
+        NULL,                       // Clone
 #ifdef __DEBUG
         object_user_debug
 #endif
@@ -108,15 +109,11 @@ t_object_funcs userland_funcs = {
                 vm_frame_stack_push(frame, obj3);
 
 
-//#define NOT_IMPLEMENTED  printf("opcode %d is not implemented yet", opcode); exit(1); break;
-
-// Builtin identifiers (like internal library objects etc)
-//t_hash_object *builtin_identifiers = NULL;
-
 /**
  *
  */
 void vm_init(void) {
+    gc_init();
     object_init();
     builtin_identifiers = (t_hash_object *)object_new(Object_Hash);
     module_init();
@@ -126,6 +123,7 @@ void vm_fini(void) {
     module_fini();
     object_free((t_object *)builtin_identifiers);
     object_fini();
+    gc_fini();
 }
 
 
@@ -169,6 +167,7 @@ dispatch:
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
+
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
             error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
@@ -252,8 +251,8 @@ dispatch:
 
             // store SP+0 as a global identifier
             case VM_STORE_GLOBAL :
+                // Refcount stays equal. So no inc/dec ref needed
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
                 s1 = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_global_identifier(frame, s1, obj1);
                 goto dispatch;
@@ -261,6 +260,8 @@ dispatch:
 
             // Remove global identifier
             case VM_DELETE_GLOBAL :
+                obj1 = vm_frame_get_global_identifier(frame, oparg1);
+                object_dec_ref(obj1);
                 s1 = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_global_identifier(frame, s1, NULL);
                 goto dispatch;
@@ -276,6 +277,7 @@ dispatch:
 
             // Store SP+0 into identifier (either local or global)
             case VM_STORE_ID :
+                // Refcount stays equal. So no inc/dec ref needed
                 obj1 = vm_frame_stack_pop(frame);
                 s1 = vm_frame_get_name(frame, oparg1);
                 DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);

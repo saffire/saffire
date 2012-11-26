@@ -96,9 +96,11 @@ static char *obj_debug(t_object *obj) {
 
 
 t_object_funcs null_funcs = {
-        NULL,               // Allocate a new bool object
-        NULL,               // Free a bool object
-        NULL,               // Clone a bool object
+        NULL,               // Allocate
+        NULL,               // Populate
+        NULL,               // Free
+        NULL,               // Destroy
+        NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif
