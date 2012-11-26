@@ -252,30 +252,30 @@ void object_method_fini(void) {
 }
 
 
-/**
- * Frees memory for a method object
- */
-static void obj_free(t_object *obj) {
-    if (! obj) return;
-}
 
-
-
-static t_object *obj_new(t_object *obj, va_list arg_list) {
+static t_object *obj_new(void) {
     // Create new object and copy all info
-    t_method_object *new_obj = smm_malloc(sizeof(t_method_object));
-    memcpy(new_obj, Object_Method, sizeof(t_method_object));
-
-    new_obj->mflags = va_arg(arg_list, int);
-    new_obj->visibility = va_arg(arg_list, int);
-    new_obj->class = va_arg(arg_list, t_object *);
-    new_obj->code = va_arg(arg_list, struct _code_object *);
+    t_method_object *obj = smm_malloc(sizeof(t_method_object));
+    memcpy(obj, Object_Method, sizeof(t_method_object));
 
     // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
 
-    return (t_object *)new_obj;
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, va_list arg_list) {
+    t_method_object *method_obj = (t_method_object *)obj;
+
+    method_obj->mflags = va_arg(arg_list, int);
+    method_obj->visibility = va_arg(arg_list, int);
+    method_obj->class = va_arg(arg_list, t_object *);
+    method_obj->code = va_arg(arg_list, struct _code_object *);
+}
+
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 
@@ -292,8 +292,10 @@ static char *obj_debug(t_object *obj) {
 // Method object management functions
 t_object_funcs method_funcs = {
         obj_new,              // Allocate a new method object
-        obj_free,             // Free a method object
-        NULL,                 // Clone a method object
+        obj_populate,         // Populate a method object
+        NULL,                 // Free a method object
+        obj_destroy,          // Destroy a method object
+        NULL,                 // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

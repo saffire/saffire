@@ -280,8 +280,10 @@ static char *obj_debug(t_object *obj) {
 
 t_object_funcs bool_funcs = {
         NULL,               // Allocate a new bool object
+        NULL,               // Populate a bool object
         NULL,               // Free a bool object
-        NULL,               // Clone a bool object
+        NULL,               // Destroy a bool object
+        NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

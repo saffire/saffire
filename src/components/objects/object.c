@@ -41,12 +41,10 @@
 #include "objects/code.h"
 #include "objects/hash.h"
 #include "objects/tuple.h"
-#include "general/smm.h"
 #include "general/dll.h"
-#include "interpreter/errors.h"
-#include "interpreter/interpreter.h"
 #include "debug.h"
-
+#include "gc/gc.h"
+#include "general/output.h"
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
@@ -56,9 +54,9 @@
 
 
 // Object type string constants
-const char *objectTypeNames[12] = { "object", "code", "method", "base", "boolean",
-                                    "null", "numerical", "regex", "string", "custom",
-                                    "hash", "tuple" };
+const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "method", "base", "boolean",
+                                                 "null", "numerical", "regex", "string", "custom",
+                                                 "hash", "tuple" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -126,7 +124,7 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
 
     // @TODO: Maybe check just for callable?
     if (! OBJECT_IS_METHOD(method_obj)) {
-        saffire_error("Object returned in this method is not a method, so I cannot call this!");
+        error_and_die(1, "Object returned in this method is not a method, so I cannot call this!");
     }
 
     t_method_object *method = (t_method_object *)method_obj;
@@ -138,7 +136,7 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
     // Code object present inside method?
     t_code_object *code = (t_code_object *)method->code;
     if (! code) {
-        saffire_error("Code object from method is not present!");
+        error_and_die(1, "Code object from method is not present!");
     }
 
     /*
@@ -154,7 +152,7 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
         // @TODO: How do we send our arguments?
         //ret = interpreter_leaf(code->p);
     } else {
-        saffire_error("Sanity error: code object has no code");
+        error_and_die(1, "Sanity error: code object has no code");
     }
 
     return ret;
@@ -216,7 +214,7 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 
     if (!func) {
         // No comparison found for this method
-        saffire_error("Cannot find operator method");
+        error_and_die(1, "Cannot find operator method");
         return Object_False;
     }
 
@@ -233,7 +231,7 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 
     va_start(arg_list, arg_count);
     if (arg_count != 1) {
-        saffire_error("Operators must have one argument!");
+        error_and_die(1, "Operators must have one argument!");
         return Object_False;
     }
     t_object *obj2 = va_arg(arg_list, t_object *);
@@ -277,7 +275,7 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     if (!func) {
         // No comparison found for this method
-        saffire_error("Cannot find compare method");
+        error_and_die(1, "Cannot find compare method");
         return Object_False;
     }
 
@@ -290,21 +288,6 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     DEBUG_PRINT("Result from the comparison: %d\n", ret);
 
     return ret ? Object_True : Object_False;
-}
-
-
-/**
- * Clones an object and returns new object
- */
-t_object *object_clone(t_object *obj) {
-    DEBUG_PRINT("Cloning: %s\n", obj->name);
-
-    // No clone function, so return same object
-    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
-        return obj;
-    }
-
-    return obj->funcs->clone(obj);
 }
 
 
@@ -329,12 +312,11 @@ void object_dec_ref(t_object *obj) {
         if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
             object_free(obj);
         } else {
-            DEBUG_PRINT(" *** STATIC, SO NOT FREEING");
+            DEBUG_PRINT(" *** STATIC, SO NOT FREEING\n");
         }
     }
 
 }
-
 
 #ifdef __DEBUG
 char *object_debug(t_object *obj) {
@@ -361,8 +343,24 @@ void object_free(t_object *obj) {
         obj->funcs->free(obj);
     }
 
-    // Free actual object
-    smm_free(obj);
+    if (! gc_queue_add(obj) && obj->funcs && obj->funcs->destroy) {
+        obj->funcs->destroy(obj);
+    }
+}
+
+
+/**
+ * Clones an object and returns new object
+ */
+t_object *object_clone(t_object *obj) {
+    DEBUG_PRINT("Cloning: %s\n", obj->name);
+
+    // No clone function, so return same object
+    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
+        return obj;
+    }
+
+    return obj->funcs->clone(obj);
 }
 
 
@@ -370,23 +368,43 @@ void object_free(t_object *obj) {
  * Creates a new object with specific values
  */
 t_object *object_new(t_object *obj, ...) {
+    t_object *res;
     va_list arg_list;
+    int cached;
 
     // Return NULL when we cannot 'new' this object
     if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
 
-    va_start(arg_list, obj);
-    t_object *res = obj->funcs->new(obj, arg_list);
-    va_end(arg_list);
+    // Create or recycle an object from this type
+    res = gc_queue_recycle(obj->type);
+    if (res != NULL) {
+        cached = 1;
+    } else {
+        res = obj->funcs->new();
+        cached = 0;
+    }
 
-#ifdef __DEBUG
-    if (strcmp(obj->name, "code") != 0 && strcmp(obj->name, "method") != 0) {
+    // Populate internal values
+    if (res->funcs->populate) {
+        va_start(arg_list, obj);
+        res->funcs->populate(res, arg_list);
+        va_end(arg_list);
+    }
+
+    if (cached) {
+        DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
+    } else {
         DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
     }
 
-    if (! ht_num_find(object_hash, (unsigned long)res)) {
-        ht_num_add(object_hash, (unsigned long)res, res);
-    }
+#ifdef __DEBUG
+//    if (strcmp(obj->name, "code") != 0 && strcmp(obj->name, "method") != 0) {
+//        DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+//    }
+//
+//    if (! ht_num_find(object_hash, (unsigned long)res)) {
+//        ht_num_add(object_hash, (unsigned long)res, res);
+//    }
 #endif
 
     return res;
@@ -496,7 +514,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
                 continue;
                 break;
             default :
-                saffire_warning("Cannot parse argument '%c'\n", c);
+                error_and_die(1, "Cannot parse argument '%c'\n", c);
                 result = 0;
                 goto done;
                 break;
@@ -506,7 +524,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         t_object **storage_obj = va_arg(storage_list, t_object **);
         t_object *argument_obj = e->data;
         if (type != objectTypeAny && type != argument_obj->type) {
-            saffire_warning("Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+            error_and_die(1, "Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
         }

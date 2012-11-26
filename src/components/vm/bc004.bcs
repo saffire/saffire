@@ -16,7 +16,7 @@
     SETUP_LOOP          #end_loop1
 #loop1:
     LOAD_ID             a
-    LOAD_CONST          2500000
+    LOAD_CONST          10000000
     COMPARE_OP          OP_NE
     JUMP_IF_FALSE       #end_loop1_pb
     POP_TOP

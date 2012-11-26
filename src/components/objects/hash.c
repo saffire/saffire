@@ -40,7 +40,7 @@
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
-#include "interpreter/errors.h"
+#include "general/output.h"
 
 /* ======================================================================
  *   Supporting functions
@@ -84,7 +84,7 @@ SAFFIRE_METHOD(hash, find) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -100,7 +100,7 @@ SAFFIRE_METHOD(hash, add) {
     t_string_object *key, *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &key, &val)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -115,7 +115,7 @@ SAFFIRE_METHOD(hash, remove) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -218,39 +218,36 @@ void object_hash_fini(void) {
 }
 
 
-/**
- * Frees memory for a hash object
- */
-static void obj_free(t_object *obj) {
-    if (! obj) return;
+static t_object *obj_new(void) {
+    // Create new object and copy all info
+    t_hash_object *obj = smm_malloc(sizeof(t_hash_object));
+    memcpy(obj, Object_Hash, sizeof(t_hash_object));
 
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, va_list arg_list) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
+    // @TODO: We should duplicate the hash, and add it!
+    hash_obj->ht = ht_create();
+}
 
-    if (hash_obj->ht != NULL) {
+static void obj_free(t_object *obj) {
+    t_hash_object *hash_obj = (t_hash_object *)obj;
+    if (! hash_obj) return;
+
+    if (hash_obj->ht) {
         ht_destroy(hash_obj->ht);
-        hash_obj->ht = NULL;
     }
 }
 
-
-
-
-static t_object *obj_new(t_object *obj, va_list arg_list) {
-
-    // Create new object and copy all info
-    t_hash_object *new_obj = smm_malloc(sizeof(t_hash_object));
-    memcpy(new_obj, Object_Hash, sizeof(t_hash_object));
-
-    // @TODO: We should duplicate the hash, and add it!
-    new_obj->ht = ht_create();
-
-    // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)new_obj;
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
-
 
 #ifdef __DEBUG
 char global_buf[1024];
@@ -264,8 +261,10 @@ static char *obj_debug(t_object *obj) {
 // Hash object management functions
 t_object_funcs hash_funcs = {
         obj_new,              // Allocate a new hash object
+        obj_populate,         // Populate a hash object
         obj_free,             // Free a hash object
-        NULL,                 // Clone a hash object
+        obj_destroy,          // Destroy a hash object
+        NULL,                 // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

@@ -153,28 +153,27 @@ void object_code_fini(void) {
 }
 
 
-/**
- * Frees memory for a code object
- */
-static void obj_free(t_object *obj) {
-    if (! obj) return;
-}
-
-
-
-static t_object *obj_new(t_object *obj, va_list arg_list) {
+static t_object *obj_new(void) {
     // Create new object and copy all info
-    t_code_object *new_obj = smm_malloc(sizeof(t_code_object));
-    memcpy(new_obj, Object_Code, sizeof(t_code_object));
-
-    new_obj->bytecode = va_arg(arg_list, t_bytecode *);
-    new_obj->native_func = va_arg(arg_list, void *);
+    t_code_object *obj = smm_malloc(sizeof(t_code_object));
+    memcpy(obj, Object_Code, sizeof(t_code_object));
 
     // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
 
-    return (t_object *)new_obj;
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, va_list arg_list) {
+    t_code_object *code_obj = (t_code_object *)obj;
+
+    code_obj->bytecode = va_arg(arg_list, t_bytecode *);
+    code_obj->native_func = va_arg(arg_list, void *);
+}
+
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 
@@ -191,8 +190,10 @@ static char *obj_debug(t_object *obj) {
 // Code object management functions
 t_object_funcs code_funcs = {
         obj_new,              // Allocate a new code object
-        obj_free,             // Free a code object
-        NULL,                 // Clone a code object
+        obj_populate,         // Populates a code object
+        NULL,                 // Free a code object
+        obj_destroy,          // Destroy a code object
+        NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

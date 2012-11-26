@@ -29,13 +29,13 @@
 
     #include <stdio.h>
 
-    #if __PARSEDEBUG
+    #ifdef __PARSEDEBUG
         #define DEBUG_PARSEPRINT printf
     #else
         #define DEBUG_PARSEPRINT(format, args...) ((void)0)
     #endif
 
-    #if __DEBUG
+    #ifdef __DEBUG1
         #define DEBUG_PRINT printf
     #else
         #define DEBUG_PRINT(format, args...) ((void)0)

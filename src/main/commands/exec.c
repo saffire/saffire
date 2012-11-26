@@ -28,12 +28,10 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <locale.h>
-#include "interpreter/context.h"
 #include "objects/object.h"
 #include "modules/module_api.h"
 #include "compiler/ast.h"
 #include "dot/dot.h"
-#include "interpreter/interpreter.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
 #include "vm/vm.h"
@@ -44,7 +42,6 @@ static int do_exec(void) {
     char *source_file = saffire_getopt_string(0);
 
     setlocale(LC_ALL,"");
-    context_init();
     vm_init();
 
     t_ast_element *ast = ast_generate_from_file(source_file);
@@ -53,7 +50,9 @@ static int do_exec(void) {
         dot_generate(ast, dot_file);
     }
 
-    int ret = interpreter(ast);
+    // @TODO: here be interpreting
+    int ret = 0;
+//    int ret = interpreter(ast);
 
     // Release memory of ast root
     if (ast != NULL) {
@@ -61,8 +60,6 @@ static int do_exec(void) {
     }
 
     vm_fini();
-    object_fini();
-    context_fini();
 
     return ret;
 }

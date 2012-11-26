@@ -39,11 +39,13 @@
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        t_object *(*new)(t_object *, va_list arg_list);       // Allocates a new object
-        void (*free)(t_object *);                             // Frees objects internal data
-        t_object *(*clone)(t_object *);                       // Clones the object (@TODO: Is thos needed)
+        t_object *(*new)(void);                     // Allocates a new object from base object
+        void (*populate)(t_object *, va_list);      // Populates an object with new values
+        void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
+        void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
+        t_object *(*clone)(t_object *);             // Clone this object to a new object
 #ifdef __DEBUG
-        char *(*debug)(t_object *);                           // Return debug string (value and info)
+        char *(*debug)(t_object *);                 // Return debug string (value and info)
 #endif
     } t_object_funcs;
 
@@ -129,9 +131,11 @@
     #define OBJECT_IS_METHOD(obj)       (obj->type == objectTypeMethod)
     #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
 
+    // Number of different object types (also needed for GC queues)
+    #define OBJECT_TYPE_LEN     12
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
-    const char *objectTypeNames[12];
+    const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCode, objectTypeMethod, objectTypeBase, objectTypeBoolean,
                    objectTypeNull,objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom,
