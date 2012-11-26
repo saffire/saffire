@@ -180,7 +180,6 @@ SAFFIRE_METHOD(base, id) {
     RETURN_NUMERICAL((long)self);
 }
 
-
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -225,33 +224,9 @@ void object_base_fini() {
 }
 
 
-/**
- * Clones a base object into a new object
- */
-static t_object *obj_clone(t_object *obj) {
-    // Create new object and copy all info
-    t_base_object *new_obj = (t_base_object *)smm_malloc(sizeof(t_base_object));
-    memcpy(new_obj, obj, sizeof(t_base_object));
-
-    // New separated object, so refcount = 1
-    new_obj->ref_count = 1;
-
-    return (t_object *)new_obj;
-}
-
-// Base object management functions
-t_object_funcs base_funcs = {
-        NULL,               // Allocate a new string object
-        NULL,               // Free a string object
-        obj_clone,          // Clone a string object
-#ifdef __DEBUG
-        NULL
-#endif
-};
-
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT3("base", objectTypeBase, NULL, NULL, OBJECT_TYPE_CLASS, &base_funcs, NULL)
+    OBJECT_HEAD_INIT3("base", objectTypeBase, NULL, NULL, OBJECT_TYPE_CLASS, NULL, NULL)
 };
 

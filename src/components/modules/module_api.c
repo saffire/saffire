@@ -30,7 +30,6 @@
 #include "general/dll.h"
 #include "modules/io.h"
 #include "modules/saffire.h"
-#include "interpreter/context.h"
 #include "debug.h"
 #include "general/hashtable.h"
 #include "vm/vm.h"

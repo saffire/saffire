@@ -24,10 +24,13 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __ERRORS_H__
-#define __ERRORS_H__
+#ifndef __CG_H__
+#define __GC_H__
 
-    void saffire_error(char *str, ...);
-    void saffire_warning(char *str, ...);
+    void gc_collect(void);
+    t_object *gc_queue_recycle(int type);
+    int gc_queue_add(t_object *obj);
+    void gc_init(void);
+    void gc_fini(void);
 
 #endif

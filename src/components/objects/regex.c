@@ -42,9 +42,7 @@
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
-#include "interpreter/errors.h"
-
-
+#include "general/output.h"
 
 
 /* ======================================================================
@@ -93,7 +91,7 @@ SAFFIRE_METHOD(regex, match) {
 
     // Parse the arguments
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -104,10 +102,10 @@ SAFFIRE_METHOD(regex, match) {
     if (rc < 0) {
         switch (rc) {
             case PCRE_ERROR_NOMATCH:
-                saffire_warning("String didn't match.\n");
+                error_and_die(1, "String didn't match.\n");
                 break;
             default :
-                saffire_warning("Error while matching: %d\n", rc);
+                error_and_die(1, "Error while matching: %d\n", rc);
                 break;
         }
     }
@@ -194,55 +192,42 @@ void object_regex_fini(void) {
 }
 
 
-/**
- * Frees memory for a regex object
- */
-static void obj_free(t_object *obj) {
-    t_regex_object *re_obj = (t_regex_object *)obj;
+static t_object *obj_new(void) {
+    t_regex_object *obj = smm_malloc(sizeof(t_regex_object));
+    memcpy(obj, Object_Regex, sizeof(t_regex_object));
 
-    if (re_obj->regex != NULL) {
-        free(re_obj->regex);
-        re_obj->regex = NULL;
-    }
-}
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
 
-/**
- * Clones a regex object into a new object
- */
-static t_object *obj_clone(t_object *obj) {
-    t_regex_object *re_obj = (t_regex_object *)obj;
-
-    // Create new object and copy all info
-    t_regex_object *new_obj = smm_malloc(sizeof(t_regex_object));
-    memcpy(new_obj, re_obj, sizeof(t_regex_object));
-
-    // Newly separated object, so refcount is 1 again
-    new_obj->ref_count = 1;
-
-    // Copy / set internal data
-    new_obj->regex_string = smm_strdup(re_obj->regex_string);
-
-    return (t_object *)new_obj;
+    return (t_object *)obj;
 }
 
 
-static t_object *obj_new(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, va_list arg_list) {
+    t_regex_object *re_obj = (t_regex_object *)obj;
     const char *error;
     int erroffset;
 
-    // Create new object and copy all info
-    t_regex_object *new_obj = smm_malloc(sizeof(t_regex_object));
-    memcpy(new_obj, Object_Regex, sizeof(t_regex_object));
-
-    new_obj->regex_string = va_arg(arg_list, char *);
+    re_obj->regex_string = va_arg(arg_list, char *);
     int pcre_options = va_arg(arg_list, int);
 
-    new_obj->regex = pcre_compile(new_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
-    if (! new_obj->regex) {
-        saffire_warning("pcre_compiled failed (offset: %d), %s\n", erroffset, error);
+    re_obj->regex = pcre_compile(re_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
+    if (! re_obj->regex) {
+        error_and_die(1, "pcre_compiled failed (offset: %d), %s\n", erroffset, error);
     }
+}
 
-    return (t_object *)new_obj;
+static void obj_free(t_object *obj) {
+   t_regex_object *re_obj = (t_regex_object *)obj;
+
+   if (re_obj->regex) {
+       free(re_obj->regex);
+   }
+}
+
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 #ifdef __DEBUG
@@ -258,8 +243,10 @@ static char *obj_debug(t_object *obj) {
 // Regex object management functions
 t_object_funcs regex_funcs = {
         obj_new,              // Allocate a new regex object
+        obj_populate,         // Populate
         obj_free,             // Free a regex object
-        obj_clone,            // Clone a regex object
+        obj_destroy,          // Clone a regex object
+        NULL,                 // Clone
 #ifdef __DEBUG
         obj_debug
 #endif

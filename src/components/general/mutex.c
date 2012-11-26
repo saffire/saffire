@@ -24,47 +24,21 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include "interpreter/errors.h"
-#include "general/dll.h"
+#include <semaphore.h>
+#include "general/mutex.h"
 
-extern t_dll *lineno_stack;
-
-#define STREAM_ERROR stderr
-#define STREAM_WARNING stderr
-
-
-/**
- * Print out an error and exit
- */
-void saffire_error(char *str, ...) {
-    t_dll_element *e = DLL_TAIL(lineno_stack);
-    unsigned long lineno = (unsigned long)e->data;
-
-    va_list args;
-    va_start(args, str);
-    fprintf(STREAM_ERROR, "Error in line %lu: ", (unsigned long)lineno);
-    vfprintf(STREAM_ERROR, str, args);
-    fprintf(STREAM_ERROR, "\n");
-    va_end(args);
-    exit(1);
+int mutex_create(t_mutex *mutex) {
+    return sem_init(mutex, 0, 1);
 }
 
-/**
- * @TODO: make the output stream configurable? Either
- * Print out an error and exit
- */
-void saffire_warning(char *str, ...) {
-    t_dll_element *e = DLL_TAIL(lineno_stack);
-    unsigned long lineno = (unsigned long)e->data;
+int mutex_destroy(t_mutex *mutex) {
+    return sem_destroy(mutex);
+}
 
-    va_list args;
-    va_start(args, str);
-    fprintf(STREAM_WARNING, "Warning in line %lu: ", (unsigned long)lineno);
-    vfprintf(STREAM_WARNING, str, args);
-    fprintf(STREAM_WARNING, "\n");
-    va_end(args);
+int mutex_wait(t_mutex *mutex) {
+    return sem_wait(mutex);
+}
+
+int mutex_post(t_mutex *mutex) {
+    return sem_post(mutex);
 }

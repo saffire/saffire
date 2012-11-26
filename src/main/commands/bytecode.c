@@ -320,9 +320,9 @@ static int do_exec(void) {
     // Fini stuff
     vm_fini();
 
-    DEBUG_PRINT("SMM Malloc Calls: %ld\n", smm_malloc_calls);
-    DEBUG_PRINT("SMM Realloc Calls: %ld\n", smm_realloc_calls);
-    DEBUG_PRINT("SMM Strdup Calls: %ld\n", smm_strdup_calls);
+    output("SMM Malloc Calls: %ld\n", smm_malloc_calls);
+    output("SMM Realloc Calls: %ld\n", smm_realloc_calls);
+    output("SMM Strdup Calls: %ld\n", smm_strdup_calls);
 
     return (ret & 0xFF);    // Make sure ret is a code between 0 and 255
 }

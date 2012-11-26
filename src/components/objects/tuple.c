@@ -40,7 +40,7 @@
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
-#include "interpreter/errors.h"
+#include "general/output.h"
 
 /* ======================================================================
  *   Supporting functions
@@ -84,7 +84,7 @@ SAFFIRE_METHOD(tuple, find) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -100,7 +100,7 @@ SAFFIRE_METHOD(tuple, add) {
     t_string_object *key, *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &key, &val)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -115,7 +115,7 @@ SAFFIRE_METHOD(tuple, remove) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
@@ -218,37 +218,37 @@ void object_tuple_fini(void) {
 }
 
 
-/**
- * Frees memory for a tuple object
- */
-static void obj_free(t_object *obj) {
-    if (! obj) return;
 
+static t_object *obj_new(void) {
+    // Create new object and copy all info
+    t_tuple_object *obj = smm_malloc(sizeof(t_tuple_object));
+    memcpy(obj, Object_Tuple, sizeof(t_tuple_object));
+
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, va_list arg_list) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
 
-    if (tuple_obj->ht != NULL) {
+    // @TODO: We should duplicate the tuple, and add it!
+    tuple_obj->ht = ht_create();
+}
+
+static void obj_free(t_object *obj) {
+    t_tuple_object *tuple_obj = (t_tuple_object *)obj;
+    if (! tuple_obj) return;
+
+    if (tuple_obj->ht) {
         ht_destroy(tuple_obj->ht);
-        tuple_obj->ht = NULL;
     }
 }
 
-
-
-
-static t_object *obj_new(t_object *obj, va_list arg_list) {
-
-    // Create new object and copy all info
-    t_tuple_object *new_obj = smm_malloc(sizeof(t_tuple_object));
-    memcpy(new_obj, Object_Tuple, sizeof(t_tuple_object));
-
-    // @TODO: We should duplicate the tuple, and add it!
-    new_obj->ht = ht_create();
-
-    // These are instances
-    new_obj->flags &= ~OBJECT_TYPE_MASK;
-    new_obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)new_obj;
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
 }
 
 
@@ -264,7 +264,9 @@ static char *obj_debug(t_object *obj) {
 // Tuple object management functions
 t_object_funcs tuple_funcs = {
         obj_new,              // Allocate a new tuple object
+        obj_populate,
         obj_free,             // Free a tuple object
+        obj_destroy,
         NULL,                 // Clone a tuple object
 #ifdef __DEBUG
         obj_debug
