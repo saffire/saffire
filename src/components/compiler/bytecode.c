@@ -571,5 +571,6 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 #include "../../src/components/vm/bc002_bcs.c"
 #include "../../src/components/vm/bc003_bcs.c"
 #include "../../src/components/vm/bc004_bcs.c"
+#include "../../src/components/vm/bc005_bcs.c"
 
 

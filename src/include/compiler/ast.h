@@ -48,32 +48,32 @@
     typedef struct {
         int oper;                   // Operator
         int nops;                   // number of additional operands
-        struct ast_element **ops;   // Operands (should be max of 2: left and right)
+        struct _ast_element **ops;   // Operands (should be max of 2: left and right)
     } oprNode;
 
     typedef struct {
         int modifiers;
         char *name;
-        struct ast_element *extends;
-        struct ast_element *implements;
-        struct ast_element *body;
+        struct _ast_element *extends;
+        struct _ast_element *implements;
+        struct _ast_element *body;
     } classNode;
 
     typedef struct {
         int modifiers;
         char *name;
-        struct ast_element *implements;
-        struct ast_element *body;
+        struct _ast_element *implements;
+        struct _ast_element *body;
     } interfaceNode;
 
     typedef struct {
         int modifiers;
         char *name;
-        struct ast_element *arguments;
-        struct ast_element *body;
+        struct _ast_element *arguments;
+        struct _ast_element *body;
     } methodNode;
 
-    typedef struct ast_element {
+    typedef struct _ast_element {
         nodeEnum type;              // Type of the node
         int flags;                  // Current flag (used for interpreting)
         unsigned long lineno;                 // Current line number for this AST element

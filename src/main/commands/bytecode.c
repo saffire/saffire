@@ -65,7 +65,7 @@ static void _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
 
-    t_bytecode *bc = generate_dummy_bytecode_bc004_bcs_main();
+    t_bytecode *bc = generate_dummy_bytecode_bc005_bcs_main();
     bytecode_save(dest_file, source_file, bc);
     bytecode_free(bc);
 

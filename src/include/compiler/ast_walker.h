@@ -24,34 +24,12 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __CLASS_H__
-#define __CLASS_H__
+#ifndef __AST_WALKER_H__
+#define __AST_WALKER_H__
 
-    #include "general/hashtable.h"
     #include "compiler/ast.h"
+    #include "compiler/bytecode.h"
 
-    /**
-     * Primary start of a class structure. Will change
-     */
-    typedef struct class {
-        int modifiers;                  // MODIFIER_* flags
-        char *name;                     // Fully qualified class name
-        struct class *parent;           // Parent class (or NULL when extending no other class) @TODO: Always extend Base class
-
-        struct _ast_element *extends;
-        struct _ast_element *implements;
-
-        t_hash_table *methods;          // Methods inside this class
-        t_hash_table *constants;        // Constants inside this class
-        t_hash_table *properties;       // Properties inside this class
-
-        struct class **interfaces;      // Interfaces
-        int num_interfaces;             // Number of interfaces
-
-        // additional info
-        char *filename;                 // Full filename path in which this class resides
-        int line_start;                 // Start of the class
-        int line_end;                   // End of the class
-    } t_class;
+    t_bytecode *ast_walker(t_ast_element *ast);
 
 #endif

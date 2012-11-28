@@ -52,7 +52,7 @@ static int do_exec(void) {
 
     // @TODO: here be interpreting
     int ret = 0;
-//    int ret = interpreter(ast);
+    ast_walker(ast);
 
     // Release memory of ast root
     if (ast != NULL) {
