@@ -94,6 +94,22 @@ SAFFIRE_METHOD(hash, find) {
 }
 
 /**
+  * Saffire method: Returns 1 if requested key exists and 0 if not
+  */
+SAFFIRE_METHOD(hash, exists) {
+    t_string_object *key;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+        saffire_warning("Error while parsing argument list\n");
+        RETURN_NUMERICAL(0);
+    }
+
+    t_object *obj = ht_exists(self->ht, key->value);
+    if (obj == NULL) RETURN_NULL;
+    RETURN_OBJECT(obj);
+}
+
+/**
  * Saffire method:
  */
 SAFFIRE_METHOD(hash, add) {
