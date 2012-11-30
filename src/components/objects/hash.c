@@ -104,7 +104,7 @@ SAFFIRE_METHOD(hash, exists) {
         RETURN_NUMERICAL(0);
     }
 
-	return ht_exists(ht, key) ? RETURN_TRUE : RETURN_FALSE;
+	return ht_exists(self->ht, key->value) ? RETURN_TRUE : RETURN_FALSE;
 }
 
 /**
