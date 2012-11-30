@@ -19,7 +19,7 @@ else
 endif
 
 # Add top include dir
-AM_CFLAGS += -I$(top_srcdir)/src/include
+AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS)
 
 # Complain about everything, except unused functions
 AM_CFLAGS += -Wall -Wno-unused-function
