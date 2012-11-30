@@ -78,7 +78,6 @@
 
     int ht_exists(t_hash_table *ht, const char *key);
     void *ht_find(t_hash_table *ht, const char *key);
-    void *ht_exists(t_hash_table *ht, const char *key);
     int ht_add(t_hash_table *ht, const char *key, void *value);
     void *ht_replace(t_hash_table *ht, const char *key, void *value);
     void *ht_remove(t_hash_table *ht, const char *key);
