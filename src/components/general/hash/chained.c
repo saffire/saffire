@@ -108,7 +108,7 @@ static void *find(t_hash_table *ht, const char *key) {
 /**
  * Check if a key exists in a hashtable
  */
-static void *exists(t_hash_table *ht, const char *key) {
+static int exists(t_hash_table *ht, const char *key) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -257,6 +257,7 @@ t_hashfuncs chained_hf = {
     hash_native,                // Use the native hashing method
     //hash_djbx33a,
     find,
+    exists,
     add,
     replace,
     remove,

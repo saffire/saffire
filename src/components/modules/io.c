@@ -57,7 +57,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
     }
 
     char *str = ((t_string_object *)obj)->value;
-    output(ANSI_BRIGHTRED "%s" ANSI_RESET "\n", str);
+    output(ANSI_BRIGHTRED "%s" ANSI_RESET, str);
 
     RETURN_SELF;
 }
