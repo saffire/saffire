@@ -37,6 +37,17 @@ static void _output(FILE *f, const char *format, va_list args) {
 }
 
 /**
+ * Outputs to specified file
+ */
+void foutput(FILE *fp, const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    _output(fp, format, args);
+    va_end(args);
+}
+
+/**
  * Outputs (to stdout)
  */
 void output(const char *format, ...) {

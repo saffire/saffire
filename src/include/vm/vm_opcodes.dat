@@ -1,0 +1,70 @@
+;
+; Only make modifications to the opcodes in this file. This will regenerate the vm_opcodes.h file
+;
+
+STOP                 0x00
+POP_TOP              0x01
+ROT_TWO              0x02
+ROT_THREE            0x03
+DUP_TOP              0x04
+ROT_FOUR             0x05
+
+NOP                  0x09
+
+BINARY_ADD           0x17
+BINARY_SUB           0x18
+BINARY_MUL           0x19
+BINARY_DIV           0x1A
+BINARY_SHL           0x1B
+BINARY_SHR           0x1C
+BINARY_AND           0x1D
+BINARY_OR            0x1E
+BINARY_XOR           0x1F
+
+INPLACE_ADD          0x20
+INPLACE_SUB          0x21
+INPLACE_MUL          0x22
+INPLACE_DIV          0x23
+INPLACE_SHL          0x24
+INPLACE_SHR          0x25
+INPLACE_AND          0x26
+INPLACE_OR           0x27
+INPLACE_XOR          0x28
+
+MAKE_METHOD          0x71
+
+POP_BLOCK            0x72
+RETURN               0x73
+BREAK_LOOP           0x74
+BREAKELSE_LOOP       0x75
+
+USE                  0x7E
+IMPORT               0x7F
+
+STORE_ID             0x80
+LOAD_CONST           0x81
+LOAD_ID              0x82
+
+JUMP_FORWARD         0x83
+JUMP_IF_TRUE         0x84
+JUMP_IF_FALSE        0x85
+JUMP_ABSOLUTE        0x86
+
+DUP_TOPX             0x87
+
+LOAD_GLOBAL          0x88
+STORE_GLOBAL         0x89
+DELETE_GLOBAL        0x8A
+
+SETUP_LOOP           0x90
+
+CONTINUE_LOOP        0x92
+BUILD_CLASS          0x93
+COMPARE_OP           0x95
+SETUP_FINALLY        0x96
+SETUP_EXCEPT         0x97
+END_FINALLY          0x98
+
+CALL_METHOD          0xC0
+
+RESERVED             0xFF

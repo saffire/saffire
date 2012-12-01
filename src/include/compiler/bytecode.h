@@ -36,12 +36,11 @@
 
     #define MAGIC_HEADER            0x43424653     // big-endian SFBC (saffire bytecode)
 
-    #define BYTECODE_CONST_STRING        0
-    #define BYTECODE_CONST_NUMERICAL     1
-    #define BYTECODE_CONST_CODE          2
-    #define BYTECODE_CONST_OBJECT        3
+    #define BYTECODE_CONST_STRING           0
+    #define BYTECODE_CONST_NUMERICAL        1
+    #define BYTECODE_CONST_CODE             2
 
-    #define BYTECODE_FLAG_SIGNED           1        // Code is signed
+    #define BYTECODE_FLAG_SIGNED            1        // Code is signed
 
     typedef struct _bytecode_binary_header {
         uint32_t   magic;                       // Magic number 0x53464243 (SFBC)
@@ -56,8 +55,8 @@
 
     struct _bytecode;
     typedef struct _bytecode_constant_header {
-        char type;          // Type of the constant
-        int  len;           // Length of data
+        char type;                  // Type of the constant
+        unsigned int  len;          // Length of data
 
         union {
             char *s;                    // String
@@ -70,28 +69,30 @@
 
 
     typedef struct _bytecode_identifier_header {
-        int  len;           // Length of data
-        char *s;            // Name of the identifier
+        int  len;                               // Length of data
+        char *s;                                // Name of the identifier
     } t_bytecode_identifier;
 
 
     typedef struct _bytecode {
-        int stack_size;         // Maximum stack size for this bytecode
+        unsigned int stack_size;                // Maximum stack size for this bytecode
 
-        int code_len;           // Length of the code
-        char *code;             // Actual binary code
+        unsigned int code_len;                  // Length of the code
+        unsigned char *code;                    // Actual binary code
 
-        int constants_len;                  // Number of constants
-        t_bytecode_constant **constants;    // Pointer to constant array
+        unsigned int constants_len;             // Number of constants
+        t_bytecode_constant **constants;        // Pointer to constant array
 
-        int identifiers_len;                  // Number of identifiers
-        t_bytecode_identifier **identifiers;  // Pointer to identifier array
+        unsigned int identifiers_len;           // Number of identifiers
+        t_bytecode_identifier **identifiers;    // Pointer to identifier array
     } t_bytecode;
 
 
     t_bytecode *bytecode_generate(t_ast_element *p, char *source_file);
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);
+
+    t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name);
 
     void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
     t_bytecode *bytecode_load(const char *filename, int verify_signature);

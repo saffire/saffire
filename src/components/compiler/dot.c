@@ -62,7 +62,7 @@ static char *show_modifiers(int modifiers) {
 /**
  * Output node (and link to parent node number). Recursively called when child nodes are present.
  */
-static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
+static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     if (! p) {
         return;
     }
@@ -90,7 +90,7 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
 
             // Plot all the operands
             for (int i=0; i!=p->opr.nops; i++) {
-                saffire_dot_node_iterate(fp, p->opr.ops[i], cur_node_nr);
+                dot_node_iterate(fp, p->opr.ops[i], cur_node_nr);
             }
             break;
 
@@ -101,23 +101,23 @@ static void saffire_dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_n
         case typeAstInterface :
             fprintf(fp, "fillcolor=darkseagreen,style=\"filled\",label=\"{N:%d|Type=Interface|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->interface.name, show_modifiers(p->interface.modifiers), p->interface.modifiers);
             // Plot implementations and body
-            saffire_dot_node_iterate(fp, p->interface.implements, cur_node_nr);
-            saffire_dot_node_iterate(fp, p->interface.body, cur_node_nr);
+            dot_node_iterate(fp, p->interface.implements, cur_node_nr);
+            dot_node_iterate(fp, p->interface.body, cur_node_nr);
             break;
 
         case typeAstClass :
             fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{N:%d|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
             // Plot extends, implementations and body
-            saffire_dot_node_iterate(fp, p->class.extends, cur_node_nr);
-            saffire_dot_node_iterate(fp, p->class.implements, cur_node_nr);
-            saffire_dot_node_iterate(fp, p->class.body, cur_node_nr);
+            dot_node_iterate(fp, p->class.extends, cur_node_nr);
+            dot_node_iterate(fp, p->class.implements, cur_node_nr);
+            dot_node_iterate(fp, p->class.body, cur_node_nr);
             break;
 
         case typeAstMethod:
             fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Method|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->method.name, show_modifiers(p->method.modifiers), p->method.modifiers);
             // Plot arguments and body
-            saffire_dot_node_iterate(fp, p->method.arguments, cur_node_nr);
-            saffire_dot_node_iterate(fp, p->method.body, cur_node_nr);
+            dot_node_iterate(fp, p->method.arguments, cur_node_nr);
+            dot_node_iterate(fp, p->method.body, cur_node_nr);
             break;
 
         default :
@@ -145,7 +145,7 @@ void dot_generate(t_ast_element *ast, const char *outputfile) {
     fprintf(fp, "\tnode [ shape = record ];\n");
     fprintf(fp, "\n");
 
-    saffire_dot_node_iterate(fp, ast, -1);
+    dot_node_iterate(fp, ast, -1);
 
     fprintf(fp, "}\n");
     fclose(fp);

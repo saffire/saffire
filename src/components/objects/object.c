@@ -323,7 +323,7 @@ char *object_debug(t_object *obj) {
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
     }
-    return "";
+    return obj->name;
 }
 #endif
 
@@ -336,7 +336,11 @@ void object_free(t_object *obj) {
     // Check if we really need to free
     if (obj->ref_count > 0) return;
 
-    DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
+#ifdef __DEBUG
+    if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_METHOD(obj)) {
+        DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
+    }
+#endif
 
     // Need to free, check if free functions exists
     if (obj->funcs && obj->funcs->free) {
@@ -394,14 +398,12 @@ t_object *object_new(t_object *obj, ...) {
     if (cached) {
         DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
     } else {
-        DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+        if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_METHOD(obj)) {
+            DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+        }
     }
 
 #ifdef __DEBUG
-//    if (strcmp(obj->name, "code") != 0 && strcmp(obj->name, "method") != 0) {
-//        DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
-//    }
-//
 //    if (! ht_num_find(object_hash, (unsigned long)res)) {
 //        ht_num_add(object_hash, (unsigned long)res, res);
 //    }
