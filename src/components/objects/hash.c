@@ -94,17 +94,21 @@ SAFFIRE_METHOD(hash, find) {
 }
 
 /**
-  * Saffire method: Returns 1 if requested key exists and 0 if not
+  * Saffire method: Returns true if requested key exists and false if not
   */
 SAFFIRE_METHOD(hash, exists) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        saffire_warning("Error while parsing argument list\n");
+        error_and_die(1, "Error while parsing argument list\n");
         RETURN_NUMERICAL(0);
     }
 
-	return ht_exists(self->ht, key->value) ? RETURN_TRUE : RETURN_FALSE;
+	if (ht_exists(self->ht, key->value)) {
+		RETURN_TRUE;
+	}
+
+	RETURN_FALSE;
 }
 
 /**
