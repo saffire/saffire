@@ -106,6 +106,19 @@ static void *find(t_hash_table *ht, const char *key) {
 
 
 /**
+ * Check if a key exists in a hashtable
+ */
+static void *exists(t_hash_table *ht, const char *key) {
+    if (! ht) return 0;      // Not a hash table
+
+    t_hash_table_bucket *htb = find_bucket(ht, key);
+    if (! htb) return 0;
+
+    return 1;
+}
+
+
+/**
  * Add key/value pair to the hash
  */
 static int add(t_hash_table *ht, const char *key, void *value) {

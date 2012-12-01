@@ -136,7 +136,7 @@ void *ht_num_find(t_hash_table *ht, long index) {
  * Return 0 when key is not found, 1 otherwise
  */
 int ht_exists(t_hash_table *ht, const char *key) {
-    return (ht->hashfuncs->find(ht, key) != NULL);
+    return ht->hashfuncs->exists(ht, key);
 }
 
 /**
