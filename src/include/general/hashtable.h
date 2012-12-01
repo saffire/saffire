@@ -65,7 +65,7 @@
     typedef struct _hashfuncs {
         hash_t (*hash)(t_hash_table *ht, const char *str);                  // Returns hash of string (0..bucket_count)
         void *(*find)(t_hash_table *ht, const char *key);                   // Find value for key in hashtable
-        void *(*exists)(t_hash_table *ht, const char *key);                 // Find if a key exists in a hashtable
+        int (*exists)(t_hash_table *ht, const char *key);                   // Find if a key exists in a hashtable
         int (*add)(t_hash_table *ht, const char *key, void *value);         // Add value to key
         void *(*replace)(t_hash_table *ht, const char *key, void *value);   // Replace value to key
         void *(*remove)(t_hash_table *ht, const char *key);                 // Remove key
