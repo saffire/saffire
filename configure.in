@@ -58,9 +58,9 @@ AM_CONDITIONAL(PARSEDEBUG, test x"$parsedebug" = x"true")
 
 
 #gcov
-AC_ARG_ENABLE(coverage,
+AC_ARG_ENABLE(gcov,
 AC_HELP_STRING([--enable-gcov],
-               [turn on test coverage @<:@default=no@:>@]), [enable_cov=$enableval],[enable_cov="no"])
+               [turn on test coverage @<:@default=no@:>@]), [enable_coverage=$enableval],[enable_coverage="no"])
 
 if test "x$enable_coverage" = "xyes"; then
 	if test "x$ac_compiler_gnu" != "xyes"; then
