@@ -67,10 +67,10 @@
 %}
 
 %union {
-    char                *sVal;
-    long                lVal;
-    double              dVal;
-    struct ast_element  *nPtr;
+    char                 *sVal;
+    long                 lVal;
+    double               dVal;
+    struct _ast_element  *nPtr;
 }
 
 %token END 0 "end of file"

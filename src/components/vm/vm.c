@@ -142,7 +142,7 @@ static t_object *_import(t_vm_frame *frame, char *module, char *class) {
 /**
  *
  */
-t_object *vm_execute(t_vm_frame *frame) {
+t_object *_vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register unsigned int opcode, oparg1, oparg2;
     register char *s1;
@@ -168,11 +168,6 @@ dispatch:
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
 
-        if (opcode == VM_STOP) break;
-        if (opcode == VM_RESERVED) {
-            error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
-        }
-
         // If high bit is set, get operand
         oparg1 = ((opcode & 0x80) == 0x80) ? vm_frame_get_operand(frame) : 0;
         oparg2 = ((opcode & 0xC0) == 0xC0) ? vm_frame_get_operand(frame) : 0;
@@ -186,6 +181,12 @@ dispatch:
             DEBUG_PRINT("%08lX : 0x%02X\n", cip, opcode);
         }
 #endif
+
+        if (opcode == VM_STOP) break;
+        if (opcode == VM_RESERVED) {
+            error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
+        }
+
 
         switch (opcode) {
             // Removes SP-0
@@ -483,7 +484,7 @@ dispatch:
                     vm_frame_stack_debug(tfr);
 #endif
 
-                    obj3 = vm_execute(tfr);
+                    obj3 = _vm_execute(tfr);
                     vm_frame_destroy(tfr);
                 }
 
@@ -504,8 +505,6 @@ dispatch:
                 obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
                 char *class = OBJ2STR(obj1);
-
-                //printf("Importing %s from %s\n", class, module);
 
                 obj3 = _import(frame, module, class);
                 object_inc_ref(obj3);
@@ -545,7 +544,7 @@ dispatch:
                 if (obj1->type != obj2->type) {
                     error_and_die(1, "Cannot compare non-identical object types");
                 }
-                obj3 = object_comparison(obj1, oparg1, obj2);
+                obj3 = object_comparison(obj2, oparg1, obj1);
 
                 object_dec_ref(obj1);
                 object_dec_ref(obj2);
@@ -679,5 +678,30 @@ block_end:
     } // for (;;)
 
 
+    return ret;
+}
+
+
+/**
+ *
+ */
+int vm_execute(t_bytecode *bc) {
+    // Create initial frame
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, bc);
+
+    // Execute the frame
+    t_object *obj1 = _vm_execute(initial_frame);
+
+    DEBUG_PRINT("*** Vm execution done\n");
+
+    // Convert returned object to numerical, so we can use it as an error code
+    if (!OBJECT_IS_NUMERICAL(obj1)) {
+        // Cast to numericak
+        t_object *obj2 = object_find_method(obj1, "numerical");
+        obj1 = object_call(obj1, obj2, 0);
+    }
+    int ret = ((t_numerical_object *) obj1)->value;
+
+    vm_frame_destroy(initial_frame);
     return ret;
 }

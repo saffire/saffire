@@ -30,6 +30,7 @@
     #include <stdio.h>
     #include <stdarg.h>
 
+    void foutput(FILE *fp, const char *format, ...);
     void output(const char *format, ...);
     void error(const char *format, ...);
     void error_and_die(int exitcode, const char *format, ...);

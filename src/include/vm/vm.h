@@ -35,7 +35,7 @@
 
     void vm_init(void);
     void vm_fini(void);
-    t_object *vm_execute(t_vm_frame *frame);
+    int vm_execute(t_bytecode *bc);
 
 #endif
 
