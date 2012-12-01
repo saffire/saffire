@@ -50,26 +50,26 @@
     } t_object_funcs;
 
     // Operator defines
-    #define OPERATOR_ADD    1
-    #define OPERATOR_SUB    2
-    #define OPERATOR_MUL    3
-    #define OPERATOR_DIV    4
-    #define OPERATOR_MOD    5
-    #define OPERATOR_AND    6
-    #define OPERATOR_OR     7
-    #define OPERATOR_XOR    8
-    #define OPERATOR_SHL    9
-    #define OPERATOR_SHR   10
+    #define OPERATOR_ADD    0       // Start at 0, to make sure function lookups work
+    #define OPERATOR_SUB    1
+    #define OPERATOR_MUL    2
+    #define OPERATOR_DIV    3
+    #define OPERATOR_MOD    4
+    #define OPERATOR_AND    5
+    #define OPERATOR_OR     6
+    #define OPERATOR_XOR    7
+    #define OPERATOR_SHL    8
+    #define OPERATOR_SHR    9
 
 
-    #define COMPARISON_EQ     1
-    #define COMPARISON_NE     2
-    #define COMPARISON_LT     3
-    #define COMPARISON_GT     4
-    #define COMPARISON_LE     5
-    #define COMPARISON_GE     6
-    #define COMPARISON_IN     7
-    #define COMPARISON_NI     8
+    #define COMPARISON_EQ     0       // Start at 0, to make sure function lookups work
+    #define COMPARISON_NE     1
+    #define COMPARISON_LT     2
+    #define COMPARISON_GT     3
+    #define COMPARISON_LE     4
+    #define COMPARISON_GE     5
+    #define COMPARISON_IN     6
+    #define COMPARISON_NI     7
 
 
     // Standard operators

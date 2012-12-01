@@ -89,7 +89,7 @@
     } t_ast_element;
 
 
-    t_ast_element *ast_generate_from_file(char *);
+    t_ast_element *ast_generate_from_file(const char *);
     t_ast_element *ast_generate_tree(FILE *fp);
 
     t_ast_element *ast_string(char *value);

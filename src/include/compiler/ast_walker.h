@@ -28,8 +28,9 @@
 #define __AST_WALKER_H__
 
     #include "compiler/ast.h"
-    #include "compiler/bytecode.h"
+    #include "compiler/assembler.h"
+    #include "general/smm.h"
 
-    t_bytecode *ast_walker(t_ast_element *ast);
+    t_dll *ast_walker(t_ast_element *ast);
 
 #endif

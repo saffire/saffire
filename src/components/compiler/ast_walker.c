@@ -25,17 +25,23 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include <string.h>
 #include "compiler/ast_walker.h"
+#include "compiler/assembler.h"
 #include "compiler/bytecode.h"
 #include "compiler/ast.h"
 #include "compiler/parser.tab.h"
 #include "general/output.h"
+#include "compiler/assembler.h"
+#include "general/smm.h"
+#include "general/dll.h"
 #include "debug.h"
+#include "vm/vm_opcodes.h"
 
-#define SI0(leaf, state)  (_ast_walker(leaf->opr.ops[0], state))
-#define SI1(leaf, state)  (_ast_walker(leaf->opr.ops[1], state))
-#define SI2(leaf, state)  (_ast_walker(leaf->opr.ops[2], state))
-#define SI3(leaf, state)  (_ast_walker(leaf->opr.ops[3], state))
+#define SI0(leaf, state)  (_ast_walker(leaf->opr.ops[0], state, output))
+#define SI1(leaf, state)  (_ast_walker(leaf->opr.ops[1], state, output))
+#define SI2(leaf, state)  (_ast_walker(leaf->opr.ops[2], state, output))
+#define SI3(leaf, state)  (_ast_walker(leaf->opr.ops[3], state, output))
 
 typedef struct _state {
     char state;
@@ -56,55 +62,52 @@ typedef struct _state {
 #define ST_T_CONST  2
 
 
-void emitraw(char *format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    vfprintf(stdout, format, args);
-    va_end(args);
-}
-
-void emit(t_state state, char *format, ...) {
-    va_list args;
-
-    if (state.state == ST_LOAD) {
-        if (state.type == ST_T_ID) {
-            emitraw("\tLOAD_ID\t\t");
-        } else if (state.type == ST_T_CONST) {
-            emitraw("\tLOAD_CONST\t");
-        }
-        emitraw("\t");
-    } else if (state.state == ST_STORE) {
-        emitraw("\tSTORE_ID\t\t");
-    }
-
-    va_start(args, format);
-    vfprintf(stdout, format, args);
-    va_end(args);
-}
-
 static int loop_cnt = 0;
 
-t_bytecode *_ast_walker(t_ast_element *leaf, t_state state) {
-//    printf("astwalk: %d  (ST: %d  TP:%d)\n", leaf->type, state.state, state.type);
-    if (!leaf) return NULL;
+static void _load_or_store(t_state state, t_asm_opr *opr, t_dll *output) {
+    switch (state.state) {
+        case ST_LOAD :
+            if (state.type == ST_T_ID) {
+                dll_append(output, asm_create_codeline(VM_LOAD_ID, 1, opr));
+            } else if (state.type == ST_T_CONST) {
+                dll_append(output, asm_create_codeline(VM_LOAD_CONST, 1, opr));
+            }
+            break;
+        case ST_STORE :
+            // Store is always to ID!
+            dll_append(output, asm_create_codeline(VM_STORE_ID, 1, opr));
+            break;
+        default :
+            error_and_die(1, "Unknown state!");
+    }
+}
+
+/**
+ *
+ */
+static void _ast_walker(t_ast_element *leaf, t_state state, t_dll *output) {
+    t_asm_opr *opr1, *opr2;
+    t_ast_element *node;
+    if (!leaf) return;
 
     switch (leaf->type) {
         case typeAstString :
             state.type = ST_T_CONST;
-            emit(state, "\"%s\"", leaf->string.value);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->string.value, 0);
+            _load_or_store(state, opr1, output);
             break;
         case typeAstNumerical :
             state.type = ST_T_CONST;
-            emit(state, "%d", leaf->numerical.value);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->numerical.value);
+            _load_or_store(state, opr1, output);
             break;
         case typeAstNull :
-//            state.type = ST_T_CONST;
-//            emit(state, "Null");
+            // Do nothing
             break;
         case typeAstIdentifier :
             state.type = ST_T_ID;
-            emit(state, "%s", leaf->identifier.name);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->identifier.name, 0);
+            _load_or_store(state, opr1, output);
             break;
         case typeAstClass :
             break;
@@ -123,91 +126,86 @@ t_bytecode *_ast_walker(t_ast_element *leaf, t_state state) {
                 case T_EXPRESSIONS :
                 case T_USE_STATEMENTS :
                     for (int i=0; i!=leaf->opr.nops; i++) {
-                        _ast_walker(leaf->opr.ops[i], state);
+                        _ast_walker(leaf->opr.ops[i], state, output);
                     }
                     break;
                 case T_IMPORT :
                     state.state = ST_LOAD;
                     SI0(leaf, state);
-                    emitraw("\n");
                     SI2(leaf, state);
-                    emitraw("\n");
 
-                    t_ast_element *node2 = leaf->opr.ops[1];
-                    emitraw("\tIMPORT\n");
-                    emitraw("\tSTORE_ID\t\t%s\n", node2->string.value);
-                    emitraw("\n");
+                    dll_append(output, asm_create_codeline(VM_IMPORT, 0));
 
-                    emitraw("\n");
+                    node = leaf->opr.ops[1];
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
+                    dll_append(output, asm_create_codeline(VM_STORE_ID, 1, opr1));
                     break;
 
                 case T_ARGUMENT_LIST :
                     for (int i=0; i!=leaf->opr.nops; i++) {
-                        _ast_walker(leaf->opr.ops[i], state);
+                        _ast_walker(leaf->opr.ops[i], state, output);
                     }
                     break;
 
                 case '+' :
                     state.state = ST_LOAD;
                     SI0(leaf, state);
-                    emitraw("\n");
                     SI1(leaf, state);
-                    emitraw("\n");
-                    emitraw("\tBINARY_ADD\n");
+                    dll_append(output, asm_create_codeline(VM_BINARY_ADD, 0));
                     break;
 
                 case T_EQ :
                     state.state = ST_LOAD;
                     SI0(leaf, state);
-                    emitraw("\n");
                     SI1(leaf, state);
-                    emitraw("\n");
-                    emitraw("\tCOMPARE_OP\t\tOP_EQ\n");
-                    emitraw("\tJUMP_IF_FALSE\t%s\n", state.pre_end_label, state.labelcount);
-                    emitraw("\tPOP_TOP\n");
-                    emitraw("\n");
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_EQ);
+                    dll_append(output, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.pre_end_label, 0);
+                    dll_append(output, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
                     break;
 
                 case '<' :
                     state.state = ST_LOAD;
                     SI0(leaf, state);
-                    emitraw("\n");
                     SI1(leaf, state);
-                    emitraw("\n");
-                    emitraw("\tCOMPARE_OP\t\tOP_LT\n");
-                    emitraw("\tJUMP_IF_FALSE\t%s\n", state.pre_end_label, state.labelcount);
-                    emitraw("\tPOP_TOP\n");
-                    emitraw("\n");
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_LT);
+                    dll_append(output, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.pre_end_label, 0);
+                    dll_append(output, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
                     break;
 
                 case T_IF :
                     loop_cnt++;
                     state.labelcount = loop_cnt;
-                    sprintf(state.start_label, "#if_%03d", state.labelcount);
-                    sprintf(state.pre_end_label, "#else_if_%03d", state.labelcount);
-                    sprintf(state.end_label, "#end_of_%03d", state.labelcount);
-                    sprintf(state.else_label, "#else_if_%03d", state.labelcount);
 
-                    emitraw("%s:\n", state.start_label);
+                    sprintf(state.start_label, "if_%03d", state.labelcount);
+                    sprintf(state.pre_end_label, "else_if_%03d", state.labelcount);
+                    sprintf(state.end_label, "end_of_%03d", state.labelcount);
+                    sprintf(state.else_label, "else_if_%03d", state.labelcount);
+
+                    dll_append(output, asm_create_labelline(state.start_label));
 
                     // Comparison first
                     SI0(leaf, state);
-                    emitraw("\n");
 
                     SI1(leaf, state);
-                    emitraw("\n");
-                    emitraw("\tJUMP_ABSOLUTE\t%s\n", state.end_label);
-                    emitraw("%s:\n", state.else_label);
-                    emitraw("\tPOP_TOP\n");
-                    emitraw("\n");
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.end_label, 0);
+                    dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    dll_append(output, asm_create_labelline(state.else_label));
+                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
 
                     // Do else body, if there is one
                     if (leaf->opr.nops == 3) {
                         SI2(leaf, state);
                     }
 
-                    emitraw("%s:\n", state.end_label);
-                    emitraw("\n");
+                    dll_append(output, asm_create_labelline(state.end_label));
 
                     break;
 
@@ -215,12 +213,14 @@ t_bytecode *_ast_walker(t_ast_element *leaf, t_state state) {
                     loop_cnt++;
                     state.labelcount = loop_cnt;
 
-                    sprintf(state.start_label, "#while_%03d", state.labelcount);
-                    sprintf(state.pre_end_label, "#end_while_%03d_pb", state.labelcount);
-                    sprintf(state.end_label, "#end_while_%03d", state.labelcount);
+                    sprintf(state.start_label, "while_%03d", state.labelcount);
+                    sprintf(state.pre_end_label, "end_while_%03d_pb", state.labelcount);
+                    sprintf(state.end_label, "end_while_%03d", state.labelcount);
 
-                    emitraw("\tSETUP_LOOP\t\t%s\n", state.end_label);
-                    emitraw("%s:\n", state.start_label);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.end_label, 0);
+                    dll_append(output, asm_create_codeline(VM_SETUP_LOOP, 1, opr1));
+
+                    dll_append(output, asm_create_labelline(state.start_label));
 
                     // Comparison
                     SI0(leaf, state);
@@ -228,46 +228,37 @@ t_bytecode *_ast_walker(t_ast_element *leaf, t_state state) {
                     // Body
                     SI1(leaf, state);
 
-                    // Add else in SI2 (if any)
+                    // Add else in SI2 (if any) ??
 
-                    emitraw("\tJUMP_ABSOLUTE\t%s\n", state.start_label);
-                    emitraw("%s:\n", state.pre_end_label);
-                    emitraw("\tPOP_BLOCK\n");
-                    emitraw("%s:\n", state.end_label);
-                    emitraw("\n");
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.start_label, 0);
+                    dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    dll_append(output, asm_create_labelline(state.pre_end_label));
+                    dll_append(output, asm_create_codeline(VM_POP_BLOCK, 0));
+                    dll_append(output, asm_create_labelline(state.end_label));
 
                     break;
 
                 case T_METHOD_CALL :
                     state.state = ST_LOAD;
-                    SI2(leaf, state);  // Do argument list
-                    emitraw("\n");
-                    SI0(leaf, state);
-                    emitraw("\n");
+                    SI2(leaf, state);       // Do argument list
+                    SI0(leaf, state);       // Load object to call
 
-                    emitraw("\tCALL_METHOD\t\t\"");
-                    int old_state = state.state;
-                    state.state = ST_NULL;
-                    SI1(leaf, state);
-                    state.state = old_state;
-                    emitraw("\", $%d", leaf->opr.ops[2]->opr.nops);
-                    emitraw("\n");
+                    node = leaf->opr.ops[1];
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->opr.ops[2]->opr.nops);
+                    dll_append(output, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
 
                     state.state = ST_STORE;
-                    emitraw("\tPOP_TOP\n");
-                    emitraw("\n");
+                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
                     break;
 
                 case T_ASSIGNMENT :
                     state.state = ST_LOAD;
                     SI2(leaf, state);
-                    emitraw("\n");
 
                     state.state = ST_STORE;
                     SI0(leaf, state);
-                    emitraw("\n");
-
-                    emitraw("\n");
                     break;
                 default :
                     error_and_die(1, "Unknown AST Operator: %02X (%d)", leaf->opr.oper, leaf->opr.oper);
@@ -278,14 +269,15 @@ t_bytecode *_ast_walker(t_ast_element *leaf, t_state state) {
     }
 }
 
-t_bytecode *ast_walker(t_ast_element *ast) {
+/**
+ *
+ */
+t_dll *ast_walker(t_ast_element *ast) {
+    t_dll *output = dll_init();
+
     t_state state;
-
-    emitraw(";\n");
-    emitraw("; Bytecode generation\n");
-    emitraw(";\n");
-    emitraw("\n");
-
     state.state = ST_NULL;
-    return _ast_walker(ast, state);
+    _ast_walker(ast, state, output);
+
+    return output;
 }

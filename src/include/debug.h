@@ -35,7 +35,7 @@
         #define DEBUG_PARSEPRINT(format, args...) ((void)0)
     #endif
 
-    #ifdef __DEBUG1
+    #ifdef __DEBUG
         #define DEBUG_PRINT printf
     #else
         #define DEBUG_PRINT(format, args...) ((void)0)

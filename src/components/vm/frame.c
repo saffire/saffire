@@ -43,15 +43,13 @@
  * Returns the next opcode
  */
 unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
-//    if (frame->ip < 0 || frame->ip > frame->bytecode->code_len) {
-//        error_and_die(1, "Trying to reach outside code length!");
-//    }
-
-    if (frame->ip == frame->bytecode->code_len) {
+    // Sanity stop
+    if (frame->ip >= frame->bytecode->code_len) {
+        DEBUG_PRINT("Running outside bytecode!");
         return VM_STOP;
     }
 
-    char op = frame->bytecode->code[frame->ip];
+    unsigned char op = frame->bytecode->code[frame->ip];
     frame->ip++;
 
     return op;
@@ -63,12 +61,12 @@ unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
  */
 int vm_frame_get_operand(t_vm_frame *frame) {
     // Read operand
-    char *ptr = frame->bytecode->code + frame->ip;
+    unsigned char *ptr = frame->bytecode->code + frame->ip;
 
     uint16_t ret = *ptr;
     frame->ip += sizeof(uint16_t);
 
-    return (int)ret;
+    return (unsigned int)ret;
 }
 
 
@@ -260,8 +258,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
                 obj = object_new(Object_Numerical, bytecode->constants[i]->data.l);
                 break;
             default :
-                printf("Cannot convert constant type into object!");
-                exit(1);
+                error_and_die(1, "Cannot convert constant type into object!");
                 break;
         }
         object_inc_ref(obj);

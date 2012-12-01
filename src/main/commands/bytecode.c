@@ -4,12 +4,12 @@
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
-     * Redistributions of source code must retain the above copyright
+ * Redistributions of source code must retain the above copyright
        notice, this list of conditions and the following disclaimer.
-     * Redistributions in binary form must reproduce the above copyright
+ * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+ * Neither the name of the <organization> nor the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -23,7 +23,7 @@
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
@@ -42,51 +42,100 @@
 #include "compiler/bytecode.h"
 #include "objects/numerical.h"
 #include "debug.h"
-
 #include "general/config.h"
+#include "dot/dot.h"
+#include "compiler/ast.h"
+#include "compiler/ast_walker.h"
+#include "compiler/assembler.h"
 
+extern char *vm_code_names[];
+extern int vm_codes_index[];
+extern int vm_codes_offset[];
 
-extern long smm_malloc_calls;
-extern long smm_realloc_calls;
-extern long smm_strdup_calls;
-
-
-char *gpg_key = NULL;
-int flag_sign = 0;      // 0 = default config setting, 1 = force sign, 2 = force unsigned
-int flag_no_verify = 0;
-
-t_bytecode *generate_dummy_bytecode_bc004_bcs_main(void);
+int write_dot = 0;                  // 1 = write DOT file
+int write_sfa = 0;                  // 1 = write saffire assembly file
+char *forced_gpg_key = NULL;        // When set, overrides the configuration gpg key
+int flag_sign = 0;                  // 0 = default config setting, 1 = force sign, 2 = force unsigned
 
 /**
  * Compiles single file
  */
-static void _compile_file(const char *source_file, int sign, char *gpg_key) {
-    char *dest_file = replace_extension(source_file, ".sf", ".sfc");
+static int _compile_file(const char *source_file, int sign, char *gpg_key) {
+    char *sfc_dest_file = NULL;
+    char *sfa_dest_file = NULL;
+    char *dot_dest_file = NULL;
+    t_ast_element *ast = NULL;
+    t_dll *asm_code = NULL;
+    int ret = 0;
 
-    output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", dest_file);
-
-    t_bytecode *bc = generate_dummy_bytecode_bc005_bcs_main();
-    bytecode_save(dest_file, source_file, bc);
-    bytecode_free(bc);
-
-    // Add signature at the end of the file
-    if (sign == 1) {
-        bytecode_add_signature(dest_file, gpg_key);
+    // Convert our saffire source to an AST
+    output("SRC -> AST\n");
+    ast = ast_generate_from_file(source_file);
+    if (! ast) {
+        ret = 1;
+        goto cleanup;
     }
 
-    smm_free(dest_file);
-}
+    // Write dot output file if needed
+    if (write_dot) {
+        dot_dest_file = replace_extension(source_file, ".sf", "dot");
+        dot_generate(ast, dot_dest_file);
+    }
 
+    // Convert the AST to assembler lines
+    output("AST -> ASM\n");
+    asm_code = ast_walker(ast);
+    if (! asm_code) {
+        ret = 1;
+        goto cleanup;
+    }
+
+    // Write assembly output file if needed
+    if (write_sfa) {
+        char *sfa_dest_file = replace_extension(source_file, ".sf", ".sfa");
+        assembler_output(asm_code, sfa_dest_file);
+    }
+
+    // Convert the assembler lines to bytecode
+    output("ASM -> BC\n");
+    t_bytecode *bc = assembler(asm_code);
+    if (! bc) {
+        ret = 1;
+        goto cleanup;
+    }
+
+    // Save bytecode structure to disk
+    output("BC -> disk\n");
+    sfc_dest_file = replace_extension(source_file, ".sf", ".sfc");
+    output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", sfc_dest_file);
+    bytecode_save(sfc_dest_file, source_file, bc);
+
+    // Add signature at the end of the file, if needed
+    if (sign == 1) {
+        bytecode_add_signature(sfc_dest_file, gpg_key);
+    }
+
+cleanup:
+    if (ast) ast_free_node(ast);
+    if (sfc_dest_file) smm_free(sfc_dest_file);
+    if (dot_dest_file) smm_free(dot_dest_file);
+    if (sfa_dest_file) smm_free(sfa_dest_file);
+    if (asm_code) assembler_free(asm_code);
+
+    return ret;
+}
 
 /**
  * Scans recursively a directory structure for files with *.sf matching
  */
-static void _compile_directory(const char *path, int sign, char *gpg_key) {
+static int _compile_directory(const char *path, int sign, char *gpg_key) {
     DIR *dirp;
     struct dirent *dp;
     char new_path[PATH_MAX];
     int path_length;
+    int ret = 0;
 
+    // Read complete directory
     dirp = opendir(path);
     do {
         if ((dp = readdir(dirp)) != NULL) {
@@ -97,25 +146,26 @@ static void _compile_directory(const char *path, int sign, char *gpg_key) {
             path_length = snprintf(new_path, PATH_MAX, "%s/%s", path, dp->d_name);
             if (path_length >= PATH_MAX) {
                 error("Path too long");
-                return;
+                return 1;
             }
 
             if (dp->d_type & DT_DIR) {
                 // Found directory. Create new path and recurse
-                _compile_directory(new_path, sign, gpg_key);
+                ret += _compile_directory(new_path, sign, gpg_key);
             } else {
                 // Check if file match *.sf
                 if (fnmatch("*.sf", dp->d_name, 0) != 0) continue;
 
-                _compile_file(new_path, sign, gpg_key);
+                ret += _compile_file(new_path, sign, gpg_key);
             }
 
         }
     } while (dp);
 
     closedir(dirp);
-}
 
+    return (ret > 0) ? 1 : 0;
+}
 
 /**
  * Add signature to a bytecode file
@@ -123,7 +173,7 @@ static void _compile_directory(const char *path, int sign, char *gpg_key) {
 static int _sign_bytecode(const char *path, char *gpg_key) {
     int ret;
 
-    if (! bytecode_is_valid_file(path)) {
+    if (!bytecode_is_valid_file(path)) {
         error("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
@@ -143,19 +193,18 @@ static int _sign_bytecode(const char *path, char *gpg_key) {
     return ret;
 }
 
-
 /**
  * Remove signature from a bytecode file
  */
 static int _unsign_bytecode(const char *path) {
     int ret;
 
-    if (! bytecode_is_valid_file(path)) {
+    if (!bytecode_is_valid_file(path)) {
         error("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
-    if (! bytecode_is_signed(path)) {
+    if (!bytecode_is_signed(path)) {
         error("Sign error: This bytecode file is not signed.\n");
         return 1;
     }
@@ -169,7 +218,6 @@ static int _unsign_bytecode(const char *path) {
     }
     return ret;
 }
-
 
 /**
  *
@@ -185,12 +233,12 @@ static int do_sign(void) {
 
     // sign file
     if (S_ISREG(st.st_mode)) {
+        char *gpg_key = config_get_string("gpg.key", forced_gpg_key);
         return _sign_bytecode(source_path, gpg_key);
     }
 
     return 0;
 }
-
 
 /**
  *
@@ -212,7 +260,6 @@ static int do_unsign(void) {
     return 0;
 }
 
-
 /**
  *
  */
@@ -233,12 +280,12 @@ static int do_info(void) {
     return 0;
 }
 
-
 /**
  *
  */
 static int do_compile(void) {
     char *source_path = saffire_getopt_string(0);
+    int ret = 0;
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
@@ -251,81 +298,18 @@ static int do_compile(void) {
     if (flag_sign == 1) sign = 1;
     if (flag_sign == 2) sign = 0;
 
+    char *gpg_key = config_get_string("gpg.key", forced_gpg_key);
+
     // Compile directory if path matches a directory
     if (S_ISDIR(st.st_mode)) {
-        _compile_directory(source_path, sign, gpg_key);
+        ret = _compile_directory(source_path, sign, gpg_key);
     } else {
-        _compile_file(source_path, sign, gpg_key);
+        ret = _compile_file(source_path, sign, gpg_key);
     }
 
-    return 0;
+    return ret;
 }
 
-
-/**
- *
- */
-static int do_exec(void) {
-    struct stat st_src;
-    struct stat st_dst;
-    char *source_path = saffire_getopt_string(0);
-
-    if (stat(source_path, &st_src) != 0) {
-        error("Cannot exec: source file not found\n");
-        return 1;
-    }
-
-    // Load BC and execute
-    char *dest_file = replace_extension(source_path, ".sf", ".sfc");
-    DEBUG_PRINT("Loading file: %s\n", dest_file);
-
-
-    if (stat(dest_file, &st_dst) != 0) {
-        error("Cannot exec: bytecode file not found\n");
-        return 1;
-    }
-
-    int timestamp = bytecode_get_timestamp(dest_file);
-    if (timestamp != st_src.st_mtime) {
-        output("Warning: Timestamp recorded in bytecode differs from the sourcefile!\n");
-    }
-
-    // Get verification flag, and override when we have entered --no-verify flag
-    int verify = config_get_bool("bytecode.verify", 1);
-    if (flag_no_verify) verify = 0;
-
-    t_bytecode *bc = bytecode_load(dest_file, verify);
-    smm_free(dest_file);
-
-    // Init stuff
-    setlocale(LC_ALL,"");
-    vm_init();
-
-    // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *)NULL, bc);
-
-    t_object *obj1 = vm_execute(initial_frame);
-
-    // Convert returned object to numerical, so we can use it as an error code
-    if (! OBJECT_IS_NUMERICAL(obj1)) {
-        // Cast to numericak
-        t_object *obj2 = object_find_method(obj1, "numerical");
-        obj1 = object_call(obj1, obj2, 0);
-    }
-    int ret = ((t_numerical_object *)obj1)->value;
-
-    vm_frame_destroy(initial_frame);
-    bytecode_free(bc);
-
-    // Fini stuff
-    vm_fini();
-
-    output("SMM Malloc Calls: %ld\n", smm_malloc_calls);
-    output("SMM Realloc Calls: %ld\n", smm_realloc_calls);
-    output("SMM Strdup Calls: %ld\n", smm_strdup_calls);
-
-    return (ret & 0xFF);    // Make sure ret is a code between 0 and 255
-}
 
 
 
@@ -335,64 +319,71 @@ static int do_exec(void) {
 
 
 /* Usage string */
-static const char help[]  = "Compiles a Saffire script or scripts without running.\n"
-                            "\n"
-                            "Actions:\n"
-                            "   compile              Compile saffire script or directory into bytecode\n"
-                            "       --sign           Sign the bytecode\n"
-                            "       --no-sign        Don't sign the bytecode\n"
-                            "   sign                 Sign bytecode file or directory\n"
-                            "       --key <key>      Use this key for signing the code\n"
-                            "   unsign               Remove signature from bytecode file or directory\n"
-                            "   info                 Display information on bytecode file\n"
-                            "   exec                 Executes bytecode\n"
-                            "\n"
-                            "If the --[no-]sign option isn't given, the bytecode is signed according to the configuration settings.\n"
-                            "\n";
+static const char help[] = "Compiles a Saffire script or scripts without running.\n"
+    "\n"
+    "Actions:\n"
+    "   compile              Compile saffire script or directory into bytecode (as filename.sfc)\n"
+    "       --text           Generate textual assembly output (as filename.sfa)\n"
+    "       --dot            Generate DOT output fromt the AST (as filename.dot)\n"
+    "       --sign           Sign the bytecode\n"
+    "       --no-sign        Don't sign the bytecode\n"
+    "       --key <key>      Use this key for signing the code\n"
+    "   sign                 Sign bytecode file or directory\n"
+    "       --key <key>      Use this key for signing the code\n"
+    "   unsign               Remove signature from bytecode file or directory\n"
+    "   info                 Display information on bytecode file\n"
+    "\n"
+    "If the --[no-]sign option isn't given, the bytecode is signed according to the configuration settings.\n"
+    "\n";
+
+static void opt_text(void *data) {
+    write_sfa = 1;
+}
+static void opt_dot(void *data) {
+    write_dot = 1;
+}
+
 
 static void opt_key(void *data) {
-    gpg_key = data;
+    forced_gpg_key = data;
 }
+
 static void opt_sign(void *data) {
     if (flag_sign > 0) {
         error_and_die(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 1;
 }
+
 static void opt_no_sign(void *data) {
     if (flag_sign > 0) {
         error_and_die(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 2;
 }
-static void opt_no_verify(void *data) {
-    flag_no_verify = 1;
-}
 
-static struct saffire_option exec_options[] = {
-    { "no-verify", "", no_argument, opt_no_verify },
-};
 
 static struct saffire_option compile_options[] = {
-    { "sign", "", no_argument, opt_sign },
-    { "no-sign", "", no_argument, opt_no_sign },
-    { "key", "", required_argument, opt_key },
-    { 0, 0, 0, 0 }
+    { "sign", "", no_argument, opt_sign},
+    { "no-sign", "", no_argument, opt_no_sign},
+    { "key", "", required_argument, opt_key},
+    { "text", "", no_argument, opt_text},
+    { "dot", "", no_argument, opt_dot},
+    { 0, 0, 0, 0}
 };
 
 static struct saffire_option sign_options[] = {
-    { "key", "", required_argument, opt_key },
-    { 0, 0, 0, 0 }
+    { "key", "", required_argument, opt_key},
+    { 0, 0, 0, 0}
 };
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "exec", "s", do_exec, exec_options },
-    { "compile", "s", do_compile, compile_options },
-    { "sign", "s", do_sign, sign_options },
-    { "unsign", "s", do_unsign, NULL },
-    { "info", "s", do_info, NULL },
-    { 0, 0, 0, 0 }
+    { "compile", "s", do_compile, compile_options},
+    { "sign", "s", do_sign, sign_options},
+    { "unsign", "s", do_unsign, NULL},
+    { "info", "s", do_info, NULL},
+    { 0, 0, 0, 0}
 };
 
 /* Config info structure */

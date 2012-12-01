@@ -54,7 +54,6 @@ CLEANFILES = components/compiler/parser.tab.c \
              components/compiler/lex.yy.c \
              include/compiler/lex.yy.h
 
-
 noinst_LIBRARIES += libcompiler.a
 libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/lex.yy.c \
@@ -62,7 +61,8 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/dot.c \
                         components/compiler/bytecode.c \
                         components/compiler/compiler.c \
-                        components/compiler/ast_walker.c
+                        components/compiler/ast_walker.c \
+                        components/compiler/assembler.c
 
 
 ########################################################################
@@ -136,10 +136,20 @@ librepl_a_SOURCES = components/repl/repl.c
 # components/vm
 ########################################################################
 
+BUILT_SOURCES += include/vm/vm_opcodes.c
+
+# Create vm_opcodes.c and vm_opcodes.h
+include/vm/vm_opcodes.c:
+	php include/vm/create_vmopcodes.php $(basename $@).dat $(basename $@).h $@
+
+CLEANFILES += include/vm/vm_opcodes.c \
+              include/vm/vm_opcodes.h
+
 noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
-                  components/vm/frame.c
+                  components/vm/frame.c \
+                  include/vm/vm_opcodes.c
 
 
 ########################################################################

@@ -34,6 +34,8 @@
 #include "general/gpg.h"
 #include "general/bzip2.h"
 #include "general/config.h"
+#include "general/hashtable.h"
+#include "compiler/assembler.h"
 
 /**
  * Add constant to a bytecode structure
@@ -440,6 +442,7 @@ int bytecode_get_timestamp(const char *path) {
 
     // Read header
     FILE *f = fopen(path, "rb");
+    if (!f) return 0;
     unused = fread(&header, sizeof(header), 1, f);
     fclose(f);
 
@@ -455,6 +458,7 @@ int bytecode_is_valid_file(const char *path) {
 
     // Read header
     FILE *f = fopen(path, "rb");
+    if (!f) return 0;
     unused = fread(&header, sizeof(header), 1, f);
     fclose(f);
 
@@ -565,12 +569,50 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 
 
 /**
- * @TODO: Temporary bytecode includes
+ *
  */
-#include "../../src/components/vm/bc001_bcs.c"
-#include "../../src/components/vm/bc002_bcs.c"
-#include "../../src/components/vm/bc003_bcs.c"
-#include "../../src/components/vm/bc004_bcs.c"
-#include "../../src/components/vm/bc005_bcs.c"
+t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
+    t_dll_element *e;
 
+    // Seek frame
+    t_asm_frame *frame = ht_find(frames, name);
+    if (! frame) return NULL;
 
+    // Create bytecode structure
+    t_bytecode *bc = smm_malloc(sizeof(t_bytecode));
+    bzero(bc, sizeof(t_bytecode));
+
+    // Fill initial values
+    bc->stack_size = frame->stack_size;
+    bc->code_len = frame->code_len;
+    bc->code = smm_malloc(bc->code_len);
+    memcpy(bc->code, frame->code, bc->code_len);
+
+    // Add constants (order matter!)
+    e = DLL_HEAD(frame->constants);
+    while (e) {
+        t_asm_constant *c = (t_asm_constant *)e->data;
+        switch (c->type) {
+            case const_code :
+                _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s));
+                break;
+            case const_string :
+                _new_constant_string(bc, c->data.s);
+                break;
+            case const_long :
+                _new_constant_long(bc, c->data.l);
+                break;
+        }
+
+        e = DLL_NEXT(e);
+    }
+
+    // Add identifiers (order matter!)
+    e = DLL_HEAD(frame->identifiers);
+    while (e) {
+        _new_name(bc, (char *)e->data);
+        e = DLL_NEXT(e);
+    }
+
+    return bc;
+}

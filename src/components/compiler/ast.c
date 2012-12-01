@@ -347,7 +347,7 @@ void ast_free_node(t_ast_element *p) {
 /**
  * Generate an AST from a source file
  */
-t_ast_element *ast_generate_from_file(char *source_file) {
+t_ast_element *ast_generate_from_file(const char *source_file) {
     // Open file, or use stdin if needed
     FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
     if (!fp) {

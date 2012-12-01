@@ -40,3 +40,5 @@ compile
 .saffire_history
 *.sfc
 *.sf
+src/include/vm/vm_opcodes.c
+src/include/vm/vm_opcodes.h

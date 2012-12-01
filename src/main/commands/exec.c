@@ -27,41 +27,77 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <stdlib.h>
-#include <locale.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "objects/object.h"
 #include "modules/module_api.h"
 #include "compiler/ast.h"
-#include "dot/dot.h"
+#include "general/smm.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
+#include "general/path_handling.h"
 #include "vm/vm.h"
+#include "compiler/ast_walker.h"
+#include "compiler/assembler.h"
+#include "general/output.h"
+#include "debug.h"
 
-char *dot_file = NULL;
+static int flag_no_verify = 0;
 
 static int do_exec(void) {
     char *source_file = saffire_getopt_string(0);
+    struct stat source_stat;
+    t_bytecode *bc;
 
-    setlocale(LC_ALL,"");
+    // Check if sourcefile exists
+    if (stat(source_file, &source_stat) != 0) {
+        error("Source file '%s' does not exist.\n", source_file);
+        return 1;
+    }
+
+    // Check if bytecode exists, or has a correct timestamp
+    char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
+    int bytecode_exists = (access(bytecode_file, F_OK) == 0);
+
+    if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
+        // (Re)generate bytecode file
+        t_ast_element *ast = ast_generate_from_file(source_file);
+        if (! ast) {
+            error("Cannot create AST");
+            smm_free(bytecode_file);
+            return 1;
+        }
+        t_dll *asm_code = ast_walker(ast);
+        if (! asm_code) {
+            error("Cannot create assembler");
+            smm_free(bytecode_file);
+            return 1;
+        }
+        bc = assembler(asm_code);
+        bytecode_save(bytecode_file, source_file, bc);
+    } else {
+        bc = bytecode_load(bytecode_file, flag_no_verify);
+    }
+
+    // Something went wrong with the bytecode loading or generating
+    if (!bc) {
+        error("Error while loading bytecode\n");
+        smm_free(bytecode_file);
+        return 1;
+    }
+
+    smm_free(bytecode_file);
+
+
+
     vm_init();
-
-    t_ast_element *ast = ast_generate_from_file(source_file);
-
-    if (dot_file) {
-        dot_generate(ast, dot_file);
-    }
-
-    // @TODO: here be interpreting
-    int ret = 0;
-    ast_walker(ast);
-
-    // Release memory of ast root
-    if (ast != NULL) {
-        ast_free_node(ast);
-    }
-
+    int exitcode = vm_execute(bc);
     vm_fini();
 
-    return ret;
+    bytecode_free(bc);
+    DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
+
+    return exitcode;
 }
 
 
@@ -69,29 +105,26 @@ static int do_exec(void) {
  * Argument Parsing and action definitions
  ***/
 
-static void opt_dot(void *data) {
-    dot_file = (char *)data;
-}
-
-
 /* Usage string */
 static const char help[]   = "Executes a Saffire script.\n"
                              "\n"
                              "Global settings:\n"
-                             "    --dot, -d <FILE>        Generate a DOT file\n"
+                             "   --no-verify      Don't verify signature from bytecode file (if any)\n"
                              "\n"
-                             "This command allows you to enter Saffire commands, which are immediately executed.\n";
+                             "This command executes a saffire script or bytecode file.\n";
 
 
-static struct saffire_option global_options[] = {
-    { "dot", "d", required_argument, opt_dot },
-    { 0, 0, 0, 0 }
+static void opt_no_verify(void *data) {
+    flag_no_verify = 1;
+}
+
+static struct saffire_option exec_options[] = {
+    { "no-verify", "", no_argument, opt_no_verify},
 };
-
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_exec, global_options },
+    { "", "s", do_exec, exec_options },
     { 0, 0, 0, 0 }
 };
 
