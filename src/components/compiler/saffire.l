@@ -39,12 +39,32 @@
 #define YYPRINT 1
 
 
+static char *strbuf;
+
 /* Create yy_*_state wrappers */
 static void yy_push_state (int new_state);
 static void yy_pop_state (void );
 
 void saffire_push_state(int state) {
     yy_push_state(state);
+}
+
+char *add_strbuf(char *buf, char *s) {
+    if (buf == NULL) {
+        // Realloc does not clear our buf, so we need to copy it, not cat
+        buf = smm_malloc(strlen(s)+1);
+        strcpy(buf, s);
+    } else {
+        buf = smm_realloc(buf, strlen(buf) + strlen(s)+1);
+        strcat(buf, s);
+    }
+    return buf;
+}
+char *add_strbuf_char(char *buf, char c) {
+    char s[2];
+    s[0] = c;
+    s[1] = 0;
+    return add_strbuf(buf, s);
 }
 
 void saffire_pop_state() {
@@ -56,6 +76,9 @@ void saffire_pop_state() {
 /* Define lexer states */
 %s st_regex
 %s st_div
+
+/* Important: exclusive state! Matches no other lexems (like identifier, whitespace etc) */
+%x st_string
 
 %option stack
 %option yylineno
@@ -166,16 +189,61 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "yield"         { saffire_push_state(st_regex); return T_YIELD; }
 
 
-\"[^\"]*\" {
-    saffire_push_state(st_div);
-    yylval.sVal = smm_strdup(yytext+1);
-    if (yylval.sVal[yyleng-2] != yytext[0]) {
-        fprintf(stderr,"improperly terminated string");
-    } else {
-        yylval.sVal[yyleng-2] = 0;
-    }
-    return T_STRING;
-}
+<st_div,st_regex>\"         {
+                                /* Opening string quote */
+                                saffire_push_state(st_string);
+                                strbuf = NULL;
+                            }
+<st_string>\"               {
+                                /* Closing string quote */
+                                yylval.sVal = smm_strdup(strbuf);
+                                smm_free(strbuf);
+                                saffire_pop_state();
+                                return T_STRING;
+                            }
+<st_string>\n               {
+                                /* Real newlines inside strings are not allowed */
+                                error("newline found in string\n");
+                            }
+<st_string>\\\\             { strbuf = add_strbuf_char(strbuf, '\\'); }
+<st_string>\\\"             { strbuf = add_strbuf_char(strbuf, '\"'); }
+
+<st_string>\\0              { strbuf = add_strbuf_char(strbuf, '\0'); }
+<st_string>\\[0-7]{1,3}     {
+                                /* Octal number */
+                                int result;
+                                (void) sscanf( yytext + 1, "%o", &result);
+                                if (result > 0xff) {
+                                    error("octal value '%s' is out of bounds\n", yytext);
+                                    yyterminate();
+                                }
+                                strbuf = add_strbuf_char(strbuf, (char)result);
+                            }
+<st_string>\\[xX][0-9A-Fa-f]{1,2} {
+                              /* Hexidecimal number */
+                                int result;
+                                (void) sscanf(yytext + 2, "%X", &result);
+                                if (result > 0xff) {
+                                    error("hex value '%s' is out of bounds\n", yytext);
+                                    yyterminate();
+                                }
+                                strbuf = add_strbuf_char(strbuf, (char)result);
+
+                            }
+
+<st_string>\\[nN]           { strbuf = add_strbuf_char(strbuf, '\n'); }
+<st_string>\\[tT]           { strbuf = add_strbuf_char(strbuf, '\t'); }
+<st_string>\\[bB]           { strbuf = add_strbuf_char(strbuf, '\b'); }
+<st_string>\\[rR]           { strbuf = add_strbuf_char(strbuf, '\r'); }
+<st_string>\\[fF]           { strbuf = add_strbuf_char(strbuf, '\f'); }
+<st_string>\\[vV]           { strbuf = add_strbuf_char(strbuf, '\v'); }
+<st_string>\\.              {
+                                /* Everything else is an unknown escape string */
+                                error("unknown escape '%s' in string\n", yytext);
+                                yyterminate();
+                            }
+<st_string>[^\\"\n]*        { strbuf = add_strbuf(strbuf, yytext); }
+
 
 \'[^\']*\' {
     saffire_push_state(st_div);
