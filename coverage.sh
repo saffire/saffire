@@ -1,7 +1,13 @@
 #!/bin/sh
-gcov main.c 
-lcov -c -d -o . -o coverage.base
-lcov -c -d . -o .coverage.base
-lcov -c -d . -o .coverage.run
-lcov -d . -a .coverage.base -a .coverage.run -o .coverage.total
-genhtml --no-branch-coverage -o html .coverage.total 
+
+#
+# Make sure to compile with ./configure --enable-gcov --enable-debug
+#
+BASEPATH=`pwd`/src
+
+gcov -p src/main/saffire.c 
+#lcov --capture --directory --output-file coverage.bas
+lcov --capture --initial --directory src --output-file .coverage.base  --base $BASEPATH
+lcov --capture --directory src --output-file .coverage.run  --base $BASEPATH
+lcov --directory src --add-tracefile .coverage.base --add-tracefile .coverage.run --output-file .coverage.total  --base $BASEPATH
+genhtml --no-branch-coverage --output-directory html .coverage.total --prefix $BASEPATH
