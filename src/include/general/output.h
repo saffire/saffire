@@ -34,5 +34,6 @@
     void output(const char *format, ...);
     void error(const char *format, ...);
     void error_and_die(int exitcode, const char *format, ...);
+    void line_error_and_die(int exitcode, int lineno, const char *format, ...);
 
 #endif

@@ -39,7 +39,7 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(unsigned long *ast, const char *err) { error_and_die(1, "Error in line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
+    void yyerror(unsigned long *ast, const char *err) { error_and_die(1, "line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
