@@ -33,6 +33,7 @@
 #include "general/smm.h"
 #include "general/dll.h"
 #include "vm/vm_opcodes.h"
+#include "debug.h"
 
 /**
  * Converts assembler codes into bytecode
@@ -82,8 +83,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
 
         // Patch it!
         uint16_t *ptr = (uint16_t *)(frame->code + opcode_off + 1);
-        *ptr = (label_off & 0x00FF);
-
+        *ptr = (label_off & 0xFFFF);
 
         ht_iter_next(&iter);
     }
@@ -247,7 +247,6 @@ static t_asm_frame *assemble_frame(void) {
                         opr = _convert_identifier(frame, line->opr[i]->data.s);
                         break;
                 }
-
 
                 _add_codebyte(frame, (unsigned char)(opr & 0x00FF));           // Add lo 8 bits
                 _add_codebyte(frame, (unsigned char)((opr & 0xFF00) >> 8));     // Add hi 8 bits

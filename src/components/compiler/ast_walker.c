@@ -88,7 +88,7 @@ static void _load_or_store(t_asm_opr *opr, t_dll *output) {
  *
  */
 static void _ast_walker(t_ast_element *leaf, t_dll *output) {
-    char start_label[100], pre_end_label[100];
+    char start_label[100], pre_end_label[100], cmp_label[100];
     char end_label[100], else_label[100];
     t_asm_opr *opr1, *opr2;
     t_ast_element *node;
@@ -194,16 +194,20 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     loop_cnt++;
                     int clc = loop_cnt;
 
-                    sprintf(start_label, "if_%03d_start", clc);
-                    sprintf(pre_end_label, "if_%03d_else", clc);        // @TODO: Is this correct?
+                    //sprintf(start_label, "if_%03d_start", clc);
+                    sprintf(pre_end_label, "if_%03d_pre_end", clc);
                     sprintf(end_label, "if_%03d_end", clc);
                     sprintf(else_label, "if_%03d_else", clc);
 
-                    dll_append(output, asm_create_labelline(start_label));
+                    //dll_append(output, asm_create_labelline(start_label));
 
                     // Comparison first
                     SI0(leaf);
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, pre_end_label, 0);
+                    if (leaf->opr.nops == 3) {
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, else_label, 0);
+                    } else {
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, pre_end_label, 0);
+                    }
                     dll_append(output, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
                     dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
 
@@ -212,12 +216,20 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
                     dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
 
-                    dll_append(output, asm_create_labelline(else_label));
-                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
-
                     // Do else body, if there is one
                     if (leaf->opr.nops == 3) {
+                        dll_append(output, asm_create_labelline(else_label));
+                        dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
+
                         SI2(leaf);
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
+                        dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    }
+
+                    if (leaf->opr.nops != 3) {
+                        dll_append(output, asm_create_labelline(pre_end_label));
+                        dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
                     }
 
                     dll_append(output, asm_create_labelline(end_label));
@@ -240,7 +252,7 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state.blocks[i].label, 0);
                     dll_append(output, asm_create_codeline(VM_CONTINUE_LOOP, 1, opr1));
 
-                    //state.block_cnt = i;
+                    state.block_cnt = i;
 
                     break;
 
@@ -248,10 +260,11 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                 case T_DO :
                     loop_cnt++;
                     clc = loop_cnt;
-                    sprintf(state.blocks[state.block_cnt].label, "dowhile_%03d", clc);
+                    sprintf(state.blocks[state.block_cnt].label, "dowhile_%03d_cmp", clc);
                     state.blocks[state.block_cnt].type = BLOCK_TYPE_LOOP;
                     state.block_cnt++;
 
+                    sprintf(cmp_label, "dowhile_%03d_cmp", clc);
                     sprintf(start_label, "dowhile_%03d", clc);
                     sprintf(pre_end_label, "dowhile_%03d_pre_end", clc);
                     sprintf(end_label, "dowhile_%03d_end", clc);
@@ -264,6 +277,7 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     SI0(leaf);
 
                     // Comparison
+                    dll_append(output, asm_create_labelline(cmp_label));
                     state.state = st_load;
                     SI1(leaf);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, pre_end_label, 0);
