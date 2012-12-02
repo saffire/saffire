@@ -53,7 +53,7 @@ static void resize(t_hash_table *ht, int new_bucket_count) {
     // We only have to rehash the first elements for each bucket // @TODO: NO WE CANT. REHASH ALL THE ELEMENTS!
     t_hash_table_bucket *htb = ht->head;
     while (htb) {
-        hash_t hash_capped = htb->hash % ht->bucket_count;
+        hash_t hash_capped = htb->hash % new_bucket_count;
         htb->next_in_list = new_bucket_list[hash_capped];       // just add the element in front of the line
         new_bucket_list[hash_capped] = htb;
         htb = htb->next_element;
