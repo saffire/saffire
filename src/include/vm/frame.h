@@ -40,7 +40,9 @@
     typedef struct _vm_frameblock {
         int type;       // Type (any of the BLOCK_TYPE_*)
         int ip;         // Saved instruction pointer
+        int ip_else;    // Saved instruction pointer to ELSE part
         int sp;         // Saved stack pointer
+        int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
     } t_vm_frameblock;
 
 
@@ -71,7 +73,7 @@
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);
-    int vm_frame_get_operand(t_vm_frame *frame);
+    unsigned int vm_frame_get_operand(t_vm_frame *frame);
 
     t_object *vm_frame_stack_pop(t_vm_frame *frame);
     void vm_frame_stack_push(t_vm_frame *frame, t_object *obj);

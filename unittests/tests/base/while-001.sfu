@@ -2,8 +2,9 @@ title: while control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-while (1) {
-  a = 1;
+a = 0;
+while (a < 10) {
+  a = a + 1;
 }
 
 ====
@@ -13,19 +14,20 @@ while (a = 5) {
 }
 
 ====
-Error in line 2: syntax error, unexpected '=', expecting ')'
+Error: line 2: syntax error, unexpected T_ASSIGNMENT, expecting ')'
 @@@@
 while a {
   a = 1;
 }
 
 ====
-Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error: line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
 while (a) a = 1;
 
 ====
 @@@@
+a = 1;
 while (a) {
     a = 1;
 } else {
@@ -34,14 +36,17 @@ while (a) {
 
 ====
 @@@@
+a = 1;
 while (a) {
     a = 1;
 } else a = 1;
 
 ====
 @@@@
+a = 1;
 while (a) a = 1; else a = 1;
 ====
 @@@@
+a = 1;
 while (a) {} else {}
 ====

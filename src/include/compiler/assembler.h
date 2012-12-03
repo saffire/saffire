@@ -62,8 +62,8 @@
         t_dll *constants;                   // represents all constant
         t_dll *identifiers;                 // represents all identifiers
 
-        t_hash_table *labels;               // Declared labels in label => offset
-        t_hash_table *label_pass;           // Label references in  offset => label
+        t_hash_table *label_offsets;        // Declared labels
+        t_dll *backpatch_offsets;           // Label references
 
         int stack_size;                     // Maximum stack size needed for this frame
 

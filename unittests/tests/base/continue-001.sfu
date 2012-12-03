@@ -6,18 +6,24 @@ continue;
 ====
 Error in line 2: We can only continue inside a loop
 @@@@
+a = 0;
 do {
+    a = a + 1;
     continue;
-} while (1);
+} while (a < 10);
 
 ====
 @@@@
+b = 0;
 do {
-    while (1) {
+    a = 0;
+    while (a < 10) {
+        a = a + 1;
         continue;
     }
+    b = b + 1;
     continue;
-} while (1);
+} while (b < 10);
 
 ====
 @@@@
