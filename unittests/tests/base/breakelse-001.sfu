@@ -6,18 +6,23 @@ breakelse;
 ====
 Error in line 2: We can only breakelse inside a loop
 @@@@
+a = 1;
 do {
-    breakelse;
-} while (1);
+    a = a + 1;
+} while (a < 1);
 
 ====
 @@@@
+a = 1;
 do {
-    while (1) {
+    a = a + 1;
+    while (a < 1) {
+        a = a + 1;
         breakelse;
+    } else {
+        a = 5;
     }
-    breakelse;
-} while (1);
+} while (a < 1);
 
 ====
 @@@@
