@@ -41,6 +41,11 @@
 t_hash_table *frames;               // All frames in this bytecode. "main" is always defined
 t_dll_element *asm_code_line;       // Assembler lines to convert into bytecode
 
+struct _backpatch {
+    long opcode_offset;             // Points to the opcode that we are actually patching
+    long operand_offset;            // Points to the operand that we need to patch
+    char *label;
+};
 
 /**
  * Calculate the maximum stack size needed for this frame (run all available paths)
@@ -52,40 +57,41 @@ static int _calculate_maximum_stack_size(t_asm_frame *frame) {
 
 
 /**
- * Backpatch label offsets for this frame
+ * Backpatch label offsets for this frame.
  */
 static void _backpatch_labels(t_asm_frame *frame) {
-    // Iterate over label-passes
-    t_hash_iter iter;
-    ht_iter_init(&iter, frame->label_pass);
-    while (ht_iter_valid(&iter)) {
+    t_dll_element *e = DLL_HEAD(frame->backpatch_offsets);
+    int start_offset;
 
-        // Fetch offset -> labelname
-        char *tmp = (char *)ht_iter_key(&iter);
-        unsigned int opcode_off = strtol(tmp, NULL, 0);
-        char *label = (char *)ht_iter_value(&iter);
+    while (e) {
+        struct _backpatch *bp = (struct _backpatch *)e->data;
 
-        // Check if labelname exists, if not, we have referenced to a label
-        // but never declared it.
-        if (! ht_exists(frame->labels, label)) {
-            error_and_die(1, "Cannot find label '%s'\n", label);
+        // Check if labelname exists, if not, we have referenced to a label but never declared it.
+        if (! ht_exists(frame->label_offsets, bp->label)) {
+            error_and_die(1, "Cannot find label '%s'\n", bp->label);
         }
         // Fetch the offset of the label so we can patch it
-        unsigned int label_off = (int)ht_find(frame->labels, label);
+        unsigned int label_offset = (int)ht_find(frame->label_offsets, bp->label);
+
+        // We need to add an offset to our patching. This is because relative items are calculated from the LAST
+        // operand read. The current operand does not have to be the last one for this opcode.
+        start_offset = bp->opcode_offset + 1;    // @TODO: Multibyte opcodes should be handled as well!
+        if (((unsigned char)frame->code[bp->opcode_offset] & 0x80) == 0x80) start_offset += 2;
+        if (((unsigned char)frame->code[bp->opcode_offset] & 0xC0) == 0xC0) start_offset += 2;
 
         // Check if it needs to be absolute or relative
-        if ((unsigned char)frame->code[opcode_off] != VM_BUILD_CLASS &&
-            (unsigned char)frame->code[opcode_off] != VM_CONTINUE_LOOP &&
-            (unsigned char)frame->code[opcode_off] != VM_JUMP_ABSOLUTE) {
+        if ((unsigned char)frame->code[bp->opcode_offset] != VM_BUILD_CLASS &&
+            (unsigned char)frame->code[bp->opcode_offset] != VM_CONTINUE_LOOP &&
+            (unsigned char)frame->code[bp->opcode_offset] != VM_JUMP_ABSOLUTE) {
             // Convert absolute offset to a relative offset
-            label_off -= opcode_off + 3;
+            label_offset -= start_offset;
         }
 
         // Patch it!
-        uint16_t *ptr = (uint16_t *)(frame->code + opcode_off + 1);
-        *ptr = (label_off & 0xFFFF);
+        uint16_t *ptr = (uint16_t *)(frame->code + bp->operand_offset);
+        *ptr = (label_offset & 0xFFFF);
 
-        ht_iter_next(&iter);
+        e = DLL_NEXT(e);
     }
 }
 
@@ -186,14 +192,15 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
  */
 static t_asm_frame *assemble_frame(void) {
     t_asm_line *line;
+    struct _backpatch *bp;
     int opr = VM_STOP;
 
     // Create frame
     t_asm_frame *frame = smm_malloc(sizeof(t_asm_frame));
     frame->constants = dll_init();
     frame->identifiers = dll_init();
-    frame->labels = ht_create();
-    frame->label_pass = ht_create();
+    frame->label_offsets = ht_create();             // key: label_name => value: offset
+    frame->backpatch_offsets = dll_init();
     frame->alloc_len = 0;
     frame->code_len = 0;
     frame->code = NULL;
@@ -209,10 +216,10 @@ static t_asm_frame *assemble_frame(void) {
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
-            if (ht_find(frame->labels, line->s)) {
+            if (ht_exists(frame->label_offsets, line->s)) {
                 error_and_die(1, "Label '%s' is already defined", line->s);
             }
-            ht_add(frame->labels, line->s, (void *)frame->code_len);
+            ht_add(frame->label_offsets, line->s, (void *)frame->code_len);
         }
 
         if (line->type == ASM_LINE_TYPE_CODE) {
@@ -225,7 +232,12 @@ static t_asm_frame *assemble_frame(void) {
             for (int i=0; i!=line->opr_count; i++) {
                 switch (line->opr[i]->type) {
                     case ASM_LINE_TYPE_OP_LABEL :
-                        ht_num_add(frame->label_pass, opcode_off, (void *)line->opr[i]->data.s);
+                        bp = smm_malloc(sizeof(struct _backpatch));
+                        bp->opcode_offset = opcode_off;
+                        bp->operand_offset = frame->code_len;
+                        bp->label = smm_strdup(line->opr[i]->data.s);
+                        dll_append(frame->backpatch_offsets, bp);
+
                         opr = 0xFFFF; // Add dummy bytes keep the offsets happy
                         break;
                     case ASM_LINE_TYPE_OP_STRING :

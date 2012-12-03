@@ -29,7 +29,7 @@
 
     #include "vm/frame.h"
 
-    void vm_push_block(t_vm_frame *frame, int type, int ip, int sp);
+    void vm_push_block(t_vm_frame *frame, int type, int ip, int sp, int ip_else);
     t_vm_frameblock *vm_pop_block(t_vm_frame *frame);
     t_vm_frameblock *vm_fetch_block(t_vm_frame *frame);
 

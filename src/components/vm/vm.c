@@ -423,6 +423,42 @@ dispatch:
                 goto dispatch;
                 break;
 
+           case VM_JUMP_IF_FIRST_TRUE :
+                obj1 = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(obj1)) {
+                    // Cast to boolean
+                    obj2 = object_find_method(obj1, "boolean");
+                    obj1 = object_call(obj1, obj2, 0);
+                }
+
+                // @TODO: We assume that this opcode has at least 1 block!
+                if (IS_BOOLEAN_TRUE(obj1) && frame->blocks[frame->block_cnt-1].visited == 0) {
+                    frame->ip += oparg1;
+                }
+
+                // We have visited this frame
+                frame->blocks[frame->block_cnt-1].visited = 1;
+                goto dispatch;
+                break;
+
+           case VM_JUMP_IF_FIRST_FALSE :
+                obj1 = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(obj1)) {
+                    // Cast to boolean
+                    obj2 = object_find_method(obj1, "boolean");
+                    obj1 = object_call(obj1, obj2, 0);
+                }
+
+                // @TODO: We assume that this opcode has at least 1 block!
+                if (IS_BOOLEAN_FALSE(obj1) && frame->blocks[frame->block_cnt-1].visited == 0) {
+                    frame->ip += oparg1;
+                }
+
+                // We have visited this frame
+                frame->blocks[frame->block_cnt-1].visited = 1;
+                goto dispatch;
+                break;
+
             // Unconditional absolute jump
             case VM_JUMP_ABSOLUTE :
                 frame->ip = oparg1;
@@ -515,9 +551,14 @@ dispatch:
 
 
             case VM_SETUP_LOOP :
-                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp);
+                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, 0);
                 goto dispatch;
                 break;
+            case VM_SETUP_ELSE_LOOP :
+                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, frame->ip + oparg2);
+                goto dispatch;
+                break;
+
             case VM_POP_BLOCK :
                 vm_pop_block(frame);
                 goto dispatch;
@@ -555,11 +596,11 @@ dispatch:
                 break;
 
             case VM_SETUP_FINALLY :
-                vm_push_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp);
+                vm_push_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp, 0);
                 goto dispatch;
                 break;
             case VM_SETUP_EXCEPT :
-                vm_push_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp);
+                vm_push_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp, 0);
                 goto dispatch;
                 break;
             case VM_END_FINALLY :
@@ -661,6 +702,12 @@ block_end:
                 DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
                 obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
+            }
+
+            if (reason == REASON_BREAKELSE && block->type == BLOCK_TYPE_LOOP) {
+                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->ip_else);
+                frame->ip = block->ip_else;
+                break;
             }
 
             if (reason == REASON_BREAK && block->type == BLOCK_TYPE_LOOP) {
