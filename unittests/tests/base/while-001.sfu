@@ -23,12 +23,13 @@ while a {
 ====
 Error: line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
-while (a) a = 1;
+a = 1;
+while (a < 4) a = a + 1;
 
 ====
 @@@@
 a = 1;
-while (a) {
+while (a < 1) {
     a = 1;
 } else {
     a = 1;
@@ -37,16 +38,16 @@ while (a) {
 ====
 @@@@
 a = 1;
-while (a) {
+while (a < 1) {
     a = 1;
 } else a = 1;
 
 ====
 @@@@
 a = 1;
-while (a) a = 1; else a = 1;
+while (a < 1) a = 1; else a = 1;
 ====
 @@@@
 a = 1;
-while (a) {} else {}
+while (a < 1) {} else {}
 ====

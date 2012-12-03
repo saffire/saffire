@@ -33,7 +33,11 @@
  *
  */
 static void _output(FILE *f, const char *format, va_list args) {
-    vfprintf(f, format, args);
+    if (args == NULL) {
+        fprintf(f, format);
+    } else {
+        vfprintf(f, format, args);
+    }
 }
 
 /**

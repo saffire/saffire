@@ -178,7 +178,7 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS)
+saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
