@@ -1,5 +1,7 @@
 language: c
 compiler: gcc
+before_script:
+    sh autogen.sh
 before_update:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev
