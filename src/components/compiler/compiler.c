@@ -43,7 +43,7 @@ extern int yylineno;
 void sfc_validate_class_modifiers(long modifiers) {
     // Classes do not have a visibility
     if (modifiers & MODIFIER_MASK_VISIBLITY) {
-        error_and_die(1, "Classes cannot have a visibility");
+        line_error_and_die(1, yylineno, "Classes cannot have a visibility");
     }
 }
 
@@ -61,7 +61,7 @@ void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
 
     // Check if we have a body
     if (body->type != typeAstNull) {
-        error_and_die(1, "Abstract methods cannot have a body");
+        line_error_and_die(1, yylineno, "Abstract methods cannot have a body");
     }
 }
 
@@ -72,12 +72,12 @@ void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
 void sfc_validate_method_modifiers(long modifiers) {
     // Make sure we have at least 1 visibility bit set
     if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
-        error_and_die(1, "Methods must define a visibility");
+        line_error_and_die(1, yylineno, "Methods must define a visibility");
     }
 
     // Check if abstract and private are set. This is not allowed
     if ((modifiers & (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) == (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) {
-        error_and_die(1, "Abstract methods cannot be private");
+        line_error_and_die(1, yylineno, "Abstract methods cannot be private");
     }
 }
 
@@ -87,7 +87,7 @@ void sfc_validate_method_modifiers(long modifiers) {
  */
 void sfc_validate_property_modifiers(long modifiers) {
     if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
-        error_and_die(1, "Methods must define a visibility");
+        line_error_and_die(1, yylineno, "Methods must define a visibility");
     }
 }
 
@@ -98,17 +98,17 @@ void sfc_validate_property_modifiers(long modifiers) {
 void sfc_validate_flags(long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBLITY) && (new_flag & MODIFIER_MASK_VISIBLITY)) {
-        error_and_die(1, "Cannot have multiple visiblity masks");
+        line_error_and_die(1, yylineno, "Cannot have multiple visiblity masks");
     }
 
     // Is one of the new flags already been set?
     if (cur_flags & new_flag) {
-        error_and_die(1, "Modifiers can only be set once");
+        line_error_and_die(1, yylineno, "Modifiers can only be set once");
     }
 
     // Make sure abstract and final are not both set.
     if (((cur_flags | new_flag) & (MODIFIER_ABSTRACT | MODIFIER_FINAL)) == (MODIFIER_ABSTRACT | MODIFIER_FINAL)) {
-       error_and_die(1, "Abstract members cannot be made final");
+       line_error_and_die(1, yylineno, "Abstract members cannot be made final");
     }
 }
 
@@ -122,7 +122,7 @@ void sfc_validate_constant(char *name) {
         // inside the current class
 
         if (ht_exists(global_table->active_class->constants, name)) {
-            error_and_die(1, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
+            line_error_and_die(1, yylineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -131,7 +131,7 @@ void sfc_validate_constant(char *name) {
     } else {
         // Global scope
         if (ht_exists(global_table->constants, name)) {
-            error_and_die(1, "Constant '%s' has already be defined in the global scope", name);
+            line_error_and_die(1, yylineno, "Constant '%s' has already be defined in the global scope", name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -144,9 +144,6 @@ void sfc_validate_constant(char *name) {
  * Enter a method, and validate method name
  */
 void sfc_init_method(const char *name) {
-//    if (name[0] == '$') {
-//        error_and_die(1, "A variable cannot be used as a method name");
-//    }
     global_table->in_method = 1;
 }
 
@@ -163,12 +160,12 @@ void sfc_fini_method() {
 void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
-        error_and_die(1, "You cannot define a class inside another class");
+        line_error_and_die(1, yylineno, "You cannot define a class inside another class");
     }
 
     // Check if the class exists in the class table
     if (ht_exists(global_table->classes, name)) {
-        error_and_die(1, "This class is already defined");
+        line_error_and_die(1, yylineno, "This class is already defined");
     }
 
     // Initialize and populte a new class structure
@@ -208,12 +205,12 @@ void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_ele
 void sfc_fini_class(void) {
     // Cannot close a class when we are not inside one
     if (global_table->in_class == 0) {
-        error_and_die(1, "Closing a class, but we weren't inside one to begin with");
+        line_error_and_die(1, yylineno, "Closing a class, but we weren't inside one to begin with");
     }
 
     // Is there an active class?
     if (global_table->active_class == NULL) {
-        error_and_die(1, "Somehow we try to close the global scope");
+        line_error_and_die(1, yylineno, "Somehow we try to close the global scope");
     }
 
     // Set line ending
@@ -292,7 +289,7 @@ void sfc_loop_enter(void) {
 void sfc_loop_leave(void) {
     // Not possible to leave a loop when we aren't inside any
     if (global_table->in_loop_counter <= 0) {
-        error_and_die(1, "Somehow, we are trying to leave a loop from the outer scope");
+        line_error_and_die(1, yylineno, "Somehow, we are trying to leave a loop from the outer scope");
     }
 
     // Decrease loop counter, since we are going down one loop
@@ -347,12 +344,12 @@ void sfc_switch_default(void) {
     t_switch_struct *ss = global_table->current_switch;
 
     if (ss == NULL) {
-        error_and_die(1, "Default label expected inside a switch statement");
+        line_error_and_die(1, yylineno, "Default label expected inside a switch statement");
     }
 
     // Check if default already exists
     if (ss->has_default) {
-        error_and_die(1, "default label already supplied");
+        line_error_and_die(1, yylineno, "default label already supplied");
     }
 
     ss->has_default = 1;
@@ -363,9 +360,6 @@ void sfc_switch_default(void) {
  * Make sure a label is not a variable
  */
 void saffire_check_label(const char *name) {
-//    if (name[0] == '$') {
-//        error_and_die(1, "A variable cannot be used as a label");
-//    }
 }
 
 
@@ -375,7 +369,7 @@ void saffire_check_label(const char *name) {
  */
 void saffire_validate_return() {
     if (global_table->in_method == 0) {
-        error_and_die(1, "Cannot use return outside a method");
+        line_error_and_die(1, yylineno, "Cannot use return outside a method");
     }
 }
 
@@ -386,7 +380,7 @@ void saffire_validate_return() {
  */
 void saffire_validate_break() {
     if (global_table->in_loop_counter == 0) {
-        error_and_die(1, "We can only break inside a loop");
+        line_error_and_die(1, yylineno, "We can only break inside a loop");
     }
 }
 
@@ -394,7 +388,7 @@ void sfc_check_permitted_identifiers(char *name) {
     if (! strcasecmp(name, "null")) return;
     if (! strcasecmp(name, "false")) return;
     if (! strcasecmp(name, "true")) return;
-    error_and_die(1, "Incorrect identifier");
+    line_error_and_die(1, yylineno, "Incorrect identifier");
 }
 
 
@@ -405,7 +399,7 @@ void sfc_check_permitted_identifiers(char *name) {
  */
 void saffire_validate_continue() {
     if (global_table->in_loop_counter == 0) {
-        error_and_die(1, "We can only continue inside a loop");
+        line_error_and_die(1, yylineno, "We can only continue inside a loop");
     }
 }
 
@@ -416,7 +410,7 @@ void saffire_validate_continue() {
  */
 void saffire_validate_breakelse() {
     if (global_table->in_loop_counter == 0) {
-        error_and_die(1, "We can only breakelse inside a loop");
+        line_error_and_die(1, yylineno, "We can only breakelse inside a loop");
     }
 }
 

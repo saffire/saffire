@@ -59,14 +59,13 @@ unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
 /**
  * Returns he next operand. Does not do any sanity checks if it actually is an operand.
  */
-int vm_frame_get_operand(t_vm_frame *frame) {
+unsigned int vm_frame_get_operand(t_vm_frame *frame) {
     // Read operand
-    unsigned char *ptr = frame->bytecode->code + frame->ip;
+    uint16_t *ptr = (uint16_t *)(frame->bytecode->code + frame->ip);
+    unsigned int ret = (*ptr & 0xFFFF);
 
-    uint16_t ret = *ptr;
     frame->ip += sizeof(uint16_t);
-
-    return (unsigned int)ret;
+    return ret;
 }
 
 

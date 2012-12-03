@@ -32,10 +32,10 @@
 /**
  *
  */
-void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
+void vm_push_block(t_vm_frame *frame, int type, int ip, int sp, int ip_else) {
     t_vm_frameblock *block;
 
-    DEBUG_PRINT(">>> PUSH BLOCK\n");
+    DEBUG_PRINT(">>> PUSH BLOCK [%d] (%04X %04X)\n", frame->block_cnt, ip, ip_else);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
         printf("Too many blocks!");
@@ -47,7 +47,9 @@ void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
 
     block->type = type;
     block->ip = ip;
+    block->ip_else = ip_else;       // Else IP for while/else
     block->sp = sp;
+    block->visited = 0;
 }
 
 
@@ -57,7 +59,7 @@ void vm_push_block(t_vm_frame *frame, int type, int ip, int sp) {
 t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
     t_vm_frameblock *block;
 
-    DEBUG_PRINT(">>> POP BLOCK\n");
+    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
 
     if (frame->block_cnt <= 0) {
         printf("Not enough blocks!");

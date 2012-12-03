@@ -85,3 +85,19 @@ void error_and_die(int exitcode, const char *format, ...) {
 
     exit(exitcode);
 }
+
+
+/**
+ * Ouputs error (to stderr) and exists with code.
+ */
+void line_error_and_die(int exitcode, int lineno, const char *format, ...) {
+    va_list args;
+
+    foutput(stderr, "Error in line %d: ", lineno);
+    va_start(args, format);
+    _output(stderr, format, args);
+    va_end(args);
+    _output(stderr, "\n", NULL);
+
+    exit(exitcode);
+}
