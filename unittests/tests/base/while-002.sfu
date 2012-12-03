@@ -1,0 +1,59 @@
+title: While Loop Functional Tests
+author: Chris Tankersley <chris@ctankersley.com>
+
+**********
+import io as io from ::_sfl::io;
+a = 0;
+while (a < 10) {
+  a = a + 1;
+}
+io.print(a);
+io.print("\n");
+====
+10
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 4) a = a + 1;
+io.print(a);
+io.print("\n");
+====
+4
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 1) {
+    a = 1;
+} else {
+    a = 1;
+}
+io.print(a);
+io.print("\n");
+====
+1
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 1) {
+    a = 1;
+} else a = 1;
+io.print(a);
+io.print("\n");
+====
+1
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 1) a = 1; else a = 1;
+io.print(a);
+io.print("\n");
+====
+1
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 1) {} else {}
+io.print(a);
+io.print("\n");
+====
+1
