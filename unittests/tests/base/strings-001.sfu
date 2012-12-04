@@ -1,0 +1,30 @@
+title: String and escape tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io as io from ::_sfl::io;
+a = "hello1";
+io.print(a);
+====
+hello1
+@@@@
+import io as io from ::_sfl::io;
+a = 'hello2';
+io.print(a);
+====
+hello2
+@@@@
+import io as io from ::_sfl::io;
+a = "hello\n3";
+io.print(a);
+====
+hello
+3
+
+@@@@
+import io as io from ::_sfl::io;
+a = 'hello\n4';
+io.print(a);
+====
+hello
+4
