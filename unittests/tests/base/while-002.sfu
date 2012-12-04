@@ -5,12 +5,23 @@ author: Chris Tankersley <chris@ctankersley.com>
 import io as io from ::_sfl::io;
 a = 0;
 while (a < 10) {
-  a = a + 1;
+    a = a + 1;
+    io.print(a);
+}
+io.print("\n");
+====
+12345678910
+@@@@
+import io as io from ::_sfl::io;
+a = 11;
+while(a < 5) {
+    a = a + 1;
+    io.print(a);
 }
 io.print(a);
 io.print("\n");
 ====
-10
+11
 @@@@
 import io as io from ::_sfl::io;
 a = 1;
@@ -22,21 +33,75 @@ io.print("\n");
 @@@@
 import io as io from ::_sfl::io;
 a = 1;
-while (a < 1) {
-    a = 1;
+while (a < 5) {
+    a = a + 1;
+    io.print(a);
 } else {
-    a = 1;
+    io.print('else');
+}
+io.print("\n");
+====
+2345
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while (a < 1) {
+    a = a + 1;
+    io.print(a);
+} else {
+    io.print('else');
+}
+io.print("\n");
+====
+else
+@@@@
+import io as io from ::_sfl::io;
+a = 1;
+while(a < 6) a + 1;
+else {
+    io.print("else");
 }
 io.print(a);
 io.print("\n");
 ====
-1
+6
 @@@@
 import io as io from ::_sfl::io;
-a = 1;
+a = 12;
+while (a < 1) a = 5;
+else {
+    io.print("else");
+    io.print("\n");
+}
+io.print(a);
+io.print("\n");
+====
+else
+12
+@@@@
+import io as io from ::_sfl::io;
+a = 0;
 while (a < 1) {
     a = 1;
-} else a = 1;
+} else a = 5;
+io.print(a);
+io.print("\n");
+====
+1
+@@@@
+import io as io from ::_sfl::io;
+a = 10;
+while (a < 1) {
+    a = 1;
+} else a = 5;
+io.print(a);
+io.print("\n");
+====
+5
+@@@@
+import io as io from ::_sfl::io;
+a = 0;
+while (a < 1) a = 1; else a = 100;
 io.print(a);
 io.print("\n");
 ====
@@ -44,16 +109,8 @@ io.print("\n");
 @@@@
 import io as io from ::_sfl::io;
 a = 1;
-while (a < 1) a = 1; else a = 1;
+while (a < 1) a = 10; else a = 50;
 io.print(a);
 io.print("\n");
 ====
-1
-@@@@
-import io as io from ::_sfl::io;
-a = 1;
-while (a < 1) {} else {}
-io.print(a);
-io.print("\n");
-====
-1
+50
