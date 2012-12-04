@@ -77,8 +77,9 @@ void saffire_pop_state() {
 %s st_regex
 %s st_div
 
-/* Important: exclusive state! Matches no other lexems (like identifier, whitespace etc) */
-%x st_string
+/* Important: exclusive states! Matches no other lexems (like identifier, whitespace etc) */
+%x st_string_dbl
+%x st_string_sgl
 
 %option stack
 %option yylineno
@@ -191,25 +192,51 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div,st_regex>\"         {
                                 /* Opening string quote */
-                                saffire_push_state(st_string);
+                                saffire_push_state(st_string_dbl);
                                 strbuf = NULL;
                             }
-<st_string>\"               {
-                                /* Closing string quote */
+<st_div,st_regex>\'         {
+                                /* Opening string quote */
+                                saffire_push_state(st_string_sgl);
+                                strbuf = NULL;
+                            }
+
+<st_string_dbl>\"               {
+                                /* Closing double string quote */
                                 yylval.sVal = smm_strdup(strbuf);
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
                             }
-<st_string>\n               {
+<st_string_sgl>\'               {
+                                /* Closing Single string quote */
+                                yylval.sVal = smm_strdup(strbuf);
+                                smm_free(strbuf);
+                                saffire_pop_state();
+                                return T_STRING;
+                            }
+
+<st_string_sgl>\"           {   /* Double quote is just a double quote in single quoted string */
+                                strbuf = add_strbuf_char(strbuf, '\\'); }
+<st_string_dbl>\'           {   /* Single quote is just a single quote in double quoted string */
+                                strbuf = add_strbuf_char(strbuf, '\''); }
+
+<st_string_sgl,
+ st_string_dbl>\n           {
                                 /* Real newlines inside strings are not allowed */
                                 error("newline found in string\n");
                             }
-<st_string>\\\\             { strbuf = add_strbuf_char(strbuf, '\\'); }
-<st_string>\\\"             { strbuf = add_strbuf_char(strbuf, '\"'); }
+<st_string_sgl,
+ st_string_dbl>\\\\         { strbuf = add_strbuf_char(strbuf, '\\'); }
+<st_string_sgl,
+ st_string_dbl>\\\"         { strbuf = add_strbuf_char(strbuf, '\"'); }
+<st_string_sgl,
+ st_string_dbl>\\\'         { strbuf = add_strbuf_char(strbuf, '\''); }
 
-<st_string>\\0              { strbuf = add_strbuf_char(strbuf, '\0'); }
-<st_string>\\[0-7]{1,3}     {
+<st_string_sgl,
+ st_string_dbl>\\0          { strbuf = add_strbuf_char(strbuf, '\0'); }
+<st_string_sgl,
+ st_string_dbl>\\[0-7]{1,3} {
                                 /* Octal number */
                                 int result;
                                 (void) sscanf( yytext + 1, "%o", &result);
@@ -219,7 +246,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 }
                                 strbuf = add_strbuf_char(strbuf, (char)result);
                             }
-<st_string>\\[xX][0-9A-Fa-f]{1,2} {
+<st_string_sgl,
+ st_string_dbl>\\[xX][0-9A-Fa-f]{1,2} {
                               /* Hexidecimal number */
                                 int result;
                                 (void) sscanf(yytext + 2, "%X", &result);
@@ -231,30 +259,27 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
                             }
 
-<st_string>\\[nN]           { strbuf = add_strbuf_char(strbuf, '\n'); }
-<st_string>\\[tT]           { strbuf = add_strbuf_char(strbuf, '\t'); }
-<st_string>\\[bB]           { strbuf = add_strbuf_char(strbuf, '\b'); }
-<st_string>\\[rR]           { strbuf = add_strbuf_char(strbuf, '\r'); }
-<st_string>\\[fF]           { strbuf = add_strbuf_char(strbuf, '\f'); }
-<st_string>\\[vV]           { strbuf = add_strbuf_char(strbuf, '\v'); }
-<st_string>\\.              {
+<st_string_sgl,
+ st_string_dbl>\\[nN]           { strbuf = add_strbuf_char(strbuf, '\n'); }
+<st_string_sgl,
+ st_string_dbl>\\[tT]           { strbuf = add_strbuf_char(strbuf, '\t'); }
+<st_string_sgl,
+ st_string_dbl>\\[bB]           { strbuf = add_strbuf_char(strbuf, '\b'); }
+<st_string_sgl,
+ st_string_dbl>\\[rR]           { strbuf = add_strbuf_char(strbuf, '\r'); }
+<st_string_sgl,
+ st_string_dbl>\\[fF]           { strbuf = add_strbuf_char(strbuf, '\f'); }
+<st_string_sgl,
+  st_string_dbl>\\[vV]           { strbuf = add_strbuf_char(strbuf, '\v'); }
+<st_string_sgl,
+ st_string_dbl>\\.              {
                                 /* Everything else is an unknown escape string */
                                 error("unknown escape '%s' in string\n", yytext);
                                 yyterminate();
                             }
-<st_string>[^\\"\n]*        { strbuf = add_strbuf(strbuf, yytext); }
+<st_string_dbl>[^\\"\n]*        { strbuf = add_strbuf(strbuf, yytext); }
+<st_string_sgl>[^\\'\n]*        { strbuf = add_strbuf(strbuf, yytext); }
 
-
-\'[^\']*\' {
-    saffire_push_state(st_div);
-    yylval.sVal = smm_strdup(yytext+1);
-    if (yylval.sVal[yyleng-2] != yytext[0]) {
-        fprintf(stderr,"improperly terminated string");
-    } else {
-        yylval.sVal[yyleng-2] = 0;
-    }
-    return T_STRING;
-}
 
 {identifier} {
     saffire_push_state(st_div);
