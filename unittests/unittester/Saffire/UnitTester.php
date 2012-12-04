@@ -247,7 +247,7 @@ class UnitTester {
 
     /**
      */
-    protected function _runFunctionalTest($test) {
+    protected function _runFunctionalTest($test, $lineno = "unknown") {
         $tmpDir = sys_get_temp_dir();
 
         // Don't expect any output
@@ -264,6 +264,7 @@ class UnitTester {
         file_put_contents($tmpFile.".sf", $tmp[0]);
         if (isset($tmp[1])) {
             $outputExpected = true;
+            $tmp[1] = preg_replace("/\n$/", "", $tmp[1]);
             file_put_contents($tmpFile.".exp", $tmp[1]);
         }
 
@@ -289,7 +290,7 @@ class UnitTester {
             exec("/usr/bin/diff --suppress-common-lines ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
             if ($result != 0) {
                 $tmp = "";
-                $tmp .= "Error in ".$this->_current['filename']."\n";
+                $tmp .= "Error in ".$this->_current['filename']." at ".$lineno."\n";
                 $tmp .= join("\n", $output);
                 $tmp .= "\n";
 
