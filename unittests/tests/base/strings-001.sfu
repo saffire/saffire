@@ -20,11 +20,33 @@ io.print(a);
 ====
 hello
 3
-
 @@@@
 import io as io from ::_sfl::io;
-a = 'hello\n4';
+a = 'abc\t1234';
 io.print(a);
 ====
-hello
-4
+abc	1234
+@@@@
+import io as io from ::_sfl::io;
+a = "abc\t1235";
+io.print(a);
+====
+abc	1235
+@@@@
+import io as io from ::_sfl::io;
+a = "abcdef\r123";
+io.print(a);
+====
+abcdef123
+@@@@
+import io as io from ::_sfl::io;
+a = '2abcdef\r123';
+io.print(a);
+====
+2abcdef123
+@@@@
+import io as io from ::_sfl::io;
+a = '1abcdef\f123';
+io.print(a);
+====
+1abcdef123
