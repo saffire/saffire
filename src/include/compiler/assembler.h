@@ -37,6 +37,7 @@
     #define ASM_LINE_TYPE_OP_NUM        5
     #define ASM_LINE_TYPE_OP_COMPARE    6
     #define ASM_LINE_TYPE_OP_ID         7
+    #define ASM_LINE_TYPE_OP_OPERATOR   8
 
     #define ASM_LINE_TYPE_FRAME         1
     #define ASM_LINE_TYPE_LABEL         2

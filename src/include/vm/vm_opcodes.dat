@@ -11,26 +11,6 @@ ROT_FOUR             0x05
 
 NOP                  0x09
 
-BINARY_ADD           0x17
-BINARY_SUB           0x18
-BINARY_MUL           0x19
-BINARY_DIV           0x1A
-BINARY_SHL           0x1B
-BINARY_SHR           0x1C
-BINARY_AND           0x1D
-BINARY_OR            0x1E
-BINARY_XOR           0x1F
-
-INPLACE_ADD          0x20
-INPLACE_SUB          0x21
-INPLACE_MUL          0x22
-INPLACE_DIV          0x23
-INPLACE_SHL          0x24
-INPLACE_SHR          0x25
-INPLACE_AND          0x26
-INPLACE_OR           0x27
-INPLACE_XOR          0x28
-
 MAKE_METHOD          0x71
 
 POP_BLOCK            0x72
@@ -67,6 +47,10 @@ END_FINALLY          0x98
 
 JUMP_IF_FIRST_FALSE  0xA0
 JUMP_IF_FIRST_TRUE   0xA1
+
+OPERATOR             0xA8
+INPLACE_OPR          0xA9
+
 
 
 CALL_METHOD          0xC0
