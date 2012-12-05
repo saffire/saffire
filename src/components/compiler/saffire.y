@@ -483,18 +483,18 @@ method_call:
         qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
     |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
 
-    |   method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
-    |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
-    |   qualified_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_identifier($3), $5); }
-    |   qualified_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
-    |   special_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_identifier($3), $5); }
-    |   special_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
+    |   method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), $5); }
+    |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
+    |   qualified_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_string($3), $5); }
+    |   qualified_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
+    |   special_name '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1  , ast_string($3), $5); }
+    |   special_name '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
     |   qualified_name '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, ast_nop(), $1, $3); }
     |   qualified_name '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, ast_nop(), $1, ast_nop()); }
-    |   method_call '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), $5); }
-    |   method_call '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_identifier($3), ast_nop()); }
-    |   '(' expression ')' '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_identifier($5), $7); smm_free($5); }
-    |   '(' expression ')' '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_identifier($5), ast_nop()); smm_free($5); }
+    |   method_call '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), $5); }
+    |   method_call '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
+    |   '(' expression ')' '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_string($5), $7); smm_free($5); }
+    |   '(' expression ')' '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $2, ast_string($5), ast_nop()); smm_free($5); }
 
 
 ;
