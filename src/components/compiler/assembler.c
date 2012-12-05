@@ -246,15 +246,15 @@ static t_asm_frame *assemble_frame(void) {
                     case ASM_LINE_TYPE_OP_CODE :
                         opr = _convert_constant_code(frame, line->opr[i]->data.s);
                         break;
-                    case ASM_LINE_TYPE_OP_REALNUM :
-                        opr = line->opr[i]->data.l;
-                        break;
                     case ASM_LINE_TYPE_OP_NUM :
                         opr = _convert_constant_numerical(frame, line->opr[i]->data.l);
                         break;
+                    case ASM_LINE_TYPE_OP_REALNUM :
                     case ASM_LINE_TYPE_OP_COMPARE :
+                    case ASM_LINE_TYPE_OP_OPERATOR :
                         opr = line->opr[i]->data.l;
                         break;
+
                     case ASM_LINE_TYPE_OP_ID :
                         opr = _convert_identifier(frame, line->opr[i]->data.s);
                         break;
