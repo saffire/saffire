@@ -1,0 +1,28 @@
+title: while functional tests
+author: Chris Tankersley <chris@ctankersley.com>
+
+**********
+import io as io from ::_sfl::io;
+a = 0;
+do {
+  a = a + 1;
+} while (a < 10);
+io.print(a);
+====
+10
+@@@@
+import io as io from ::_sfl::io;
+a = 0;
+do {
+    a = a + 1;
+} while (a < 1);
+io.print(a);
+====
+1
+@@@@
+import io as io from ::_sfl::io;
+a = 0;
+do a = a + 1; while ( a < 10);
+io.print(a);
+====
+10
