@@ -93,22 +93,6 @@ t_object_funcs userland_funcs = {
 };
 
 
-
-#define CALL_OP(opr, in_place, err_str) \
-                obj1 = vm_frame_stack_pop(frame); \
-                object_dec_ref(obj1); \
-                obj2 = vm_frame_stack_pop(frame); \
-                object_dec_ref(obj2); \
-                \
-                if (obj1->type != obj2->type) { \
-                    error_and_die(1, err_str); \
-                } \
-                obj3 = object_operator(obj2, opr, in_place, 1, obj1); \
-                \
-                object_inc_ref(obj3);   \
-                vm_frame_stack_push(frame, obj3);
-
-
 /**
  *
  */
@@ -297,92 +281,35 @@ dispatch:
                 break;
 
             //
-            case VM_BINARY_ADD :
-                CALL_OP(OPERATOR_ADD, 0, "Can only add equal types");
+            case VM_OPERATOR :
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+                obj2 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj2);
+
+                if (obj1->type != obj2->type) {
+                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemetned");
+                }
+                obj3 = object_operator(obj2, oparg1, 0, 1, obj1);
+
+                object_inc_ref(obj3);
+                vm_frame_stack_push(frame, obj3);
                 goto dispatch;
                 break;
 
-            case VM_BINARY_SUB :
-                CALL_OP(OPERATOR_SUB, 0, "Can only subtract equal types");
-                goto dispatch;
-                break;
+            case VM_INPLACE_OPR :
+                obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
+                obj2 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj2);
 
-            case VM_BINARY_MUL :
-                CALL_OP(OPERATOR_MUL, 0, "Can only multiply equal types");
-                goto dispatch;
-                break;
+                if (obj1->type != obj2->type) { \
+                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemetned");
+                }
+                obj3 = object_operator(obj2, oparg1, 1, 1, obj1);
 
-            case VM_BINARY_DIV :
-                CALL_OP(OPERATOR_DIV, 0, "Can only divide equal types");
-                goto dispatch;
-                break;
-
-            case VM_BINARY_SHL :
-                CALL_OP(OPERATOR_SHL, 0, "Can only shift equal types");
-                goto dispatch;
-                break;
-
-            case VM_BINARY_SHR :
-                CALL_OP(OPERATOR_SHR, 0, "Can only shift equal types");
-                goto dispatch;
-                break;
-
-            case VM_BINARY_OR :
-                CALL_OP(OPERATOR_OR, 0, "Can only 'binary or' equal types");
-                goto dispatch;
-                break;
-
-            case VM_BINARY_AND :
-                CALL_OP(OPERATOR_AND, 0, "Can only 'binary and' equal types");
-                goto dispatch;
-                break;
-
-            case VM_BINARY_XOR :
-                CALL_OP(OPERATOR_XOR, 0, "Can only 'binary xor' equal types")
-                goto dispatch;
-                break;
-            case VM_INPLACE_ADD :
-                CALL_OP(OPERATOR_ADD, 1, "Can only add equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_SUB :
-                CALL_OP(OPERATOR_SUB, 1, "Can only subtract equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_MUL :
-                CALL_OP(OPERATOR_MUL, 1, "Can only multiply equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_DIV :
-                CALL_OP(OPERATOR_DIV, 1, "Can only divide equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_SHL :
-                CALL_OP(OPERATOR_SHL, 1, "Can only shift equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_SHR :
-                CALL_OP(OPERATOR_SHR, 1, "Can only shift equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_OR :
-                CALL_OP(OPERATOR_OR, 1, "Can only 'binary or' equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_AND :
-                CALL_OP(OPERATOR_AND, 1, "Can only 'binary and' equal types");
-                goto dispatch;
-                break;
-
-            case VM_INPLACE_XOR :
-                CALL_OP(OPERATOR_XOR, 1, "Can only 'binary xor' equal types")
+                object_inc_ref(obj3);   \
+                vm_frame_stack_push(frame, obj3);
                 goto dispatch;
                 break;
 
