@@ -221,6 +221,7 @@ void object_hash_init(void) {
     object_add_internal_method(&Object_Hash_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_length);
 
     Object_Hash_struct.properties = ht_create();
+	Object_Hash_struct.ht = ht_create();
 }
 
 /**
@@ -293,5 +294,6 @@ t_object_funcs hash_funcs = {
 // Intial object
 t_hash_object Object_Hash_struct = {
     OBJECT_HEAD_INIT2("hash", objectTypeHash, NULL, NULL, OBJECT_TYPE_CLASS, &hash_funcs),
-    NULL
+	NULL
 };
+

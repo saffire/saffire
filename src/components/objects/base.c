@@ -38,6 +38,7 @@
 
 /*
  class base {
+	public method new();
     public method ctor();
     public method dtor();
     public method properties();
@@ -62,6 +63,14 @@
  *   Object methods
  * ======================================================================
  */
+
+/**
+ * Instantiation
+ */
+SAFFIRE_METHOD(base, new) {
+    t_object *obj = object_new(Object_Base);
+	RETURN_OBJECT(obj);
+}
 
 /**
  * Constructor
@@ -191,6 +200,7 @@ SAFFIRE_METHOD(base, id) {
 void object_base_init() {
     Object_Base_struct.methods = ht_create();
 
+    object_add_internal_method(&Object_Base_struct, "new", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_new);
     object_add_internal_method(&Object_Base_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_ctor);
     object_add_internal_method(&Object_Base_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_dtor);
     object_add_internal_method(&Object_Base_struct, "properties", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_properties);
