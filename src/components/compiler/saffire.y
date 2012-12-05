@@ -166,9 +166,9 @@ use_statement:
         /* import <foo> as <bar> from <baz> */
     |   T_IMPORT namespace_identifier T_AS T_IDENTIFIER T_FROM namespace_identifier ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), $6); }
         /* import <foo> as <bar> */
-    |   T_IMPORT namespace_identifier T_AS T_IDENTIFIER                             ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), ast_nop()); }
+    |   T_IMPORT namespace_identifier T_AS T_IDENTIFIER                             ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), ast_string_dup($2)); }
         /* import <foo> */
-    |   T_IMPORT namespace_identifier                                               ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_nop(), ast_nop()); }
+    |   T_IMPORT namespace_identifier                                               ';' { TRACE $$ = ast_opr(T_IMPORT, 3, $2, ast_string_dup($2), ast_string_dup($2)); }
 ;
 
 
