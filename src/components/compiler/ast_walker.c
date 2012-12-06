@@ -44,7 +44,6 @@ extern char *get_token_string(int token);
 #define SI0(leaf)  (_ast_walker(leaf->opr.ops[0], output))
 #define SI1(leaf)  (_ast_walker(leaf->opr.ops[1], output))
 #define SI2(leaf)  (_ast_walker(leaf->opr.ops[2], output))
-#define SI3(leaf)  (_ast_walker(leaf->opr.ops[3], output))
 
 enum _blocktype { st_bt_none, st_bt_loop };
 
@@ -90,11 +89,9 @@ static void _load_or_store(t_asm_opr *opr, t_dll *output) {
 static void _ast_walker(t_ast_element *leaf, t_dll *output) {
     char start_label[100], pre_end_label[100], cmp_label[100], pre_else_label[100];
     char end_label[100], else_label[100];
-    int tmp;
     t_asm_opr *opr1, *opr2;
     t_ast_element *node;
     int i;
-
 
     if (!leaf) return;
 
@@ -117,6 +114,34 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->identifier.name, 0);
             _load_or_store(opr1, output);
             break;
+        case typeAstComparison :
+            state.state = st_load;
+            _ast_walker(leaf->comparison.l, output);
+            state.state = st_load;
+            _ast_walker(leaf->comparison.r, output);
+
+            int tmp;
+            switch (leaf->comparison.cmp) {
+                case T_EQ : tmp = COMPARISON_EQ; break;
+                case T_NE : tmp = COMPARISON_NE; break;
+                case '>' : tmp = COMPARISON_GT; break;
+                case '<' : tmp = COMPARISON_LT; break;
+                case T_GE : tmp = COMPARISON_GE; break;
+                case T_LE : tmp = COMPARISON_LE; break;
+            }
+
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, tmp);
+            dll_append(output, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+            break;
+        case typeAstAssignment :
+            // @TODO: We only handle =, not += -= etc
+            state.state = st_load;
+            _ast_walker(leaf->assignment.r, output);
+            state.state = st_store;
+            _ast_walker(leaf->assignment.l, output);
+            state.state = st_load;
+            break;
+
         case typeAstClass :
             break;
         case typeAstInterface :
@@ -161,79 +186,6 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     for (int i=0; i!=leaf->opr.nops; i++) {
                         _ast_walker(leaf->opr.ops[i], output);
                     }
-                    break;
-
-            /* Operators */
-                case '+' :
-                    tmp = OPERATOR_ADD;
-                    goto operator;
-                case '-' :
-                    tmp = OPERATOR_SUB;
-                    goto operator;
-                case '*' :
-                    tmp = OPERATOR_MUL;
-                    goto operator;
-                case '/' :
-                    tmp = OPERATOR_DIV;
-                    goto operator;
-                case '%' :
-                    tmp = OPERATOR_MOD;
-                    goto operator;
-                case T_AND :
-                    tmp = OPERATOR_AND;
-                    goto operator;
-                case T_OR :
-                    tmp = OPERATOR_OR;
-                    goto operator;
-                case '^' :
-                    tmp = OPERATOR_XOR;
-                    goto operator;
-                case T_SHIFT_LEFT :
-                    tmp = OPERATOR_SHL;
-                    goto operator;
-                case T_SHIFT_RIGHT :
-                    tmp = OPERATOR_SHR;
-                    goto operator;
-
-
-operator:
-                    state.state = st_load;
-                    SI0(leaf);
-                    SI1(leaf);
-
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, tmp);
-                    dll_append(output, asm_create_codeline(VM_OPERATOR, 1, opr1));
-                    break;
-
-            /* Comparisons */
-                case T_EQ :
-                    tmp = COMPARISON_EQ;
-                    goto compare;
-                case T_NE :
-                    tmp = COMPARISON_NE;
-                    goto compare;
-                case '>' :
-                    tmp = COMPARISON_GT;
-                    goto compare;
-                case '<' :
-                    tmp = COMPARISON_LT;
-                    goto compare;
-                case T_GE :
-                    tmp = COMPARISON_GE;
-                    goto compare;
-                case T_LE :
-                    tmp = COMPARISON_LE;
-                    goto compare;
-                case T_IN :
-                    tmp = COMPARISON_IN;
-                    goto compare;
-compare:
-                    state.state = st_load;
-                    SI0(leaf);
-                    SI1(leaf);
-
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
-                    dll_append(output, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
                     break;
 
                 case T_IF :

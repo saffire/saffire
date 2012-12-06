@@ -93,6 +93,27 @@ static t_ast_element *ast_alloc_element(void) {
 }
 
 
+t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstAssignment;
+    p->assignment.op = op;
+    p->assignment.l = left;
+    p->assignment.r = right;
+
+    return p;
+}
+t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstComparison;
+    p->comparison.cmp = cmp;
+    p->comparison.l = left;
+    p->comparison.r = right;
+
+    return p;
+}
+
 /**
  * Creates a string node
  */
@@ -133,11 +154,12 @@ t_ast_element *ast_numerical(int value) {
 /**
  * Creates a identifier node
  */
-t_ast_element *ast_identifier(char *var_name) {
+t_ast_element *ast_identifier(char *var_name, char action) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeAstIdentifier;
     p->identifier.name = smm_strdup(var_name);
+    p->identifier.action = action;
 
     return p;
 }
