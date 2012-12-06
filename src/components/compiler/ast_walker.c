@@ -409,11 +409,19 @@ compare:
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->opr.ops[2]->opr.nops);
+
+                    int nops = 0;
+                    if(leaf->opr.ops[2]->type == typeAstOpr ) {
+                        nops = leaf->opr.ops[2]->opr.nops;
+                    }
+
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, nops);
                     dll_append(output, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
+
 
                     state.state = st_store;
                     dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
+
                     break;
 
                 case T_ASSIGNMENT :
