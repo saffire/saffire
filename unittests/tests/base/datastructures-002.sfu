@@ -1,0 +1,7 @@
+title: Hash table key tests
+author: Freek Lijten <freeklijten@gmail.com>
+**********
+hashTable = hash.new();
+hashTable.add("a", "b");
+hashTable.exists("a");
+====
