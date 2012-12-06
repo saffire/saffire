@@ -28,6 +28,7 @@
 #define __AST_H__
 
     #include "compiler/class.h"
+    #include "general/dll.h"
     #include <stdio.h>
 
     // different kind of nodes we manage
@@ -73,10 +74,13 @@
         struct _ast_element *body;
     } methodNode;
 
+    typedef void (*t_clean_handler)(t_dll*);
+
     typedef struct _ast_element {
         nodeEnum type;              // Type of the node
         int flags;                  // Current flag (used for interpreting)
         unsigned long lineno;                 // Current line number for this AST element
+        t_clean_handler clean_handler;       //Function to clean up
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
