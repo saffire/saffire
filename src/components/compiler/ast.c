@@ -87,6 +87,7 @@ static t_ast_element *ast_alloc_element(void) {
         yyerror("Out of memory");   /* LCOV_EXCL_LINE */
     }
     p->lineno = yylineno;
+    p->clean_handler = NULL;
 
     return p;
 }

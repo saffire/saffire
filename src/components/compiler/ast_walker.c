@@ -132,6 +132,14 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                 case T_TOP_STATEMENTS :
                 case T_STATEMENTS :
                 case T_EXPRESSIONS :
+                    for (int i=0; i!=leaf->opr.nops; i++) {
+                        _ast_walker(leaf->opr.ops[i], output);
+                        if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler)
+                        {
+                            leaf->opr.ops[i]->clean_handler(output);
+                        }
+                    }
+                    break;
                 case T_USE_STATEMENTS :
                     for (int i=0; i!=leaf->opr.nops; i++) {
                         _ast_walker(leaf->opr.ops[i], output);
@@ -418,9 +426,9 @@ compare:
                     opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, nops);
                     dll_append(output, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
 
+                    leaf->clean_handler = &ast_walker_call_method_clean_handler;
 
                     state.state = st_store;
-                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
 
                     break;
 
@@ -438,6 +446,10 @@ compare:
         default :
             error_and_die(1, "Unknown AST type\n");
     }
+}
+
+void ast_walker_call_method_clean_handler(t_dll *output) {
+    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
 }
 
 /**
