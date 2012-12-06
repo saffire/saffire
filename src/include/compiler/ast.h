@@ -93,6 +93,7 @@
     t_ast_element *ast_generate_tree(FILE *fp);
 
     t_ast_element *ast_string(char *value);
+    t_ast_element *ast_string_dup(t_ast_element *src);
     t_ast_element *ast_numerical(int value);
     t_ast_element *ast_identifier(char *var_name);
     t_ast_element *ast_opr(int opr, int nops, ...);

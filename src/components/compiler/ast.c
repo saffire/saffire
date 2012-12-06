@@ -105,6 +105,17 @@ t_ast_element *ast_string(char *value) {
 }
 
 
+t_ast_element *ast_string_dup(t_ast_element *src) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstString;
+    p->string.value = smm_strdup(src->string.value);
+
+    return p;
+}
+
+
+
 /**
  * Creates a numerical node
  */
