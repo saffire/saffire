@@ -68,7 +68,7 @@
  * Instantiation
  */
 SAFFIRE_METHOD(base, new) {
-    t_object *obj = object_new(Object_Base);
+    t_object *obj = object_new((t_object *)self);
 	RETURN_OBJECT(obj);
 }
 
