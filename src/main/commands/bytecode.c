@@ -78,7 +78,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     // Write dot output file if needed
     if (write_dot) {
-        dot_dest_file = replace_extension(source_file, ".sf", "dot");
+        dot_dest_file = replace_extension(source_file, ".sf", ".dot");
         dot_generate(ast, dot_dest_file);
     }
 
