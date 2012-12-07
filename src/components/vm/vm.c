@@ -418,8 +418,7 @@ dispatch:
                     t_dll *args = dll_init();
                     for (int i=0; i!=oparg2; i++) {
                         obj3 = vm_frame_stack_pop(frame);
-                        object_dec_ref(obj3);
-                        dll_append(args, obj3);
+                        dll_prepend(args, obj3);
                     }
 
                     obj3 = code->native_func(obj1, args);
