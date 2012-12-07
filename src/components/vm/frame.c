@@ -233,6 +233,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     if (parent_frame == NULL) {
         // Initial frame, so create a new global identifier hash
         cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash);
+		ht_add(cfr->global_identifiers->ht, "hash", (t_hash_object *)object_new(Object_Hash));
     } else {
         // otherwise copy from parent
         cfr->global_identifiers = parent_frame->global_identifiers;
