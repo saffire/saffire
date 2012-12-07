@@ -563,16 +563,12 @@ dispatch:
                 for (int i=0; i!=oparg1; i++) {
                     // pop method name
                     obj1 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj1);
-
                     // pop method object
                     obj3 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj3);
-
-                    DEBUG_PRINT("Adding method %s to class\n", OBJ2STR(obj1));
-
                     // add to class
-                    ht_add(obj2->methods, OBJ2STR(obj1), obj3);
+                    ht_add(obj2->methods, OBJ2STR(obj3), obj1);
+
+                    DEBUG_PRINT("Added method '%s' to class\n", OBJ2STR(obj3));
                 }
 
                 object_inc_ref(obj2);
@@ -580,12 +576,10 @@ dispatch:
 
                 goto dispatch;
                 break;
-            case VM_MAKE_METHOD :
+            case VM_BUILD_METHOD :
                 // pop code object
                 obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
-
-                //obj2 = object_new(Object_Code, obj1, NULL);
 
                 // Generate method object
                 obj2 = object_new(Object_Method, 0, 0, NULL, obj1);

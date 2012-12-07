@@ -11,7 +11,7 @@ ROT_FOUR             0x05
 
 NOP                  0x09
 
-MAKE_METHOD          0x71
+BUILD_METHOD         0x71
 
 POP_BLOCK            0x72
 RETURN               0x73
