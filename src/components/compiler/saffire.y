@@ -339,12 +339,12 @@ conditional_expression:
 
 conditional_or_expression:
         conditional_and_expression { TRACE $$ = $1; }
-    |   conditional_or_expression T_OR conditional_and_expression { TRACE $$ = ast_opr(T_OR, 2, $1, $3);}
+    |   conditional_or_expression T_OR conditional_and_expression { TRACE $$ = ast_boolop(1, $1, $3);}
 ;
 
 conditional_and_expression:
         inclusive_or_expression { TRACE $$ = $1; }
-    |   conditional_and_expression T_AND inclusive_or_expression { TRACE $$ = ast_opr(T_AND, 2, $1, $3); }
+    |   conditional_and_expression T_AND inclusive_or_expression { TRACE $$ = ast_boolop(0, $1, $3); }
 ;
 
 inclusive_or_expression:

@@ -38,7 +38,7 @@
     typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier,
                    typeAstOpr,
                    typeAstClass, typeAstInterface, typeAstMethod,
-                   typeAstAssignment, typeAstComparison
+                   typeAstAssignment, typeAstComparison, typeAstBool
                  } nodeEnum;
 
     typedef struct {
@@ -71,6 +71,12 @@
         struct _ast_element *l;
         struct _ast_element *r;
     } comparisonNode;
+
+    typedef struct {
+        int op;
+        struct _ast_element *l;
+        struct _ast_element *r;
+    } boolopNode;
 
     typedef struct {
         int modifiers;
@@ -111,6 +117,7 @@
             methodNode method;          // methods
             assignmentNode assignment;  // assignment
             comparisonNode comparison;  // comparison
+            boolopNode boolop;          // booleans (|| &&)
         };
     } t_ast_element;
 
@@ -133,6 +140,7 @@
     t_ast_element *ast_nop(void);
     t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right);
 
 
     void ast_free_node(t_ast_element *p);

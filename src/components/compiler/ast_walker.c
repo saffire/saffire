@@ -91,7 +91,7 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
     char end_label[100], else_label[100];
     t_asm_opr *opr1, *opr2;
     t_ast_element *node;
-    int i;
+    int i, clc;
 
     if (!leaf) return;
 
@@ -128,9 +128,11 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                 case '<' : tmp = COMPARISON_LT; break;
                 case T_GE : tmp = COMPARISON_GE; break;
                 case T_LE : tmp = COMPARISON_LE; break;
+                default :
+                    error_and_die(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
             }
 
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, tmp);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, tmp);
             dll_append(output, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
             break;
         case typeAstAssignment :
@@ -140,6 +142,46 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
             state.state = st_store;
             _ast_walker(leaf->assignment.l, output);
             state.state = st_load;
+            break;
+
+        case typeAstBool :
+            loop_cnt++;
+            clc = loop_cnt;
+
+            if (leaf->boolop.op == 0) {
+                // Do boolean AND
+                sprintf(end_label, "and_%03d_end", clc);
+
+                _ast_walker(leaf->boolop.l, output);
+
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
+                dll_append(output, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
+
+                _ast_walker(leaf->boolop.r, output);
+
+                // Skip checks&jumps, since we can safely use the result from RHS as result for boolean op node
+
+                dll_append(output, asm_create_labelline(end_label));
+            }
+
+            if (leaf->boolop.op == 1) {
+                // Do boolean OR
+                sprintf(end_label, "or_%03d_end", clc);
+
+                _ast_walker(leaf->boolop.l, output);
+
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
+                dll_append(output, asm_create_codeline(VM_JUMP_IF_TRUE, 1, opr1));
+                dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
+
+                _ast_walker(leaf->boolop.r, output);
+
+                // Skip checks&jumps, since we can safely use the result from RHS as result for boolean op node
+
+                dll_append(output, asm_create_labelline(end_label));
+            }
+
             break;
 
         case typeAstClass :
@@ -189,44 +231,37 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
 
                 case T_IF :
                     loop_cnt++;
-                    int clc = loop_cnt;
+                    clc = loop_cnt;
 
                     sprintf(pre_end_label, "if_%03d_pre_end", clc);
                     sprintf(end_label, "if_%03d_end", clc);
                     sprintf(else_label, "if_%03d_else", clc);
 
-                    //dll_append(output, asm_create_labelline(start_label));
 
                     // Comparison first
                     SI0(leaf);
-                    if (leaf->opr.nops == 3) {
-                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, else_label, 0);
-                    } else {
-                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, pre_end_label, 0);
-                    }
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, else_label, 0);
                     dll_append(output, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+
                     dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
-
-
                     SI1(leaf);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
                     dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
 
+
+                    // Always add else-label
+                    dll_append(output, asm_create_labelline(else_label));
+
+                    dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
+
                     // Do else body, if there is one
                     if (leaf->opr.nops == 3) {
-                        dll_append(output, asm_create_labelline(else_label));
-                        dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
-
                         SI2(leaf);
-                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
-                        dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
-
                     }
 
-                    if (leaf->opr.nops != 3) {
-                        dll_append(output, asm_create_labelline(pre_end_label));
-                        dll_append(output, asm_create_codeline(VM_POP_TOP, 0));
-                    }
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, end_label, 0);
+                    dll_append(output, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
 
                     dll_append(output, asm_create_labelline(end_label));
                     break;
@@ -390,6 +425,7 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     state.state = st_store;
                     SI0(leaf);
                     break;
+
                 default :
                     error_and_die(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
             }
