@@ -92,7 +92,16 @@ static t_ast_element *ast_alloc_element(void) {
     return p;
 }
 
+t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_alloc_element();
 
+    p->type = typeAstBool;
+    p->boolop.op = boolop;
+    p->boolop.l = left;
+    p->boolop.r = right;
+
+    return p;
+}
 t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right) {
     t_ast_element *p = ast_alloc_element();
 

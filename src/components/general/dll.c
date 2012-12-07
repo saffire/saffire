@@ -185,3 +185,32 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
 
     return 1;
 }
+
+/**
+ * Pushes data at the tail of the DLL
+ */
+void dll_push(t_dll *dll, void *data) {
+    dll_insert_after(dll, DLL_TAIL(dll), data);
+}
+
+/**
+ * Pops data at the tail of the DLL
+ */
+void *dll_pop(t_dll *dll) {
+    t_dll_element *e = DLL_TAIL(dll);
+     if (!e) return NULL;
+
+     void *ret = e->data;
+     dll_remove(dll, e);
+     return ret;
+}
+
+/*
+ * Peeks at data at the tail of the DLL
+ */
+void *dll_top(t_dll *dll) {
+    t_dll_element *e = DLL_TAIL(dll);
+     if (!e) return NULL;
+
+     return e->data;
+}
