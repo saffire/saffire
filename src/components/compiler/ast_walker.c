@@ -492,15 +492,27 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
  * Initialize a new frame and walk the leaf into this frame
  */
 static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *name) {
+    // Initialize frame state
     t_state state;
     state.loop_cnt = 0;
     state.block_cnt = 0;
     state.methods = 0;
 
+    // Create frame and add to output
     t_dll *frame = dll_init();
     ht_add(output, name, frame);
 
-    return __ast_walker(leaf, output, frame, &state);
+    // Walk the leaf and store in the frame
+    __ast_walker(leaf, output, frame, &state);
+
+    // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
+    t_asm_opr *opr1;
+    if (strcmp(name, "main") == 0) {
+        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+    } else {
+        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
+    }
+    dll_append(frame, asm_create_codeline(VM_RETURN, 1, opr1));
 }
 
 
