@@ -51,6 +51,9 @@
     t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *, void *data);
     t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *, void *data);
     int dll_remove(t_dll *dll, t_dll_element *element);
+    void dll_push(t_dll *dll, void *data);
+    void *dll_pop(t_dll *dll);
+    void *dll_top(t_dll *dll);
 
 #endif
 
