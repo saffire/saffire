@@ -46,18 +46,20 @@
 static t_object *io_print(t_object *self, t_dll *dll) {
     t_object *obj, *obj2;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
-        error_and_die(1, "Error while parsing argument list\n");
-    }
+    t_dll_element *e = DLL_HEAD(dll);
+    while (e) {
+        obj = (t_object *)e->data;
 
-    // Implied conversion to string
-    if (! OBJECT_IS_STRING(obj)) {
-        obj2 = object_find_method(obj, "string");
+        // Implied conversion to string
+        if (! OBJECT_IS_STRING(obj)) {
+            obj2 = object_find_method(obj, "string");
             obj = object_call(obj, obj2, 0);
-    }
+        }
 
-    char *str = ((t_string_object *)obj)->value;
-    output(ANSI_BRIGHTRED "%s" ANSI_RESET, str);
+        output(ANSI_BRIGHTRED "%s" ANSI_RESET, ((t_string_object *)obj)->value);
+
+        e = DLL_NEXT(e);
+    }
 
     RETURN_SELF;
 }
