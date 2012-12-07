@@ -219,6 +219,10 @@ void object_hash_init(void) {
     object_add_internal_method(&Object_Hash_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_conv_string);
 
     object_add_internal_method(&Object_Hash_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method(&Object_Hash_struct, "add", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method(&Object_Hash_struct, "remove", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method(&Object_Hash_struct, "find", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_find);
+    object_add_internal_method(&Object_Hash_struct, "exists", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_exists);
 
     Object_Hash_struct.properties = ht_create();
 	Object_Hash_struct.ht = ht_create();
