@@ -2,42 +2,90 @@ title: if/else control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-if (1) {
-  a = 1;
+import io as io from ::_sfl::io;
+if (1 == 1) {
+  io.print("T");
+} else {
+  io.print("F");
+}
+
+if (0 == 1) {
+  io.print("T");
+} else {
+  io.print("F");
 }
 
 ====
+TF
 @@@@
+import io as io from ::_sfl::io;
 if (a = 5) {
-  a = 1;
+    io.print("T");
+} else {
+    io.print("F");
 }
 
 ====
 Cannot use an assignment inside an if-statement
 @@@@
+import io as io from ::_sfl::io;
+a = 1;
 if (a == 5) {
-  a = 1;
+    io.print("T");
+} else {
+    io.print("F");
 }
 
+if (a != 5) {
+    io.print("T");
+} else {
+    io.print("F");
+}
+
+if (a <= 5) {
+    io.print("T");
+} else {
+    io.print("F");
+}
+
+if (a >= 5) {
+    io.print("T");
+} else {
+    io.print("F");
+}
+
+
 ====
+FTTF
 @@@@
-if (a == 5 || b == 1) {
-  a = 1;
-}
+import io as io from ::_sfl::io;
+a = 1;  b = 2; c = 1;
+if (a == 1 && b == 2) { io.print("T"); } else { io.print("F"); }
+if (a == 2 && b == 2) { io.print("T"); } else { io.print("F"); }
+if (a == 3 && b == 2) { io.print("T"); } else { io.print("F"); }
+
+if (a != 1 && b == 1) { io.print("T"); } else { io.print("F"); }
+if (a != 2 && b != 1) { io.print("T"); } else { io.print("F"); }
+if (a != 2 && b != 2) { io.print("T"); } else { io.print("F"); }
+if (a != 3 && b != 3) { io.print("T"); } else { io.print("F"); }
+
+if (a == 1 || b == 1) { io.print("T"); } else { io.print("F"); }
+if (a == 1 || b == 2) { io.print("T"); } else { io.print("F"); }
+if (a == 1 || b == 3) { io.print("T"); } else { io.print("F"); }
+if (a == 2 || b == 1) { io.print("T"); } else { io.print("F"); }
+if (a == 2 || b == 2) { io.print("T"); } else { io.print("F"); }
+if (a == 2 || b == 3) { io.print("T"); } else { io.print("F"); }
+if (a == 3 || b == 3) { io.print("T"); } else { io.print("F"); }
+if (a == 3 || b == 3) { io.print("T"); } else { io.print("F"); }
+if (a == 3 || b == 3) { io.print("T"); } else { io.print("F"); }
+
+if (a == 3 || b == 3 && c == 1) { io.print("T"); } else { io.print("F"); }
+if (a == 3 && b == 3 || c == 1) { io.print("T"); } else { io.print("F"); }
+if ((a == 3 || b == 3) && c == 1) { io.print("T"); } else { io.print("F"); }
+if ((a == 3 && b == 3) || c == 1) { io.print("T"); } else { io.print("F"); }
 
 ====
-@@@@
-if (a == 5 && b == 1) {
-  a = 1;
-}
-
-====
-@@@@
-if (a == 5 | 1) {
-  a = 1;
-}
-
-====
+TFFFTFTTTTFTFFFFFTFT
 @@@@
 if ("foo") {
   a = 1;
@@ -45,22 +93,26 @@ if ("foo") {
 
 ====
 @@@@
+foo = 1;
 if (foo) {
   a = 1;
 }
 
 ====
 @@@@
+foo = 1;
 if (foo) a = 1;
 
 ====
 @@@@
+foo = 1;
 if (foo) a = 1; else {
   b = 1;
 }
 
 ====
 @@@@
+foo = 1;
 if (foo) {
     a = 1;
 } else {
@@ -69,16 +121,20 @@ if (foo) {
 
 ====
 @@@@
+foo = 1;
 if (foo) {
 } else if (foo) {
 } else (foo);
 ====
 @@@@
+foo = 1;
 if (foo) {
 } elseif (foo) {
 } else (foo);
 ====
-Error in line 3: syntax error, unexpected '{', expecting ';' or ','
+Error: line 4: syntax error, unexpected '{', expecting ';' or ','
+
+
 @@@@
 if (foo) {
   a = 1;
