@@ -62,12 +62,7 @@ void dll_free(t_dll *dll) {
 t_dll_element *dll_prepend(t_dll *dll, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    // Correct pointer of the previous head element
-    if (dll->head == NULL) {
-        dll->head = e;
-    } else {
-        dll->head->prev = e;
-    }
+    // Correct pointer of the previous tail element
     if (dll->tail == NULL) {
         dll->tail = e;
     }
@@ -77,8 +72,14 @@ t_dll_element *dll_prepend(t_dll *dll, void *data) {
     e->next = dll->head;
     e->data = data;
 
-    // Set dll data
+    
+    if (dll->head != NULL) {
+        dll->head->prev = e;
+    }
     dll->head = e;
+
+    // Set dll data
+
     dll->size++;
 
     return e;
