@@ -233,13 +233,17 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     if (parent_frame == NULL) {
         // Initial frame, so create a new global identifier hash
         cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash);
-		ht_add(cfr->global_identifiers->ht, "hash", (t_hash_object *)object_new(Object_Hash));
+        cfr->local_identifiers = cfr->global_identifiers;
     } else {
-        // otherwise copy from parent
+        // otherwise link globals from the parent
         cfr->global_identifiers = parent_frame->global_identifiers;
+        // And create new local identifier hash
+        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
     }
-    cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash);
+
+
     cfr->builtin_identifiers = builtin_identifiers;
+    ht_add(cfr->builtin_identifiers->ht, "hash", (t_hash_object *)object_new(Object_Hash));
 
 
     cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
@@ -278,7 +282,8 @@ void vm_frame_destroy(t_vm_frame *frame) {
 
     // Destroy global identifiers when this frame is the initial one
     if (! frame->parent) {
-        object_free((t_object *)frame->global_identifiers);
+        // @TODO: We should free global id's, but this results in errors
+        //object_free((t_object *)frame->global_identifiers);
     }
 
     // @TODO: remove constants objects.
