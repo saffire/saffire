@@ -55,9 +55,9 @@ SAFFIRE_METHOD(boolean, conv_numerical) {
 
 SAFFIRE_METHOD(boolean, conv_string) {
     if (self->value == 1) {
-        RETURN_STRING(L"true");
+        RETURN_STRING("true");
     } else {
-        RETURN_STRING(L"false");
+        RETURN_STRING("false");
     }
 }
 
