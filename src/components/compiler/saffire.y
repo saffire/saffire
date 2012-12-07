@@ -94,7 +94,7 @@
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
 %token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
-%token T_FQN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_EXPRESSIONS T_ASSIGNMENT T_FIELDACCESS
+%token T_FQN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_ASSIGNMENT T_FIELDACCESS
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
 %token T_IMPORT T_FROM T_ELLIPSIS
 
@@ -339,12 +339,12 @@ conditional_expression:
 
 conditional_or_expression:
         conditional_and_expression { TRACE $$ = $1; }
-    |   conditional_or_expression T_OR conditional_and_expression { TRACE $$ = ast_opr(T_OR, 2, $1, $3);}
+    |   conditional_or_expression T_OR conditional_and_expression { TRACE $$ = ast_boolop(1, $1, $3);}
 ;
 
 conditional_and_expression:
         inclusive_or_expression { TRACE $$ = $1; }
-    |   conditional_and_expression T_AND inclusive_or_expression { TRACE $$ = ast_opr(T_AND, 2, $1, $3); }
+    |   conditional_and_expression T_AND inclusive_or_expression { TRACE $$ = ast_boolop(0, $1, $3); }
 ;
 
 inclusive_or_expression:
