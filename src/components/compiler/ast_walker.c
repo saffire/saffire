@@ -156,7 +156,6 @@ static void _ast_walker(t_ast_element *leaf, t_dll *output) {
                     break;
                 case T_TOP_STATEMENTS :
                 case T_STATEMENTS :
-                case T_EXPRESSIONS :
                     for (int i=0; i!=leaf->opr.nops; i++) {
                         _ast_walker(leaf->opr.ops[i], output);
                         if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler)
