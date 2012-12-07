@@ -29,11 +29,13 @@
 
     #include <stdio.h>
     #include <stdarg.h>
+    #include "general/dll.h"
 
     void foutput(FILE *fp, const char *format, ...);
     void output(const char *format, ...);
     void error(const char *format, ...);
     void error_and_die(int exitcode, const char *format, ...);
     void line_error_and_die(int exitcode, int lineno, const char *format, ...);
+    void output_printf(const char *format, t_dll *args);
 
 #endif

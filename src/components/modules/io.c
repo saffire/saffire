@@ -68,7 +68,28 @@ static t_object *io_print(t_object *self, t_dll *dll) {
  *
  */
 static t_object *io_printf(t_object *self, t_dll *args) {
-    output(ANSI_BRIGHTRED "IO.printf: %ld arguments" ANSI_RESET "\n", args->size);
+    t_string_object *obj;
+
+    t_dll_element *e = DLL_HEAD(args);
+    obj = (t_string_object *)e->data;
+    if (! OBJECT_IS_STRING(obj)) {
+        error_and_die(1, "argument 1 of printf needs to be a string\n");
+    }
+
+    char *format = obj->value;
+
+    // @TODO: Don't change the args DLL!
+    e = DLL_HEAD(args);
+    dll_remove(args, e);
+
+#ifdef __DEBUG
+    output(ANSI_BRIGHTRED);
+#endif
+    output_printf(format, args);
+#ifdef __DEBUG
+    output(ANSI_RESET);
+#endif
+
     RETURN_SELF;
 }
 
