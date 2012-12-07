@@ -77,7 +77,7 @@
 %token <lVal> T_LNUM
 %token <sVal> T_STRING T_IDENTIFIER T_REGEX
 
-%type <lVal> modifier modifier_list
+%type <lVal> modifier modifier_list assignment_operator comparison_operator
 
 %token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
@@ -109,9 +109,9 @@
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> method_call real_postfix_expression data_structure_name
-%type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator assignment_operator
+%type <nPtr> postfix_expression unary_expression primary_expression arithmic_unary_operator
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
-%type <nPtr> relational_expression catch_header conditional_expression assignment_expression real_scalar_value
+%type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> data_structure logical_unary_expression equality_expression and_expression inclusive_or_expression
@@ -321,7 +321,7 @@ label_statement:
  */
 
 expression:
-        assignment_expression { TRACE $$ = ast_opr(T_EXPRESSIONS, 1, $1); }
+        assignment_expression { TRACE $$ = $1; }
     |   expression ',' assignment_expression { TRACE $$ = ast_add($$, $3); }
     |   expression ',' ',' assignment_expression { TRACE $$ = ast_add($$, ast_nop()); $$ = ast_add($$, $4); }
 
@@ -329,7 +329,7 @@ expression:
 
 assignment_expression:
         conditional_expression { TRACE $$ = $1; }
-    |   unary_expression assignment_operator assignment_expression { TRACE $$ = ast_opr(T_ASSIGNMENT, 3, $1, $2, $3); }
+    |   unary_expression assignment_operator assignment_expression { TRACE $$ = ast_assignment($2, $1, $3); }
 ;
 
 conditional_expression:
@@ -363,18 +363,18 @@ and_expression:
 ;
 
 equality_expression:
-        relational_expression { TRACE $$ = $1; }
-    |   equality_expression T_EQ relational_expression { TRACE $$ = ast_opr(T_EQ, 2, $1, $3); }
-    |   equality_expression T_NE relational_expression { TRACE $$ = ast_opr(T_NE, 2, $1, $3); }
-    |   equality_expression T_IN relational_expression { TRACE $$ = ast_opr(T_IN, 2, $1, $3); }
+        regex_expression { TRACE $$ = $1; }
+    |   equality_expression comparison_operator regex_expression { TRACE $$ = ast_comparison($2, $1, $3); }
 ;
 
-relational_expression:
-        regex_expression { TRACE $$ = $1; }
-    |   relational_expression '>' regex_expression { TRACE $$ = ast_opr('>', 2, $1, $3); }
-    |   relational_expression '<' regex_expression { TRACE $$ = ast_opr('<', 2, $1, $3); }
-    |   relational_expression T_LE regex_expression { TRACE $$ = ast_opr(T_LE, 2, $1, $3); }
-    |   relational_expression T_GE regex_expression { TRACE $$ = ast_opr(T_GE, 2, $1, $3); }
+comparison_operator:
+        T_EQ { TRACE $$ = T_EQ; }
+    |   T_NE { TRACE $$ = T_NE; }
+    |   T_IN { TRACE $$ = T_IN; }
+    |   '>'  { TRACE $$ = '>';  }
+    |   '<'  { TRACE $$ = '<';  }
+    |   T_LE { TRACE $$ = T_LE; }
+    |   T_GE { TRACE $$ = T_GE; }
 ;
 
 regex_expression:
@@ -445,17 +445,17 @@ logical_unary_operator:
 
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
-        T_ASSIGNMENT       { TRACE $$ = ast_opr(T_ASSIGNMENT, 0); }
-    |   T_PLUS_ASSIGNMENT  { TRACE $$ = ast_opr(T_PLUS_ASSIGNMENT, 0); }
-    |   T_MINUS_ASSIGNMENT { TRACE $$ = ast_opr(T_MINUS_ASSIGNMENT, 0); }
-    |   T_MUL_ASSIGNMENT   { TRACE $$ = ast_opr(T_MUL_ASSIGNMENT, 0); }
-    |   T_DIV_ASSIGNMENT   { TRACE $$ = ast_opr(T_DIV_ASSIGNMENT, 0); }
-    |   T_MOD_ASSIGNMENT   { TRACE $$ = ast_opr(T_MOD_ASSIGNMENT, 0); }
-    |   T_AND_ASSIGNMENT   { TRACE $$ = ast_opr(T_AND_ASSIGNMENT, 0); }
-    |   T_OR_ASSIGNMENT    { TRACE $$ = ast_opr(T_OR_ASSIGNMENT, 0); }
-    |   T_XOR_ASSIGNMENT   { TRACE $$ = ast_opr(T_XOR_ASSIGNMENT, 0); }
-    |   T_SL_ASSIGNMENT    { TRACE $$ = ast_opr(T_SL_ASSIGNMENT, 0); }
-    |   T_SR_ASSIGNMENT    { TRACE $$ = ast_opr(T_SR_ASSIGNMENT, 0); }
+        T_ASSIGNMENT       { TRACE $$ = T_ASSIGNMENT; }
+    |   T_PLUS_ASSIGNMENT  { TRACE $$ = T_PLUS_ASSIGNMENT; }
+    |   T_MINUS_ASSIGNMENT { TRACE $$ = T_MINUS_ASSIGNMENT; }
+    |   T_MUL_ASSIGNMENT   { TRACE $$ = T_MUL_ASSIGNMENT; }
+    |   T_DIV_ASSIGNMENT   { TRACE $$ = T_DIV_ASSIGNMENT; }
+    |   T_MOD_ASSIGNMENT   { TRACE $$ = T_MOD_ASSIGNMENT; }
+    |   T_AND_ASSIGNMENT   { TRACE $$ = T_AND_ASSIGNMENT; }
+    |   T_OR_ASSIGNMENT    { TRACE $$ = T_OR_ASSIGNMENT; }
+    |   T_XOR_ASSIGNMENT   { TRACE $$ = T_XOR_ASSIGNMENT; }
+    |   T_SL_ASSIGNMENT    { TRACE $$ = T_SL_ASSIGNMENT; }
+    |   T_SR_ASSIGNMENT    { TRACE $$ = T_SR_ASSIGNMENT; }
 ;
 
 /* Any number, any string or null|true|false */
@@ -468,20 +468,20 @@ scalar_value:
         T_LNUM        { TRACE $$ = ast_numerical($1); }
     |   T_STRING      { TRACE $$ = ast_string($1); smm_free($1); }
     |   T_REGEX       { TRACE $$ = ast_string($1); smm_free($1); }
-    |   T_IDENTIFIER  { sfc_check_permitted_identifiers($1); TRACE $$ = ast_identifier($1); smm_free($1); }
+    |   T_IDENTIFIER  { sfc_check_permitted_identifiers($1); TRACE $$ = ast_identifier($1, ID_LOAD); smm_free($1); }
 ;
 
 
 qualified_name:
-       T_IDENTIFIER                             { TRACE $$ = ast_identifier($1); }
-    |  T_NS_SEP T_IDENTIFIER                    { TRACE $$ = ast_identifier("::"); $$ = ast_concat($$, $2); }
+       T_IDENTIFIER                             { TRACE $$ = ast_identifier($1, ID_LOAD); }
+    |  T_NS_SEP T_IDENTIFIER                    { TRACE $$ = ast_identifier("::", ID_LOAD); $$ = ast_concat($$, $2); }
     |  qualified_name T_NS_SEP T_IDENTIFIER     { TRACE $$ = ast_concat($$, "::"); $$ = ast_concat($$, $3); }
 ;
 
 
 method_call:
-        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
-    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3)); smm_free($3); }
+        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3, ID_LOAD)); smm_free($3); }
+    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3, ID_LOAD)); smm_free($3); }
 
     |   method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), $5); }
     |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
@@ -507,8 +507,8 @@ method_call_pre_parenthesis:
 
 /* Self and parent are processed differently, since they are separate tokens */
 special_name:
-        T_SELF      { TRACE $$ = ast_identifier("self"); }
-    |   T_PARENT    { TRACE $$ = ast_identifier("parent"); }
+        T_SELF      { TRACE $$ = ast_identifier("self", ID_LOAD); }
+    |   T_PARENT    { TRACE $$ = ast_identifier("parent", ID_LOAD); }
 ;
 
 /* argument list inside a method call*/
@@ -572,12 +572,12 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1), ast_nop(), ast_numerical(0)); smm_free($1); }
-    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1), $3, ast_numerical(0)); smm_free($1); }
-    |   T_IDENTIFIER T_IDENTIFIER                              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_identifier($1), ast_identifier($2), ast_nop(), ast_numerical(0)); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_identifier($1), ast_identifier($2), $4, ast_numerical(0)); smm_free($1); smm_free($2); }
-    |   T_ELLIPSIS T_IDENTIFIER                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($2), ast_nop(), ast_numerical(1)); smm_free($2); }
-    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1), $3, ast_numerical(1)); smm_free($1); }
+        T_IDENTIFIER                                           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1, ID_LOAD), ast_nop(), ast_numerical(0)); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1, ID_STORE), $3, ast_numerical(0)); smm_free($1); }
+    |   T_IDENTIFIER T_IDENTIFIER                              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_identifier($1, ID_LOAD), ast_identifier($2, ID_LOAD), ast_nop(), ast_numerical(0)); smm_free($1); smm_free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_identifier($1, ID_LOAD), ast_identifier($2, ID_STORE), $4, ast_numerical(0)); smm_free($1); smm_free($2); }
+    |   T_ELLIPSIS T_IDENTIFIER                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($2, ID_LOAD), ast_nop(), ast_numerical(1)); smm_free($2); }
+    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(), ast_identifier($1, ID_LOAD), $3, ast_numerical(1)); smm_free($1); }
 ;
 
 constant_list:
@@ -586,7 +586,7 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2), $4); smm_free($2); }
+        T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2, ID_STORE), $4); smm_free($2); }
 ;
 
 class_definition:
@@ -607,12 +607,12 @@ interface_definition:
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3), $5); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3, ID_STORE), $5); smm_free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
 ;
 
 modifier_list:

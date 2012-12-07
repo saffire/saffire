@@ -27,12 +27,19 @@
 #ifndef __AST_H__
 #define __AST_H__
 
+    #define ID_LOAD     0
+    #define ID_STORE    1
+
     #include "compiler/class.h"
     #include "general/dll.h"
     #include <stdio.h>
 
     // different kind of nodes we manage
-    typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier, typeAstOpr, typeAstClass, typeAstInterface, typeAstMethod } nodeEnum;
+    typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier,
+                   typeAstOpr,
+                   typeAstClass, typeAstInterface, typeAstMethod,
+                   typeAstAssignment, typeAstComparison
+                 } nodeEnum;
 
     typedef struct {
         char *value;                // Pointer to the actual constant string
@@ -44,6 +51,7 @@
 
     typedef struct {
         char *name;                 // Name of the actual variable to use
+        char action;                // 0 = LOAD, 1 = STORE
     } identifierNode;
 
     typedef struct {
@@ -51,6 +59,18 @@
         int nops;                   // number of additional operands
         struct _ast_element **ops;   // Operands (should be max of 2: left and right)
     } oprNode;
+
+    typedef struct {
+        int op;
+        struct _ast_element *l;
+        struct _ast_element *r;
+    } assignmentNode;
+
+    typedef struct {
+        int cmp;
+        struct _ast_element *l;
+        struct _ast_element *r;
+    } comparisonNode;
 
     typedef struct {
         int modifiers;
@@ -89,6 +109,8 @@
             classNode class;            // class
             interfaceNode interface;    // interface
             methodNode method;          // methods
+            assignmentNode assignment;  // assignment
+            comparisonNode comparison;  // comparison
         };
     } t_ast_element;
 
@@ -99,7 +121,7 @@
     t_ast_element *ast_string(char *value);
     t_ast_element *ast_string_dup(t_ast_element *src);
     t_ast_element *ast_numerical(int value);
-    t_ast_element *ast_identifier(char *var_name);
+    t_ast_element *ast_identifier(char *var_name, char action);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
@@ -109,6 +131,8 @@
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);
+    t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right);
 
 
     void ast_free_node(t_ast_element *p);

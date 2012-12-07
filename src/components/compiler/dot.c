@@ -82,8 +82,21 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             break;
 
         case typeAstIdentifier :
-            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.name);
+            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled, rounded\",label=\"{N:%d|Type=Variable|%s|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.action == 0 ? "LOAD" : "STORE", p->identifier.name);
             break;
+
+        case typeAstAssignment :
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled, rounded\",label=\"{N:%d|Type=Assignment|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->assignment.op), p->assignment.op);
+            dot_node_iterate(fp, p->assignment.l, cur_node_nr);
+            dot_node_iterate(fp, p->assignment.r, cur_node_nr);
+            break;
+
+        case typeAstComparison :
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled, rounded\",label=\"{N:%d|Type=Comparison|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->comparison.cmp), p->comparison.cmp);
+            dot_node_iterate(fp, p->comparison.l, cur_node_nr);
+            dot_node_iterate(fp, p->comparison.r, cur_node_nr);
+            break;
+
 
         case typeAstOpr :
             fprintf(fp, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
