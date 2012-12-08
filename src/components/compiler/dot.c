@@ -60,6 +60,19 @@ static char *show_modifiers(int modifiers) {
 
 
 /**
+ * Sanitize escape characters to _ so dot/graphiz does not complain
+ */
+char sanitized_string[100];
+char *sanitize(char *s) {
+    strncpy(sanitized_string, s, 99);
+    for (int i=0; i!=strlen(sanitized_string); i++) {
+        if (sanitized_string[i] < 32) sanitized_string[i] = '_';
+    }
+    return sanitized_string;
+}
+
+
+/**
  * Output node (and link to parent node number). Recursively called when child nodes are present.
  */
 static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
@@ -74,7 +87,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     fprintf(fp, "\tN_%d [", cur_node_nr);
     switch (p->type) {
         case typeAstString :
-            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->string.value);
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, sanitize(p->string.value));
             break;
 
         case typeAstNumerical :

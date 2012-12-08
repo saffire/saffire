@@ -39,9 +39,8 @@
     #define ASM_LINE_TYPE_OP_ID         7
     #define ASM_LINE_TYPE_OP_OPERATOR   8
 
-    #define ASM_LINE_TYPE_FRAME         1
-    #define ASM_LINE_TYPE_LABEL         2
-    #define ASM_LINE_TYPE_CODE          3
+    #define ASM_LINE_TYPE_LABEL         1
+    #define ASM_LINE_TYPE_CODE          2
 
     typedef struct _asm_opr {
         int type;
@@ -87,8 +86,8 @@
     t_asm_line *asm_create_frameline(char *name);
     t_asm_line *asm_create_labelline(char *label);
 
-    t_bytecode *assembler(t_dll *asm_code);
-    void assembler_output(t_dll *asm_code, char *output_path);
-    void assembler_free(t_dll *asm_code);
+    t_bytecode *assembler(t_hash_table *asm_code);
+    void assembler_output(t_hash_table *asm_code, char *output_path);
+    void assembler_free(t_hash_table *asm_code);
 
 #endif

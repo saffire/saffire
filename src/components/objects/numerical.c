@@ -464,6 +464,7 @@ static void obj_populate(t_object *obj, va_list arg_list) {
 //    }
 
     num_obj->value = value;
+    num_obj->ref_count++;
 }
 
 static void obj_destroy(t_object *obj) {

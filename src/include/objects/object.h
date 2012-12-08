@@ -138,7 +138,7 @@
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCode, objectTypeMethod, objectTypeBase, objectTypeBoolean,
-                   objectTypeNull,objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom,
+                   objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom,
                    objectTypeHash, objectTypeTuple
                  } t_objectype_enum;
 

@@ -32,8 +32,6 @@
     #include "general/smm.h"
     #include "general/dll.h"
 
-    t_dll *ast_walker(t_ast_element *ast);
-
-    void ast_walker_call_method_clean_handler(t_dll *output);
+    t_hash_table *ast_walker(t_ast_element *ast);
 
 #endif

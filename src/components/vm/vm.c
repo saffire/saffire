@@ -46,6 +46,14 @@
 #include "general/output.h"
 #include "gc/gc.h"
 
+
+// A method-argument hash consists of name => structure
+typedef struct _method_arg {
+    t_object *value;
+    t_string_object *typehint;
+} t_method_arg;
+
+
 #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
 #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
 
@@ -54,6 +62,58 @@
 #define REASON_CONTINUE     2
 #define REASON_BREAK        3
 #define REASON_BREAKELSE    4
+
+
+/**
+ * Parse calling arguments
+ */
+static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_method_object *method) {
+    // Check if the number of arguments given exceeds the number of arguments needed.
+    t_hash_table *ht = ((t_hash_object *)method->arguments)->ht;
+    if (arg_count > ht->element_count) {
+        // @TODO: If we have variable argument count, this does not apply!
+        error_and_die(1, "Too many arguments given\n");
+    }
+
+    // Iterate all arguments for this method.
+    int csp = cur_frame->sp + arg_count - 1;
+    int args_left = arg_count;
+    int cur_arg = 1;
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        char *name = ht_iter_key(&iter);
+        t_method_arg *arg = ht_iter_value(&iter);
+
+        // Set object to default value if any
+        t_object *obj = (arg->value->type == objectTypeNull) ? NULL : arg->value;
+
+        if (args_left) {
+            // When arguments are left on the stack, override object with next value on stack
+            obj = cur_frame->stack[csp--];      // Don't pop, just fetch
+            args_left--;
+        }
+
+        // Found a value (either default or from stack)?
+        if (obj == NULL) {
+            error_and_die(1, "No value found for argument %d\n", cur_arg);
+        }
+
+        // Check for correct typehinting
+        if (arg->typehint->type != objectTypeNull && strcmp(OBJ2STR(arg->typehint), obj->name) != 0) {
+            error_and_die(1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+        }
+
+        // Everything is ok, add the new value onto the local identifiers
+        ht_add(new_frame->local_identifiers->ht, name, obj);
+
+        // Process next argument
+        cur_arg++;
+        ht_iter_next(&iter);
+    }
+}
+
 
 
 //t_object *object_userland_new(void) {
@@ -267,6 +327,7 @@ dispatch:
                 s1 = vm_frame_get_name(frame, oparg1);
                 DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
                 vm_frame_set_identifier(frame, s1, obj1);
+
                 goto dispatch;
                 break;
                 // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
@@ -288,7 +349,7 @@ dispatch:
                 object_dec_ref(obj2);
 
                 if (obj1->type != obj2->type) {
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemetned");
+                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 obj3 = object_operator(obj2, oparg1, 0, 1, obj1);
 
@@ -304,7 +365,7 @@ dispatch:
                 object_dec_ref(obj2);
 
                 if (obj1->type != obj2->type) { \
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemetned");
+                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 obj3 = object_operator(obj2, oparg1, 1, 1, obj1);
 
@@ -424,28 +485,22 @@ dispatch:
                     obj3 = code->native_func(obj1, args);
                     dll_free(args);
                 } else {
-                    DEBUG_PRINT("\n\nCalling bytecode: %08lX\n\n\n", (unsigned long)code->bytecode);
+                    // Create a new frame
                     tfr = vm_frame_new(frame, code->bytecode);
 
-#ifdef __DEBUG
-                    vm_frame_stack_debug(frame);
-                    vm_frame_stack_debug(tfr);
-#endif
+//#ifdef __DEBUG
+//                    vm_frame_stack_debug(frame);
+//#endif
 
-                    // Push the arguments in the correct order onto the new stack
-                    //for (int i=0; i!=oparg2; i++) {
-                        // We don't need to push and pop, just copy arguments and set SP.
-                        memcpy(tfr->stack + tfr->sp - oparg2, frame->stack + frame->sp, oparg2 * sizeof(t_object *));
+                    // Add reference to self to the local identifiers
+                    ht_replace(tfr->local_identifiers->ht, "self", obj1);
 
-                        frame->sp += oparg2;
-                        tfr->sp -= oparg2;
-                    //}
+                    _parse_calling_arguments(frame, tfr, oparg2, method);
 
-#ifdef __DEBUG
-                    vm_frame_stack_debug(frame);
-                    vm_frame_stack_debug(tfr);
-#endif
+                    // "Remove" the arguments from the original stack
+                    frame->sp += oparg2;
 
+                    // Execute frame, return the last object
                     obj3 = _vm_execute(tfr);
                     vm_frame_destroy(tfr);
                 }
@@ -509,7 +564,7 @@ dispatch:
                 obj2 = vm_frame_stack_pop(frame);
 
                 if (obj1->type != obj2->type) {
-                    error_and_die(1, "Cannot compare non-identical object types");
+                    error_and_die(1, "Cannot compare non-identical object types\n");
                 }
                 obj3 = object_comparison(obj2, oparg1, obj1);
 
@@ -561,18 +616,14 @@ dispatch:
 
                 // Iterate all methods
                 for (int i=0; i!=oparg1; i++) {
-                    // pop method name
-                    obj1 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj1);
-
                     // pop method object
                     obj3 = vm_frame_stack_pop(frame);
-                    object_dec_ref(obj3);
-
-                    DEBUG_PRINT("Adding method %s to class\n", OBJ2STR(obj1));
-
+                    // pop method name
+                    obj1 = vm_frame_stack_pop(frame);
                     // add to class
-                    ht_add(obj2->methods, OBJ2STR(obj1), obj3);
+                    ht_add(obj2->methods, OBJ2STR(obj3), obj1);
+
+                    DEBUG_PRINT("Added method '%s' to class\n", OBJ2STR(obj3));
                 }
 
                 object_inc_ref(obj2);
@@ -580,19 +631,30 @@ dispatch:
 
                 goto dispatch;
                 break;
-            case VM_MAKE_METHOD :
+            case VM_BUILD_METHOD :
                 // pop code object
                 obj1 = vm_frame_stack_pop(frame);
                 object_dec_ref(obj1);
 
-                //obj2 = object_new(Object_Code, obj1, NULL);
+                // Generate hash object from arguments
+                obj2 = object_new(Object_Hash);
+
+                for (int i=0; i!=oparg1; i++) {
+                    t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
+
+                    arg->value = vm_frame_stack_pop(frame);
+                    t_object *name_obj = vm_frame_stack_pop(frame);
+                    arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
+
+                    ht_add(((t_hash_object *)obj2)->ht, OBJ2STR(name_obj), arg);
+                }
 
                 // Generate method object
-                obj2 = object_new(Object_Method, 0, 0, NULL, obj1);
+                obj3 = object_new(Object_Method, 0, 0, NULL, obj1, obj2);
 
                 // Push method object
-                object_inc_ref(obj2);
-                vm_frame_stack_push(frame, obj2);
+                object_inc_ref(obj3);
+                vm_frame_stack_push(frame, obj3);
 
                 goto dispatch;
                 break;

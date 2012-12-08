@@ -272,6 +272,7 @@ static void obj_populate(t_object *obj, va_list arg_list) {
     method_obj->visibility = va_arg(arg_list, int);
     method_obj->class = va_arg(arg_list, t_object *);
     method_obj->code = va_arg(arg_list, struct _code_object *);
+    method_obj->arguments = va_arg(arg_list, struct _hash_object *);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -306,6 +307,7 @@ t_method_object Object_Method_struct = {
     OBJECT_HEAD_INIT2("method", objectTypeMethod, NULL, NULL, OBJECT_TYPE_CLASS, &method_funcs),
     0,
     0,
+    NULL,
     NULL,
     NULL
 };

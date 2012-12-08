@@ -63,6 +63,8 @@
         t_object *class;                    // Bound to a class (or NULL)
         struct _code_object *code;          // Code for this method
 
+        struct _hash_object *arguments;     // Arguments (key => default value (or NULL))
+
         // Additional information for methods
 //        int calls;                  // Number of calls made to this method
 //        int time_spent;             // Time spend in this method

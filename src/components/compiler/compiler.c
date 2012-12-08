@@ -384,10 +384,10 @@ void saffire_validate_break() {
     }
 }
 
-void sfc_check_permitted_identifiers(char *name) {
-    if (! strcasecmp(name, "null")) return;
-    if (! strcasecmp(name, "false")) return;
-    if (! strcasecmp(name, "true")) return;
+void sfc_check_permitted_identifiers(const char *name) {
+    if (! strcmp(name, "null")) return;
+    if (! strcmp(name, "false")) return;
+    if (! strcmp(name, "true")) return;
     line_error_and_die(1, yylineno, "Incorrect identifier");
 }
 
