@@ -431,6 +431,20 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                     case ASM_LINE_TYPE_OP_NUM :
                         foutput(f, "%d", line->opr[i]->data.l);
                         break;
+                    case ASM_LINE_TYPE_OP_OPERATOR :
+                        switch (line->opr[i]->data.l) {
+                            case OPERATOR_ADD : foutput(f, "ADD"); break;
+                            case OPERATOR_SUB : foutput(f, "SUB"); break;
+                            case OPERATOR_MUL : foutput(f, "MUL"); break;
+                            case OPERATOR_DIV : foutput(f, "DIV"); break;
+                            case OPERATOR_MOD : foutput(f, "MOD"); break;
+                            case OPERATOR_AND : foutput(f, "AND"); break;
+                            case OPERATOR_OR  : foutput(f, "OR");  break;
+                            case OPERATOR_XOR : foutput(f, "XOR"); break;
+                            case OPERATOR_SHL : foutput(f, "SHL"); break;
+                            case OPERATOR_SHR : foutput(f, "SHR"); break;
+                        }
+                        break;
                     case ASM_LINE_TYPE_OP_COMPARE :
                         switch (line->opr[i]->data.l) {
                             case COMPARISON_EQ : foutput(f, "EQ"); break;

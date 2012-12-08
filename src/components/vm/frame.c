@@ -34,6 +34,7 @@
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/null.h"
+#include "objects/boolean.h"
 #include "objects/code.h"
 #include "debug.h"
 #include "general/output.h"
@@ -243,7 +244,12 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
 
 
     cfr->builtin_identifiers = builtin_identifiers;
+
+    // @TODO: Move this to a vm_populate
     ht_add(cfr->builtin_identifiers->ht, "hash", (t_hash_object *)object_new(Object_Hash));
+    ht_add(cfr->builtin_identifiers->ht, "true", Object_True);
+    ht_add(cfr->builtin_identifiers->ht, "false", Object_False);
+    ht_add(cfr->builtin_identifiers->ht, "null", Object_Null);
 
 
     cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));

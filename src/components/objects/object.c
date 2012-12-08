@@ -320,7 +320,7 @@ void object_dec_ref(t_object *obj) {
 
 #ifdef __DEBUG
 char *object_debug(t_object *obj) {
-    if (! obj) return "(no debug)";
+    if (! obj) return "(no debug info)";
     
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
