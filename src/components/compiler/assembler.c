@@ -38,8 +38,7 @@
 /**
  * Converts assembler codes into bytecode
  */
-t_hash_table *frames;               // All frames in this bytecode. "main" is always defined
-t_dll_element *asm_code_line;       // Assembler lines to convert into bytecode
+//t_hash_table *frames;               // All frames in this bytecode. "main" is always defined
 
 struct _backpatch {
     long opcode_offset;             // Points to the opcode that we are actually patching
@@ -190,7 +189,7 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
 /**
  * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
  */
-static t_asm_frame *assemble_frame(void) {
+static t_asm_frame *assemble_frame(t_dll *source_frame) {
     t_asm_line *line;
     struct _backpatch *bp;
     int opr = VM_STOP;
@@ -205,14 +204,9 @@ static t_asm_frame *assemble_frame(void) {
     frame->code_len = 0;
     frame->code = NULL;
 
-    while (asm_code_line) {
-        line = (t_asm_line *)asm_code_line->data;
-
-        if (line->type == ASM_LINE_TYPE_FRAME) {
-            // Next frame. We're done
-            asm_code_line = DLL_PREV(asm_code_line);
-            break;
-        }
+    t_dll_element *e = DLL_HEAD(source_frame);
+    while (e) {
+        line = (t_asm_line *)e->data;
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
@@ -265,7 +259,7 @@ static t_asm_frame *assemble_frame(void) {
             }
         }
 
-        asm_code_line = DLL_NEXT(asm_code_line);
+        e = DLL_NEXT(e);
     }
 
     // Backpatch labels
@@ -295,7 +289,6 @@ static void _asm_free_opr(t_asm_opr *opr) {
  */
 static void _asm_free_line(t_asm_line *line) {
     switch (line->type) {
-        case ASM_LINE_TYPE_FRAME :
         case ASM_LINE_TYPE_LABEL :
             smm_free(line->s);
             break;
@@ -311,14 +304,25 @@ static void _asm_free_line(t_asm_line *line) {
 /**
  * Free assembler DLL structure
  */
-void assembler_free(t_dll *asm_code) {
-    t_dll_element *e = DLL_HEAD(asm_code);
-    while (e) {
-        _asm_free_line((t_asm_line *)e->data);
-        e = DLL_NEXT(e);
+void assembler_free(t_hash_table *asm_code) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, asm_code);
+
+    while (ht_iter_valid(&iter)) {
+        t_dll *frame = ht_iter_value(&iter);
+
+        t_dll_element *e = DLL_HEAD(frame);
+        while (e) {
+            _asm_free_line((t_asm_line *)e->data);
+            e = DLL_NEXT(e);
+        }
+
+        dll_free(frame);
+
+        ht_iter_next(&iter);
     }
 
-    dll_free(asm_code);
+    ht_destroy(asm_code);
 }
 
 
@@ -356,15 +360,6 @@ t_asm_line *asm_create_codeline(int opcode, int opr_cnt, ...) {
     return line;
 }
 
-/**
- * Create a frame line
- */
-t_asm_line *asm_create_frameline(char *name) {
-    t_asm_line *line = smm_malloc(sizeof(t_asm_line));
-    line->type = ASM_LINE_TYPE_FRAME;
-    line->s = smm_strdup(name);
-    return line;
-}
 
 /**
  * Create a label line
@@ -381,46 +376,37 @@ t_asm_line *asm_create_labelline(char *label) {
 /**
  *
  */
-t_bytecode *assembler(t_dll *asm_code) {
+t_bytecode *assembler(t_hash_table *asm_code) {
+    t_hash_iter iter;
+
     // Init
-    frames = ht_create();
-    asm_code_line = DLL_HEAD(asm_code);
+    t_hash_table *assembled_frames = ht_create();
 
-    // Assemble the initial frame
-    t_asm_frame *frame = assemble_frame();
-    ht_add(frames, "main", frame);
+    ht_iter_init(&iter, asm_code);
+    while (ht_iter_valid(&iter)) {
+        t_dll *frame = ht_iter_value(&iter);
+        char *key = ht_iter_key(&iter);
 
-    // Assemble next frames
-    while (asm_code_line) {
-        t_asm_line *line = (t_asm_line *)asm_code_line->data;
-        if (line->type != ASM_LINE_TYPE_FRAME) {
-            error_and_die(1, "We did not end on a frame!");
-        }
-        t_asm_frame *frame = assemble_frame();
-        ht_add(frames, line->s, frame);
+        t_asm_frame *assembled_frame = assemble_frame(frame);
+        ht_add(assembled_frames, key, assembled_frame);
 
-        asm_code_line = DLL_NEXT(asm_code_line);
+        ht_iter_next(&iter);
     }
 
-
-    return convert_frames_to_bytecode(frames, "main");
+    t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main");
+    ht_destroy(assembled_frames);
+    return bc;
 }
 
 
 /**
- * Outputs a textual assembler file
+ * Ouput a complete frame
  */
-void assembler_output(t_dll *asm_code, char *output_path) {
-    FILE *f = fopen(output_path, "w");
-    if (! f) return;
-
-    t_dll_element *e = DLL_HEAD(asm_code);
+static void _assembler_output_frame(t_dll *frame, FILE *f) {
+    t_dll_element *e = DLL_HEAD(frame);
     while (e) {
         t_asm_line *line = (t_asm_line *)e->data;
 
-        if (line->type == ASM_LINE_TYPE_FRAME) {
-            foutput(f, "\n\n@%s:", line->s);
-        }
         if (line->type == ASM_LINE_TYPE_LABEL) {
             foutput(f, "#%s:", line->s);
         }
@@ -444,6 +430,20 @@ void assembler_output(t_dll *asm_code, char *output_path) {
                         break;
                     case ASM_LINE_TYPE_OP_NUM :
                         foutput(f, "%d", line->opr[i]->data.l);
+                        break;
+                    case ASM_LINE_TYPE_OP_OPERATOR :
+                        switch (line->opr[i]->data.l) {
+                            case OPERATOR_ADD : foutput(f, "ADD"); break;
+                            case OPERATOR_SUB : foutput(f, "SUB"); break;
+                            case OPERATOR_MUL : foutput(f, "MUL"); break;
+                            case OPERATOR_DIV : foutput(f, "DIV"); break;
+                            case OPERATOR_MOD : foutput(f, "MOD"); break;
+                            case OPERATOR_AND : foutput(f, "AND"); break;
+                            case OPERATOR_OR  : foutput(f, "OR");  break;
+                            case OPERATOR_XOR : foutput(f, "XOR"); break;
+                            case OPERATOR_SHL : foutput(f, "SHL"); break;
+                            case OPERATOR_SHR : foutput(f, "SHR"); break;
+                        }
                         break;
                     case ASM_LINE_TYPE_OP_COMPARE :
                         switch (line->opr[i]->data.l) {
@@ -470,6 +470,32 @@ void assembler_output(t_dll *asm_code, char *output_path) {
 
         e = DLL_NEXT(e);
     }
+}
+
+/**
+ * Outputs a textual assembler file
+ */
+void assembler_output(t_hash_table *asm_code, char *output_path) {
+    FILE *f = fopen(output_path, "w");
+    if (! f) return;
+
+    t_hash_iter iter;
+
+    ht_iter_init(&iter, asm_code);
+    while (ht_iter_valid(&iter)) {
+        t_dll *frame = ht_iter_value(&iter);
+        char *key = ht_iter_key(&iter);
+
+        // The "main frame does not need any declaration. Other frames do:
+        if (strcmp(key, "main") != 0) {
+            foutput(f, "\n\n@%s:\n", key);
+        }
+
+        _assembler_output_frame(frame, f);
+
+        ht_iter_next(&iter);
+    }
+
 
     fclose(f);
 }

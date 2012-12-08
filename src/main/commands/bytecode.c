@@ -65,7 +65,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     char *sfa_dest_file = NULL;
     char *dot_dest_file = NULL;
     t_ast_element *ast = NULL;
-    t_dll *asm_code = NULL;
+    t_hash_table *asm_code = NULL;
     int ret = 0;
 
     // Convert our saffire source to an AST

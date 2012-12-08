@@ -67,7 +67,7 @@ static int do_exec(void) {
             smm_free(bytecode_file);
             return 1;
         }
-        t_dll *asm_code = ast_walker(ast);
+        t_hash_table *asm_code = ast_walker(ast);
         if (! asm_code) {
             error("Cannot create assembler");
             smm_free(bytecode_file);
