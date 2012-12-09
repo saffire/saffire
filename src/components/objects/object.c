@@ -106,7 +106,9 @@ static t_object *_find_method(t_object *obj, char *method_name) {
  */
 t_object *object_find_method(t_object *obj, char *method_name) {
     t_object *method = _find_method(obj, method_name);
-    if (! method) return NULL;
+    if (! method) {
+        error_and_die(1, "Cannot find '%s' in '%s'\n", method_name, obj->name);
+    }
     return method;
 }
 
@@ -321,7 +323,7 @@ void object_dec_ref(t_object *obj) {
 #ifdef __DEBUG
 char *object_debug(t_object *obj) {
     if (! obj) return "(no debug info)";
-    
+
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
     }
