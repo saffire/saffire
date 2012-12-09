@@ -116,6 +116,11 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             dot_node_iterate(fp, p->comparison.r, cur_node_nr);
             break;
 
+        case typeAstOperator:
+            fprintf(fp, "fillcolor=burlywood1,style=\"filled\",label=\"{N:%d|Type=Operator|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->operator.op), p->operator.op);
+            dot_node_iterate(fp, p->operator.l, cur_node_nr);
+            dot_node_iterate(fp, p->operator.r, cur_node_nr);
+            break;
 
         case typeAstOpr :
             fprintf(fp, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);

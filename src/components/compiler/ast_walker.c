@@ -132,6 +132,32 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
         case typeAstNop :
             // Nop does not emit any asmlines
             break;
+        case typeAstOperator :
+            state->state = st_load;
+            WALK_LEAF(leaf->operator.l);
+            state->state = st_load;
+            WALK_LEAF(leaf->operator.r);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, OPERATOR_MUL);
+            dll_append(frame, asm_create_codeline(VM_OPERATOR, 1, opr1));
+
+            int op = 0;
+            switch (leaf->operator.op) {
+                case '+' : op = OPERATOR_ADD; break;
+                case '-' : op = OPERATOR_SUB; break;
+                case '*' : op = OPERATOR_MUL; break;
+                case '/' : op = OPERATOR_DIV; break;
+                case '%' : op = OPERATOR_MOD; break;
+                case '&' : op = OPERATOR_AND; break;
+                case '|' : op = OPERATOR_OR;  break;
+                case '^' : op = OPERATOR_XOR; break;
+                case T_SHIFT_LEFT : op = OPERATOR_SHL; break;
+                case T_SHIFT_RIGHT : op = OPERATOR_SHR; break;
+            }
+
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, op);
+            dll_append(frame, asm_create_codeline(VM_OPERATOR, 1, opr1));
+            break;
+
         case typeAstComparison :
             state->state = st_load;
             WALK_LEAF(leaf->comparison.l);
@@ -279,14 +305,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
         case typeAstOpr :
             switch (leaf->opr.oper) {
-                case '*' :
-                    state->state = st_load;
-                    WALK_LEAF(leaf->opr.ops[0]);
-                    WALK_LEAF(leaf->opr.ops[1]);
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, OPERATOR_MUL);
-                    dll_append(frame, asm_create_codeline(VM_OPERATOR, 1, opr1));
-                    break;
-
                 case T_PROGRAM :
                     WALK_LEAF(leaf->opr.ops[0]);        // Imports
                     WALK_LEAF(leaf->opr.ops[1]);        // Top statements
