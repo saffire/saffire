@@ -572,12 +572,12 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(),      ast_string($1), ast_nop()); smm_free($1); }
-    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_nop(),      ast_string($1), $3       ); smm_free($1); }
-    |   T_IDENTIFIER T_IDENTIFIER                              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), ast_nop()); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), $4       ); smm_free($1); smm_free($2); }
-/*    |   T_ELLIPSIS T_IDENTIFIER                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(),    ast_string($2), ast_nop(), ast_numerical(1)); smm_free($2); } */
-/*    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_nop(),    ast_string($1), $3,        ast_numerical(1)); smm_free($1); } */
+        T_IDENTIFIER                                           { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_null(),     ast_string($1), ast_null()); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_null(),     ast_string($1), $3        ); smm_free($1); }
+    |   T_IDENTIFIER T_IDENTIFIER                              { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), ast_null()); smm_free($1); smm_free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), $4        ); smm_free($1); smm_free($2); }
+/*    |   T_ELLIPSIS T_IDENTIFIER                                { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_null(),     ast_string($2), ast_nop(), ast_numerical(1)); smm_free($2); } */
+/*    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { TRACE $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_null(),     ast_string($1), $3,        ast_numerical(1)); smm_free($1); } */
 ;
 
 constant_list:

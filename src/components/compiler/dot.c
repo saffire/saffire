@@ -130,6 +130,10 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{N:%d|Type=NULL}\"]\n", cur_node_nr);
             break;
 
+        case typeAstNop :
+            fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{N:%d|Type=NOP}\"]\n", cur_node_nr);
+            break;
+
         case typeAstInterface :
             fprintf(fp, "fillcolor=darkseagreen,style=\"filled\",label=\"{N:%d|Type=Interface|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->interface.name, show_modifiers(p->interface.modifiers), p->interface.modifiers);
             // Plot implementations and body
