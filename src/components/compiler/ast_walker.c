@@ -137,8 +137,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             WALK_LEAF(leaf->operator.l);
             state->state = st_load;
             WALK_LEAF(leaf->operator.r);
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, OPERATOR_MUL);
-            dll_append(frame, asm_create_codeline(VM_OPERATOR, 1, opr1));
 
             int op = 0;
             switch (leaf->operator.op) {
@@ -160,23 +158,23 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
         case typeAstComparison :
             state->state = st_load;
-            WALK_LEAF(leaf->comparison.l);
-            state->state = st_load;
             WALK_LEAF(leaf->comparison.r);
+            state->state = st_load;
+            WALK_LEAF(leaf->comparison.l);
 
             int tmp = 0;
             switch (leaf->comparison.cmp) {
                 case T_EQ : tmp = COMPARISON_EQ; break;
                 case T_NE : tmp = COMPARISON_NE; break;
-                case '>' : tmp = COMPARISON_GT; break;
-                case '<' : tmp = COMPARISON_LT; break;
+                case '>'  : tmp = COMPARISON_GT; break;
+                case '<'  : tmp = COMPARISON_LT; break;
                 case T_GE : tmp = COMPARISON_GE; break;
                 case T_LE : tmp = COMPARISON_LE; break;
                 default :
                     error_and_die(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
             }
 
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, tmp);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
             dll_append(frame, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
             break;
         case typeAstAssignment :
