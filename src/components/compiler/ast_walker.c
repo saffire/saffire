@@ -203,6 +203,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Iterate body
             WALK_LEAF(leaf->class.body);
 
+            // Push parent class
+            state->state = st_load;
+            WALK_LEAF(leaf->class.extends);
+
             // Push flags
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->class.modifiers);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
@@ -281,8 +285,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     break;
 
                 case T_PROGRAM :
-                    WALK_LEAF(leaf->opr.ops[0]);        // Imports
-                    WALK_LEAF(leaf->opr.ops[1]);        // Top statements
+                    if (leaf->opr.ops[0]->type != typeAstNull)
+                        WALK_LEAF(leaf->opr.ops[0]);        // Imports
+                    if (leaf->opr.ops[1]->type != typeAstNull)
+                        WALK_LEAF(leaf->opr.ops[1]);        // Top statements
                     break;
                 case T_TOP_STATEMENTS :
                 case T_STATEMENTS :
@@ -491,8 +497,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_METHOD_CALL :
                     state->state = st_load;
-                    WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
-                    WALK_LEAF(leaf->opr.ops[0]);       // Load object to call
+                    if (leaf->opr.ops[2]->type != typeAstNull)
+                        WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
+                    WALK_LEAF(leaf->opr.ops[0]);           // Load object to call
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);

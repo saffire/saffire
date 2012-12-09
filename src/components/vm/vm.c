@@ -496,6 +496,9 @@ dispatch:
                     // Add reference to self to the local identifiers
                     ht_replace(tfr->local_identifiers->ht, "self", obj1);
 
+                    // Add refernce to parent (if any)
+                    ht_replace(tfr->local_identifiers->ht, "parent", obj1->parent);
+
                     _parse_calling_arguments(frame, tfr, oparg2, method);
 
                     // "Remove" the arguments from the original stack
@@ -592,43 +595,62 @@ dispatch:
 
 
             case VM_BUILD_CLASS :
-                // pop class name
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
+                {
+                    // pop class name
+                    t_object *name = vm_frame_stack_pop(frame);
+                    object_dec_ref(name);
+                    DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name));
 
-                // pop flags
-                obj3 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj3);
+                    // pop flags
+                    t_object *flags = vm_frame_stack_pop(frame);
+                    object_dec_ref(flags);
+                    DEBUG_PRINT("Flags: %ld\n", OBJ2NUM((t_numerical_object *)flags));
 
-                obj2 = (t_object *)smm_malloc(sizeof(t_object));
-                obj2->ref_count = 0;
-                obj2->type = objectTypeAny;
-                obj2->name = smm_strdup(OBJ2STR(obj1));
-                obj2->flags = OBJ2NUM(obj3) | OBJECT_TYPE_CLASS;
-                obj2->parent = Object_Base;
-                obj2->implement_count = 0;
-                obj2->implements = NULL;
-                obj2->methods = ht_create();
-                obj2->properties = ht_create();
-                obj2->constants = ht_create();
-                obj2->operators = NULL;
-                obj2->comparisons = NULL;
-                obj2->funcs = &userland_funcs;
+                    // pop parent code object (as string)
+                    t_object *parent_class_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(parent_class_obj);
 
-                // Iterate all methods
-                for (int i=0; i!=oparg1; i++) {
-                    // pop method object
-                    obj3 = vm_frame_stack_pop(frame);
-                    // pop method name
-                    obj1 = vm_frame_stack_pop(frame);
-                    // add to class
-                    ht_add(obj2->methods, OBJ2STR(obj3), obj1);
+                    // If no parent class has been given, use the Base class as parent
+                    t_object *parent_class;
+                    if (OBJECT_IS_NULL(parent_class_obj)) {
+                        parent_class = Object_Base;
+                    } else {
+                        // Find the object of this string
+                        parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
+                    }
+                    object_inc_ref(parent_class);
 
-                    DEBUG_PRINT("Added method '%s' to class\n", OBJ2STR(obj3));
+                    DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
+
+                    t_object *class = (t_object *)smm_malloc(sizeof(t_object));
+                    class->ref_count = 0;
+                    class->type = objectTypeAny;
+                    class->name = smm_strdup(OBJ2STR(name));
+                    class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
+                    class->parent = parent_class;
+                    class->implement_count = 0;
+                    class->implements = NULL;
+                    class->methods = ht_create();
+                    class->properties = ht_create();
+                    class->constants = ht_create();
+                    class->operators = NULL;
+                    class->comparisons = NULL;
+                    class->funcs = &userland_funcs;
+
+                    // Iterate all methods
+                    for (int i=0; i!=oparg1; i++) {
+                        t_object *name = vm_frame_stack_pop(frame);
+                        t_object *method = vm_frame_stack_pop(frame);
+
+                        // add to class
+                        ht_add(class->methods, OBJ2STR(name), method);
+
+                        DEBUG_PRINT("Added method '%s' to class\n", object_debug(method));
+                    }
+
+                    object_inc_ref(class);
+                    vm_frame_stack_push(frame, class);
                 }
-
-                object_inc_ref(obj2);
-                vm_frame_stack_push(frame, obj2);
 
                 goto dispatch;
                 break;
