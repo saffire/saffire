@@ -129,6 +129,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->identifier.name, 0);
             _load_or_store(opr1, frame, state);
             break;
+        case typeAstNop :
+            // Nop does not emit any asmlines
+            break;
         case typeAstComparison :
             state->state = st_load;
             WALK_LEAF(leaf->comparison.l);
@@ -285,10 +288,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     break;
 
                 case T_PROGRAM :
-                    if (leaf->opr.ops[0]->type != typeAstNull)
-                        WALK_LEAF(leaf->opr.ops[0]);        // Imports
-                    if (leaf->opr.ops[1]->type != typeAstNull)
-                        WALK_LEAF(leaf->opr.ops[1]);        // Top statements
+                    WALK_LEAF(leaf->opr.ops[0]);        // Imports
+                    WALK_LEAF(leaf->opr.ops[1]);        // Top statements
                     break;
                 case T_TOP_STATEMENTS :
                 case T_STATEMENTS :
@@ -497,8 +498,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_METHOD_CALL :
                     state->state = st_load;
-                    if (leaf->opr.ops[2]->type != typeAstNull)
-                        WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
+                    WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
                     WALK_LEAF(leaf->opr.ops[0]);           // Load object to call
 
                     node = leaf->opr.ops[1];
