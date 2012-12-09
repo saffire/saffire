@@ -203,6 +203,8 @@ void object_tuple_init(void) {
     object_add_internal_method(&Object_Tuple_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     Object_Tuple_struct.properties = ht_create();
+
+    vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }
 
 /**

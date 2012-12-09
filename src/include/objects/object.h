@@ -33,6 +33,8 @@
     #include "general/dll.h"
     #include "compiler/ast.h"
 
+    void vm_populate_builtins(const char *name, void *data);
+
     // Forward define
     typedef struct _object t_object;
     struct _saffire_result;

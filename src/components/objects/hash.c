@@ -225,7 +225,9 @@ void object_hash_init(void) {
     object_add_internal_method(&Object_Hash_struct, "exists", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_exists);
 
     Object_Hash_struct.properties = ht_create();
-	Object_Hash_struct.ht = ht_create();
+    Object_Hash_struct.ht = ht_create();
+
+    vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }
 
 /**
@@ -256,7 +258,9 @@ static t_object *obj_new(void) {
 static void obj_populate(t_object *obj, va_list arg_list) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     // @TODO: We should duplicate the hash, and add it!
-    hash_obj->ht = ht_create();
+
+    t_hash_table *ht = va_arg(arg_list, t_hash_table *);
+    hash_obj->ht = ht ? ht : ht_create();
 }
 
 static void obj_free(t_object *obj) {

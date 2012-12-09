@@ -31,11 +31,12 @@
     #include "objects/hash.h"
     #include "vm/frame.h"
 
-    t_hash_object *builtin_identifiers;         // Builtin identifiers like the _sfl etc
+    t_hash_table *builtin_identifiers;
 
     void vm_init(void);
     void vm_fini(void);
     int vm_execute(t_bytecode *bc);
+    void vm_populate_builtins(const char *name, void *data);
 
 #endif
 

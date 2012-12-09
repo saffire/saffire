@@ -65,8 +65,7 @@ int register_module(t_module *mod) {
         char key[100]; // @TODO: fixme
         sprintf(key, "%s::%s", mod->name, obj->name);
 
-        ht_add(builtin_identifiers->ht, key, obj);
-        DEBUG_PRINT("Added object to builtins: %s\n", key);
+        vm_populate_builtins(key, obj);
 
         idx++;
         obj = (t_object *)mod->objects[idx];

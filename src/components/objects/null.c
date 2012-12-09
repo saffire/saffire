@@ -74,6 +74,8 @@ void object_null_init(void) {
     object_add_internal_method(&Object_Null_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_string);
 
     Object_Null_struct.properties = ht_create();
+
+    vm_populate_builtins("null", Object_Null);
 }
 
 /**
