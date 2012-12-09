@@ -36,7 +36,7 @@
 
     // different kind of nodes we manage
     typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier,
-                   typeAstOpr,
+                   typeAstOpr, typeAstNop,
                    typeAstClass, typeAstInterface, typeAstMethod,
                    typeAstAssignment, typeAstComparison, typeAstBool
                  } nodeEnum;
@@ -138,6 +138,7 @@
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);
+    t_ast_element *ast_null(void);
     t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right);

@@ -175,9 +175,20 @@ t_ast_element *ast_identifier(char *var_name, char action) {
 
 
 /**
- * Creates a null/nop node
+ * Creates a nop node
  */
 t_ast_element *ast_nop(void) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstNop;
+
+    return p;
+}
+
+/**
+ * Creates a null node
+ */
+t_ast_element *ast_null(void) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeAstNull;
@@ -346,11 +357,22 @@ void ast_free_node(t_ast_element *p) {
     if (!p) return;
 
     switch (p->type) {
+        case typeAstNop :
         case typeAstNull :
-            // Nothing to free
-            break;
         case typeAstNumerical :
             // Nothing to free
+            break;
+        case typeAstBool :
+            ast_free_node(p->boolop.r);
+            ast_free_node(p->boolop.l);
+            break;
+        case typeAstAssignment :
+            ast_free_node(p->assignment.r);
+            ast_free_node(p->assignment.l);
+            break;
+        case typeAstComparison:
+            ast_free_node(p->comparison.r);
+            ast_free_node(p->comparison.l);
             break;
         case typeAstString :
             smm_free(p->string.value);
