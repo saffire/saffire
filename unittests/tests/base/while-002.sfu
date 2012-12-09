@@ -52,7 +52,7 @@ else
 @@@@
 import io as io from ::_sfl::io;
 a = 1;
-while(a < 6) a + 1;
+while(a < 6) a = a + 1;
 else {
     io.print("else");
 }
@@ -62,7 +62,7 @@ io.print(a);
 @@@@
 import io as io from ::_sfl::io;
 a = 12;
-while (a < 1) a = 5;
+while (a < 1) a = a + 5;
 else {
     io.print("else");
     io.print("\n");

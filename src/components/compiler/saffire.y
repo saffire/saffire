@@ -384,21 +384,21 @@ regex_expression:
 
 shift_expression:
         additive_expression { TRACE $$ = $1; }
-    |   shift_expression T_SHIFT_LEFT additive_expression { TRACE $$ = ast_opr(T_SHIFT_LEFT, 2, $1, $3); }
-    |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE $$ = ast_opr(T_SHIFT_RIGHT, 2, $1, $3); }
+    |   shift_expression T_SHIFT_LEFT additive_expression { TRACE $$ = ast_operator(T_SHIFT_LEFT, $1, $3); }
+    |   shift_expression T_SHIFT_RIGHT additive_expression { TRACE $$ = ast_operator(T_SHIFT_RIGHT, $1, $3); }
 ;
 
 additive_expression:
         multiplicative_expression { TRACE $$ = $1; }
-    |   additive_expression '+' multiplicative_expression { TRACE $$ = ast_opr('+', 2, $1, $3); }
-    |   additive_expression '-' multiplicative_expression { TRACE $$ = ast_opr('-', 2, $1, $3); }
+    |   additive_expression '+' multiplicative_expression { TRACE $$ = ast_operator('+', $1, $3); }
+    |   additive_expression '-' multiplicative_expression { TRACE $$ = ast_operator('-', $1, $3); }
 ;
 
 multiplicative_expression:
         unary_expression { TRACE $$ = $1; }
-    |   multiplicative_expression '*' unary_expression { TRACE $$ = ast_opr('*', 2, $1, $3); }
-    |   multiplicative_expression '/' unary_expression { TRACE $$ = ast_opr('/', 2, $1, $3); }
-    |   multiplicative_expression '%' unary_expression { TRACE $$ = ast_opr('%', 2, $1, $3); }
+    |   multiplicative_expression '*' unary_expression { TRACE $$ = ast_operator('*', $1, $3); }
+    |   multiplicative_expression '/' unary_expression { TRACE $$ = ast_operator('/', $1, $3); }
+    |   multiplicative_expression '%' unary_expression { TRACE $$ = ast_operator('%', $1, $3); }
 ;
 
 unary_expression:
