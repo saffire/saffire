@@ -122,6 +122,16 @@ t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right
 
     return p;
 }
+t_ast_element *ast_operator(int op, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstOperator;
+    p->operator.op = op;
+    p->operator.l = left;
+    p->operator.r = right;
+
+    return p;
+}
 
 /**
  * Creates a string node
@@ -181,7 +191,6 @@ t_ast_element *ast_nop(void) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeAstNop;
-
     return p;
 }
 
@@ -192,7 +201,6 @@ t_ast_element *ast_null(void) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeAstNull;
-
     return p;
 }
 
@@ -361,6 +369,10 @@ void ast_free_node(t_ast_element *p) {
         case typeAstNull :
         case typeAstNumerical :
             // Nothing to free
+            break;
+        case typeAstOperator :
+            ast_free_node(p->operator.r);
+            ast_free_node(p->operator.l);
             break;
         case typeAstBool :
             ast_free_node(p->boolop.r);
