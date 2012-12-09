@@ -115,8 +115,6 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
     }
 }
 
-
-
 //t_object *object_userland_new(void) {
 //    DEBUG_PRINT("object_create_new_instance called");
 //
@@ -189,8 +187,10 @@ static t_object *_import(t_vm_frame *frame, char *module, char *class) {
  */
 t_object *_vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
+    register t_object *left_obj, *right_obj;
+    register t_object *dst;
+    register char *name;
     register unsigned int opcode, oparg1, oparg2;
-    register char *s1;
     int reason = REASON_NONE;
     t_vm_frame *tfr;
     t_vm_frameblock *block;
@@ -284,94 +284,96 @@ dispatch:
 
             // No operation
             case VM_NOP :
+                // Do nothing..
                 goto dispatch;
                 break;
 
             // Load a global identifier
             case VM_LOAD_GLOBAL :
-                obj1 = vm_frame_get_global_identifier(frame, oparg1);
-                object_inc_ref(obj1);
-                vm_frame_stack_push(frame, obj1);
+                dst = vm_frame_get_global_identifier(frame, oparg1);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
             // store SP+0 as a global identifier
             case VM_STORE_GLOBAL :
                 // Refcount stays equal. So no inc/dec ref needed
-                obj1 = vm_frame_stack_pop(frame);
-                s1 = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_global_identifier(frame, s1, obj1);
+                dst = vm_frame_stack_pop(frame);
+                name = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_global_identifier(frame, name, dst);
                 goto dispatch;
                 break;
 
             // Remove global identifier
             case VM_DELETE_GLOBAL :
-                obj1 = vm_frame_get_global_identifier(frame, oparg1);
-                object_dec_ref(obj1);
-                s1 = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_global_identifier(frame, s1, NULL);
+                dst = vm_frame_get_global_identifier(frame, oparg1);
+                object_dec_ref(dst);
+                name = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_global_identifier(frame, name, NULL);
                 goto dispatch;
                 break;
 
             // Load and push constant onto stack
             case VM_LOAD_CONST :
-                obj1 = vm_frame_get_constant(frame, oparg1);
-                object_inc_ref(obj1);
-                vm_frame_stack_push(frame, obj1);
+                dst = vm_frame_get_constant(frame, oparg1);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
             // Store SP+0 into identifier (either local or global)
             case VM_STORE_ID :
                 // Refcount stays equal. So no inc/dec ref needed
-                obj1 = vm_frame_stack_pop(frame);
-                s1 = vm_frame_get_name(frame, oparg1);
-                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(obj1), s1);
-                vm_frame_set_identifier(frame, s1, obj1);
+                dst = vm_frame_stack_pop(frame);
+                register char *name = vm_frame_get_name(frame, oparg1);
+                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
+                vm_frame_set_identifier(frame, name, dst);
 
                 goto dispatch;
                 break;
+
                 // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                s1 = vm_frame_get_name(frame, oparg1);
-                obj1 = vm_frame_get_identifier(frame, s1);
-                object_inc_ref(obj1);
-                vm_frame_stack_push(frame, obj1);
+                name = vm_frame_get_name(frame, oparg1);
+                dst = vm_frame_get_identifier(frame, name);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
             //
             case VM_OPERATOR :
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
-                obj2 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj2);
+                left_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(left_obj);
+                right_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(right_obj);
 
-                if (obj1->type != obj2->type) {
+                if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                obj3 = object_operator(obj2, oparg1, 0, 1, obj1);
+                dst = object_operator(left_obj, oparg1, 0, 1, right_obj);
 
-                object_inc_ref(obj3);
-                vm_frame_stack_push(frame, obj3);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
             case VM_INPLACE_OPR :
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
-                obj2 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj2);
+                left_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(left_obj);
+                right_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(right_obj);
 
-                if (obj1->type != obj2->type) { \
+                if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                obj3 = object_operator(obj2, oparg1, 1, 1, obj1);
+                dst = object_operator(left_obj, oparg1, 1, 1, right_obj);
 
-                object_inc_ref(obj3);   \
-                vm_frame_stack_push(frame, obj3);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
@@ -383,14 +385,14 @@ dispatch:
 
             // Conditional jump on SP-0 is true
             case VM_JUMP_IF_TRUE :
-                obj1 = vm_frame_stack_fetch_top(frame);
-                if (! OBJECT_IS_BOOLEAN(obj1)) {
+                dst = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    obj2 = object_find_method(obj1, "boolean");
-                    obj1 = object_call(obj1, obj2, 0);
+                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    dst = object_call(dst, bool_method, 0);
                 }
 
-                if (IS_BOOLEAN_TRUE(obj1)) {
+                if (IS_BOOLEAN_TRUE(dst)) {
                     frame->ip += oparg1;
                 }
 
@@ -399,29 +401,29 @@ dispatch:
 
             // Conditional jump on SP-0 is false
             case VM_JUMP_IF_FALSE :
-                obj1 = vm_frame_stack_fetch_top(frame);
-                if (! OBJECT_IS_BOOLEAN(obj1)) {
+                dst = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    obj2 = object_find_method(obj1, "boolean");
-                    obj1 = object_call(obj1, obj2, 0);
+                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    dst = object_call(dst, bool_method, 0);
                 }
 
-                if (IS_BOOLEAN_FALSE(obj1)) {
+                if (IS_BOOLEAN_FALSE(dst)) {
                     frame->ip += oparg1;
                 }
                 goto dispatch;
                 break;
 
-           case VM_JUMP_IF_FIRST_TRUE :
-                obj1 = vm_frame_stack_fetch_top(frame);
-                if (! OBJECT_IS_BOOLEAN(obj1)) {
+            case VM_JUMP_IF_FIRST_TRUE :
+                dst = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    obj2 = object_find_method(obj1, "boolean");
-                    obj1 = object_call(obj1, obj2, 0);
+                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    dst = object_call(dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
-                if (IS_BOOLEAN_TRUE(obj1) && frame->blocks[frame->block_cnt-1].visited == 0) {
+                if (IS_BOOLEAN_TRUE(dst) && frame->blocks[frame->block_cnt-1].visited == 0) {
                     frame->ip += oparg1;
                 }
 
@@ -430,16 +432,16 @@ dispatch:
                 goto dispatch;
                 break;
 
-           case VM_JUMP_IF_FIRST_FALSE :
-                obj1 = vm_frame_stack_fetch_top(frame);
-                if (! OBJECT_IS_BOOLEAN(obj1)) {
+            case VM_JUMP_IF_FIRST_FALSE :
+                dst = vm_frame_stack_fetch_top(frame);
+                if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    obj2 = object_find_method(obj1, "boolean");
-                    obj1 = object_call(obj1, obj2, 0);
+                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    dst = object_call(dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
-                if (IS_BOOLEAN_FALSE(obj1) && frame->blocks[frame->block_cnt-1].visited == 0) {
+                if (IS_BOOLEAN_FALSE(dst) && frame->blocks[frame->block_cnt-1].visited == 0) {
                     frame->ip += oparg1;
                 }
 
@@ -456,80 +458,87 @@ dispatch:
 
             // Duplicates the SP+0 a number of times
             case VM_DUP_TOPX :
-                obj1 = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame);
                 for (int i=0; i!=oparg1; i++) {
-                    object_inc_ref(obj1);
-                    vm_frame_stack_push(frame, obj1);
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
                 }
                 goto dispatch;
                 break;
 
             // Calls method OP+0 SP+0 from object SP+1 with OP+1 args starting from SP+2.
             case VM_CALL_METHOD :
-                // This object will become "self" in our method call
-                obj1 = vm_frame_stack_pop(frame);
-                // Find the actual method to call inside our object (or parent classes)
-                obj2 = object_find_method(obj1, (char *)vm_frame_get_constant_literal(frame, oparg1));
+                {
+                    // This object will become "self" in our method call
+                    register t_object *self_obj = vm_frame_stack_pop(frame);
 
-                // @TODO: Maybe this should just be a tuple object?
+                    // Find the code from the method we need to call
+                    register char *method_name = (char *)vm_frame_get_constant_literal(frame, oparg1);
+                    t_method_object *method_obj = (t_method_object *)object_find_method(self_obj, method_name);
+                    t_code_object *code_obj = (t_code_object *)method_obj->code;
 
-                t_method_object *method = (t_method_object *)obj2;
-                t_code_object *code = (t_code_object *)method->code;
-                if (code->native_func) {
-                    // Create argument list
-                    t_dll *args = dll_init();
-                    for (int i=0; i!=oparg2; i++) {
-                        obj3 = vm_frame_stack_pop(frame);
-                        dll_prepend(args, obj3);
+                    // @TODO: Native and userland functions are treated differently. This needs to be moved
+                    //        to the code-object AND both systems need the same way to deal with arguments.
+
+                    // Check if it's a native function.
+                    if (code_obj->native_func) {
+
+                        // Create argument list inside a DLL
+                        t_dll *arg_list = dll_init();
+                        for (int i=0; i!=oparg2; i++) {
+                            dll_prepend(arg_list, vm_frame_stack_pop(frame));
+                        }
+
+                        // Call native function
+                        dst = code_obj->native_func(self_obj, arg_list);
+
+                        // Free argument list
+                        dll_free(arg_list);
+                    } else {
+                        // Create a new executio frame
+                        tfr = vm_frame_new(frame, code_obj->bytecode);
+
+                        // Add references to parent and self
+                        ht_replace(tfr->local_identifiers->ht, "self", self_obj);
+                        ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
+
+                        // Parse calling arguments to see if they match our signatures
+                        _parse_calling_arguments(frame, tfr, oparg2, method_obj);
+
+                        // "Remove" the arguments from the original stack
+                        frame->sp += oparg2;
+
+                        // Execute frame, return the last object
+                        dst = _vm_execute(tfr);
+
+                        // Destroy frame
+                        vm_frame_destroy(tfr);
                     }
 
-                    obj3 = code->native_func(obj1, args);
-                    dll_free(args);
-                } else {
-                    // Create a new frame
-                    tfr = vm_frame_new(frame, code->bytecode);
-
-//#ifdef __DEBUG
-//                    vm_frame_stack_debug(frame);
-//#endif
-
-                    // Add reference to self to the local identifiers
-                    ht_replace(tfr->local_identifiers->ht, "self", obj1);
-
-                    // Add refernce to parent (if any)
-                    ht_replace(tfr->local_identifiers->ht, "parent", obj1->parent);
-
-                    _parse_calling_arguments(frame, tfr, oparg2, method);
-
-                    // "Remove" the arguments from the original stack
-                    frame->sp += oparg2;
-
-                    // Execute frame, return the last object
-                    obj3 = _vm_execute(tfr);
-                    vm_frame_destroy(tfr);
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
                 }
-
-                object_inc_ref(obj3);
-                vm_frame_stack_push(frame, obj3);
 
                 goto dispatch;
                 break;
 
             // Import X as Y from Z
             case VM_IMPORT :
-                // Fetch the module to import
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
-                char *module = OBJ2STR(obj1);
+                {
+                    // Fetch the module to import
+                    register t_object *module_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(module_obj);
+                    register char *module_name = OBJ2STR(module_obj);
 
-                // Fetch class
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
-                char *class = OBJ2STR(obj1);
+                    // Fetch class
+                    register t_object *class_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(class_obj);
+                    register char *class_name = OBJ2STR(class_obj);
 
-                obj3 = _import(frame, module, class);
-                object_inc_ref(obj3);
-                vm_frame_stack_push(frame, obj3);
+                    dst = _import(frame, module_name, class_name);
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
+                }
 
                 goto dispatch;
                 break;
@@ -564,19 +573,19 @@ dispatch:
                 break;
 
             case VM_COMPARE_OP :
-                obj1 = vm_frame_stack_pop(frame);
-                obj2 = vm_frame_stack_pop(frame);
+                left_obj = vm_frame_stack_pop(frame);
+                right_obj = vm_frame_stack_pop(frame);
 
-                if (obj1->type != obj2->type) {
+                if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Cannot compare non-identical object types\n");
                 }
-                obj3 = object_comparison(obj2, oparg1, obj1);
+                dst = object_comparison(left_obj, oparg1, right_obj);
 
-                object_dec_ref(obj1);
-                object_dec_ref(obj2);
+                object_dec_ref(left_obj);
+                object_dec_ref(right_obj);
 
-                object_inc_ref(obj3);
-                vm_frame_stack_push(frame, obj3);
+                object_inc_ref(dst);
+                vm_frame_stack_push(frame, dst);
                 goto dispatch;
                 break;
 
@@ -597,21 +606,21 @@ dispatch:
             case VM_BUILD_CLASS :
                 {
                     // pop class name
-                    t_object *name = vm_frame_stack_pop(frame);
+                    register t_object *name = vm_frame_stack_pop(frame);
                     object_dec_ref(name);
                     DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name));
 
                     // pop flags
-                    t_object *flags = vm_frame_stack_pop(frame);
+                    register t_object *flags = vm_frame_stack_pop(frame);
                     object_dec_ref(flags);
                     DEBUG_PRINT("Flags: %ld\n", OBJ2NUM((t_numerical_object *)flags));
 
                     // pop parent code object (as string)
-                    t_object *parent_class_obj = vm_frame_stack_pop(frame);
+                    register t_object *parent_class_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(parent_class_obj);
 
                     // If no parent class has been given, use the Base class as parent
-                    t_object *parent_class;
+                    register t_object *parent_class;
                     if (OBJECT_IS_NULL(parent_class_obj)) {
                         parent_class = Object_Base;
                     } else {
@@ -622,7 +631,7 @@ dispatch:
 
                     DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
 
-                    t_object *class = (t_object *)smm_malloc(sizeof(t_object));
+                    register t_object *class = (t_object *)smm_malloc(sizeof(t_object));
                     class->ref_count = 0;
                     class->type = objectTypeAny;
                     class->name = smm_strdup(OBJ2STR(name));
@@ -639,8 +648,8 @@ dispatch:
 
                     // Iterate all methods
                     for (int i=0; i!=oparg1; i++) {
-                        t_object *name = vm_frame_stack_pop(frame);
-                        t_object *method = vm_frame_stack_pop(frame);
+                        register t_object *name = vm_frame_stack_pop(frame);
+                        register t_object *method = vm_frame_stack_pop(frame);
 
                         // add to class
                         ht_add(class->methods, OBJ2STR(name), method);
@@ -655,29 +664,29 @@ dispatch:
                 goto dispatch;
                 break;
             case VM_BUILD_METHOD :
-                // pop code object
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
+                {
+                    // pop code object
+                    register t_object *code_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(code_obj);
 
-                // Generate hash object from arguments
-                obj2 = object_new(Object_Hash, NULL);
+                    // Generate hash object from arguments
+                    register t_object *arg_list = object_new(Object_Hash, NULL);
+                    for (int i=0; i!=oparg1; i++) {
+                        t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
+                        arg->value = vm_frame_stack_pop(frame);
+                        register t_object *name_obj = vm_frame_stack_pop(frame);
+                        arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
 
-                for (int i=0; i!=oparg1; i++) {
-                    t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
+                        ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
+                    }
 
-                    arg->value = vm_frame_stack_pop(frame);
-                    t_object *name_obj = vm_frame_stack_pop(frame);
-                    arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
+                    // Generate method object
+                    dst = object_new(Object_Method, 0, 0, NULL, code_obj, arg_list);
 
-                    ht_add(((t_hash_object *)obj2)->ht, OBJ2STR(name_obj), arg);
+                    // Push method object
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
                 }
-
-                // Generate method object
-                obj3 = object_new(Object_Method, 0, 0, NULL, obj1, obj2);
-
-                // Push method object
-                object_inc_ref(obj3);
-                vm_frame_stack_push(frame, obj3);
 
                 goto dispatch;
                 break;
@@ -711,8 +720,8 @@ block_end:
             // Unwind the stack. Make sure we are at the same level as the caller block.
             while (frame->sp < block->sp) {
                 DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
-                obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
+                dst = vm_frame_stack_pop(frame);
+                object_dec_ref(dst);
             }
 
             if (reason == REASON_BREAKELSE && block->type == BLOCK_TYPE_LOOP) {
@@ -748,20 +757,20 @@ int vm_execute(t_bytecode *bc) {
     t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, bc);
 
     // Execute the frame
-    t_object *obj1 = _vm_execute(initial_frame);
+    t_object *result = _vm_execute(initial_frame);
 
     DEBUG_PRINT("*** Vm execution done\n");
 
     // Convert returned object to numerical, so we can use it as an error code
-    if (!OBJECT_IS_NUMERICAL(obj1)) {
+    if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
-        t_object *obj2 = object_find_method(obj1, "numerical");
-        obj1 = object_call(obj1, obj2, 0);
+        t_object *result_numerical = object_find_method(result, "numerical");
+        result = object_call(result, result_numerical, 0);
     }
-    int ret = ((t_numerical_object *) obj1)->value;
+    int ret_val = ((t_numerical_object *) result)->value;
 
     vm_frame_destroy(initial_frame);
-    return ret;
+    return ret_val;
 }
 
 /**
