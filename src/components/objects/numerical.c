@@ -398,6 +398,8 @@ void object_numerical_init(void) {
         numerical_cache[i]->flags &= ~OBJECT_TYPE_MASK;
         numerical_cache[i]->flags |= OBJECT_TYPE_INSTANCE;
     }
+
+    vm_populate_builtins("numerical", (t_object *)&Object_Numerical_struct);
 }
 
 

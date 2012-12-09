@@ -46,6 +46,7 @@
 #include "general/output.h"
 #include "gc/gc.h"
 
+t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
 
 // A method-argument hash consists of name => structure
 typedef struct _method_arg {
@@ -158,15 +159,15 @@ t_object_funcs userland_funcs = {
  */
 void vm_init(void) {
     gc_init();
+    builtin_identifiers = ht_create();
     object_init();
-    builtin_identifiers = (t_hash_object *)object_new(Object_Hash);
     module_init();
 }
 
 void vm_fini(void) {
     module_fini();
-    object_free((t_object *)builtin_identifiers);
     object_fini();
+    ht_destroy(builtin_identifiers);
     gc_fini();
 }
 
@@ -637,7 +638,7 @@ dispatch:
                 object_dec_ref(obj1);
 
                 // Generate hash object from arguments
-                obj2 = object_new(Object_Hash);
+                obj2 = object_new(Object_Hash, NULL);
 
                 for (int i=0; i!=oparg1; i++) {
                     t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
@@ -739,4 +740,12 @@ int vm_execute(t_bytecode *bc) {
 
     vm_frame_destroy(initial_frame);
     return ret;
+}
+
+/**
+ *
+ */
+void vm_populate_builtins(const char *name, void *data) {
+    DEBUG_PRINT("Added object to builtins: %s\n", name);
+    ht_add(builtin_identifiers, name, data);
 }

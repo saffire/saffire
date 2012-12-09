@@ -177,6 +177,8 @@ void object_regex_init(void) {
     object_add_internal_method(&Object_Regex_struct, "regex", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     Object_Regex_struct.properties = ht_create();
+
+    vm_populate_builtins("regex", (t_object *)&Object_Regex_struct);
 }
 
 /**

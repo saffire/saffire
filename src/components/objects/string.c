@@ -318,6 +318,8 @@ void object_string_init(void) {
 
     // Create string cache
     string_cache = ht_create();
+
+    vm_populate_builtins("string", (t_object *)&Object_String_struct);
 }
 
 /**

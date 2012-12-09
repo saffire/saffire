@@ -257,6 +257,9 @@ void object_boolean_init(void) {
 
     Object_Boolean_False_struct.properties = Object_Boolean_struct.properties;
     Object_Boolean_True_struct.properties = Object_Boolean_struct.properties;
+
+    vm_populate_builtins("false", Object_True);
+    vm_populate_builtins("true", Object_False);
 }
 
 /**
