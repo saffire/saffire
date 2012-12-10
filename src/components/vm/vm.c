@@ -443,6 +443,16 @@ dispatch:
                     t_method_object *method_obj = (t_method_object *)object_find_method(self_obj, method_name);
                     t_code_object *code_obj = (t_code_object *)method_obj->code;
 
+
+                    printf("\n\n\n");
+                    printf("**** CALLING FROM A %s\n", OBJECT_TYPE_IS_CLASS(self_obj) ? "CLASS" : "OBJECT");
+                    printf("**** CALLING A %s METHOD\n", OBJECT_TYPE_IS_STATIC(method_obj) ? "STATIC" : "DYNAMIC");
+                    printf("\n\n\n");
+                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! OBJECT_TYPE_IS_STATIC(method_obj)) {
+                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
+                    }
+
+
                     // @TODO: Native and userland functions are treated differently. This needs to be moved
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
@@ -571,8 +581,6 @@ dispatch:
 
             case VM_BUILD_CLASS :
                 {
-                    vm_frame_stack_debug(frame);
-
                     // pop class name
                     register t_object *name = vm_frame_stack_pop(frame);
                     object_dec_ref(name);
@@ -598,8 +606,6 @@ dispatch:
                     object_inc_ref(parent_class);
 
                     DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
-
-                    printf("\n\n\n**** CREATING A CLASS ****\n\n\n\n");
 
                     //register t_object *class = object_new(Object_Userland, OBJ2STR(name), OBJ2NUM(flags), parent_class);
 
@@ -629,6 +635,13 @@ dispatch:
                 break;
             case VM_BUILD_METHOD :
                 {
+
+                    printf("\n\n\n**** CREATING A METHOD ****\n\n\n\n");
+
+                    // pop flags object
+                    register t_object *flags = vm_frame_stack_pop(frame);
+                    object_dec_ref(flags);
+
                     // pop code object
                     register t_object *code_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(code_obj);
@@ -645,7 +658,7 @@ dispatch:
                     }
 
                     // Generate method object
-                    dst = object_new(Object_Method, 0, 0, NULL, code_obj, arg_list);
+                    dst = object_new(Object_Method, flags, 0, NULL, code_obj, arg_list);
 
                     // Push method object
                     object_inc_ref(dst);

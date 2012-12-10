@@ -132,6 +132,16 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
 
     t_method_object *method = (t_method_object *)method_obj;
 
+    printf("\n\n\n");
+    printf("**** CALLING FROM A %s SELF\n", OBJECT_TYPE_IS_STATIC(self) ? "STATIC" : "DYNAMIC");
+    printf("**** CALLING A %s METHOD\n", OBJECT_TYPE_IS_STATIC(method_obj) ? "STATIC" : "DYNAMIC");
+    printf("\n\n\n");
+
+    if (OBJECT_TYPE_IS_STATIC(self) && ! OBJECT_TYPE_IS_STATIC(method_obj)) {
+        error_and_die(1, "Cannot call dynamic method '%s' from static context", method_obj->name);
+    }
+
+
     DEBUG_PRINT("MFLAGS: %d\n", method->mflags);
     DEBUG_PRINT("OFLAGS: %d\n", method->class->flags);
 
@@ -165,6 +175,7 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
 * Calls a method from specified object. Returns NULL when method is not found.
 */
 t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
+
     // Add all arguments to a DLL
     va_list arg_list;
     va_start(arg_list, arg_count);
