@@ -194,7 +194,7 @@ void object_regex_fini(void) {
 }
 
 
-static t_object *obj_new(void) {
+static t_object *obj_new(t_object *self) {
     t_regex_object *obj = smm_malloc(sizeof(t_regex_object));
     memcpy(obj, Object_Regex, sizeof(t_regex_object));
 

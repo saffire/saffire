@@ -290,6 +290,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Walk the body inside a new frame!
             _ast_walker(leaf->method.body, output, label1);
 
+            // Push method flags
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->method.modifiers);
+            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+
             // Build method
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
             dll_append(frame, asm_create_codeline(VM_BUILD_METHOD, 1, opr1));

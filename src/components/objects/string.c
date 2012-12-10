@@ -339,7 +339,7 @@ void object_string_fini(void) {
 
 
 
-static t_object *obj_new(void) {
+static t_object *obj_new(t_object *self) {
     t_string_object *obj = smm_malloc(sizeof(t_string_object));
     memcpy(obj, Object_String, sizeof(t_string_object));
 
