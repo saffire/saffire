@@ -41,6 +41,7 @@
 #include "objects/code.h"
 #include "objects/method.h"
 #include "objects/null.h"
+#include "objects/userland.h"
 #include "modules/module_api.h"
 #include "debug.h"
 #include "general/output.h"
@@ -115,41 +116,6 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
     }
 }
 
-//t_object *object_userland_new(void) {
-//    DEBUG_PRINT("object_create_new_instance called");
-//
-//    t_object *new_obj = smm_malloc(sizeof(t_object));
-//    memcpy(new_obj, obj, sizeof(t_object));
-//
-//    // Reset refcount for new object
-//    new_obj->ref_count = 0;
-//
-//    // These are instances
-//    new_obj->flags &= ~OBJECT_TYPE_MASK;
-//    new_obj->flags |= OBJECT_TYPE_INSTANCE;
-//
-//    return new_obj;
-//}
-
-#ifdef __DEBUG
-char global_buf[1024];
-static char *object_user_debug(t_object *obj) {
-    sprintf(global_buf, "User object[%s]", obj->name);
-    return global_buf;
-}
-#endif
-
-// String object management functions
-t_object_funcs userland_funcs = {
-        NULL,                       // Allocate
-        NULL,                       // Populate
-        NULL,                       // Free
-        NULL,                       // Destroy
-        NULL,                       // Clone
-#ifdef __DEBUG
-        object_user_debug
-#endif
-};
 
 
 /**
@@ -477,6 +443,16 @@ dispatch:
                     t_method_object *method_obj = (t_method_object *)object_find_method(self_obj, method_name);
                     t_code_object *code_obj = (t_code_object *)method_obj->code;
 
+
+                    printf("\n\n\n");
+                    printf("**** CALLING FROM A %s\n", OBJECT_TYPE_IS_CLASS(self_obj) ? "CLASS" : "OBJECT");
+                    printf("**** CALLING A %s METHOD\n", OBJECT_TYPE_IS_STATIC(method_obj) ? "STATIC" : "DYNAMIC");
+                    printf("\n\n\n");
+                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! OBJECT_TYPE_IS_STATIC(method_obj)) {
+                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
+                    }
+
+
                     // @TODO: Native and userland functions are treated differently. This needs to be moved
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
@@ -631,20 +607,14 @@ dispatch:
 
                     DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
 
+                    //register t_object *class = object_new(Object_Userland, OBJ2STR(name), OBJ2NUM(flags), parent_class);
+
                     register t_object *class = (t_object *)smm_malloc(sizeof(t_object));
-                    class->ref_count = 0;
-                    class->type = objectTypeAny;
+                    memcpy(class, Object_Userland, sizeof(t_userland_object));
+
                     class->name = smm_strdup(OBJ2STR(name));
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
-                    class->implement_count = 0;
-                    class->implements = NULL;
-                    class->methods = ht_create();
-                    class->properties = ht_create();
-                    class->constants = ht_create();
-                    class->operators = NULL;
-                    class->comparisons = NULL;
-                    class->funcs = &userland_funcs;
 
                     // Iterate all methods
                     for (int i=0; i!=oparg1; i++) {
@@ -665,6 +635,13 @@ dispatch:
                 break;
             case VM_BUILD_METHOD :
                 {
+
+                    printf("\n\n\n**** CREATING A METHOD ****\n\n\n\n");
+
+                    // pop flags object
+                    register t_object *flags = vm_frame_stack_pop(frame);
+                    object_dec_ref(flags);
+
                     // pop code object
                     register t_object *code_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(code_obj);
@@ -681,7 +658,7 @@ dispatch:
                     }
 
                     // Generate method object
-                    dst = object_new(Object_Method, 0, 0, NULL, code_obj, arg_list);
+                    dst = object_new(Object_Method, flags, 0, NULL, code_obj, arg_list);
 
                     // Push method object
                     object_inc_ref(dst);

@@ -153,7 +153,7 @@ void object_code_fini(void) {
 }
 
 
-static t_object *obj_new(void) {
+static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_code_object *obj = smm_malloc(sizeof(t_code_object));
     memcpy(obj, Object_Code, sizeof(t_code_object));

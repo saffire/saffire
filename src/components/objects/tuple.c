@@ -221,7 +221,7 @@ void object_tuple_fini(void) {
 
 
 
-static t_object *obj_new(void) {
+static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_tuple_object *obj = smm_malloc(sizeof(t_tuple_object));
     memcpy(obj, Object_Tuple, sizeof(t_tuple_object));
