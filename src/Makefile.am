@@ -121,7 +121,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/code.c \
                        components/objects/method.c \
                        components/objects/hash.c \
-                       components/objects/tuple.c
+                       components/objects/tuple.c \
+		       components/objects/userland.c
 
 
 ########################################################################

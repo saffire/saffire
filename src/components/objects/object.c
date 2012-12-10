@@ -41,6 +41,7 @@
 #include "objects/code.h"
 #include "objects/hash.h"
 #include "objects/tuple.h"
+#include "objects/userland.h"
 #include "general/dll.h"
 #include "debug.h"
 #include "gc/gc.h"
@@ -388,7 +389,7 @@ t_object *object_new(t_object *obj, ...) {
     if (res != NULL) {
         cached = 1;
     } else {
-        res = obj->funcs->new();
+        res = obj->funcs->new(obj);
         cached = 0;
     }
 
@@ -435,6 +436,7 @@ void object_init() {
     object_method_init();
     object_hash_init();
     object_tuple_init();
+    object_userland_init();
 
 #ifdef __DEBUG
     ht_num_add(object_hash, (unsigned long)Object_True, Object_True);
@@ -463,6 +465,7 @@ void object_fini() {
     object_method_fini();
     object_hash_fini();
     object_tuple_fini();
+    object_userland_fini();
 }
 
 

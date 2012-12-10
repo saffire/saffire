@@ -253,7 +253,7 @@ void object_method_fini(void) {
 
 
 
-static t_object *obj_new(void) {
+static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_method_object *obj = smm_malloc(sizeof(t_method_object));
     memcpy(obj, Object_Method, sizeof(t_method_object));

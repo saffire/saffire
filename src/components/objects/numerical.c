@@ -444,7 +444,7 @@ static t_object *obj_clone(t_object *obj) {
 /**
  * Creates a new numerical object by "cloning" the original one
  */
- static t_object *obj_new(void) {
+ static t_object *obj_new(t_object *self) {
     t_numerical_object *obj = smm_malloc(sizeof(t_numerical_object));
     memcpy(obj, Object_Numerical, sizeof(t_numerical_object));
 

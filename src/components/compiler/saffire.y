@@ -634,13 +634,13 @@ modifier:
 /* extends only one class */
 class_extends:
         T_EXTENDS T_IDENTIFIER { TRACE $$ = ast_string($2); smm_free($2); }
-    |   /* empty */            { TRACE $$ = ast_nop(); }
+    |   /* empty */            { TRACE $$ = ast_null(); }
 ;
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
         T_IMPLEMENTS class_list { TRACE $$ = ast_opr(T_IMPLEMENTS, 1, $2); }
-    |   /* empty */             { TRACE $$ = ast_nop(); }
+    |   /* empty */             { TRACE $$ = ast_null(); }
 ;
 
 /* Comma separated list of classes (for extends and implements) */
