@@ -27,6 +27,8 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
+    #include "gitversion.h"
+
     #define saffire_version_major   "0"
     #define saffire_version_minor   "0"
     #define saffire_version_build   "1"
@@ -39,7 +41,7 @@
     #define saffire_version       "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
     #define saffire_version_wide   L"" saffire_version
     #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
-    #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__
+    #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__ " from git revision " git_revision
 
 
 #endif
