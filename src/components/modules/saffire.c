@@ -37,7 +37,7 @@
  *
  */
 static t_object *saffire_return_version(t_object *self, t_dll *args) {
-    RETURN_STRING(saffire_version_wide);
+    RETURN_STRING(saffire_version);
 }
 
 static t_object *saffire_return_gitrev(t_object *self, t_dll *args) {
