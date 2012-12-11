@@ -40,12 +40,18 @@ static t_object *saffire_return_version(t_object *self, t_dll *args) {
     RETURN_STRING(saffire_version_wide);
 }
 
+static t_object *saffire_return_gitrev(t_object *self, t_dll *args) {
+    RETURN_STRING(git_revision);
+}
+
 
 t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
 
 static void _init(void) {
     saffire_struct.methods = ht_create();
-    ht_add(saffire_struct.methods, "version", saffire_return_version);
+
+    object_add_internal_method(&saffire_struct, "version", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, saffire_return_version);
+    object_add_internal_method(&saffire_struct, "gitrevision", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, saffire_return_gitrev);
     saffire_struct.properties = ht_create();
 }
 static void _fini(void) {
