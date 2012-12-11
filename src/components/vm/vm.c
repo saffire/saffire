@@ -443,12 +443,7 @@ dispatch:
                     t_method_object *method_obj = (t_method_object *)object_find_method(self_obj, method_name);
                     t_code_object *code_obj = (t_code_object *)method_obj->code;
 
-
-                    printf("\n\n\n");
-                    printf("**** CALLING FROM A %s\n", OBJECT_TYPE_IS_CLASS(self_obj) ? "CLASS" : "OBJECT");
-                    printf("**** CALLING A %s METHOD\n", OBJECT_TYPE_IS_STATIC(method_obj) ? "STATIC" : "DYNAMIC");
-                    printf("\n\n\n");
-                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! OBJECT_TYPE_IS_STATIC(method_obj)) {
+                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
                         error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
                     }
 
