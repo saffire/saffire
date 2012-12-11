@@ -253,14 +253,14 @@ void object_method_fini(void) {
 
 
 
-static t_object *obj_new(t_object *self, long flags) {
+static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_method_object *obj = smm_malloc(sizeof(t_method_object));
     memcpy(obj, Object_Method, sizeof(t_method_object));
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= (flags | OBJECT_TYPE_INSTANCE);
+    obj->flags |= OBJECT_TYPE_INSTANCE;
 
     return (t_object *)obj;
 }
