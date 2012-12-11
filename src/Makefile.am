@@ -165,6 +165,7 @@ noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
                   components/vm/frame.c \
+                  components/vm/import.c \
                   include/vm/vm_opcodes.c
 
 

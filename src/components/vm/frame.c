@@ -184,7 +184,33 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
  * Return object from either the local or the global identifier table
  */
 t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
+    t_object *obj = vm_frame_find_identifier(frame, id);
+    if (obj != NULL) return obj;
+
+    error_and_die(1, "Cannot find variable: %s\n", id);
+    return NULL;
+}
+
+/**
+ * Same as get, but does not halt on error (but returns NULL)
+ */
+t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
+
+
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, frame->local_identifiers->ht);
+    while (ht_iter_valid(&iter)) {
+        char *k = ht_iter_key(&iter);
+        t_object *v = ht_iter_value(&iter);
+        printf("  K: %-20s %s\n", k, object_debug(v));
+        ht_iter_next(&iter);
+    }
+
+
+
+
 
     obj = ht_find(frame->local_identifiers->ht, id);
     if (obj != NULL) return obj;
@@ -195,10 +221,7 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     }
 
     obj = ht_find(frame->builtin_identifiers->ht, id);
-    if (obj != NULL) return obj;
-
-    error_and_die(1, "Cannot find variable: %s\n", id);
-    return NULL;
+    return obj;
 }
 
 

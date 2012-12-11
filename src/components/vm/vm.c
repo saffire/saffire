@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include <limits.h>
 #include "compiler/bytecode.h"
 #include "vm/vm.h"
 #include "vm/vm_opcodes.h"
@@ -45,6 +46,7 @@
 #include "modules/module_api.h"
 #include "debug.h"
 #include "general/output.h"
+#include "vm/import.h"
 #include "gc/gc.h"
 
 t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
@@ -134,19 +136,6 @@ void vm_fini(void) {
     ht_destroy(builtin_identifiers);
     gc_fini();
 }
-
-
-/**
- *
- */
-static t_object *_import(t_vm_frame *frame, char *module, char *class) {
-    char tmp[100];
-    snprintf(tmp, 99, "%s::%s", module, class);
-
-    t_object *obj = vm_frame_get_identifier(frame, tmp);
-    return obj;
-}
-
 
 /**
  *
@@ -506,7 +495,7 @@ dispatch:
                     object_dec_ref(class_obj);
                     register char *class_name = OBJ2STR(class_obj);
 
-                    dst = _import(frame, module_name, class_name);
+                    dst = vm_import(frame, module_name, class_name);
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
                 }
