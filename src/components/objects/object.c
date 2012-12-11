@@ -129,21 +129,10 @@ t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
     if (! OBJECT_IS_METHOD(method_obj)) {
         error_and_die(1, "Object returned in this method is not a method, so I cannot call this!");
     }
-
     t_method_object *method = (t_method_object *)method_obj;
-
-    printf("\n\n\n");
-    printf("**** CALLING FROM A %s SELF\n", OBJECT_TYPE_IS_STATIC(self) ? "STATIC" : "DYNAMIC");
-    printf("**** CALLING A %s METHOD\n", OBJECT_TYPE_IS_STATIC(method_obj) ? "STATIC" : "DYNAMIC");
-    printf("\n\n\n");
-
-    if (OBJECT_TYPE_IS_STATIC(self) && ! OBJECT_TYPE_IS_STATIC(method_obj)) {
+    if (OBJECT_TYPE_IS_CLASS(self) && ! METHOD_IS_STATIC(method)) {
         error_and_die(1, "Cannot call dynamic method '%s' from static context", method_obj->name);
     }
-
-
-    DEBUG_PRINT("MFLAGS: %d\n", method->mflags);
-    DEBUG_PRINT("OFLAGS: %d\n", method->class->flags);
 
 
     // Code object present inside method?
