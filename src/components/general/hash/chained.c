@@ -251,6 +251,54 @@ static void *remove(t_hash_table *ht, const char *key) {
     return val;
 }
 
+t_hash_table_bucket *_copy_bucket(t_hash_table_bucket *bucket) {
+    t_hash_table_bucket *copy = smm_malloc(sizeof(t_hash_table_bucket));
+
+    copy->key = bucket->key;
+    copy->value = bucket->value;
+    copy->hash = bucket->hash;
+
+    copy->prev_element = bucket->prev_element;
+    copy->next_element = bucket->next_element;
+    copy->next_in_list = bucket->next_in_list;
+
+    return copy;
+}
+
+void _place_bucket(t_hash_table *ht, t_hash_table_bucket *bucket) {
+    hash_t capped_hash = bucket->hash % ht->bucket_count;
+    bucket->next_in_list = ht->bucket_list[capped_hash];
+    ht->bucket_list[capped_hash] = bucket;
+}
+
+void deep_copy(t_hash_table *ht) {
+    ht->copy_on_write = 0;
+
+    int bucket_count = ht->bucket_count;
+    ht->bucket_count = 0;
+    resize(ht, bucket_count);
+
+    t_hash_table_bucket *old_current = ht->head;
+    ht->head = _copy_bucket(old_current);
+
+    t_hash_table_bucket *new_current = ht->head;
+    _place_bucket(ht, new_current);
+    t_hash_table_bucket *new_bucket;
+
+    while(old_current) {
+        new_bucket = _copy_bucket(old_current);
+        new_bucket->prev_element = new_current;
+        new_current->next_element = new_bucket;
+        _place_bucket(ht, new_bucket);
+
+        new_current = new_bucket;
+        old_current = old_current->next_element;
+    }
+
+    ht->tail = new_current;
+
+}
+
 
 // Hash structure with our function definitions
 t_hashfuncs chained_hf = {
@@ -262,4 +310,5 @@ t_hashfuncs chained_hf = {
     replace,
     remove,
     resize,
+    deep_copy,
 };
