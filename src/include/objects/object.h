@@ -132,6 +132,7 @@
     #define OBJECT_IS_BOOLEAN(obj)      (obj->type == objectTypeBoolean)
     #define OBJECT_IS_METHOD(obj)       (obj->type == objectTypeMethod)
     #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
+    #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
 
     // Number of different object types (also needed for GC queues)
     #define OBJECT_TYPE_LEN     13

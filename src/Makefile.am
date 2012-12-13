@@ -168,6 +168,7 @@ noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
                   components/vm/frame.c \
+                  components/vm/import.c \
                   include/vm/vm_opcodes.c
 
 
@@ -206,13 +207,13 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire utmain
 
-utmain_LDADD = $(SAFFIRE_LIBS) -lcunit -lpthread
+utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread -lcunit
 
 utmain_SOURCES = \
                     ../unittests/core/main.c \
                     ../unittests/core/hashtable/hashtable.c
 
-saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
+saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
