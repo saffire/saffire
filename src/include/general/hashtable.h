@@ -52,6 +52,7 @@
         int element_count;                      // Number of elements in the hash table
         float load_factor;                      // ratio that has to be filled before resizing
         float resize_factor;                    // Resize factor
+        char copy_on_write;                    // Copy the buckets when written to
 
         struct _hashfuncs *hashfuncs;           // Pointer to actual hash functions
         t_hash_table_bucket *head;              // DLL head (for iteration)
@@ -70,11 +71,13 @@
         void *(*replace)(t_hash_table *ht, const char *key, void *value);   // Replace value to key
         void *(*remove)(t_hash_table *ht, const char *key);                 // Remove key
         void (*resize)(t_hash_table *ht, int new_bucket_count);             // Resize (and rehash) hashtable to new size
+        void (*deep_copy)(t_hash_table *ht);                                // Makes a deep copy of the buckets
     } t_hashfuncs;
 
 
     t_hash_table *ht_create(void);
     t_hash_table *ht_create_custom(int bucket_count, float load_factor, float resize_factor, t_hashfuncs *hashfuncs);
+    t_hash_table *ht_copy(t_hash_table *ht, int copy_on_write);
 
     int ht_exists(t_hash_table *ht, const char *key);
     void *ht_find(t_hash_table *ht, const char *key);

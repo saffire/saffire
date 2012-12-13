@@ -2,6 +2,9 @@
 # INIT
 ########################################################################
 
+TESTS=utmain
+noinst_BINARIES=utmain
+
 # Set our optimization / debug flags
 if DEBUG
   AM_CFLAGS = -ggdb  -O0 -D__DEBUG
@@ -178,21 +181,37 @@ libgc_a_SOURCES = components/gc/gc.c
 
 
 ########################################################################
+# ../unittests/core
+########################################################################
+
+noinst_LIBRARIES += libtests.a
+libtests_a_SOURCES = ../unittests/core/main.c
+
+########################################################################
 # main/saffire
 ########################################################################
 
 SAFFIRE_LIBS = \
                  libobjects.a \
+                 libgeneral.a \
+                 libobjects.a \
+                 libgeneral.a \
                  libcompiler.a \
                  libfastcgi.a \
                  librepl.a \
                  libvm.a \
                  libgc.a \
-                 libmodules.a \
-                 libgeneral.a
+                 libgeneral.a \
+                 libmodules.a
 
 
-bin_PROGRAMS = saffire
+bin_PROGRAMS = saffire utmain
+
+utmain_LDADD = $(SAFFIRE_LIBS) -lcunit -lpthread
+
+utmain_SOURCES = \
+                    ../unittests/core/main.c \
+                    ../unittests/core/hashtable/hashtable.c
 
 saffire_LDADD = $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
 

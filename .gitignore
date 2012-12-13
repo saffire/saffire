@@ -43,3 +43,4 @@ compile
 src/include/vm/vm_opcodes.c
 src/include/vm/vm_opcodes.h
 src/include/gitversion.h
+src/utmain
