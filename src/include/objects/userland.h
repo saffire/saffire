@@ -33,7 +33,7 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
-        t_hash_object *local_identifiers;
+        t_hash_object *run_context;
     } t_userland_object;
 
     t_userland_object Object_Userland_struct;

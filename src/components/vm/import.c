@@ -26,7 +26,14 @@
 */
 #include <string.h>
 #include <limits.h>
+#include "vm/vm.h"
 #include "vm/frame.h"
+#include "compiler/ast.h"
+#include "compiler/ast_walker.h"
+#include "compiler/assembler.h"
+#include "general/path_handling.h"
+#include "general/output.h"
+#include "debug.h"
 
 
 const char *module_search_path[] = {
@@ -37,7 +44,7 @@ const char *module_search_path[] = {
 
 
 static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, char *class) {
-    printf(" * _import_class_from_file(%s, %s)\n", source_file, class);
+    DEBUG_PRINT(" * _import_class_from_file(%s, %s)\n", source_file, class);
 
     // Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
@@ -48,10 +55,10 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     t_vm_frame *module_frame = vm_frame_new(frame, bc);
     _vm_execute(module_frame);
 
-    printf("\n\n\n\n * End of running module bytecode.\n");
+    DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
 
     t_object *obj = vm_frame_find_identifier(module_frame, class);
-    printf("FOUND: %08X\n", obj);
+    DEBUG_PRINT("FOUND: %08X\n", (unsigned int)obj);
     return obj;
 
 //    // Let's see if the object is now present...
@@ -63,13 +70,13 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
  *
  */
 t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
-    printf("\n\n\n");
-    printf("*** looks like we need to import class '%s' from module '%s'\n", class, module);
+    DEBUG_PRINT("\n\n\n");
+    DEBUG_PRINT("*** looks like we need to import class '%s' from module '%s'\n", class, module);
 
     // Allocate room to build our complete namespace string
     char *fqcn = smm_malloc(strlen(module) + strlen(class) + strlen("::") + 1);
     sprintf(fqcn, "%s::%s", module, class);
-    printf(" * Looks like we're looking for '%s'\n", fqcn);
+    DEBUG_PRINT(" * Looks like we're looking for '%s'\n", fqcn);
     t_object *obj = vm_frame_find_identifier(frame, fqcn);
     smm_free(fqcn);
 
@@ -79,27 +86,27 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
     }
 
     // Looks like we haven't found it. Let's try and load it from disk.
-    printf(" * *** Nothing found in current frame. Scanning searchpath:\n");
+    DEBUG_PRINT(" * *** Nothing found in current frame. Scanning searchpath:\n");
 
     // Scan . and /usr/saffire/modules only!
-    char **current_search_path = module_search_path;
+    char **current_search_path = (char **)&module_search_path;
     while (*current_search_path) {
         char path[PATH_MAX];
         char final_path[PATH_MAX];
         char *res = realpath(*current_search_path, path);
         if (res) {
             snprintf(final_path, PATH_MAX, "%s/%s.sf", path, class);
-            printf(" * Looking for module at path '%s'\n", final_path);
+            DEBUG_PRINT(" * Looking for module at path '%s'\n", final_path);
 
             if (is_saffire_file(final_path)) {
-                printf(" * Found a matching file. Whoohoo!\n");
+                DEBUG_PRINT(" * Found a matching file. Whoohoo!\n");
                 t_object *obj = _import_class_from_file(frame, final_path, class);
                 if (! obj) {
                     error_and_die(1, "Cannot find class '%s' in module '%s'\n", class, module);
                 }
                 return obj;
             } else {
-                printf(" * Nothing found here.. continuing..\n");
+                DEBUG_PRINT(" * Nothing found here.. continuing..\n");
             }
         }
         current_search_path++;

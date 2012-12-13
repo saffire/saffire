@@ -36,6 +36,7 @@
     void vm_init(void);
     void vm_fini(void);
     int vm_execute(t_bytecode *bc);
+    t_object *_vm_execute(t_vm_frame *frame);
     void vm_populate_builtins(const char *name, void *data);
 
 #endif

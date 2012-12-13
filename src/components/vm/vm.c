@@ -460,7 +460,9 @@ dispatch:
                         tfr = vm_frame_new(frame, code_obj->bytecode);
 
                         if (OBJECT_IS_USER(self_obj)) {
-                            tfr->local_identifiers = ((t_userland_object *)self_obj)->local_identifiers;
+                            t_userland_object *ulo = (t_userland_object *)self_obj;
+                            t_hash_object *ho = (t_hash_object *)ulo->run_context;
+                            tfr->local_identifiers->ht = ht_copy(ho->ht, 0);
                         }
 
                         // Add references to parent and self
@@ -604,7 +606,7 @@ dispatch:
                     class->name = smm_strdup(OBJ2STR(name_obj));
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
-                    class->local_identifiers = frame->local_identifiers;
+                    class->run_context = frame->local_identifiers;
 
                     // Iterate all methods
                     for (int i=0; i!=oparg1; i++) {
@@ -626,7 +628,7 @@ dispatch:
             case VM_BUILD_METHOD :
                 {
 
-                    printf("\n\n\n**** CREATING A METHOD ****\n\n\n\n");
+                    DEBUG_PRINT("\n\n\n**** CREATING A METHOD ****\n\n\n\n");
 
                     // pop flags object
                     register t_object *flags = vm_frame_stack_pop(frame);

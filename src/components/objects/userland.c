@@ -55,8 +55,6 @@ void object_userland_fini() {
 
 
 static t_object *obj_new(t_object *self) {
-    printf("\n\n\n**** USERLAND ***\n\n\n");
-
     t_userland_object *obj = smm_malloc(sizeof(t_userland_object));
     memcpy(obj, self, sizeof(t_userland_object));
 
