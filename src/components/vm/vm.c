@@ -455,8 +455,13 @@ dispatch:
                         // Free argument list
                         dll_free(arg_list);
                     } else {
-                        // Create a new executio frame
+
+                        // Create a new execution frame
                         tfr = vm_frame_new(frame, code_obj->bytecode);
+
+                        if (OBJECT_IS_USER(self_obj)) {
+                            tfr->local_identifiers = ((t_userland_object *)self_obj)->local_identifiers;
+                        }
 
                         // Add references to parent and self
                         ht_replace(tfr->local_identifiers->ht, "self", self_obj);
@@ -471,8 +476,8 @@ dispatch:
                         // Execute frame, return the last object
                         dst = _vm_execute(tfr);
 
-                        // Destroy frame
-                        vm_frame_destroy(tfr);
+//                        // Destroy frame
+//                        vm_frame_destroy(tfr);
                     }
 
                     object_inc_ref(dst);
@@ -566,9 +571,9 @@ dispatch:
             case VM_BUILD_CLASS :
                 {
                     // pop class name
-                    register t_object *name = vm_frame_stack_pop(frame);
-                    object_dec_ref(name);
-                    DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name));
+                    register t_object *name_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(name_obj);
+                    DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name_obj));
 
                     // pop flags
                     register t_object *flags = vm_frame_stack_pop(frame);
@@ -593,12 +598,13 @@ dispatch:
 
                     //register t_object *class = object_new(Object_Userland, OBJ2STR(name), OBJ2NUM(flags), parent_class);
 
-                    register t_object *class = (t_object *)smm_malloc(sizeof(t_object));
+                    register t_userland_object *class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
                     memcpy(class, Object_Userland, sizeof(t_userland_object));
 
-                    class->name = smm_strdup(OBJ2STR(name));
+                    class->name = smm_strdup(OBJ2STR(name_obj));
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
+                    class->local_identifiers = frame->local_identifiers;
 
                     // Iterate all methods
                     for (int i=0; i!=oparg1; i++) {
@@ -611,8 +617,8 @@ dispatch:
                         DEBUG_PRINT("Added method '%s' to class\n", object_debug(method));
                     }
 
-                    object_inc_ref(class);
-                    vm_frame_stack_push(frame, class);
+                    object_inc_ref((t_object *)class);
+                    vm_frame_stack_push(frame, (t_object *)class);
                 }
 
                 goto dispatch;

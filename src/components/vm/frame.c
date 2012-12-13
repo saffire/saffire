@@ -46,7 +46,7 @@
 unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
     // Sanity stop
     if (frame->ip >= frame->bytecode->code_len) {
-        DEBUG_PRINT("Running outside bytecode!");
+        DEBUG_PRINT("Running outside bytecode!\n\n\n");
         return VM_STOP;
     }
 
@@ -204,7 +204,7 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     while (ht_iter_valid(&iter)) {
         char *k = ht_iter_key(&iter);
         t_object *v = ht_iter_value(&iter);
-        printf("  K: %-20s %s\n", k, object_debug(v));
+        DEBUG_PRINT("  K: %-20s %s\n", k, object_debug(v));
         ht_iter_next(&iter);
     }
 
