@@ -52,6 +52,7 @@ static t_hash_table *_ht_create(int bucket_count, float load_factor, float resiz
     ht->element_count = 0;
     ht->load_factor = load_factor;
     ht->resize_factor = resize_factor;
+    ht->copy_on_write = 0;
     ht->hashfuncs = hashfuncs;
     ht->head = NULL;
     ht->tail = NULL;
@@ -77,6 +78,20 @@ t_hash_table *ht_create_custom(int bucket_count, float load_factor, float resize
 }
 
 
+t_hash_table *ht_copy(t_hash_table *ht, int copy_on_write) {
+    t_hash_table *copy = smm_malloc(sizeof(t_hash_table));
+
+    memcpy(copy, ht, sizeof(t_hash_table));
+
+    copy->copy_on_write = copy_on_write;
+
+    if(!copy_on_write) {
+        ht->hashfuncs->deep_copy(copy);
+    }
+
+    return copy;
+}
+
 /**
  * Free a hash table
  */
@@ -86,22 +101,25 @@ void ht_destroy(t_hash_table *ht) {
     // Nothing to free
     if (! ht) return;
 
-    // Destroy buckets
-    bucket = ht->head;
-    while (bucket) {
-        // Find next bucket
-        next_bucket = bucket->next_element;
+    if (!ht->copy_on_write) {
+        // Destroy buckets
+        bucket = ht->head;
+        while (bucket) {
+            // Find next bucket
+            next_bucket = bucket->next_element;
 
-        // Now, we can safely remove bucket
-        smm_free(bucket->key); // strdupped
-        smm_free(bucket);
+            // Now, we can safely remove bucket
+            smm_free(bucket->key); // strdupped
+            smm_free(bucket);
 
-        // goto next bucket
-        bucket = next_bucket;
+            // goto next bucket
+            bucket = next_bucket;
+        }
+
+        // Free bucket list array
+        smm_free(ht->bucket_list);
     }
 
-    // Free bucket list array
-    smm_free(ht->bucket_list);
 
     // Destroy hash table
     smm_free(ht);
@@ -143,6 +161,9 @@ int ht_exists(t_hash_table *ht, const char *key) {
  * Add key/value into hashtable
  */
 int ht_add(t_hash_table *ht, const char *key, void *value) {
+    if (ht->copy_on_write) {
+        ht->hashfuncs->deep_copy(ht);
+    }
     return ht->hashfuncs->add(ht, key, value);
 }
 
@@ -156,6 +177,9 @@ int ht_num_add(t_hash_table *ht, long index, void *value) {
  * Replace key/value into hashtable
  */
 void *ht_replace(t_hash_table *ht, const char *key, void *value) {
+    if (ht->copy_on_write) {
+            ht->hashfuncs->deep_copy(ht);
+    }
     return ht->hashfuncs->replace(ht, key, value);
 }
 
@@ -164,6 +188,9 @@ void *ht_replace(t_hash_table *ht, const char *key, void *value) {
  * Removes key from hashtable
  */
 void *ht_remove(t_hash_table *ht, const char *key) {
+    if (ht->copy_on_write) {
+            ht->hashfuncs->deep_copy(ht);
+    }
     return ht->hashfuncs->remove(ht, key);
 }
 
