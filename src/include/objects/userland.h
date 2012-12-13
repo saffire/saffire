@@ -29,9 +29,11 @@
 
     #include "general/md5.h"
     #include "objects/object.h"
+    #include "vm/frame.h"
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
+        t_hash_object *run_context;
     } t_userland_object;
 
     t_userland_object Object_Userland_struct;

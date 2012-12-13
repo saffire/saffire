@@ -24,21 +24,12 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __VM_IMPORT_H__
+#define __VM_IMPORT_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
+    #include "objects/object.h"
     #include "vm/frame.h"
 
-    t_hash_table *builtin_identifiers;
-
-    void vm_init(void);
-    void vm_fini(void);
-    int vm_execute(t_bytecode *bc);
-    t_object *_vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
+    t_object *vm_import(t_vm_frame *frame, char *module, char *class);
 
 #endif
-
-
