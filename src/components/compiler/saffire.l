@@ -203,14 +203,14 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_string_dbl>\"               {
                                 /* Closing double string quote */
-                                yylval.sVal = smm_strdup(strbuf);
+                                yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
                             }
 <st_string_sgl>\'               {
                                 /* Closing Single string quote */
-                                yylval.sVal = smm_strdup(strbuf);
+                                yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
