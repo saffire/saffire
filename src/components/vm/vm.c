@@ -460,9 +460,7 @@ dispatch:
                         tfr = vm_frame_new(frame, code_obj->bytecode);
 
                         if (OBJECT_IS_USER(self_obj)) {
-                            t_userland_object *ulo = (t_userland_object *)self_obj;
-                            t_hash_object *ho = (t_hash_object *)ulo->run_context;
-                            tfr->local_identifiers->ht = ht_copy(ho->ht, 0);
+                            tfr->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
                         }
 
                         // Add references to parent and self
@@ -606,7 +604,7 @@ dispatch:
                     class->name = smm_strdup(OBJ2STR(name_obj));
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
-                    class->run_context = frame->local_identifiers;
+                    class->file_identifiers = frame->local_identifiers;
 
                     // Iterate all methods
                     for (int i=0; i!=oparg1; i++) {
