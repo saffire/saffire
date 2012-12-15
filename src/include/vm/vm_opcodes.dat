@@ -11,6 +11,8 @@ ROT_FOUR             0x05
 
 NOP                  0x09
 
+LOAD_PROPERTY        0x40
+
 POP_BLOCK            0x72
 RETURN               0x73
 BREAK_LOOP           0x74
@@ -38,7 +40,7 @@ SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
 BUILD_CLASS          0x93
-BUILD_METHOD         0x94
+BUILD_ATTRIB         0x94
 COMPARE_OP           0x95
 SETUP_FINALLY        0x96
 SETUP_EXCEPT         0x97

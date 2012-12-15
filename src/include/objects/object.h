@@ -114,6 +114,18 @@
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
 
 
+
+    typedef struct _attribute {
+        // Meta data
+        struct {
+            char        visibility;
+            char        access;
+        } meta;
+
+        t_object    *attribute;
+    } t_attribute;
+
+
     // Object type and flag checks
     #define OBJECT_TYPE_IS_CLASS(obj) ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS)
     #define OBJECT_TYPE_IS_INTERFACE(obj) ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE)
@@ -130,20 +142,27 @@
     #define OBJECT_IS_NUMERICAL(obj)    (obj->type == objectTypeNumerical)
     #define OBJECT_IS_STRING(obj)       (obj->type == objectTypeString)
     #define OBJECT_IS_BOOLEAN(obj)      (obj->type == objectTypeBoolean)
-    #define OBJECT_IS_METHOD(obj)       (obj->type == objectTypeMethod)
+    #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
 
+
+    // Convert object to value
+    #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+    #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
+
+
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     13
+    #define OBJECT_TYPE_LEN     12
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
-                   objectTypeAny, objectTypeCode, objectTypeMethod, objectTypeBase, objectTypeBoolean,
-                   objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeCustom,
-                   objectTypeHash, objectTypeTuple, objectTypeUser
+                   objectTypeAny, objectTypeCode, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
+                   objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
+                   objectTypeTuple, objectTypeUser
                  } t_objectype_enum;
+
 
 
     // Actual header that needs to be present in each object (as the first entry)
@@ -160,9 +179,7 @@
         int implement_count;           /* Number of interfaces */ \
         t_object **implements;   /* Actual interfaces */ \
         \
-        t_hash_table *methods;                  /* Object methods */ \
-        t_hash_table *properties;               /* Object properties */  \
-        t_hash_table *constants;                /* Object constants (needed?) */ \
+        t_hash_table *attributes;               /* Object attributes, properties or constants */ \
         t_object_operators *operators;          /* Object operators */ \
         t_object_comparisons *comparisons;      /* Object comparisons */ \
         \
@@ -184,9 +201,7 @@
                 base,           /* parent */               \
                 0,              /* implement count */      \
                 NULL,           /* implements */           \
-                NULL,           /* methods */              \
-                NULL,           /* properties */           \
-                NULL,           /* constants */            \
+                NULL,           /* attribute */            \
                 operators,      /* operators */            \
                 comparisons,    /* comparisons */          \
                 funcs           /* functions */
@@ -225,6 +240,7 @@
     void object_init(void);
     void object_fini(void);
     t_object *object_find_method(t_object *obj, char *method_name);
+    t_object *object_find_property(t_object *obj, char *property_name);
     t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *dll);
     t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...);
     t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...);
@@ -239,6 +255,6 @@
 
     void object_add_internal_method(void *obj, char *name, int flags, int visibility, void *func);
     void object_add_external_method(void *obj, char *name, int flags, int visibility, t_ast_element *p);
-    void object_remove_all_internal_methods(t_object *obj);
+    void object_remove_all_internal_attributes(t_object *obj);
 
 #endif

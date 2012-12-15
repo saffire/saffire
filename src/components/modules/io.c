@@ -28,8 +28,8 @@
 #include "general/output.h"
 #include "modules/module_api.h"
 #include "objects/object.h"
-#include "objects/method.h"
 #include "objects/string.h"
+#include "objects/attrib.h"
 #include "general/dll.h"
 #include "general/smm.h"
 
@@ -125,32 +125,28 @@ static t_object *console_sprintf(t_object *self, t_dll *args) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeCustom, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
-t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeCustom, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
+t_object io_struct       = { OBJECT_HEAD_INIT2("io", objectTypeAny, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
+t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeAny, NULL, NULL, OBJECT_TYPE_CLASS, NULL) };
 
 
 static void _init(void) {
-    io_struct.methods = ht_create();
-    object_add_internal_method(&io_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_print);
-    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_printf);
-    object_add_internal_method(&io_struct, "sprintf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, io_sprintf);
-    io_struct.properties = ht_create();
+    io_struct.attributes = ht_create();
+    object_add_internal_method(&io_struct, "print", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_print);
+    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_printf);
+    object_add_internal_method(&io_struct, "sprintf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_sprintf);
 
-    console_struct.methods = ht_create();
-    object_add_internal_method(&console_struct, "print", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_print);
-    object_add_internal_method(&console_struct, "printf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_printf);
-    object_add_internal_method(&console_struct, "sprintf", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, console_sprintf);
-    console_struct.properties = ht_create();
+    console_struct.attributes = ht_create();
+    object_add_internal_method(&console_struct, "print", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_print);
+    object_add_internal_method(&console_struct, "printf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_printf);
+    object_add_internal_method(&console_struct, "sprintf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_sprintf);
 }
 
 static void _fini(void) {
-    object_remove_all_internal_methods(&io_struct);
-    ht_destroy(io_struct.methods);
-    ht_destroy(io_struct.properties);
+    object_remove_all_internal_attributes(&io_struct);
+    ht_destroy(io_struct.attributes);
 
-    object_remove_all_internal_methods(&console_struct);
-    ht_destroy(console_struct.methods);
-    ht_destroy(console_struct.properties);
+    object_remove_all_internal_attributes(&console_struct);
+    ht_destroy(console_struct.attributes);
 }
 
 

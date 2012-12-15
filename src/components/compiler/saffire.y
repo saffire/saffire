@@ -35,6 +35,7 @@
     #include "compiler/lex.yy.h"
     #include "compiler/compiler.h"
     #include "compiler/ast.h"
+    #include "objects/attrib.h"
     #include "debug.h"
 
     extern int yylineno;
@@ -93,8 +94,8 @@
 %token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_READONLY T_PROPERTY
-%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_TOP_STATEMENTS T_PROGRAM T_USE_STATEMENTS
-%token T_FQN T_ARGUMENT_LIST T_LIST T_STATEMENTS T_ASSIGNMENT T_FIELDACCESS T_CALL_ARGUMENT_LIST
+%token T_LABEL T_METHOD_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
+%token T_FQN T_ARGUMENT_LIST T_LIST T_ASSIGNMENT T_FIELDACCESS T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
 %token T_IMPORT T_FROM T_ELLIPSIS
 
@@ -148,11 +149,11 @@ program:
 
 use_statement_list:
         non_empty_use_statement_list { TRACE $$ = $1; }
-    |   /* empty */                  { TRACE $$ = ast_nop(); }
+    |   /* empty */                  { TRACE $$ = ast_group(0); }
 ;
 
 non_empty_use_statement_list:
-        use_statement { TRACE $$ = ast_opr(T_USE_STATEMENTS, 1, $1); }
+        use_statement { TRACE $$ = ast_group(1, $1); }
     |   non_empty_use_statement_list use_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -183,11 +184,11 @@ namespace_identifier:
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
         non_empty_top_statement_list { TRACE $$ = $1; }
-    |   /* empty */                  { TRACE $$ = ast_nop(); }
+    |   /* empty */                  { TRACE $$ = ast_group(0); }
 ;
 
 non_empty_top_statement_list:
-        top_statement                              { TRACE $$ = ast_opr(T_TOP_STATEMENTS, 1, $1); }
+        top_statement                              { TRACE $$ = ast_group(1, $1); }
     |   non_empty_top_statement_list top_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -207,7 +208,7 @@ top_statement:
  */
 
 statement_list:
-        statement                { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+        statement                { TRACE $$ = ast_group(1, $1); }
     |   statement_list statement { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -235,7 +236,7 @@ selection_statement:
 ;
 
 case_statements:
-        case_statement { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+        case_statement { TRACE $$ = ast_group(1, $1); }
     |   case_statements case_statement { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -480,8 +481,8 @@ qualified_name:
 
 
 method_call:
-        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3, ID_LOAD)); smm_free($3); }
-    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_opr('.', 2, $1, ast_identifier($3, ID_LOAD)); smm_free($3); }
+        qualified_name '.' T_IDENTIFIER     { TRACE $$ = ast_property($1, ast_identifier($3, ID_LOAD)); smm_free($3); }
+    |   special_name '.' T_IDENTIFIER       { TRACE $$ = ast_property($1, ast_identifier($3, ID_LOAD)); smm_free($3); }
 
     |   method_call_pre_parenthesis '.' T_IDENTIFIER '(' calling_method_argument_list ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), $5); }
     |   method_call_pre_parenthesis '.' T_IDENTIFIER '('                              ')' { TRACE $$ = ast_opr(T_METHOD_CALL, 3, $1, ast_string($3), ast_nop()); }
@@ -527,7 +528,7 @@ calling_method_argument_list:
 
 /* Statements inside a class: constant and methods */
 class_inner_statement_list:
-        class_inner_statement                               { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+        class_inner_statement                               { TRACE $$ = ast_group(1, $1); }
     |   class_inner_statement_list class_inner_statement    { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -539,7 +540,7 @@ class_inner_statement:
 
 /* Statements inside an interface: constant and methods */
 interface_inner_statement_list:
-        interface_inner_statement                                    { TRACE $$ = ast_opr(T_STATEMENTS, 1, $1); }
+        interface_inner_statement                                    { TRACE $$ = ast_group(1, $1); }
     |   interface_inner_statement_list interface_inner_statement     { TRACE $$ = ast_add($$, $2); }
 ;
 
@@ -553,11 +554,11 @@ interface_method_definition:
 ;
 
 interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method(); TRACE $$ = ast_method($1, $3, $5, ast_nop()); smm_free($3); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method(); TRACE $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, $1, ATTRIB_ACCESS_RO, ast_nop(), $1, $5); smm_free($3); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { sfc_init_method($3); sfc_validate_method_modifiers($1); } compound_statement { sfc_fini_method(); sfc_validate_abstract_method_body($1, $8); TRACE $$ = ast_method($1, $3, $5, $8); smm_free($3); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { sfc_init_method($3); sfc_validate_method_modifiers($1); } compound_statement { sfc_fini_method(); sfc_validate_abstract_method_body($1, $8); TRACE $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, $8, sfc_mod_to_methodflags($1), $5); smm_free($3); }
     |   interface_or_abstract_method_definition { TRACE $$ = $1; }
 ;
 
@@ -586,7 +587,7 @@ constant_list:
 ;
 
 constant:
-        T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_opr(T_CONST, 2, ast_identifier($2, ID_STORE), $4); smm_free($2); }
+        T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_attribute($2, ATTRIB_TYPE_CONSTANT, ATTRIB_VISIBILITY_PUBLIC, ATTRIB_ACCESS_RO, $4, 0, ast_nop()); smm_free($2); }
 ;
 
 class_definition:
@@ -607,8 +608,8 @@ interface_definition:
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 3, ast_numerical($1), ast_identifier($3, ID_STORE), $5); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, ast_nop(), 0, ast_nop()); smm_free($3); }
 ;
 
 interface_property_definition:
@@ -628,7 +629,6 @@ modifier:
     |   T_FINAL     { TRACE $$ = MODIFIER_FINAL; }
     |   T_ABSTRACT  { TRACE $$ = MODIFIER_ABSTRACT; }
     |   T_STATIC    { TRACE $$ = MODIFIER_STATIC; }
-    |   T_READONLY  { TRACE $$ = MODIFIER_READONLY; }
 ;
 
 /* extends only one class */
@@ -645,7 +645,7 @@ class_interface_implements:
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        T_IDENTIFIER                { TRACE $$ = ast_opr(T_STATEMENTS, 1, ast_string($1)); smm_free($1); }
+        T_IDENTIFIER                { TRACE $$ = ast_group(1, ast_string($1)); smm_free($1); }
     |   class_list ',' T_IDENTIFIER { TRACE $$ = ast_add($$, ast_string($3)); smm_free($3); }
 ;
 

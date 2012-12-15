@@ -30,7 +30,7 @@
 #include "objects/null.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "general/smm.h"
 
 /* ======================================================================
@@ -52,7 +52,7 @@ SAFFIRE_METHOD(null, conv_numerical) {
 }
 
 SAFFIRE_METHOD(null, conv_string) {
-    RETURN_STRING(L"null");
+    RETURN_STRING("null");
 }
 
 
@@ -66,14 +66,12 @@ SAFFIRE_METHOD(null, conv_string) {
  * Initializes string methods and properties, these are used
  */
 void object_null_init(void) {
-    Object_Null_struct.methods = ht_create();
+    Object_Null_struct.attributes = ht_create();
 
-    object_add_internal_method(&Object_Null_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
-    object_add_internal_method(&Object_Null_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_null);
-    object_add_internal_method(&Object_Null_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
-    object_add_internal_method(&Object_Null_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_null_method_conv_string);
-
-    Object_Null_struct.properties = ht_create();
+    object_add_internal_method(&Object_Null_struct, "boolean",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
+    object_add_internal_method(&Object_Null_struct, "null",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
+    object_add_internal_method(&Object_Null_struct, "numerical", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
+    object_add_internal_method(&Object_Null_struct, "string",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
 
     vm_populate_builtins("null", Object_Null);
 }
@@ -82,12 +80,9 @@ void object_null_init(void) {
  * Frees memory for a string object
  */
 void object_null_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Null_struct);
-    ht_destroy(Object_Null_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Null_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Null_struct);
+    ht_destroy(Object_Null_struct.attributes);
 }
 
 #ifdef __DEBUG

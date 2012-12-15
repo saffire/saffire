@@ -33,16 +33,45 @@
 #include "compiler/parser.tab.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
+#include "objects/attrib.h"
 
 extern void yyerror(const char *err);
 extern int yylineno;
+
+
+/**
+ * Convert modifier list to visibility flags for astAttribute nodes.
+ */
+char sfc_mod_to_visibility(long modifiers) {
+    modifiers &= MODIFIER_MASK_VISIBILITY;
+
+    if ((modifiers & MODIFIER_MASK_VISIBILITY) == MODIFIER_PUBLIC) return ATTRIB_VISIBILITY_PUBLIC;
+    if ((modifiers & MODIFIER_MASK_VISIBILITY) == MODIFIER_PROTECTED) return ATTRIB_VISIBILITY_PROTECTED;
+    if ((modifiers & MODIFIER_MASK_VISIBILITY) == MODIFIER_PRIVATE) return ATTRIB_VISIBILITY_PRIVATE;
+
+    return 0;
+}
+
+/**
+ * Convert modifier list to method flags for astAttribute nodes.
+ */
+char sfc_mod_to_methodflags(long modifiers) {
+    char ret = 0;
+
+    if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= METHOD_FLAG_STATIC;
+    if ((modifiers & MODIFIER_ABSTRACT) == MODIFIER_ABSTRACT) ret |= METHOD_FLAG_ABSTRACT;
+    if ((modifiers & MODIFIER_FINAL) == MODIFIER_FINAL) ret |= METHOD_FLAG_FINAL;
+
+    return ret;
+}
+
 
 /**
  * Validate class modifiers
  */
 void sfc_validate_class_modifiers(long modifiers) {
     // Classes do not have a visibility
-    if (modifiers & MODIFIER_MASK_VISIBLITY) {
+    if (modifiers & MODIFIER_MASK_VISIBILITY) {
         line_error_and_die(1, yylineno, "Classes cannot have a visibility");
     }
 }
@@ -71,7 +100,7 @@ void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
  */
 void sfc_validate_method_modifiers(long modifiers) {
     // Make sure we have at least 1 visibility bit set
-    if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
+    if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, yylineno, "Methods must define a visibility");
     }
 
@@ -86,7 +115,7 @@ void sfc_validate_method_modifiers(long modifiers) {
  * Validate property modifiers
  */
 void sfc_validate_property_modifiers(long modifiers) {
-    if ((modifiers & MODIFIER_MASK_VISIBLITY) == 0) {
+    if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, yylineno, "Methods must define a visibility");
     }
 }
@@ -97,7 +126,7 @@ void sfc_validate_property_modifiers(long modifiers) {
  */
 void sfc_validate_flags(long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
-    if ((cur_flags & MODIFIER_MASK_VISIBLITY) && (new_flag & MODIFIER_MASK_VISIBLITY)) {
+    if ((cur_flags & MODIFIER_MASK_VISIBILITY) && (new_flag & MODIFIER_MASK_VISIBILITY)) {
         line_error_and_die(1, yylineno, "Cannot have multiple visiblity masks");
     }
 

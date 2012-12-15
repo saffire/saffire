@@ -37,7 +37,7 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/regex.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/code.h"
 #include "objects/hash.h"
 #include "objects/tuple.h"
@@ -46,6 +46,7 @@
 #include "debug.h"
 #include "gc/gc.h"
 #include "general/output.h"
+#include "general/smm.h"
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
@@ -53,10 +54,9 @@
     t_hash_table *object_hash;
 #endif
 
-
 // Object type string constants
-const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "method", "base", "boolean",
-                                                 "null", "numerical", "regex", "string", "custom",
+const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
+                                                 "null", "numerical", "regex", "string",
                                                  "hash", "tuple" };
 
 
@@ -65,23 +65,22 @@ int object_is_immutable(t_object *obj) {
 }
 
 /**
- * Checks and returns the correct object that holds the method (if any)
+ * Finds the attribute inside the object, or any base objects if needed.
  */
-static t_object *_find_method(t_object *obj, char *method_name) {
-    // Try and find the correct method (might be found of the bases classes!)
-    t_object *method = NULL;
+static t_object *_find_attribute(t_object *obj, char *attr_name) {
+    t_object *attr = NULL;
     t_object *cur_obj = obj;
 
-    while (method == NULL) {
-        DEBUG_PRINT(">>> Finding method '%s' on object %s\n", method_name, cur_obj->name);
+    while (attr == NULL) {
+        DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
 
-        // Find the method in the current object
-        method = ht_find(cur_obj->methods, method_name);
-        if (method != NULL) break;
+        // Find the attribute in the current object
+        attr = ht_find(cur_obj->attributes, attr_name);
+        if (attr != NULL) break;
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
-            DEBUG_PRINT(">>> Cannot call method '%s' on object %s: not found\n", method_name, obj->name);
+            DEBUG_PRINT(">>> Cannot find attribute '%s' in object %s:\n", attr_name, obj->name);
             return NULL;
         }
 
@@ -89,16 +88,21 @@ static t_object *_find_method(t_object *obj, char *method_name) {
         cur_obj = cur_obj->parent;
     }
 
-    DEBUG_PRINT(">>> Calling method '%s' on object %s, actually: %s\n", method_name, obj->name, cur_obj->name);
+    DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
 
-    if (OBJECT_TYPE_IS_CLASS(cur_obj)) {
-        DEBUG_PRINT(">>> This is a CLASS\n");
-    }
-    if (OBJECT_TYPE_IS_INSTANCE(cur_obj)) {
-        DEBUG_PRINT(">>> This is a INSTANCE\n");
-    }
+    return attr;
+}
 
-    return method;
+
+/**
+ *
+ */
+t_object *object_find_property(t_object *obj, char *property_name) {
+    t_object *property = _find_attribute(obj, property_name);
+    if (! property) {
+        error_and_die(1, "Cannot find property '%s' in '%s'\n", property_name, obj->name);
+    }
+    return property;
 }
 
 
@@ -106,11 +110,14 @@ static t_object *_find_method(t_object *obj, char *method_name) {
  *
  */
 t_object *object_find_method(t_object *obj, char *method_name) {
-    t_object *method = _find_method(obj, method_name);
-    if (! method) {
-        error_and_die(1, "Cannot find '%s' in '%s'\n", method_name, obj->name);
+    t_object *attrib = _find_attribute(obj, method_name);
+    if (! attrib) {
+        error_and_die(1, "Cannot find method '%s' in '%s'\n", method_name, obj->name);
     }
-    return method;
+    if (! ATTRIB_IS_METHOD(attrib)) {
+        error_and_die(1, "Found object '%s' is not callable (or at least, not a method object)\n", method_name);
+    }
+    return attrib;
 }
 
 
@@ -119,31 +126,32 @@ t_object *object_find_method(t_object *obj, char *method_name) {
  *
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
-t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
+t_object *object_call_args(t_object *self, t_object *attrib_obj, t_dll *args) {
     t_object *ret = NULL;
 
     // @TODO: It should be a callable method
 
 
     // @TODO: Maybe check just for callable?
-    if (! OBJECT_IS_METHOD(method_obj)) {
-        error_and_die(1, "Object returned in this method is not a method, so I cannot call this!");
+    if (! OBJECT_IS_ATTRIBUTE(attrib_obj)) {
+        error_and_die(1, "Object is not an attribute!");
     }
-    t_method_object *method = (t_method_object *)method_obj;
-    if (OBJECT_TYPE_IS_CLASS(self) && ! METHOD_IS_STATIC(method)) {
-        error_and_die(1, "Cannot call dynamic method '%s' from static context", method_obj->name);
+    if (OBJECT_TYPE_IS_CLASS(self) && ! METHOD_IS_STATIC(attrib_obj)) {
+        error_and_die(1, "Cannot call dynamic method '%s' from static context", attrib_obj->name);
     }
 
 
     // Code object present inside method?
-    t_code_object *code = (t_code_object *)method->code;
-    if (! code) {
+    t_code_object *code = (t_code_object *)((t_attrib_object *)attrib_obj)->attribute;
+    if (! code || OBJECT_IS_CODE(code)) {
         error_and_die(1, "Code object from method is not present!");
     }
 
     /*
      * Everything is hunky-dory. Make the call
      */
+
+   error_and_die(1, "Cannot make the call this way.. Not implemented yet...");
 
     // @TODO: move this to the code-object
     if (code->native_func) {
@@ -223,15 +231,6 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 
     DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
 
-//    // Add all arguments to a DLL
-//    va_start(arg_list, arg_count);
-//    t_dll *dll = dll_init();
-//    for (int i=0; i!=arg_count; i++) {
-//        t_object *obj = va_arg(arg_list, t_object *);
-//        dll_append(dll, obj);
-//    }
-//    va_end(arg_list);
-
     va_start(arg_list, arg_count);
     if (arg_count != 1) {
         error_and_die(1, "Operators must have one argument!");
@@ -242,8 +241,6 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
     // Call the actual operator and return the result
     t_object *ret = func(obj, obj2, in_place);
 
-//    // Free dll
-//    dll_free(dll);
     return ret;
 }
 
@@ -342,7 +339,7 @@ void object_free(t_object *obj) {
     if (obj->ref_count > 0) return;
 
 #ifdef __DEBUG
-    if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_METHOD(obj)) {
+    if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
         DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
     }
 #endif
@@ -403,7 +400,7 @@ t_object *object_new(t_object *obj, ...) {
     if (cached) {
         DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
     } else {
-        if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_METHOD(obj)) {
+        if (! OBJECT_IS_CODE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
             DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
         }
     }
@@ -433,7 +430,7 @@ void object_init() {
     object_string_init();
     object_regex_init();
     object_code_init();
-    object_method_init();
+    object_attrib_init();
     object_hash_init();
     object_tuple_init();
     object_userland_init();
@@ -462,7 +459,7 @@ void object_fini() {
     object_string_fini();
     object_regex_fini();
     object_code_fini();
-    object_method_fini();
+    object_attrib_fini();
     object_hash_fini();
     object_tuple_fini();
     object_userland_fini();
@@ -556,41 +553,58 @@ done:
 
 
 /**
- *
+ * Create method- attribute that points to an external (SAFFIRE) function.
  */
-void object_add_external_method(void *obj, char *method_name, int flags, int visibility, t_ast_element *p) {
+void object_add_external_method(void *obj, char *name, int method_flags, int visibility, t_ast_element *p) {
     t_object *the_obj = (t_object *)obj;
 
-    t_code_object *code = (t_code_object *)object_new(Object_Code, p, NULL);
-    t_method_object *method = (t_method_object *)object_new(Object_Method, flags, visibility, obj, code);
+    t_code_object *code_obj = (t_code_object *)object_new(Object_Code, p, NULL);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
 
-    ht_add(the_obj->methods, method_name, method);
+    ht_add(the_obj->attributes, name, attrib);
 }
 
 
 /**
- *
+ * Create method- attribute that points to an INTERNAL (C) function
  */
-void object_add_internal_method(void *obj, char *method_name, int flags, int visibility, void *func) {
+void object_add_internal_method(void *obj, char *name, int method_flags, int visibility, void *func) {
     t_object *the_obj = (t_object *)obj;
 
-    t_code_object *code = (t_code_object *)object_new(Object_Code, NULL, func);
-    t_method_object *method = (t_method_object *)object_new(Object_Method, flags, visibility, obj, code);
+    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
+    // with internal and external functions.
+    t_code_object *code_obj = (t_code_object *)object_new(Object_Code, NULL, func);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
 
-    ht_add(the_obj->methods, method_name, method);
+    ht_add(the_obj->attributes, name, attrib);
 }
 
-void object_remove_all_internal_methods(t_object *obj) {
+
+/**
+ * Clears up all attributes found in this object
+ */
+void object_remove_all_internal_attributes(t_object *obj) {
     t_hash_iter iter;
 
-    ht_iter_init(&iter, obj->methods);
+    ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
-        t_method_object *method = ht_iter_value(&iter);
-
-        // @TODO: We assume here that method and method->code are always used once. This does not have to be the case!
-        object_free((t_object *)method->code);
-        object_free((t_object *)method);
-
+        // @TODO: We must remove and free attrib-objects here..
         ht_iter_next(&iter);
     }
 }
+
+
+///**
+// *
+// */
+//void object_add_attribute(t_object *obj, char *name, t_object *attribute, char visibility, char access) {
+//    t_attribute *attr = (t_attribute *)smm_malloc(sizeof(t_attribute));
+//    attr->meta.visibility = visibility;
+//    attr->meta.access = access;
+//    attr->attribute = attribute;
+//
+//    // add to class
+//    ht_add(obj->attributes, OBJ2STR(name), attr);
+//
+//    DEBUG_PRINT("Added attribute '%s' to object '%s'\n", object_debug(attribute), object_debug(obj));
+//}

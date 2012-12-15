@@ -30,6 +30,7 @@
 #include "general/output.h"
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
+#include "objects/attrib.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "general/path_handling.h"
@@ -45,16 +46,43 @@ static int node_nr = 0;
  */
 static char *show_modifiers(int modifiers) {
     char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
-    memset(s, 0, 100);
+    bzero(s, 100);
 
-    if (modifiers & MODIFIER_PROTECTED) s = strcat(s, "PROTECTED\\n");
-    if (modifiers & MODIFIER_PUBLIC) s = strcat(s, "PUBLIC\\n");
-    if (modifiers & MODIFIER_PRIVATE) s = strcat(s, "PRIVATE\\n");
     if (modifiers & MODIFIER_FINAL) s = strcat(s, "FINAL\\n");
     if (modifiers & MODIFIER_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
     if (modifiers & MODIFIER_STATIC) s = strcat(s, "STATIC\\n");
-    if (modifiers & MODIFIER_READONLY) s = strcat(s, "READONLY\\n");
 
+    return s;
+}
+
+static char *show_attr_visibility(char visibility) {
+    char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
+    bzero(s, 100);
+    switch (visibility) {
+        case ATTRIB_VISIBILITY_PUBLIC :
+            snprintf(s, 99, "PUBLIC");
+            break;
+        case ATTRIB_VISIBILITY_PROTECTED :
+            snprintf(s, 99, "PROTECTED");
+            break;
+        case ATTRIB_VISIBILITY_PRIVATE :
+            snprintf(s, 99, "PRIVATE");
+            break;
+    }
+    return s;
+}
+
+static char *show_attr_access(char access) {
+    char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
+    bzero(s, 100);
+    switch (access) {
+        case ATTRIB_ACCESS_RW :
+            snprintf(s, 99, "READ/WRITE");
+            break;
+        case ATTRIB_ACCESS_RO :
+            snprintf(s, 99, "READONLY");
+            break;
+    }
     return s;
 }
 
@@ -110,6 +138,13 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             dot_node_iterate(fp, p->assignment.r, cur_node_nr);
             break;
 
+        case typeAstProperty :
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Property} \"]\n", cur_node_nr);
+            dot_node_iterate(fp, p->property.class, cur_node_nr);
+            dot_node_iterate(fp, p->property.property, cur_node_nr);
+            break;
+
+
         case typeAstComparison :
             fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Comparison|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->comparison.cmp), p->comparison.cmp);
             dot_node_iterate(fp, p->comparison.l, cur_node_nr);
@@ -120,6 +155,15 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             fprintf(fp, "fillcolor=burlywood1,style=\"filled\",label=\"{N:%d|Type=Operator|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->operator.op), p->operator.op);
             dot_node_iterate(fp, p->operator.l, cur_node_nr);
             dot_node_iterate(fp, p->operator.r, cur_node_nr);
+            break;
+
+        case typeAstGroup :
+            fprintf(fp, "label=\"{N:%d|Type=Group|Length=%d} \"]\n", cur_node_nr, p->group.len);
+
+            // Plot all the items in the group
+            for (int i=0; i!=p->group.len; i++) {
+                dot_node_iterate(fp, p->group.items[i], cur_node_nr);
+            }
             break;
 
         case typeAstOpr :
@@ -154,11 +198,25 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             dot_node_iterate(fp, p->class.body, cur_node_nr);
             break;
 
-        case typeAstMethod:
-            fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Method|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->method.name, show_modifiers(p->method.modifiers), p->method.modifiers);
-            // Plot arguments and body
-            dot_node_iterate(fp, p->method.arguments, cur_node_nr);
-            dot_node_iterate(fp, p->method.body, cur_node_nr);
+        case typeAstAttribute:
+            switch(p->attribute.attrib_type) {
+                case ATTRIB_TYPE_METHOD :
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Method)|Name=%s|Access=%s|Visiblity=%s|method_flags=%s}\"]\n",
+                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility), show_modifiers(p->attribute.method_flags));
+
+                    // Plot arguments
+                    dot_node_iterate(fp, p->attribute.arguments, cur_node_nr);
+                    break;
+                case ATTRIB_TYPE_PROPERTY :
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Property)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
+                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
+                    break;
+                case ATTRIB_TYPE_CONSTANT :
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Constant)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
+                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
+                    break;
+            }
+            dot_node_iterate(fp, p->attribute.value, cur_node_nr);
             break;
 
         default :

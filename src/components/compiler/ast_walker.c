@@ -38,6 +38,7 @@
 #include "debug.h"
 #include "vm/vm_opcodes.h"
 #include "vm/frame.h"
+#include "objects/attrib.h"
 
 #define MAX_LABEL_LEN       100
 
@@ -56,7 +57,7 @@ typedef struct _state {
     enum { st_load, st_store } state;
     enum { st_type_id, st_type_const } type;
 
-    int methods;        // Methods on stack
+    int attributes;     // Number of attributes on stack
     int loop_cnt;       // Loop counter
     int block_cnt;                            // Last used block number
     t_state_frame blocks[BLOCK_MAX_DEPTH];    // Frame blocks
@@ -109,6 +110,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
     if (!leaf) return;
 
     switch (leaf->type) {
+        case typeAstProperty :
+            state->state = st_load;
+            WALK_LEAF(leaf->property.class);
+            state->state = st_load;
+            WALK_LEAF(leaf->property.property);
+            dll_append(frame, asm_create_codeline(VM_LOAD_PROPERTY, 0));
+            break;
+
         case typeAstString :
             state->type = st_type_const;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->string.value, 0);
@@ -243,9 +252,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
             // Build class code
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, state->methods);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, state->attributes);
             dll_append(frame, asm_create_codeline(VM_BUILD_CLASS, 1, opr1));
-            state->methods = 0;
+            state->attributes = 0;
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->class.name, 0);
@@ -254,76 +263,90 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
         case typeAstInterface :
             break;
-        case typeAstMethod :
 
+        case typeAstAttribute :
             arg_count = 0;
+            if (leaf->attribute.attrib_type == ATTRIB_TYPE_METHOD) {
+                // Do arguments
+                arglist = leaf->attribute.arguments;
+                if (arglist->type == typeAstOpr && arglist->opr.oper == T_ARGUMENT_LIST) {
+                    DEBUG_PRINT("Method '%s' : Total args: %d\n", leaf->attribute.name, arglist->opr.nops);
 
-            // Do arguments
-            arglist = leaf->method.arguments;
-            if (arglist->type == typeAstOpr && arglist->opr.oper == T_ARGUMENT_LIST) {
-                DEBUG_PRINT("Method '%s' : Total args: %d\n", leaf->method.name, arglist->opr.nops);
+                    arg_count = arglist->opr.nops;
 
-                arg_count = arglist->opr.nops;
+                    for (int i=arglist->opr.nops-1; i>=0; i--) {
+                        t_ast_element *arg = arglist->opr.ops[i];
 
-                for (int i=arglist->opr.nops-1; i>=0; i--) {
-                    t_ast_element *arg = arglist->opr.ops[i];
-
-                    // Iterate method arguments
-                    state->state = st_load;
-                    WALK_LEAF(arg->opr.ops[0]);     // type hint
-                    WALK_LEAF(arg->opr.ops[1]);     // name
-                    WALK_LEAF(arg->opr.ops[2]);     // value
+                        // Iterate method arguments
+                        state->state = st_load;
+                        WALK_LEAF(arg->opr.ops[0]);     // type hint
+                        WALK_LEAF(arg->opr.ops[1]);     // name
+                        WALK_LEAF(arg->opr.ops[2]);     // value
+                    }
                 }
 
-            } else {
-                DEBUG_PRINT("Method '%s' : No args found\n", leaf->method.name);
+                // Push body
+                state->loop_cnt++;
+                clc = state->loop_cnt;
+                sprintf(label1, "frame_%03d", clc);
+
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_CODE, label1, 0);
+                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+
+                // Walk the body inside a new frame!
+                _ast_walker(leaf->attribute.value, output, label1);
+
+                // Push method flags
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.method_flags);
+                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
             }
 
-            // Push body
-            state->loop_cnt++;
-            clc = state->loop_cnt;
-            sprintf(label1, "frame_%03d", clc);
+            if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
+                // Nothing to do for constants
+            }
 
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_CODE, label1, 0);
+            if (leaf->attribute.attrib_type == ATTRIB_TYPE_PROPERTY) {
+                // Nothing to do for properties
+            }
+
+            // Store visibility
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.visibility);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
-            // Walk the body inside a new frame!
-            _ast_walker(leaf->method.body, output, label1);
-
-            // Push method flags
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->method.modifiers);
+            // Store access
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.access);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
-            // Build method
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
-            dll_append(frame, asm_create_codeline(VM_BUILD_METHOD, 1, opr1));
-            state->methods++;
+            // Create constant
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.attrib_type);
+            dll_append(frame, asm_create_codeline(VM_BUILD_ATTRIB, 1, opr1));
 
-            // Push the name (so BUILD_CLASS picks up name|method object)
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->method.name, 0);
+            // Name of the id to store the constant into
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->attribute.name, 0);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
-
+            state->attributes++;
             break;
+
+        case typeAstGroup :
+//            for (int i=0; i!=leaf->opr.nops; i++) {
+//                WALK_LEAF(leaf->opr.ops[i]);
+//                if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler) {
+//                    leaf->opr.ops[i]->clean_handler(frame);
+//                }
+//            }
+//            break;
+            for (int i=0; i!=leaf->group.len; i++) {
+                WALK_LEAF(leaf->group.items[i]);
+            }
+            break;
+
+
         case typeAstOpr :
             switch (leaf->opr.oper) {
                 case T_PROGRAM :
                     WALK_LEAF(leaf->opr.ops[0]);        // Imports
                     WALK_LEAF(leaf->opr.ops[1]);        // Top statements
-                    break;
-                case T_TOP_STATEMENTS :
-                case T_STATEMENTS :
-                    for (int i=0; i!=leaf->opr.nops; i++) {
-                        WALK_LEAF(leaf->opr.ops[i]);
-                        if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler) {
-                            leaf->opr.ops[i]->clean_handler(frame);
-                        }
-                    }
-                    break;
-                case T_USE_STATEMENTS :
-                    for (int i=0; i!=leaf->opr.nops; i++) {
-                        WALK_LEAF(leaf->opr.ops[i]);
-                    }
                     break;
                 case T_IMPORT :
                     state->state = st_load;
@@ -519,7 +542,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_METHOD_CALL :
                     state->state = st_load;
                     WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
-                    WALK_LEAF(leaf->opr.ops[0]);           // Load object to call
+                    WALK_LEAF(leaf->opr.ops[0]);       // Load object to call
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
@@ -552,7 +575,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
             break;
         default :
-            error_and_die(1, "Unknown AST type\n");
+            error_and_die(1, "Unknown AST type : %d\n", leaf->type);
     }
 }
 
@@ -565,7 +588,7 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     t_state state;
     state.loop_cnt = 0;
     state.block_cnt = 0;
-    state.methods = 0;
+    state.attributes = 0;
 
     // Create frame and add to output
     t_dll *frame = dll_init();

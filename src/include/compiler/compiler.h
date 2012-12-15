@@ -38,9 +38,8 @@
     #define MODIFIER_FINAL               8
     #define MODIFIER_ABSTRACT           16
     #define MODIFIER_STATIC             32
-    #define MODIFIER_READONLY           64
 
-    #define MODIFIER_MASK_VISIBLITY      (MODIFIER_PUBLIC | MODIFIER_PROTECTED | MODIFIER_PRIVATE)
+    #define MODIFIER_MASK_VISIBILITY      (MODIFIER_PUBLIC | MODIFIER_PROTECTED | MODIFIER_PRIVATE)
 
 
     typedef struct switch_struct {
@@ -90,7 +89,6 @@
     void sfc_loop_enter(void);
     void sfc_loop_leave(void);
 
-
     void sfc_init_method(const char *name);
     void sfc_fini_method(void);
     void sfc_validate_constant(char *constant);
@@ -99,5 +97,8 @@
     void sfc_validate_method_modifiers(long modifiers);
     void sfc_validate_property_modifiers(long modifiers);
     void sfc_validate_flags(long cur_flags, long new_flag);
+
+    char sfc_mod_to_visibility(long modifiers);
+    char sfc_mod_to_methodflags(long modifiers);
 
 #endif

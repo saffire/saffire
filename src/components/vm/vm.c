@@ -40,7 +40,7 @@
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/code.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/null.h"
 #include "objects/userland.h"
 #include "modules/module_api.h"
@@ -58,9 +58,6 @@ typedef struct _method_arg {
 } t_method_arg;
 
 
-#define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
-#define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
-
 #define REASON_NONE         0
 #define REASON_RETURN       1
 #define REASON_CONTINUE     2
@@ -71,9 +68,9 @@ typedef struct _method_arg {
 /**
  * Parse calling arguments
  */
-static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_method_object *method) {
+static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_attrib_object *attrib) {
     // Check if the number of arguments given exceeds the number of arguments needed.
-    t_hash_table *ht = ((t_hash_object *)method->arguments)->ht;
+    t_hash_table *ht = ((t_hash_object *)attrib->arguments)->ht;
     if (arg_count > ht->element_count) {
         // @TODO: If we have variable argument count, this does not apply!
         error_and_die(1, "Too many arguments given\n");
@@ -242,6 +239,30 @@ dispatch:
                 // Do nothing..
                 goto dispatch;
                 break;
+
+            // Load a property from an object
+            case VM_LOAD_PROPERTY :
+                {
+                    vm_frame_stack_debug(frame);
+
+                    register t_object *class = vm_frame_stack_pop(frame);
+                    register t_object *property = vm_frame_stack_pop(frame);
+
+                    DEBUG_PRINT("PROPERTY: CLASS: %s\n", object_debug(class));
+                    DEBUG_PRINT("PROPERTY: PROPERTY: %s\n", object_debug(property));
+                    if (! OBJECT_IS_STRING(property)) {
+                        // Cast to string
+                        register t_object *string_method = object_find_method(property, "string");
+                        property = object_call(property, string_method, 0);
+                    }
+
+                    t_object *dst = object_find_property(class, OBJ2STR(property));
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
+
+                    goto dispatch;
+                    break;
+                }
 
             // Load a global identifier
             case VM_LOAD_GLOBAL :
@@ -427,10 +448,9 @@ dispatch:
                     // This object will become "self" in our method call
                     register t_object *self_obj = vm_frame_stack_pop(frame);
 
-                    // Find the code from the method we need to call
+                    // Find the code from the method-attribute we need to call
                     register char *method_name = (char *)vm_frame_get_constant_literal(frame, oparg1);
-                    t_method_object *method_obj = (t_method_object *)object_find_method(self_obj, method_name);
-                    t_code_object *code_obj = (t_code_object *)method_obj->code;
+                    t_attrib_object *method_obj = (t_attrib_object *)object_find_method(self_obj, method_name);
 
                     if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
                         error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
@@ -441,6 +461,7 @@ dispatch:
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
                     // Check if it's a native function.
+                    t_code_object *code_obj = (t_code_object *)method_obj->attribute;
                     if (code_obj->native_func) {
 
                         // Create argument list inside a DLL
@@ -568,6 +589,64 @@ dispatch:
                 break;
 
 
+            case VM_BUILD_ATTRIB :
+                {
+                    DEBUG_PRINT("\n\n\n**** CREATING A ATTRIB ****\n\n\n\n");
+
+                    // pop attribute type
+                    register t_object *type = vm_frame_stack_pop(frame);
+                    object_dec_ref(type);
+
+                    // pop access object
+                    register t_object *access = vm_frame_stack_pop(frame);
+                    object_dec_ref(access);
+
+                    // pop visibility object
+                    register t_object *visibility = vm_frame_stack_pop(frame);
+                    object_dec_ref(visibility);
+
+                    // pop value object
+                    register t_object *value_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(value_obj);
+
+                    // Deal with attribute type specific values
+                    register t_object *method_flags_obj = NULL;
+                    register t_object *arg_list  = NULL;
+
+                    if (OBJ2NUM(type) == ATTRIB_TYPE_METHOD) {
+                        // We have method flags and possible arguments
+                        method_flags_obj = vm_frame_stack_pop(frame);
+                        object_dec_ref(method_flags_obj);
+
+                        // Generate hash object from arguments
+                        arg_list = object_new(Object_Hash, NULL);
+                        for (int i=0; i!=oparg1; i++) {
+                            t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
+                            arg->value = vm_frame_stack_pop(frame);
+                            register t_object *name_obj = vm_frame_stack_pop(frame);
+                            arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
+
+                            ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
+                        }
+                    }
+                    if (OBJ2NUM(type) == ATTRIB_TYPE_CONSTANT) {
+                        // Nothing additional to do for constants
+                    }
+                    if (OBJ2NUM(type) == ATTRIB_TYPE_PROPERTY) {
+                        // Nothing additional to do for regular properties
+                    }
+
+                    // Create new attribute object
+                    dst = object_new(Object_Attrib, OBJ2NUM(type), OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
+
+                    // Push method object
+                    object_inc_ref(dst);
+                    vm_frame_stack_push(frame, dst);
+                }
+                goto dispatch;
+                break;
+
+
             case VM_BUILD_CLASS :
                 {
                     // pop class name
@@ -593,11 +672,9 @@ dispatch:
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
                     }
                     object_inc_ref(parent_class);
-
                     DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
 
-                    //register t_object *class = object_new(Object_Userland, OBJ2STR(name), OBJ2NUM(flags), parent_class);
-
+                    // Create a userland object, and fill it
                     register t_userland_object *class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
                     memcpy(class, Object_Userland, sizeof(t_userland_object));
 
@@ -606,53 +683,19 @@ dispatch:
                     class->parent = parent_class;
                     class->file_identifiers = frame->local_identifiers;
 
-                    // Iterate all methods
+                    // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
                         register t_object *name = vm_frame_stack_pop(frame);
-                        register t_object *method = vm_frame_stack_pop(frame);
+                        register t_object *attribute = vm_frame_stack_pop(frame);
 
-                        // add to class
-                        ht_add(class->methods, OBJ2STR(name), method);
+                        // Add method attribute to class
+                        ht_add(class->attributes, OBJ2STR(name), attribute);
 
-                        DEBUG_PRINT("Added method '%s' to class\n", object_debug(method));
+                        DEBUG_PRINT("Added attribute '%s' to class '%s'\n", object_debug(attribute), object_debug((t_object *)class));
                     }
 
                     object_inc_ref((t_object *)class);
                     vm_frame_stack_push(frame, (t_object *)class);
-                }
-
-                goto dispatch;
-                break;
-            case VM_BUILD_METHOD :
-                {
-
-                    DEBUG_PRINT("\n\n\n**** CREATING A METHOD ****\n\n\n\n");
-
-                    // pop flags object
-                    register t_object *flags = vm_frame_stack_pop(frame);
-                    object_dec_ref(flags);
-
-                    // pop code object
-                    register t_object *code_obj = vm_frame_stack_pop(frame);
-                    object_dec_ref(code_obj);
-
-                    // Generate hash object from arguments
-                    register t_object *arg_list = object_new(Object_Hash, NULL);
-                    for (int i=0; i!=oparg1; i++) {
-                        t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
-                        arg->value = vm_frame_stack_pop(frame);
-                        register t_object *name_obj = vm_frame_stack_pop(frame);
-                        arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
-
-                        ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
-                    }
-
-                    // Generate method object
-                    dst = object_new(Object_Method, flags, 0, NULL, code_obj, arg_list);
-
-                    // Push method object
-                    object_inc_ref(dst);
-                    vm_frame_stack_push(frame, dst);
                 }
 
                 goto dispatch;
@@ -739,6 +782,7 @@ int vm_execute(t_bytecode *bc) {
     vm_frame_destroy(initial_frame);
     return ret_val;
 }
+
 
 /**
  *
