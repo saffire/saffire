@@ -591,36 +591,39 @@ dispatch:
 
             case VM_BUILD_ATTRIB :
                 {
+                    vm_frame_stack_debug(frame);
+
                     DEBUG_PRINT("\n\n\n**** CREATING A ATTRIB ****\n\n\n\n");
 
-                    // pop attribute type
-                    register t_object *type = vm_frame_stack_pop(frame);
-                    object_dec_ref(type);
+                    printf("Type: %d  Optional arguments for type=0: %d\n", oparg1, oparg2);
 
                     // pop access object
                     register t_object *access = vm_frame_stack_pop(frame);
                     object_dec_ref(access);
+                    DEBUG_PRINT("ATTRIB ACCESS: %d\n", OBJ2NUM(access));
 
                     // pop visibility object
                     register t_object *visibility = vm_frame_stack_pop(frame);
                     object_dec_ref(visibility);
+                    DEBUG_PRINT("ATTRIB VIS: %d\n", OBJ2NUM(visibility));
 
                     // pop value object
                     register t_object *value_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(value_obj);
+                    DEBUG_PRINT("ATTRIB VALUE: %s\n", object_debug(value_obj));
 
                     // Deal with attribute type specific values
                     register t_object *method_flags_obj = NULL;
                     register t_object *arg_list  = NULL;
 
-                    if (OBJ2NUM(type) == ATTRIB_TYPE_METHOD) {
+                    if (oparg1 == ATTRIB_TYPE_METHOD) {
                         // We have method flags and possible arguments
                         method_flags_obj = vm_frame_stack_pop(frame);
                         object_dec_ref(method_flags_obj);
 
                         // Generate hash object from arguments
                         arg_list = object_new(Object_Hash, NULL);
-                        for (int i=0; i!=oparg1; i++) {
+                        for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
                             arg->value = vm_frame_stack_pop(frame);
                             register t_object *name_obj = vm_frame_stack_pop(frame);
@@ -629,15 +632,15 @@ dispatch:
                             ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
                     }
-                    if (OBJ2NUM(type) == ATTRIB_TYPE_CONSTANT) {
+                    if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
                     }
-                    if (OBJ2NUM(type) == ATTRIB_TYPE_PROPERTY) {
+                    if (oparg1 == ATTRIB_TYPE_PROPERTY) {
                         // Nothing additional to do for regular properties
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, OBJ2NUM(type), OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
+                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
 
                     // Push method object
                     object_inc_ref(dst);

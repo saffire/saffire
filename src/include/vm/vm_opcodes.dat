@@ -40,7 +40,6 @@ SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
 BUILD_CLASS          0x93
-BUILD_ATTRIB         0x94
 COMPARE_OP           0x95
 SETUP_FINALLY        0x96
 SETUP_EXCEPT         0x97
@@ -53,8 +52,8 @@ OPERATOR             0xA8
 INPLACE_OPR          0xA9
 
 
-
 CALL_METHOD          0xC0
 SETUP_ELSE_LOOP      0xC1
+BUILD_ATTRIB         0xC2
 
 RESERVED             0xFF

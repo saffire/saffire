@@ -88,13 +88,15 @@ static t_object *obj_new(t_object *self) {
 static void obj_populate(t_object *obj, va_list arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
-    attrib_obj->type = (char)va_arg(arg_list, int);
+    attrib_obj->attrib_type = (char)va_arg(arg_list, int);
     attrib_obj->visibility = (char)va_arg(arg_list, int);
     attrib_obj->access = (char)va_arg(arg_list, int);
     attrib_obj->attribute = va_arg(arg_list, struct _object *);
 
-    attrib_obj->method_flags = (char)va_arg(arg_list, int);
-    attrib_obj->arguments = va_arg(arg_list, struct _hash_object *);
+    if (attrib_obj->attrib_type == ATTRIB_TYPE_METHOD) {
+        attrib_obj->method_flags = (char)va_arg(arg_list, int);
+        attrib_obj->arguments = va_arg(arg_list, struct _hash_object *);
+    }
 }
 
 static void obj_destroy(t_object *obj) {
@@ -106,7 +108,9 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *)obj;
-    sprintf(global_buf, "attrib %s T: %d V: %d A: %d Obj: %s Attrib: %s", self->name, self->type, self->visibility, self->access, self->class ? self->class->name : "no", object_debug(self->attribute));
+    char attrbuf[1024];
+    snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
+    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%d/%d) Bound: %s Value: %s", self->name, self->type, self->visibility, self->access, self->class ? self->class->name : "no", attrbuf);
     return global_buf;
 }
 #endif

@@ -589,7 +589,6 @@ constant_list:
 constant:
         T_CONST T_IDENTIFIER T_ASSIGNMENT real_scalar_value ';' { TRACE sfc_validate_constant($2); $$ = ast_attribute($2, ATTRIB_TYPE_CONSTANT, ATTRIB_VISIBILITY_PUBLIC, ATTRIB_ACCESS_RO, $4, 0, ast_nop()); smm_free($2); }
 ;
-
 class_definition:
         class_header '{' class_inner_statement_list '}' { TRACE $$ = ast_class(global_table->active_class, $3); sfc_fini_class(); }
     |   class_header '{'                            '}' { TRACE $$ = ast_class(global_table->active_class, ast_nop()); sfc_fini_class(); }
@@ -609,7 +608,7 @@ interface_definition:
 
 class_property_definition:
         modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { TRACE sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, ast_nop(), 0, ast_nop()); smm_free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { TRACE sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, ast_null(), 0, ast_nop()); smm_free($3); }
 ;
 
 interface_property_definition:

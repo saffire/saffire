@@ -302,24 +302,28 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
-                // Nothing to do for constants
+                state->state = st_load;
+                WALK_LEAF(leaf->attribute.value);
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_PROPERTY) {
-                // Nothing to do for properties
+                state->state = st_load;
+                WALK_LEAF(leaf->attribute.value);
             }
 
+
             // Store visibility
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.visibility);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.visibility);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
             // Store access
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.access);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.access);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
             // Create constant
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.attrib_type);
-            dll_append(frame, asm_create_codeline(VM_BUILD_ATTRIB, 1, opr1));
+            opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
+            dll_append(frame, asm_create_codeline(VM_BUILD_ATTRIB, 2, opr1, opr2));
 
             // Name of the id to store the constant into
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->attribute.name, 0);
