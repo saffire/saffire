@@ -243,8 +243,6 @@ dispatch:
             // Load a property from an object
             case VM_LOAD_PROPERTY :
                 {
-                    vm_frame_stack_debug(frame);
-
                     register t_object *class = vm_frame_stack_pop(frame);
                     register t_object *property = vm_frame_stack_pop(frame);
 
@@ -591,8 +589,6 @@ dispatch:
 
             case VM_BUILD_ATTRIB :
                 {
-                    vm_frame_stack_debug(frame);
-
                     DEBUG_PRINT("\n\n\n**** CREATING A ATTRIB ****\n\n\n\n");
 
                     printf("Type: %d  Optional arguments for type=0: %d\n", oparg1, oparg2);

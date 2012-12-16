@@ -222,7 +222,6 @@ t_ast_element *ast_null(void) {
  * Add a node to an existing operator node. This allows to have multiple children in later stages (like lists)
  */
 t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
-    printf("Adding element\n");
     if (src->type == typeAstGroup) {
         // Resize memory
         src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
@@ -288,7 +287,6 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
 //}
 
 t_ast_element *ast_group(int len, ...) {
-    printf("CRETING GROUP WITH %d ELLEMENTS\n", len);
     t_ast_element *p = ast_alloc_element();
     va_list ap;
 

@@ -270,8 +270,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 // Do arguments
                 arglist = leaf->attribute.arguments;
                 if (arglist->type == typeAstOpr && arglist->opr.oper == T_ARGUMENT_LIST) {
-                    DEBUG_PRINT("Method '%s' : Total args: %d\n", leaf->attribute.name, arglist->opr.nops);
-
                     arg_count = arglist->opr.nops;
 
                     for (int i=arglist->opr.nops-1; i>=0; i--) {
@@ -543,20 +541,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     state->block_cnt--;
                     break;
 
-                case T_METHOD_CALL :
+                case T_CALL :
                     state->state = st_load;
-                    WALK_LEAF(leaf->opr.ops[2]);       // Do argument list
-                    WALK_LEAF(leaf->opr.ops[0]);       // Load object to call
+                    WALK_LEAF(leaf->opr.ops[1]);       // Do argument list
+                    WALK_LEAF(leaf->opr.ops[0]);       // Load callable
 
-                    node = leaf->opr.ops[1];
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
+//                    node = leaf->opr.ops[0];
+//                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
 
-                    int nops = 0;
-                    if(leaf->opr.ops[2]->type == typeAstOpr ) {
-                        nops = leaf->opr.ops[2]->opr.nops;
-                    }
+                    int arg_count = leaf->opr.ops[1]->group.len;
 
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, nops);
+                    // @TODO: Dummy. Remove me!
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 42);
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
                     dll_append(frame, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
 
                     leaf->clean_handler = &ast_walker_call_method_clean_handler;
@@ -565,6 +562,24 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     //state->state = st_store;
 
                     break;
+
+                case T_SUBSCRIPT :
+//                    state->state = st_load;
+//                    WALK_LEAF(leaf->opr.ops[0]);       // Load object to subscribe
+//
+//                    node = leaf->opr.ops[1];
+//                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
+//
+//                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, nops);
+//                    dll_append(frame, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
+//
+//                    leaf->clean_handler = &ast_walker_call_method_clean_handler;
+//
+//                    state->state = st_load;
+//                    //state->state = st_store;
+
+                    break;
+
 
                 case T_ASSIGNMENT :
                     state->state = st_load;
