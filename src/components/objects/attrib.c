@@ -88,6 +88,7 @@ static t_object *obj_new(t_object *self) {
 static void obj_populate(t_object *obj, va_list arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
+    attrib_obj->binding = (t_object *)va_arg(arg_list, struct _object *);
     attrib_obj->attrib_type = (char)va_arg(arg_list, int);
     attrib_obj->visibility = (char)va_arg(arg_list, int);
     attrib_obj->access = (char)va_arg(arg_list, int);
@@ -110,7 +111,7 @@ static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *)obj;
     char attrbuf[1024];
     snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
-    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%d/%d) Bound: %s Value: %s", self->name, self->type, self->visibility, self->access, self->class ? self->class->name : "no", attrbuf);
+    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%d/%d) Binding: %s Value: %s", self->name, self->type, self->visibility, self->access, self->binding ? self->binding->name : "not bound", attrbuf);
     return global_buf;
 }
 #endif

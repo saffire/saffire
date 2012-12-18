@@ -438,12 +438,15 @@ dispatch:
             // Calls callable from SP-0 with OP+0 args starting from SP-1.
             case VM_CALL_METHOD :
                 {
-//                    // This object will become "self" in our method call
-                    register t_attrib_object *method_obj = vm_frame_stack_pop(frame);
+                    // Fetch attribute to call
+                    register t_attrib_object *method_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
 
-//                    // Find the code from the method-attribute we need to call
-//                    register char *method_name = (char *)vm_frame_get_constant_literal(frame, oparg1);
-//                    t_attrib_object *method_obj = (t_attrib_object *)object_find_method(self_obj, method_name);
+                    // The bounded object will become "self" in our method call
+                    register t_object *self_obj = method_obj->binding;
+
+                    if (!self_obj) {
+                        error_and_die(1, "Method '%s' is not bound to any class or instantiation\n", method_obj->name);
+                    }
 
                     if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
                         error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
@@ -496,6 +499,7 @@ dispatch:
 
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
+
                 }
 
                 goto dispatch;
@@ -631,7 +635,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
+                    dst = object_new(Object_Attrib, NULL, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
 
                     // Push method object
                     object_inc_ref(dst);
@@ -681,6 +685,9 @@ dispatch:
                     for (int i=0; i!=oparg1; i++) {
                         register t_object *name = vm_frame_stack_pop(frame);
                         register t_object *attribute = vm_frame_stack_pop(frame);
+
+                        // Bind the attribute to the actual class
+                        ((t_attrib_object *)attribute)->binding = (t_object *)class;
 
                         // Add method attribute to class
                         ht_add(class->attributes, OBJ2STR(name), attribute);

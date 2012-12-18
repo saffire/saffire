@@ -122,7 +122,7 @@
             char        access;
         } meta;
 
-        t_object    *attribute;
+        t_attrib_object *attribute;
     } t_attribute;
 
 
@@ -167,17 +167,17 @@
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
-        int ref_count;                 /* Reference count. When 0, it is targeted for garbage collection */ \
+        int ref_count;                  /* Reference count. When 0, it is targeted for garbage collection */ \
         \
-        t_objectype_enum type;         /* Type of the (scalar) object */ \
-        char *name;                    /* Name of the class */ \
+        t_objectype_enum type;          /* Type of the (scalar) object */ \
+        char *name;                     /* Name of the class */ \
         \
-        int flags;                     /* object flags */ \
+        int flags;                      /* object flags */ \
         \
-        t_object *parent;        /* Parent object (only t_base_object is allowed to have this NULL) */ \
+        t_object *parent;               /* Parent object (only t_base_object is allowed to have this NULL) */ \
         \
-        int implement_count;           /* Number of interfaces */ \
-        t_object **implements;   /* Actual interfaces */ \
+        int implement_count;            /* Number of interfaces */ \
+        t_object **implements;          /* Actual interfaces */ \
         \
         t_hash_table *attributes;               /* Object attributes, properties or constants */ \
         t_object_operators *operators;          /* Object operators */ \
@@ -229,12 +229,10 @@
 
 
     // Returns custom object 'obj'
-    #define RETURN_OBJECT(obj) \
-        return (t_object*)obj
+    #define RETURN_OBJECT(obj) return (t_object*)obj
 
     // Returns self
-    #define RETURN_SELF \
-        { return (t_object *)self; }
+    #define RETURN_SELF { return (t_object *)self; }
 
 
     void object_init(void);

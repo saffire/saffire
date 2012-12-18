@@ -559,7 +559,7 @@ void object_add_external_method(void *obj, char *name, int method_flags, int vis
     t_object *the_obj = (t_object *)obj;
 
     t_code_object *code_obj = (t_code_object *)object_new(Object_Code, p, NULL);
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
 
     ht_add(the_obj->attributes, name, attrib);
 }
@@ -574,7 +574,7 @@ void object_add_internal_method(void *obj, char *name, int method_flags, int vis
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     // with internal and external functions.
     t_code_object *code_obj = (t_code_object *)object_new(Object_Code, NULL, func);
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
 
     ht_add(the_obj->attributes, name, attrib);
 }

@@ -73,7 +73,7 @@
 
         t_object *attribute;                // Actual attribute
 
-        t_object *class;                    // Method bound to specified class
+        t_object *binding;                  // Method bound to this specified class or object
 
         char method_flags;                  // method flags (abstract, static, final etc)
         struct _hash_object *arguments;     // Arguments, in case of a method type (key => default value (or NULL))
