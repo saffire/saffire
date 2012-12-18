@@ -1,5 +1,5 @@
 ;
-; Only make modifications to the opcodes in this file. This will regenerate the vm_opcodes.h file
+; Only make modifications to the opcodes in this file. This will regenerate the vm_opcodes.h and c file
 ;
 
 STOP                 0x00
@@ -10,8 +10,6 @@ DUP_TOP              0x04
 ROT_FOUR             0x05
 
 NOP                  0x09
-
-LOAD_PROPERTY        0x40
 
 POP_BLOCK            0x72
 RETURN               0x73
@@ -36,6 +34,8 @@ LOAD_GLOBAL          0x88
 STORE_GLOBAL         0x89
 DELETE_GLOBAL        0x8A
 
+LOAD_PROPERTY        0x8F
+
 SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
@@ -51,8 +51,8 @@ JUMP_IF_FIRST_TRUE   0xA1
 OPERATOR             0xA8
 INPLACE_OPR          0xA9
 
+CALL_METHOD          0xBF
 
-CALL_METHOD          0xC0
 SETUP_ELSE_LOOP      0xC1
 BUILD_ATTRIB         0xC2
 

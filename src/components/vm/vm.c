@@ -243,16 +243,11 @@ dispatch:
             // Load a property from an object
             case VM_LOAD_PROPERTY :
                 {
+                    register t_object *property = vm_frame_get_constant(frame, oparg1);
                     register t_object *class = vm_frame_stack_pop(frame);
-                    register t_object *property = vm_frame_stack_pop(frame);
 
                     DEBUG_PRINT("PROPERTY: CLASS: %s\n", object_debug(class));
                     DEBUG_PRINT("PROPERTY: PROPERTY: %s\n", object_debug(property));
-                    if (! OBJECT_IS_STRING(property)) {
-                        // Cast to string
-                        register t_object *string_method = object_find_method(property, "string");
-                        property = object_call(property, string_method, 0);
-                    }
 
                     t_object *dst = object_find_property(class, OBJ2STR(property));
                     object_inc_ref(dst);
@@ -440,15 +435,15 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Calls method OP+0 SP+0 from object SP+1 with OP+1 args starting from SP+2.
+            // Calls callable from SP-0 with OP+0 args starting from SP-1.
             case VM_CALL_METHOD :
                 {
-                    // This object will become "self" in our method call
-                    register t_object *self_obj = vm_frame_stack_pop(frame);
+//                    // This object will become "self" in our method call
+                    register t_attrib_object *method_obj = vm_frame_stack_pop(frame);
 
-                    // Find the code from the method-attribute we need to call
-                    register char *method_name = (char *)vm_frame_get_constant_literal(frame, oparg1);
-                    t_attrib_object *method_obj = (t_attrib_object *)object_find_method(self_obj, method_name);
+//                    // Find the code from the method-attribute we need to call
+//                    register char *method_name = (char *)vm_frame_get_constant_literal(frame, oparg1);
+//                    t_attrib_object *method_obj = (t_attrib_object *)object_find_method(self_obj, method_name);
 
                     if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
                         error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
@@ -596,12 +591,12 @@ dispatch:
                     // pop access object
                     register t_object *access = vm_frame_stack_pop(frame);
                     object_dec_ref(access);
-                    DEBUG_PRINT("ATTRIB ACCESS: %d\n", OBJ2NUM(access));
+                    DEBUG_PRINT("ATTRIB ACCESS: %ld\n", OBJ2NUM(access));
 
                     // pop visibility object
                     register t_object *visibility = vm_frame_stack_pop(frame);
                     object_dec_ref(visibility);
-                    DEBUG_PRINT("ATTRIB VIS: %d\n", OBJ2NUM(visibility));
+                    DEBUG_PRINT("ATTRIB VIS: %ld\n", OBJ2NUM(visibility));
 
                     // pop value object
                     register t_object *value_obj = vm_frame_stack_pop(frame);

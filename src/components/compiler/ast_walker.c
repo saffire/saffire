@@ -113,9 +113,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
         case typeAstProperty :
             state->state = st_load;
             WALK_LEAF(leaf->property.class);
-            state->state = st_load;
-            WALK_LEAF(leaf->property.property);
-            dll_append(frame, asm_create_codeline(VM_LOAD_PROPERTY, 0));
+
+            node = leaf->property.property;
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
+            dll_append(frame, asm_create_codeline(VM_LOAD_PROPERTY, 1, opr1));
             break;
 
         case typeAstString :
@@ -552,9 +553,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     int arg_count = leaf->opr.ops[1]->group.len;
 
                     // @TODO: Dummy. Remove me!
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 42);
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
-                    dll_append(frame, asm_create_codeline(VM_CALL_METHOD, 2, opr1, opr2));
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
+                    dll_append(frame, asm_create_codeline(VM_CALL_METHOD, 1, opr1));
 
                     leaf->clean_handler = &ast_walker_call_method_clean_handler;
 

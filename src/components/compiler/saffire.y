@@ -113,7 +113,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name scalar_value callable subscription primary_expression_item primary_expression_item_single
+%type <nPtr> special_name scalar_value callable subscription primary_expression_first_part
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -161,17 +161,17 @@ non_empty_use_statement_list:
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE qualified_name T_AS T_IDENTIFIER                          ';' { $$ = ast_opr(T_USE, 2, $2, ast_string($4));  }
+        T_USE qualified_name T_AS T_IDENTIFIER                        ';' { $$ = ast_opr(T_USE, 2, $2, ast_string($4));  }
         /* use <foo>; */
-    |   T_USE qualified_name                                            ';' { $$ = ast_opr(T_USE, 1, $2); }
+    |   T_USE qualified_name                                          ';' { $$ = ast_opr(T_USE, 1, $2); }
         /* import <foo> from <bar> */
-    |   T_IMPORT qualified_name                   T_FROM qualified_name ';' { $$ = ast_opr(T_IMPORT, 3, $2, ast_nop(), $4); }
+    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_opr(T_IMPORT, 3, ast_string($2), ast_string($2), ast_string_dup($4)); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), $6); }
+    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_opr(T_IMPORT, 3, ast_string($2), ast_string($4), ast_string_dup($6)); }
         /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_opr(T_IMPORT, 3, $2, ast_string($4), ast_string_dup($2)); }
+    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER                       ';' { $$ = ast_opr(T_IMPORT, 3, ast_string($2), ast_string($4), ast_string($2)); }
         /* import <foo> */
-    |   T_IMPORT qualified_name                                         ';' { $$ = ast_opr(T_IMPORT, 3, $2, ast_string_dup($2), ast_string_dup($2)); }
+    |   T_IMPORT T_IDENTIFIER                                         ';' { $$ = ast_opr(T_IMPORT, 3, ast_string($2), ast_string($2), ast_string($2)); }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -191,7 +191,7 @@ top_statement:
         class_definition        { $$ = $1; }
     |   interface_definition    { $$ = $1; }
     |   constant_list           { $$ = $1; }
-    |   statement_list          { $$ = $1; }
+    |   statement               { $$ = $1; }  /* statement, not statementlist, since top_statement is a list already! */
 ;
 
 
@@ -268,7 +268,7 @@ while_statement:
 /* An expression is anything that evaluates something */
 expression_statement:
         ';'             { $$ = ast_opr(';', 0); }
-    |   expression ';'  { $$ = $1; DEBUG_PARSEPRINT("\n\nLine %d:\n", yylineno+1); }
+    |   expression ';'  { $$ = $1; }
 ;
 
 
@@ -451,28 +451,22 @@ scalar_value:
     |   T_IDENTIFIER        { sfc_check_permitted_identifiers($1);  $$ = ast_identifier($1, ID_LOAD); smm_free($1); }
 ;
 
+/* This is primary expression */
 primary_expression:
-        primary_expression_item_single              { $$ = $1; }
-    |   primary_expression_item_single callable     { $$ = ast_opr(T_CALL, 2, $1, $2); }            /* anything ending on () */
-    |   primary_expression_item_single subscription { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }       /* anything ending on [] */
+        primary_expression_first_part         { $$ = $1; }
+    |   primary_expression '.' T_IDENTIFIER   { $$ = ast_property($1, ast_string($3)); }
+    |   primary_expression callable       { $$ = ast_opr(T_CALL, 2, $1, $2); }
+    |   primary_expression subscription   { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
 ;
 
-primary_expression_item_single:
-        primary_expression_item                                     { $$ = $1; }
-    |   primary_expression_item '.' primary_expression_item_single  { $$ = ast_property($1, $3); }
-;
-
-/* Anything that results in an object. */
-primary_expression_item:
-        qualified_name                          { $$ = $1; }   /* qualified name */
+/* First part is different (can be namespaced / ++foo / --foo etc */
+primary_expression_first_part:
+        qualified_name                          { $$ = $1; }   /* fully qualified name */
     |   special_name                            { $$ = $1; }   /* self or parent */
     |   real_scalar_value                       { $$ = $1; }   /* digits, strings, regexes */
-    |   primary_expression_item T_OP_INC        { $$ = ast_opr(T_OP_INC, 1, $1); }  /* foo++ */
-    |   primary_expression_item T_OP_DEC        { $$ = ast_opr(T_OP_DEC, 1, $1); }  /* foo-- */
-
+/*    |   T_OP_INC primary_expression_first_part  { $$ = ast_opr(T_OP_INC, 1, $2); }  /* --foo */
+/*    |   T_OP_DEC primary_expression_first_part  { $$ = ast_opr(T_OP_DEC, 1, $2); }  /* ++foo */
 ;
-
-/*    |   '(' expression ')'      { $$ = $2; }   /* Any expression between ()  (but not method calls!)*/
 
 /* A name that is namespaced (or not). */
 qualified_name:
