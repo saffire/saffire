@@ -246,12 +246,17 @@ dispatch:
                     register t_object *property = vm_frame_get_constant(frame, oparg1);
                     register t_object *class = vm_frame_stack_pop(frame);
 
-                    DEBUG_PRINT("PROPERTY: CLASS: %s\n", object_debug(class));
-                    DEBUG_PRINT("PROPERTY: PROPERTY: %s\n", object_debug(property));
+                    t_object *attr = object_find_property(class, OBJ2STR(property));
 
-                    t_object *dst = object_find_property(class, OBJ2STR(property));
-                    object_inc_ref(dst);
-                    vm_frame_stack_push(frame, dst);
+                    // @TODO: Can attr be NULL?
+
+                    // Create a copy of the attrib object and change binding
+                    t_attrib_object *dst = (t_attrib_object *)smm_malloc(sizeof(t_attrib_object));
+                    memcpy(dst, attr, sizeof(t_attrib_object));
+                    dst->binding = class;
+
+                    object_inc_ref((t_object *)dst);
+                    vm_frame_stack_push(frame, (t_object *)dst);
 
                     goto dispatch;
                     break;
