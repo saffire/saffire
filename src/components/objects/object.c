@@ -405,6 +405,26 @@ t_object *object_new(t_object *obj, ...) {
         }
     }
 
+    // Iterate all attributes, copy them into new attribute and change the binding
+    t_hash_iter iter;
+    ht_iter_init(&iter, obj->attributes);
+    while (ht_iter_valid(&iter)) {
+        t_attribute *attr = (t_attribute *)ht_iter_value(&iter);
+
+        // Create a copy of the attrib object
+        t_attrib_object *attr_obj = (t_attrib_object *)smm_malloc(sizeof(t_attrib_object));
+        memcpy(attr_obj, attr, sizeof(t_attrib_object));
+
+        // Change binding
+        attr_obj->binding = obj;
+
+        // Replace attribute to new bounded attribute
+        iter.bucket->value = attr_obj;
+
+        ht_iter_next(&iter);
+    }
+
+
 #ifdef __DEBUG
 //    if (! ht_num_find(object_hash, (unsigned long)res)) {
 //        ht_num_add(object_hash, (unsigned long)res, res);
