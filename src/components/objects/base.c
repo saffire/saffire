@@ -68,6 +68,7 @@
  * Instantiation
  */
 SAFFIRE_METHOD(base, new) {
+    // @TODO: Will this work? What if we do:  "string".new();
     t_object *obj = object_new((t_object *)self);
 	RETURN_OBJECT(obj);
 }
