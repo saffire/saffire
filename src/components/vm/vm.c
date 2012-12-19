@@ -462,7 +462,7 @@ dispatch:
 
                         // Create argument list inside a DLL
                         t_dll *arg_list = dll_init();
-                        for (int i=0; i!=oparg2; i++) {
+                        for (int i=0; i!=oparg1; i++) {
                             dll_prepend(arg_list, vm_frame_stack_pop(frame));
                         }
 
@@ -488,7 +488,7 @@ dispatch:
                         _parse_calling_arguments(frame, tfr, oparg2, method_obj);
 
                         // "Remove" the arguments from the original stack
-                        frame->sp += oparg2;
+                        frame->sp += oparg1;
 
                         // Execute frame, return the last object
                         dst = _vm_execute(tfr);
@@ -609,7 +609,7 @@ dispatch:
 
                     // Deal with attribute type specific values
                     register t_object *method_flags_obj = NULL;
-                    register t_object *arg_list  = NULL;
+                    register t_object *arg_list = NULL;
 
                     if (oparg1 == ATTRIB_TYPE_METHOD) {
                         // We have method flags and possible arguments

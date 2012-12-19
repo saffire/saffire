@@ -122,7 +122,6 @@ t_object *object_find_method(t_object *obj, char *method_name) {
 
 
 /**
- * OBJECT_CALL FUNCTIONS ARE ONLY USED IN THE OBSOLETE INTERPRETER CODE! REMOVE THIS!
  *
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
@@ -151,16 +150,13 @@ t_object *object_call_args(t_object *self, t_object *attrib_obj, t_dll *args) {
      * Everything is hunky-dory. Make the call
      */
 
-   error_and_die(1, "Cannot make the call this way.. Not implemented yet...");
-
     // @TODO: move this to the code-object
     if (code->native_func) {
         // Internal function
         ret = code->native_func(self, args);
     } else if (code->bytecode) {
         // External function found in AST
-        // @TODO: How do we send our arguments?
-        //ret = interpreter_leaf(code->p);
+        error_and_die(1, "Sanity error: trying to call an external method. This is not allowed!");
     } else {
         error_and_die(1, "Sanity error: code object has no code");
     }
