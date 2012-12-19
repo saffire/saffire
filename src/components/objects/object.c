@@ -143,7 +143,7 @@ t_object *object_call_args(t_object *self, t_object *attrib_obj, t_dll *args) {
 
     // Code object present inside method?
     t_code_object *code = (t_code_object *)((t_attrib_object *)attrib_obj)->attribute;
-    if (! code || OBJECT_IS_CODE(code)) {
+    if (! code || ! OBJECT_IS_CODE(code)) {
         error_and_die(1, "Code object from method is not present!");
     }
 
