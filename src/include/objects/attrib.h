@@ -59,9 +59,9 @@
     #define ATTRIB_IS_READWRITE(attrib) (((t_attrib_object *)attrib)->access == ATTRIB_ACCESS_RW)
     #define ATTRIB_IS_READONLY(attrib) (((t_attrib_object *)attrib)->access == ATTRIB_ACCESS_RO)
 
-    #define ATTRIB_IS_METHOD(attrib) (((t_attrib_object *)attrib)->type == ATTRIB_TYPE_METHOD)
-    #define ATTRIB_IS_CONSTANT(attrib) (((t_attrib_object *)attrib)->type == ATTRIB_TYPE_CONSTANT)
-    #define ATTRIB_IS_PROPERTY(attrib) (((t_attrib_object *)attrib)->type == ATTRIB_TYPE_PROPERTY)
+    #define ATTRIB_IS_METHOD(attrib) (((t_attrib_object *)attrib)->attrib_type == ATTRIB_TYPE_METHOD)
+    #define ATTRIB_IS_CONSTANT(attrib) (((t_attrib_object *)attrib)->attrib_type == ATTRIB_TYPE_CONSTANT)
+    #define ATTRIB_IS_PROPERTY(attrib) (((t_attrib_object *)attrib)->attrib_type == ATTRIB_TYPE_PROPERTY)
 
 
     typedef struct {
