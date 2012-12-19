@@ -403,8 +403,8 @@ multiplicative_expression:
 
 unary_expression:
         logical_unary_expression                    { $$ = $1; }
-/*    |   T_OP_INC unary_expression                   { $$ = ast_opr(T_OP_INC, 1, $2); } */
-/*    |   T_OP_DEC unary_expression                   { $$ = ast_opr(T_OP_DEC, 1, $2); } */
+    |   T_OP_INC unary_expression                   { $$ = ast_operator('+', $2, ast_numerical(1)); }
+    |   T_OP_DEC unary_expression                   { $$ = ast_operator('-', $2, ast_numerical(1)); }
 ;
 
 logical_unary_expression:
@@ -457,6 +457,8 @@ primary_expression:
     |   primary_expression '.' T_IDENTIFIER   { $$ = ast_property($1, ast_string($3)); }
     |   primary_expression callable       { $$ = ast_opr(T_CALL, 2, $1, $2); }
     |   primary_expression subscription   { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
+    |   primary_expression T_OP_INC         { $$ = ast_operator('+', $1, ast_numerical(1)); }
+    |   primary_expression T_OP_DEC         { $$ = ast_operator('-', $1, ast_numerical(1)); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
@@ -464,8 +466,6 @@ primary_expression_first_part:
         qualified_name                            { $$ = $1; }   /* fully qualified name */
     |   special_name                              { $$ = $1; }   /* self or parent */
     |   real_scalar_value                         { $$ = $1; }   /* digits, strings, regexes */
-/*    |   T_OP_INC primary_expression_first_part  { $$ = ast_opr(T_OP_INC, 1, $2); }  /* --foo */
-/*    |   T_OP_DEC primary_expression_first_part  { $$ = ast_opr(T_OP_DEC, 1, $2); }  /* ++foo */
 ;
 
 /* A name that is namespaced (or not). */

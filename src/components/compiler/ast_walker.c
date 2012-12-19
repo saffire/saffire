@@ -284,6 +284,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
                 }
 
+                // Push method flags
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.method_flags);
+                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+
+
                 // Push body
                 state->loop_cnt++;
                 clc = state->loop_cnt;
@@ -294,10 +299,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 // Walk the body inside a new frame!
                 _ast_walker(leaf->attribute.value, output, label1);
-
-                // Push method flags
-                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.method_flags);
-                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
