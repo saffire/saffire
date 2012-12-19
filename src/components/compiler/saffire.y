@@ -63,6 +63,7 @@
     #define YYPRINT(file, type, value)
 %}
 
+
 %union {
     char                 *sVal;
     long                 lVal;
@@ -100,7 +101,7 @@
 
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
-%type <nPtr> constant_list statement_list compound_statement statement expression_statement jump_statement
+%type <nPtr> statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement iteration_statement class_list while_statement
 %type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
@@ -113,7 +114,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name scalar_value callable subscription primary_expression_first_part
+%type <nPtr> special_name scalar_value callable subscription primary_expression_first_part qualified_name_first_part
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -123,7 +124,6 @@
 %token_table
 
 %error-verbose
-
 
 /* Start rule */
 %start saffire
@@ -190,7 +190,7 @@ non_empty_top_statement_list:
 top_statement:
         class_definition        { $$ = $1; }
     |   interface_definition    { $$ = $1; }
-    |   constant_list           { $$ = $1; }
+    |   constant                { $$ = $1; }
     |   statement               { $$ = $1; }  /* statement, not statementlist, since top_statement is a list already! */
 ;
 
@@ -461,19 +461,24 @@ primary_expression:
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
 primary_expression_first_part:
-        qualified_name                          { $$ = $1; }   /* fully qualified name */
-    |   special_name                            { $$ = $1; }   /* self or parent */
-    |   real_scalar_value                       { $$ = $1; }   /* digits, strings, regexes */
+        qualified_name                            { $$ = $1; }   /* fully qualified name */
+    |   special_name                              { $$ = $1; }   /* self or parent */
+    |   real_scalar_value                         { $$ = $1; }   /* digits, strings, regexes */
 /*    |   T_OP_INC primary_expression_first_part  { $$ = ast_opr(T_OP_INC, 1, $2); }  /* --foo */
 /*    |   T_OP_DEC primary_expression_first_part  { $$ = ast_opr(T_OP_DEC, 1, $2); }  /* ++foo */
 ;
 
 /* A name that is namespaced (or not). */
 qualified_name:
-       T_IDENTIFIER                             { $$ = ast_identifier($1, ID_LOAD); }
-    |  T_NS_SEP T_IDENTIFIER                    { $$ = ast_identifier("::", ID_LOAD); $$ = ast_concat($$, $2); }
-    |  qualified_name T_NS_SEP T_IDENTIFIER     { $$ = ast_concat($$, "::"); $$ = ast_concat($$, $3); }
+        qualified_name_first_part               { $$ = $1; }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_concat($1, "::"); $$ = ast_concat($$, $3); }
 ;
+
+qualified_name_first_part:
+        T_IDENTIFIER                            { $$ = ast_identifier($1, ID_LOAD); }
+    |   T_NS_SEP T_IDENTIFIER                   { $$ = ast_string("::"); $$ = ast_concat($$, $2); }
+;
+
 
 /* Self and parent are processed differently, since they are separate tokens */
 special_name:
@@ -490,7 +495,6 @@ callable:
 calling_method_argument_list:
         assignment_expression                                     { $$ = ast_group(1, $1); }
     |   calling_method_argument_list ',' assignment_expression    { $$ = ast_add($$, $3); }
-    |   /* empty */                                               { $$ = ast_nop(); }
 ;
 
 /**
@@ -555,12 +559,7 @@ method_argument:
 /*    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_null(),     ast_string($1), $3,        ast_numerical(1)); smm_free($1); } */
 ;
 
-constant_list:
-        constant                    { $$ = ast_opr(T_CONSTANTS, 1, $1); }
-    |   constant_list constant      { $$ = ast_add($$, $1); }
-;
-
-    constant:
+constant:
         T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { sfc_validate_constant($2); $$ = ast_attribute($2, ATTRIB_TYPE_CONSTANT, ATTRIB_VISIBILITY_PUBLIC, ATTRIB_ACCESS_RO, $4, 0, ast_nop()); smm_free($2); }
 ;
 class_definition:
