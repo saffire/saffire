@@ -344,7 +344,7 @@ static t_object *obj_new(t_object *self) {
 
     return (t_object *)obj;
 }
-¦¦¦ª£
+
 static void obj_populate(t_object *obj, va_list arg_list) {
     t_string_object *str_obj = (t_string_object *)obj;
 
