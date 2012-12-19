@@ -122,7 +122,7 @@
             char        access;
         } meta;
 
-        t_attrib_object *attribute;
+        t_object *attribute;
     } t_attribute;
 
 
