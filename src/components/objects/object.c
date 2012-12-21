@@ -306,7 +306,9 @@ void object_dec_ref(t_object *obj) {
     if(obj->ref_count == 0) {
         // Free object
         if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
-            object_free(obj);
+            DEBUG_PRINT(" *** WOULD BE FREED, BUT WE DONT YET\n");
+            // @TODO: Free objects!
+            //object_free(obj);
         } else {
             DEBUG_PRINT(" *** STATIC, SO NOT FREEING\n");
         }
@@ -400,7 +402,7 @@ t_object *object_new(t_object *obj, ...) {
             DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
         }
     }
-    
+
     return res;
 }
 
