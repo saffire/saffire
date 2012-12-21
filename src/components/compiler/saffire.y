@@ -225,8 +225,8 @@ compound_statement:
 
 /* if if/else statements */
 if_statement:
-        T_IF conditional_expression statement                  { $$ = ast_opr(T_IF, 2, $2, $3); }
-    |   T_IF conditional_expression statement T_ELSE statement { $$ = ast_opr(T_IF, 3, $2, $3, $5); }
+        T_IF '(' conditional_expression ')' statement                  { $$ = ast_opr(T_IF, 2, $3, $5); }
+    |   T_IF '(' conditional_expression ')' statement T_ELSE statement { $$ = ast_opr(T_IF, 3, $3, $5, $7); }
 ;
 
 /* Switch statement */
