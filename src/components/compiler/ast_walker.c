@@ -543,6 +543,53 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     state->block_cnt--;
                     break;
 
+                case T_FOR :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+                    sprintf(state->blocks[state->block_cnt].label, "for_%03d_incdec", clc);
+                    state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    state->block_cnt++;
+
+                    sprintf(label2, "for_%03d_init", clc);
+                    sprintf(label3, "for_%03d_test", clc);
+                    sprintf(label4, "for_%03d_pre_end", clc);
+                    sprintf(label5, "for_%03d_end", clc);
+                    sprintf(label6, "for_%03d_incdec", clc);
+
+                    // Add init
+                    dll_append(frame, asm_create_labelline(label2));
+                    WALK_LEAF(leaf->opr.ops[0]);
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_SETUP_LOOP, 1, opr1));
+
+                    // Add comparison
+                    dll_append(frame, asm_create_labelline(label3));
+                    WALK_LEAF(leaf->opr.ops[1]);
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+
+                    // Add body
+                    WALK_LEAF(leaf->opr.ops[3]);
+
+                    // Add incdec
+                    dll_append(frame, asm_create_labelline(label6));
+                    WALK_LEAF(leaf->opr.ops[2]);
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label3, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    dll_append(frame, asm_create_labelline(label4));
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+
+                    dll_append(frame, asm_create_labelline(label5));
+
+                    state->block_cnt--;
+                    break;
+
                 case T_CALL :
                     state->state = st_load;
                     WALK_LEAF(leaf->opr.ops[1]);       // Do argument list
