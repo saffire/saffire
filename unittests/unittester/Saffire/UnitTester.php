@@ -312,11 +312,11 @@ class UnitTester {
 
 cleanup:
         // Unlink all temp files
-//        @unlink($tmpFile);
-//        @unlink($tmpFile.".sf");
-//        @unlink($tmpFile.".exp");
-//        @unlink($tmpFile.".out");
-//        @unlink($tmpFile.".diff");
+        @unlink($tmpFile);
+        @unlink($tmpFile.".sf");
+        @unlink($tmpFile.".exp");
+        @unlink($tmpFile.".out");
+        @unlink($tmpFile.".diff");
         return $ret;
     }
 
