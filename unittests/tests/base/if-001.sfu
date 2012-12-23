@@ -26,7 +26,7 @@ if (a = 5) {
 }
 
 ====
-Cannot use an assignment inside an if-statement
+Error in line 2: syntax error, unexpected T_ASSIGNMENT, expecting ')'
 @@@@
 import io as io from ::_sfl::io;
 a = 1;

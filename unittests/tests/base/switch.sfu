@@ -12,7 +12,7 @@ switch (a=1) {
 }
 
 ====
-Error in line 2: syntax error, unexpected '=', expecting ')'
+Error in line 2: syntax error, unexpected T_ASSIGNMENT, expecting ')'
 @@@@
 case 5:
     break;
