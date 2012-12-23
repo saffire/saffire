@@ -183,6 +183,19 @@ t_ast_element *ast_identifier(char *var_name, char action) {
     return p;
 }
 
+/**
+ * Creates a identifier node
+ */
+t_ast_element *ast_property(t_ast_element *class, t_ast_element *property) {
+    t_ast_element *p = ast_alloc_element();
+
+    p->type = typeAstProperty;
+    p->property.class = class;
+    p->property.property = property;
+
+    return p;
+}
+
 
 /**
  * Creates a nop node
@@ -209,52 +222,92 @@ t_ast_element *ast_null(void) {
  * Add a node to an existing operator node. This allows to have multiple children in later stages (like lists)
  */
 t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
-    if (src->type != typeAstOpr) {
-        yyerror("Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
+    if (src->type == typeAstGroup) {
+        // Resize memory
+        src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
+        if (src->group.items == NULL) {
+            yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+        }
+
+        // Add new operator
+        src->group.items[src->group.len] = new_element;
+        src->group.len++;
+
+        return src;
     }
 
-    // Resize operator memory
-    src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
-    if (src->opr.ops == NULL) {
-        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+    if (src->type == typeAstOpr) {
+        // Resize memory
+        src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
+        if (src->opr.ops == NULL) {
+            yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+        }
+
+        // Add new operator
+        src->opr.ops[src->opr.nops] = new_element;
+        src->opr.nops++;
+
+        return src;
     }
 
-    // Add new operator
-    src->opr.ops[src->opr.nops] = new_element;
-    src->opr.nops++;
 
-    return src;
+    yyerror("Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
+    return NULL;
 }
 
 
-/**
- * Add all the children of a node to the src node.
- */
-t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element) {
-    if (src->type != typeAstOpr) {
-        yyerror("Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
-    }
-    if (new_element->type != typeAstOpr) {
-        yyerror("We can only add child elements from a opr element");   /* LCOV_EXCL_LINE */
-    }
+///**
+// * Add all the children of a node to the src node.
+// */
+//t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element) {
+//    if (src->type != typeAstOpr) {
+//        yyerror("Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
+//    }
+//    if (new_element->type != typeAstOpr) {
+//        yyerror("We can only add child elements from a opr element");   /* LCOV_EXCL_LINE */
+//    }
+//
+//    // Allocate or resize operator memory
+//    if (src->opr.ops) {
+//        src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops + new_element->opr.nops) * sizeof(t_ast_element));
+//    } else {
+//        src->opr.ops = smm_malloc(new_element->opr.nops * sizeof(t_ast_element));
+//    }
+//    if (src->opr.ops == NULL) {
+//        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+//    }
+//
+//    // Add new operator
+//    for (int i=0; i!=new_element->opr.nops; i++) {
+//        src->opr.ops[src->opr.nops] = new_element->opr.ops[i];
+//        src->opr.nops++;
+//    }
+//
+//    return src;
+//}
 
-    // Allocate or resize operator memory
-    if (src->opr.ops) {
-        src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops + new_element->opr.nops) * sizeof(t_ast_element));
-    } else {
-        src->opr.ops = smm_malloc(new_element->opr.nops * sizeof(t_ast_element));
-    }
-    if (src->opr.ops == NULL) {
+t_ast_element *ast_group(int len, ...) {
+    t_ast_element *p = ast_alloc_element();
+    va_list ap;
+
+    p->type = typeAstGroup;
+    p->group.len = len;
+    p->group.items = NULL;
+
+    if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
         yyerror("Out of memory");   /* LCOV_EXCL_LINE */
     }
 
-    // Add new operator
-    for (int i=0; i!=new_element->opr.nops; i++) {
-        src->opr.ops[src->opr.nops] = new_element->opr.ops[i];
-        src->opr.nops++;
+    // Add additional nodes (they can be added later with ast_add())
+    if (len) {
+        va_start(ap, len);
+        for (int i=0; i < len; i++) {
+            p->group.items[i] = va_arg(ap, t_ast_element *);
+        }
+        va_end(ap);
     }
 
-    return src;
+    return p;
 }
 
 
@@ -343,16 +396,19 @@ t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implement
 
 
 /**
- * Create a method node
+ * Create a attribute node
  */
-t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body) {
+t_ast_element *ast_attribute(char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments) {
     t_ast_element *p = ast_alloc_element();
 
-    p->type = typeAstMethod;
-    p->method.modifiers = modifiers;
-    p->method.name = smm_strdup(name);
-    p->method.arguments = arguments;
-    p->method.body = body;
+    p->type = typeAstAttribute;
+    p->attribute.name = smm_strdup(name);
+    p->attribute.attrib_type = attrib_type;
+    p->attribute.visibility = visibility;
+    p->attribute.access = access;
+    p->attribute.value = value;
+    p->attribute.method_flags = method_flags;
+    p->attribute.arguments = arguments;
 
     return p;
 }
@@ -369,6 +425,15 @@ void ast_free_node(t_ast_element *p) {
         case typeAstNull :
         case typeAstNumerical :
             // Nothing to free
+            break;
+        case typeAstAttribute :
+            smm_free(p->attribute.name);
+            ast_free_node(p->attribute.value);
+            ast_free_node(p->attribute.arguments);
+            break;
+        case typeAstProperty :
+            ast_free_node(p->property.class);
+            ast_free_node(p->property.property);
             break;
         case typeAstOperator :
             ast_free_node(p->operator.r);
@@ -403,11 +468,6 @@ void ast_free_node(t_ast_element *p) {
             ast_free_node(p->interface.implements);
             ast_free_node(p->interface.body);
             break;
-        case typeAstMethod :
-            smm_free(p->method.name);
-            ast_free_node(p->method.arguments);
-            ast_free_node(p->method.body);
-            break;
         case typeAstOpr :
             if (p->opr.nops) {
                 for (int i=0; i < p->opr.nops; i++) {
@@ -416,6 +476,15 @@ void ast_free_node(t_ast_element *p) {
                 smm_free(p->opr.ops);
             }
             break;
+        case typeAstGroup :
+            if (p->group.len) {
+                for (int i=0; i < p->group.len; i++) {
+                    ast_free_node(p->group.items[i]);
+                }
+                smm_free(p->group.items);
+            }
+            break;
+
     }
     smm_free(p);
 }

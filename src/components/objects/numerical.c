@@ -33,7 +33,7 @@
 #include "objects/boolean.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/null.h"
 #include "general/smm.h"
 
@@ -368,19 +368,17 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  * Initializes numerical methods and properties
  */
 void object_numerical_init(void) {
-    Object_Numerical_struct.methods = ht_create();
-    object_add_internal_method(&Object_Numerical_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_ctor);
-    object_add_internal_method(&Object_Numerical_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_dtor);
+    Object_Numerical_struct.attributes = ht_create();
+    object_add_internal_method(&Object_Numerical_struct, "ctor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
+    object_add_internal_method(&Object_Numerical_struct, "dtor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
 
-    object_add_internal_method(&Object_Numerical_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
-    object_add_internal_method(&Object_Numerical_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
-    object_add_internal_method(&Object_Numerical_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
-    object_add_internal_method(&Object_Numerical_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
+    object_add_internal_method(&Object_Numerical_struct, "boolean",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
+    object_add_internal_method(&Object_Numerical_struct, "null",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
+    object_add_internal_method(&Object_Numerical_struct, "numerical",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
+    object_add_internal_method(&Object_Numerical_struct, "string",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
 
-    object_add_internal_method(&Object_Numerical_struct, "neg", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_neg);
-    object_add_internal_method(&Object_Numerical_struct, "abs", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_numerical_method_abs);
-
-    Object_Numerical_struct.properties = ht_create();
+    object_add_internal_method(&Object_Numerical_struct, "neg",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
+    object_add_internal_method(&Object_Numerical_struct, "abs",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
 
 
     // Create a numerical cache
@@ -415,12 +413,9 @@ void object_numerical_fini(void) {
     }
     smm_free(numerical_cache);
 
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Numerical_struct);
-    ht_destroy(Object_Numerical_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Numerical_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Numerical_struct);
+    ht_destroy(Object_Numerical_struct.attributes);
 }
 
 

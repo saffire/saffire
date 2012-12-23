@@ -34,7 +34,7 @@
 #include "objects/null.h"
 #include "objects/base.h"
 #include "objects/numerical.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/hash.h"
 #include "general/hashtable.h"
 #include "general/smm.h"
@@ -209,23 +209,20 @@ SAFFIRE_OPERATOR_METHOD(hash, add) {
  * Initializes hash methods and properties, these are used
  */
 void object_hash_init(void) {
-    Object_Hash_struct.methods = ht_create();
-    object_add_internal_method(&Object_Hash_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_ctor);
-    object_add_internal_method(&Object_Hash_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_dtor);
+    Object_Hash_struct.attributes = ht_create();
+    object_add_internal_method(&Object_Hash_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_ctor);
+    object_add_internal_method(&Object_Hash_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_dtor);
 
-    object_add_internal_method(&Object_Hash_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
-    object_add_internal_method(&Object_Hash_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_conv_null);
-    object_add_internal_method(&Object_Hash_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
-    object_add_internal_method(&Object_Hash_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_conv_string);
+    object_add_internal_method(&Object_Hash_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
+    object_add_internal_method(&Object_Hash_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_null);
+    object_add_internal_method(&Object_Hash_struct, "numerical",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
+    object_add_internal_method(&Object_Hash_struct, "string",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
 
-    object_add_internal_method(&Object_Hash_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method(&Object_Hash_struct, "add", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_add);
-    object_add_internal_method(&Object_Hash_struct, "remove", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_remove);
-    object_add_internal_method(&Object_Hash_struct, "find", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_find);
-    object_add_internal_method(&Object_Hash_struct, "exists", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_hash_method_exists);
-
-    Object_Hash_struct.properties = ht_create();
-    Object_Hash_struct.ht = ht_create();
+    object_add_internal_method(&Object_Hash_struct, "length",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method(&Object_Hash_struct, "add",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method(&Object_Hash_struct, "remove",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method(&Object_Hash_struct, "find",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_find);
+    object_add_internal_method(&Object_Hash_struct, "exists",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }
@@ -234,12 +231,9 @@ void object_hash_init(void) {
  * Frees memory for a hash object
  */
 void object_hash_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Hash_struct);
-    ht_destroy(Object_Hash_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Hash_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Hash_struct);
+    ht_destroy(Object_Hash_struct.attributes);
 }
 
 

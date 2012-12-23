@@ -30,7 +30,7 @@
 #include "objects/null.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "general/smm.h"
 
 
@@ -243,20 +243,16 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
  * Initializes string methods and properties, these are used
  */
 void object_boolean_init(void) {
-    Object_Boolean_struct.methods = ht_create();
+    Object_Boolean_struct.attributes = ht_create();
 
-    object_add_internal_method(&Object_Boolean_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
-    object_add_internal_method(&Object_Boolean_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
-    object_add_internal_method(&Object_Boolean_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
-    object_add_internal_method(&Object_Boolean_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
+    object_add_internal_method(&Object_Boolean_struct, "boolean",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
+    object_add_internal_method(&Object_Boolean_struct, "null",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
+    object_add_internal_method(&Object_Boolean_struct, "numerical", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
+    object_add_internal_method(&Object_Boolean_struct, "string",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
 
-    Object_Boolean_struct.properties = ht_create();
 
-    Object_Boolean_False_struct.methods = Object_Boolean_struct.methods;
-    Object_Boolean_True_struct.methods = Object_Boolean_struct.methods;
-
-    Object_Boolean_False_struct.properties = Object_Boolean_struct.properties;
-    Object_Boolean_True_struct.properties = Object_Boolean_struct.properties;
+    Object_Boolean_False_struct.attributes = Object_Boolean_struct.attributes;
+    Object_Boolean_True_struct.attributes = Object_Boolean_struct.attributes;
 
     vm_populate_builtins("false", Object_True);
     vm_populate_builtins("true", Object_False);
@@ -266,12 +262,9 @@ void object_boolean_init(void) {
  * Frees memory for a string object
  */
 void object_boolean_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Boolean_struct);
-    ht_destroy(Object_Boolean_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Boolean_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Boolean_struct);
+    ht_destroy(Object_Boolean_struct.attributes);
 }
 
 #ifdef __DEBUG

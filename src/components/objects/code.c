@@ -33,7 +33,7 @@
 #include "objects/null.h"
 #include "objects/base.h"
 #include "objects/code.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/numerical.h"
 #include "general/smm.h"
 #include "general/smm.h"
@@ -127,29 +127,24 @@ SAFFIRE_METHOD(code, conv_null) {
  * Initializes methods and properties, these are used
  */
 void object_code_init(void) {
-    Object_Code_struct.methods = ht_create();
-    object_add_internal_method(&Object_Code_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_ctor);
-    object_add_internal_method(&Object_Code_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_dtor);
+    Object_Code_struct.attributes = ht_create();
+    object_add_internal_method(&Object_Code_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_ctor);
+    object_add_internal_method(&Object_Code_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_dtor);
 
-    object_add_internal_method(&Object_Code_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_conv_boolean);
-    object_add_internal_method(&Object_Code_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_conv_null);
+    object_add_internal_method(&Object_Code_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_boolean);
+    object_add_internal_method(&Object_Code_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_null);
 
-    object_add_internal_method(&Object_Code_struct, "call", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_call);
-    object_add_internal_method(&Object_Code_struct, "internal?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_code_method_internal);
-
-    Object_Code_struct.properties = ht_create();
+    object_add_internal_method(&Object_Code_struct, "call",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_call);
+    object_add_internal_method(&Object_Code_struct, "internal?",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_internal);
 }
 
 /**
  * Frees memory for a code object
  */
 void object_code_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Code_struct);
-    ht_destroy(Object_Code_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Code_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Code_struct);
+    ht_destroy(Object_Code_struct.attributes);
 }
 
 

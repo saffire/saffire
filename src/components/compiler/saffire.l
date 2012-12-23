@@ -93,7 +93,8 @@ void saffire_pop_state() {
 
 /* Our actual lexemes */
 lnum            [0-9]+
-identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?)
+/* identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
+identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
 whitespace      [ \t\n\r]+
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
@@ -162,14 +163,13 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "abstract"      { saffire_push_state(st_regex); return T_ABSTRACT; }
 "final"         { saffire_push_state(st_regex); return T_FINAL; }
 "interface"     { saffire_push_state(st_regex); return T_INTERFACE; }
-"const"         { saffire_push_state(st_regex); return T_CONST; }
+"constant"      { saffire_push_state(st_regex); return T_CONST; }
 "static"        { saffire_push_state(st_regex); return T_STATIC; }
 
 "public"        { saffire_push_state(st_regex); return T_PUBLIC; }
 "private"       { saffire_push_state(st_regex); return T_PRIVATE; }
 "protected"     { saffire_push_state(st_regex); return T_PROTECTED; }
 "method"        { saffire_push_state(st_regex); return T_METHOD; }
-"readonly"      { saffire_push_state(st_regex); return T_READONLY; }
 "property"      { saffire_push_state(st_regex); return T_PROPERTY; }
 
 "catch"         { saffire_push_state(st_regex); return T_CATCH; }
@@ -203,14 +203,14 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_string_dbl>\"               {
                                 /* Closing double string quote */
-                                yylval.sVal = smm_strdup(strbuf);
+                                yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
                             }
 <st_string_sgl>\'               {
                                 /* Closing Single string quote */
-                                yylval.sVal = smm_strdup(strbuf);
+                                yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;

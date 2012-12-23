@@ -56,6 +56,7 @@
         unsigned int sp;                            // Stack pointer
 
         t_hash_object *local_identifiers;           // Local identifiers
+        t_hash_object *file_identifiers;            // Identifiers inside the current file (other classes, methods, imports etc)
         t_hash_object *global_identifiers;          // Global identifiers
         t_hash_object *builtin_identifiers;         // Builtin identifiers
 

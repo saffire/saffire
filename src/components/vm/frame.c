@@ -184,10 +184,11 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
  * Return object from either the local or the global identifier table
  */
 t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
+    DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
     t_object *obj = vm_frame_find_identifier(frame, id);
     if (obj != NULL) return obj;
 
-    error_and_die(1, "Cannot find variable: %s\n", id);
+    error_and_die(1, "Cannot find attribute: %s\n", id);
     return NULL;
 }
 
@@ -198,7 +199,7 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
 
 
-
+#ifdef __DEBUG
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
     while (ht_iter_valid(&iter)) {
@@ -207,21 +208,28 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
         DEBUG_PRINT("  K: %-20s %s\n", k, object_debug(v));
         ht_iter_next(&iter);
     }
+#endif
 
-
-
-
-
+    // Check locals first
     obj = ht_find(frame->local_identifiers->ht, id);
     if (obj != NULL) return obj;
 
-    if (frame->global_identifiers && frame->global_identifiers->ht) {
-        obj = ht_find(frame->global_identifiers->ht, id);
+    // If file identifiers are present, check them
+    if (frame->file_identifiers) {
+        obj = ht_find(frame->file_identifiers->ht, id);
         if (obj != NULL) return obj;
     }
 
+    // Check globals
+    obj = ht_find(frame->global_identifiers->ht, id);
+    if (obj != NULL) return obj;
+
+    // Last, check builtins
     obj = ht_find(frame->builtin_identifiers->ht, id);
-    return obj;
+    if (obj != NULL) return obj;
+
+    // @TODO: We should throw an exception instead of just returning
+    return NULL;
 }
 
 
@@ -263,12 +271,15 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         cfr->global_identifiers = parent_frame->global_identifiers;
         // And create new local identifier hash
         cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, NULL);
+
+        // By default, don't create file identifiers
+        cfr->file_identifiers = NULL;
     }
 
     // Create builtin-identifiers
     cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, builtin_identifiers);
 
-    // Create constants
+    // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
     cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
         t_object *obj = Object_Null;
@@ -291,7 +302,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         object_inc_ref(obj);
         cfr->constants_objects[i] = obj;
     }
-
 
     return cfr;
 }
