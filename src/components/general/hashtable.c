@@ -204,7 +204,7 @@ void *ht_remove(t_hash_table *ht, const char *key) {
 int ht_iter_init(t_hash_iter *iter, t_hash_table *ht) {
     iter->ht = ht;
     iter->bucket_idx = 0;
-    iter->bucket = ht->head;
+    iter->bucket = ht ? ht->head : NULL;
     return 1;
 }
 

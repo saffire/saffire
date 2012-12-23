@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <CUnit/CUnit.h>
+#include <CUnit/Basic.h>
 #include "hashtable/hashtable.h"
 
 int main(int argc, char *argv[]) {

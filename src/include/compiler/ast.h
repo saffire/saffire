@@ -36,8 +36,8 @@
 
     // different kind of nodes we manage
     typedef enum { typeAstString, typeAstNumerical, typeAstNull, typeAstIdentifier,
-                   typeAstOpr, typeAstNop,
-                   typeAstClass, typeAstInterface, typeAstMethod,
+                   typeAstOpr, typeAstNop, typeAstGroup,
+                   typeAstClass, typeAstInterface, typeAstAttribute, typeAstProperty,
                    typeAstAssignment, typeAstComparison, typeAstBool, typeAstOperator,
                  } nodeEnum;
 
@@ -51,8 +51,25 @@
 
     typedef struct {
         char *name;                 // Name of the actual variable to use
-        char action;                // 0 = LOAD, 1 = STORE
+        char action;                // 0 = LOAD, 1 = STORE (not used!)
     } identifierNode;
+
+    typedef struct {
+        struct _ast_element *class;
+        struct _ast_element *property;
+    } propertyNode;
+
+    typedef struct {
+        char *name;                         // Name of the attribute
+        char attrib_type;                   // Type (constant, property, method)
+        char access;                        // RO / RW
+        char visibility;                    // Public, private, protected)
+        struct _ast_element *value;         // Actual value
+
+        // Additional information for method attributes
+        char method_flags;                  // Flags: static, final, abstract
+        struct _ast_element *arguments;     // Additional arguments
+    } attributeNode;
 
     typedef struct {
         int oper;                   // Operator
@@ -100,11 +117,9 @@
     } interfaceNode;
 
     typedef struct {
-        int modifiers;
-        char *name;
-        struct _ast_element *arguments;
-        struct _ast_element *body;
-    } methodNode;
+        int len;
+        struct _ast_element **items;
+    } groupNode;
 
     typedef void (*t_clean_handler)(t_dll*);
 
@@ -117,10 +132,12 @@
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
             identifierNode identifier;  // variable
+            propertyNode property;      // property
+            attributeNode attribute;    // attribute
             oprNode opr;                // operators
+            groupNode group;            // grouping of multiple items (statements etc)
             classNode class;            // class
             interfaceNode interface;    // interface
-            methodNode method;          // methods
             assignmentNode assignment;  // assignment
             comparisonNode comparison;  // comparison
             boolopNode boolop;          // booleans (|| &&)
@@ -136,20 +153,22 @@
     t_ast_element *ast_string_dup(t_ast_element *src);
     t_ast_element *ast_numerical(int value);
     t_ast_element *ast_identifier(char *var_name, char action);
+    t_ast_element *ast_property(t_ast_element *class, t_ast_element *property);
     t_ast_element *ast_opr(int opr, int nops, ...);
+    t_ast_element *ast_group(int len, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
-    t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
+//    t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_string_concat(t_ast_element *src, char *s);
     t_ast_element *ast_concat(t_ast_element *src, char *s);
     t_ast_element *ast_class(t_class *class, t_ast_element *body);
     t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
-    t_ast_element *ast_method(int modifiers, char *name, t_ast_element *arguments, t_ast_element *body);
     t_ast_element *ast_nop(void);
     t_ast_element *ast_null(void);
     t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_operator(int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_attribute(char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
 
 
     void ast_free_node(t_ast_element *p);

@@ -34,7 +34,7 @@
 #include "objects/null.h"
 #include "objects/base.h"
 #include "objects/numerical.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/tuple.h"
 #include "general/hashtable.h"
 #include "general/smm.h"
@@ -191,18 +191,16 @@ SAFFIRE_OPERATOR_METHOD(tuple, add) {
  * Initializes tuple methods and properties, these are used
  */
 void object_tuple_init(void) {
-    Object_Tuple_struct.methods = ht_create();
-    object_add_internal_method(&Object_Tuple_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_ctor);
-    object_add_internal_method(&Object_Tuple_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_dtor);
+    Object_Tuple_struct.attributes = ht_create();
+    object_add_internal_method(&Object_Tuple_struct, "ctor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
+    object_add_internal_method(&Object_Tuple_struct, "dtor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
 
-    object_add_internal_method(&Object_Tuple_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
-    object_add_internal_method(&Object_Tuple_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
-    object_add_internal_method(&Object_Tuple_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
-    object_add_internal_method(&Object_Tuple_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
+    object_add_internal_method(&Object_Tuple_struct, "boolean",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
+    object_add_internal_method(&Object_Tuple_struct, "null",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
+    object_add_internal_method(&Object_Tuple_struct, "numerical",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
+    object_add_internal_method(&Object_Tuple_struct, "string",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
-    object_add_internal_method(&Object_Tuple_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_tuple_method_length);
-
-    Object_Tuple_struct.properties = ht_create();
+    object_add_internal_method(&Object_Tuple_struct, "length",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }
@@ -211,12 +209,9 @@ void object_tuple_init(void) {
  * Frees memory for a tuple object
  */
 void object_tuple_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Tuple_struct);
-    ht_destroy(Object_Tuple_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Tuple_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Tuple_struct);
+    ht_destroy(Object_Tuple_struct.attributes);
 }
 
 

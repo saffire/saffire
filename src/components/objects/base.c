@@ -31,8 +31,8 @@
 #include "objects/string.h"
 #include "objects/numerical.h"
 #include "objects/boolean.h"
-#include "objects/method.h"
 #include "objects/null.h"
+#include "objects/attrib.h"
 #include "general/smm.h"
 
 
@@ -68,6 +68,7 @@
  * Instantiation
  */
 SAFFIRE_METHOD(base, new) {
+    // @TODO: Will this work? What if we do:  "string".new();
     t_object *obj = object_new((t_object *)self);
 	RETURN_OBJECT(obj);
 }
@@ -98,7 +99,7 @@ SAFFIRE_METHOD(base, properties) {
  */
 SAFFIRE_METHOD(base, methods) {
     // @TODO: return list of methods
-    RETURN_STRING(L"methods");
+    RETURN_STRING("methods");
 }
 
 /**
@@ -106,7 +107,7 @@ SAFFIRE_METHOD(base, methods) {
  */
 SAFFIRE_METHOD(base, parents) {
     // @TODO: return list of parents
-    RETURN_STRING(L"parents");
+    RETURN_STRING("parents");
 }
 
 /**
@@ -121,7 +122,7 @@ SAFFIRE_METHOD(base, name) {
  */
 SAFFIRE_METHOD(base, implements) {
     // @TODO: return list of implementations
-    RETURN_STRING(L"implementations");
+    RETURN_STRING("implementations");
 }
 
 /**
@@ -137,7 +138,7 @@ SAFFIRE_METHOD(base, memory) {
  */
 SAFFIRE_METHOD(base, annotations) {
     // @TODO: return method annotations
-    RETURN_STRING(L"annotations");
+    RETURN_STRING("annotations");
 }
 
 /**
@@ -198,26 +199,24 @@ SAFFIRE_METHOD(base, id) {
  * Initializes base methods and properties
  */
 void object_base_init() {
-    Object_Base_struct.methods = ht_create();
+    Object_Base_struct.attributes = ht_create();
 
-    object_add_internal_method(&Object_Base_struct, "new", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_new);
-    object_add_internal_method(&Object_Base_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_ctor);
-    object_add_internal_method(&Object_Base_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_dtor);
-    object_add_internal_method(&Object_Base_struct, "properties", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_properties);
-    object_add_internal_method(&Object_Base_struct, "methods", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_methods);
-    object_add_internal_method(&Object_Base_struct, "parents", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_parents);
-    object_add_internal_method(&Object_Base_struct, "name", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_name);
-    object_add_internal_method(&Object_Base_struct, "implements", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_implements);
-    object_add_internal_method(&Object_Base_struct, "memory", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_memory);
-    object_add_internal_method(&Object_Base_struct, "annotations", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_annotations);
-    object_add_internal_method(&Object_Base_struct, "clone", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_clone);
-    object_add_internal_method(&Object_Base_struct, "immutable?", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_is_immutable);
-    object_add_internal_method(&Object_Base_struct, "immutable", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_immutable);
-    object_add_internal_method(&Object_Base_struct, "destroy", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_destroy);
-    object_add_internal_method(&Object_Base_struct, "refcount", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_refcount);
-    object_add_internal_method(&Object_Base_struct, "id", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_base_method_id);
-
-    Object_Base_struct.properties = ht_create();
+    object_add_internal_method(&Object_Base_struct, "new",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
+    object_add_internal_method(&Object_Base_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
+    object_add_internal_method(&Object_Base_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
+    object_add_internal_method(&Object_Base_struct, "properties",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
+    object_add_internal_method(&Object_Base_struct, "methods",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
+    object_add_internal_method(&Object_Base_struct, "parents",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
+    object_add_internal_method(&Object_Base_struct, "name",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method(&Object_Base_struct, "implements",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method(&Object_Base_struct, "memory",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
+    object_add_internal_method(&Object_Base_struct, "annotations",  METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
+    object_add_internal_method(&Object_Base_struct, "clone",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
+    object_add_internal_method(&Object_Base_struct, "immutable?",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
+    object_add_internal_method(&Object_Base_struct, "immutable",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
+    object_add_internal_method(&Object_Base_struct, "destroy",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
+    object_add_internal_method(&Object_Base_struct, "refcount",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
+    object_add_internal_method(&Object_Base_struct, "id",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
 }
 
 
@@ -225,12 +224,9 @@ void object_base_init() {
  * Frees memory for a base object
  */
 void object_base_fini() {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_Base_struct);
-    ht_destroy(Object_Base_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_Base_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_Base_struct);
+    ht_destroy(Object_Base_struct.attributes);
 }
 
 

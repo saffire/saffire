@@ -182,7 +182,7 @@ class UnitTester {
         // Initialize the current suite result
         $this->_current = array();
         $this->_current['filename'] = $filename;
-        $this->_current['lineno'] = 0;
+        $this->_current['lineno'] = 1;
         $this->_current['tags'] = array();
 
         $this->_output($this->_current['filename']." : ");
@@ -195,8 +195,8 @@ class UnitTester {
         $this->_current['contents'] = $f;
 
         // Find header and body
-        $pattern = "/^\*\*+/m";
-        $header_and_body = preg_split($pattern, $this->_current['contents'], 4);
+        $pattern = "/^\*\*\*\*+\n/m";
+        $header_and_body = preg_split($pattern, $this->_current['contents'], 4, PREG_OFFSET_CAPTURE);
         if (count($header_and_body) != 2) {
             $this->_output("Error finding header in file\n");
             return;
@@ -218,13 +218,19 @@ class UnitTester {
 
     protected function _runFunctionalTests($body) {
         // Split each test
-        $pattern = "/^\@\@+/m";
+        $pattern = "/^\@\@\@\@+\n/m";
         $tests = preg_split($pattern, $body);
+
+        $this->_current['testno'] = 1;
 
         foreach ($tests as $test) {
             // Run the actual test
-            $result = $this->_runFunctionalTest($test);
+            $result = $this->_runFunctionalTest($test, $this->_current['testno'], $this->_current['lineno']);
             $this->_results['total_tests']++;
+
+            $this->_current['lineno'] += countnewlines($test)+1;
+            $this->_current['testno']++;
+
 
             switch ($result) {
                 case self::PASS :
@@ -247,14 +253,14 @@ class UnitTester {
 
     /**
      */
-    protected function _runFunctionalTest($test, $lineno = "unknown") {
+    protected function _runFunctionalTest($test, $testno, $lineno) {
         $tmpDir = sys_get_temp_dir();
 
         // Don't expect any output
         $outputExpected = false;
 
         // Split source and expected output
-        $pattern = "/^==+\n/m";
+        $pattern = "/^===+\n/m";
         $tmp = preg_split($pattern, $test, 2);
 
         // Generate temp file(name)
@@ -287,10 +293,9 @@ class UnitTester {
 
         if ($outputExpected) {
             // We expect certain output. Let's try and diff it..
-            exec("/usr/bin/diff --suppress-common-lines ".$tmpFile.".out ".$tmpFile.".exp", $output, $result);
-            if ($result != 0) {
+            if (! diff_it($tmpFile.".out", $tmpFile.".exp", $output)) {
                 $tmp = "";
-                $tmp .= "Error in ".$this->_current['filename']." at ".$lineno."\n";
+                $tmp .= "Error in ".$this->_current['filename']." (test $testno, line $lineno)\n";
                 $tmp .= join("\n", $output);
                 $tmp .= "\n";
 
@@ -307,11 +312,11 @@ class UnitTester {
 
 cleanup:
         // Unlink all temp files
-        @unlink($tmpFile);
-        @unlink($tmpFile.".sf");
-        @unlink($tmpFile.".exp");
-        @unlink($tmpFile.".out");
-        @unlink($tmpFile.".diff");
+//        @unlink($tmpFile);
+//        @unlink($tmpFile.".sf");
+//        @unlink($tmpFile.".exp");
+//        @unlink($tmpFile.".out");
+//        @unlink($tmpFile.".diff");
         return $ret;
     }
 
@@ -345,4 +350,49 @@ cleanup:
         return true;
     }
 
+}
+
+
+/**
+ */
+function diff_it($in_name, $exp_name, &$output) {
+    $output = array();
+
+    $f1 = file($in_name);
+    $f2 = file($exp_name);
+
+    $it = new \MultipleIterator();
+    $it->attachIterator(new \ArrayIterator($f1));
+    $it->attachIterator(new \ArrayIterator($f2));
+    foreach ($it as $v) {
+        $v[0] = sanitize_line($v[0]);
+        $v[1] = sanitize_line($v[1]);
+
+        if ($v[0] != $v[1]) {
+            $output[] = "+++ ".$v[0];
+            $output[] = "--- ".$v[1];
+        }
+    }
+
+    return count($output) == 0;
+}
+
+
+/*
+ * Sanitizes a line
+ */
+function sanitize_line($line) {
+    $line = preg_replace("/^Error: line \d:/", "", $line);
+    $line = preg_replace("/^Error in line \d:/", "", $line);
+
+    $line = preg_replace("/\n$/", "", $line);
+    return $line;
+}
+
+function countnewlines($s) {
+    $nl = 0;
+    for ($i=0; $i!=strlen($s); $i++) {
+        if ($s[$i] == "\n") $nl++;
+    }
+    return $nl;
 }

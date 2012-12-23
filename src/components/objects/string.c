@@ -34,7 +34,7 @@
 #include "objects/null.h"
 #include "objects/base.h"
 #include "objects/numerical.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "general/smm.h"
 #include "general/smm.h"
 #include "general/md5.h"
@@ -298,23 +298,21 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  * Initializes string methods and properties, these are used
  */
 void object_string_init(void) {
-    Object_String_struct.methods = ht_create();
-    object_add_internal_method(&Object_String_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "ctor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "dtor", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_dtor);
+    Object_String_struct.attributes = ht_create();
+    object_add_internal_method(&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method(&Object_String_struct, "dtor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method(&Object_String_struct, "boolean", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method(&Object_String_struct, "null", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method(&Object_String_struct, "numerical", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method(&Object_String_struct, "string", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method(&Object_String_struct, "boolean",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method(&Object_String_struct, "null",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method(&Object_String_struct, "numerical",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method(&Object_String_struct, "string",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method(&Object_String_struct, "byte_length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_byte_length);
-    object_add_internal_method(&Object_String_struct, "length", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method(&Object_String_struct, "upper", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_upper);
-    object_add_internal_method(&Object_String_struct, "lower", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_lower);
-    object_add_internal_method(&Object_String_struct, "reverse", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, object_string_method_reverse);
-
-    Object_String_struct.properties = ht_create();
+    object_add_internal_method(&Object_String_struct, "byte_length",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
+    object_add_internal_method(&Object_String_struct, "length",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method(&Object_String_struct, "upper",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method(&Object_String_struct, "lower",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method(&Object_String_struct, "reverse",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
     // Create string cache
     string_cache = ht_create();
@@ -326,12 +324,9 @@ void object_string_init(void) {
  * Frees memory for a string object
  */
 void object_string_fini(void) {
-    // Free methods
-    object_remove_all_internal_methods((t_object *)&Object_String_struct);
-    ht_destroy(Object_String_struct.methods);
-
-    // Free properties
-    ht_destroy(Object_String_struct.properties);
+    // Free attributes
+    object_remove_all_internal_attributes((t_object *)&Object_String_struct);
+    ht_destroy(Object_String_struct.attributes);
 
     // Destroy string cache
     ht_destroy(string_cache);

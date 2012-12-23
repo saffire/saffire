@@ -40,8 +40,7 @@
  * Initializes base methods and properties
  */
 void object_userland_init() {
-    Object_Userland_struct.methods = ht_create();
-    Object_Userland_struct.properties = ht_create();
+    Object_Userland_struct.attributes = ht_create();
 }
 
 
@@ -49,8 +48,7 @@ void object_userland_init() {
  * Frees memory for a base object
  */
 void object_userland_fini() {
-    ht_destroy(Object_Userland_struct.methods);
-    ht_destroy(Object_Userland_struct.properties);
+    ht_destroy(Object_Userland_struct.attributes);
 }
 
 

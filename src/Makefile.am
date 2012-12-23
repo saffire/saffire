@@ -2,9 +2,6 @@
 # INIT
 ########################################################################
 
-TESTS=utmain
-noinst_BINARIES=utmain
-
 # Set our optimization / debug flags
 if DEBUG
   AM_CFLAGS = -ggdb  -O0 -D__DEBUG
@@ -137,7 +134,7 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/string.c \
                        components/objects/regex.c \
                        components/objects/code.c \
-                       components/objects/method.c \
+                       components/objects/attrib.c \
                        components/objects/hash.c \
                        components/objects/tuple.c \
                        components/objects/userland.c
@@ -181,13 +178,6 @@ libgc_a_SOURCES = components/gc/gc.c
 
 
 ########################################################################
-# ../unittests/core
-########################################################################
-
-noinst_LIBRARIES += libtests.a
-libtests_a_SOURCES = ../unittests/core/main.c
-
-########################################################################
 # main/saffire
 ########################################################################
 
@@ -205,13 +195,7 @@ SAFFIRE_LIBS = \
                  libmodules.a
 
 
-bin_PROGRAMS = saffire utmain
-
-utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread -lcunit
-
-utmain_SOURCES = \
-                    ../unittests/core/main.c \
-                    ../unittests/core/hashtable/hashtable.c
+bin_PROGRAMS = saffire
 
 saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
 
@@ -220,3 +204,24 @@ saffire_SOURCES = main/saffire.c \
                   main/commands/exec.c main/commands/repl.c main/commands/help.c \
                   main/commands/version.c main/commands/bytecode.c
 
+
+
+########################################################################
+# ../unittests/core
+########################################################################
+
+noinst_LIBRARIES += libtests.a
+libtests_a_SOURCES = ../unittests/core/main.c
+
+########################################################################
+# unittests
+########################################################################
+
+TESTS = utmain
+check_PROGRAMS = utmain
+
+utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread -lcunit
+
+utmain_SOURCES = \
+                    ../unittests/core/main.c \
+                    ../unittests/core/hashtable/hashtable.c
