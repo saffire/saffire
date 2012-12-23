@@ -79,7 +79,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_IDENTIFIER, expecting T_LNUM or T_STRING
+ Incorrect identifier
 @@@@
 class Foo {
     public method Bar(String arg = 1) {

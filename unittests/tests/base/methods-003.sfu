@@ -19,14 +19,6 @@ class Foo {
 Error in line 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
 @@@@
 class Foo {
-    public method bar() {
-    }
-}
-
-====
-Error in line 3: A variable cannot be used as a method name
-@@@@
-class Foo {
     public method 1() {
     }
 }
