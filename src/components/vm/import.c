@@ -39,6 +39,7 @@
 const char *module_search_path[] = {
     ".",
     "/usr/share/saffire/modules",
+    "/usr/share/saffire/modules/sfl",
     NULL
 };
 
@@ -91,23 +92,25 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
     // Scan . and /usr/saffire/modules only!
     char **current_search_path = (char **)&module_search_path;
     while (*current_search_path) {
-        char path[PATH_MAX];
+        DEBUG_PRINT("   * Searching on path '%s'\n", *current_search_path);
         char final_path[PATH_MAX];
-        char *res = realpath(*current_search_path, path);
-        if (res) {
+        char *path = realpath(*current_search_path, NULL);
+        if (path) {
             snprintf(final_path, PATH_MAX, "%s/%s.sf", path, class);
-            DEBUG_PRINT(" * Looking for module at path '%s'\n", final_path);
+            DEBUG_PRINT("   * Looking for module at path '%s'\n", final_path);
 
-            if (is_saffire_file(final_path)) {
-                DEBUG_PRINT(" * Found a matching file. Whoohoo!\n");
+            if (is_file(final_path)) {
+                DEBUG_PRINT("   * Found a matching file. Whoohoo!\n");
                 t_object *obj = _import_class_from_file(frame, final_path, class);
                 if (! obj) {
                     error_and_die(1, "Cannot find class '%s' in module '%s'\n", class, module);
                 }
                 return obj;
             } else {
-                DEBUG_PRINT(" * Nothing found here.. continuing..\n");
+                DEBUG_PRINT("   * Nothing found here.. continuing..\n");
             }
+        } else {
+            DEBUG_PRINT("   * This path is not real!?");
         }
         current_search_path++;
     }

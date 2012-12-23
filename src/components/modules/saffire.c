@@ -28,7 +28,7 @@
 #include "general/output.h"
 #include "modules/module_api.h"
 #include "objects/object.h"
-#include "objects/method.h"
+#include "objects/attrib.h"
 #include "objects/string.h"
 #include "general/dll.h"
 #include "version.h"
@@ -45,19 +45,17 @@ static t_object *saffire_return_gitrev(t_object *self, t_dll *args) {
 }
 
 
-t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeCustom, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
+t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeAny, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
 
 static void _init(void) {
-    saffire_struct.methods = ht_create();
+    saffire_struct.attributes = ht_create();
 
-    object_add_internal_method(&saffire_struct, "version", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, saffire_return_version);
-    object_add_internal_method(&saffire_struct, "gitrevision", METHOD_FLAG_STATIC, METHOD_VISIBILITY_PUBLIC, saffire_return_gitrev);
-    saffire_struct.properties = ht_create();
+    object_add_internal_method(&saffire_struct, "version", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, saffire_return_version);
+    object_add_internal_method(&saffire_struct, "gitrevision", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, saffire_return_gitrev);
 }
 static void _fini(void) {
     // Destroy methods and properties
-    ht_destroy(saffire_struct.methods);
-    ht_destroy(saffire_struct.properties);
+    ht_destroy(saffire_struct.attributes);
 }
 
 static t_object *_objects[] = {
