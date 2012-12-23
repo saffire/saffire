@@ -12,10 +12,11 @@ label:
 ====
 @@@@
 // double labels
-label:
-label:
-    goto label;
+foo:
+foo:
+    goto foo;
 ====
+Error in line 3: Label 'foo' already defined.
 @@@@
 // No label specified
     goto label;
@@ -29,7 +30,7 @@ Error in line 3: A variable cannot be used as a label
 // incorrect label
 "blaat":
 ====
-Error in line 3: syntax error, unexpected ':', expecting ';' or ','
+Error: Unknown token: '"'
 @@@@
 // incorrect label
 /regex/:
