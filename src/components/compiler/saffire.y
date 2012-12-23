@@ -107,7 +107,7 @@
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement
-%type <nPtr> unary_expression primary_expression
+%type <nPtr> unary_expression primary_expression primary_expression_no_parenthesis
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
@@ -324,7 +324,6 @@ expression:
         assignment_expression { $$ = $1; }
     |   expression ',' assignment_expression { $$ = ast_add($$, $3); }
     |   expression ',' ',' assignment_expression { $$ = ast_add($$, ast_nop()); $$ = ast_add($$, $4); }
-
 ;
 
 assignment_expression:
@@ -453,6 +452,11 @@ scalar_value:
 
 /* This is primary expression */
 primary_expression:
+        primary_expression_no_parenthesis   { $$ = $1; }
+   |    '(' expression ')'                  { $$ = $2; }
+;
+
+primary_expression_no_parenthesis:
         primary_expression_first_part         { $$ = $1; }
     |   primary_expression '.' T_IDENTIFIER   { $$ = ast_property($1, ast_string($3)); }
     |   primary_expression callable       { $$ = ast_opr(T_CALL, 2, $1, $2); }
