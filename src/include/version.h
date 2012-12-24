@@ -28,6 +28,7 @@
 #define __VERSION_H__
 
     #include "gitversion.h"
+    #include "config.h"
 
     #define saffire_version_major   "0"
     #define saffire_version_minor   "0"
@@ -41,6 +42,7 @@
     #define saffire_version       "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
     #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
     #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__ " from git revision " git_revision
+    #define saffire_configured "Configured with: ./configure " CONFIGURE_ARGS
 
 
 #endif

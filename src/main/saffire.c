@@ -30,7 +30,6 @@
 #include <sys/stat.h>
 #include "general/output.h"
 #include "general/parse_options.h"
-#include "version.h"
 #include "commands/command.h"
 
 
@@ -65,13 +64,6 @@ struct command commands[] = {
 int original_argc;
 char **original_argv;
 
-
-/**
- * Prints current version number and copyright information
- */
-void print_version(void) {
-    output("%s  - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
-}
 
 
 /**
