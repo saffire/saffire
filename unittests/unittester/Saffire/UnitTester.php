@@ -39,14 +39,14 @@ class UnitTester {
         }
 
         // Execute (and thus: find) the binary to find version
-        exec($this->_saffireBinary." --version", $output, $result);
+        exec($this->_saffireBinary." --version --long", $output, $result);
         if ($result != 0) {
             print "Cannot find the test binary set by the SAFFIRE_TEST_BIN environment, or error while fetching its version.\n\n";
             exit(1);
         }
 
         // Parse version and store it so we can use this info for some of the header tags (since, until etc)
-        if (!preg_match("/v([0-9\.]+)/", $output[0], $match)) {
+        if (!preg_match("/([0-9\.]+)/", $output[0], $match)) {
             print "Cannot find the test binary set by the SAFFIRE_TEST_BIN environment, or error while fetching its version.\n\n";
             exit(1);
         }

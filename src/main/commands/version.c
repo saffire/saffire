@@ -26,15 +26,24 @@
 */
 #include <stdio.h>
 #include "commands/command.h"
+#include "general/output.h"
+#include "version.h"
 
+static int flag_long_version = 0;
 
-extern void print_version(void);
 
 /**
  * Display version information
  */
 static int do_version(void) {
-    print_version();
+    // Output long version info
+    if (flag_long_version) {
+        output("%s - %s\n%s\n%s\n", saffire_version, saffire_copyright, saffire_compiled, saffire_configured);
+        return 0;
+    }
+
+    // Output simple parsable version
+    output("%s.%s.%s\n", saffire_version_major, saffire_version_minor, saffire_version_build);
     return 0;
 }
 
@@ -48,9 +57,17 @@ static int do_version(void) {
 static const char help[]   = "Displays version information about Saffire.\n"
                              "\n";
 
+static void opt_long(void *data) {
+    flag_long_version = 1;
+}
+
+static struct saffire_option version_options[] = {
+    { "long", "b", no_argument, opt_long},
+};
+
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "", do_version, NULL },
+    { "", "", do_version, version_options },
     { 0, 0, 0, 0 }
 };
 
