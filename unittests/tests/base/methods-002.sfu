@@ -79,7 +79,7 @@ class Foo {
 }
 
 ====
- Incorrect identifier
+Incorrect identifier
 @@@@
 class Foo {
     public method Bar(String arg = 1) {

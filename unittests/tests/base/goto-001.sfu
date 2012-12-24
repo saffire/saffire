@@ -2,10 +2,19 @@ title: goto control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-// Correct syntax
-label:
-    goto label;
+import io as io from ::_sfl::io;
+    goto label2;
+    io.print("noLabel\n");
+label1:
+    io.print("Label\n");
+    goto label3;
+label2:
+    io.print("Label2\n");
+    goto label1;
+label3:
 ====
+Label2
+Label
 @@@@
 1:
     goto 1;
@@ -16,16 +25,11 @@ foo:
 foo:
     goto foo;
 ====
-Error in line 3: Label 'foo' already defined.
+Error: Duplicate label 'foo' found
 @@@@
 // No label specified
     goto label;
 ====
-@@@@
-// incorrect label
-foo:
-====
-Error in line 3: A variable cannot be used as a label
 @@@@
 // incorrect label
 "blaat":
@@ -64,6 +68,7 @@ while(true) {
     label:
 }
 ====
+Label not found
 @@@@
 // Not allowed to jump into a loop
 while(true) {
@@ -71,3 +76,4 @@ while(true) {
 }
 goto label;
 ====
+Label not found
