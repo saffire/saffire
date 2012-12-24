@@ -389,6 +389,7 @@ void sfc_switch_default(void) {
  * Make sure a label is not a variable
  */
 void saffire_check_label(const char *name) {
+    // @TODO: We need to do a check on labels, to see if the current block has already defined the label
 }
 
 

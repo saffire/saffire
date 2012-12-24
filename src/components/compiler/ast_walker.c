@@ -51,6 +51,7 @@ enum _blocktype { st_bt_none, st_bt_loop };
 typedef struct _state_frame {
     int type;           // BLOCK_TYPE_* as defined in vm/frame.h
     char label[MAX_LABEL_LEN];
+    t_hash_table *labels;       // Defined labels inside this block (so we can tests for duplicates)
 } t_state_frame;
 
 typedef struct _state {
@@ -442,6 +443,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     clc = state->loop_cnt;
                     sprintf(state->blocks[state->block_cnt].label, "dowhile_%03d_cmp", clc);
                     state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    if (state->blocks[state->block_cnt].labels) {
+                        ht_destroy(state->blocks[state->block_cnt].labels);
+                        state->blocks[state->block_cnt].labels = ht_create();
+                    }
                     state->block_cnt++;
 
                     sprintf(label3, "dowhile_%03d_cmp", clc);
@@ -481,6 +486,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     clc = state->loop_cnt;
                     sprintf(state->blocks[state->block_cnt].label, "while_%03d", clc);
                     state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    if (state->blocks[state->block_cnt].labels) {
+                        ht_destroy(state->blocks[state->block_cnt].labels);
+                        state->blocks[state->block_cnt].labels = ht_create();
+                    }
                     state->block_cnt++;
 
                     sprintf(label1, "while_%03d", clc);
@@ -548,6 +557,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     clc = state->loop_cnt;
                     sprintf(state->blocks[state->block_cnt].label, "for_%03d_incdec", clc);
                     state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    if (state->blocks[state->block_cnt].labels) {
+                        ht_destroy(state->blocks[state->block_cnt].labels);
+                        state->blocks[state->block_cnt].labels = ht_create();
+                    }
                     state->block_cnt++;
 
                     sprintf(label2, "for_%03d_init", clc);
@@ -628,6 +641,23 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     break;
 
+                case T_GOTO :
+                    node = leaf->opr.ops[0];
+                    sprintf(label1, "userlabel_%s", node->string.value);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1   , 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    break;
+                case T_LABEL :
+                    node = leaf->opr.ops[0];
+                    // Check for duplicate label inside current block
+                    sprintf(label1, "userlabel_%s", node->string.value);
+                    if (ht_exists(state->blocks[state->block_cnt].labels, label1)) {
+                        error_and_die(1, "Duplicate label '%s' found\n", label1);
+                    }
+                    ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
+
+                    dll_append(frame, asm_create_labelline(label1));
+                    break;
 
                 case T_ASSIGNMENT :
                     state->state = st_load;
@@ -656,6 +686,9 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     state.loop_cnt = 0;
     state.block_cnt = 0;
     state.attributes = 0;
+    for (int i=0; i!=BLOCK_MAX_DEPTH; i++) {
+        state.blocks[i].labels = ht_create();
+    }
 
     // Create frame and add to output
     t_dll *frame = dll_init();
@@ -663,6 +696,14 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
 
     // Walk the leaf and store in the frame
     __ast_walker(leaf, output, frame, &state);
+
+    // Destroy all the hashtables that might be available
+    for (int i=0; i!=BLOCK_MAX_DEPTH; i++) {
+        if (state.blocks[i].labels) {
+            ht_destroy(state.blocks[i].labels);
+        }
+    }
+
 
     // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
     t_asm_opr *opr1;
