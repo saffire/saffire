@@ -16,16 +16,11 @@ foo:
 foo:
     goto foo;
 ====
-Error in line 3: Label 'foo' already defined.
+Error: Duplicate label 'foo' found
 @@@@
 // No label specified
     goto label;
 ====
-@@@@
-// incorrect label
-foo:
-====
-Error in line 3: A variable cannot be used as a label
 @@@@
 // incorrect label
 "blaat":
@@ -64,6 +59,7 @@ while(true) {
     label:
 }
 ====
+Label not found
 @@@@
 // Not allowed to jump into a loop
 while(true) {
@@ -71,3 +67,4 @@ while(true) {
 }
 goto label;
 ====
+Label not found

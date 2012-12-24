@@ -122,7 +122,7 @@ switch (a) {
         break;
 }
 ====
-Error in line 10: default label already supplied
+default label already supplied
 @@@@
 switch (a) {
     case False:

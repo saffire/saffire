@@ -382,8 +382,8 @@ function diff_it($in_name, $exp_name, &$output) {
  * Sanitizes a line
  */
 function sanitize_line($line) {
-    $line = preg_replace("/^Error: line \d:/", "", $line);
-    $line = preg_replace("/^Error in line \d:/", "", $line);
+    $line = preg_replace("/^Error: line \d: /", "", $line);
+    $line = preg_replace("/^Error in line \d: /", "", $line);
 
     $line = preg_replace("/\n$/", "", $line);
     return $line;
