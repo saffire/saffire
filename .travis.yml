@@ -10,3 +10,5 @@ before_install:
 env:
     SAFFIRE_TEST_BIN=src/saffire
 script: ./configure && make && make check && php unittests/unittester/run-saffire-tests.php unittests/tests/
+notifications:
+  irc: "irc.freenode.org#saffire"
