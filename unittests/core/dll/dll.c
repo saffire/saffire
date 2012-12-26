@@ -18,9 +18,20 @@ void test_dll_dll_append_adds_item() {
     CU_ASSERT_STRING_EQUAL(DLL_HEAD(dll)->data, "test");
 }
 
+void test_dll_dll_prepend_prepends_item() {
+    t_dll *dll = dll_init();
+
+    dll_append(dll, "test");
+    dll_prepend(dll, "prepend");
+
+    CU_ASSERT_STRING_EQUAL(DLL_HEAD(dll)->data, "prepend");
+}
+
 void test_dll_init() {
      CU_pSuite suite = CU_add_suite("dll", NULL, NULL);
 
-     CU_add_test(suite, "dll_init", test_dll_dll_init);
-     CU_add_test(suite, "dll_append_adds_item", test_dll_dll_append_adds_item);
+     CU_add_test(suite, "dll_init creates object", test_dll_dll_init);
+     CU_add_test(suite, "dll_append adds item", test_dll_dll_append_adds_item);
+     CU_add_test(suite, "dll_prepend prepends item", test_dll_dll_prepend_prepends_item);
+
 }
