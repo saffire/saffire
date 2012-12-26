@@ -129,6 +129,7 @@ t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void
     e->next = before_element;
     e->data = data;
 
+    before_element->prev->next = e;
     before_element->prev = e;
 
     dll->size++;

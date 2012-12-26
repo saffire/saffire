@@ -41,6 +41,7 @@
 
     #define DLL_HEAD(dll) dll->head
     #define DLL_TAIL(dll) dll->tail
+    #define DLL_SIZE(dll) dll->size
     #define DLL_NEXT(e)   e->next
     #define DLL_PREV(e)   e->prev
 
