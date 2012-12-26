@@ -224,4 +224,5 @@ utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpth
 
 utmain_SOURCES = \
                     ../unittests/core/main.c \
-                    ../unittests/core/hashtable/hashtable.c
+                    ../unittests/core/hashtable/hashtable.c \
+                    ../unittests/core/dll/dll.c
