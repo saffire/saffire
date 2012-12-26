@@ -24,9 +24,24 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __FASTCGI_SRV_H__
-#define __FASTCGI_SRV_H__
+#ifndef __DAEMONIZE_H__
+#define __DAEMONIZE_H__
 
-    int fastcgi_run(void);
+    struct _sockdata {      // Socket data (either Unix or Inet)
+        union {
+            struct sockaddr_in in;          // Listening socket is a internet address
+            struct sockaddr_un un;          // listening socket is a unix socket
+        } data;
+        int len;                            // Length of the structure (in case of a unix-socket)
+    } sockdata;
+
+    #define IS_UNIXSOCK(sock) (sock.data.in.sin_family == AF_UNIX)
+    #define IS_INETSOCK(sock) (sock.data.in.sin_family == AF_INET)
+
+    int drop_privileges(char *user, char *group);
+    int setup_socket(char *socket_name);
+    int open_pid(char *pid_path);
+    int fork_child(void);
+    int check_suidroot(void);
 
 #endif

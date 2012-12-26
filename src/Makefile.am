@@ -85,7 +85,9 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
 ########################################################################
 
 noinst_LIBRARIES += libfastcgi.a
-libfastcgi_a_SOURCES = components/fastcgi/fastcgi_srv.c
+libfastcgi_a_SOURCES = components/fastcgi/fastcgi_srv.c \
+                       components/fastcgi/scoreboard.c \
+                       components/fastcgi/daemonize.c
 
 
 

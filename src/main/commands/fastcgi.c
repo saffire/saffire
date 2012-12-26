@@ -33,32 +33,9 @@
  *
  */
 static int do_start(void) {
-//    if (fastcgi_running()) {
-//        error("FastCGI server is already running!\n");
-//        return 1;
-//    }
-
-    return fastcgi_start();
+    return fastcgi_run();
 }
 
-static int do_stop(void) {
-//    if (! fastcgi_running()) {
-//        error("FastCGI server is not running!\n");
-//        return 1;
-//    }
-
-    return fastcgi_stop();
-}
-
-static int do_status(void) {
-//    if (fastcgi_running()) {
-//        error("Status: running\n");
-//        return 0;
-//    }
-
-    output("Status: stopped\n");
-    return 1;
-}
 
 
 /****
@@ -67,20 +44,12 @@ static int do_status(void) {
 
 
 /* Usage string */
-static const char help[]   = "Controls the Saffire FastCGI Daemon\n"
-                             "\n"
-                             "Actions:\n"
-                             "  start     Starts the daemon\n"
-                             "  stop      Stops the daemon\n"
-                             "  status    Display daemon status\n"
-                             "  info      Returns information \n";
+static const char help[]   = "Starts the Saffire FastCGI Daemon\n"
+                             "\n";
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "start", "", do_start, NULL },
-    { "stop", "", do_stop, NULL },
-    { "status", "", do_status, NULL },
-//    { "info", "", do_info, NULL },
+    { "", "", do_start, NULL },
     { 0, 0, 0, 0 }
 };
 
