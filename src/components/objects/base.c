@@ -201,22 +201,22 @@ SAFFIRE_METHOD(base, id) {
 void object_base_init() {
     Object_Base_struct.attributes = ht_create();
 
-    object_add_internal_method(&Object_Base_struct, "new",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
-    object_add_internal_method(&Object_Base_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
-    object_add_internal_method(&Object_Base_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
-    object_add_internal_method(&Object_Base_struct, "properties",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
-    object_add_internal_method(&Object_Base_struct, "methods",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
-    object_add_internal_method(&Object_Base_struct, "parents",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
-    object_add_internal_method(&Object_Base_struct, "name",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
-    object_add_internal_method(&Object_Base_struct, "implements",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
-    object_add_internal_method(&Object_Base_struct, "memory",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
-    object_add_internal_method(&Object_Base_struct, "annotations",  METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
-    object_add_internal_method(&Object_Base_struct, "clone",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
-    object_add_internal_method(&Object_Base_struct, "immutable?",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
-    object_add_internal_method(&Object_Base_struct, "immutable",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
-    object_add_internal_method(&Object_Base_struct, "destroy",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
-    object_add_internal_method(&Object_Base_struct, "refcount",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
-    object_add_internal_method(&Object_Base_struct, "id",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
+    object_add_internal_method((t_object *)&Object_Base_struct, "new",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
+    object_add_internal_method((t_object *)&Object_Base_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
+    object_add_internal_method((t_object *)&Object_Base_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
+    object_add_internal_method((t_object *)&Object_Base_struct, "properties",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
+    object_add_internal_method((t_object *)&Object_Base_struct, "methods",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
+    object_add_internal_method((t_object *)&Object_Base_struct, "parents",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
+    object_add_internal_method((t_object *)&Object_Base_struct, "name",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method((t_object *)&Object_Base_struct, "implements",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method((t_object *)&Object_Base_struct, "memory",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
+    object_add_internal_method((t_object *)&Object_Base_struct, "annotations",  METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
+    object_add_internal_method((t_object *)&Object_Base_struct, "clone",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
+    object_add_internal_method((t_object *)&Object_Base_struct, "immutable?",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "immutable",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "destroy",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
+    object_add_internal_method((t_object *)&Object_Base_struct, "refcount",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
+    object_add_internal_method((t_object *)&Object_Base_struct, "id",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
 }
 
 

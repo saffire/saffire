@@ -128,14 +128,14 @@ SAFFIRE_METHOD(code, conv_null) {
  */
 void object_code_init(void) {
     Object_Code_struct.attributes = ht_create();
-    object_add_internal_method(&Object_Code_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_ctor);
-    object_add_internal_method(&Object_Code_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_dtor);
+    object_add_internal_method((t_object *)&Object_Code_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_ctor);
+    object_add_internal_method((t_object *)&Object_Code_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_dtor);
 
-    object_add_internal_method(&Object_Code_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_boolean);
-    object_add_internal_method(&Object_Code_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Code_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Code_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_null);
 
-    object_add_internal_method(&Object_Code_struct, "call",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_call);
-    object_add_internal_method(&Object_Code_struct, "internal?",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_internal);
+    object_add_internal_method((t_object *)&Object_Code_struct, "call",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_call);
+    object_add_internal_method((t_object *)&Object_Code_struct, "internal?",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_internal);
 }
 
 /**
