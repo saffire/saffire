@@ -58,7 +58,6 @@
 
 extern int sock_fd;
 
-
 // Boolean flag
 static int terminated = 0;
 
@@ -114,7 +113,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    vm_init();
+    vm_init(VM_FASTCGI);
 
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {

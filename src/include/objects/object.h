@@ -226,6 +226,7 @@
 
     #define SAFFIRE_METHOD_ARGS dll
 
+    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *args)
 
 
     // Returns custom object 'obj'
@@ -251,8 +252,9 @@
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);
 
-    void object_add_internal_method(void *obj, char *name, int flags, int visibility, void *func);
-    void object_add_external_method(void *obj, char *name, int flags, int visibility, t_ast_element *p);
+    void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
+    void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
+    void object_add_external_method(t_object *obj, char *name, int flags, int visibility, t_ast_element *p);
     void object_remove_all_internal_attributes(t_object *obj);
 
 #endif

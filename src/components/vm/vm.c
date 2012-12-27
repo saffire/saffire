@@ -120,7 +120,9 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
 /**
  *
  */
-void vm_init(void) {
+void vm_init(int mode) {
+    vm_mode = mode;
+
     gc_init();
     builtin_identifiers = ht_create();
     object_init();
