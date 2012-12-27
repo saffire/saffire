@@ -40,12 +40,17 @@
 #include "fastcgi/scoreboard.h"
 #include "fastcgi/daemonize.h"
 #include "fastcgi/fastcgi_srv.h"
+#include "general/smm.h"
+#include "general/path_handling.h"
+#include "vm/vm.h"
+#include "compiler/ast_walker.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
  */
 
-#include "fcgiapp.h"
+#define NO_FCGI_DEFINES
+#include "fcgi_stdio.h"
 
 // This file descriptor has to be connected to a socket, otherwise
 // FastCGI does not recognize this as a FastCGI program
@@ -60,8 +65,25 @@ static int terminated = 0;
 // Holds the number of workers we need to spawn. Protected by the scoreboard mutex (@TODO: change this into own mutex)
 static int needs_spawn = 0;
 
+
 FCGX_Stream *fcgi_in, *fcgi_out, *fcgi_err;
 FCGX_ParamArray fcgi_env;
+
+
+
+extern int (*output_char_helper)(char c);
+extern int (*output_string_helper)(char *s);
+
+
+static int _fcgi_output_char_helper (char c) {
+    return FCGX_PutChar(c, fcgi_out);
+}
+static int _fcgi_output_string_helper (char *s) {
+    return FCGX_PutS(s, fcgi_out);
+}
+
+
+
 
 /**
  * Getenv for fcgi vars
@@ -91,8 +113,14 @@ static int fcgi_loop(void) {
     }
     atexit(&FCGX_Finish);
 
+    // Initialize virtualmachine
+    vm_init();
+
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
+        // reroute all output to FCGI
+        output_char_helper = _fcgi_output_char_helper;
+        output_string_helper = _fcgi_output_string_helper;
 
         // Update scoreboard info
         scoreboard_lock();
@@ -105,53 +133,60 @@ static int fcgi_loop(void) {
         }
         scoreboard_unlock();
 
-        char *qs = fcgi_getenv("QUERY_STRING");
-        if (strcmp(qs, "raw") == 0) {
-            FCGX_FPrintF(fcgi_out, "Content-type: text/html\r\n\r\n");
+        // @TODO: headers should be done through Saffire scripts!
+        FCGX_FPrintF(fcgi_out, "Content-type: text/html\r\n\r\n");
 
-            FCGX_FPrintF(fcgi_out, "Worker PID: %d\n", getpid());
-            char **env;
-            for (env = fcgi_env; *env; env++) {
-                char *key = *env;
-                char *val = strchr(key, '=');
-                if (val == NULL) {
-                    val = "(empty)";
-                } else {
-                    *val = '\0';
-                    val++;
-                }
-                FCGX_FPrintF(fcgi_out, "%s : %s\n", key, val);
-            }
+        char *source_file = fcgi_getenv("SCRIPT_FILENAME");
+        struct stat source_stat;
+        t_bytecode *bc;
 
-        } else {
-            FCGX_FPrintF(fcgi_out, "Content-type: text/html\r\n"
-                   "\r\n"
-                   "<html><head><title>Saffire FastCGI Server</title></head>\n"
-                   "<body>\n"
-                   "<h1><blink><marquee>Hello world</marquee></blink></h1>\n");
-
-            FCGX_FPrintF(fcgi_out, "<table border=1 align=center><tr><th colspan=2>Environment</th></tr>");
-            FCGX_FPrintF(fcgi_out, "<tr><td>Worker PID</td><td>%d</td></tr>", getpid());
-            char **env;
-            for (env = fcgi_env; *env; env++) {
-                char *key = *env;
-                char *val = strchr(key, '=');
-                if (val == NULL) {
-                    val = "(empty)";
-                } else {
-                    *val = '\0';
-                    val++;
-                }
-                FCGX_FPrintF(fcgi_out, "<tr><td>%s</td><td>%s</td></tr>", key, val);
-            }
-            FCGX_FPrintF(fcgi_out, "</table>");
-
-            FCGX_FPrintF(fcgi_out, "<br><br><address>This page is powered by the Saffire FastCGI daemon.</address>");
-
-            FCGX_FPrintF(fcgi_out, "</body>"
-                    "</html>");
+        // Check if sourcefile exists
+        if (stat(source_file, &source_stat) != 0 || ((source_stat.st_mode & S_IFMT) != S_IFREG)) {
+            FCGX_FPrintF(fcgi_out, "<h1>File not found: %s</h1>", source_file);
+            continue;
         }
+
+        // Check if bytecode exists, or has a correct timestamp
+        char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
+        int bytecode_exists = (access(bytecode_file, F_OK) == 0);
+
+        if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
+            // (Re)generate bytecode file
+            t_ast_element *ast = ast_generate_from_file(source_file);
+            if (! ast) {
+                FCGX_FPrintF(fcgi_out, "<h1>Cannot create AST</h1>");
+                smm_free(bytecode_file);
+                continue;
+            }
+            t_hash_table *asm_code = ast_walker(ast);
+            if (! asm_code) {
+                error("Cannot create assembler</h1>");
+                smm_free(bytecode_file);
+                continue;
+            }
+            bc = assembler(asm_code);
+            bytecode_save(bytecode_file, source_file, bc);
+        } else {
+            bc = bytecode_load(bytecode_file, 0);
+        }
+
+        // Something went wrong with the bytecode loading or generating
+        if (!bc) {
+            error("Error while loading bytecode</h1>");
+            smm_free(bytecode_file);
+            continue;
+        }
+
+        smm_free(bytecode_file);
+
+        vm_execute(bc);
+
+        bytecode_free(bc);
     }
+
+
+    // Finish virtual machine
+    vm_fini();
 
     exit(0);
 }
@@ -316,8 +351,13 @@ int fastcgi_run(void) {
         //@TODO: if ( !fork()) daemonize();
         daemonize();
     } else {
+
+        scoreboard_init(1);
+        scoreboard_init_slot(0, getpid());
         fcgi_loop();
+        scoreboard_fini();
     }
 
     return 0;
 }
+

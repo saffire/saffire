@@ -390,6 +390,11 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
 
     // Create file
     FILE *f = fopen(dest_filename, "wb");
+    if (f == NULL) {
+        // Cannot create file
+        smm_free(bincode);
+        return;
+    }
 
     // temporary write header
     fwrite("\0", 1, sizeof(header), f);

@@ -110,7 +110,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/bzip2.c \
                        components/general/config.c \
                        components/general/output.c \
-                       components/general/mutex.c
+                       components/general/mutex.c \
+                       components/general/printf/arg_printf.c
 
 
 ########################################################################
