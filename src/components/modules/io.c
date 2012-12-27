@@ -34,12 +34,14 @@
 #include "general/smm.h"
 
 #ifdef __DEBUG
-#define ANSI_BRIGHTRED "\33[41;33;1m"
-#define ANSI_RESET "\33[0m"
+    #define ANSI_BRIGHTRED "\33[41;33;1m"
+    #define ANSI_RESET "\33[0m"
 #else
-#define ANSI_BRIGHTRED
-#define ANSI_RESET
+    #define ANSI_BRIGHTRED
+    #define ANSI_RESET
 #endif
+
+
 /**
  *
  */

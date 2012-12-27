@@ -24,49 +24,81 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <string.h>
-#include <sys/wait.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <errno.h>
 #include <sys/socket.h>
-#include <pwd.h>
-#include <grp.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
 #include "general/output.h"
 #include "general/config.h"
+#include "fastcgi/scoreboard.h"
+#include "fastcgi/daemonize.h"
+#include "fastcgi/fastcgi_srv.h"
+#include "general/smm.h"
+#include "general/path_handling.h"
+#include "vm/vm.h"
+#include "compiler/ast_walker.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
  */
 
-// Environment will be overwritten by the the FASTCGI environment.
-extern char **environ;
-
-
-// Make sure that the FastCGI library does not redefine our printf()-like function
 #define NO_FCGI_DEFINES
 #include "fcgi_stdio.h"
-
 
 // This file descriptor has to be connected to a socket, otherwise
 // FastCGI does not recognize this as a FastCGI program
 #define FCGI_LISTENSOCK_FILENO 0
 
-int sock_fd = -1;       // Socket file descriptor
-int pid_fd = -1;        // PID file descriptor
-struct _sockdata {      // Socket data (either Unix or Inet)
-    union {
-        struct sockaddr_in in;
-        struct sockaddr_un un;
-    } data;
-    int len;
-} sockdata;
+extern int sock_fd;
+
+
+// Boolean flag
+static int terminated = 0;
+
+// Holds the number of workers we need to spawn. Protected by the scoreboard mutex (@TODO: change this into own mutex)
+static int needs_spawn = 0;
+
+
+FCGX_Stream *fcgi_in, *fcgi_out, *fcgi_err;
+FCGX_ParamArray fcgi_env;
+
+
+
+extern int (*output_char_helper)(char c);
+extern int (*output_string_helper)(char *s);
+
+
+static int _fcgi_output_char_helper (char c) {
+    return FCGX_PutChar(c, fcgi_out);
+}
+static int _fcgi_output_string_helper (char *s) {
+    return FCGX_PutS(s, fcgi_out);
+}
+
+
+
+
+/**
+ * Getenv for fcgi vars
+ */
+char *fcgi_getenv(const char *key) {
+    char **p, *c;
+
+    for (p = fcgi_env; (c = *p) != NULL; ++p) {
+        if (strncmp(c, key, strlen(key)) == 0 && c[strlen(key)] == '=') {
+            return c + strlen(key) + 1;
+        }
+    }
+    return NULL;
+}
+
 
 /**
  * Make sure this loop does not return
@@ -79,251 +111,227 @@ static int fcgi_loop(void) {
         close(sock_fd);
         sock_fd = FCGI_LISTENSOCK_FILENO;
     }
+    atexit(&FCGX_Finish);
+
+    // Initialize virtualmachine
+    vm_init();
 
     int ret;
-    while (ret = FCGI_Accept(), ret >= 0) {
-        FCGI_printf("Content-type: text/html\r\n"
-               "\r\n"
-               "<html><head><title>Saffire FastCGI Server</title></head>\n"
-               "<body>\n"
-               "<h1><blink><marquee>Hello world</marquee></blink></h1>\n");
+    while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
+        // reroute all output to FCGI
+        output_char_helper = _fcgi_output_char_helper;
+        output_string_helper = _fcgi_output_string_helper;
 
-        FCGI_printf("<table border=1 align=center><tr><th colspan=2>Environment</th></tr>");
-        char **env;
-        for (env = environ; *env; env++) {
-            char *key = *env;
-            char *val = strchr(key, '=');
-            if (val == NULL) {
-                val = "(empty)";
-            } else {
-                *val = '\0';
-                val++;
+        // Update scoreboard info
+        scoreboard_lock();
+        scoreboard->reqs++;
+        pid_t cp = getpid();
+        for (int i=0; i!=scoreboard->num_workers; i++) {
+            if (scoreboard->workers[i].pid == cp) {
+                scoreboard->workers[i].reqs++;
             }
-            FCGI_printf("<tr><td>%s</td><td>%s</td></tr>", key, val);
         }
-        FCGI_printf("</table>");
+        scoreboard_unlock();
 
-        FCGI_printf("<br><br><address>This page is powered by the Saffire FastCGI daemon.</address>");
+        // @TODO: headers should be done through Saffire scripts!
+        FCGX_FPrintF(fcgi_out, "Content-type: text/html\r\n\r\n");
 
-        FCGI_printf("</body>"
-               "</html>"
-               );
+        char *source_file = fcgi_getenv("SCRIPT_FILENAME");
+        struct stat source_stat;
+        t_bytecode *bc;
+
+        // Check if sourcefile exists
+        if (stat(source_file, &source_stat) != 0 || ((source_stat.st_mode & S_IFMT) != S_IFREG)) {
+            FCGX_FPrintF(fcgi_out, "<h1>File not found: %s</h1>", source_file);
+            continue;
+        }
+
+        // Check if bytecode exists, or has a correct timestamp
+        char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
+        int bytecode_exists = (access(bytecode_file, F_OK) == 0);
+
+        if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
+            // (Re)generate bytecode file
+            t_ast_element *ast = ast_generate_from_file(source_file);
+            if (! ast) {
+                FCGX_FPrintF(fcgi_out, "<h1>Cannot create AST</h1>");
+                smm_free(bytecode_file);
+                continue;
+            }
+            t_hash_table *asm_code = ast_walker(ast);
+            if (! asm_code) {
+                error("Cannot create assembler</h1>");
+                smm_free(bytecode_file);
+                continue;
+            }
+            bc = assembler(asm_code);
+            bytecode_save(bytecode_file, source_file, bc);
+        } else {
+            bc = bytecode_load(bytecode_file, 0);
+        }
+
+        // Something went wrong with the bytecode loading or generating
+        if (!bc) {
+            error("Error while loading bytecode</h1>");
+            smm_free(bytecode_file);
+            continue;
+        }
+
+        smm_free(bytecode_file);
+
+        vm_execute(bc);
+
+        bytecode_free(bc);
     }
+
+
+    // Finish virtual machine
+    vm_fini();
+
     exit(0);
 }
 
 
 /**
- * Drop privileges in case we are running as root
+ * Called when a child terminates
  */
-static int drop_privileges(char *user, char *group) {
-    // No root, so nothing to drop
-    if (getuid() != 0) return 0;
+static void sighandler_child(int sig) {
+    pid_t pid = wait(NULL);
+    printf("CHILD signal %d found for pid: %d\n", sig, pid);
 
-    return 0;
-}
-
-
-
-static int setup_socket(char *socket_name) {
-    // If the socketname starts with a /, it's a (absolute) path and thus a unix socket
-    if (socket_name[0] == '/') {
-        // Set socket info
-        memset(&sockdata, 0, sizeof(struct sockaddr_un));
-        sockdata.data.un.sun_family = AF_UNIX;
-        strcpy(sockdata.data.un.sun_path, socket_name);
-        sockdata.len = sizeof(sockdata.data.un.sun_family) + strlen(sockdata.data.un.sun_path);
-
-        // unlink if needed
-        unlink(socket_name);
-
-        // Create socket
-        if ((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-            error("Cannot create socket\n");
-            return -1;
-         }
-    } else {
-        sockdata.data.in.sin_family = AF_INET;
-        //sockdata.data.in.sin_addr.s_addr
-        //sockdata.data.in.sin_port
-        sockdata.len = 0;
-        //
-        error("Cannot use AF_INET yet");
-        return -1;
-
-    }
+    // We need to spawn a new child, since this one has ended
+    scoreboard_lock();
+    needs_spawn++;
+    scoreboard_unlock();
 
 
-
-    // Set socket options
-    int val = 1;
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0) {
-        close(sock_fd);
-        error("Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
-        return -1;
-    }
-
-    // Bind
-    if (! bind(sock_fd, (struct sockaddr *) &sockdata.data, sockdata.len) < 0) {
-        close(sock_fd);
-        error("Cannot bind() socket: %s\n", strerror(errno));
-        return -1;
-    }
-
-    // Listen to the socket
-    int backlog = config_get_long("fastcgi.listen.backlog", -1);
-    if (backlog <= 0) backlog = 1024;
-    if (listen (sock_fd, backlog) == -1) {
-        close(sock_fd);
-        error("Cannot listen() on socket: %s\n", strerror(errno));
-        return -1;
-    }
-
-    if (socket_name[0] == '/') {
-        // Set socket permissions, user and group
-        char *socket_user = config_get_string("fastcgi.listen.socket.user", "-1");
-        char *socket_group = config_get_string("fastcgi.listen.socket.group", "-1");
-        char *mode = config_get_string("fastcgi.listen.socket.mode", "0666");
-
-        char *endptr;
-
-        struct passwd *pwd;
-        int uid = strtol(socket_user, &endptr, 10);
-        if (*endptr != '\0') {
-            pwd = getpwnam(socket_user);
-            if (pwd == NULL) {
-                error("Cannot find user: %s: %s", socket_user, strerror(errno));
-                return -1;
-            }
-            uid = pwd->pw_uid;
-        }
-
-        struct group *grp;
-        int gid = strtol(socket_group, &endptr, 10);
-        if (*endptr != '\0') {
-            grp = getgrnam(socket_group);
-            if (grp == NULL) {
-                close(sock_fd);
-                error("Cannot find group: %s: %s", socket_group, strerror(errno));
-                return -1;
-            }
-            gid = grp->gr_gid;
-        }
-
-        // Change owner of socket
-        if (chown(socket_name, uid, gid) == -1) {
-            close(sock_fd);
-            error("Cannot chown(): %s\n", strerror(errno));
-            return -1;
-        }
-
-        // Change mode of socket
-        mode_t modei = strtol(mode, NULL, 8);
-        if (modei == 0) modei = 0600;  // RW for user if not correct settings
-        if (chmod(socket_name, modei) == -1) {
-            close(sock_fd);
-            error("Cannot chmod(): %s\n", strerror(errno));
-            return -1;
+    // Update status of the current PID in the scoreboard
+    scoreboard_lock();
+    for (int i=0; i!=scoreboard->num_workers; i++) {
+        if (scoreboard->workers[i].pid == pid) {
+            scoreboard->workers[i].status = SB_ST_FREE;
         }
     }
-
-    return 0;
+    scoreboard_unlock();
 }
 
 
 /**
- *
+ * Called when the master terminates (will terminate all children as well)
  */
-static int open_pid(char *pid_path) {
-    struct stat st;
-
-    pid_fd = open(pid_path, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (pid_fd == 0) {
-        return 0;
+static void sighandler_term(int sig) {
+    // Send TERM signal to all workers
+    for (int i=0; i!=scoreboard->num_workers; i++) {
+        if (scoreboard->workers[i].status == SB_ST_INUSE && scoreboard->workers[i].pid) {
+            printf("Sending TERM signal to pid: %d\n", scoreboard->workers[i].pid);
+            kill(SIGTERM, scoreboard->workers[i].pid);
+        }
     }
 
-    if (errno != EEXIST) {
-        error("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
-        return -1;
-    }
+    // We do not need to spawn any workers
+    scoreboard_lock();
+    needs_spawn = 0;
+    scoreboard_unlock();
 
-    if (stat(pid_path, &st) != 0) {
-        error("Cannot stat PID file: %s: %s\n", pid_path, strerror(errno));
-        return -1;
-    }
-
-    if (!S_ISREG(st.st_mode)) {
-        error("PID is not a regular file: %s\n", pid_path);
-    }
-
-    pid_fd = open(pid_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (pid_fd == -1) {
-        error("Cannot open PID file: %s: %s\n", pid_path, strerror(errno));
-        return -1;
-    }
-
-    return 0;
+    // We can safely terminate
+    terminated = 1;
 }
 
 
 /**
- *
+ * Simple SIGHUP handler
  */
-static int daemonize(void) {
-    pid_t child_pid = fork();
+static void sighandler_hup(int sig) {
+    // Hangup signal detected
+    scoreboard_dump();
+}
 
-    if (child_pid == -1) {
-        error("Cannot fork(): %s", strerror(errno));
-        return -1;
-    }
 
-    if (child_pid == 0) {
-        setsid();
-        return 0;
-    }
+/**
+ * Spawn 'count' number of workers
+ */
+void spawn_worker(int count) {
+    for (int i=0; i!=count; i++) {
 
-    return 1;
+        // Try and find a free slot in our scoreboard
+        int slot = scoreboard_find_freeslot();
+        if (slot == -1) continue; // Full scoreboard?
 
-    struct timeval tv = { 0, 5000 * 1000 };
-    select(0, NULL, NULL, NULL, &tv);
+        // Fork process
+        pid_t child_pid = fork_child();
+        if (child_pid == 0) {
+            // Reset signal handlers for worker
+            signal(SIGHUP, SIG_DFL);
+            signal(SIGTERM, SIG_DFL);
 
-    int ret;
-    int status;
-waitforchild:
-    ret = waitpid(child_pid, &status, WNOHANG);
-    if (ret == -1) {
-        if (errno == EINTR) goto waitforchild;
-        error("Unknown error occured: %s\n", strerror(errno));
-        return -1;
-    }
-    if (ret == 0) {
-        error("Child spawned: %d\n", child_pid);
-        return child_pid;
-    }
-    if (WIFEXITED(status)) {
-        return -1;
+            // Do FastCGI loop
+            fcgi_loop();
+
+            // And we're done (no cleanup needed)
+            exit(0);
+        }
+
+        // Parent process
+
+        // Decrease our spawn counter
+        scoreboard_lock();
+        needs_spawn--;
+        scoreboard_unlock();
+
+        scoreboard_init_slot(slot, child_pid);
     }
 }
 
 
 /**
- *
+ * Daemonize master and spawn worker-processes
  */
-static int check_suidroot(void) {
-    // Make sure we don't run as SUID root
-    if (geteuid() == 0 || getegid() == 0) {
-        error("Please do not run this app with SUID root.\n");
-        return -1;
+void daemonize(void) {
+    // Set new process group
+    setsid();
+
+//    // Close descriptors and open to /dev/null?
+//    for (int i=getdtablesize(); i>=0; --i) close(i);
+//    int i = open("/dev/null", O_RDWR); // stdin
+//    dup(i); // stdout
+//    dup(i); // stderr
+
+    // Set correct umask for created files
+    umask(027);
+
+    // chroot?
+
+    int worker_count = config_get_long("fastcgi.spawn_children", 10);
+    if (worker_count <= 0) worker_count = 1;
+
+    scoreboard_init(worker_count);
+    needs_spawn = worker_count;
+
+    // Set signals (after the workers have started
+    signal(SIGCHLD, sighandler_child);      // Child handler
+    signal(SIGTERM, sighandler_term);       // Termination handler
+    signal(SIGHUP, sighandler_hup);         // Hangup handler
+
+    // Repeat the master loop until terminated
+    terminated = 0;
+    while (! terminated) {
+        // Spawn workers if needed
+        if (needs_spawn > 0) spawn_worker(10);
+
+        // Sleep until the next loop
+        sleep(1);
     }
 
-    return 1;
+    // Daemon finished (SIGTERM). Do cleanup
+    scoreboard_fini();
 }
+
 
 
 /**
  *
  */
-int fastcgi_start(void) {
+int fastcgi_run(void) {
     // Make sure we don't run as a SUID root user
     if (check_suidroot() == -1) return 1;
 
@@ -331,52 +339,25 @@ int fastcgi_start(void) {
     char *listen_dst = config_get_string("fastcgi.listen", "0.0.0.0:8000");
     if (setup_socket(listen_dst) == -1) return 1;
 
-    // Setup PID
-    char *pid_path = config_get_string("fastcgi.pid.path", "/tmp/saffire.pid");
-    if (open_pid(pid_path) == -1) return 1;
-
     // Drop privileges
     char *user = config_get_string("fastcgi.user", "-1");
     char *group = config_get_string("fastcgi.group", "-1");
     if (drop_privileges(user, group) == -1) return 1;
 
-    // Check if we need to daemonize
+    // Check if we need to fork into the background
     int need_daemonizing = config_get_bool("fastcgi.daemonize", 1);
 
-    if (! need_daemonizing) {
-        // Don't daemonize
+    if (need_daemonizing) {
+        //@TODO: if ( !fork()) daemonize();
+        daemonize();
+    } else {
+
+        scoreboard_init(1);
+        scoreboard_init_slot(0, getpid());
         fcgi_loop();
+        scoreboard_fini();
     }
 
-    // Spawn process backgrounds
-    int sc = config_get_long("fastcgi.spawn_children", 10);
-    if (sc <= 0) sc = 1;
-
-    for (int i=0; i!=sc; i++) {
-        pid_t child_pid = daemonize();
-        if (child_pid == -1) return 1;
-        if (child_pid == 0) fcgi_loop();
-
-        // Write PID to PID file if needed
-        if (pid_fd > 0) {
-            char strpid[10];
-            sprintf(strpid, "%d\n", child_pid);
-            if (i == sc- - 1) {
-                i = write(pid_fd, strpid, strlen(strpid)-1);
-            } else {
-                i = write(pid_fd, strpid, strlen(strpid));
-            }
-        }
-    }
-    return 0;
-}
-
-
-int fastcgi_stop(void) {
-    return 0;
-}
-
-int fastcgi_running(void) {
     return 0;
 }
 

@@ -27,22 +27,38 @@
 #ifndef __SCOREBOARD_H__
 #define __SCOREBOARD_H__
 
+    #include <sys/types.h>
+
+    #define SB_ST_FREE     0        // Slot is free
+    #define SB_ST_INIT     1        // Slot is currently being filled
+    #define SB_ST_INUSE    2        // Slot is in use
+
     typedef struct _worker_scoreboard {
-        pid_t   pid;            // PID of the worker
         char    status;         // Not yet used
+        pid_t   pid;            // PID of the worker
         long    reqs;           // Number of requests served
         long    bytes_in;       // Number of bytes in
         long    bytes_out;      // Number of bytes out
     } t_worker_scoreboard;
 
     typedef struct _scoreboard {
-        int  start_ts;
-        long reqs;
-        t_worker_scoreboard workers[];
+        int     start_ts;               // When has it started?
+        long    reqs;                   // How many requests did it handle?
+        int     num_workers;            // How many workers are present?
+        t_worker_scoreboard workers[];  // Our actual workers
     } t_scoreboard;
+
+    t_scoreboard *scoreboard;       // Pointer to scoreboard struct in SHM
+
 
     int scoreboard_init(int workers);
     int scoreboard_fini(void);
+    void scoreboard_init_slot(int slot, pid_t pid);
     t_scoreboard *scoreboard_fetch(void);
+    void scoreboard_dump(void);
+    int scoreboard_find_freeslot(void);
+
+    int scoreboard_lock(void);
+    int scoreboard_unlock(void);
 
 #endif

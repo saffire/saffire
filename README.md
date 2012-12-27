@@ -3,7 +3,7 @@ Saffire
 
 [![Build Status](https://travis-ci.org/saffire/saffire.png)](https://travis-ci.org/saffire/saffire)
 
-A new OO programming scripting language, based on primarily Python, PHP and Ruby. It's primary features:
+A new OO programming scripting language, based on primarily Python, PHP and Ruby. Its primary features:
 
 - interpreted language
 - dynamically, strong typed

@@ -27,8 +27,6 @@
 #ifndef __FASTCGI_SRV_H__
 #define __FASTCGI_SRV_H__
 
-    int fastcgi_start(void);
-    int fastcgi_stop(void);
-    int fastcgi_running(void);
+    int fastcgi_run(void);
 
 #endif
