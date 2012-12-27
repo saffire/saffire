@@ -408,65 +408,65 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
         t_asm_line *line = (t_asm_line *)e->data;
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
-            foutput(f, "#%s:", line->s);
+            fprintf(f, "#%s:", line->s);
         }
         if (line->type == ASM_LINE_TYPE_CODE) {
-            foutput(f, "    %-20s", vm_code_names[vm_codes_offset[line->opcode]]);
+            fprintf(f, "    %-20s", vm_code_names[vm_codes_offset[line->opcode]]);
 
             // Output additional operands
             for (int i=0; i!=line->opr_count; i++) {
                 switch (line->opr[i]->type) {
                     case ASM_LINE_TYPE_OP_LABEL :
-                        foutput(f, "#%s", line->opr[i]->data.s);
+                        fprintf(f, "#%s", line->opr[i]->data.s);
                         break;
                     case ASM_LINE_TYPE_OP_STRING :
-                        foutput(f, "\"%s\"", line->opr[i]->data.s);
+                        fprintf(f, "\"%s\"", line->opr[i]->data.s);
                         break;
                     case ASM_LINE_TYPE_OP_CODE :
-                        foutput(f, "@%s", line->opr[i]->data.s);
+                        fprintf(f, "@%s", line->opr[i]->data.s);
                         break;
                     case ASM_LINE_TYPE_OP_REALNUM :
-                        foutput(f, "$%d", line->opr[i]->data.l);
+                        fprintf(f, "$%ld", line->opr[i]->data.l);
                         break;
                     case ASM_LINE_TYPE_OP_NUM :
-                        foutput(f, "%d", line->opr[i]->data.l);
+                        fprintf(f, "%ld", line->opr[i]->data.l);
                         break;
                     case ASM_LINE_TYPE_OP_OPERATOR :
                         switch (line->opr[i]->data.l) {
-                            case OPERATOR_ADD : foutput(f, "ADD"); break;
-                            case OPERATOR_SUB : foutput(f, "SUB"); break;
-                            case OPERATOR_MUL : foutput(f, "MUL"); break;
-                            case OPERATOR_DIV : foutput(f, "DIV"); break;
-                            case OPERATOR_MOD : foutput(f, "MOD"); break;
-                            case OPERATOR_AND : foutput(f, "AND"); break;
-                            case OPERATOR_OR  : foutput(f, "OR");  break;
-                            case OPERATOR_XOR : foutput(f, "XOR"); break;
-                            case OPERATOR_SHL : foutput(f, "SHL"); break;
-                            case OPERATOR_SHR : foutput(f, "SHR"); break;
+                            case OPERATOR_ADD : fprintf(f, "ADD"); break;
+                            case OPERATOR_SUB : fprintf(f, "SUB"); break;
+                            case OPERATOR_MUL : fprintf(f, "MUL"); break;
+                            case OPERATOR_DIV : fprintf(f, "DIV"); break;
+                            case OPERATOR_MOD : fprintf(f, "MOD"); break;
+                            case OPERATOR_AND : fprintf(f, "AND"); break;
+                            case OPERATOR_OR  : fprintf(f, "OR");  break;
+                            case OPERATOR_XOR : fprintf(f, "XOR"); break;
+                            case OPERATOR_SHL : fprintf(f, "SHL"); break;
+                            case OPERATOR_SHR : fprintf(f, "SHR"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_COMPARE :
                         switch (line->opr[i]->data.l) {
-                            case COMPARISON_EQ : foutput(f, "EQ"); break;
-                            case COMPARISON_NE : foutput(f, "NE"); break;
-                            case COMPARISON_LT : foutput(f, "LT"); break;
-                            case COMPARISON_LE : foutput(f, "LE"); break;
-                            case COMPARISON_GT : foutput(f, "GT"); break;
-                            case COMPARISON_GE : foutput(f, "GE"); break;
-                            case COMPARISON_IN : foutput(f, "IN"); break;
-                            case COMPARISON_NI : foutput(f, "NI"); break;
+                            case COMPARISON_EQ : fprintf(f, "EQ"); break;
+                            case COMPARISON_NE : fprintf(f, "NE"); break;
+                            case COMPARISON_LT : fprintf(f, "LT"); break;
+                            case COMPARISON_LE : fprintf(f, "LE"); break;
+                            case COMPARISON_GT : fprintf(f, "GT"); break;
+                            case COMPARISON_GE : fprintf(f, "GE"); break;
+                            case COMPARISON_IN : fprintf(f, "IN"); break;
+                            case COMPARISON_NI : fprintf(f, "NI"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_ID :
-                        foutput(f, "%s", line->opr[i]->data.s);
+                        fprintf(f, "%s", line->opr[i]->data.s);
                         break;
                 }
                 if (i < line->opr_count-1) {
-                    foutput(f, ", ");
+                    fprintf(f, ", ");
                 }
             }
         }
-        foutput(f, "\n");
+        fprintf(f, "\n");
 
         e = DLL_NEXT(e);
     }
@@ -488,7 +488,7 @@ void assembler_output(t_hash_table *asm_code, char *output_path) {
 
         // The "main frame does not need any declaration. Other frames do:
         if (strcmp(key, "main") != 0) {
-            foutput(f, "\n\n@%s:\n", key);
+            fprintf(f, "\n\n@%s:\n", key);
         }
 
         _assembler_output_frame(frame, f);

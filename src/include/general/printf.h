@@ -24,18 +24,26 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OUTPUT_H__
-#define __OUTPUT_H__
 
-    #include <stdio.h>
-    #include <stdarg.h>
+#ifndef __PRINTF_H__
+#define __PRINTF_H__
+
     #include "general/dll.h"
 
-    void output(const char *format, ...);
-    void output_printf(const char *format, t_dll *args);
+    // Flags user in processing format string
+    #define PR_LJ   0x01    // Left Justify
+    #define PR_CA   0x02    // Casing (A..F instead of a..f)
+    #define PR_SG   0x04    // Signed conversion (%d vs %u)
+    #define PR_32   0x08    // Long (32bit)
+    #define PR_16   0x10    // Short (16bit)
+    #define PR_WS   0x20    // PR_SG set and num < 0
+    #define PR_LZ   0x40    // Pad left with '0' instead of ' '
+    #define PR_FP   0x80    // Far pointers
 
-    void error(const char *format, ...);
-    void error_and_die(int exitcode, const char *format, ...);
-    void line_error_and_die(int exitcode, int lineno, const char *format, ...);
+    #define PR_BUFLEN  16
+
+    typedef int (*fnptr)(char c);
+
+    int arg_printf (const char *fmt, t_dll *args, fnptr output);
 
 #endif

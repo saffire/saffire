@@ -24,18 +24,24 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OUTPUT_H__
-#define __OUTPUT_H__
+#ifndef __DAEMONIZE_H__
+#define __DAEMONIZE_H__
 
-    #include <stdio.h>
-    #include <stdarg.h>
-    #include "general/dll.h"
+    struct _sockdata {      // Socket data (either Unix or Inet)
+        union {
+            struct sockaddr_in in;          // Listening socket is a internet address
+            struct sockaddr_un un;          // listening socket is a unix socket
+        } data;
+        int len;                            // Length of the structure (in case of a unix-socket)
+    } sockdata;
 
-    void output(const char *format, ...);
-    void output_printf(const char *format, t_dll *args);
+    #define IS_UNIXSOCK(sock) (sock.data.in.sin_family == AF_UNIX)
+    #define IS_INETSOCK(sock) (sock.data.in.sin_family == AF_INET)
 
-    void error(const char *format, ...);
-    void error_and_die(int exitcode, const char *format, ...);
-    void line_error_and_die(int exitcode, int lineno, const char *format, ...);
+    int drop_privileges(char *user, char *group);
+    int setup_socket(char *socket_name);
+    int open_pid(char *pid_path);
+    int fork_child(void);
+    int check_suidroot(void);
 
 #endif

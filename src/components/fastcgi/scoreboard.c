@@ -27,15 +27,16 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
+#include "general/output.h"
 #include "fastcgi/scoreboard.h"
 
-int shm_id;     // ID of shared memory
-int sem_id;     // ID of semaphore (for locking shared memory)
-
-t_scoreboard *scoreboard;       // Pointer to scoreboard struct in SHM
+static  int shm_id;     // ID of shared memory
+static int sem_id;     // ID of semaphore (for locking shared memory)
 
 
 /**
@@ -49,7 +50,7 @@ int scoreboard_init(int workers) {
         return -1;
     }
     scoreboard = shmat(shm_id, (void *)0, 0);
-    if (scoreboard == -1) {
+    if (scoreboard == (void *)-1) {
         error("Cannot connect to shared memory: %s\n", strerror(errno));
         return -1;
     }
@@ -57,22 +58,47 @@ int scoreboard_init(int workers) {
     // Create semaphore
     sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
     if (sem_id < 0) {
-        error("Cannot create semaphore: %s\n", strerror(errno));
+        error("Cannot create scoreboard semaphore: %s\n", strerror(errno));
         return -1;
     }
+    semctl(sem_id, 0, SETVAL, 0);
 
     // Init scoreboard structure
-    scoreboard = shm_id;
-    scoreboard->start_ts = time();
+    scoreboard->start_ts = time(NULL);
     scoreboard->reqs = 0;
     scoreboard->num_workers = workers;
-    for (int i=0; i!=workers; i++) {
-        scoreboard->workers[i].pid = 0;
-        scoreboard->workers[i].status = 0;
-        scoreboard->workers[i].reqs = 0;
-        scoreboard->workers[i].bytes_in = 0;
-        scoreboard->workers[i].bytes_out = 0;
+
+    // Zero out scoreboard workers
+    bzero(scoreboard->workers, sizeof(t_worker_scoreboard) * workers);
+
+    return 0;
+}
+
+
+// Find a free slot, and change status.
+int scoreboard_find_freeslot(void) {
+    scoreboard_lock();
+    for (int i=0; i!=scoreboard->num_workers; i++) {
+        if (scoreboard->workers[i].status == SB_ST_FREE) {
+            scoreboard->workers[i].status = SB_ST_INIT;
+            scoreboard_unlock();
+            return i;
+        }
     }
+    scoreboard_unlock();
+    return -1;
+}
+
+
+/**
+ * Se
+ */
+void scoreboard_init_slot(int slot, pid_t pid) {
+    scoreboard->workers[slot].pid = pid;
+    scoreboard->workers[slot].status = SB_ST_INUSE;
+    scoreboard->workers[slot].reqs = 0;
+    scoreboard->workers[slot].bytes_in = 0;
+    scoreboard->workers[slot].bytes_out = 0;
 }
 
 
@@ -83,9 +109,11 @@ int scoreboard_lock(void) {
     struct sembuf sb;
 
     sb.sem_num = 0;
-    sb.sem_op = -1;
+    sb.sem_op =  1;
+    sb.sem_flg = 0;
 
     semop(sem_id, &sb, 1);
+    return 0;
 }
 
 /**
@@ -95,9 +123,11 @@ int scoreboard_unlock(void) {
     struct sembuf sb;
 
     sb.sem_num = 0;
-    sb.sem_op = 1;
+    sb.sem_op = -1;
+    sb.sem_flg = 0;
 
     semop(sem_id, &sb, 1);
+    return 0;
 }
 
 
@@ -107,16 +137,32 @@ int scoreboard_unlock(void) {
 int scoreboard_fini(void) {
     // Remove shared segment
     shmctl(shm_id, IPC_RMID, NULL);
+    shmctl(sem_id, IPC_RMID, NULL);
+    return 0;
 }
 
 /**
  * Fetch a worker by PID
  */
-t_worker_scoreboard *scoreboard_worker_fetch(pid_t *pid) {
+t_worker_scoreboard *scoreboard_worker_fetch(pid_t pid) {
     for (int i=0; i!=scoreboard->num_workers; i++) {
         if (scoreboard->workers[i].pid == pid) {
-            return scoreboard->workers[i];
+            return scoreboard->workers+i;
         }
     }
     return NULL;
+}
+
+
+/**
+ * Dumps some scoreboard info
+ */
+void scoreboard_dump(void) {
+    printf("--------\n");
+    printf("  Time started     : %d\n", scoreboard->start_ts);
+    printf("  Requests handled : %ld\n", scoreboard->reqs);
+    for (int i=0; i!=scoreboard->num_workers; i++) {
+        printf("  Worker: %d   ST: %d   PID : %d   Rqsts: %ld   BI: %ld   BO: %ld\n", i, scoreboard->workers[i].status, scoreboard->workers[i].pid, scoreboard->workers[i].reqs, scoreboard->workers[i].bytes_in, scoreboard->workers[i].bytes_out);
+    }
+    printf("\n");
 }
