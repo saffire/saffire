@@ -33,7 +33,13 @@
 
     t_hash_table *builtin_identifiers;
 
-    void vm_init(void);
+    #define VM_FASTCGI      0       // Virtual machine run as FastCGI
+    #define VM_CLI          1       // Virtual machine run as CLI
+    #define VM_REPL         2       // Virtual machine run as REPL
+
+    int vm_mode;
+
+    void vm_init(int mode);
     void vm_fini(void);
     int vm_execute(t_bytecode *bc);
     t_object *_vm_execute(t_vm_frame *frame);

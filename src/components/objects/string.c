@@ -299,20 +299,20 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.attributes = ht_create();
-    object_add_internal_method(&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method(&Object_String_struct, "dtor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
+    object_add_internal_method((t_object *)&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method((t_object *)&Object_String_struct, "ctor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method((t_object *)&Object_String_struct, "dtor",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method(&Object_String_struct, "boolean",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method(&Object_String_struct, "null",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method(&Object_String_struct, "numerical",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method(&Object_String_struct, "string",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method((t_object *)&Object_String_struct, "boolean",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_String_struct, "null",           METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method((t_object *)&Object_String_struct, "numerical",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_String_struct, "string",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method(&Object_String_struct, "byte_length",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
-    object_add_internal_method(&Object_String_struct, "length",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method(&Object_String_struct, "upper",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
-    object_add_internal_method(&Object_String_struct, "lower",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
-    object_add_internal_method(&Object_String_struct, "reverse",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "length",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "upper",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method((t_object *)&Object_String_struct, "lower",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
     // Create string cache
     string_cache = ht_create();
