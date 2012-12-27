@@ -45,10 +45,10 @@
 /**
  *
  */
-static t_object *io_print(t_object *self, t_dll *dll) {
+SAFFIRE_MODULE_METHOD(io, print) {
     t_object *obj, *obj2;
 
-    t_dll_element *e = DLL_HEAD(dll);
+    t_dll_element *e = DLL_HEAD(args);
     while (e) {
         obj = (t_object *)e->data;
 
@@ -69,7 +69,7 @@ static t_object *io_print(t_object *self, t_dll *dll) {
 /**
  *
  */
-static t_object *io_printf(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(io, printf) {
     t_string_object *obj;
 
     t_dll_element *e = DLL_HEAD(args);
@@ -98,14 +98,14 @@ static t_object *io_printf(t_object *self, t_dll *args) {
 /**
  *
  */
-static t_object *io_sprintf(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(io, sprintf) {
     RETURN_STRING("IO.sprintf\n");
 }
 
 /**
  *
  */
-static t_object *console_print(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(console, print) {
     output(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
@@ -113,7 +113,7 @@ static t_object *console_print(t_object *self, t_dll *args) {
 /**
  *
  */
-static t_object *console_printf(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(console, printf) {
     output(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", args->size);
     RETURN_SELF;
 }
@@ -121,7 +121,7 @@ static t_object *console_printf(t_object *self, t_dll *args) {
 /**
  *
  */
-static t_object *console_sprintf(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(console, sprintf) {
     RETURN_STRING("console.sprintf\n");
 }
 
@@ -133,14 +133,14 @@ t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeAny, NULL, N
 
 static void _init(void) {
     io_struct.attributes = ht_create();
-    object_add_internal_method(&io_struct, "print", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_print);
-    object_add_internal_method(&io_struct, "printf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_printf);
-    object_add_internal_method(&io_struct, "sprintf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, io_sprintf);
+    object_add_internal_method(&io_struct, "print",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
+    object_add_internal_method(&io_struct, "printf",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
+    object_add_internal_method(&io_struct, "sprintf",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
 
     console_struct.attributes = ht_create();
-    object_add_internal_method(&console_struct, "print", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_print);
-    object_add_internal_method(&console_struct, "printf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_printf);
-    object_add_internal_method(&console_struct, "sprintf", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, console_sprintf);
+    object_add_internal_method(&console_struct, "print",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_print);
+    object_add_internal_method(&console_struct, "printf",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_printf);
+    object_add_internal_method(&console_struct, "sprintf",  METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_sprintf);
 }
 
 static void _fini(void) {

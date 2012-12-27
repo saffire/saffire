@@ -32,26 +32,44 @@
 #include "objects/string.h"
 #include "general/dll.h"
 #include "version.h"
+#include "vm/vm.h"
 
 /**
  *
  */
-static t_object *saffire_return_version(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(io, version) {
     RETURN_STRING(saffire_version);
 }
 
-static t_object *saffire_return_gitrev(t_object *self, t_dll *args) {
+SAFFIRE_MODULE_METHOD(io, gitrev) {
     RETURN_STRING(git_revision);
 }
 
+SAFFIRE_MODULE_METHOD(io, runmode) {
+    if (vm_mode == VM_FASTCGI) {
+        RETURN_STRING("fastcgi");
+    }
+    if (vm_mode == VM_CLI) {
+        RETURN_STRING("cli");
+    }
+    if (vm_mode == VM_REPL) {
+        RETURN_STRING("repl");
+    }
 
-t_object saffire_struct       = { OBJECT_HEAD_INIT2("saffire", objectTypeAny, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
+    RETURN_STRING("unknown");
+}
+
+
+
+
+t_object saffire_struct = { OBJECT_HEAD_INIT2("saffire", objectTypeAny, NULL, NULL, OBJECT_TYPE_INSTANCE, NULL) };
 
 static void _init(void) {
     saffire_struct.attributes = ht_create();
 
-    object_add_internal_method(&saffire_struct, "version", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, saffire_return_version);
-    object_add_internal_method(&saffire_struct, "gitrevision", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, saffire_return_gitrev);
+    object_add_internal_method(&saffire_struct, "version",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_version);
+    object_add_internal_method(&saffire_struct, "git_revision", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_gitrev);
+    object_add_internal_method(&saffire_struct, "run_mode",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_runmode);
 }
 static void _fini(void) {
     // Destroy methods and properties

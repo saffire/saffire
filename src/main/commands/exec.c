@@ -90,7 +90,7 @@ static int do_exec(void) {
 
 
 
-    vm_init();
+    vm_init(VM_CLI);
     int exitcode = vm_execute(bc);
     vm_fini();
 

@@ -226,6 +226,7 @@
 
     #define SAFFIRE_METHOD_ARGS dll
 
+    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *args)
 
 
     // Returns custom object 'obj'
