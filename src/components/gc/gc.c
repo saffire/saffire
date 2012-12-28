@@ -30,6 +30,7 @@
 #include "general/mutex.h"
 #include "general/smm.h"
 #include "debug.h"
+#include "general/output.h"
 
 #define GC_OBJECT_QUEUE_SIZE        100;
 

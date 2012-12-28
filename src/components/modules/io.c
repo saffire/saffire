@@ -54,7 +54,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            obj2 = object_find_method(obj, "string");
+            obj2 = object_find_attribute(obj, "string");
             obj = object_call(obj, obj2, 0);
         }
 

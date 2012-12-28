@@ -2,6 +2,7 @@
 ; Only make modifications to the opcodes in this file. This will regenerate the vm_opcodes.h and c file
 ;
 
+; no operands per opcode
 STOP                 0x00
 POP_TOP              0x01
 ROT_TWO              0x02
@@ -34,8 +35,8 @@ LOAD_GLOBAL          0x88
 STORE_GLOBAL         0x89
 DELETE_GLOBAL        0x8A
 
-LOAD_PROPERTY        0x8F
 
+; 1 operand per opcode
 SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
@@ -51,8 +52,11 @@ JUMP_IF_FIRST_TRUE   0xA1
 OPERATOR             0xA8
 INPLACE_OPR          0xA9
 
+LOAD_ATTRIB          0xBE
 CALL_METHOD          0xBF
 
+
+; 2 operands per opcode
 SETUP_ELSE_LOOP      0xC1
 BUILD_ATTRIB         0xC2
 

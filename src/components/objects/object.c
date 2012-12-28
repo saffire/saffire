@@ -67,7 +67,7 @@ int object_is_immutable(t_object *obj) {
 /**
  * Finds the attribute inside the object, or any base objects if needed.
  */
-static t_object *_find_attribute(t_object *obj, char *attr_name) {
+t_object *object_find_attribute(t_object *obj, char *attr_name) {
     t_object *attr = NULL;
     t_object *cur_obj = obj;
 
@@ -96,45 +96,13 @@ static t_object *_find_attribute(t_object *obj, char *attr_name) {
 
 /**
  *
- */
-t_object *object_find_property(t_object *obj, char *property_name) {
-    t_object *attrib_obj = _find_attribute(obj, property_name);
-    if (! attrib_obj) {
-        error_and_die(1, "Cannot find property '%s' in '%s'\n", property_name, obj->name);
-    }
-    if (! ATTRIB_IS_PROPERTY(attrib_obj)) {
-        error_and_die(1, "Found object '%s' is not a property\n", property_name);
-    }
-    return attrib_obj;
-}
-
-
-/**
- *
- */
-t_object *object_find_method(t_object *obj, char *method_name) {
-    t_object *attrib_obj = _find_attribute(obj, method_name);
-    if (! attrib_obj) {
-        error_and_die(1, "Cannot find method '%s' in '%s'\n", method_name, obj->name);
-    }
-    if (! ATTRIB_IS_METHOD(attrib_obj)) {
-        error_and_die(1, "Found object '%s' is not callable (or at least, not a method object)\n", method_name);
-    }
-    return attrib_obj;
-}
-
-
-/**
- *
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
 t_object *object_call_args(t_object *self, t_object *attrib_obj, t_dll *args) {
     t_object *ret = NULL;
 
-    // @TODO: It should be a callable method
+    // @TODO: It should be a callable method, any callable method!
 
-
-    // @TODO: Maybe check just for callable?
     if (! OBJECT_IS_ATTRIBUTE(attrib_obj)) {
         error_and_die(1, "Object is not an attribute!");
     }

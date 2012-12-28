@@ -52,9 +52,9 @@
     #define METHOD_IS_FINAL(attrib) ((((t_attrib_object *)attrib)->method_flags & METHOD_FLAG_FINAL) == METHOD_FLAG_FINAL)
     #define METHOD_IS_ABSTRACT(attrib) ((((t_attrib_object *)attrib)->method_flags & METHOD_FLAG_ABSTRACT) == METHOD_FLAG_ABSTRACT)
 
-    #define ATTRIB_IS_PUBLIC(attrib) (((t_attrib_object *)attrib)->visiblity == ATTRIB_VISIBILITY_PUBLIC)
-    #define ATTRIB_IS_PROTECTED(attrib) (((t_attrib_object *)attrib)->visiblity == ATTRIB_VISIBILITY_PROTECTED)
-    #define ATTRIB_IS_PRIVATE(attrib) (((t_attrib_object *)attrib)->visiblity == ATTRIB_VISIBILITY_PRIVATE)
+    #define ATTRIB_IS_PUBLIC(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PUBLIC)
+    #define ATTRIB_IS_PROTECTED(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PROTECTED)
+    #define ATTRIB_IS_PRIVATE(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PRIVATE)
 
     #define ATTRIB_IS_READWRITE(attrib) (((t_attrib_object *)attrib)->access == ATTRIB_ACCESS_RW)
     #define ATTRIB_IS_READONLY(attrib) (((t_attrib_object *)attrib)->access == ATTRIB_ACCESS_RO)

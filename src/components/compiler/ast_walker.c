@@ -117,7 +117,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             node = leaf->property.property;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_PROPERTY, 1, opr1));
+            dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
             break;
 
         case typeAstString :

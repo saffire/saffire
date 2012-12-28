@@ -42,7 +42,7 @@ static long _get_long(t_dll_element **e) {
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
         // Implied converesion to numerical
-        t_object *obj2 = object_find_method(obj, "numerical");
+        t_object *obj2 = object_find_attribute(obj, "numerical");
         obj = object_call(obj, obj2, 0);
     }
 
@@ -60,7 +60,7 @@ static unsigned char *_get_string(t_dll_element **e) {
 
     if (! OBJECT_IS_STRING(obj)) {
         // Implied converesion to string
-        t_object *obj2 = object_find_method(obj, "string");
+        t_object *obj2 = object_find_attribute(obj, "string");
         obj = object_call(obj, obj2, 0);
     }
 

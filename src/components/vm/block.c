@@ -28,6 +28,7 @@
 #include "vm/block.h"
 #include "vm/frame.h"
 #include "debug.h"
+#include "general/output.h"
 
 /**
  *
