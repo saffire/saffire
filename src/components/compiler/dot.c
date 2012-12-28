@@ -31,6 +31,7 @@
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "objects/attrib.h"
+#include "objects/method.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "general/path_handling.h"

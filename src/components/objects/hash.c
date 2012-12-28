@@ -34,6 +34,7 @@
 #include "objects/null.h"
 #include "objects/base.h"
 #include "objects/numerical.h"
+#include "objects/method.h"
 #include "objects/attrib.h"
 #include "objects/hash.h"
 #include "general/hashtable.h"

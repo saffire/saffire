@@ -30,6 +30,7 @@
 #include "objects/object.h"
 #include "objects/null.h"
 #include "objects/attrib.h"
+#include "objects/method.h"
 #include "objects/string.h"
 #include "general/dll.h"
 #include "version.h"

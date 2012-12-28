@@ -35,7 +35,7 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/attrib.h"
-#include "general/smm.h"
+#include "objects/method.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"

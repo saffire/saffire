@@ -31,6 +31,8 @@
 #include "general/output.h"
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
+#include "objects/method.h"
+
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "objects/attrib.h"

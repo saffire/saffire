@@ -31,6 +31,7 @@
 #include "objects/string.h"
 #include "objects/numerical.h"
 #include "objects/boolean.h"
+#include "objects/method.h"
 #include "objects/null.h"
 #include "objects/attrib.h"
 #include "general/smm.h"

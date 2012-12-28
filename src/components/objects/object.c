@@ -37,6 +37,7 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/regex.h"
+#include "objects/method.h"
 #include "objects/attrib.h"
 #include "objects/code.h"
 #include "objects/hash.h"
@@ -57,17 +58,27 @@
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple" };
+                                                 "hash", "tuple", "method" };
 
 
 int object_is_immutable(t_object *obj) {
     return ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE);
 }
 
+
 /**
  * Finds the attribute inside the object, or any base objects if needed.
  */
 t_object *object_find_attribute(t_object *obj, char *attr_name) {
+    t_object *attr = object_find_actual_attribute(obj, attr_name);
+    return attr ? ((t_attrib_object *)attr)->attribute : NULL;
+}
+
+
+/**
+ * Finds the attribute inside the object, or any base objects if needed.
+ */
+t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
     t_object *attr = NULL;
     t_object *cur_obj = obj;
 
@@ -98,21 +109,21 @@ t_object *object_find_attribute(t_object *obj, char *attr_name) {
  *
  * Calls a method from specified object, but with a argument list. Returns NULL when method is not found.
  */
-t_object *object_call_args(t_object *self, t_object *attrib_obj, t_dll *args) {
+t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *args) {
     t_object *ret = NULL;
 
     // @TODO: It should be a callable method, any callable method!
 
-    if (! OBJECT_IS_ATTRIBUTE(attrib_obj)) {
-        error_and_die(1, "Object is not an attribute!");
+    if (! OBJECT_IS_METHOD(method_obj)) {
+        error_and_die(1, "Object is not an method!");
     }
-    if (OBJECT_TYPE_IS_CLASS(self) && ! METHOD_IS_STATIC(attrib_obj)) {
-        error_and_die(1, "Cannot call dynamic method '%s' from static context", attrib_obj->name);
+    if (OBJECT_TYPE_IS_CLASS(self) && ! METHOD_IS_STATIC(method_obj)) {
+        error_and_die(1, "Cannot call dynamic method '%s' from static context", method_obj->name);
     }
 
 
     // Code object present inside method?
-    t_code_object *code = (t_code_object *)((t_attrib_object *)attrib_obj)->attribute;
+    t_code_object *code = (t_code_object *)((t_method_object *)method_obj)->code;
     if (! code || ! OBJECT_IS_CODE(code)) {
         error_and_die(1, "Code object from method is not present!");
     }
@@ -393,6 +404,7 @@ void object_init() {
     object_string_init();
     object_regex_init();
     object_code_init();
+    object_method_init();
     object_attrib_init();
     object_hash_init();
     object_tuple_init();
@@ -423,6 +435,7 @@ void object_fini() {
     object_regex_fini();
     object_code_fini();
     object_attrib_fini();
+    object_method_fini();
     object_hash_fini();
     object_tuple_fini();
     object_userland_fini();
@@ -516,11 +529,20 @@ done:
 
 
 /**
- * Create method- attribute that points to an external (SAFFIRE) function.
+ * Create method- attribute that points to an INTERNAL (C) function
  */
-void object_add_external_method(t_object *obj, char *name, int method_flags, int visibility, t_ast_element *p) {
-    t_code_object *code_obj = (t_code_object *)object_new(Object_Code, p, NULL);
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
+void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
+    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
+    // with internal and external functions.
+    t_code_object *code_obj = (t_code_object *)object_new(Object_Code, NULL, func);
+    t_method_object *method_obj = (t_method_object *)object_new(Object_Method, name, code_obj, obj, method_flags, NULL);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, method_obj);
+
+    ht_add(obj->attributes, name, attrib_obj);
+}
+
+void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
     if (ht_exists(obj->attributes, name)) {
         error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
@@ -528,16 +550,12 @@ void object_add_external_method(t_object *obj, char *name, int method_flags, int
     ht_add(obj->attributes, name, attrib);
 }
 
+void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
-/**
- * Create method- attribute that points to an INTERNAL (C) function
- */
-void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
-    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
-    // with internal and external functions.
-    t_code_object *code_obj = (t_code_object *)object_new(Object_Code, NULL, func);
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, code_obj, method_flags, NULL);
-
+    if (ht_exists(obj->attributes, name)) {
+        error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
+    }
     ht_add(obj->attributes, name, attrib);
 }
 
@@ -553,22 +571,4 @@ void object_remove_all_internal_attributes(t_object *obj) {
         // @TODO: We must remove and free attrib-objects here..
         ht_iter_next(&iter);
     }
-}
-
-void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
-
-    if (ht_exists(obj->attributes, name)) {
-        error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
-    }
-    ht_add(obj->attributes, name, attrib);
-}
-
-void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, obj, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
-
-    if (ht_exists(obj->attributes, name)) {
-        error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
-    }
-    ht_add(obj->attributes, name, attrib);
 }

@@ -40,6 +40,7 @@
 #include "objects/numerical.h"
 #include "objects/hash.h"
 #include "objects/code.h"
+#include "objects/method.h"
 #include "objects/attrib.h"
 #include "objects/null.h"
 #include "objects/userland.h"
@@ -68,9 +69,9 @@ typedef struct _method_arg {
 /**
  * Parse calling arguments
  */
-static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_attrib_object *attrib) {
+static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_method_object *method) {
     // Check if the number of arguments given exceeds the number of arguments needed.
-    t_hash_table *ht = ((t_hash_object *)attrib->arguments)->ht;
+    t_hash_table *ht = ((t_hash_object *)method->arguments)->ht;
     if (arg_count > ht->element_count) {
         // @TODO: If we have variable argument count, this does not apply!
         error_and_die(1, "Too many arguments given\n");
@@ -250,23 +251,15 @@ dispatch:
 
                     DEBUG_PRINT("\n\n\n  >>>>> Fetching %s from %s\n\n\n", OBJ2STR(name), class_obj->name);
 
-                    register t_object *attrib_obj = object_find_attribute(class_obj, OBJ2STR(name));
+                    register t_object *attrib_obj = object_find_actual_attribute(class_obj, OBJ2STR(name));
 
 
-                    // @TODO: Somewhere, we need to have a check to see if the called class is:
-                    //
-//                    1) if class, we can only call static methods
-//                    2) if object, we can call static and non-static methods
 
-
-                    // 3) if attribute == public, we allow always
-                    // 4) if attribute == protected, we only allow from same class, or when the class extends this class
-                    // 5) if attribute == private, we only allow from the same class, no extends possible
-
-                    int i;
-                    i = ATTRIB_IS_PUBLIC(attrib_obj);
-                    i = ATTRIB_IS_PRIVATE(attrib_obj);
-                    i = ATTRIB_IS_PROTECTED(attrib_obj);
+                    /* Check visibility
+                       1) if attribute == public, we always allow
+                       2) if attribute == protected, we allow from same class or when the class extends this class
+                       3) if attribute == private, we only allow from the same class
+                     */
 
                     int visible = 0;
                     if (ATTRIB_IS_PUBLIC(attrib_obj)) {
@@ -276,7 +269,7 @@ dispatch:
                         if (self != NULL) {
                             // We are inside an class context
 
-                            if (ATTRIB_IS_PRIVATE(attrib_obj) && attrib_obj == self) {
+                            if (ATTRIB_IS_PRIVATE(attrib_obj) && class_obj == self) {
                                  // Private visiblity is allowed when we are inside the SAME class.
                                  visible = 1;
                             }
@@ -285,7 +278,7 @@ dispatch:
                                 // the protected visibility is ok
                                 t_object *parent = self;
                                 while (parent) {
-                                    if (parent == attrib_obj) {
+                                    if (parent == class_obj) {
                                         visible = 1;
                                         break;
                                     }
@@ -300,7 +293,19 @@ dispatch:
                     if (!visible) {
                         error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                     } else {
-                        register t_object *value = ((t_attrib_object *)attrib_obj)->attribute;
+                        register t_object *value;
+
+                        if (ATTRIB_IS_METHOD(attrib_obj)) {
+                            register t_method_object *method_obj = (t_method_object *)((t_attrib_object *)attrib_obj)->attribute;
+
+                            register t_method_object *new_copy = (t_method_object *)smm_malloc(sizeof(t_method_object));
+                            memcpy(new_copy, method_obj, sizeof(t_method_object));
+                            new_copy->binding = class_obj;
+
+                            value = (t_object *)new_copy;
+                        } else {
+                            value = ((t_attrib_object *)attrib_obj)->attribute;
+                        }
 
                         // If we are a METHOD, we must do something with the binding inside the method_obj! Create a new object
                         // and change the binding!
@@ -499,18 +504,20 @@ dispatch:
             // Calls callable from SP-0 with OP+0 args starting from SP-1.
             case VM_CALL_METHOD :
                 {
-                    if ()
-                    // Fetch attribute to call
-                    register t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
-
-                    // fetch self object
-                    register t_object *self_obj = attrib_obj->binding;
-                    if (!self_obj) {
-                        error_and_die(1, "Method '%s' is not bound to any class or instantiation\n", attrib_obj->name);
+                    // Fetch method to call
+                    register t_method_object *method_obj = (t_method_object *)vm_frame_stack_pop(frame);
+                    if (! OBJECT_IS_METHOD(method_obj)) {
+                        error_and_die(1, "This object is not a method object!\n");
                     }
 
-                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(attrib_obj)) {
-                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", attrib_obj->name);
+                    // fetch self object
+                    register t_object *self_obj = method_obj->binding;
+                    if (!self_obj) {
+                        error_and_die(1, "Method '%s' is not bound to any class or instantiation\n", method_obj->name);
+                    }
+
+                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
+                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
                     }
 
 
@@ -518,7 +525,7 @@ dispatch:
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
                     // Check if it's a native function.
-                    register t_code_object *code_obj = (t_code_object *)vm_frame_stack_pop(frame);
+                    register t_code_object *code_obj = (t_code_object *)method_obj->code;
                     if (code_obj->native_func) {
 
                         // Create argument list inside a DLL
@@ -547,7 +554,7 @@ dispatch:
                         ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
 
                         // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg2, attrib_obj);
+                        _parse_calling_arguments(frame, tfr, oparg2, method_obj);
 
                         // "Remove" the arguments from the original stack
                         frame->sp += oparg1;
@@ -650,24 +657,17 @@ dispatch:
 
             case VM_BUILD_ATTRIB :
                 {
-                    DEBUG_PRINT("\n\n\n**** CREATING A ATTRIB ****\n\n\n\n");
-
-                    DEBUG_PRINT("Type: %d  Optional arguments for type=0: %d\n", oparg1, oparg2);
+                    // pop access object
+                    register t_object *access = vm_frame_stack_pop(frame);
+                    object_dec_ref(access);
 
                     // pop visibility object
                     register t_object *visibility = vm_frame_stack_pop(frame);
                     object_dec_ref(visibility);
-                    DEBUG_PRINT("ATTRIB VIS: %ld\n", OBJ2NUM(visibility));
-
-                    // pop access object
-                    register t_object *access = vm_frame_stack_pop(frame);
-                    object_dec_ref(access);
-                    DEBUG_PRINT("ATTRIB ACCESS: %ld\n", OBJ2NUM(access));
 
                     // pop value object
                     register t_object *value_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(value_obj);
-                    DEBUG_PRINT("ATTRIB VALUE: %s\n", object_debug(value_obj));
 
                     // Deal with attribute type specific values
                     register t_object *method_flags_obj = NULL;
@@ -688,6 +688,9 @@ dispatch:
 
                             ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
+
+                        // Create method object, no name and no binding is present here!
+                        value_obj = object_new(Object_Method, "", value_obj, NULL, OBJ2NUM(method_flags_obj), arg_list);
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
@@ -697,7 +700,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, NULL, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
+                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
 
                     // Push method object
                     object_inc_ref(dst);
@@ -746,15 +749,21 @@ dispatch:
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
                         register t_object *name = vm_frame_stack_pop(frame);
-                        register t_object *attribute = vm_frame_stack_pop(frame);
+                        register t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
 
-                        // Bind the attribute to the actual class
-                        ((t_attrib_object *)attribute)->binding = (t_object *)class;
+                        if (ATTRIB_IS_METHOD(attrib_obj)) {
+                            // If we are a method, we will set the name.
+                            t_method_object *method_obj = (t_method_object *)attrib_obj->attribute;
+                            method_obj->name = OBJ2STR(name);
+
+                            // @TODO: We could set the binding, but we cannot do this for properties. Do we need this anyway?
+                            //method_obj->binding = class;
+                        }
 
                         // Add method attribute to class
-                        ht_add(class->attributes, OBJ2STR(name), attribute);
+                        ht_add(class->attributes, OBJ2STR(name), attrib_obj);
 
-                        DEBUG_PRINT("Added attribute '%s' to class '%s'\n", object_debug(attribute), object_debug((t_object *)class));
+                        DEBUG_PRINT("Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), class->name);
                     }
 
                     object_inc_ref((t_object *)class);

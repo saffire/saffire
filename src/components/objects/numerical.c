@@ -33,6 +33,7 @@
 #include "objects/boolean.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
+#include "objects/method.h"
 #include "objects/attrib.h"
 #include "objects/null.h"
 #include "general/smm.h"

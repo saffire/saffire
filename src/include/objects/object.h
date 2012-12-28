@@ -145,6 +145,7 @@
     #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CODE(obj)         (obj->type == objectTypeCode)
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
+    #define OBJECT_IS_METHOD(obj)       (obj->type == objectTypeMethod)
 
 
     // Convert object to value
@@ -153,14 +154,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     12
+    #define OBJECT_TYPE_LEN     13
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCode, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser
+                   objectTypeTuple, objectTypeUser, objectTypeMethod
                  } t_objectype_enum;
 
 
@@ -239,6 +240,7 @@
     void object_init(void);
     void object_fini(void);
 
+    t_object *object_find_actual_attribute(t_object *obj, char *attr_name);
     t_object *object_find_attribute(t_object *obj, char *attribute_name);
 
     t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *dll);
@@ -256,7 +258,6 @@
 
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
-    void object_add_external_method(t_object *obj, char *name, int flags, int visibility, t_ast_element *p);
     void object_remove_all_internal_attributes(t_object *obj);
 
 #endif

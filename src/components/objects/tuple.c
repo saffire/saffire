@@ -36,6 +36,7 @@
 #include "objects/numerical.h"
 #include "objects/attrib.h"
 #include "objects/tuple.h"
+#include "objects/method.h"
 #include "general/hashtable.h"
 #include "general/smm.h"
 #include "general/md5.h"

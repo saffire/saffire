@@ -42,16 +42,6 @@
     #define ATTRIB_TYPE_CONSTANT               1        // Constant
     #define ATTRIB_TYPE_PROPERTY               2        // Property
 
-    // These are bitwise flags!
-    #define METHOD_FLAG_STATIC                 1        // Can be called in class context
-    #define METHOD_FLAG_FINAL                  2        // Cannot be extended
-    #define METHOD_FLAG_ABSTRACT               4        // Must be extended by class
-
-
-    #define METHOD_IS_STATIC(attrib) ((((t_attrib_object *)attrib)->method_flags & METHOD_FLAG_STATIC) == METHOD_FLAG_STATIC)
-    #define METHOD_IS_FINAL(attrib) ((((t_attrib_object *)attrib)->method_flags & METHOD_FLAG_FINAL) == METHOD_FLAG_FINAL)
-    #define METHOD_IS_ABSTRACT(attrib) ((((t_attrib_object *)attrib)->method_flags & METHOD_FLAG_ABSTRACT) == METHOD_FLAG_ABSTRACT)
-
     #define ATTRIB_IS_PUBLIC(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PUBLIC)
     #define ATTRIB_IS_PROTECTED(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PROTECTED)
     #define ATTRIB_IS_PRIVATE(attrib) (((t_attrib_object *)attrib)->visibility == ATTRIB_VISIBILITY_PRIVATE)
@@ -72,11 +62,6 @@
         char access;                        // Access of the attribute (read/write)
 
         t_object *attribute;                // Actual attribute
-
-        t_object *binding;                  // Method bound to this specified class or object
-
-        char method_flags;                  // method flags (abstract, static, final etc)
-        struct _hash_object *arguments;     // Arguments, in case of a method type (key => default value (or NULL))
     } t_attrib_object;
 
     t_attrib_object Object_Attrib_struct;

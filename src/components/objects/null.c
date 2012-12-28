@@ -30,6 +30,7 @@
 #include "objects/null.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
+#include "objects/method.h"
 #include "objects/attrib.h"
 #include "general/smm.h"
 

@@ -536,7 +536,7 @@ interface_method_definition:
 ;
 
 interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method();  $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, $1, ATTRIB_ACCESS_RO, ast_nop(), $1, $5); smm_free($3); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method();  $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags($1), $5); smm_free($3); }
 ;
 
 class_method_definition:
@@ -572,24 +572,24 @@ class_definition:
 ;
 
 class_header:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class($1, $3, $4, $5); smm_free($3); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class(sfc_mod_to_methodflags($1), $3, $4, $5); smm_free($3); }
     |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_init_class( 0, $2, $3, $4); smm_free($2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, $6); smm_free($3); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface($1, $3, $4, ast_nop()); smm_free($3); }
+        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, $6); smm_free($3); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, ast_nop()); smm_free($3); }
     |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { $$ = ast_interface(0, $2, $3, $5); smm_free($2); }
     |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { $$ = ast_interface(0, $2, $3, ast_nop()); smm_free($2); };
 
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, $1, ATTRIB_ACCESS_RW, ast_null(), 0, ast_nop()); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, ast_null(), 0, ast_nop()); smm_free($3); }
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, ast_numerical($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
 ;
 
 modifier_list:
