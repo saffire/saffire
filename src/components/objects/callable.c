@@ -88,6 +88,20 @@ SAFFIRE_METHOD(callable, internal) {
 }
 
 /**
+ * Rebinds the callable to another object
+ */
+SAFFIRE_METHOD(callable, bind) {
+    // @TODO: use object_parse_parameters
+
+    t_dll_element *e = DLL_HEAD(dll);
+    t_object *newbound_obj = (t_object *)e->data;
+    self->binding = newbound_obj;
+
+    RETURN_SELF;
+}
+
+
+/**
  *
  */
 SAFFIRE_METHOD(callable, conv_boolean) {
@@ -132,6 +146,7 @@ void object_callable_init(void) {
     object_add_internal_method((t_object *)&Object_Callable_struct, "null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
     object_add_internal_method((t_object *)&Object_Callable_struct, "internal?",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
 }
 
 /**
