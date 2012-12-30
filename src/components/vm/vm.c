@@ -289,42 +289,32 @@ dispatch:
 
                     if (!visible) {
                         error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
-                    } else {
-                        register t_object *value;
-
-                        if (ATTRIB_IS_METHOD(attrib_obj)) {
-                            register t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
-
-                            /* Every callable method is bounded by its calling class (self). We save this info inside the callable
-                             * @TODO: it would make sense to add this self as a stack parameter, but we cannot (this info is not really
-                             * available in the AST.
-                             *
-                             * Therefore, we create new copies of callable-objects and just set a new binding-object. Since everything is
-                             * linked in the callable-class, overhead should be minimal, for now... */
-
-                            register t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
-                            memcpy(new_copy, callable_obj, sizeof(t_callable_object));
-
-                            // For methods, we actually pop the bind (self) object from the stack as well
-                            register t_object *bind_obj = vm_frame_stack_pop(frame);
-                            new_copy->binding = bind_obj;
-
-                            value = (t_object *)new_copy;
-                        } else {
-                            value = ((t_attrib_object *)attrib_obj)->attribute;
-                        }
-
-                        // If we are a METHOD, we must do something with the binding inside the method_obj! Create a new object
-                        // and change the binding!
-//                        // Create a copy of the attrib object and change binding
-//                        register t_attrib_object *dst = (t_attrib_object *)smm_malloc(sizeof(t_attrib_object));
-//                        memcpy(dst, attrib_obj, sizeof(t_attrib_object));
-//                        dst->binding = class_obj;
-
-                        object_inc_ref((t_object *)value);
-                        vm_frame_stack_push(frame, (t_object *)value);
                     }
 
+                    register t_object *value;
+
+                    if (ATTRIB_IS_METHOD(attrib_obj)) {
+                        register t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
+
+                        /* Every callable method is bounded by its calling class (self). We save this info inside the callable
+                         * @TODO: it would make sense to add this self as a stack parameter, but we cannot (this info is not really
+                         * available in the AST.
+                         *
+                         * Therefore, we create new copies of callable-objects and just set a new binding-object. Since everything is
+                         * linked in the callable-class, overhead should be minimal, for now... */
+
+                        register t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
+                        memcpy(new_copy, callable_obj, sizeof(t_callable_object));
+
+                        new_copy->binding = class_obj;
+
+                        value = (t_object *)new_copy;
+                    } else {
+                        value = ((t_attrib_object *)attrib_obj)->attribute;
+                    }
+
+                    object_inc_ref((t_object *)value);
+                    vm_frame_stack_push(frame, (t_object *)value);
 
                     goto dispatch;
                     break;
