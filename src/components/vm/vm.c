@@ -39,8 +39,7 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
-#include "objects/code.h"
-#include "objects/method.h"
+#include "objects/callable.h"
 #include "objects/attrib.h"
 #include "objects/null.h"
 #include "objects/userland.h"
@@ -69,15 +68,15 @@ typedef struct _method_arg {
 /**
  * Parse calling arguments
  */
-static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_method_object *method) {
+static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_callable_object *callable) {
     // Check if the number of arguments given exceeds the number of arguments needed.
-    t_hash_table *ht = ((t_hash_object *)method->arguments)->ht;
+    t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
     if (arg_count > ht->element_count) {
         // @TODO: If we have variable argument count, this does not apply!
         error_and_die(1, "Too many arguments given\n");
     }
 
-    // Iterate all arguments for this method.
+    // Iterate all arguments for this callable.
     int csp = cur_frame->sp + arg_count - 1;
     int args_left = arg_count;
     int cur_arg = 1;
@@ -253,8 +252,6 @@ dispatch:
 
                     register t_object *attrib_obj = object_find_actual_attribute(class_obj, OBJ2STR(name));
 
-
-
                     /* Check visibility
                        1) if attribute == public, we always allow
                        2) if attribute == protected, we allow from same class or when the class extends this class
@@ -296,11 +293,21 @@ dispatch:
                         register t_object *value;
 
                         if (ATTRIB_IS_METHOD(attrib_obj)) {
-                            register t_method_object *method_obj = (t_method_object *)((t_attrib_object *)attrib_obj)->attribute;
+                            register t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
 
-                            register t_method_object *new_copy = (t_method_object *)smm_malloc(sizeof(t_method_object));
-                            memcpy(new_copy, method_obj, sizeof(t_method_object));
-                            new_copy->binding = class_obj;
+                            /* Every callable method is bounded by its calling class (self). We save this info inside the callable
+                             * @TODO: it would make sense to add this self as a stack parameter, but we cannot (this info is not really
+                             * available in the AST.
+                             *
+                             * Therefore, we create new copies of callable-objects and just set a new binding-object. Since everything is
+                             * linked in the callable-class, overhead should be minimal, for now... */
+
+                            register t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
+                            memcpy(new_copy, callable_obj, sizeof(t_callable_object));
+
+                            // For methods, we actually pop the bind (self) object from the stack as well
+                            register t_object *bind_obj = vm_frame_stack_pop(frame);
+                            new_copy->binding = bind_obj;
 
                             value = (t_object *)new_copy;
                         } else {
@@ -501,23 +508,28 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Calls callable from SP-0 with OP+0 args starting from SP-1.
-            case VM_CALL_METHOD :
+            // Calls a callable from SP-0 with OP+0 args starting from SP-1.
+            case VM_CALL :
                 {
                     // Fetch method to call
-                    register t_method_object *method_obj = (t_method_object *)vm_frame_stack_pop(frame);
-                    if (! OBJECT_IS_METHOD(method_obj)) {
-                        error_and_die(1, "This object is not a method object!\n");
+                    register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
+                    if (! OBJECT_IS_CALLABLE(callable_obj)) {
+                        error_and_die(1, "This object is not a callable object!\n");
                     }
 
-                    // fetch self object
-                    register t_object *self_obj = method_obj->binding;
-                    if (!self_obj) {
-                        error_and_die(1, "Method '%s' is not bound to any class or instantiation\n", method_obj->name);
-                    }
+                    // If we're a method, Fetch self object,
 
-                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
-                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
+                    register t_object *self_obj = callable_obj->binding;
+                    if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
+                        // Check if we are bounded to a class or instantiation
+                        if (!self_obj) {
+                            error_and_die(1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+                        }
+
+                        // Make sure we are not calling a non-static method from a static context
+                        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
+                            error_and_die(1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+                        }
                     }
 
 
@@ -525,8 +537,7 @@ dispatch:
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
                     // Check if it's a native function.
-                    register t_code_object *code_obj = (t_code_object *)method_obj->code;
-                    if (code_obj->native_func) {
+                    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
 
                         // Create argument list inside a DLL
                         t_dll *arg_list = dll_init();
@@ -535,7 +546,7 @@ dispatch:
                         }
 
                         // Call native function
-                        dst = code_obj->native_func(self_obj, arg_list);
+                        dst = callable_obj->code.native_func(self_obj, arg_list);
 
                         // Free argument list
                         dll_free(arg_list);
@@ -543,7 +554,7 @@ dispatch:
                     } else {
 
                         // Create a new execution frame
-                        tfr = vm_frame_new(frame, code_obj->bytecode);
+                        tfr = vm_frame_new(frame, callable_obj->code.bytecode);
 
                         if (OBJECT_IS_USER(self_obj)) {
                             tfr->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
@@ -554,7 +565,7 @@ dispatch:
                         ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
 
                         // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg2, method_obj);
+                        _parse_calling_arguments(frame, tfr, oparg2, callable_obj);
 
                         // "Remove" the arguments from the original stack
                         frame->sp += oparg1;
@@ -689,8 +700,10 @@ dispatch:
                             ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
 
-                        // Create method object, no name and no binding is present here!
-                        value_obj = object_new(Object_Method, "", value_obj, NULL, OBJ2NUM(method_flags_obj), arg_list);
+                        // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
+                        // @TODO: this means we cannot re-use the same codeblock with different args (which makes sense). Make sure
+                        // this works.
+                        ((t_callable_object *)value_obj)->arguments = (t_hash_object *)arg_list;
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
@@ -745,6 +758,7 @@ dispatch:
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
                     class->file_identifiers = frame->local_identifiers;
+                    class->attributes = ht_create();
 
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
@@ -753,11 +767,9 @@ dispatch:
 
                         if (ATTRIB_IS_METHOD(attrib_obj)) {
                             // If we are a method, we will set the name.
-                            t_method_object *method_obj = (t_method_object *)attrib_obj->attribute;
-                            method_obj->name = OBJ2STR(name);
-
-                            // @TODO: We could set the binding, but we cannot do this for properties. Do we need this anyway?
-                            //method_obj->binding = class;
+                            t_callable_object *callable_obj = (t_callable_object *)attrib_obj->attribute;
+                            callable_obj->name = OBJ2STR(name);
+                            callable_obj->binding = (t_object *)class;
                         }
 
                         // Add method attribute to class

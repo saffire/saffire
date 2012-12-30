@@ -30,8 +30,8 @@
 #include "objects/null.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
-#include "objects/method.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "general/smm.h"
 
 
@@ -246,10 +246,10 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
 void object_boolean_init(void) {
     Object_Boolean_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "boolean",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "null",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "numerical", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "string",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
 
 
     Object_Boolean_False_struct.attributes = Object_Boolean_struct.attributes;

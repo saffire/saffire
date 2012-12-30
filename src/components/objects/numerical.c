@@ -33,9 +33,9 @@
 #include "objects/boolean.h"
 #include "objects/numerical.h"
 #include "objects/string.h"
-#include "objects/method.h"
 #include "objects/attrib.h"
 #include "objects/null.h"
+#include "objects/callable.h"
 #include "general/smm.h"
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
@@ -370,16 +370,16 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  */
 void object_numerical_init(void) {
     Object_Numerical_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "ctor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "dtor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "boolean",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "null",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "numerical",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "string",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
 
 
     // Create a numerical cache

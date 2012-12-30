@@ -53,7 +53,7 @@ OPERATOR             0xA8
 INPLACE_OPR          0xA9
 
 LOAD_ATTRIB          0xBE
-CALL_METHOD          0xBF
+CALL                 0xBF
 
 
 ; 2 operands per opcode

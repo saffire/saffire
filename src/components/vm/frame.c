@@ -35,7 +35,7 @@
 #include "objects/hash.h"
 #include "objects/null.h"
 #include "objects/boolean.h"
-#include "objects/code.h"
+#include "objects/callable.h"
 #include "debug.h"
 #include "general/output.h"
 
@@ -287,7 +287,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-                obj = object_new(Object_Code, bytecode->constants[i]->data.code, NULL);
+                obj = object_new(Object_Callable, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
                 break;
             case BYTECODE_CONST_STRING :
                 obj = object_new(Object_String, bytecode->constants[i]->data.s);

@@ -33,8 +33,6 @@
 #include "objects/string.h"
 #include "objects/null.h"
 #include "objects/base.h"
-#include "objects/method.h"
-#include "objects/code.h"
 #include "objects/numerical.h"
 #include "general/smm.h"
 #include "general/md5.h"

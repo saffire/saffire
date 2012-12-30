@@ -35,8 +35,8 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "objects/tuple.h"
-#include "objects/method.h"
 #include "general/hashtable.h"
 #include "general/smm.h"
 #include "general/md5.h"
@@ -193,15 +193,15 @@ SAFFIRE_OPERATOR_METHOD(tuple, add) {
  */
 void object_tuple_init(void) {
     Object_Tuple_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "ctor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "dtor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "boolean",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "null",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "numerical",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "string",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }

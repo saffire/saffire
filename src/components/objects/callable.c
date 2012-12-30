@@ -32,8 +32,8 @@
 #include "objects/string.h"
 #include "objects/null.h"
 #include "objects/base.h"
-#include "objects/method.h"
-#include "objects/code.h"
+#include "objects/callable.h"
+#include "objects/attrib.h"
 #include "objects/numerical.h"
 #include "general/smm.h"
 #include "general/smm.h"
@@ -51,6 +51,56 @@
  *   Object methods
  * ======================================================================
  */
+
+
+/**
+ * Saffire method: constructor
+ */
+SAFFIRE_METHOD(callable, ctor) {
+    RETURN_SELF;
+}
+
+/**
+ * Saffire method: destructor
+ */
+SAFFIRE_METHOD(callable, dtor) {
+    RETURN_NULL;
+}
+
+
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, call) {
+    // @TODO: Will do a call to the callable object
+    RETURN_NULL;
+}
+
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, internal) {
+    if (CALLABLE_IS_CODE_INTERNAL(self)) {
+        RETURN_TRUE;
+    }
+
+    RETURN_FALSE;
+}
+
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, conv_boolean) {
+    RETURN_TRUE;
+}
+
+
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, conv_null) {
+    RETURN_NULL;
+}
 
 
 /* ======================================================================
@@ -73,24 +123,31 @@
 /**
  * Initializes methods and properties, these are used
  */
-void object_method_init(void) {
-    Object_Method_struct.attributes = ht_create();
+void object_callable_init(void) {
+    Object_Callable_struct.attributes = ht_create();
+    object_add_internal_method((t_object *)&Object_Callable_struct, "ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+
+    object_add_internal_method((t_object *)&Object_Callable_struct, "boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+
+    object_add_internal_method((t_object *)&Object_Callable_struct, "internal?",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
 }
 
 /**
- * Frees memory for an method object
+ * Frees memory for a callable object
  */
-void object_method_fini(void) {
+void object_callable_fini(void) {
     // Free attributes
-    ht_destroy(Object_Method_struct.attributes);
+    object_remove_all_internal_attributes((t_object *)&Object_Callable_struct);
+    ht_destroy(Object_Callable_struct.attributes);
 }
-
 
 
 static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
-    t_method_object *obj = smm_malloc(sizeof(t_method_object));
-    memcpy(obj, Object_Method, sizeof(t_method_object));
+    t_callable_object *obj = smm_malloc(sizeof(t_callable_object));
+    memcpy(obj, Object_Callable, sizeof(t_callable_object));
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -100,13 +157,18 @@ static t_object *obj_new(t_object *self) {
 }
 
 static void obj_populate(t_object *obj, va_list arg_list) {
-    t_method_object *method_obj = (t_method_object *)obj;
+    t_callable_object *callable_obj = (t_callable_object *)obj;
 
-    method_obj->name = va_arg(arg_list, char *);
-    method_obj->code = (struct _code_object *)va_arg(arg_list, struct _object *);
-    method_obj->binding = va_arg(arg_list, struct _object *);
-    method_obj->method_flags = (char)va_arg(arg_list, int);
-    method_obj->arguments = va_arg(arg_list, struct _hash_object *);
+    callable_obj->callable_flags = va_arg(arg_list, int);
+
+    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        callable_obj->code.native_func = va_arg(arg_list, void *);
+    } else {
+        callable_obj->code.bytecode = va_arg(arg_list, t_bytecode *);
+    }
+
+    callable_obj->binding = va_arg(arg_list, t_object *);
+    callable_obj->arguments = va_arg(arg_list, t_hash_object *);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -117,30 +179,30 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_method_object *self = (t_method_object *)obj;
-    snprintf(global_buf, 1024, "Object: %s Flags: %d Binding: %s", self->name, self->method_flags, self->binding ? self->binding->name : "not bound");
+    t_callable_object *self = (t_callable_object *)obj;
+    sprintf(global_buf, "callable object. F: %d", self->callable_flags);
     return global_buf;
 }
 #endif
 
 
-// Method object management functions
-t_object_funcs method_funcs = {
-        obj_new,              // Allocate a new method object
-        obj_populate,         // Populate a method object
-        NULL,                 // Free a method object
-        obj_destroy,          // Destroy a method object
-        NULL,                 // Clone
+// Callable object management functions
+t_object_funcs callable_funcs = {
+        obj_new,              // Allocate a new callable object
+        obj_populate,         // Populates a callable object
+        NULL,                 // Free a callable object
+        obj_destroy,          // Destroy a callable object
+        NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif
 };
 
-// Intial object
-t_method_object Object_Method_struct = {
-    OBJECT_HEAD_INIT2("method", objectTypeMethod, NULL, NULL, OBJECT_TYPE_CLASS, &method_funcs),
+// Initial object
+t_callable_object Object_Callable_struct = {
+    OBJECT_HEAD_INIT2("callable", objectTypeCallable, NULL, NULL, OBJECT_TYPE_CLASS, &callable_funcs),
     0,
-    0,
-    0,
+    { NULL },
+    NULL,
     NULL
 };
