@@ -133,15 +133,3 @@ if (foo) {
 } else (foo);
 ====
 Error: line 4: syntax error, unexpected '{', expecting ';' or ','
-
-
-@@@@
-if (foo) {
-  a = 1;
-} else if (bar) {
-  b = 1;
-} else {
-  c = 1;
-}
-
-====
