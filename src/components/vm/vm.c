@@ -116,6 +116,41 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
 }
 
 
+/**
+ * Checks visibility, returns 0 when not allowed, 1 when allowed.
+ *
+ *   1) if attribute == public, we always allow
+ *   2) if attribute == protected, we allow from same class or when the class extends this class
+ *   3) if attribute == private, we only allow from the same class
+ */
+
+int vm_check_visibility(t_object *self, t_object *class, t_object *attrib) {
+    // Public attributes are always ok
+    if (ATTRIB_IS_PUBLIC(attrib)) return 1;
+
+    // Not bound, so always ok
+    if (self == NULL) return 1;
+
+
+    if (ATTRIB_IS_PRIVATE(attrib) && class == self) {
+        // Private visiblity is allowed when we are inside the SAME class.
+        return 1;
+    }
+
+    if (ATTRIB_IS_PROTECTED(attrib)) {
+        // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok
+        t_object *parent = self;
+        while (parent) {
+            if (parent == class) return 1;
+
+            // Check parent of the parent
+            parent = parent->parent;
+        }
+    }
+
+    // Not
+    return 0;
+}
 
 /**
  *
@@ -252,47 +287,12 @@ dispatch:
 
                     register t_object *attrib_obj = object_find_actual_attribute(class_obj, OBJ2STR(name));
 
-                    /* Check visibility
-                       1) if attribute == public, we always allow
-                       2) if attribute == protected, we allow from same class or when the class extends this class
-                       3) if attribute == private, we only allow from the same class
-                     */
-
-                    int visible = 0;
-                    if (ATTRIB_IS_PUBLIC(attrib_obj)) {
-                        visible = 1;
-                    } else {
-                        t_object *self = vm_frame_find_identifier(frame, "self");
-                        if (self != NULL) {
-                            // We are inside an class context
-
-                            if (ATTRIB_IS_PRIVATE(attrib_obj) && class_obj == self) {
-                                 // Private visiblity is allowed when we are inside the SAME class.
-                                 visible = 1;
-                            }
-                            if (ATTRIB_IS_PROTECTED(attrib_obj)) {
-                                // Iterate self down all its parent, to see if one matches "attrib_obj". If so,
-                                // the protected visibility is ok
-                                t_object *parent = self;
-                                while (parent) {
-                                    if (parent == class_obj) {
-                                        visible = 1;
-                                        break;
-                                    }
-
-                                    // Check parent of the parent
-                                    parent = parent->parent;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!visible) {
+                    t_object *self = vm_frame_find_identifier(frame, "self");
+                    if (! vm_check_visibility(self, class_obj, attrib_obj)) {
                         error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                     }
 
                     register t_object *value;
-
                     if (ATTRIB_IS_METHOD(attrib_obj)) {
                         register t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
 
