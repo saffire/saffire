@@ -35,7 +35,7 @@
 #include "objects/hash.h"
 #include "objects/null.h"
 #include "objects/boolean.h"
-#include "objects/code.h"
+#include "objects/callable.h"
 #include "debug.h"
 #include "general/output.h"
 
@@ -199,16 +199,16 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
 
 
-#ifdef __DEBUG
-    t_hash_iter iter;
-    ht_iter_init(&iter, frame->local_identifiers->ht);
-    while (ht_iter_valid(&iter)) {
-        char *k = ht_iter_key(&iter);
-        t_object *v = ht_iter_value(&iter);
-        DEBUG_PRINT("  K: %-20s %s\n", k, object_debug(v));
-        ht_iter_next(&iter);
-    }
-#endif
+//#ifdef __DEBUG
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, frame->local_identifiers->ht);
+//    while (ht_iter_valid(&iter)) {
+//        char *k = ht_iter_key(&iter);
+//        t_object *v = ht_iter_value(&iter);
+//        DEBUG_PRINT("  K: %-20s %s\n", k, object_debug(v));
+//        ht_iter_next(&iter);
+//    }
+//#endif
 
     // Check locals first
     obj = ht_find(frame->local_identifiers->ht, id);
@@ -287,7 +287,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-                obj = object_new(Object_Code, bytecode->constants[i]->data.code, NULL);
+                obj = object_new(Object_Callable, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
                 break;
             case BYTECODE_CONST_STRING :
                 obj = object_new(Object_String, bytecode->constants[i]->data.s);

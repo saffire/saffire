@@ -31,6 +31,8 @@
 #include "general/output.h"
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
+#include "objects/callable.h"
+
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "objects/attrib.h"
@@ -58,9 +60,9 @@ char sfc_mod_to_visibility(long modifiers) {
 char sfc_mod_to_methodflags(long modifiers) {
     char ret = 0;
 
-    if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= METHOD_FLAG_STATIC;
-    if ((modifiers & MODIFIER_ABSTRACT) == MODIFIER_ABSTRACT) ret |= METHOD_FLAG_ABSTRACT;
-    if ((modifiers & MODIFIER_FINAL) == MODIFIER_FINAL) ret |= METHOD_FLAG_FINAL;
+    if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= CALLABLE_FLAG_STATIC;
+    if ((modifiers & MODIFIER_ABSTRACT) == MODIFIER_ABSTRACT) ret |= CALLABLE_FLAG_ABSTRACT;
+    if ((modifiers & MODIFIER_FINAL) == MODIFIER_FINAL) ret |= CALLABLE_FLAG_FINAL;
 
     return ret;
 }

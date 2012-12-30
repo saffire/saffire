@@ -39,7 +39,7 @@
 #include "objects/base.h"
 #include "objects/numerical.h"
 #include "objects/hash.h"
-#include "objects/code.h"
+#include "objects/callable.h"
 #include "objects/attrib.h"
 #include "objects/null.h"
 #include "objects/userland.h"
@@ -68,15 +68,15 @@ typedef struct _method_arg {
 /**
  * Parse calling arguments
  */
-static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_attrib_object *attrib) {
+static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_callable_object *callable) {
     // Check if the number of arguments given exceeds the number of arguments needed.
-    t_hash_table *ht = ((t_hash_object *)attrib->arguments)->ht;
+    t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
     if (arg_count > ht->element_count) {
         // @TODO: If we have variable argument count, this does not apply!
         error_and_die(1, "Too many arguments given\n");
     }
 
-    // Iterate all arguments for this method.
+    // Iterate all arguments for this callable.
     int csp = cur_frame->sp + arg_count - 1;
     int args_left = arg_count;
     int cur_arg = 1;
@@ -116,6 +116,34 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
 }
 
 
+/**
+ * Checks visibility, returns 0 when not allowed, 1 when allowed.
+ *
+ *   1) if attribute == public, we always allow
+ *   2) if attribute == protected, we allow from same class or when the class extends this class
+ *   3) if attribute == private, we only allow from the same class
+ */
+int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib) {
+    // Not bound, so always ok
+    if (! binding) return 1;
+
+    // Public attributes are always ok
+    if (ATTRIB_IS_PUBLIC(attrib)) return 1;
+
+    // Private visiblity is allowed when we are inside the SAME class.
+    if (ATTRIB_IS_PRIVATE(attrib) && binding == instance) return 1;
+
+    if (ATTRIB_IS_PROTECTED(attrib)) {
+        // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
+        while (binding) {
+            if (binding == instance) return 1;
+            binding = binding->parent;
+        }
+    }
+
+    // Not
+    return 0;
+}
 
 /**
  *
@@ -242,23 +270,45 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Load a property from an object
-            case VM_LOAD_PROPERTY :
+            // Load an attribute from an object
+            case VM_LOAD_ATTRIB :
                 {
-                    register t_object *property = vm_frame_get_constant(frame, oparg1);
-                    register t_object *class = vm_frame_stack_pop(frame);
+                    register t_object *name = vm_frame_get_constant(frame, oparg1);
+                    register t_object *search_obj = vm_frame_stack_pop(frame);
+                    register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
-                    t_object *attr = object_find_property(class, OBJ2STR(property));
+                    DEBUG_PRINT("\n\n\n  >>>>> Fetching %s from %s\n\n\n", OBJ2STR(name), search_obj->name);
+                    DEBUG_PRINT("Binding this to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
-                    // @TODO: Can attr be NULL?
+                    register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
 
-                    // Create a copy of the attrib object and change binding
-                    t_attrib_object *dst = (t_attrib_object *)smm_malloc(sizeof(t_attrib_object));
-                    memcpy(dst, attr, sizeof(t_attrib_object));
-                    dst->binding = class;
+                    if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
+                        error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
+                    }
 
-                    object_inc_ref((t_object *)dst);
-                    vm_frame_stack_push(frame, (t_object *)dst);
+                    register t_object *value;
+                    if (ATTRIB_IS_METHOD(attrib_obj)) {
+                        register t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
+
+                        /* Every callable method is bounded by its calling class (self). We save this info inside the callable
+                         * @TODO: it would make sense to add this self as a stack parameter, but we cannot (this info is not really
+                         * available in the AST.
+                         *
+                         * Therefore, we create new copies of callable-objects and just set a new binding-object. Since everything is
+                         * linked in the callable-class, overhead should be minimal, for now... */
+
+                        register t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
+                        memcpy(new_copy, callable_obj, sizeof(t_callable_object));
+
+                        new_copy->binding = bound_obj ? bound_obj : search_obj;
+
+                        value = (t_object *)new_copy;
+                    } else {
+                        value = ((t_attrib_object *)attrib_obj)->attribute;
+                    }
+
+                    object_inc_ref((t_object *)value);
+                    vm_frame_stack_push(frame, (t_object *)value);
 
                     goto dispatch;
                     break;
@@ -364,7 +414,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "boolean");
                     dst = object_call(dst, bool_method, 0);
                 }
 
@@ -380,7 +430,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "boolean");
                     dst = object_call(dst, bool_method, 0);
                 }
 
@@ -394,7 +444,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "boolean");
                     dst = object_call(dst, bool_method, 0);
                 }
 
@@ -412,7 +462,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_method(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "boolean");
                     dst = object_call(dst, bool_method, 0);
                 }
 
@@ -442,21 +492,28 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Calls callable from SP-0 with OP+0 args starting from SP-1.
-            case VM_CALL_METHOD :
+            // Calls a callable from SP-0 with OP+0 args starting from SP-1.
+            case VM_CALL :
                 {
-                    // Fetch attribute to call
-                    register t_attrib_object *method_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
-
-                    // The bounded object will become "self" in our method call
-                    register t_object *self_obj = method_obj->binding;
-
-                    if (!self_obj) {
-                        error_and_die(1, "Method '%s' is not bound to any class or instantiation\n", method_obj->name);
+                    // Fetch method to call
+                    register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
+                    if (! OBJECT_IS_CALLABLE(callable_obj)) {
+                        error_and_die(1, "This object is not a callable object!\n");
                     }
 
-                    if (OBJECT_TYPE_IS_CLASS(self_obj) && ! METHOD_IS_STATIC(method_obj)) {
-                        error_and_die(1, "Cannot call dynamic method '%s' from a class\n", method_obj->name);
+                    // If we're a method, Fetch self object,
+
+                    register t_object *self_obj = callable_obj->binding;
+                    if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
+                        // Check if we are bounded to a class or instantiation
+                        if (!self_obj) {
+                            error_and_die(1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+                        }
+
+                        // Make sure we are not calling a non-static method from a static context
+                        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
+                            error_and_die(1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+                        }
                     }
 
 
@@ -464,8 +521,7 @@ dispatch:
                     //        to the code-object AND both systems need the same way to deal with arguments.
 
                     // Check if it's a native function.
-                    t_code_object *code_obj = (t_code_object *)method_obj->attribute;
-                    if (code_obj->native_func) {
+                    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
 
                         // Create argument list inside a DLL
                         t_dll *arg_list = dll_init();
@@ -474,14 +530,15 @@ dispatch:
                         }
 
                         // Call native function
-                        dst = code_obj->native_func(self_obj, arg_list);
+                        dst = callable_obj->code.native_func(self_obj, arg_list);
 
                         // Free argument list
                         dll_free(arg_list);
+
                     } else {
 
                         // Create a new execution frame
-                        tfr = vm_frame_new(frame, code_obj->bytecode);
+                        tfr = vm_frame_new(frame, callable_obj->code.bytecode);
 
                         if (OBJECT_IS_USER(self_obj)) {
                             tfr->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
@@ -492,7 +549,7 @@ dispatch:
                         ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
 
                         // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg2, method_obj);
+                        _parse_calling_arguments(frame, tfr, oparg2, callable_obj);
 
                         // "Remove" the arguments from the original stack
                         frame->sp += oparg1;
@@ -500,7 +557,7 @@ dispatch:
                         // Execute frame, return the last object
                         dst = _vm_execute(tfr);
 
-//                        // Destroy frame
+//                        // @TODO: Destroy frame
 //                        vm_frame_destroy(tfr);
                     }
 
@@ -595,24 +652,17 @@ dispatch:
 
             case VM_BUILD_ATTRIB :
                 {
-                    DEBUG_PRINT("\n\n\n**** CREATING A ATTRIB ****\n\n\n\n");
-
-                    printf("Type: %d  Optional arguments for type=0: %d\n", oparg1, oparg2);
-
                     // pop access object
                     register t_object *access = vm_frame_stack_pop(frame);
                     object_dec_ref(access);
-                    DEBUG_PRINT("ATTRIB ACCESS: %ld\n", OBJ2NUM(access));
 
                     // pop visibility object
                     register t_object *visibility = vm_frame_stack_pop(frame);
                     object_dec_ref(visibility);
-                    DEBUG_PRINT("ATTRIB VIS: %ld\n", OBJ2NUM(visibility));
 
                     // pop value object
                     register t_object *value_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(value_obj);
-                    DEBUG_PRINT("ATTRIB VALUE: %s\n", object_debug(value_obj));
 
                     // Deal with attribute type specific values
                     register t_object *method_flags_obj = NULL;
@@ -633,6 +683,11 @@ dispatch:
 
                             ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
+
+                        // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
+                        // @TODO: this means we cannot re-use the same codeblock with different args (which makes sense). Make sure
+                        // this works.
+                        ((t_callable_object *)value_obj)->arguments = (t_hash_object *)arg_list;
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
@@ -642,7 +697,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, NULL, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags_obj ? OBJ2NUM(method_flags_obj) : 0, arg_list);
+                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
 
                     // Push method object
                     object_inc_ref(dst);
@@ -657,12 +712,10 @@ dispatch:
                     // pop class name
                     register t_object *name_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(name_obj);
-                    DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name_obj));
 
                     // pop flags
                     register t_object *flags = vm_frame_stack_pop(frame);
                     object_dec_ref(flags);
-                    DEBUG_PRINT("Flags: %ld\n", OBJ2NUM((t_numerical_object *)flags));
 
                     // pop parent code object (as string)
                     register t_object *parent_class_obj = vm_frame_stack_pop(frame);
@@ -677,7 +730,6 @@ dispatch:
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
                     }
                     object_inc_ref(parent_class);
-                    DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
 
                     // Create a userland object, and fill it
                     register t_userland_object *class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
@@ -687,19 +739,24 @@ dispatch:
                     class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
                     class->parent = parent_class;
                     class->file_identifiers = frame->local_identifiers;
+                    class->attributes = ht_create();
 
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
                         register t_object *name = vm_frame_stack_pop(frame);
-                        register t_object *attribute = vm_frame_stack_pop(frame);
+                        register t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
 
-                        // Bind the attribute to the actual class
-                        ((t_attrib_object *)attribute)->binding = (t_object *)class;
+                        if (ATTRIB_IS_METHOD(attrib_obj)) {
+                            // If we are a method, we will set the name.
+                            t_callable_object *callable_obj = (t_callable_object *)attrib_obj->attribute;
+                            callable_obj->name = OBJ2STR(name);
+                            callable_obj->binding = (t_object *)class;
+                        }
 
                         // Add method attribute to class
-                        ht_add(class->attributes, OBJ2STR(name), attribute);
+                        ht_add(class->attributes, OBJ2STR(name), attrib_obj);
 
-                        DEBUG_PRINT("Added attribute '%s' to class '%s'\n", object_debug(attribute), object_debug((t_object *)class));
+                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), class->name);
                     }
 
                     object_inc_ref((t_object *)class);
@@ -782,7 +839,7 @@ int vm_execute(t_bytecode *bc) {
     // Convert returned object to numerical, so we can use it as an error code
     if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
-        t_object *result_numerical = object_find_method(result, "numerical");
+        t_object *result_numerical = object_find_attribute(result, "numerical");
         result = object_call(result, result_numerical, 0);
     }
     int ret_val = ((t_numerical_object *) result)->value;

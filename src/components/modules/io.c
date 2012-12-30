@@ -30,6 +30,7 @@
 #include "objects/object.h"
 #include "objects/string.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "general/dll.h"
 #include "general/smm.h"
 
@@ -46,7 +47,7 @@
  *
  */
 SAFFIRE_MODULE_METHOD(io, print) {
-    t_object *obj, *obj2;
+    t_object *obj, *attrib;
 
     t_dll_element *e = DLL_HEAD(args);
     while (e) {
@@ -54,8 +55,8 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            obj2 = object_find_method(obj, "string");
-            obj = object_call(obj, obj2, 0);
+            attrib = object_find_attribute(obj, "string");
+            obj = object_call(obj, attrib, 0);
         }
 
         output(ANSI_BRIGHTRED "%s" ANSI_RESET, ((t_string_object *)obj)->value);
@@ -133,14 +134,14 @@ t_object console_struct  = { OBJECT_HEAD_INIT2("console", objectTypeAny, NULL, N
 
 static void _init(void) {
     io_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&io_struct, "print",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
-    object_add_internal_method((t_object *)&io_struct, "printf",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
-    object_add_internal_method((t_object *)&io_struct, "sprintf",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
+    object_add_internal_method((t_object *)&io_struct, "print",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
+    object_add_internal_method((t_object *)&io_struct, "printf",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
+    object_add_internal_method((t_object *)&io_struct, "sprintf",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
 
     console_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&console_struct, "print",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_print);
-    object_add_internal_method((t_object *)&console_struct, "printf",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_printf);
-    object_add_internal_method((t_object *)&console_struct, "sprintf",  METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_sprintf);
+    object_add_internal_method((t_object *)&console_struct, "print",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_print);
+    object_add_internal_method((t_object *)&console_struct, "printf",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_printf);
+    object_add_internal_method((t_object *)&console_struct, "sprintf",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_sprintf);
 }
 
 static void _fini(void) {

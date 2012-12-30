@@ -32,7 +32,7 @@
 #include "objects/string.h"
 #include "objects/null.h"
 #include "objects/base.h"
-#include "objects/code.h"
+#include "objects/callable.h"
 #include "objects/attrib.h"
 #include "objects/numerical.h"
 #include "general/smm.h"
@@ -56,14 +56,14 @@
 /**
  * Saffire method: constructor
  */
-SAFFIRE_METHOD(code, ctor) {
+SAFFIRE_METHOD(callable, ctor) {
     RETURN_SELF;
 }
 
 /**
  * Saffire method: destructor
  */
-SAFFIRE_METHOD(code, dtor) {
+SAFFIRE_METHOD(callable, dtor) {
     RETURN_NULL;
 }
 
@@ -71,16 +71,16 @@ SAFFIRE_METHOD(code, dtor) {
 /**
  *
  */
-SAFFIRE_METHOD(code, call) {
-    // @TODO: Will do a call to the code object
+SAFFIRE_METHOD(callable, call) {
+    // @TODO: Will do a call to the callable object
     RETURN_NULL;
 }
 
 /**
  *
  */
-SAFFIRE_METHOD(code, internal) {
-    if (self->native_func) {
+SAFFIRE_METHOD(callable, internal) {
+    if (CALLABLE_IS_CODE_INTERNAL(self)) {
         RETURN_TRUE;
     }
 
@@ -88,20 +88,31 @@ SAFFIRE_METHOD(code, internal) {
 }
 
 /**
- *
+ * Rebinds the callable to another object
  */
-SAFFIRE_METHOD(code, conv_boolean) {
-    if (self->bytecode || self->native_func) {
-        RETURN_TRUE;
-    }
+SAFFIRE_METHOD(callable, bind) {
+    // @TODO: use object_parse_parameters
 
-    RETURN_FALSE;
+    t_dll_element *e = DLL_HEAD(dll);
+    t_object *newbound_obj = (t_object *)e->data;
+    self->binding = newbound_obj;
+
+    RETURN_SELF;
 }
+
 
 /**
  *
  */
-SAFFIRE_METHOD(code, conv_null) {
+SAFFIRE_METHOD(callable, conv_boolean) {
+    RETURN_TRUE;
+}
+
+
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, conv_null) {
     RETURN_NULL;
 }
 
@@ -126,32 +137,32 @@ SAFFIRE_METHOD(code, conv_null) {
 /**
  * Initializes methods and properties, these are used
  */
-void object_code_init(void) {
-    Object_Code_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Code_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_ctor);
-    object_add_internal_method((t_object *)&Object_Code_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_dtor);
+void object_callable_init(void) {
+    Object_Callable_struct.attributes = ht_create();
+    object_add_internal_method((t_object *)&Object_Callable_struct, "ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Code_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Code_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method((t_object *)&Object_Code_struct, "call",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_call);
-    object_add_internal_method((t_object *)&Object_Code_struct, "internal?",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_code_method_internal);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "internal?",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
 }
 
 /**
- * Frees memory for a code object
+ * Frees memory for a callable object
  */
-void object_code_fini(void) {
+void object_callable_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Code_struct);
-    ht_destroy(Object_Code_struct.attributes);
+    object_remove_all_internal_attributes((t_object *)&Object_Callable_struct);
+    ht_destroy(Object_Callable_struct.attributes);
 }
 
 
 static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
-    t_code_object *obj = smm_malloc(sizeof(t_code_object));
-    memcpy(obj, Object_Code, sizeof(t_code_object));
+    t_callable_object *obj = smm_malloc(sizeof(t_callable_object));
+    memcpy(obj, Object_Callable, sizeof(t_callable_object));
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -161,10 +172,18 @@ static t_object *obj_new(t_object *self) {
 }
 
 static void obj_populate(t_object *obj, va_list arg_list) {
-    t_code_object *code_obj = (t_code_object *)obj;
+    t_callable_object *callable_obj = (t_callable_object *)obj;
 
-    code_obj->bytecode = va_arg(arg_list, t_bytecode *);
-    code_obj->native_func = va_arg(arg_list, void *);
+    callable_obj->callable_flags = va_arg(arg_list, int);
+
+    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        callable_obj->code.native_func = va_arg(arg_list, void *);
+    } else {
+        callable_obj->code.bytecode = va_arg(arg_list, t_bytecode *);
+    }
+
+    callable_obj->binding = va_arg(arg_list, t_object *);
+    callable_obj->arguments = va_arg(arg_list, t_hash_object *);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -175,28 +194,30 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_code_object *self = (t_code_object *)obj;
-    sprintf(global_buf, "code object. Internal: %s", self->native_func ? "yes" : "no");
+    t_callable_object *self = (t_callable_object *)obj;
+    sprintf(global_buf, "callable object. F: %d", self->callable_flags);
     return global_buf;
 }
 #endif
 
 
-// Code object management functions
-t_object_funcs code_funcs = {
-        obj_new,              // Allocate a new code object
-        obj_populate,         // Populates a code object
-        NULL,                 // Free a code object
-        obj_destroy,          // Destroy a code object
+// Callable object management functions
+t_object_funcs callable_funcs = {
+        obj_new,              // Allocate a new callable object
+        obj_populate,         // Populates a callable object
+        NULL,                 // Free a callable object
+        obj_destroy,          // Destroy a callable object
         NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
 #endif
 };
 
-// Intial object
-t_code_object Object_Code_struct = {
-    OBJECT_HEAD_INIT2("code", objectTypeCode, NULL, NULL, OBJECT_TYPE_CLASS, &code_funcs),
+// Initial object
+t_callable_object Object_Callable_struct = {
+    OBJECT_HEAD_INIT2("callable", objectTypeCallable, NULL, NULL, OBJECT_TYPE_CLASS, &callable_funcs),
+    0,
+    { NULL },
     NULL,
     NULL
 };

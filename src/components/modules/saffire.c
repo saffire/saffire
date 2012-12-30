@@ -30,6 +30,7 @@
 #include "objects/object.h"
 #include "objects/null.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "objects/string.h"
 #include "general/dll.h"
 #include "version.h"
@@ -68,9 +69,9 @@ t_object saffire_struct = { OBJECT_HEAD_INIT2("saffire", objectTypeAny, NULL, NU
 static void _init(void) {
     saffire_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&saffire_struct, "version",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_version);
-    object_add_internal_method((t_object *)&saffire_struct, "git_revision", METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_gitrev);
-    object_add_internal_method((t_object *)&saffire_struct, "run_mode",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_runmode);
+    object_add_internal_method((t_object *)&saffire_struct, "version",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_version);
+    object_add_internal_method((t_object *)&saffire_struct, "git_revision", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_gitrev);
+    object_add_internal_method((t_object *)&saffire_struct, "run_mode",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_runmode);
 
     object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
     object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
