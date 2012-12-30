@@ -19,4 +19,3 @@ import foo as baz;
 @@@@
 import foo from bar as baz;
 ====
-@@@@

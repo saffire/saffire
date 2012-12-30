@@ -3,19 +3,26 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 // Normal notation
-a = a ? b : c;
+import io as io from ::_sfl::io;
+a = true ? false : true;
+io.print(a);
 ====
 @@@@
 // No short notation
-a = a ?: c
+import io as io from ::_sfl::io;
+a = true ?: false;
+io.print(a);
 ====
 Error in line 3: syntax error, unexpected ':'
 @@@@
 // invalid compound statement
+import io as io from ::_sfl::io;
 a = "foo" ? "bar" : { "baz" }
+io.print(a);
 ====
-Error in line 3: syntax error, unexpected '{'
 @@@@
 // Ternary inside ternary
-a = "foo" ? "bar" ? "baz" : "qux"
+import io as io from ::_sfl::io;
+a = "foo" ? "bar" : "baz" ? "qux" : "woq";
+io.print(a);
 ====

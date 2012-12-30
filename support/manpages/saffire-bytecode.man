@@ -1,6 +1,6 @@
 .TH SAFFIRE 1 "August 01, 2012"
 .SH NAME
-saffire \- The saffire programming language CLI binary
+saffire \- The saffire programming language
 .SH SYNOPSIS
 .B saffire
 .RI [ options ] [ scriptname [ args ] ]
@@ -46,8 +46,8 @@ Saffire is licensed under the
 .B
 3-clause BSD License
 .
-.br
-More information at
+.SH MORE INFORMATION
+More information about Saffire can be found at the homepage:
 .B http://www.saffire-lang.com/
 .SH AUTHOR
 Saffire is written by the Saffire Group. For more information, contact us at
