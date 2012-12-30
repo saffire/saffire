@@ -48,6 +48,8 @@ a = 1;
 while (a < 1) a = 1; else a = 1;
 ====
 @@@@
+import io as io from ::_sfl::io;
 a = 1;
-while (a < 1) {} else {}
+while (a < 1) { break; } else { io.print("F"); }
 ====
+F

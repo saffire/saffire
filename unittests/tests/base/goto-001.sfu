@@ -42,17 +42,24 @@ Error: Unknown token: '"'
 Error in line 3: syntax error, unexpected '/', expecting end of file
 @@@@
 // Correct scope
+i = 0;
 while(true) {
 label:
-    goto label;
+    i = i + 1;
+    if (i < 10) goto label;
+    break;
 }
 ====
 @@@@
 // Allowed to jump out of a loop
+goto label2;
 label:
+    goto label3;
+label2:
 while (true) {
     goto label;
 }
+label3:
 ====
 @@@@
 // Allowed to jump out of a loop
@@ -63,17 +70,21 @@ label:
 ====
 @@@@
 // Not allowed to jump into a loop
+/*
 goto label;
 while(true) {
     label:
 }
+*/
 ====
 Label not found
 @@@@
 // Not allowed to jump into a loop
+/*
 while(true) {
     label:
 }
 goto label;
+*/
 ====
 Label not found

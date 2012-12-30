@@ -1,0 +1,77 @@
+title: if/else control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io as io from ::_sfl::io;
+
+foo = true;
+bar = false;
+
+a=0; b=0; c=0;
+
+if (foo == true) {
+  a = 1;
+} else if (bar == true) {
+  b = 1;
+} else {
+  c = 1;
+}
+io.print(a,b,c);
+======
+100
+@@@@@@
+import io as io from ::_sfl::io;
+
+foo = false;
+bar = true;
+
+a=0; b=0; c=0;
+
+if (foo == true) {
+  a = 1;
+} else if (bar == true) {
+  b = 1;
+} else {
+  c = 1;
+}
+io.print(a,b,c);
+======
+010
+@@@@@@
+import io as io from ::_sfl::io;
+
+foo = false;
+bar = false;
+
+a=0; b=0; c=0;
+
+if (foo == true) {
+  a = 1;
+} else if (bar == true) {
+  b = 1;
+} else {
+  c = 1;
+}
+io.print(a,b,c);
+======
+001
+@@@@@@
+import io as io from ::_sfl::io;
+
+foo = true;
+bar = false;
+
+if (foo) {
+  io.print("T");
+} else {
+  io.print("F");
+}
+
+if (bar) {
+  io.print("T");
+} else {
+  io.print("F");
+}
+
+======
+TF
