@@ -264,7 +264,7 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
  */
 void object_inc_ref(t_object *obj) {
     obj->ref_count++;
-    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -273,16 +273,14 @@ void object_inc_ref(t_object *obj) {
  */
 void object_dec_ref(t_object *obj) {
     obj->ref_count--;
-    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
     if(obj->ref_count == 0) {
         // Free object
         if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
-            DEBUG_PRINT(" *** WOULD BE FREED, BUT WE DONT YET\n");
+//            DEBUG_PRINT(" *** WOULD BE FREED, BUT WE DONT YET\n");
             // @TODO: Free objects!
             //object_free(obj);
-        } else {
-            DEBUG_PRINT(" *** STATIC, SO NOT FREEING\n");
         }
     }
 
@@ -368,10 +366,10 @@ t_object *object_new(t_object *obj, ...) {
     }
 
     if (cached) {
-        DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
+//        DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
     } else {
         if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-            DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+//            DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
         }
     }
 
