@@ -37,8 +37,8 @@
 #include "objects/null.h"
 #include "objects/numerical.h"
 #include "objects/base.h"
-#include "objects/numerical.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
@@ -165,16 +165,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Regex_struct, "ctor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "dtor",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "boolean",     METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "null",        METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "numerical",   METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "string",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     vm_populate_builtins("regex", (t_object *)&Object_Regex_struct);
 }

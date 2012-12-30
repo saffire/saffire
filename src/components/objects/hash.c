@@ -36,6 +36,7 @@
 #include "objects/numerical.h"
 #include "objects/attrib.h"
 #include "objects/hash.h"
+#include "objects/callable.h"
 #include "general/hashtable.h"
 #include "general/smm.h"
 #include "general/md5.h"
@@ -210,19 +211,19 @@ SAFFIRE_OPERATOR_METHOD(hash, add) {
  */
 void object_hash_init(void) {
     Object_Hash_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Hash_struct, "ctor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_ctor);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "dtor",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_dtor);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_ctor);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "boolean",      METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "null",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "numerical",    METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "string",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "length",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "add",          METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "find",         METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_find);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "exists",       METHOD_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "find",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_find);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "exists",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }

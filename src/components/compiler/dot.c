@@ -31,6 +31,7 @@
 #include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "objects/attrib.h"
+#include "objects/callable.h"
 #include "compiler/ast.h"
 #include "general/smm.h"
 #include "general/path_handling.h"
@@ -48,9 +49,9 @@ static char *show_modifiers(int modifiers) {
     char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
     bzero(s, 100);
 
-    if (modifiers & METHOD_FLAG_FINAL) s = strcat(s, "FINAL\\n");
-    if (modifiers & METHOD_FLAG_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
-    if (modifiers & METHOD_FLAG_STATIC) s = strcat(s, "STATIC\\n");
+    if (modifiers & CALLABLE_FLAG_FINAL) s = strcat(s, "FINAL\\n");
+    if (modifiers & CALLABLE_FLAG_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
+    if (modifiers & CALLABLE_FLAG_STATIC) s = strcat(s, "STATIC\\n");
 
     return s;
 }
