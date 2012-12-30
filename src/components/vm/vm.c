@@ -123,28 +123,21 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
  *   2) if attribute == protected, we allow from same class or when the class extends this class
  *   3) if attribute == private, we only allow from the same class
  */
+int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib) {
+    // Not bound, so always ok
+    if (! binding) return 1;
 
-int vm_check_visibility(t_object *self, t_object *class, t_object *attrib) {
     // Public attributes are always ok
     if (ATTRIB_IS_PUBLIC(attrib)) return 1;
 
-    // Not bound, so always ok
-    if (self == NULL) return 1;
-
-
-    if (ATTRIB_IS_PRIVATE(attrib) && class == self) {
-        // Private visiblity is allowed when we are inside the SAME class.
-        return 1;
-    }
+    // Private visiblity is allowed when we are inside the SAME class.
+    if (ATTRIB_IS_PRIVATE(attrib) && binding == instance) return 1;
 
     if (ATTRIB_IS_PROTECTED(attrib)) {
-        // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok
-        t_object *parent = self;
-        while (parent) {
-            if (parent == class) return 1;
-
-            // Check parent of the parent
-            parent = parent->parent;
+        // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
+        while (binding) {
+            if (binding == instance) return 1;
+            binding = binding->parent;
         }
     }
 
@@ -281,14 +274,15 @@ dispatch:
             case VM_LOAD_ATTRIB :
                 {
                     register t_object *name = vm_frame_get_constant(frame, oparg1);
-                    register t_object *class_obj = vm_frame_stack_pop(frame);
+                    register t_object *search_obj = vm_frame_stack_pop(frame);
+                    register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
-                    DEBUG_PRINT("\n\n\n  >>>>> Fetching %s from %s\n\n\n", OBJ2STR(name), class_obj->name);
+                    DEBUG_PRINT("\n\n\n  >>>>> Fetching %s from %s\n\n\n", OBJ2STR(name), search_obj->name);
+                    DEBUG_PRINT("Binding this to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
-                    register t_object *attrib_obj = object_find_actual_attribute(class_obj, OBJ2STR(name));
+                    register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
 
-                    t_object *self = vm_frame_find_identifier(frame, "self");
-                    if (! vm_check_visibility(self, class_obj, attrib_obj)) {
+                    if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
                         error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                     }
 
@@ -306,7 +300,7 @@ dispatch:
                         register t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
                         memcpy(new_copy, callable_obj, sizeof(t_callable_object));
 
-                        new_copy->binding = class_obj;
+                        new_copy->binding = bound_obj ? bound_obj : search_obj;
 
                         value = (t_object *)new_copy;
                     } else {
@@ -718,12 +712,10 @@ dispatch:
                     // pop class name
                     register t_object *name_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(name_obj);
-                    DEBUG_PRINT("Name of the class: %s\n", OBJ2STR(name_obj));
 
                     // pop flags
                     register t_object *flags = vm_frame_stack_pop(frame);
                     object_dec_ref(flags);
-                    DEBUG_PRINT("Flags: %ld\n", OBJ2NUM((t_numerical_object *)flags));
 
                     // pop parent code object (as string)
                     register t_object *parent_class_obj = vm_frame_stack_pop(frame);
@@ -738,7 +730,6 @@ dispatch:
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
                     }
                     object_inc_ref(parent_class);
-                    DEBUG_PRINT("Parent: %s\n", object_debug(parent_class));
 
                     // Create a userland object, and fill it
                     register t_userland_object *class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
@@ -765,7 +756,7 @@ dispatch:
                         // Add method attribute to class
                         ht_add(class->attributes, OBJ2STR(name), attrib_obj);
 
-                        DEBUG_PRINT("Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), class->name);
+                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), class->name);
                     }
 
                     object_inc_ref((t_object *)class);
