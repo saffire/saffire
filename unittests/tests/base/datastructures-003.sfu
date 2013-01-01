@@ -3,64 +3,46 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
 import io as io from ::_sfl::io;
 f = "foobarbaz";
-foreach ("foobarbaz"[] as c) {
-    io.print(c);
-}
+io.print(f[]);
 ====
 foobarbaz
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[0..2] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[0..2]);
 ====
 foo
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[3..5] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[3..5]);
 ====
 bar
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[6..8] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[6..8]);
 ====
 baz
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[3..10] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[3..10]);
 ====
 barbaz
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[10..3] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[10..3]);
 ====
-//nothing
+Error: max < min!
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[..5] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[..5]);
 ====
 foobar
 @@@@
 import io as io from ::_sfl::io;
-f = "foobarbaz";
-foreach ("foobarbaz"[4..] as c) {
-    io.print(c);
-}
+io.print("foobarbaz"[4..]);
 ====
 arbaz
+@@@@
+import io as io from ::_sfl::io;
+io.print("X","foobarbaz"[20..]);
+====
+X

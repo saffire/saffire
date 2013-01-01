@@ -511,7 +511,7 @@ calling_method_argument_list:
 ;
 
 subscription:
-        '[' expression T_TO            ']' { $$ = ast_group(2, ast_null(), $2); }
+        '[' expression T_TO            ']' { $$ = ast_group(2, $2, ast_null()); }
     |   '[' expression T_TO expression ']' { $$ = ast_group(2, $2, $4); }
     |   '['            T_TO expression ']' { $$ = ast_group(2, ast_null(), $3); }
     |   '[' /* empty */                ']' { $$ = ast_group(2, ast_null(), ast_null()); }

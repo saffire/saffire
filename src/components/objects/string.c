@@ -204,19 +204,22 @@ SAFFIRE_METHOD(string, conv_string) {
 }
 
 SAFFIRE_METHOD(string, splice) {
+    // @TODO: use parse_args
     t_dll_element *e = DLL_HEAD(dll);
     t_object *obj1 = e->data;
-    int min = OBJ2NUM(obj1);
-    
     e = DLL_NEXT(e);
     t_object *obj2 = e->data;
-    int max = OBJ2NUM(obj2);
 
     // We can just return self when we want to do a whole range?
-    if (min == -1 && max == -1) RETURN_SELF;
+    if (OBJECT_IS_NULL(obj1) && OBJECT_IS_NULL(obj2)) RETURN_SELF;
 
-    if (min == -1) min = 0;
-    if (max == -1) max = self->char_length;
+    // @TODO: make sure obj1 is numerical!
+    long min = OBJECT_IS_NULL(obj1) ? 0 : OBJ2NUM(obj1);
+    // @TODO: make sure obj1 is numerical!
+    long max = OBJECT_IS_NULL(obj2) ? self->char_length : OBJ2NUM(obj2);
+
+    if (min > self->char_length) min = self->char_length;
+    if (max > self->char_length) max = self->char_length;
 
     // Sanity check
     if (max < min) error_and_die(1, "max < min!");
