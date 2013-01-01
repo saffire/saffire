@@ -102,4 +102,4 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected ')', expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected ')', expecting T_IDENTIFIER or T_ELLIPSIS
