@@ -88,7 +88,7 @@
 %token T_OP_INC T_OP_DEC T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 %token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
-%token T_SELF T_PARENT T_NS_SEP
+%token T_SELF T_PARENT T_NS_SEP T_TO
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
@@ -511,10 +511,10 @@ calling_method_argument_list:
 ;
 
 subscription:
-        '[' T_LNUM             ']' { $$ = ast_group(2, ast_null(), $2); }
-    |   '[' T_LNUM T_TO T_LNUM ']' { $$ = ast_group(2, $2, $4); }
-    |   '['        T_TO T_LNUM ']' { $$ = ast_group(2, ast_null(), $2); }
-    |   '[' /* empty */        ']' { $$ = ast_group(0, ); }
+        '[' expression T_TO            ']' { $$ = ast_group(2, ast_null(), $2); }
+    |   '[' expression T_TO expression ']' { $$ = ast_group(2, $2, $4); }
+    |   '['            T_TO expression ']' { $$ = ast_group(2, ast_null(), $3); }
+    |   '[' /* empty */                ']' { $$ = ast_group(2, ast_null(), ast_null()); }
 ;
 
 /**
