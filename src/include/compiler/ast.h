@@ -51,7 +51,6 @@
 
     typedef struct {
         char *name;                 // Name of the actual variable to use
-        char action;                // 0 = LOAD, 1 = STORE (not used!)
     } identifierNode;
 
     typedef struct {
@@ -152,7 +151,7 @@
     t_ast_element *ast_string(char *value);
     t_ast_element *ast_string_dup(t_ast_element *src);
     t_ast_element *ast_numerical(int value);
-    t_ast_element *ast_identifier(char *var_name, char action);
+    t_ast_element *ast_identifier(char *var_name);
     t_ast_element *ast_property(t_ast_element *class, t_ast_element *property);
     t_ast_element *ast_opr(int opr, int nops, ...);
     t_ast_element *ast_group(int len, ...);

@@ -173,13 +173,11 @@ t_ast_element *ast_numerical(int value) {
 /**
  * Creates a identifier node
  */
-t_ast_element *ast_identifier(char *var_name, char action) {
+t_ast_element *ast_identifier(char *var_name) {
     t_ast_element *p = ast_alloc_element();
 
     p->type = typeAstIdentifier;
     p->identifier.name = smm_strdup(var_name);
-    p->identifier.action = action;
-
     return p;
 }
 

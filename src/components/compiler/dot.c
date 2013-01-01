@@ -124,7 +124,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             break;
 
         case typeAstIdentifier :
-            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled\",label=\"{N:%d|Type=Variable|%s|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.action == 0 ? "LOAD" : "STORE", p->identifier.name);
+            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.name);
             break;
 
         case typeAstBool :

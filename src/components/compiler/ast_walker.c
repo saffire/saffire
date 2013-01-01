@@ -96,6 +96,7 @@ static void ast_walker_call_method_clean_handler(t_dll *frame) {
     dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
 }
 
+static int multi_assignment = 0;
 
 /**
  * Walk the leaf into the frame. Can create new frames if needed (method bodies etc)
@@ -189,9 +190,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             dll_append(frame, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
             break;
         case typeAstAssignment :
+
+            if (leaf->assignment.r->type == typeAstAssignment) {
+                multi_assignment++;
+            }
             // @TODO: We only handle =, not += -= etc
             state->state = st_load;
             WALK_LEAF(leaf->assignment.r);
+
+            if (multi_assignment) {
+                dll_append(frame, asm_create_codeline(VM_DUP_TOP, 0));
+                multi_assignment--;
+            }
+
             state->state = st_store;
             WALK_LEAF(leaf->assignment.l);
             state->state = st_load;
@@ -608,9 +619,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[1]);       // Do argument list
                     WALK_LEAF(leaf->opr.ops[0]);       // Load callable
 
-//                    node = leaf->opr.ops[0];
-//                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
-
                     int arg_count = leaf->opr.ops[1]->group.len;
 
                     // @TODO: Dummy. Remove me! (@TODO: is this true?)
@@ -618,10 +626,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_codeline(VM_CALL, 1, opr1));
 
                     leaf->clean_handler = &ast_walker_call_method_clean_handler;
-
-                    state->state = st_load;
-                    //state->state = st_store;
-
                     break;
 
                 case T_SUBSCRIPT :
@@ -657,14 +661,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
                     dll_append(frame, asm_create_labelline(label1));
-                    break;
-
-                case T_ASSIGNMENT :
-                    state->state = st_load;
-                    WALK_LEAF(leaf->opr.ops[2]);
-
-                    state->state = st_store;
-                    WALK_LEAF(leaf->opr.ops[0]);
                     break;
 
                 default :
