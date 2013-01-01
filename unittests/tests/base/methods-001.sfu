@@ -39,10 +39,9 @@ class Foo {
 Error in line 3: Cannot have multiple visiblity masks
 @@@@
 class Foo {
-    static protected method Bar() {
+    static protected method Bar()[] {
     }
 }
-
 ====
 @@@@
 class Foo {

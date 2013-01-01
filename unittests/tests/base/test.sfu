@@ -1,0 +1,16 @@
+title: Method modifiers tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+class Foo {
+    static protected method Bar()[] {
+    }
+}
+====
+@@@@
+class Foo {
+    static final protected method Bar() {
+    }
+}
+
+====
