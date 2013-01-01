@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2012, The Saffire Group
+ Copyright (c) 2012-2013, The Saffire Group
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
     #define VERSION_BUILD(v)    ((v >>  0) & 0x0008)
 
     #define saffire_version       "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
-    #define saffire_copyright "Copyright (C) 2012 The Saffire Group"
+    #define saffire_copyright "Copyright (C) 2012-2013 The Saffire Group"
     #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__ " from git revision " git_revision
     #define saffire_configured "Configured with: ./configure " CONFIGURE_ARGS
 
