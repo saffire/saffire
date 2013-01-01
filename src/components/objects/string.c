@@ -38,6 +38,7 @@
 #include "objects/callable.h"
 #include "general/smm.h"
 #include "general/md5.h"
+#include "general/output.h"
 #include "debug.h"
 
 t_hash_table *string_cache;
@@ -95,6 +96,17 @@ static void recalc_hash(t_string_object *obj) {
     hash_string(obj->value, obj->hash);
 }
 
+
+static long find_utf_idx(t_string_object *obj, long idx) {
+    long utf_idx = 0;
+
+    for (long i=0; i!=idx; i++) {
+        while ((obj->value[utf_idx] & 0xC0) == 0x80) utf_idx++;
+        utf_idx++;
+    }
+
+    return utf_idx;
+}
 
 /* ======================================================================
  *   Object methods
@@ -189,6 +201,43 @@ SAFFIRE_METHOD(string, conv_numerical) {
  */
 SAFFIRE_METHOD(string, conv_string) {
     RETURN_SELF;
+}
+
+SAFFIRE_METHOD(string, splice) {
+    // @TODO: use parse_args
+    t_dll_element *e = DLL_HEAD(dll);
+    t_object *obj1 = e->data;
+    e = DLL_NEXT(e);
+    t_object *obj2 = e->data;
+
+    // We can just return self when we want to do a whole range?
+    if (OBJECT_IS_NULL(obj1) && OBJECT_IS_NULL(obj2)) RETURN_SELF;
+
+    // @TODO: make sure obj1 is numerical!
+    long min = OBJECT_IS_NULL(obj1) ? 0 : OBJ2NUM(obj1);
+    // @TODO: make sure obj1 is numerical!
+    long max = OBJECT_IS_NULL(obj2) ? self->char_length : OBJ2NUM(obj2);
+
+    if (min > self->char_length) min = self->char_length;
+    if (max > self->char_length) max = self->char_length;
+
+    // Sanity check
+    if (max < min) error_and_die(1, "max < min!");
+
+    long min_idx = find_utf_idx(self, min);
+    long max_idx = find_utf_idx(self, max);
+
+    long new_size = max_idx - min_idx + 1;
+
+    // Make a new copy of length. Allocate worst-case scenario bytes.
+    char *new_string = smm_malloc(new_size + 1);
+    memcpy(new_string, self->value + min_idx, new_size);
+    new_string[new_size] = '\0';
+
+    t_object *obj = object_new(Object_String, new_string);
+    smm_free(new_string);
+
+    RETURN_OBJECT(obj);
 }
 
 
@@ -313,6 +362,8 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "upper",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
     object_add_internal_method((t_object *)&Object_String_struct, "lower",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
     object_add_internal_method((t_object *)&Object_String_struct, "reverse",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+
+    object_add_internal_method((t_object *)&Object_String_struct, "splice",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
     // Create string cache
     string_cache = ht_create();

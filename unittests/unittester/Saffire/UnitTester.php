@@ -260,7 +260,7 @@ class UnitTester {
         $outputExpected = false;
 
         // Split source and expected output
-        $pattern = "/^===+\n/m";
+        $pattern = "/^====+\n/m";
         $tmp = preg_split($pattern, $test, 2);
 
         // Generate temp file(name)
@@ -268,7 +268,8 @@ class UnitTester {
 
         // Create tempfile with source and optional expectation
         file_put_contents($tmpFile.".sf", $tmp[0]);
-        if (isset($tmp[1])) {
+        $tmp[1] = trim($tmp[1]);
+        if (! empty($tmp[1])) {
             $outputExpected = true;
             $tmp[1] = preg_replace("/\n$/", "", $tmp[1]);
             file_put_contents($tmpFile.".exp", $tmp[1]);

@@ -1,0 +1,37 @@
+title: foreach control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io as io from ::_sfl::io;
+foo = list[1,"A",3];
+foreach (foo as k:v)  {
+    io.print(k,v,"\n");
+}
+====
+01
+1A
+23
+@@@@
+import io as io from ::_sfl::io;
+foo = hash["a":1,"b":2,"c":3];
+foreach (blaat as k:v:x)  {
+    io.print(k,"=>",v,x,"\n");
+}
+====
+a=>1Null
+b=>2Null
+c=>3Null
+@@@@
+import io as io from ::_sfl::io;
+foo = hash["a":1,"b":2,"c":3];
+foreach (blaat as k:v, meta)  {
+    if (meta.first) io.print("first\n");
+    if (meta.last) io.print("last\n");
+    io.print(meta.count," ",meta.index," ",k," ",v,"\n");
+}
+====
+first
+3 0 a 1
+3 1 b 2
+last
+3 2 c 3
