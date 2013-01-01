@@ -30,7 +30,7 @@
     #include "general/md5.h"
     #include "objects/object.h"
 
-    #define RETURN_STRING(s)   RETURN_OBJECT(object_new(Object_String, s));
+    #define RETURN_STRING(s)   RETURN_OBJECT(object_new(Object_String, s, LAST_ARGUMENT));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

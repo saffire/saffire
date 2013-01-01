@@ -81,7 +81,7 @@ SAFFIRE_METHOD(hash, length) {
 /**
   * Saffire method: Returns object stored at "key" inside the hash (or NULL when not found)
   */
-SAFFIRE_METHOD(hash, find) {
+SAFFIRE_METHOD(hash, get) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
@@ -123,7 +123,7 @@ SAFFIRE_METHOD(hash, add) {
         RETURN_NUMERICAL(0);
     }
 
-    ht_add(self->ht, key->value, val->value);
+    ht_add(self->ht, key->value, val);
     RETURN_SELF;
 }
 
@@ -222,7 +222,7 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
     object_add_internal_method((t_object *)&Object_Hash_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "find",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_find);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
     object_add_internal_method((t_object *)&Object_Hash_struct, "exists",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
@@ -254,8 +254,8 @@ static void obj_populate(t_object *obj, va_list arg_list) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     // @TODO: We should duplicate the hash, and add it!
 
-    t_hash_table *ht = va_arg(arg_list, t_hash_table *);
-    hash_obj->ht = ht ? ht : ht_create();
+    t_hash_table *ht = va_arg(arg_list, t_hash_table *);    // A hashtable or NULL
+    hash_obj->ht = ((void *)ht != LAST_ARGUMENT) ? ht : ht_create();
 }
 
 static void obj_free(t_object *obj) {
@@ -274,7 +274,8 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    sprintf(global_buf, "hash[%d]", ((t_hash_object *)obj)->ht->element_count);
+    t_hash_table *ht = ((t_hash_object *)obj)->ht;
+    sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
     return global_buf;
 }
 #endif

@@ -606,7 +606,7 @@ dispatch:
                 break;
 
             case VM_CONTINUE_LOOP :
-                ret = object_new(Object_Numerical, oparg1);
+                ret = object_new(Object_Numerical, oparg1, LAST_ARGUMENT);
                 reason = REASON_CONTINUE;
                 goto block_end;
                 break;
@@ -674,7 +674,7 @@ dispatch:
                         object_dec_ref(method_flags_obj);
 
                         // Generate hash object from arguments
-                        arg_list = object_new(Object_Hash, NULL);
+                        arg_list = object_new(Object_Hash, LAST_ARGUMENT);
                         for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
                             arg->value = vm_frame_stack_pop(frame);
@@ -697,7 +697,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
+                    dst = object_new(Object_Attrib, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, LAST_ARGUMENT);
 
                     // Push method object
                     object_inc_ref(dst);
