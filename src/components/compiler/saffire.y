@@ -40,7 +40,12 @@
 
     extern int yylineno;
     int yylex(void);
-    void yyerror(unsigned long *ast, const char *err) { error_and_die(1, "line %lu: %s\n", (unsigned long)yylineno, err); exit(1); }
+
+    // Our own error manager
+    void yyerror(unsigned long *ast, const char *err) {
+        error_and_die(1, "line %lu: %s\n", (unsigned long)yylineno, err);
+        exit(1);
+    }
 
     // Use our own saffire memory manager
     void *yyalloc (size_t bytes) {
@@ -65,10 +70,10 @@
 
 
 %union {
-    char                 *sVal;
-    long                 lVal;
-    double               dVal;
-    struct _ast_element  *nPtr;
+    char                 *sVal;     // Holds any string
+    long                 lVal;      // Holds any numerical value
+    double               dVal;      // Holds any double value
+    struct _ast_element  *nPtr;     // Holds any ast-element
 }
 
 %token END 0 "end of file"
@@ -77,12 +82,11 @@
 
 %type <lVal> modifier modifier_list assignment_operator comparison_operator
 
+/* These must be sorted and used properly */
 %token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
 %nonassoc T_ELSE
-
 %token T_OP_INC T_OP_DEC T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
-
 %token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
 %token T_SELF T_PARENT T_NS_SEP
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
@@ -123,13 +127,16 @@
 /* Add token table, so we can convert a token(numerical) into it's name (330 => T_TOKEN for example) */
 %token_table
 
+/* Verbose errors */
 %error-verbose
 
-/* Start rule */
+/* Define our start rule */
 %start saffire
 
 /* Parser uses ast_root as a parameter */
 %parse-param { unsigned long *ast_root }
+
+
 
 %% /* rules */
 
@@ -141,10 +148,12 @@
  */
 
 saffire:
+        /* We must convert our ast_root address to an unsigned long */
         program { *ast_root = (unsigned long)$1; }
 ;
 
 program:
+        /* A program consists of use-statements and a list of top-statements */
         use_statement_list top_statement_list { $$ = ast_opr(T_PROGRAM,2, $1, $2); }
 ;
 
@@ -235,7 +244,7 @@ switch_statement:
 ;
 
 case_statements:
-        case_statement { $$ = ast_group(1, $1); }
+        case_statement                 { $$ = ast_group(1, $1); }
     |   case_statements case_statement { $$ = ast_add($$, $2); }
 ;
 
@@ -250,13 +259,10 @@ case_statement:
 /* while, while else, do/while, for and foreach */
 iteration_statement:
         while_statement T_ELSE statement { $$ = ast_add($1, $3); }
-    |   while_statement { $$ = $1; }
-
+    |   while_statement                  { $$ = $1; }
     |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave();  $$ = ast_opr(T_DO, 2, $3, $6); }
-
     |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
     |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
-
     |   T_FOREACH '(' expression T_AS expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $8); }
 ;
 
@@ -281,7 +287,7 @@ jump_statement:
     |   T_RETURN expression ';'     { saffire_validate_return();  $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { $$ = ast_opr(T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_opr(T_GOTO, 1, ast_string($2)); smm_free($2); }
-    |   T_GOTO T_LNUM ';'           { $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }
+    |   T_GOTO T_LNUM ';'           { $$ = ast_opr(T_GOTO, 1, ast_numerical($2)); }                 // @TODO: Should support goto 3; ?
 ;
 
 /* try/catch try/catch/finally blocks */
@@ -306,7 +312,7 @@ catch_header:
 
 label_statement:
         T_IDENTIFIER ':'    { saffire_check_label($1);  $$ = ast_opr(T_LABEL, 1, ast_string($1)); smm_free($1); }
-    |   T_LNUM ':'          { $$ = ast_opr(T_LABEL, 1, ast_numerical($1)); }
+    |   T_LNUM ':'          { $$ = ast_opr(T_LABEL, 1, ast_numerical($1)); }  /* @TODO: should we support goto 4; ? */
 ;
 
 
@@ -447,7 +453,7 @@ real_scalar_value:
 /* Any number, any string, any regex or null|true|false */
 scalar_value:
         real_scalar_value   { $$ = $1; }
-    |   T_IDENTIFIER        { sfc_check_permitted_identifiers($1);  $$ = ast_identifier($1, ID_LOAD); smm_free($1); }
+    |   T_IDENTIFIER        { sfc_check_permitted_identifiers($1);  $$ = ast_identifier($1); smm_free($1); }
 ;
 
 /* This is primary expression */
@@ -479,15 +485,15 @@ qualified_name:
 ;
 
 qualified_name_first_part:
-        T_IDENTIFIER                            { $$ = ast_identifier($1, ID_LOAD); }
+        T_IDENTIFIER                            { $$ = ast_identifier($1); }
     |   T_NS_SEP T_IDENTIFIER                   { $$ = ast_string("::"); $$ = ast_concat($$, $2); }
 ;
 
 
 /* Self and parent are processed differently, since they are separate tokens */
 special_name:
-        T_SELF      { $$ = ast_identifier("self", ID_LOAD); }
-    |   T_PARENT    { $$ = ast_identifier("parent", ID_LOAD); }
+        T_SELF      { $$ = ast_identifier("self"); }
+    |   T_PARENT    { $$ = ast_identifier("parent"); }
 ;
 
 callable:
@@ -589,7 +595,7 @@ class_property_definition:
 ;
 
 interface_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier($3, ID_LOAD)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier($3)); smm_free($3); }
 ;
 
 modifier_list:
@@ -652,7 +658,7 @@ data_structure_element:
 %%
 
    /* Returns the actual name of a token, must be implemented here, because we have no access
-      to the yytoknum and yytname otherwise. */
+      to the yytoknum and yytname otherwise in other source files. */
    char *get_token_string(int token) {
         for (int i=0; i!=YYNTOKENS; i++) {
             if (token == yytoknum[i]) {

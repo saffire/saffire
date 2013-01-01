@@ -1,0 +1,34 @@
+title: assigments tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io as io from ::_sfl::io;
+a = 0;
+io.print(a);
+====
+0
+@@@@
+import io as io from ::_sfl::io;
+a = true;
+b = a;
+io.print(b);
+====
+true
+@@@@
+import io as io from ::_sfl::io;
+a = b = c = 42;
+io.print(a);
+io.print(b);
+io.print(c);
+====
+424242
+@@@@
+import io as io from ::_sfl::io;
+a = b = c = 42;
+
+b = true;
+io.print(a);
+io.print(b);
+io.print(c);
+====
+42true42
