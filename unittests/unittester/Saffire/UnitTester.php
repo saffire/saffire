@@ -359,19 +359,24 @@ cleanup:
 function diff_it($in_name, $exp_name, &$output) {
     $output = array();
 
-    $f1 = file($in_name);
-    $f2 = file($exp_name);
+    $f1 = @file($in_name);
+    $f2 = @file($exp_name);
+    if (is_bool($f1)) $f1 = array();
+    if (is_bool($f2)) $f2 = array();
 
-    $it = new \MultipleIterator();
-    $it->attachIterator(new \ArrayIterator($f1));
-    $it->attachIterator(new \ArrayIterator($f2));
-    foreach ($it as $v) {
-        $v[0] = sanitize_line($v[0]);
-        $v[1] = sanitize_line($v[1]);
+    // Sync sizes of f1 and f2
+    while (count($f1) < count($f2)) $f1[] = "";
+    while (count($f2) < count($f1)) $f2[] = "";
 
-        if ($v[0] != $v[1]) {
-            $output[] = "+++ ".$v[0];
-            $output[] = "--- ".$v[1];
+    for ($i=0; $i!=count($f2); $i++) {
+        $v1 = next($f1);
+        $v2 = next($f2);
+        $v1 = sanitize_line($v1);
+        $c1 = sanitize_line($v2);
+
+        if ($v1 != $v2) {
+            $output[] = "+++ ".$v1;
+            $output[] = "--- ".$v2;
         }
     }
 
