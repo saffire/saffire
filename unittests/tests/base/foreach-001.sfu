@@ -2,50 +2,84 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+import io as io from ::_sfl::io;
+foo = list[1,2,3];
+foreach (foo as k)  {
+    io.print(k,"\n");
+}
+====
+1
+2
+3
+@@@@
+import io as io from ::_sfl::io;
+foo = hash["a":1,"b":2,"c":3];
+foreach (blaat as k:v)  {
+    io.print(k,"=>",v,"\n");
+}
+====
+a=>1
+b=>2
+c=>3
+@@@@
+import io as io from ::_sfl::io;
+foo = hash["a":1,"b":2,"c":3];
 foreach (blaat as k)  {
+    io.print(k,"\n");
 }
 ====
+a
+b
+c
 @@@@
-foreach (blaat as k, v)  {
+foo = list[1,2,3];
+foreach (blaat as k:v, i, j)  {
 }
 ====
+Error: line 1: syntax error, unexpected ',', expecting ')'
 @@@@
-foreach (blaat as k, v)  {
+foo = 1;
+foreach (blaat as k:v, i)  {
 }
 ====
+a
 @@@@
-foreach (blaat as k, v, i)  {
-}
-====
-@@@@
-foreach (blaat as k, , i)  {
-}
-====
-@@@@
-foreach (blaat as k, , )  {
-}
-====
-@@@@
+foo = list[1,2,3];
 foreach blaat {
 }
 ====
-Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error in line 1: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
+foo = list[1,2,3];
 foreach blaat {
 }
 ====
-Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error in line 1: syntax error, unexpected T_IDENTIFIER, expecting '('
 @@@@
+foo = list[1,2,3];
 foreach ("foo" as a) {
 }
 ====
+a
 @@@@
-foreach (1 as a) {
+import io as io from ::_sfl::io;
+foreach (list[] as a) {
+    /* no iteration, because of empty list */
+    io.print("iteration\n");
 }
+io.print("done\n");
 ====
+done
 @@@@
-foreach (1 as a) a;
+import io as io from ::_sfl::io;
+foreach (list[1,2,3] as a) io.print(a,"\n");
+io.print("done\n");
 ====
+1
+2
+3
+done
 @@@@
-foreach (1 as a);
+foreach (list[] as a);
 ====
+a
