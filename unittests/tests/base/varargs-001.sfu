@@ -1,0 +1,111 @@
+title: Variable arguments
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+class foo {
+    public method bar(... args) {
+    }
+}
+====
+a
+@@@@
+class foo {
+    public method bar(String foo, ... args) {
+    }
+}
+====
+a
+@@@@
+class foo {
+    public method bar(String foo = "s", ... args) {
+    }
+}
+====
+a
+@@@@
+class foo {
+    public method bar(String foo = "s", ... args = foo) {
+    }
+}
+====
+syntax error, unexpected T_ASSIGNMENT, expecting ')'
+@@@@
+class foo {
+    public method bar(String foo = "s", ... args, Numerical tmp) {
+    }
+}
+====
+syntax error, unexpected ',', expecting ')'
+@@@@
+class foo {
+    public method bar(String foo = "s", ... args, tmp) {
+    }
+}
+====
+syntax error, unexpected ',', expecting ')'
+@@@@
+import io as io from ::_sfl::io;
+class foo {
+    public method bar(String s, Numerical n, ... args) {
+        io.print(args.count(), "\n");
+    }
+}
+
+f = foo.new();
+f.bar("str", 1);
+f.bar("str", 1, "foo");
+f.bar("str", 1, 1);
+f.bar("str", 1, "foo", true);
+=====
+0
+1
+1
+2
+@@@@@@
+import io as io from ::_sfl::io;
+class foo {
+    public method bar(String s, Numerical n, ... args) {
+        io.print("bar: ",args.count(), "\n");
+        self.baz(args);
+        self.baz(... args);
+    }
+    public method baz(... args) {
+        io.print("baz: ",args.count(), "\n");
+    }
+}
+
+f = foo.new();
+f.bar("str", 1);
+f.bar("str", 1, "foo");
+f.bar("str", 1, 1);
+f.bar("str", 1, "foo", true);
+=====
+bar: 0
+baz: 1
+baz: 0
+bar: 1
+baz: 1
+baz: 1
+bar: 1
+baz: 1
+baz: 1
+bar: 2
+baz: 1
+baz: 2
+@@@@@@
+import io as io from ::_sfl::io;
+class foo {
+    public method bar(String s, Numerical n, ... args) {
+        io.print(args.count(), "\n");
+    }
+}
+
+params = list["string", 1, "foo", "bar"];
+f = foo.new();
+f.bar(... params);
+f.bar("str", 1, ... params);
+f.bar("str", 1, "foo", ... params);
+=====
+2
+4
+5

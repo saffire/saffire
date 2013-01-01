@@ -261,9 +261,10 @@ iteration_statement:
         while_statement T_ELSE statement { $$ = ast_add($1, $3); }
     |   while_statement                  { $$ = $1; }
     |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave();  $$ = ast_opr(T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $8); }
+    |   T_FOR '(' expression_statement expression_statement                   ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
+    |   T_FOR '(' expression_statement expression_statement expression        ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOREACH '(' expression T_AS data_structure_element                  ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 2, $3, $5); }
+    |   T_FOREACH '(' expression T_AS data_structure_element ',' T_IDENTIFIER ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
 ;
 
 /* while is separate otherwise we cannot find it's else */
@@ -463,12 +464,12 @@ primary_expression:
 ;
 
 primary_expression_no_parenthesis:
-        primary_expression_first_part         { $$ = $1; }
-    |   primary_expression '.' T_IDENTIFIER   { $$ = ast_property($1, ast_string($3)); }
-    |   primary_expression callable       { $$ = ast_opr(T_CALL, 2, $1, $2); }
-    |   primary_expression subscription   { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
-    |   primary_expression T_OP_INC         { $$ = ast_operator('+', $1, ast_numerical(1)); }
-    |   primary_expression T_OP_DEC         { $$ = ast_operator('-', $1, ast_numerical(1)); }
+        primary_expression_first_part        { $$ = $1; }
+    |   primary_expression '.' T_IDENTIFIER  { $$ = ast_property($1, ast_string($3)); }
+    |   primary_expression callable          { $$ = ast_opr(T_CALL, 2, $1, $2); }
+    |   primary_expression subscription      { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
+    |   primary_expression T_OP_INC          { $$ = ast_operator('+', $1, ast_numerical(1)); }
+    |   primary_expression T_OP_DEC          { $$ = ast_operator('-', $1, ast_numerical(1)); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
@@ -497,14 +498,23 @@ special_name:
 ;
 
 callable:
-        '(' calling_method_argument_list ')' { $$ = $2; }
-    |   '('                              ')' { $$ = ast_group(0); }
+        '(' calling_method_argument_list                           ')' { $$ = $2; }
+    |   '(' calling_method_argument_list ',' T_ELLIPSIS expression ')' { $$ = ast_add($2, $5); }    /* @TODO: How do we know it's ellipsis!? */
+    |   '(' T_ELLIPSIS expression                                  ')' { $$ = ast_group(1, $3); }   /* @TODO: How do we know it's ellipsis!? */
+    |   '(' /* empty */                                            ')' { $$ = ast_group(0); }
 ;
 
 /* argument list inside a method call*/
 calling_method_argument_list:
         assignment_expression                                     { $$ = ast_group(1, $1); }
     |   calling_method_argument_list ',' assignment_expression    { $$ = ast_add($$, $3); }
+;
+
+subscription:
+        '[' T_LNUM             ']' { $$ = ast_group(2, ast_null(), $2); }
+    |   '[' T_LNUM T_TO T_LNUM ']' { $$ = ast_group(2, $2, $4); }
+    |   '['        T_TO T_LNUM ']' { $$ = ast_group(2, ast_null(), $2); }
+    |   '[' /* empty */        ']' { $$ = ast_group(0, ); }
 ;
 
 /**
@@ -551,8 +561,10 @@ class_method_definition:
 ;
 
 method_argument_list:
-        non_empty_method_argument_list { $$ = $1; }
-    |   /* empty */                    { $$ = ast_nop(); }
+        non_empty_method_argument_list                         { $$ = $1; }
+    |   /* empty */                                            { $$ = ast_nop(); }
+    |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_add($$, ast_opr(T_METHOD_ARGUMENT, 3, ast_string("..."), ast_string($4), ast_null())); smm_free($4); }
+    |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_opr(T_ARGUMENT_LIST, 0); ast_add($$, ast_opr(T_METHOD_ARGUMENT, 3, ast_string("..."), ast_string($2), ast_null())); smm_free($2); }
 ;
 
 non_empty_method_argument_list:
@@ -565,8 +577,6 @@ method_argument:
     |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_null(),     ast_string($1), $3        ); smm_free($1); }
     |   T_IDENTIFIER T_IDENTIFIER                              { $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), ast_null()); smm_free($1); smm_free($2); }
     |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), $4        ); smm_free($1); smm_free($2); }
-/*    |   T_ELLIPSIS T_IDENTIFIER                                { $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_null(),     ast_string($2), ast_nop(), ast_numerical(1)); smm_free($2); } */
-/*    |   T_IDENTIFIER T_ELLIPSIS T_IDENTIFIER                   { $$ = ast_opr(T_METHOD_ARGUMENT, 4, ast_null(),     ast_string($1), $3,        ast_numerical(1)); smm_free($1); } */
 ;
 
 constant:
@@ -638,12 +648,6 @@ class_list:
  * data structures
  ************************************************************
  */
-
-subscription:
-        '[' data_structure_elements     ']' { $$ = ast_opr(T_DATA_STRUCTURE, 1, $2); }
-    |   '[' data_structure_elements ',' ']' { $$ = ast_opr(T_DATA_STRUCTURE, 1, $2); }
-    |   '[' /* empty */                 ']' { $$ = ast_opr(T_DATA_STRUCTURE, 1, ast_nop()); }
-;
 
 data_structure_elements:
         data_structure_element                             { $$ = ast_opr(T_DATA_ELEMENTS, 1, $1); }

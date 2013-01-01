@@ -1,7 +1,26 @@
 title: Hash table key tests
-author: Freek Lijten <freeklijten@gmail.com>
+author: Freek Lijten <freeklijten@gmail.com>, Joshua Thijssen <joshua@saffire-lang.org>
 **********
 hashTable = hash.new();
-hashTable.add("a", "b");
-hashTable.exists("a");
+hashTable.add("a", "foo");
+hashTable.add("b", "bar");
+io.print(hashTable.exists("a"), "\n");
+io.print(hashTable.exists("b"), "\n");
+io.print(hashTable.exists("c"), "\n");
+io.print(hashTable.count(), "\n");
+hashTable.add("c", "baz");
+io.print(hashTable.count(), "\n");
+io.print(hashTable.exists("c"), "\n");
+io.print(hashTable.get("a"), "\n");
+io.print(hashTable.get("b"), "\n");
+io.print(hashTable.get("c"), "\n");
 ====
+true
+true
+false
+2
+3
+true
+foo
+bar
+baz

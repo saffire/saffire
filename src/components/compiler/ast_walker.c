@@ -663,6 +663,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label1));
                     break;
 
+                case T_FOREACH :
+                    break;
+
                 default :
                     error_and_die(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
             }
