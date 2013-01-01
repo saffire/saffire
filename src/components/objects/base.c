@@ -70,7 +70,7 @@
  */
 SAFFIRE_METHOD(base, new) {
     // @TODO: Will this work? What if we do:  "string".new();
-    t_object *obj = object_new((t_object *)self);
+    t_object *obj = object_new((t_object *)self, LAST_ARGUMENT);
 	RETURN_OBJECT(obj);
 }
 

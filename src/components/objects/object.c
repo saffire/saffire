@@ -520,14 +520,14 @@ done:
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL);
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
+    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, LAST_ARGUMENT);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, LAST_ARGUMENT);
 
     ht_add(obj->attributes, name, attrib_obj);
 }
 
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, LAST_ARGUMENT);
 
     if (ht_exists(obj->attributes, name)) {
         error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
@@ -536,7 +536,7 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
 }
 
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, LAST_ARGUMENT);
 
     if (ht_exists(obj->attributes, name)) {
         error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);

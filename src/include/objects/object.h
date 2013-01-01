@@ -228,6 +228,9 @@
 
     #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *args)
 
+    /* Must be added as a last argument to object_new(), so we can detect the last argument for object_populate */
+    #define LAST_ARGUMENT NULL
+
 
     // Returns custom object 'obj'
     #define RETURN_OBJECT(obj) return (t_object*)obj

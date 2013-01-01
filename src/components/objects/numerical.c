@@ -74,7 +74,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_object *obj = object_new(Object_Numerical, abs(self->value));
+    t_object *obj = object_new(Object_Numerical, abs(self->value), LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -83,7 +83,7 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_object *obj = object_new(Object_Numerical, 0 - self->value);
+    t_object *obj = object_new(Object_Numerical, 0 - self->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -131,7 +131,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value + other->value);
+    t_object *obj = object_new(Object_Numerical, self->value + other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -151,7 +151,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value - other->value);
+    t_object *obj = object_new(Object_Numerical, self->value - other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -171,7 +171,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value * other->value);
+    t_object *obj = object_new(Object_Numerical, self->value * other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -191,7 +191,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value / other->value);
+    t_object *obj = object_new(Object_Numerical, self->value / other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -211,7 +211,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value % other->value);
+    t_object *obj = object_new(Object_Numerical, self->value % other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -231,7 +231,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value & other->value);
+    t_object *obj = object_new(Object_Numerical, self->value & other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -251,7 +251,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value | other->value);
+    t_object *obj = object_new(Object_Numerical, self->value | other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -271,7 +271,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value ^ other->value);
+    t_object *obj = object_new(Object_Numerical, self->value ^ other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -291,7 +291,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value << other->value);
+    t_object *obj = object_new(Object_Numerical, self->value << other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
@@ -311,7 +311,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value >> other->value);
+    t_object *obj = object_new(Object_Numerical, self->value >> other->value, LAST_ARGUMENT);
     RETURN_OBJECT(obj);
 }
 
