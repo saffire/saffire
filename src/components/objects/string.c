@@ -234,7 +234,7 @@ SAFFIRE_METHOD(string, splice) {
     memcpy(new_string, self->value + min_idx, new_size);
     new_string[new_size] = '\0';
 
-    t_object *obj = object_new(Object_String, new_string);
+    t_object *obj = object_new(Object_String, new_string, LAST_ARGUMENT);
     smm_free(new_string);
 
     RETURN_OBJECT(obj);
