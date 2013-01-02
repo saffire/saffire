@@ -74,7 +74,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_object *obj = object_new(Object_Numerical, abs(self->value), LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, abs(self->value));
     RETURN_OBJECT(obj);
 }
 
@@ -83,7 +83,7 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_object *obj = object_new(Object_Numerical, 0 - self->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, 0 - self->value);
     RETURN_OBJECT(obj);
 }
 
@@ -131,7 +131,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value + other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value + other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -151,7 +151,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value - other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value - other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -171,7 +171,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value * other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value * other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -191,7 +191,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value / other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value / other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -211,7 +211,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value % other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value % other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -231,7 +231,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value & other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value & other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -251,7 +251,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value | other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value | other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -271,7 +271,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value ^ other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value ^ other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -291,7 +291,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value << other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value << other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -311,7 +311,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 //        RETURN_SELF;
 //    }
 
-    t_object *obj = object_new(Object_Numerical, self->value >> other->value, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_Numerical, 1, self->value >> other->value);
     RETURN_OBJECT(obj);
 }
 
@@ -451,9 +451,11 @@ static t_object *obj_clone(t_object *obj) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
-    long value = va_arg(arg_list, long);
+
+    t_dll_element *e = DLL_HEAD(arg_list);
+    long value = (long)e->data;
 
     // @TODO: We cannot use the numerical cache now :/
 //    // Return cached object if it's already present.

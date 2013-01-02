@@ -98,7 +98,7 @@
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
-%token T_IMPORT T_FROM T_ELLIPSIS T_SUBSCRIPT
+%token T_IMPORT T_FROM T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
 
 /* reserved for later use */
 %token T_YIELD
@@ -107,11 +107,11 @@
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement iteration_statement class_list while_statement
-%type <nPtr> guarding_statement expression catch_list catch data_structure_element data_structure_elements
+%type <nPtr> guarding_statement expression catch_list catch ds_element ds_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement
-%type <nPtr> unary_expression primary_expression primary_expression_no_parenthesis
+%type <nPtr> unary_expression primary_expression pe_no_parenthesis data_structure
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
 %type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
@@ -261,10 +261,10 @@ iteration_statement:
         while_statement T_ELSE statement { $$ = ast_add($1, $3); }
     |   while_statement                  { $$ = $1; }
     |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave();  $$ = ast_opr(T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement                   ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
-    |   T_FOR '(' expression_statement expression_statement expression        ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS data_structure_element                  ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 2, $3, $5); }
-    |   T_FOREACH '(' expression T_AS data_structure_element ',' T_IDENTIFIER ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
+    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
+    |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOREACH '(' expression T_AS ds_element                       ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 2, $3, $5); }
+    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
 ;
 
 /* while is separate otherwise we cannot find it's else */
@@ -459,24 +459,25 @@ scalar_value:
 
 /* This is primary expression */
 primary_expression:
-        primary_expression_no_parenthesis   { $$ = $1; }
-   |    '(' expression ')'                  { $$ = $2; }
+        pe_no_parenthesis     { $$ = $1; }
+   |    '(' expression ')'    { $$ = $2; }
 ;
 
-primary_expression_no_parenthesis:
+pe_no_parenthesis:
         primary_expression_first_part        { $$ = $1; }
     |   primary_expression '.' T_IDENTIFIER  { $$ = ast_property($1, ast_string($3)); }
     |   primary_expression callable          { $$ = ast_opr(T_CALL, 2, $1, $2); }
     |   primary_expression subscription      { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
+    |   primary_expression data_structure    { $$ = ast_opr(T_DATASTRUCT, 2, $1, $2); }
     |   primary_expression T_OP_INC          { $$ = ast_operator('+', $1, ast_numerical(1)); }
     |   primary_expression T_OP_DEC          { $$ = ast_operator('-', $1, ast_numerical(1)); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
 primary_expression_first_part:
-        qualified_name                            { $$ = $1; }   /* fully qualified name */
-    |   special_name                              { $$ = $1; }   /* self or parent */
-    |   real_scalar_value                         { $$ = $1; }   /* digits, strings, regexes */
+        qualified_name          { $$ = $1; }   /* fully qualified name */
+    |   special_name            { $$ = $1; }   /* self or parent */
+    |   real_scalar_value       { $$ = $1; }   /* digits, strings, regexes */
 ;
 
 /* A name that is namespaced (or not). */
@@ -486,15 +487,15 @@ qualified_name:
 ;
 
 qualified_name_first_part:
-        T_IDENTIFIER                            { $$ = ast_identifier($1); }
-    |   T_NS_SEP T_IDENTIFIER                   { $$ = ast_string("::"); $$ = ast_concat($$, $2); }
+        T_IDENTIFIER            { $$ = ast_identifier($1); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_string("::"); $$ = ast_concat($$, $2); }
 ;
 
 
 /* Self and parent are processed differently, since they are separate tokens */
 special_name:
-        T_SELF      { $$ = ast_identifier("self"); }
-    |   T_PARENT    { $$ = ast_identifier("parent"); }
+        T_SELF    { $$ = ast_identifier("self"); }
+    |   T_PARENT  { $$ = ast_identifier("parent"); }
 ;
 
 callable:
@@ -510,10 +511,14 @@ calling_method_argument_list:
     |   calling_method_argument_list ',' assignment_expression    { $$ = ast_add($$, $3); }
 ;
 
+data_structure:
+        '[' ds_elements ']' { $$ = $2; }
+;
+
 subscription:
-        '[' expression T_TO            ']' { $$ = ast_group(2, $2, ast_null()); }
-    |   '[' expression T_TO expression ']' { $$ = ast_group(2, $2, $4); }
-    |   '['            T_TO expression ']' { $$ = ast_group(2, ast_null(), $3); }
+        '[' pe_no_parenthesis T_TO                                   ']' { $$ = ast_group(2, $2, ast_null()); }
+    |   '[' pe_no_parenthesis T_TO pe_no_parenthesis ']' { $$ = ast_group(2, $2, $4); }
+    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_group(2, ast_null(), $3); }
     |   '[' /* empty */                ']' { $$ = ast_group(2, ast_null(), ast_null()); }
 ;
 
@@ -561,8 +566,8 @@ class_method_definition:
 ;
 
 method_argument_list:
-        non_empty_method_argument_list                         { $$ = $1; }
-    |   /* empty */                                            { $$ = ast_nop(); }
+        non_empty_method_argument_list                             { $$ = $1; }
+    |   /* empty */                                                { $$ = ast_nop(); }
     |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_add($$, ast_opr(T_METHOD_ARGUMENT, 3, ast_string("..."), ast_string($4), ast_null())); smm_free($4); }
     |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_opr(T_ARGUMENT_LIST, 0); ast_add($$, ast_opr(T_METHOD_ARGUMENT, 3, ast_string("..."), ast_string($2), ast_null())); smm_free($2); }
 ;
@@ -649,14 +654,14 @@ class_list:
  ************************************************************
  */
 
-data_structure_elements:
-        data_structure_element                             { $$ = ast_opr(T_DATA_ELEMENTS, 1, $1); }
-    |   data_structure_elements ',' data_structure_element { $$ = ast_add($$, $3); }
+ds_elements:
+        ds_element                 { $$ = ast_group(1, $1); }
+    |   ds_elements ',' ds_element { $$ = ast_add($$, $3); }
 ;
 
-data_structure_element:
-        assignment_expression                            { $$ = ast_opr(T_DATA_ELEMENT, 1, $1); }
-    |   data_structure_element ':' assignment_expression { $$ = ast_add($$, $3); }
+ds_element:
+        assignment_expression                { $$ = ast_group(1, $1); }
+    |   ds_element ':' assignment_expression { $$ = ast_add($$, $3); }
 ;
 
 %%

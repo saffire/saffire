@@ -105,7 +105,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
     char label1[MAX_LABEL_LEN], label2[MAX_LABEL_LEN], label3[MAX_LABEL_LEN];
     char label4[MAX_LABEL_LEN], label5[MAX_LABEL_LEN], label6[MAX_LABEL_LEN];
     t_asm_opr *opr1, *opr2;
-    t_ast_element *node;
+    t_ast_element *node, *node2;
     t_ast_element *arglist;
     int i, clc, arg_count;
 
@@ -648,12 +648,34 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     leaf->clean_handler = &ast_walker_call_method_clean_handler;
                     break;
 
+                case T_DATASTRUCT :
+                    state->state = st_load;
+                    WALK_LEAF(leaf->opr.ops[0]);
+
+                    // Iterate elements
+                    node = leaf->opr.ops[1];
+                    for (int i=0; i!=node->group.len; i++) {
+                        node2 = node->group.items[i];
+                        // Iterate attributes
+                        for (int j=0; j!=node2->group.len; j++) {
+                            state->state = st_load;
+                            WALK_LEAF(node2->group.items[j]);
+                        }
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node2->group.len);
+                        dll_append(frame, asm_create_codeline(VM_BUILD_TUPLE, 1, opr1));
+                    }
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node->group.len);
+                    dll_append(frame, asm_create_codeline(VM_BUILD_DATASTRUCT, 1, opr1));
+                    break;
+
                 case T_GOTO :
                     node = leaf->opr.ops[0];
                     sprintf(label1, "userlabel_%s", node->string.value);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1   , 0);
                     dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
                     break;
+
                 case T_LABEL :
                     node = leaf->opr.ops[0];
                     // Check for duplicate label inside current block

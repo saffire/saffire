@@ -52,6 +52,9 @@ JUMP_IF_FIRST_TRUE   0xA1
 OPERATOR             0xA8
 INPLACE_OPR          0xA9
 
+BUILD_TUPLE          0xAE
+BUILD_DATASTRUCT     0xAF
+
 LOAD_ATTRIB          0xBE
 CALL                 0xBF
 
