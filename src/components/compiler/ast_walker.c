@@ -57,6 +57,7 @@ typedef struct _state_frame {
 typedef struct _state {
     enum { st_load, st_store } state;
     enum { st_type_id, st_type_const } type;
+    enum { st_left, st_right, st_none } side;
 
     int attributes;     // Number of attributes on stack
     int loop_cnt;       // Loop counter
@@ -118,7 +119,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             node = leaf->property.property;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+            if (state->side == st_left) {
+                dll_append(frame, asm_create_codeline(VM_STORE_ATTRIB, 1, opr1));
+            } else {
+                dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+            }
             break;
 
         case typeAstString :
@@ -204,7 +209,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
 
             state->state = st_store;
+            state->side = st_left;
             WALK_LEAF(leaf->assignment.l);
+            state->side = st_none;
             state->state = st_load;
             break;
 

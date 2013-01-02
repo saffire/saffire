@@ -311,9 +311,31 @@ dispatch:
                     object_inc_ref((t_object *)value);
                     vm_frame_stack_push(frame, (t_object *)value);
 
-                    goto dispatch;
-                    break;
                 }
+                goto dispatch;
+                break;
+
+            // Store an attribute into an object
+            case VM_STORE_ATTRIB :
+                {
+                    register t_object *name = vm_frame_get_constant(frame, oparg1);
+                    register t_object *search_obj = vm_frame_stack_pop(frame);
+                    register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
+
+                    register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
+                    if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
+                        error_and_die(1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
+                    }
+                    if (attrib_obj && ! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
+                        error_and_die(1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
+                    }
+
+                    register t_object *value = vm_frame_stack_pop(frame);
+                    object_add_property(search_obj, OBJ2STR(name), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
+
+                }
+                goto dispatch;
+                break;
 
             // Load a global identifier
             case VM_LOAD_GLOBAL :
