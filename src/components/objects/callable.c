@@ -93,7 +93,7 @@ SAFFIRE_METHOD(callable, internal) {
 SAFFIRE_METHOD(callable, bind) {
     // @TODO: use object_parse_parameters
 
-    t_dll_element *e = DLL_HEAD(dll);
+    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     t_object *newbound_obj = (t_object *)e->data;
     self->binding = newbound_obj;
 
@@ -171,19 +171,26 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
 
-    callable_obj->callable_flags = va_arg(arg_list, int);
+    t_dll_element *e = DLL_HEAD(arg_list);
+    callable_obj->callable_flags = (int)e->data;
+    e = DLL_NEXT(e);
+
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
-        callable_obj->code.native_func = va_arg(arg_list, void *);
+        callable_obj->code.native_func = (void *)e->data;
+        e = DLL_NEXT(e);
     } else {
-        callable_obj->code.bytecode = va_arg(arg_list, t_bytecode *);
+        callable_obj->code.bytecode = (t_bytecode *)e->data;
+        e = DLL_NEXT(e);
     }
 
-    callable_obj->binding = va_arg(arg_list, t_object *);
-    callable_obj->arguments = va_arg(arg_list, t_hash_object *);
+    callable_obj->binding = (t_object *)e->data;
+    e = DLL_NEXT(e);
+    callable_obj->arguments = (t_hash_object *)e->data;
+    e = DLL_NEXT(e);
 }
 
 static void obj_destroy(t_object *obj) {

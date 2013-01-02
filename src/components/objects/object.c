@@ -339,38 +339,57 @@ t_object *object_clone(t_object *obj) {
 
 
 /**
- * Creates a new object with specific values
+ *
  */
-t_object *object_new(t_object *obj, ...) {
+static t_object *_object_new(t_object *obj) {
     t_object *res;
-    va_list arg_list;
-    int cached;
 
     // Return NULL when we cannot 'new' this object
     if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
 
     // Create or recycle an object from this type
     res = gc_queue_recycle(obj->type);
-    if (res != NULL) {
-        cached = 1;
-    } else {
+    if (! res) {
         res = obj->funcs->new(obj);
-        cached = 0;
     }
+    return res;
+}
+
+
+/**
+ * Creates a new object with specific values, with a already created
+ * argument DLL list.
+ */
+t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
+    t_object *res = _object_new(obj);
 
     // Populate internal values
     if (res->funcs->populate) {
-        va_start(arg_list, obj);
-        res->funcs->populate(res, arg_list);
-        va_end(arg_list);
+        res->funcs->populate(res, arguments);
     }
 
-    if (cached) {
-//        DEBUG_PRINT("Using a cached instance: %s\n", object_debug(res));
-    } else {
-        if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-//            DEBUG_PRINT("Creating a new instance: %s\n", object_debug(res));
+    return res;
+}
+
+
+/**
+ * Creates a new object with specific values
+ */
+t_object *object_new(t_object *obj, int arg_count, ...) {
+    va_list arg_list;
+    t_object *res = _object_new(obj);
+
+    // Populate internal values
+    if (res->funcs->populate) {
+
+        t_dll *arguments = dll_init();
+        va_start(arg_list, arg_count);
+        for (int i=0; i!=arg_count; i++) {
+            dll_append(arguments, va_arg(arg_list, void *));
         }
+        va_end(arg_list);
+
+        res->funcs->populate(res, arguments);
     }
 
     return res;
@@ -520,14 +539,14 @@ done:
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, LAST_ARGUMENT);
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, LAST_ARGUMENT);
+    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 4, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add(obj->attributes, name, attrib_obj);
 }
 
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, LAST_ARGUMENT);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
     if (ht_exists(obj->attributes, name)) {
         error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
@@ -536,7 +555,7 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
 }
 
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, LAST_ARGUMENT);
+    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
     if (ht_exists(obj->attributes, name)) {
         error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);

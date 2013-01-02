@@ -250,12 +250,11 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     // @TODO: We should duplicate the hash, and add it!
 
-    t_hash_table *ht = va_arg(arg_list, t_hash_table *);    // A hashtable or NULL
-    hash_obj->ht = ((void *)ht != LAST_ARGUMENT) ? ht : ht_create();
+    hash_obj->ht = arg_list->size == 0 ? ht_create() : DLL_HEAD(arg_list)->data;
 }
 
 static void obj_free(t_object *obj) {

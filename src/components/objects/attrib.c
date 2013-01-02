@@ -84,13 +84,17 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
-    attrib_obj->attrib_type = (char)va_arg(arg_list, int);
-    attrib_obj->visibility = (char)va_arg(arg_list, int);
-    attrib_obj->access = (char)va_arg(arg_list, int);
-    attrib_obj->attribute = va_arg(arg_list, struct _object *);
+    t_dll_element *e = DLL_HEAD(arg_list);
+    attrib_obj->attrib_type = (long)e->data;
+    e = DLL_NEXT(e);
+    attrib_obj->visibility = (long)e->data;
+    e = DLL_NEXT(e);
+    attrib_obj->access = (long)e->data;
+    e = DLL_NEXT(e);
+    attrib_obj->attribute = (t_object *)e->data;
 }
 
 static void obj_destroy(t_object *obj) {
@@ -104,7 +108,7 @@ static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *)obj;
     char attrbuf[1024];
     snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
-    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%d/%d) Value: %s", self->name, self->type, self->visibility, self->access, attrbuf);
+    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%lu/%lu) Value: %s", self->name, self->type, self->visibility, self->access, attrbuf);
     return global_buf;
 }
 #endif

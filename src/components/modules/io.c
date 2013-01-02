@@ -49,7 +49,7 @@
 SAFFIRE_MODULE_METHOD(io, print) {
     t_object *obj, *attrib;
 
-    t_dll_element *e = DLL_HEAD(args);
+    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     while (e) {
         obj = (t_object *)e->data;
 
@@ -73,7 +73,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
 SAFFIRE_MODULE_METHOD(io, printf) {
     t_string_object *obj;
 
-    t_dll_element *e = DLL_HEAD(args);
+    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     obj = (t_string_object *)e->data;
     if (! OBJECT_IS_STRING(obj)) {
         error_and_die(1, "argument 1 of printf needs to be a string\n");
@@ -82,13 +82,13 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     char *format = obj->value;
 
     // @TODO: Don't change the args DLL!
-    e = DLL_HEAD(args);
-    dll_remove(args, e);
+    e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
+    dll_remove(SAFFIRE_METHOD_ARGS, e);
 
 #ifdef __DEBUG
     output(ANSI_BRIGHTRED);
 #endif
-    output_printf(format, args);
+    output_printf(format, SAFFIRE_METHOD_ARGS);
 #ifdef __DEBUG
     output(ANSI_RESET);
 #endif
@@ -107,7 +107,7 @@ SAFFIRE_MODULE_METHOD(io, sprintf) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, print) {
-    output(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", args->size);
+    output(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 
@@ -115,7 +115,7 @@ SAFFIRE_MODULE_METHOD(console, print) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, printf) {
-    output(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", args->size);
+    output(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 
