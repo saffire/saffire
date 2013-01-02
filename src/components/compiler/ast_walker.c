@@ -352,16 +352,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
 
         case typeAstGroup :
-//            for (int i=0; i!=leaf->opr.nops; i++) {
-//                WALK_LEAF(leaf->opr.ops[i]);
-//                if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler) {
-//                    leaf->opr.ops[i]->clean_handler(frame);
-//                }
-//            }
-//            break;
             for (int i=0; i!=leaf->group.len; i++) {
                 node = leaf->group.items[i];
                 WALK_LEAF(node);
+
+                // If we are not an assignment, we need to add a POP_TOP to cleanup the resulting variable
                 if (node->opr.oper != T_ASSIGNMENT && node->clean_handler) {
                     node->clean_handler(frame);
                 }

@@ -124,7 +124,6 @@ t_object *object_call_args(t_object *self, t_object *callable_obj, t_dll *args) 
      * Everything is hunky-dory. Make the call
      */
 
-    // @TODO: move this to the code-object
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // Internal function
         ret = ((t_callable_object *)callable_obj)->code.native_func(self, args);
