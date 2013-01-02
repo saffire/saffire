@@ -79,17 +79,16 @@ SAFFIRE_METHOD(tuple, length) {
 }
 
 /**
-  * Saffire method: Returns object stored at "key" inside the tuple (or NULL when not found)
+  * Saffire method: Returns object stored at index inside the tuple (or NULL when not found)
   */
-SAFFIRE_METHOD(tuple, find) {
-    t_string_object *key;
+SAFFIRE_METHOD(tuple, get) {
+    t_numerical_object *index;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &index)) {
         error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
     }
 
-    t_object *obj = ht_find(self->ht, key->value);
+    t_object *obj = ht_num_find(self->ht, OBJ2NUM(index));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -98,31 +97,30 @@ SAFFIRE_METHOD(tuple, find) {
  * Saffire method:
  */
 SAFFIRE_METHOD(tuple, add) {
-    t_string_object *key, *val;
+    t_object *val;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &key, &val)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
         error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
     }
-
-    ht_add(self->ht, key->value, val->value);
+    ht_num_add(self->ht, self->ht->element_count, val);
     RETURN_SELF;
 }
 
 /**
  * Saffire method:
  */
+/*
 SAFFIRE_METHOD(tuple, remove) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
         error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
     }
 
     ht_remove(self->ht, key->value);
     RETURN_SELF;
 }
+*/
 
 
 /**
@@ -201,6 +199,8 @@ void object_tuple_init(void) {
     object_add_internal_method((t_object *)&Object_Tuple_struct, "numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
@@ -232,8 +232,20 @@ static t_object *obj_new(t_object *self) {
 static void obj_populate(t_object *obj, va_list arg_list) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
 
-    // @TODO: We should duplicate the tuple, and add it!
+    // Create new hash list
     tuple_obj->ht = ht_create();
+
+    // Add all arguments
+    t_object *arg_obj;
+    int cnt = 0;
+    do {
+        arg_obj = va_arg(arg_list, t_object *);
+        if (arg_obj) {
+            DEBUG_PRINT("Adding object: %s\n", object_debug(arg_obj));
+            ht_num_add(tuple_obj->ht, cnt, arg_obj);
+            cnt++;
+        }
+    } while (arg_obj);
 }
 
 static void obj_free(t_object *obj) {
@@ -253,7 +265,7 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht->element_count);
+    sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
     return global_buf;
 }
 #endif
