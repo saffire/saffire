@@ -30,7 +30,7 @@
     #include "objects/object.h"
     #include "general/hashtable.h"
 
-    #define RETURN_HASH(h)   RETURN_OBJECT(object_new(Object_Hash, h, LAST_ARGUMENT));
+    #define RETURN_HASH(h)   RETURN_OBJECT(object_new(Object_Hash, 1, h));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

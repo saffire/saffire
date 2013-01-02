@@ -205,7 +205,7 @@ SAFFIRE_METHOD(string, conv_string) {
 
 SAFFIRE_METHOD(string, splice) {
     // @TODO: use parse_args
-    t_dll_element *e = DLL_HEAD(dll);
+    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     t_object *obj1 = e->data;
     e = DLL_NEXT(e);
     t_object *obj2 = e->data;
@@ -234,7 +234,7 @@ SAFFIRE_METHOD(string, splice) {
     memcpy(new_string, self->value + min_idx, new_size);
     new_string[new_size] = '\0';
 
-    t_object *obj = object_new(Object_String, new_string, LAST_ARGUMENT);
+    t_object *obj = object_new(Object_String, 1, new_string);
     smm_free(new_string);
 
     RETURN_OBJECT(obj);
@@ -396,11 +396,12 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_string_object *str_obj = (t_string_object *)obj;
 
     // Get the widestring from the argument list
-    char *value = va_arg(arg_list, char *);
+    t_dll_element *e = DLL_HEAD(arg_list);
+    char *value = (char *)e->data;
 
     // Create a hash from the string
     char strhash[33];

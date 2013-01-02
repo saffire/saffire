@@ -201,13 +201,16 @@ static t_object *obj_new(t_object *self) {
 }
 
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_regex_object *re_obj = (t_regex_object *)obj;
     const char *error;
     int erroffset;
 
-    re_obj->regex_string = va_arg(arg_list, char *);
-    int pcre_options = va_arg(arg_list, int);
+    t_dll_element *e = DLL_HEAD(arg_list);
+    re_obj->regex_string = (char *)e->data;
+    e = DLL_NEXT(e);
+
+    int pcre_options = (int)e->data;
 
     re_obj->regex = pcre_compile(re_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
     if (! re_obj->regex) {

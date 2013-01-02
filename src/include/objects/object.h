@@ -42,7 +42,7 @@
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
         t_object *(*new)(t_object *);               // Allocates a new object from base object
-        void (*populate)(t_object *, va_list);      // Populates an object with new values
+        void (*populate)(t_object *, t_dll *);      // Populates an object with new values
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
         t_object *(*clone)(t_object *);             // Clone this object to a new object
@@ -218,18 +218,15 @@
     /*
      * Header macros
      */
-    #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *dll)
+    #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *arguments)
 
     #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_object *_self, t_object *_other, int in_place)
 
     #define SAFFIRE_COMPARISON_METHOD(obj, cmp) static int object_##obj##_comparison_##cmp(t_object *_self, t_object *_other)
 
-    #define SAFFIRE_METHOD_ARGS dll
+    #define SAFFIRE_METHOD_ARGS arguments
 
-    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *args)
-
-    /* Must be added as a last argument to object_new(), so we can detect the last argument for object_populate */
-    #define LAST_ARGUMENT NULL
+    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *arguments)
 
 
     // Returns custom object 'obj'
@@ -252,8 +249,8 @@
 
     void object_free(t_object *obj);
     char *object_debug(t_object *obj);
-    int object_parse_arguments(t_dll *dll, const char *speclist, ...);
-    t_object *object_new(t_object *obj, ...);
+    int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
+    t_object *object_new(t_object *obj, int arg_count, ...);
     t_object *object_clone(t_object *obj);
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);

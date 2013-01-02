@@ -29,7 +29,7 @@
 
     #include "objects/object.h"
 
-    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_new(Object_Numerical, n, LAST_ARGUMENT));
+    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_new(Object_Numerical, 1, n));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

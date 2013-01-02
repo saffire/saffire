@@ -229,23 +229,22 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
-static void obj_populate(t_object *obj, va_list arg_list) {
+static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
 
     // Create new hash list
     tuple_obj->ht = ht_create();
 
-    // Add all arguments
-    t_object *arg_obj;
     int cnt = 0;
-    do {
-        arg_obj = va_arg(arg_list, t_object *);
-        if (arg_obj) {
-            DEBUG_PRINT("Adding object: %s\n", object_debug(arg_obj));
-            ht_num_add(tuple_obj->ht, cnt, arg_obj);
-            cnt++;
-        }
-    } while (arg_obj);
+    t_dll_element *e = DLL_HEAD(arg_list);
+    while (e) {
+        t_object *arg_obj = (t_object *)e->data;
+
+        DEBUG_PRINT("Adding object: %s\n", object_debug(arg_obj));
+        ht_num_add(tuple_obj->ht, cnt++, arg_obj);
+
+        e = DLL_NEXT(e);
+    }
 }
 
 static void obj_free(t_object *obj) {

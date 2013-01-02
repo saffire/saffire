@@ -264,20 +264,20 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
     // Set the variable hashes
     if (parent_frame == NULL) {
         // Initial frame, so create a new global identifier hash
-        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, LAST_ARGUMENT);
+        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
         cfr->local_identifiers = cfr->global_identifiers;
     } else {
         // otherwise link globals from the parent
         cfr->global_identifiers = parent_frame->global_identifiers;
         // And create new local identifier hash
-        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, LAST_ARGUMENT);
+        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
 
         // By default, don't create file identifiers
         cfr->file_identifiers = NULL;
     }
 
     // Create builtin-identifiers
-    cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, builtin_identifiers, LAST_ARGUMENT);
+    cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
 
     // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
     cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
@@ -287,13 +287,13 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-                obj = object_new(Object_Callable, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, LAST_ARGUMENT);
+                obj = object_new(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL);
                 break;
             case BYTECODE_CONST_STRING :
-                obj = object_new(Object_String, bytecode->constants[i]->data.s, LAST_ARGUMENT);
+                obj = object_new(Object_String, 1, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
-                obj = object_new(Object_Numerical, bytecode->constants[i]->data.l, LAST_ARGUMENT);
+                obj = object_new(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
             default :
                 error_and_die(1, "Cannot convert constant type into object!");

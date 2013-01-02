@@ -58,7 +58,7 @@
 
     #define CALLABLE_IS_TYPE_METHOD(callable)   ((((t_callable_object *)callable)->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD)
 
-    #define RETURN_CALLABLE(bytecode, func, flags, args)   RETURN_OBJECT(object_new(Object_Callable, bytecode, flags, flags, args, LAST_ARGUMENT));
+    #define RETURN_CALLABLE(bytecode, func, flags, args)   RETURN_OBJECT(object_new(Object_Callable, 4, bytecode, flags, flags, args));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

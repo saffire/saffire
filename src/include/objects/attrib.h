@@ -57,9 +57,9 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        char attrib_type;                   // Attribute type (constant,property,method)
-        char visibility;                    // Visibility of the attribute
-        char access;                        // Access of the attribute (read/write)
+        long attrib_type;                   // Attribute type (constant,property,method)
+        long visibility;                    // Visibility of the attribute
+        long access;                        // Access of the attribute (read/write)
 
         t_object *attribute;                // Actual attribute
     } t_attrib_object;
