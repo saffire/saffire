@@ -360,7 +360,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 //            }
 //            break;
             for (int i=0; i!=leaf->group.len; i++) {
-                WALK_LEAF(leaf->group.items[i]);
+                node = leaf->group.items[i];
+                WALK_LEAF(node);
+                if (node->opr.oper != T_ASSIGNMENT && node->clean_handler) {
+                    node->clean_handler(frame);
+                }
             }
             break;
 
