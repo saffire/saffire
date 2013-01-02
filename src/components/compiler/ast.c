@@ -37,7 +37,7 @@
 
 //extern void yylex_destroy
 extern int yylex_destroy();
-extern void yyerror(const char *err);
+extern void yyerror(t_ast_element *ast, const char *err);
 extern int yyparse(unsigned long *ptr);
 extern FILE *yyin;
 extern int yylineno;
@@ -84,7 +84,7 @@ static t_ast_element *ast_alloc_element(void) {
     t_ast_element *p;
 
     if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+        yyerror(p, "Out of memory");   /* LCOV_EXCL_LINE */
     }
     p->lineno = yylineno;
     p->clean_handler = NULL;
@@ -224,7 +224,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
         // Resize memory
         src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
         if (src->group.items == NULL) {
-            yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+            yyerror(src, "Out of memory");   /* LCOV_EXCL_LINE */
         }
 
         // Add new operator
@@ -238,7 +238,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
         // Resize memory
         src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
         if (src->opr.ops == NULL) {
-            yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+            yyerror(src, "Out of memory");   /* LCOV_EXCL_LINE */
         }
 
         // Add new operator
@@ -248,8 +248,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
         return src;
     }
 
-
-    yyerror("Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
+    yyerror(src, "Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
     return NULL;
 }
 
@@ -259,10 +258,10 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
 // */
 //t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element) {
 //    if (src->type != typeAstOpr) {
-//        yyerror("Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
+//        yyerror(src, "Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
 //    }
 //    if (new_element->type != typeAstOpr) {
-//        yyerror("We can only add child elements from a opr element");   /* LCOV_EXCL_LINE */
+//        yyerror(src, "We can only add child elements from a opr element");   /* LCOV_EXCL_LINE */
 //    }
 //
 //    // Allocate or resize operator memory
@@ -272,7 +271,7 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
 //        src->opr.ops = smm_malloc(new_element->opr.nops * sizeof(t_ast_element));
 //    }
 //    if (src->opr.ops == NULL) {
-//        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+//        yyerror(src, "Out of memory");   /* LCOV_EXCL_LINE */
 //    }
 //
 //    // Add new operator
@@ -293,7 +292,7 @@ t_ast_element *ast_group(int len, ...) {
     p->group.items = NULL;
 
     if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+        yyerror(p, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Add additional nodes (they can be added later with ast_add())
@@ -322,7 +321,7 @@ t_ast_element *ast_opr(int opr, int nops, ...) {
     p->opr.ops = NULL;
 
     if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
-        yyerror("Out of memory");   /* LCOV_EXCL_LINE */
+        yyerror(p, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Add additional nodes (they can be added later with ast_add())

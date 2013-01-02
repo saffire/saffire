@@ -1,35 +1,5 @@
 title: Class modifiers tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
-
-# Every unittest consist of a header block inside at least 2 **'s.
-# Every header block must at least have the following tags:
-#    title      The title of the testsuite
-#    author     The author or authors
-#
-# Comments can be started with a # as the first character of the line.
-#
-# Empty lines are ignored.
-#
-# After the headers, 0 or more tests will be added.
-# Every test is separated by at least 2 @@'s.
-# Every test has a source-code and optionally an output expectation, both separated by at least two =='s.
-# If no output is given, any non-zero resultcode from saffire will result in a failure.
-
-# Output of the unittests will be something like:
-#
-#  Saffire Test Suite v0.1 - The Saffire Group
-#  Start time: 12:34:56
-#  001\modifiers-001.sfu: Class tests: ...........XX...X.X.XX..
-#  001\modifiers-001.sfu: Method modifiers tests: .....
-#  End time: 12:35:00 (4 seconds running time)
-#
-#  Status:
-#    Test suites:   4
-#    Total tests:  16
-#    Passed:       12 (75.00%)
-#    Failed:        4 (25.00%)
-
-
 **********
 // Simple class
 class Foo {
