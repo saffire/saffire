@@ -372,7 +372,7 @@ function diff_it($in_name, $exp_name, &$output) {
         $v1 = next($f1);
         $v2 = next($f2);
         $v1 = sanitize_line($v1);
-        $c1 = sanitize_line($v2);
+        $v2 = sanitize_line($v2);
 
         if ($v1 != $v2) {
             $output[] = "+++ ".$v1;
