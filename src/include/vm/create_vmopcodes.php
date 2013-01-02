@@ -79,7 +79,6 @@ fwrite($fp, "\n\n");
 
 fwrite($fp, "    int vm_codes_offset[256];\n");
 fwrite($fp, "    char *vm_code_names[".count($opcodes)."];\n");
-fwrite($fp, "    int vm_codes_offset[256];\n");
 
 $footer = <<< EOT
 #endif
