@@ -66,7 +66,8 @@ typedef struct _method_arg {
 
 
 /**
- * Parse calling arguments
+ * Parse calling arguments. It will iterate all arguments declarations needed for the callable. The arguments
+ * can be found on the cur_frame stack.
  */
 static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_callable_object *callable) {
     // Check if the number of arguments given exceeds the number of arguments needed.
@@ -201,11 +202,11 @@ dispatch:
 
 #ifdef __DEBUG
         if ((opcode & 0xC0) == 0xC0) {
-            DEBUG_PRINT("%08lX : 0x%02X (0x%02X, 0x%02X)\n", cip, opcode, oparg1, oparg2);
+            DEBUG_PRINT("%08lX : %s (0x%02X, 0x%02X)\n", cip, vm_code_names[vm_codes_offset[opcode]], oparg1, oparg2);
         } else if ((opcode & 0x80) == 0x80) {
-            DEBUG_PRINT("%08lX : 0x%02X (0x%02X)\n", cip, opcode, oparg1);
+            DEBUG_PRINT("%08lX : %s (0x%02X)\n", cip, vm_code_names[vm_codes_offset[opcode]], oparg1);
         } else {
-            DEBUG_PRINT("%08lX : 0x%02X\n", cip, opcode);
+            DEBUG_PRINT("%08lX : %s\n", cip, vm_code_names[vm_codes_offset[opcode]]);
         }
 #endif
 
