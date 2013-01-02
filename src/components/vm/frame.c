@@ -80,6 +80,7 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
         error_and_die(1, "Trying to pop from an empty stack");
     }
     t_object *ret = frame->stack[frame->sp];
+    frame->stack[frame->sp] = NULL;
     frame->sp++;
 
     return ret;
