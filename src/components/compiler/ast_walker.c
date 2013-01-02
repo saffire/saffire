@@ -744,10 +744,11 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     t_asm_opr *opr1;
     if (strcmp(name, "main") == 0) {
         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+        dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
     } else {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "self", 0);
+        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
+        dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
     }
-    dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
     dll_append(frame, asm_create_codeline(VM_RETURN, 0));
 }
 
