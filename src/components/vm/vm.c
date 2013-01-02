@@ -518,15 +518,27 @@ dispatch:
             // Calls a callable from SP-0 with OP+0 args starting from SP-1.
             case VM_CALL :
                 {
-                    // Fetch method to call
+                    // Fetch methods to call
                     register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
+                    register t_object *self_obj = callable_obj->binding;
+
+                    // If the object is a class, we can call it, ie instantiating it
+                    if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
+                        // Do actual instantiation (pass nothing)
+                        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
+                        self_obj = object_call((t_object *)callable_obj, new_obj, 0);
+
+                        // Call constructor
+                        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+                    }
+
                     if (! OBJECT_IS_CALLABLE(callable_obj)) {
                         error_and_die(1, "This object is not a callable object!\n");
                     }
 
                     // If we're a method, Fetch self object,
 
-                    register t_object *self_obj = callable_obj->binding;
+
                     if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
                         // Check if we are bounded to a class or instantiation
                         if (!self_obj) {
@@ -559,7 +571,6 @@ dispatch:
                         dll_free(arg_list);
 
                     } else {
-
                         // Create a new execution frame
                         tfr = vm_frame_new(frame, callable_obj->code.bytecode);
 
@@ -572,9 +583,9 @@ dispatch:
                         ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
 
                         // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg2, callable_obj);
+                        _parse_calling_arguments(frame, tfr, oparg1, callable_obj);
 
-                        // "Remove" the arguments from the original stack
+                        // "Remove" the arguments from the original stack @TODO: REFCOUNTS!
                         frame->sp += oparg1;
 
                         // Execute frame, return the last object
