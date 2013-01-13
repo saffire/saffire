@@ -94,8 +94,9 @@
 
     t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name);
 
-    void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
+    int bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
     t_bytecode *bytecode_load(const char *filename, int verify_signature);
+    t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *bytecode_file, int *success);
 
     int bytecode_get_timestamp(const char *path);
     int bytecode_is_valid_file(const char *path);

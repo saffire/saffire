@@ -55,6 +55,7 @@ INPLACE_OPR          0xA9
 BUILD_TUPLE          0xAE
 BUILD_DATASTRUCT     0xAF
 
+STORE_ATTRIB         0xBD
 LOAD_ATTRIB          0xBE
 CALL                 0xBF
 

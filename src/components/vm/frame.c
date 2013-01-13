@@ -80,6 +80,7 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
         error_and_die(1, "Trying to pop from an empty stack");
     }
     t_object *ret = frame->stack[frame->sp];
+    frame->stack[frame->sp] = NULL;
     frame->sp++;
 
     return ret;
@@ -287,7 +288,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-                obj = object_new(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL);
+                obj = object_new(Object_Callable, 4, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
                 break;
             case BYTECODE_CONST_STRING :
                 obj = object_new(Object_String, 1, bytecode->constants[i]->data.s);
