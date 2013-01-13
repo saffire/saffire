@@ -28,6 +28,7 @@
 #include "general/stack.h"
 #include "general/dll.h"
 #include "general/smm.h"
+#include "error.h"
 
 
 /**
@@ -53,12 +54,23 @@ void stack_push(t_stack *stack, void *data) {
  *
  */
 void *stack_pop(t_stack *stack) {
+    if (stack->dll->size <= 0) {
+        error_and_die(1, "cannot pop from an empty stack!\n");
+    }
     t_dll_element *e = DLL_TAIL(stack->dll);
 
     dll_remove(stack->dll, e);
     return e->data;
 }
 
+/**
+ *
+ */
+void *stack_peek(t_stack *stack) {
+    t_dll_element *e = DLL_TAIL(stack->dll);
+    if (! e) return NULL;
+    return e->data;
+}
 
 /**
  *
