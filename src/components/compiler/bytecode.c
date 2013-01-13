@@ -36,6 +36,9 @@
 #include "general/config.h"
 #include "general/hashtable.h"
 #include "compiler/assembler.h"
+#include "compiler/ast_walker.h"
+#include "compiler/assembler.h"
+
 
 /**
  * Add constant to a bytecode structure
@@ -342,13 +345,14 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 /**
  * Save a bytecode from disk, optionally sign and add signature
  */
-void bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc) {
+int bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc) {
     char *bincode = NULL;
     int bincode_len = 0;
 
     // Convert bytecode to bincode
     if (! bytecode_bc2bin(bc, &bincode_len, &bincode)) {
         error_and_die(1, "Could not convert bytecode data");
+        return 0;
     }
 
     // Let header point to the reserved header position
@@ -393,7 +397,7 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
     if (f == NULL) {
         // Cannot create file
         smm_free(bincode);
-        return;
+        return 0;
     }
 
     // temporary write header
@@ -411,6 +415,8 @@ void bytecode_save(const char *dest_filename, const char *source_filename, t_byt
 
     // Free up our binary code
     smm_free(bincode);
+
+    return 1;
 }
 
 
@@ -618,6 +624,47 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
         _new_name(bc, (char *)e->data);
         e = DLL_NEXT(e);
     }
+
+    return bc;
+}
+
+/**
+ * Generates bytecode and tries to store to disk.
+ *
+ * @param source_file  The source file to compile
+ * @Param bytecode_file The bytecode file to store the compiled bytecode to. If NULL, it will not try to store
+ * @param success  integer to save the status code of the bytecode file saving. If NULL, no status code will be saved
+ */
+t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *bytecode_file, int *success) {
+    // (Re)generate bytecode file
+    t_ast_element *ast = ast_generate_from_file(source_file);
+    if (! ast) return NULL;
+
+    t_hash_table *asm_code = ast_walker(ast);
+    if (! asm_code) {
+        ast_free_node(ast);
+        return NULL;
+    }
+
+    t_bytecode *bc = assembler(asm_code);
+    if (! bc) {
+        ast_free_node(ast);
+        assembler_free(asm_code);
+        return NULL;
+    }
+
+    // Save to disk if a bytecode filename is present
+    if (bytecode_file) {
+        int ret = bytecode_save(bytecode_file, source_file, bc);  /* This may or may not succeed. Doesn't matter */
+
+        // Save success status from bytecode saving if needed
+        if (success) {
+            *success = ret;
+        }
+    }
+
+    ast_free_node(ast);
+    assembler_free(asm_code);
 
     return bc;
 }

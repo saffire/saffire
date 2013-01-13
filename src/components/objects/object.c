@@ -124,7 +124,6 @@ t_object *object_call_args(t_object *self, t_object *callable_obj, t_dll *args) 
      * Everything is hunky-dory. Make the call
      */
 
-    // @TODO: move this to the code-object
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // Internal function
         ret = ((t_callable_object *)callable_obj)->code.native_func(self, args);
@@ -548,10 +547,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
-    if (ht_exists(obj->attributes, name)) {
-        error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
-    }
-    ht_add(obj->attributes, name, attrib);
+    ht_replace(obj->attributes, name, attrib);
 }
 
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {

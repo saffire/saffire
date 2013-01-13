@@ -37,8 +37,6 @@
 #include "general/parse_options.h"
 #include "general/path_handling.h"
 #include "vm/vm.h"
-#include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
 #include "general/output.h"
 #include "debug.h"
 
@@ -60,34 +58,17 @@ static int do_exec(void) {
     int bytecode_exists = (access(bytecode_file, F_OK) == 0);
 
     if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
-        // (Re)generate bytecode file
-        t_ast_element *ast = ast_generate_from_file(source_file);
-        if (! ast) {
-            error("Cannot create AST");
-            smm_free(bytecode_file);
-            return 1;
-        }
-        t_hash_table *asm_code = ast_walker(ast);
-        if (! asm_code) {
-            error("Cannot create assembler");
-            smm_free(bytecode_file);
-            return 1;
-        }
-        bc = assembler(asm_code);
-        bytecode_save(bytecode_file, source_file, bc);
+        bc = bytecode_generate_diskfile(source_file, bytecode_file, NULL);
     } else {
         bc = bytecode_load(bytecode_file, flag_no_verify);
     }
+    smm_free(bytecode_file);
 
     // Something went wrong with the bytecode loading or generating
     if (!bc) {
         error("Error while loading bytecode\n");
-        smm_free(bytecode_file);
         return 1;
     }
-
-    smm_free(bytecode_file);
-
 
 
     vm_init(VM_CLI);

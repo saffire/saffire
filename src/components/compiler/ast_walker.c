@@ -57,6 +57,7 @@ typedef struct _state_frame {
 typedef struct _state {
     enum { st_load, st_store } state;
     enum { st_type_id, st_type_const } type;
+    enum { st_left, st_right, st_none } side;
 
     int attributes;     // Number of attributes on stack
     int loop_cnt;       // Loop counter
@@ -118,7 +119,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             node = leaf->property.property;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, node->string.value, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+            if (state->side == st_left) {
+                dll_append(frame, asm_create_codeline(VM_STORE_ATTRIB, 1, opr1));
+            } else {
+                dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+            }
+
+            state->side = st_none;
             break;
 
         case typeAstString :
@@ -204,7 +211,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
 
             state->state = st_store;
+            state->side = st_left;
             WALK_LEAF(leaf->assignment.l);
+            state->side = st_none;
             state->state = st_load;
             break;
 
@@ -345,15 +354,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
 
         case typeAstGroup :
-//            for (int i=0; i!=leaf->opr.nops; i++) {
-//                WALK_LEAF(leaf->opr.ops[i]);
-//                if(leaf->opr.ops[i]->opr.oper != T_ASSIGNMENT && leaf->opr.ops[i]->clean_handler) {
-//                    leaf->opr.ops[i]->clean_handler(frame);
-//                }
-//            }
-//            break;
             for (int i=0; i!=leaf->group.len; i++) {
-                WALK_LEAF(leaf->group.items[i]);
+                node = leaf->group.items[i];
+                WALK_LEAF(node);
+
+                // If we are not an assignment, we need to add a POP_TOP to cleanup the resulting variable
+                if (node->opr.oper != T_ASSIGNMENT && node->clean_handler) {
+                    node->clean_handler(frame);
+                }
             }
             break;
 
@@ -710,6 +718,10 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     state.loop_cnt = 0;
     state.block_cnt = 0;
     state.attributes = 0;
+    state.side = st_none;
+    state.type = st_type_const;
+    state.state = st_load;
+
     for (int i=0; i!=BLOCK_MAX_DEPTH; i++) {
         state.blocks[i].labels = ht_create();
     }
@@ -733,10 +745,11 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     t_asm_opr *opr1;
     if (strcmp(name, "main") == 0) {
         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+        dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
     } else {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "self", 0);
+        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
+        dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
     }
-    dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
     dll_append(frame, asm_create_codeline(VM_RETURN, 0));
 }
 

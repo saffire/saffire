@@ -66,7 +66,8 @@ typedef struct _method_arg {
 
 
 /**
- * Parse calling arguments
+ * Parse calling arguments. It will iterate all arguments declarations needed for the callable. The arguments
+ * can be found on the cur_frame stack.
  */
 static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_callable_object *callable) {
     // Check if the number of arguments given exceeds the number of arguments needed.
@@ -201,11 +202,11 @@ dispatch:
 
 #ifdef __DEBUG
         if ((opcode & 0xC0) == 0xC0) {
-            DEBUG_PRINT("%08lX : 0x%02X (0x%02X, 0x%02X)\n", cip, opcode, oparg1, oparg2);
+            DEBUG_PRINT("%08lX : %s (0x%02X, 0x%02X)\n", cip, vm_code_names[vm_codes_offset[opcode]], oparg1, oparg2);
         } else if ((opcode & 0x80) == 0x80) {
-            DEBUG_PRINT("%08lX : 0x%02X (0x%02X)\n", cip, opcode, oparg1);
+            DEBUG_PRINT("%08lX : %s (0x%02X)\n", cip, vm_code_names[vm_codes_offset[opcode]], oparg1);
         } else {
-            DEBUG_PRINT("%08lX : 0x%02X\n", cip, opcode);
+            DEBUG_PRINT("%08lX : %s\n", cip, vm_code_names[vm_codes_offset[opcode]]);
         }
 #endif
 
@@ -310,9 +311,31 @@ dispatch:
                     object_inc_ref((t_object *)value);
                     vm_frame_stack_push(frame, (t_object *)value);
 
-                    goto dispatch;
-                    break;
                 }
+                goto dispatch;
+                break;
+
+            // Store an attribute into an object
+            case VM_STORE_ATTRIB :
+                {
+                    register t_object *name = vm_frame_get_constant(frame, oparg1);
+                    register t_object *search_obj = vm_frame_stack_pop(frame);
+                    register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
+
+                    register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
+                    if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
+                        error_and_die(1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
+                    }
+                    if (attrib_obj && ! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
+                        error_and_die(1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
+                    }
+
+                    register t_object *value = vm_frame_stack_pop(frame);
+                    object_add_property(search_obj, OBJ2STR(name), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
+
+                }
+                goto dispatch;
+                break;
 
             // Load a global identifier
             case VM_LOAD_GLOBAL :
@@ -495,15 +518,27 @@ dispatch:
             // Calls a callable from SP-0 with OP+0 args starting from SP-1.
             case VM_CALL :
                 {
-                    // Fetch method to call
+                    // Fetch methods to call
                     register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
+                    register t_object *self_obj = callable_obj->binding;
+
+                    // If the object is a class, we can call it, ie instantiating it
+                    if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
+                        // Do actual instantiation (pass nothing)
+                        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
+                        self_obj = object_call((t_object *)callable_obj, new_obj, 0);
+
+                        // Call constructor
+                        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+                    }
+
                     if (! OBJECT_IS_CALLABLE(callable_obj)) {
                         error_and_die(1, "This object is not a callable object!\n");
                     }
 
                     // If we're a method, Fetch self object,
 
-                    register t_object *self_obj = callable_obj->binding;
+
                     if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
                         // Check if we are bounded to a class or instantiation
                         if (!self_obj) {
@@ -536,7 +571,6 @@ dispatch:
                         dll_free(arg_list);
 
                     } else {
-
                         // Create a new execution frame
                         tfr = vm_frame_new(frame, callable_obj->code.bytecode);
 
@@ -549,9 +583,9 @@ dispatch:
                         ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
 
                         // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg2, callable_obj);
+                        _parse_calling_arguments(frame, tfr, oparg1, callable_obj);
 
-                        // "Remove" the arguments from the original stack
+                        // "Remove" the arguments from the original stack @TODO: REFCOUNTS!
                         frame->sp += oparg1;
 
                         // Execute frame, return the last object

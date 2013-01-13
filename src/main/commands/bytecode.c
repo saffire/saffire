@@ -69,7 +69,6 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     int ret = 0;
 
     // Convert our saffire source to an AST
-    output("SRC -> AST\n");
     ast = ast_generate_from_file(source_file);
     if (! ast) {
         ret = 1;
@@ -83,7 +82,6 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the AST to assembler lines
-    output("AST -> ASM\n");
     asm_code = ast_walker(ast);
     if (! asm_code) {
         ret = 1;
@@ -97,7 +95,6 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the assembler lines to bytecode
-    output("ASM -> BC\n");
     t_bytecode *bc = assembler(asm_code);
     if (! bc) {
         ret = 1;
@@ -105,7 +102,6 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Save bytecode structure to disk
-    output("BC -> disk\n");
     sfc_dest_file = replace_extension(source_file, ".sf", ".sfc");
     output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", sfc_dest_file);
     bytecode_save(sfc_dest_file, source_file, bc);

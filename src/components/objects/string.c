@@ -246,14 +246,22 @@ SAFFIRE_METHOD(string, splice) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(string, add) {
-    t_string_object *self = (t_string_object *)_self;
+    t_string_object *self = (t_string_object *)_other;
+    t_string_object *other = (t_string_object *)_self;
 
     if (in_place) {
         //self->value += 1;
         RETURN_SELF;
     }
 
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
+    int new_length = self->byte_length + other->byte_length;
+    char *str = smm_malloc(new_length + 1);
+    strcpy(str, self->value);
+    strcat(str, other->value);
+
+    t_object *obj = object_new(Object_String, 1, str);
+    smm_free(str);
+
     RETURN_OBJECT(obj);
 }
 
