@@ -124,6 +124,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             } else {
                 dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
             }
+
+            state->side = st_none;
             break;
 
         case typeAstString :
@@ -716,6 +718,10 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     state.loop_cnt = 0;
     state.block_cnt = 0;
     state.attributes = 0;
+    state.side = st_none;
+    state.type = st_type_const;
+    state.state = st_load;
+
     for (int i=0; i!=BLOCK_MAX_DEPTH; i++) {
         state.blocks[i].labels = ht_create();
     }
