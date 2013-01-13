@@ -180,10 +180,14 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
     }
 
     dll->size--;
-
-    tmp = element->next;
-    element->next = element->prev;
-    element->prev = tmp;
+    if (dll->size == 0) {
+        dll->head = NULL;
+        dll->tail = NULL;
+    } else {
+        tmp = element->next;
+        element->next = element->prev;
+        element->prev = tmp;
+    }
 
     return 1;
 }

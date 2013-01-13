@@ -278,8 +278,8 @@ dispatch:
                     register t_object *search_obj = vm_frame_stack_pop(frame);
                     register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
-                    DEBUG_PRINT("\n\n\n  >>>>> Fetching %s from %s\n\n\n", OBJ2STR(name), search_obj->name);
-                    DEBUG_PRINT("Binding this to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
+                    DEBUG_PRINT("Fetching %s from %s\n", OBJ2STR(name), search_obj->name);
+                    DEBUG_PRINT("Binding %to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
 
