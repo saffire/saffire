@@ -27,8 +27,8 @@
 #ifndef __VM_FRAME_H__
 #define __VM_FRAME_H__
 
-    #include "compiler/bytecode.h"
     #include "objects/hash.h"
+    #include "compiler/bytecode.h"
 
     #define BLOCK_MAX_DEPTH             20          // This is the same depth as defined in python
 
@@ -46,8 +46,8 @@
     } t_vm_frameblock;
 
 
-    typedef struct _vm_frame {
-        struct _vm_frame *parent;                   // Parent frame, or NULL when we reached the initial / global frame.
+    struct _vm_frame {
+        t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
         char *name;
         t_bytecode *bytecode;                       // Global bytecode array
         unsigned int ip;                            // Instruction pointer
@@ -67,7 +67,7 @@
 
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
-    } t_vm_frame;
+    };
 
 
     t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode);

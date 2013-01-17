@@ -27,8 +27,9 @@
 #ifndef __OBJECT_USERLAND_H__
 #define __OBJECT_USERLAND_H__
 
-    #include "general/md5.h"
     #include "objects/object.h"
+    #include "objects/hash.h"
+    #include "general/md5.h"
     #include "vm/frame.h"
 
     typedef struct {

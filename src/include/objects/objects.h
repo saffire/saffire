@@ -24,65 +24,19 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include "general/stack.h"
-#include "general/dll.h"
-#include "general/smm.h"
-#include "general/output.h"
+#ifndef __OBJECTS_H__
+#define __OBJECTS_H__
 
-/**
- *
- */
-t_stack *stack_init(void) {
-    t_stack *stack = (t_stack *)smm_malloc(sizeof(t_stack));
+    #include "userland.h"
+    #include "attrib.h"
+    #include "base.h"
+    #include "boolean.h"
+    #include "hash.h"
+    #include "callable.h"
+    #include "null.h"
+    #include "numerical.h"
+    #include "regex.h"
+    #include "string.h"
+    #include "tuple.h"
 
-    stack->dll = dll_init();
-    return stack;
-}
-
-
-/**
- *
- */
-void stack_push(t_stack *stack, void *data) {
-    dll_append(stack->dll, data);
-}
-
-
-/**
- *
- */
-void *stack_pop(t_stack *stack) {
-    if (stack->dll->size <= 0) {
-        error_and_die(1, "cannot pop from an empty stack!\n");
-    }
-    t_dll_element *e = DLL_TAIL(stack->dll);
-
-    dll_remove(stack->dll, e);
-    return e->data;
-}
-
-/**
- *
- */
-void *stack_peek(t_stack *stack) {
-    t_dll_element *e = DLL_TAIL(stack->dll);
-    if (! e) return NULL;
-    return e->data;
-}
-
-/**
- *
- */
-int stack_size(t_stack *stack) {
-    return stack->dll->size;
-}
-
-
-/**
- *
- */
-void stack_free(t_stack *stack) {
-    dll_free(stack->dll);
-    smm_free(stack);
-}
+#endif

@@ -53,7 +53,6 @@
         uint32_t   signature_offset;            // Offset of the GPG signature (NULL if none)
     } PACKED t_bytecode_binary_header;
 
-    struct _bytecode;
     typedef struct _bytecode_constant_header {
         char type;                  // Type of the constant
         unsigned int  len;          // Length of data
@@ -61,7 +60,7 @@
         union {
             char *s;                    // String
             long l;                     // Long
-            struct _bytecode *code;     // Code block
+            t_bytecode *code;     // Code block
             void *ptr;                  // Generic pointer
             t_object *obj;              // Object
         } data;
@@ -74,7 +73,7 @@
     } t_bytecode_identifier;
 
 
-    typedef struct _bytecode {
+    struct _bytecode {
         unsigned int stack_size;                // Maximum stack size for this bytecode
 
         unsigned int code_len;                  // Length of the code
@@ -85,7 +84,7 @@
 
         unsigned int identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
-    } t_bytecode;
+    };
 
 
     t_bytecode *bytecode_generate(t_ast_element *p, char *source_file);

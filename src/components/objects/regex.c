@@ -31,14 +31,7 @@
 #include <ctype.h>
 #include <pcre.h>
 #include "objects/object.h"
-#include "objects/regex.h"
-#include "objects/boolean.h"
-#include "objects/string.h"
-#include "objects/null.h"
-#include "objects/numerical.h"
-#include "objects/base.h"
-#include "objects/attrib.h"
-#include "objects/callable.h"
+#include "objects/objects.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
