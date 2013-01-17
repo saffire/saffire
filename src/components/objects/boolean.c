@@ -26,12 +26,7 @@
 */
 
 #include "objects/object.h"
-#include "objects/boolean.h"
-#include "objects/null.h"
-#include "objects/numerical.h"
-#include "objects/string.h"
-#include "objects/attrib.h"
-#include "objects/callable.h"
+#include "objects/objects.h"
 #include "general/smm.h"
 
 

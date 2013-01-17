@@ -33,11 +33,14 @@
     #include "general/dll.h"
     #include "compiler/ast.h"
 
+    typedef struct _bytecode t_bytecode;
+    typedef struct _vm_frame t_vm_frame;
+
+
     void vm_populate_builtins(const char *name, void *data);
 
     // Forward define
     typedef struct _object t_object;
-    struct _saffire_result;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
@@ -76,28 +79,28 @@
 
     // Standard operators
     typedef struct _object_operators {
-        t_object *(*add)(t_object *, t_object *, int );
-        t_object *(*sub)(t_object *, t_object *, int );
-        t_object *(*mul)(t_object *, t_object *, int );
-        t_object *(*div)(t_object *, t_object *, int );
-        t_object *(*mod)(t_object *, t_object *, int );
-        t_object *(*and)(t_object *, t_object *, int );
-        t_object *(*or )(t_object *, t_object *, int );
-        t_object *(*xor)(t_object *, t_object *, int );
-        t_object *(*shl)(t_object *, t_object *, int );
-        t_object *(*shr)(t_object *, t_object *, int );
+        t_object *(*add)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*sub)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*mul)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*div)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*mod)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*and)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*or )(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*xor)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*shl)(t_vm_frame *, t_object *, t_object *, int );
+        t_object *(*shr)(t_vm_frame *, t_object *, t_object *, int );
     } t_object_operators;
 
     // Standard operators
     typedef struct _object_comparisons {
-        int (*eq)(t_object *, t_object *);
-        int (*ne)(t_object *, t_object *);
-        int (*lt)(t_object *, t_object *);
-        int (*gt)(t_object *, t_object *);
-        int (*le)(t_object *, t_object *);
-        int (*ge)(t_object *, t_object *);
-        int (*in)(t_object *, t_object *);
-        int (*ni)(t_object *, t_object *);
+        int (*eq)(t_vm_frame *, t_object *, t_object *);
+        int (*ne)(t_vm_frame *, t_object *, t_object *);
+        int (*lt)(t_vm_frame *, t_object *, t_object *);
+        int (*gt)(t_vm_frame *, t_object *, t_object *);
+        int (*le)(t_vm_frame *, t_object *, t_object *);
+        int (*ge)(t_vm_frame *, t_object *, t_object *);
+        int (*in)(t_vm_frame *, t_object *, t_object *);
+        int (*ni)(t_vm_frame *, t_object *, t_object *);
     } t_object_comparisons;
 
 
@@ -217,15 +220,15 @@
     /*
      * Header macros
      */
-    #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *arguments)
+    #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_vm_frame *frame, t_##obj##_object *self, t_dll *arguments)
 
-    #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_object *_self, t_object *_other, int in_place)
+    #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_vm_frame *frame, t_object *_self, t_object *_other, int in_place)
 
-    #define SAFFIRE_COMPARISON_METHOD(obj, cmp) static int object_##obj##_comparison_##cmp(t_object *_self, t_object *_other)
+    #define SAFFIRE_COMPARISON_METHOD(obj, cmp) static int object_##obj##_comparison_##cmp(t_vm_frame *frame, t_object *_self, t_object *_other)
 
     #define SAFFIRE_METHOD_ARGS arguments
 
-    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_object *self, t_dll *arguments)
+    #define SAFFIRE_MODULE_METHOD(mod, method) static t_object *module_##mod##_method_##method(t_vm_frame *frame, t_object *self, t_dll *arguments)
 
 
     // Returns custom object 'obj'
@@ -241,15 +244,16 @@
     t_object *object_find_actual_attribute(t_object *obj, char *attr_name);
     t_object *object_find_attribute(t_object *obj, char *attribute_name);
 
-    t_object *object_call_args(t_object *self, t_object *method_obj, t_dll *dll);
-    t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...);
-    t_object *object_operator(t_object *obj, int operator, int in_place, int arg_count, ...);
-    t_object *object_comparison(t_object *obj1, int comparison, t_object *obj2);
+    t_object *object_call_args(t_vm_frame *frame, t_object *self, t_object *method_obj, t_dll *arg_list);
+    t_object *object_call(t_vm_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...);
+    t_object *object_operator(t_vm_frame *frame, t_object *obj, int operator, int in_place, int arg_count, ...);
+    t_object *object_comparison(t_vm_frame *frame, t_object *obj1, int comparison, t_object *obj2);
 
     void object_free(t_object *obj);
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
     t_object *object_new(t_object *obj, int arg_count, ...);
+    t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);

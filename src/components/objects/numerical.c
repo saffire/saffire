@@ -29,13 +29,7 @@
 #include <stdlib.h>
 #include "debug.h"
 #include "objects/object.h"
-#include "objects/base.h"
-#include "objects/boolean.h"
-#include "objects/numerical.h"
-#include "objects/string.h"
-#include "objects/attrib.h"
-#include "objects/null.h"
-#include "objects/callable.h"
+#include "objects/objects.h"
 #include "general/smm.h"
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */

@@ -28,8 +28,8 @@
 #define __CALLABLE_H__
 
     #include "objects/object.h"
+    #include "objects/objects.h"
     #include "compiler/bytecode.h"
-    #include "objects/hash.h"
 
     /* Callable flags, mostly method flags */
     #define CALLABLE_FLAG_STATIC              1      /* Static callable */
@@ -66,8 +66,8 @@
         int callable_flags;                   // Callable flags
 
         union {
-            t_bytecode *bytecode;                              // External bytecode
-            t_object *(*native_func)(t_object *, t_dll *);     // internal function
+            t_bytecode *bytecode;                                           // External bytecode
+            t_object *(*native_func)(t_vm_frame *,t_object *, t_dll *);     // internal function
         } code;
 
         t_object *binding;                  // Bound to a class (or NULL)

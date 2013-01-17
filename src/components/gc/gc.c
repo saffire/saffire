@@ -26,6 +26,7 @@
 */
 #include <stdio.h>
 #include "objects/object.h"
+#include "objects/objects.h"
 #include "gc/gc.h"
 #include "general/mutex.h"
 #include "general/smm.h"

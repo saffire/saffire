@@ -28,9 +28,7 @@
 #include "general/output.h"
 #include "modules/module_api.h"
 #include "objects/object.h"
-#include "objects/string.h"
-#include "objects/attrib.h"
-#include "objects/callable.h"
+#include "objects/objects.h"
 #include "general/dll.h"
 #include "general/smm.h"
 
@@ -47,7 +45,7 @@
  *
  */
 SAFFIRE_MODULE_METHOD(io, print) {
-    t_object *obj, *attrib;
+    t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     while (e) {
@@ -55,8 +53,11 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            attrib = object_find_attribute(obj, "string");
-            obj = object_call(obj, attrib, 0);
+            /* @TODO: We should make sure we ONLY get strings here.. If something else, we should throw an error, as
+             * this should not happen. We have no way of casting back to another type, because object_call needs a
+             * frame, and we cannot supply a frame here (maybe we can, if we inject it inside the object or something?
+             * does that even make sense?) */
+            error_and_die(1, "We can only print string objects!");
         }
 
         output(ANSI_BRIGHTRED "%s" ANSI_RESET, ((t_string_object *)obj)->value);
