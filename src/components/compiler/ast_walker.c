@@ -428,7 +428,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_RETURN :
                     stack_push(state->context, st_ctx_load);
+                    stack_push(state->call_state, (void *)st_call_stay);
                     WALK_LEAF(leaf->opr.ops[0]);
+                    stack_pop(state->call_state);
                     dll_append(frame, asm_create_codeline(VM_RETURN, 0));
 
                     break;

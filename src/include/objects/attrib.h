@@ -28,7 +28,7 @@
 #define __ATTRIB_H__
 
     #include "objects/object.h"
-    #include "objects/hash.h"
+    #include "objects/objects.h"
 
     // Attribute defines
     #define ATTRIB_VISIBILITY_PUBLIC           0        // Visible for all objects

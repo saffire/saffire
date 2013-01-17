@@ -35,7 +35,7 @@
     #include "compiler/lex.yy.h"
     #include "compiler/compiler.h"
     #include "compiler/ast.h"
-    #include "objects/attrib.h"
+    #include "objects/objects.h"
     #include "debug.h"
 
     extern int yylineno;

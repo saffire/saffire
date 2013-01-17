@@ -34,15 +34,7 @@
 #include "general/dll.h"
 #include "general/smm.h"
 #include "objects/object.h"
-#include "objects/boolean.h"
-#include "objects/string.h"
-#include "objects/base.h"
-#include "objects/numerical.h"
-#include "objects/hash.h"
-#include "objects/callable.h"
-#include "objects/attrib.h"
-#include "objects/null.h"
-#include "objects/userland.h"
+#include "objects/objects.h"
 #include "modules/module_api.h"
 #include "debug.h"
 #include "general/output.h"
@@ -69,18 +61,19 @@ typedef struct _method_arg {
  * Parse calling arguments. It will iterate all arguments declarations needed for the callable. The arguments
  * can be found on the cur_frame stack.
  */
-static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_frame, int arg_count, t_callable_object *callable) {
+static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
     // Check if the number of arguments given exceeds the number of arguments needed.
     t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
-    if (arg_count > ht->element_count) {
+    if (arg_list->size > ht->element_count) {
         // @TODO: If we have variable argument count, this does not apply!
         error_and_die(1, "Too many arguments given\n");
     }
 
     // Iterate all arguments for this callable.
-    int csp = cur_frame->sp + arg_count - 1;
-    int args_left = arg_count;
+    int args_left = arg_list->size;
     int cur_arg = 1;
+
+    t_dll_element *e = DLL_HEAD(arg_list);
 
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
@@ -93,7 +86,7 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
 
         if (args_left) {
             // When arguments are left on the stack, override object with next value on stack
-            obj = cur_frame->stack[csp--];      // Don't pop, just fetch
+            obj = (t_object *)e->data;
             args_left--;
         }
 
@@ -108,7 +101,7 @@ static void _parse_calling_arguments(t_vm_frame *cur_frame, t_vm_frame *new_fram
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add(new_frame->local_identifiers->ht, name, obj);
+        ht_add(frame->local_identifiers->ht, name, obj);
 
         // Process next argument
         cur_arg++;
@@ -175,7 +168,6 @@ t_object *_vm_execute(t_vm_frame *frame) {
     register char *name;
     register unsigned int opcode, oparg1, oparg2;
     int reason = REASON_NONE;
-    t_vm_frame *tfr;
     t_vm_frameblock *block;
 
 
@@ -187,7 +179,6 @@ t_object *_vm_execute(t_vm_frame *frame) {
 dispatch:
         // Increase number of executions done
         frame->executions++;
-
 
 #ifdef __DEBUG
         unsigned long cip = frame->ip;
@@ -279,7 +270,7 @@ dispatch:
                     register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
                     DEBUG_PRINT("Fetching %s from %s\n", OBJ2STR(name), search_obj->name);
-                    DEBUG_PRINT("Binding %to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
+                    DEBUG_PRINT("Binding to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
 
@@ -403,7 +394,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(left_obj, oparg1, 0, 1, right_obj);
+                dst = object_operator(frame, left_obj, oparg1, 0, 1, right_obj);
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -419,7 +410,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(left_obj, oparg1, 1, 1, right_obj);
+                dst = object_operator(frame, left_obj, oparg1, 1, 1, right_obj);
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -438,7 +429,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = object_call(dst, bool_method, 0);
+                    dst = vm_object_call(frame, dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_TRUE(dst)) {
@@ -454,7 +445,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = object_call(dst, bool_method, 0);
+                    dst = vm_object_call(frame, dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_FALSE(dst)) {
@@ -468,7 +459,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = object_call(dst, bool_method, 0);
+                    dst = vm_object_call(frame, dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
@@ -486,7 +477,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = object_call(dst, bool_method, 0);
+                    dst = vm_object_call(frame, dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
@@ -522,82 +513,17 @@ dispatch:
                     register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
                     register t_object *self_obj = callable_obj->binding;
 
-                    // If the object is a class, we can call it, ie instantiating it
-                    if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
-                        // Do actual instantiation (pass nothing)
-                        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
-                        self_obj = object_call((t_object *)callable_obj, new_obj, 0);
-
-                        // Call constructor
-                        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+                    // Create argument list inside a DLL
+                    t_dll *arg_list = dll_init();
+                    for (int i=0; i!=oparg1; i++) {
+                        dll_prepend(arg_list, vm_frame_stack_pop(frame));
                     }
 
-                    if (! OBJECT_IS_CALLABLE(callable_obj)) {
-                        error_and_die(1, "This object is not a callable object!\n");
-                    }
+                    t_object *ret_obj = vm_object_call_args(frame, self_obj, (t_object *)callable_obj, arg_list);
+                    dll_free(arg_list);
 
-                    // If we're a method, Fetch self object,
-
-
-                    if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
-                        // Check if we are bounded to a class or instantiation
-                        if (!self_obj) {
-                            error_and_die(1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
-                        }
-
-                        // Make sure we are not calling a non-static method from a static context
-                        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
-                            error_and_die(1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
-                        }
-                    }
-
-
-                    // @TODO: Native and userland functions are treated differently. This needs to be moved
-                    //        to the code-object AND both systems need the same way to deal with arguments.
-
-                    // Check if it's a native function.
-                    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
-
-                        // Create argument list inside a DLL
-                        t_dll *arg_list = dll_init();
-                        for (int i=0; i!=oparg1; i++) {
-                            dll_prepend(arg_list, vm_frame_stack_pop(frame));
-                        }
-
-                        // Call native function
-                        dst = callable_obj->code.native_func(self_obj, arg_list);
-
-                        // Free argument list
-                        dll_free(arg_list);
-
-                    } else {
-                        // Create a new execution frame
-                        tfr = vm_frame_new(frame, callable_obj->code.bytecode);
-
-                        if (OBJECT_IS_USER(self_obj)) {
-                            tfr->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
-                        }
-
-                        // Add references to parent and self
-                        ht_replace(tfr->local_identifiers->ht, "self", self_obj);
-                        ht_replace(tfr->local_identifiers->ht, "parent", self_obj->parent);
-
-                        // Parse calling arguments to see if they match our signatures
-                        _parse_calling_arguments(frame, tfr, oparg1, callable_obj);
-
-                        // "Remove" the arguments from the original stack @TODO: REFCOUNTS!
-                        frame->sp += oparg1;
-
-                        // Execute frame, return the last object
-                        dst = _vm_execute(tfr);
-
-//                        // @TODO: Destroy frame
-//                        vm_frame_destroy(tfr);
-                    }
-
-                    object_inc_ref(dst);
-                    vm_frame_stack_push(frame, dst);
-
+                    object_inc_ref(ret_obj);
+                    vm_frame_stack_push(frame, ret_obj);
                 }
 
                 goto dispatch;
@@ -660,7 +586,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Cannot compare non-identical object types\n");
                 }
-                dst = object_comparison(left_obj, oparg1, right_obj);
+                dst = object_comparison(frame, left_obj, oparg1, right_obj);
 
                 object_dec_ref(left_obj);
                 object_dec_ref(right_obj);
@@ -874,7 +800,7 @@ int vm_execute(t_bytecode *bc) {
     if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
         t_object *result_numerical = object_find_attribute(result, "numerical");
-        result = object_call(result, result_numerical, 0);
+        result = vm_object_call(initial_frame, result, result_numerical, 0);
     }
     int ret_val = ((t_numerical_object *) result)->value;
 
@@ -889,4 +815,94 @@ int vm_execute(t_bytecode *bc) {
 void vm_populate_builtins(const char *name, void *data) {
     DEBUG_PRINT("Added object to builtins: %s\n", name);
     ht_add(builtin_identifiers, name, data);
+}
+
+
+/**
+* Calls a method from specified object. Returns NULL when method is not found.
+*/
+t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...) {
+    // Create DLL with all arguments
+    va_list args;
+    va_start(args, arg_count);
+    t_dll *arg_list = dll_init();
+    for (int i=0; i!=arg_count; i++) {
+        t_object *obj = va_arg(args, t_object *);
+        dll_append(arg_list, obj);
+    }
+    va_end(args);
+
+    t_object *ret_obj = vm_object_call_args(frame, self, (t_object *)method_obj, arg_list);
+
+    // Free dll
+    dll_free(arg_list);
+
+    return ret_obj;
+}
+
+
+/**
+ *
+ */
+t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *callable, t_dll *arg_list) {
+    t_callable_object *callable_obj = (t_callable_object *)callable;
+    t_object *self_obj = self;
+    t_object *dst;
+
+    // If the object is a class, we can call it, ie instantiating it
+    if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
+        // Do actual instantiation (pass nothing)
+        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
+        self_obj = vm_object_call(frame, (t_object *)callable_obj, new_obj, 0);
+
+        // We continue the function, but using the constructor as our callable
+        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+    }
+
+    // Check if the object is actually a callable
+    if (! OBJECT_IS_CALLABLE(callable_obj)) {
+        error_and_die(1, "This object is not a callable object!\n");
+    }
+
+
+    // Check if we can call the method
+    if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
+        // Check if we are bounded to a class or instantiation
+        if (!self_obj) {
+            error_and_die(1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+        }
+
+        // Make sure we are not calling a non-static method from a static context
+        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
+            error_and_die(1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+        }
+    }
+
+    // Check if it's a native function.
+    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // Internal function call
+        dst = callable_obj->code.native_func(frame, self_obj, arg_list);
+    } else {
+        // Create a new execution frame
+        t_vm_frame *new_frame = vm_frame_new(frame, callable_obj->code.bytecode);
+
+        if (OBJECT_IS_USER(self_obj)) {
+            new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
+        }
+
+        // Add references to parent and self
+        ht_replace(new_frame->local_identifiers->ht, "self", self_obj);
+        ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
+
+        // Parse calling arguments to see if they match our signatures
+        _parse_calling_arguments(new_frame, callable_obj, arg_list);
+
+        // Execute frame, return the last object
+        dst = _vm_execute(new_frame);
+
+        // @TODO: Destroy frame
+        //vm_frame_destroy(new_frame);
+    }
+
+    return dst;
 }

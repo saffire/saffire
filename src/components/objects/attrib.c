@@ -28,12 +28,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "objects/object.h"
-#include "objects/attrib.h"
-#include "objects/boolean.h"
-#include "objects/string.h"
-#include "objects/null.h"
-#include "objects/base.h"
-#include "objects/numerical.h"
+#include "objects/objects.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"

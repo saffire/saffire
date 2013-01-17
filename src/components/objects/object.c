@@ -104,67 +104,67 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
 }
 
 
-/**
- *
- * Calls a callable from specified object, but with a argument list. Returns NULL when callable is not found.
- */
-t_object *object_call_args(t_object *self, t_object *callable_obj, t_dll *args) {
-    t_object *ret = NULL;
+///**
+// *
+// * Calls a callable from specified object, but with a argument list. Returns NULL when callable is not found.
+// */
+//t_object *object_call_args(t_frame *frame, t_object *self, t_object *callable_obj, t_dll *args) {
+//    t_object *ret = NULL;
+//
+//    if (! OBJECT_IS_CALLABLE(callable_obj)) {
+//        error_and_die(1, "Object is not an callable!");
+//    }
+//
+//    // @TODO: Didn't we have this check already inside the VM? Probably we have to merge some code.
+//    if (OBJECT_TYPE_IS_CLASS(self) && ! CALLABLE_IS_STATIC(callable_obj)) {
+//        error_and_die(1, "Cannot call dynamic callable '%s' from static context", callable_obj->name);
+//    }
+//
+//    /*
+//     * Everything is hunky-dory. Make the call
+//     */
+//
+//    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+//        // Internal function
+//        ret = ((t_callable_object *)callable_obj)->code.native_func(self, args);
+//    } else {
+//        // External function found in AST
+//        error_and_die(1, "Sanity error: trying to call an external method. This is not allowed here!");
+//    }
+//
+//    return ret;
+//}
 
-    if (! OBJECT_IS_CALLABLE(callable_obj)) {
-        error_and_die(1, "Object is not an callable!");
-    }
-
-    // @TODO: Didn't we have this check already inside the VM? Probably we have to merge some code.
-    if (OBJECT_TYPE_IS_CLASS(self) && ! CALLABLE_IS_STATIC(callable_obj)) {
-        error_and_die(1, "Cannot call dynamic callable '%s' from static context", callable_obj->name);
-    }
-
-    /*
-     * Everything is hunky-dory. Make the call
-     */
-
-    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
-        // Internal function
-        ret = ((t_callable_object *)callable_obj)->code.native_func(self, args);
-    } else {
-        // External function found in AST
-        error_and_die(1, "Sanity error: trying to call an external method. This is not allowed here!");
-    }
-
-    return ret;
-}
-
-/**
-* Calls a method from specified object. Returns NULL when method is not found.
-*/
-t_object *object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
-
-    // Add all arguments to a DLL
-    va_list arg_list;
-    va_start(arg_list, arg_count);
-    t_dll *dll = dll_init();
-    for (int i=0; i!=arg_count; i++) {
-        t_object *obj = va_arg(arg_list, t_object *);
-        dll_append(dll, obj);
-    }
-    va_end(arg_list);
-
-    t_object *ret = object_call_args(self, method_obj, dll);
-
-    // Free dll
-    dll_free(dll);
-    return ret;
-}
+///**
+//* Calls a method from specified object. Returns NULL when method is not found.
+//*/
+//t_object *object_call(t_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...) {
+//
+//    // Add all arguments to a DLL
+//    va_list arg_list;
+//    va_start(arg_list, arg_count);
+//    t_dll *dll = dll_init();
+//    for (int i=0; i!=arg_count; i++) {
+//        t_object *obj = va_arg(arg_list, t_object *);
+//        dll_append(dll, obj);
+//    }
+//    va_end(arg_list);
+//
+//    t_object *ret = object_call_args(frame, self, method_obj, dll);
+//
+//    // Free dll
+//    dll_free(dll);
+//    return ret;
+//}
 
 
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */
-t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, ...) {
+t_object *object_operator(t_vm_frame *frame, t_object *obj, int opr, int in_place, int arg_count, ...) {
     t_object *cur_obj = obj;
     va_list arg_list;
-    t_object *(*func)(t_object *, t_object *, int) = NULL;
+    t_object *(*func)(t_vm_frame *, t_object *, t_object *, int) = NULL;
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->operators != NULL) {
@@ -206,7 +206,7 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
     t_object *obj2 = va_arg(arg_list, t_object *);
 
     // Call the actual operator and return the result
-    t_object *ret = func(obj, obj2, in_place);
+    t_object *ret = func(frame, obj, obj2, in_place);
 
     return ret;
 }
@@ -214,9 +214,9 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 /**
  * Calls an comparison function. Returns true or false
  */
-t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+t_object *object_comparison(t_vm_frame *frame, t_object *obj1, int cmp, t_object *obj2) {
     t_object *cur_obj = obj1;
-    int (*func)(t_object *, t_object *) = NULL;
+    int (*func)(t_vm_frame *, t_object *, t_object *) = NULL;
 
     // Try and find the correct operator (might be found of the base classes!)
     while (cur_obj && cur_obj->comparisons != NULL) {
@@ -250,7 +250,7 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     DEBUG_PRINT(">>> Calling comparison %d on object %s\n", cmp, obj1->name);
 
     // Call the actual equality operator and return the result
-    int ret = func(obj1, obj2);
+    int ret = func(frame, obj1, obj2);
 
     DEBUG_PRINT("Result from the comparison: %d\n", ret);
 
@@ -376,22 +376,22 @@ t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
  */
 t_object *object_new(t_object *obj, int arg_count, ...) {
     va_list arg_list;
-    t_object *res = _object_new(obj);
 
-    // Populate internal values
-    if (res->funcs->populate) {
-
-        t_dll *arguments = dll_init();
-        va_start(arg_list, arg_count);
-        for (int i=0; i!=arg_count; i++) {
-            dll_append(arguments, va_arg(arg_list, void *));
-        }
-        va_end(arg_list);
-
-        res->funcs->populate(res, arguments);
+    // Create argument DLL
+    t_dll *arguments = dll_init();
+    va_start(arg_list, arg_count);
+    for (int i=0; i!=arg_count; i++) {
+        dll_append(arguments, va_arg(arg_list, void *));
     }
+    va_end(arg_list);
 
-    return res;
+    // Create new object
+    t_object *new_obj = object_new_with_dll_args(obj, arguments);
+
+    // Free argument DLL
+    dll_free(arguments);
+
+    return new_obj;
 }
 
 

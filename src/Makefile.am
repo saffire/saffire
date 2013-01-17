@@ -24,6 +24,10 @@ AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS)
 # Complain about everything, except unused functions
 AM_CFLAGS += -Wall -Wno-unused-function
 
+
+# Add GNUSOURCE define to ignore warning for aprintf
+AM_CFLAGS += -D_GNU_SOURCE
+
 noinst_LIBRARIES =
 
 

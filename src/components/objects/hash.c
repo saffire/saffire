@@ -29,15 +29,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include "objects/object.h"
-#include "objects/boolean.h"
-#include "objects/string.h"
-#include "objects/null.h"
-#include "objects/base.h"
-#include "objects/numerical.h"
-#include "objects/attrib.h"
-#include "objects/hash.h"
-#include "objects/callable.h"
-#include "general/hashtable.h"
+#include "objects/objects.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
