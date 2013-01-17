@@ -4,8 +4,6 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
 import io as io from ::_sfl::io;
 
-import io as io from ::_sfl::io;
-
 t = tuple.new("foo", "bar", "baz");
 io.print(t.get(0), "\n");
 io.print(t.get(2), "\n");
