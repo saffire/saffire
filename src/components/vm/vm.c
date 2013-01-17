@@ -87,6 +87,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
         if (args_left) {
             // When arguments are left on the stack, override object with next value on stack
             obj = (t_object *)e->data;
+            e = DLL_NEXT(e);
             args_left--;
         }
 
@@ -269,10 +270,18 @@ dispatch:
                     register t_object *search_obj = vm_frame_stack_pop(frame);
                     register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
+                    // Hardcoded to bind the attribute to the search object!!
+                    bound_obj = search_obj;
+
                     DEBUG_PRINT("Fetching %s from %s\n", OBJ2STR(name), search_obj->name);
                     DEBUG_PRINT("Binding to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
+
+                    DEBUG_PRINT("     NAME: %s\n", OBJ2STR(name));
+                    DEBUG_PRINT("     SEARCH: %s\n", object_debug(search_obj));
+                    DEBUG_PRINT("     BOUND: %s\n", object_debug(bound_obj));
+                    DEBUG_PRINT("     ATTR: %s\n", object_debug(attrib_obj));
 
                     if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
                         error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
