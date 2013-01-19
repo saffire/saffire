@@ -24,20 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECTS_H__
-#define __OBJECTS_H__
+#ifndef __OBJECT_LIST_H__
+#define __OBJECT_LIST_H__
 
-    #include "userland.h"
-    #include "attrib.h"
-    #include "base.h"
-    #include "boolean.h"
-    #include "hash.h"
-    #include "list.h"
-    #include "callable.h"
-    #include "null.h"
-    #include "numerical.h"
-    #include "regex.h"
-    #include "string.h"
-    #include "tuple.h"
+    #include "objects/object.h"
+    #include "general/hashtable.h"
+
+    #define RETURN_LIST(h)   RETURN_OBJECT(object_new(Object_List, 1, h));
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        t_hash_table *ht;
+    } t_list_object;
+
+    t_list_object Object_List_struct;
+
+    #define Object_List   (t_object *)&Object_List_struct
+
+    void object_list_init(void);
+    void object_list_fini(void);
 
 #endif

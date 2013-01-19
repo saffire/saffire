@@ -50,14 +50,10 @@
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
-#ifdef __DEBUG
-    t_hash_table *object_hash;
-#endif
-
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "callable" };
+                                                 "hash", "tuple", "callable", "list" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -367,6 +363,7 @@ void object_init() {
     ht_num_add(object_hash, (unsigned long)Object_Null, Object_Null);
 #endif
 
+    object_list_init();
 }
 
 
@@ -389,6 +386,7 @@ void object_fini() {
     object_hash_fini();
     object_tuple_fini();
     object_userland_fini();
+    object_list_fini();
 }
 
 
