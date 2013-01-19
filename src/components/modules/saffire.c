@@ -45,13 +45,13 @@ SAFFIRE_MODULE_METHOD(io, gitrev) {
 }
 
 SAFFIRE_MODULE_METHOD(io, runmode) {
-    if (vm_mode == VM_FASTCGI) {
+    if (vm_runmode == VM_RUNMODE_FASTCGI) {
         RETURN_STRING("fastcgi");
     }
-    if (vm_mode == VM_CLI) {
+    if (vm_runmode == VM_RUNMODE_CLI) {
         RETURN_STRING("cli");
     }
-    if (vm_mode == VM_REPL) {
+    if (vm_runmode == VM_RUNMODE_REPL) {
         RETURN_STRING("repl");
     }
 

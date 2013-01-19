@@ -143,8 +143,9 @@ int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib)
 /**
  *
  */
-void vm_init(int mode) {
-    vm_mode = mode;
+void vm_init(int runmode) {
+    // Set run mode (repl, cli, fastcgi)
+    vm_runmode = runmode;
 
     gc_init();
     builtin_identifiers = ht_create();
