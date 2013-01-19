@@ -200,6 +200,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
 
         case typeAstComparison :
+            stack_push(state->call_state, (void *)st_call_stay);
+
             stack_push(state->context, st_ctx_load);
             stack_push(state->side, (void *)st_side_right);
             WALK_LEAF(leaf->comparison.r);
@@ -211,6 +213,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             WALK_LEAF(leaf->comparison.l);
             stack_pop(state->side);
             stack_pop(state->context);
+
+            stack_pop(state->call_state);
 
             int tmp = 0;
             switch (leaf->comparison.cmp) {
