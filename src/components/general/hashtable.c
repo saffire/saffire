@@ -144,8 +144,12 @@ void *ht_find(t_hash_table *ht, const char *key) {
 /**
  * Return value of key, or NULL when nothing found
  */
-void *ht_num_find(t_hash_table *ht, long index) {
+void *ht_num_find(t_hash_table *ht, unsigned long index) {
     char key[32];
+
+    // Sanity check. Index can never be larger than
+    if (index >= ht->element_count) return NULL;
+
     snprintf(key, 31, "%ld", index);
     return ht_find(ht, key);
 }
@@ -167,7 +171,7 @@ int ht_add(t_hash_table *ht, const char *key, void *value) {
     return ht->hashfuncs->add(ht, key, value);
 }
 
-int ht_num_add(t_hash_table *ht, long index, void *value) {
+int ht_num_add(t_hash_table *ht, unsigned long index, void *value) {
     char key[32];
     snprintf(key, 31, "%ld", index);
     return ht_add(ht, key, value);
