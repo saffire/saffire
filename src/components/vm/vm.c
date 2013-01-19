@@ -99,14 +99,14 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
             if (! strcmp(OBJ2STR(arg->typehint), "...")) {
                 // ... typehint found,
-                printf("Created a vararg object!\n");
+                DEBUG_PRINT("Created a vararg object!\n");
                 vararg_obj = (t_list_object *)object_new(Object_List, 0);
 
                 // Add first argument
                 ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
 
                 // Make sure we add our List[] to the local_identifiers below
-                obj = vararg_obj;
+                obj = (t_object *)vararg_obj;
             } else if (strcmp(OBJ2STR(arg->typehint), obj->name)) {
                 // classname does not match the typehint
 
@@ -129,14 +129,14 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
     // We check if we can feed them to the last argument, a variable arg
     if (given_count > 0) {
-        printf("More given variables are found.\n");
+        DEBUG_PRINT("More given variables are found.\n");
 
         if (vararg_obj == NULL) {
             error_and_die(1, "No variable argument found, and too many arguments passed");
         }
 
         while (e) {
-            printf("Adding %s to vararg\n", object_debug((t_object *)e->data));
+            DEBUG_PRINT("Adding %s to vararg\n", object_debug((t_object *)e->data));
             // Just add argument to vararg list. No need to do any typehint checks here.
             ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
             e = DLL_NEXT(e);
@@ -206,7 +206,6 @@ t_object *_vm_execute(t_vm_frame *frame) {
     register unsigned int opcode, oparg1, oparg2;
     int reason = REASON_NONE;
     t_vm_frameblock *block;
-
 
     // Default return value;
     t_object *ret = Object_Null;
@@ -560,8 +559,24 @@ dispatch:
 
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
+
+                    // Fetch varargs object (or NULL when no varargs are needed)
+                    t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
+
+                    // Add items
                     for (int i=0; i!=oparg1; i++) {
                         dll_prepend(arg_list, vm_frame_stack_pop(frame));
+                    }
+
+                    if (varargs != NULL) {
+                        // iterate hash (this is the correct order), and prepend values to the arg_list DLL
+                        t_hash_iter iter;
+                        ht_iter_init(&iter, varargs->ht);
+                        while (ht_iter_valid(&iter)) {
+                            t_object *obj = ht_iter_value(&iter);
+                            dll_prepend(arg_list, obj);
+                            ht_iter_next(&iter);
+                        }
                     }
 
                     t_object *ret_obj = vm_object_call_args(frame, self_obj, (t_object *)callable_obj, arg_list);

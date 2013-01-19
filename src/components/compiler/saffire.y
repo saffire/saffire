@@ -118,7 +118,7 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name scalar_value callable subscription primary_expression_first_part qualified_name_first_part
+%type <nPtr> special_name scalar_value callable var_callable subscription primary_expression_first_part qualified_name_first_part
 
 %type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -466,7 +466,8 @@ primary_expression:
 pe_no_parenthesis:
         primary_expression_first_part        { $$ = $1; }
     |   primary_expression '.' T_IDENTIFIER  { $$ = ast_property($1, ast_string($3)); }
-    |   primary_expression callable          { $$ = ast_opr(T_CALL, 2, $1, $2); }
+    |   primary_expression callable          { $$ = ast_opr(T_CALL, 2, $1, ast_add($2, ast_null())); } /* Add termination varargs list */
+    |   primary_expression var_callable      { $$ = ast_opr(T_CALL, 2, $1, $2); }
     |   primary_expression subscription      { $$ = ast_opr(T_SUBSCRIPT, 2, $1, $2); }
     |   primary_expression data_structure    { $$ = ast_opr(T_DATASTRUCT, 2, $1, $2); }
     |   primary_expression T_OP_INC          { $$ = ast_operator('+', $1, ast_numerical(1)); }
@@ -498,11 +499,14 @@ special_name:
     |   T_PARENT  { $$ = ast_identifier("parent"); }
 ;
 
+var_callable:
+        '(' calling_method_argument_list ',' T_ELLIPSIS expression ')' { $$ = ast_add($2, $5); }
+    |   '(' T_ELLIPSIS expression                                  ')' { $$ = ast_group(1, $3); }
+;
+
 callable:
-        '(' calling_method_argument_list                           ')' { $$ = $2; }
-    |   '(' calling_method_argument_list ',' T_ELLIPSIS expression ')' { $$ = ast_add($2, $5); }    /* @TODO: How do we know it's ellipsis!? */
-    |   '(' T_ELLIPSIS expression                                  ')' { $$ = ast_group(1, $3); }   /* @TODO: How do we know it's ellipsis!? */
-    |   '(' /* empty */                                            ')' { $$ = ast_group(0); }
+        '(' calling_method_argument_list ')' { $$ = $2; }
+    |   '(' /* empty */                  ')' { $$ = ast_group(0); }
 ;
 
 /* argument list inside a method call*/
