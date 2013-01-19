@@ -110,11 +110,11 @@
 %type <nPtr> guarding_statement expression catch_list catch ds_element ds_elements
 %type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
-%type <nPtr> if_statement switch_statement
+%type <nPtr> if_statement switch_statement class_constant_definition
 %type <nPtr> unary_expression primary_expression pe_no_parenthesis data_structure
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
-%type <nPtr> constant method_argument interface_inner_statement interface_method_definition interface_property_definition
+%type <nPtr> method_argument interface_inner_statement interface_method_definition interface_property_definition
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
@@ -199,7 +199,7 @@ non_empty_top_statement_list:
 top_statement:
         class_definition        { $$ = $1; }
     |   interface_definition    { $$ = $1; }
-    |   constant                { $$ = $1; }
+/*    |   constant                { $$ = $1; } */
     |   statement               { $$ = $1; }  /* statement, not statementlist, since top_statement is a list already! */
 ;
 
@@ -536,7 +536,7 @@ class_inner_statement_list:
 ;
 
 class_inner_statement:
-        constant                    { $$ = $1; }
+        class_constant_definition   { $$ = $1; }
     |   class_property_definition   { $$ = $1; }
     |   class_method_definition     { $$ = $1; }
 ;
@@ -584,9 +584,6 @@ method_argument:
     |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { $$ = ast_opr(T_METHOD_ARGUMENT, 3, ast_string($1), ast_string($2), $4        ); smm_free($1); smm_free($2); }
 ;
 
-constant:
-        T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { sfc_validate_constant($2); $$ = ast_attribute($2, ATTRIB_TYPE_CONSTANT, ATTRIB_VISIBILITY_PUBLIC, ATTRIB_ACCESS_RO, $4, 0, ast_nop()); smm_free($2); }
-;
 class_definition:
         class_header '{' class_inner_statement_list '}' { $$ = ast_class(global_table->active_class, $3); sfc_fini_class(); }
     |   class_header '{'                            '}' { $$ = ast_class(global_table->active_class, ast_nop()); sfc_fini_class(); }
@@ -602,12 +599,17 @@ interface_definition:
     |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, ast_nop()); smm_free($3); }
     |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { $$ = ast_interface(0, $2, $3, $5); smm_free($2); }
     |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { $$ = ast_interface(0, $2, $3, ast_nop()); smm_free($2); };
-
+;
 
 class_property_definition:
         modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
     |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, ast_null(), 0, ast_nop()); smm_free($3); }
 ;
+
+class_constant_definition:
+        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { sfc_validate_property_modifiers($1); $$ = ast_attribute($3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, $5, 0, ast_nop()); smm_free($3); }
+;
+
 
 interface_property_definition:
         modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier($3)); smm_free($3); }
