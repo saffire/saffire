@@ -574,7 +574,7 @@ dispatch:
                         ht_iter_init(&iter, varargs->ht);
                         while (ht_iter_valid(&iter)) {
                             t_object *obj = ht_iter_value(&iter);
-                            dll_prepend(arg_list, obj);
+                            dll_append(arg_list, obj);
                             ht_iter_next(&iter);
                         }
                     }
