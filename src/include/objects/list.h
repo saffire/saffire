@@ -24,31 +24,25 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __OBJECT_LIST_H__
+#define __OBJECT_LIST_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
-    #include "vm/frame.h"
+    #include "objects/object.h"
+    #include "general/hashtable.h"
 
-    t_hash_table *builtin_identifiers;
+    #define RETURN_LIST(h)   RETURN_OBJECT(object_new(Object_List, 1, h));
 
-    #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
-    #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
-    #define VM_RUNMODE_REPL         2       // Virtual machine run as REPL
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
 
-    // Actual runmode of the VM (fastcgi, cli, rep
-    int vm_runmode;
+        t_hash_table *ht;
+    } t_list_object;
 
-    void vm_init(int mode);
-    void vm_fini(void);
-    int vm_execute(t_bytecode *bc);
-    t_object *_vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
-    t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...);
+    t_list_object Object_List_struct;
 
+    #define Object_List   (t_object *)&Object_List_struct
+
+    void object_list_init(void);
+    void object_list_fini(void);
 
 #endif
-
-

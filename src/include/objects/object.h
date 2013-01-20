@@ -155,14 +155,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     12
+    #define OBJECT_TYPE_LEN     13
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser
+                   objectTypeTuple, objectTypeUser, objectTypeList
                  } t_objectype_enum;
 
 
