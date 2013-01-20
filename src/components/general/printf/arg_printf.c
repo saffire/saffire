@@ -32,6 +32,7 @@
 #include "general/output.h"
 #include "objects/object.h"
 #include "objects/objects.h"
+#include "vm/vm.h"
 
 /**
  *
@@ -40,8 +41,8 @@ static long _get_long(t_dll_element **e) {
     t_object *obj = (t_object *)(*e)->data;
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
-        // @TODO: No implied conversion. We cannot do a object_call because we don't have a frame!
-        error_and_die(1, "Need a numerical, but found a %s\n", obj->name);
+        t_object *numerical_method = object_find_attribute(obj, "numerical");
+        obj = vm_object_call(obj, numerical_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));
@@ -57,8 +58,8 @@ static unsigned char *_get_string(t_dll_element **e) {
     t_object *obj = (*e)->data;
 
     if (! OBJECT_IS_STRING(obj)) {
-        // @TODO: No implied conversion. We cannot do a object_call because we don't have a frame!
-        error_and_die(1, "Need a string, but found a %s\n", obj->name);
+        t_object *bool_method = object_find_attribute(obj, "string");
+        obj = vm_object_call(obj, bool_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));

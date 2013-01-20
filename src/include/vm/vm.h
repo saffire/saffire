@@ -45,8 +45,8 @@
     int vm_execute(t_bytecode *bc);
     t_object *_vm_execute(t_vm_frame *frame);
     void vm_populate_builtins(const char *name, void *data);
-    t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...);
+    t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
+    t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
 
 
 #endif
