@@ -37,7 +37,7 @@ import io;
 a = "abcdef\r123\n";
 io.print(a);
 ====
-123def
+abcdef123
 @@@@
 import io;
 a = '1abcdef\f123';

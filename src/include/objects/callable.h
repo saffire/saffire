@@ -67,7 +67,7 @@
 
         union {
             t_bytecode *bytecode;                                           // External bytecode
-            t_object *(*native_func)(t_vm_frame *,t_object *, t_dll *);     // internal function
+            t_object *(*native_func)(t_object *, t_dll *);     // internal function
         } code;
 
         t_object *binding;                  // Bound to a class (or NULL)

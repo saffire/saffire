@@ -2,12 +2,14 @@ title: ternary if/else control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+!skip
 // Normal notation
 import io;
 a = true ? false : true;
 io.print(a);
 ====
 @@@@
+!skip
 // No short notation
 import io;
 a = true ?: false;
@@ -15,12 +17,14 @@ io.print(a);
 ====
 Error in line 3: syntax error, unexpected ':'
 @@@@
+!skip
 // invalid compound statement
 import io;
 a = "foo" ? "bar" : { "baz" }
 io.print(a);
 ====
 @@@@
+!skip
 // Ternary inside ternary
 import io;
 a = "foo" ? "bar" : "baz" ? "qux" : "woq";

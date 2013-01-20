@@ -26,6 +26,7 @@ class Foo {
 ====
 Error in line 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
 @@@@
+!skip Not supporting bang methods at the moment
 class Foo {
     public method bar!() {
     }
@@ -33,6 +34,7 @@ class Foo {
 
 ====
 @@@@
+!skip Not supporting bang methods at the moment
 class Foo {
     public method bar?() {
     }

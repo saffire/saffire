@@ -750,7 +750,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Check for duplicate label inside current block
                     sprintf(label1, "userlabel_%s", node->string.value);
                     if (ht_exists(state->blocks[state->block_cnt].labels, label1)) {
-                        error_and_die(1, "Duplicate label '%s' found\n", label1);
+                        error_and_die(1, "Duplicate label '%s' found\n", node->string.value);
                     }
                     ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
@@ -759,6 +759,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_FOREACH :
                     break;
+                case T_FINALLY :
+                    break;
+                case T_SWITCH :
+                    break;
+                case '?' :
+                    break;
+
+
 
                 default :
                     error_and_die(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));

@@ -31,6 +31,7 @@
 #include "objects/objects.h"
 #include "general/dll.h"
 #include "general/smm.h"
+#include "vm/vm.h"
 
 #ifdef __DEBUG
     #define ANSI_BRIGHTRED "\33[41;33;1m"
@@ -53,11 +54,8 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            /* @TODO: We should make sure we ONLY get strings here.. If something else, we should throw an error, as
-             * this should not happen. We have no way of casting back to another type, because object_call needs a
-             * frame, and we cannot supply a frame here (maybe we can, if we inject it inside the object or something?
-             * does that even make sense?) */
-            error_and_die(1, "We can only print string objects!");
+            t_object *string_method = object_find_attribute(obj, "string");
+            obj = vm_object_call(obj, string_method, 0);
         }
 
         output(ANSI_BRIGHTRED "%s" ANSI_RESET, ((t_string_object *)obj)->value);
@@ -72,15 +70,16 @@ SAFFIRE_MODULE_METHOD(io, print) {
  *
  */
 SAFFIRE_MODULE_METHOD(io, printf) {
-    t_string_object *obj;
+    t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-    obj = (t_string_object *)e->data;
+    obj = (t_object *)e->data;
     if (! OBJECT_IS_STRING(obj)) {
-        error_and_die(1, "argument 1 of printf needs to be a string\n");
+        t_object *string_method = object_find_attribute(obj, "string");
+        obj = vm_object_call(obj, string_method, 0);
     }
 
-    char *format = obj->value;
+    char *format = ((t_string_object *)obj)->value;
 
     // @TODO: Don't change the args DLL!
     e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
