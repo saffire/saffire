@@ -2,7 +2,7 @@ title: if/else control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io as io from ::_sfl::io;
+import io;
 if (1 == 1) {
   io.print("T");
 } else {
@@ -18,7 +18,7 @@ if (0 == 1) {
 ====
 TF
 @@@@
-import io as io from ::_sfl::io;
+import io;
 if (a = 5) {
     io.print("T");
 } else {
@@ -28,7 +28,7 @@ if (a = 5) {
 ====
 Error in line 2: syntax error, unexpected T_ASSIGNMENT, expecting ')'
 @@@@
-import io as io from ::_sfl::io;
+import io;
 a = 1;
 if (a == 5) {
     io.print("T");
@@ -58,7 +58,7 @@ if (a >= 5) {
 ====
 FTTF
 @@@@
-import io as io from ::_sfl::io;
+import io;
 a = 1;  b = 2; c = 1;
 if (a == 1 && b == 2) { io.print("T"); } else { io.print("F"); }
 if (a == 2 && b == 2) { io.print("T"); } else { io.print("F"); }
