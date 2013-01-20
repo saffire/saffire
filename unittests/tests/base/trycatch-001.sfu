@@ -2,7 +2,7 @@ title: Try/Catch tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-// try catch finally
+!skip
 try {
 
 } catch (Exception e) {
@@ -12,6 +12,7 @@ try {
 }
 ====
 @@@@
+!skip
 // Try multiple catches
 try {
 

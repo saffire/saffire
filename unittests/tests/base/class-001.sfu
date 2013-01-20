@@ -28,25 +28,26 @@ final abstract class Foo {
 ====
 Error in line 3: Abstract members cannot be made final
 @@@@
+import io;
 abstract class Foo {
 }
-
+io.print("done");
 ====
+done
 @@@@
-static class Foo {
-}
-
-====
-@@@@
+import io;
 final static class Foo {
 }
-
+io.print("done");
 ====
+done
 @@@@
+import io;
 static class Foo {
 }
-
+io.print("done");
 ====
+done
 @@@@
 // Double Abstract
 abstract abstract public class Foo {

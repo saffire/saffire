@@ -2,19 +2,30 @@ title: while control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+import io;
+a = 1;
 do {
-  a = 1;
-} while (a < 1);
-
+  a = a + 1;
+} while (a < 10);
+io.print(a);
 ====
+10
 @@@@
+import io;
+a = 5;
 do {
+ a = a - 1;
 } while ( a < 1);
-
+io.print(a);
 ====
+5
 @@@@
+import io;
+a = 10;
 do a = 1; while ( a < 1);
+io.print(a);
 ====
+1
 @@@@
 do a = 1; while 1;
 ====

@@ -93,39 +93,61 @@ if ("foo") {
 
 ====
 @@@@
+import io;
 foo = 1;
 if (foo) {
   a = 1;
 }
-
+io.print(a);
 ====
+1
 @@@@
+import io;
 foo = 1;
 if (foo) a = 1;
-
+io.print(a);
 ====
+1
 @@@@
+import io;
 foo = 1;
 if (foo) a = 1; else {
-  b = 1;
+  a = 2;
 }
+io.print(a);
 
 ====
+1
 @@@@
+import io;
 foo = 1;
 if (foo) {
-    a = 1;
+  a = 1;
 } else {
-  b = 1;
+  a = 2;
 }
+io.print(a);
 
+foo = 0;
+if (foo) {
+  a = 1;
+} else {
+  a = 2;
+}
+io.print(a);
 ====
+12
 @@@@
+import io;
 foo = 1;
 if (foo) {
+    io.print("1");
 } else if (foo) {
+    io.print("2");
 } else (foo);
+io.print("3");
 ====
+13
 @@@@
 foo = 1;
 if (foo) {

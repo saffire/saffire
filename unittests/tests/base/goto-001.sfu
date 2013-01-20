@@ -16,6 +16,7 @@ label3:
 Label2
 Label
 @@@@
+!skip
 1:
     goto 1;
 ====
@@ -28,9 +29,11 @@ foo:
 Error: Duplicate label 'foo' found
 @@@@
 // No label specified
-    goto label;
+    goto foo;
 ====
+Error: Cannot find label 'foo'
 @@@@
+!skip
 // incorrect label
 "blaat":
 ====
@@ -42,49 +45,68 @@ Error: Unknown token: '"'
 Error in line 3: syntax error, unexpected '/', expecting end of file
 @@@@
 // Correct scope
+import io;
 i = 0;
 while(true) {
+    io.print("1");
 label:
     i = i + 1;
+    io.print("2");
     if (i < 10) goto label;
     break;
+    io.print("3");
 }
+io.print("4");
+io.print(i);
 ====
+12222222222410
 @@@@
 // Allowed to jump out of a loop
+import io;
+
 goto label2;
 label:
+    io.print("label\n");
     goto label3;
 label2:
+io.print("label2\n");
 while (true) {
     goto label;
 }
 label3:
+io.print("label3\n");
 ====
+label2
+label
+label3
 @@@@
 // Allowed to jump out of a loop
+import io;
 while(true) {
+    io.print("1");
     goto label;
+    io.print("2");
 }
+io.print("3");
 label:
+io.print("4");
 ====
+14
 @@@@
+!skip
 // Not allowed to jump into a loop
-/*
 goto label;
 while(true) {
     label:
 }
-*/
 ====
 Label not found
 @@@@
+!skip
 // Not allowed to jump into a loop
-/*
 while(true) {
     label:
 }
 goto label;
-*/
 ====
 Label not found

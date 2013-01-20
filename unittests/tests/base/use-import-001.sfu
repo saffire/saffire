@@ -2,20 +2,23 @@ title: Use and import tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+!skip use is not supported yet
 use io;
 ====
 @@@@
+!skip use is not supported yet
 use io as blaat;
 ====
 @@@@
-import foo from bar;
+import io from io;
 ====
 @@@@
-import foo as baz from bar;
+import io as foo from io;
 ====
 @@@@
-import foo as baz;
+import io as foo;
 ====
 @@@@
-import foo from bar as baz;
+import io from io as bar;
 ====
+Error: line 1: syntax error, unexpected T_AS, expecting T_NS_SEP or ';'

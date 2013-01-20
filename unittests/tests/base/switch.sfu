@@ -35,6 +35,7 @@ switch (1) {
 ====
 Error in line 7: syntax error, unexpected T_CASE
 @@@@
+!skip
 switch (1) {
     default :
         switch (2) {
@@ -47,6 +48,7 @@ switch (1) {
 }
 ====
 @@@@
+!skip
 switch (a) {
     case "foo" :
     case "bar" :
@@ -54,12 +56,14 @@ switch (a) {
 
 ====
 @@@@
+!skip
 switch (a) {
     case "foo" :
 }
 
 ====
 @@@@
+!skip
 switch (a) {
     case a == 1 :
     case b == 1 :
@@ -78,6 +82,7 @@ switch (a) {
 ====
 Error in line 3: syntax error, unexpected T_BREAK, expecting T_CASE or T_DEFAULT
 @@@@
+!skip
 switch (a) {
     case 1:
         a = 1;
@@ -89,6 +94,7 @@ switch (a) {
 
 ====
 @@@@
+!skip
 switch (a) {
     case 1:
         a = 1;
@@ -110,6 +116,7 @@ switch (a) {
 ====
 Error in line 3: syntax error, unexpected T_DEFAULT
 @@@@
+!skip
 switch (a) {
     default:
         a = 1;
@@ -124,6 +131,7 @@ switch (a) {
 ====
 default label already supplied
 @@@@
+!skip
 switch (a) {
     case False:
         a = 1;

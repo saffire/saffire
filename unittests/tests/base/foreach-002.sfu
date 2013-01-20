@@ -2,6 +2,7 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+!skip
 import io;
 foo = list[1,"A",3];
 foreach (foo as k:v)  {
@@ -12,6 +13,7 @@ foreach (foo as k:v)  {
 1A
 23
 @@@@
+!skip
 import io;
 foo = hash["a":1,"b":2,"c":3];
 foreach (blaat as k:v:x)  {
@@ -22,6 +24,7 @@ a=>1Null
 b=>2Null
 c=>3Null
 @@@@
+!skip
 import io;
 foo = hash["a":1,"b":2,"c":3];
 foreach (blaat as k:v, meta)  {

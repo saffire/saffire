@@ -17,6 +17,7 @@ class Foo {
 }
 ====
 @@@@
+!skip returning multiple arguments is not supported?
 class Foo {
     public method bar() {
         return "foo", "bar", "baz";

@@ -6,26 +6,32 @@ breakelse;
 ====
 Error in line 2: We can only breakelse inside a loop
 @@@@
+import io;
 a = 1;
 do {
     a = a + 1;
-} while (a < 1);
-
+} while (a < 10);
+io.print(a);
 ====
+10
 @@@@
+import io;
 a = 1;
 do {
     a = a + 1;
     while (a < 1) {
+        io.print(a);
         a = a + 1;
         breakelse;
     } else {
         a = 5;
     }
 } while (a < 1);
-
+io.print(a);
 ====
+5
 @@@@
+!skip
 foreach (a as b) {
     breakelse;
 }

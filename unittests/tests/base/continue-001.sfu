@@ -31,6 +31,7 @@ foreach (a as b) {
     continue;
 }
 ====
+Error: Trying to fetch from outside constant range
 @@@@
 foreach (a as b) {
     foreach (a as b) {
