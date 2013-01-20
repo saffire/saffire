@@ -1,48 +1,48 @@
 title: data structure tests - splicing
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import io as io from ::_sfl::io;
+import io;
 f = "foobarbaz";
 io.print(f[]);
 ====
 foobarbaz
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[0..2]);
 ====
 foo
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[3..5]);
 ====
 bar
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[6..8]);
 ====
 baz
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[3..10]);
 ====
 barbaz
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[10..3]);
 ====
 Error: max < min!
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[..5]);
 ====
 foobar
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("foobarbaz"[4..]);
 ====
 arbaz
 @@@@
-import io as io from ::_sfl::io;
+import io;
 io.print("X","foobarbaz"[20..]);
 ====
 X

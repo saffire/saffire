@@ -7,101 +7,77 @@ class foo {
     }
 }
 ====
-a
 @@@@
 class foo {
-    public method bar(String foo, ... args) {
+    public method bar(string foo, ... args) {
     }
 }
 ====
-a
 @@@@
 class foo {
-    public method bar(String foo = "s", ... args) {
+    public method bar(string foo = "s", ... args) {
     }
 }
 ====
-a
 @@@@
 class foo {
-    public method bar(String foo = "s", ... args = foo) {
+    public method bar(string foo = "s", ... args = foo) {
     }
 }
 ====
 syntax error, unexpected T_ASSIGNMENT, expecting ')'
 @@@@
 class foo {
-    public method bar(String foo = "s", ... args, Numerical tmp) {
+    public method bar(string foo = "s", ... args, numerical tmp) {
     }
 }
 ====
 syntax error, unexpected ',', expecting ')'
 @@@@
 class foo {
-    public method bar(String foo = "s", ... args, tmp) {
+    public method bar(string foo = "s", ... args, tmp) {
     }
 }
 ====
 syntax error, unexpected ',', expecting ')'
 @@@@
-import io as io from ::_sfl::io;
+import io;
+
 class foo {
-    public method bar(String s, Numerical n, ... args) {
-        io.print(args.count(), "\n");
+    public method bar(string s, numerical n, ... args) {
+        io.print(args.length(), "\n");
     }
 }
 
-f = foo.new();
+f = foo();
 f.bar("str", 1);
 f.bar("str", 1, "foo");
 f.bar("str", 1, 1);
 f.bar("str", 1, "foo", true);
+f.bar("str", 1, null);
+f.bar("str", 1, null, null, null);
 =====
 0
 1
 1
 2
+1
+3
 @@@@@@
-import io as io from ::_sfl::io;
+import io;
 class foo {
-    public method bar(String s, Numerical n, ... args) {
-        io.print("bar: ",args.count(), "\n");
-        self.baz(args);
-        self.baz(... args);
-    }
-    public method baz(... args) {
-        io.print("baz: ",args.count(), "\n");
+    public method bar(string s, numerical n, ... args) {
+        io.print(args.length(), "\n");
     }
 }
 
-f = foo.new();
-f.bar("str", 1);
-f.bar("str", 1, "foo");
-f.bar("str", 1, 1);
-f.bar("str", 1, "foo", true);
-=====
-bar: 0
-baz: 1
-baz: 0
-bar: 1
-baz: 1
-baz: 1
-bar: 1
-baz: 1
-baz: 1
-bar: 2
-baz: 1
-baz: 2
-@@@@@@
-import io as io from ::_sfl::io;
-class foo {
-    public method bar(String s, Numerical n, ... args) {
-        io.print(args.count(), "\n");
-    }
-}
+params = list();
+params.add("string");
+params.add(1);
+params.add("foo");
+params.add("bar");
 
-params = list["string", 1, "foo", "bar"];
-f = foo.new();
+f = foo();
 f.bar(... params);
 f.bar("str", 1, ... params);
 f.bar("str", 1, "foo", ... params);
