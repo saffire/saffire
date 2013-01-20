@@ -81,6 +81,11 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
         char *name = ht_iter_key(&iter);
         t_method_arg *arg = ht_iter_value(&iter);
 
+        int is_vararg =0 ;
+        if (arg->typehint->type != objectTypeNull && ! strcmp(OBJ2STR(arg->typehint), "...")) {
+            is_vararg = 1;
+        }
+
         // Preset object to default value if a default value was found.
         t_object *obj = (arg->value->type == objectTypeNull) ? NULL : arg->value;
 
@@ -90,20 +95,22 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
         }
 
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
-        if (obj == NULL) {
+        if (obj == NULL && ! is_vararg) {
             error_and_die(1, "Not enough arguments passed, and no default values found");
         }
 
         if (arg->typehint->type != objectTypeNull) {
             // Check typehint / varargs
 
-            if (! strcmp(OBJ2STR(arg->typehint), "...")) {
+            if (is_vararg) {
                 // ... typehint found,
                 DEBUG_PRINT("Created a vararg object!\n");
                 vararg_obj = (t_list_object *)object_new(Object_List, 0);
 
                 // Add first argument
-                ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
+                if (obj) {
+                    ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
+                }
 
                 // Make sure we add our List[] to the local_identifiers below
                 obj = (t_object *)vararg_obj;
