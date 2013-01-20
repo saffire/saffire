@@ -48,11 +48,11 @@
 
     // Hash table structure
     typedef struct _hash_table {
-        int bucket_count;                       // Number of available buckets
-        int element_count;                      // Number of elements in the hash table
+        unsigned int bucket_count;              // Number of available buckets
+        unsigned int element_count;             // Number of elements in the hash table
         float load_factor;                      // ratio that has to be filled before resizing
         float resize_factor;                    // Resize factor
-        char copy_on_write;                    // Copy the buckets when written to
+        char copy_on_write;                     // Copy the buckets when written to
 
         struct _hashfuncs *hashfuncs;           // Pointer to actual hash functions
         t_hash_table_bucket *head;              // DLL head (for iteration)
@@ -86,13 +86,13 @@
     void *ht_remove(t_hash_table *ht, const char *key);
     void ht_destroy(t_hash_table *ht);
 
-    void *ht_num_find(t_hash_table *ht, long index);
-    int ht_num_add(t_hash_table *ht, long index, void *value);
+    void *ht_num_find(t_hash_table *ht, unsigned long index);
+    int ht_num_add(t_hash_table *ht, unsigned long index, void *value);
 
     // Functionality for iterating a hash table (forward only)
     typedef struct _hash_iter {
         t_hash_table *ht;
-        long bucket_idx;
+        unsigned long bucket_idx;
         t_hash_table_bucket *bucket;
     } t_hash_iter;
 

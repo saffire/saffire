@@ -1,26 +1,19 @@
+import io as sflio from ::_sfl::io;
+
 /**
  * This is the IO class.
  */
 class io {
-    const STDIN  = 0;
-    const STDOUT = 1;
-    const STDERR = 2;
+    public const STDIN  = 0;
+    public const STDOUT = 1;
+    public const STDERR = 2;
 
     static public method print(... args) {
-        ::_sfl::io.print(args);
+        return sflio.print(... args);
     }
 
     static public method printf(string format, ... args) {
-        return ::_sfl::io.printf(format, args);
+        return ::_sfl::io.printf(format, ... args);
     }
 
-//    static public method fprintf(File f, String format, List *args) {
-//        return ::_sfl::io.fprintf(f, format, args);
-//    }
-
 }
-
-
-// args = list[]
-io.print("hello world");
-io.print("foo", );

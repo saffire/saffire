@@ -58,56 +58,91 @@ typedef struct _method_arg {
 
 
 /**
- * Parse calling arguments. It will iterate all arguments declarations needed for the callable. The arguments
- * can be found on the cur_frame stack.
+ * Parse calling arguments. It will iterate all arguments declarations needed for the
+ * callable. The arguments are placed onto the frame stack.
  */
 static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
-    // Check if the number of arguments given exceeds the number of arguments needed.
     t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
-    if (arg_list->size > ht->element_count) {
-        // @TODO: If we have variable argument count, this does not apply!
-        error_and_die(1, "Too many arguments given\n");
-    }
-
-    // Iterate all arguments for this callable.
-    int args_left = arg_list->size;
-    int cur_arg = 1;
-
     t_dll_element *e = DLL_HEAD(arg_list);
+
+    int need_count = ht->element_count;
+    int given_count = arg_list->size;
+
+    // When set to null, no varargs are wanted
+    t_list_object *vararg_obj = NULL;
+
+    int cur_arg = 0;
 
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
+        cur_arg++;
+
         char *name = ht_iter_key(&iter);
         t_method_arg *arg = ht_iter_value(&iter);
 
-        // Set object to default value if any
+        // Preset object to default value if a default value was found.
         t_object *obj = (arg->value->type == objectTypeNull) ? NULL : arg->value;
 
-        if (args_left) {
-            // When arguments are left on the stack, override object with next value on stack
-            obj = (t_object *)e->data;
-            e = DLL_NEXT(e);
-            args_left--;
+        // If we have values on the calling arg list, use the next value, overriding any default values set.
+        if (given_count) {
+            obj = e ? e->data : NULL;
         }
 
-        // Found a value (either default or from stack)?
+        // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
         if (obj == NULL) {
-            error_and_die(1, "No value found for argument %d\n", cur_arg);
+            error_and_die(1, "Not enough arguments passed, and no default values found");
         }
 
-        // Check for correct typehinting
-        if (arg->typehint->type != objectTypeNull && strcmp(OBJ2STR(arg->typehint), obj->name) != 0) {
-            error_and_die(1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+        if (arg->typehint->type != objectTypeNull) {
+            // Check typehint / varargs
+
+            if (! strcmp(OBJ2STR(arg->typehint), "...")) {
+                // ... typehint found,
+                DEBUG_PRINT("Created a vararg object!\n");
+                vararg_obj = (t_list_object *)object_new(Object_List, 0);
+
+                // Add first argument
+                ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
+
+                // Make sure we add our List[] to the local_identifiers below
+                obj = (t_object *)vararg_obj;
+            } else if (strcmp(OBJ2STR(arg->typehint), obj->name)) {
+                // classname does not match the typehint
+
+                // @TODO: we need to check if object as a parent or interface that matches!
+                error_and_die(1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+            }
         }
 
         // Everything is ok, add the new value onto the local identifiers
         ht_add(frame->local_identifiers->ht, name, obj);
 
-        // Process next argument
-        cur_arg++;
+        need_count--;
+        given_count--;
+
+        // Next needed element
         ht_iter_next(&iter);
+        if (e) e = DLL_NEXT(e);
     }
+
+
+    // We check if we can feed them to the last argument, a variable arg
+    if (given_count > 0) {
+        DEBUG_PRINT("More given variables are found.\n");
+
+        if (vararg_obj == NULL) {
+            error_and_die(1, "No variable argument found, and too many arguments passed");
+        }
+
+        while (e) {
+            DEBUG_PRINT("Adding %s to vararg\n", object_debug((t_object *)e->data));
+            // Just add argument to vararg list. No need to do any typehint checks here.
+            ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
+            e = DLL_NEXT(e);
+        }
+    }
+
 }
 
 
@@ -143,8 +178,9 @@ int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib)
 /**
  *
  */
-void vm_init(int mode) {
-    vm_mode = mode;
+void vm_init(int runmode) {
+    // Set run mode (repl, cli, fastcgi)
+    vm_runmode = runmode;
 
     gc_init();
     builtin_identifiers = ht_create();
@@ -170,7 +206,6 @@ t_object *_vm_execute(t_vm_frame *frame) {
     register unsigned int opcode, oparg1, oparg2;
     int reason = REASON_NONE;
     t_vm_frameblock *block;
-
 
     // Default return value;
     t_object *ret = Object_Null;
@@ -524,8 +559,24 @@ dispatch:
 
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
+
+                    // Fetch varargs object (or NULL when no varargs are needed)
+                    t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
+
+                    // Add items
                     for (int i=0; i!=oparg1; i++) {
                         dll_prepend(arg_list, vm_frame_stack_pop(frame));
+                    }
+
+                    if (varargs != NULL) {
+                        // iterate hash (this is the correct order), and prepend values to the arg_list DLL
+                        t_hash_iter iter;
+                        ht_iter_init(&iter, varargs->ht);
+                        while (ht_iter_valid(&iter)) {
+                            t_object *obj = ht_iter_value(&iter);
+                            dll_append(arg_list, obj);
+                            ht_iter_next(&iter);
+                        }
                     }
 
                     t_object *ret_obj = vm_object_call_args(frame, self_obj, (t_object *)callable_obj, arg_list);

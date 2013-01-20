@@ -50,14 +50,10 @@
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
-#ifdef __DEBUG
-    t_hash_table *object_hash;
-#endif
-
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "callable" };
+                                                 "hash", "tuple", "callable", "list" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -345,10 +341,6 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
  * Initialize all the (scalar) objects
  */
 void object_init() {
-#ifdef __DEBUG
-    object_hash = ht_create();
-#endif
-
     object_base_init();
     object_boolean_init();
     object_null_init();
@@ -360,13 +352,7 @@ void object_init() {
     object_hash_init();
     object_tuple_init();
     object_userland_init();
-
-#ifdef __DEBUG
-    ht_num_add(object_hash, (unsigned long)Object_True, Object_True);
-    ht_num_add(object_hash, (unsigned long)Object_False, Object_False);
-    ht_num_add(object_hash, (unsigned long)Object_Null, Object_Null);
-#endif
-
+    object_list_init();
 }
 
 
@@ -374,10 +360,6 @@ void object_init() {
  * Finalize all the (scalar) objects
  */
 void object_fini() {
-#ifdef __DEBUG
-    ht_destroy(object_hash);
-#endif
-
     object_base_fini();
     object_boolean_fini();
     object_null_fini();
@@ -389,6 +371,7 @@ void object_fini() {
     object_hash_fini();
     object_tuple_fini();
     object_userland_fini();
+    object_list_fini();
 }
 
 

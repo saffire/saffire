@@ -32,6 +32,7 @@
     #include "base.h"
     #include "boolean.h"
     #include "hash.h"
+    #include "list.h"
     #include "callable.h"
     #include "null.h"
     #include "numerical.h"

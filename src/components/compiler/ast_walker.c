@@ -200,6 +200,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
 
         case typeAstComparison :
+            stack_push(state->call_state, (void *)st_call_stay);
+
             stack_push(state->context, st_ctx_load);
             stack_push(state->side, (void *)st_side_right);
             WALK_LEAF(leaf->comparison.r);
@@ -211,6 +213,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             WALK_LEAF(leaf->comparison.l);
             stack_pop(state->side);
             stack_pop(state->context);
+
+            stack_pop(state->call_state);
 
             int tmp = 0;
             switch (leaf->comparison.cmp) {
@@ -674,17 +678,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_push(state->context, st_ctx_load);
 
                     stack_push(state->call_state, (void *)st_call_stay);
-                    WALK_LEAF(leaf->opr.ops[1]);       // Do argument list
+                    WALK_LEAF(leaf->opr.ops[1]);       // Do argument list (including last item being NullObject or ListObject varargs)
                     stack_pop(state->call_state);
 
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);       // Load callable
 
+                    // Push number of arguments
                     int arg_count = leaf->opr.ops[1]->group.len;
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count-1);
+
                     dll_append(frame, asm_create_codeline(VM_CALL, 1, opr1));
 
-                    // Pop the item after the call, but only when we need so
+                    // Pop the item after the call, but only when we need so.
                     enum call_state cs = (enum call_state)stack_peek(state->call_state);
                     if (!cs || cs == st_call_pop) {
                         dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
