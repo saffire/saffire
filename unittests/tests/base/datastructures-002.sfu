@@ -1,8 +1,8 @@
 title: Hash table key tests
 author: Freek Lijten <freeklijten@gmail.com>, Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import io as io from ::_sfl::io;
-hashTable = hash.new();
+import io;
+hashTable = hash();
 hashTable.add("a", "foo");
 hashTable.add("b", "bar");
 io.print(hashTable.exists("a"), "\n");

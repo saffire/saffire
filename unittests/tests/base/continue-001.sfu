@@ -40,4 +40,4 @@ foreach (a as b) {
 }
 continue;
 ====
-Error in line 8: We can only continue inside a loop
+Error in line 7: We can only continue inside a loop

@@ -13,7 +13,7 @@ class io {
     }
 
     static public method printf(string format, ... args) {
-        return ::_sfl::io.printf(format, ... args);
+        return sflio.printf(format, ... args);
     }
 
 }
