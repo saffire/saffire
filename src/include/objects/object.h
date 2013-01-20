@@ -173,7 +173,6 @@
         \
         t_objectype_enum type;          /* Type of the (scalar) object */ \
         char *name;                     /* Name of the class */ \
-        t_vm_frame *frame;              /* Frame in which this object resides */ \
         \
         int flags;                      /* object flags */ \
         \
@@ -200,7 +199,6 @@
                 0,              /* initial refcount */     \
                 type,           /* scalar type */          \
                 name,           /* name */                 \
-                NULL,           /* frame */                \
                 flags,          /* flags */                \
                 base,           /* parent */               \
                 0,              /* implement count */      \

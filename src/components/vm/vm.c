@@ -57,6 +57,18 @@ typedef struct _method_arg {
 #define REASON_BREAKELSE    4
 
 
+// Current running frame. Used all over the place
+t_vm_frame *current_frame = NULL;
+
+
+/**
+ * returns the current running frame
+ */
+t_vm_frame *vm_get_current_frame() {
+    return current_frame;
+}
+
+
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
  * callable. The arguments are placed onto the frame stack.
@@ -104,7 +116,6 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
             if (is_vararg) {
                 // ... typehint found,
-                DEBUG_PRINT("Created a vararg object!\n");
                 vararg_obj = (t_list_object *)object_new(Object_List, 0);
 
                 // Add first argument
@@ -134,17 +145,14 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
     }
 
 
-    // We check if we can feed them to the last argument, a variable arg
+    // If there are more arguments passed, check if we can feed them to the vararg, if present
     if (given_count > 0) {
-        DEBUG_PRINT("More given variables are found.\n");
-
         if (vararg_obj == NULL) {
             error_and_die(1, "No variable argument found, and too many arguments passed");
         }
 
+        // Just add arguments to vararg list. No need to do any typehint checks here.
         while (e) {
-            DEBUG_PRINT("Adding %s to vararg\n", object_debug((t_object *)e->data));
-            // Just add argument to vararg list. No need to do any typehint checks here.
             ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
             e = DLL_NEXT(e);
         }
@@ -213,6 +221,11 @@ t_object *_vm_execute(t_vm_frame *frame) {
     register unsigned int opcode, oparg1, oparg2;
     int reason = REASON_NONE;
     t_vm_frameblock *block;
+
+
+    // Set the correct current frame
+    t_vm_frame *old_current_frame = vm_get_current_frame();
+    current_frame = frame;
 
     // Default return value;
     t_object *ret = Object_Null;
@@ -350,7 +363,6 @@ dispatch:
                         value = ((t_attrib_object *)attrib_obj)->attribute;
                     }
 
-                    value->frame = frame;
                     object_inc_ref((t_object *)value);
                     vm_frame_stack_push(frame, (t_object *)value);
 
@@ -611,7 +623,6 @@ dispatch:
                     register char *class_name = OBJ2STR(class_obj);
 
                     dst = vm_import(frame, module_name, class_name);
-                    dst->frame = frame;
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
                 }
@@ -849,6 +860,9 @@ block_end:
     } // for (;;)
 
 
+    // Restore current frame
+    current_frame = old_current_frame;
+
     return ret;
 }
 
@@ -952,12 +966,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Internal function call
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
-        if (callable_obj->frame == NULL) {
-            error_and_die(1, "Want to call an external method, but the frame has not been defined");
-        }
-
         // Create a new execution frame
-        t_vm_frame *new_frame = vm_frame_new(callable_obj->frame, callable_obj->code.bytecode);
+        t_vm_frame *new_frame = vm_frame_new(vm_get_current_frame(), callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
