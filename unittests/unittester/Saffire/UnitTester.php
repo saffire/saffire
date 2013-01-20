@@ -18,10 +18,10 @@ class UnitTester {
     protected $_saffireBinaryVersion;       // Actual binary version (for version checking)
 
     // Result chars
-    const PASS = ".";
-    const FAIL = "X";
-    const IGNORE = "I";
-    const SKIP = "S";
+    const PASS = "\033[32m-\033[0m";
+    const FAIL = "\033[31mX\033[0m";
+    const IGNORE = "\033[33;1mI\033[0m";
+    const SKIP = "\033[33;1mS\033[0m";
 
     /**
      *
@@ -231,7 +231,6 @@ class UnitTester {
             $this->_current['lineno'] += countnewlines($test)+1;
             $this->_current['testno']++;
 
-
             switch ($result) {
                 case self::PASS :
                     $this->_results['passed']++;
@@ -246,6 +245,10 @@ class UnitTester {
                     $this->_results['skipped']++;
                     break;
             }
+
+            if (($this->_current['testno']-2) % 10 == 0 && ($this->_current['testno']-2) != 0) {
+                $this->_output("][");
+            }
             $this->_output($result);
         }
     }
@@ -254,6 +257,15 @@ class UnitTester {
     /**
      */
     protected function _runFunctionalTest($test, $testno, $lineno) {
+        $ignore = false;
+
+        // Check if we need to skip this test.
+        if (preg_match("/^!skip/i", $test)) return self::SKIP;
+
+        // Check if we need to ignore results of this test.
+        if (preg_match("/^!ignore/i", $test)) $ignore = true;
+
+
         $tmpDir = sys_get_temp_dir();
 
         // Don't expect any output
@@ -318,7 +330,9 @@ cleanup:
         @unlink($tmpFile.".exp");
         @unlink($tmpFile.".out");
         @unlink($tmpFile.".diff");
-        return $ret;
+
+
+        return $ignore ? self::IGNORE : $ret;
     }
 
 

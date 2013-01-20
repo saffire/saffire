@@ -343,6 +343,7 @@ dispatch:
                         value = ((t_attrib_object *)attrib_obj)->attribute;
                     }
 
+                    value->frame = frame;
                     object_inc_ref((t_object *)value);
                     vm_frame_stack_push(frame, (t_object *)value);
 
@@ -438,7 +439,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(frame, left_obj, oparg1, 0, 1, right_obj);
+                dst = object_operator(left_obj, oparg1, 0, 1, right_obj);
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -454,7 +455,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(frame, left_obj, oparg1, 1, 1, right_obj);
+                dst = object_operator(left_obj, oparg1, 1, 1, right_obj);
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -473,7 +474,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = vm_object_call(frame, dst, bool_method, 0);
+                    dst = vm_object_call(dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_TRUE(dst)) {
@@ -489,7 +490,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = vm_object_call(frame, dst, bool_method, 0);
+                    dst = vm_object_call(dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_FALSE(dst)) {
@@ -503,7 +504,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = vm_object_call(frame, dst, bool_method, 0);
+                    dst = vm_object_call(dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
@@ -521,7 +522,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     register t_object *bool_method = object_find_attribute(dst, "boolean");
-                    dst = vm_object_call(frame, dst, bool_method, 0);
+                    dst = vm_object_call(dst, bool_method, 0);
                 }
 
                 // @TODO: We assume that this opcode has at least 1 block!
@@ -579,7 +580,7 @@ dispatch:
                         }
                     }
 
-                    t_object *ret_obj = vm_object_call_args(frame, self_obj, (t_object *)callable_obj, arg_list);
+                    t_object *ret_obj = vm_object_call_args(self_obj, (t_object *)callable_obj, arg_list);
                     dll_free(arg_list);
 
                     object_inc_ref(ret_obj);
@@ -603,6 +604,7 @@ dispatch:
                     register char *class_name = OBJ2STR(class_obj);
 
                     dst = vm_import(frame, module_name, class_name);
+                    dst->frame = frame;
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
                 }
@@ -646,7 +648,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Cannot compare non-identical object types\n");
                 }
-                dst = object_comparison(frame, left_obj, oparg1, right_obj);
+                dst = object_comparison(left_obj, oparg1, right_obj);
 
                 object_dec_ref(left_obj);
                 object_dec_ref(right_obj);
@@ -860,7 +862,7 @@ int vm_execute(t_bytecode *bc) {
     if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
         t_object *result_numerical = object_find_attribute(result, "numerical");
-        result = vm_object_call(initial_frame, result, result_numerical, 0);
+        result = vm_object_call(result, result_numerical, 0);
     }
     int ret_val = ((t_numerical_object *) result)->value;
 
@@ -881,7 +883,7 @@ void vm_populate_builtins(const char *name, void *data) {
 /**
 * Calls a method from specified object. Returns NULL when method is not found.
 */
-t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj, int arg_count, ...) {
+t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
     // Create DLL with all arguments
     va_list args;
     va_start(args, arg_count);
@@ -892,7 +894,7 @@ t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj
     }
     va_end(args);
 
-    t_object *ret_obj = vm_object_call_args(frame, self, (t_object *)method_obj, arg_list);
+    t_object *ret_obj = vm_object_call_args(self, (t_object *)method_obj, arg_list);
 
     // Free dll
     dll_free(arg_list);
@@ -904,7 +906,7 @@ t_object *vm_object_call(t_vm_frame *frame, t_object *self, t_object *method_obj
 /**
  *
  */
-t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *callable, t_dll *arg_list) {
+t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list) {
     t_callable_object *callable_obj = (t_callable_object *)callable;
     t_object *self_obj = self;
     t_object *dst;
@@ -913,7 +915,7 @@ t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *calla
     if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
         // Do actual instantiation (pass nothing)
         t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
-        self_obj = vm_object_call(frame, (t_object *)callable_obj, new_obj, 0);
+        self_obj = vm_object_call((t_object *)callable_obj, new_obj, 0);
 
         // We continue the function, but using the constructor as our callable
         callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
@@ -941,10 +943,14 @@ t_object *vm_object_call_args(t_vm_frame *frame, t_object *self, t_object *calla
     // Check if it's a native function.
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // Internal function call
-        dst = callable_obj->code.native_func(frame, self_obj, arg_list);
+        dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
+        if (callable_obj->frame == NULL) {
+            error_and_die(1, "Want to call an external method, but the frame has not been defined");
+        }
+
         // Create a new execution frame
-        t_vm_frame *new_frame = vm_frame_new(frame, callable_obj->code.bytecode);
+        t_vm_frame *new_frame = vm_frame_new(callable_obj->frame, callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;

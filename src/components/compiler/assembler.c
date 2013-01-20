@@ -67,7 +67,9 @@ static void _backpatch_labels(t_asm_frame *frame) {
 
         // Check if labelname exists, if not, we have referenced to a label but never declared it.
         if (! ht_exists(frame->label_offsets, bp->label)) {
-            error_and_die(1, "Cannot find label '%s'\n", bp->label);
+            char *label = bp->label;
+            label += strlen("userlabel_");
+            error_and_die(1, "Cannot find label '%s'\n", label);
         }
         // Fetch the offset of the label so we can patch it
         unsigned int label_offset = (int)ht_find(frame->label_offsets, bp->label);

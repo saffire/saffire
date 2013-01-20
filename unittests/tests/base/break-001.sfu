@@ -6,21 +6,30 @@ break;
 ====
 Error in line 2: We can only break inside a loop
 @@@@
+
+import io;
 do {
     break;
+    io.print("inner");
 } while (1);
-
+io.print("done");
 ====
+done
 @@@@
+import io;
 do {
     while (1) {
         break;
+        io.print("inner");
     }
     break;
+    io.print("outer");
 } while (1);
-
+io.print("done");
 ====
+done
 @@@@
+!skip
 foreach (a as b) {
     break;
 }
