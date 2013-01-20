@@ -47,6 +47,7 @@
     void vm_populate_builtins(const char *name, void *data);
     t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
     t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+    t_vm_frame *vm_get_current_frame();
 
 
 #endif
