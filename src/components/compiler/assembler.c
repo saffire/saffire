@@ -457,6 +457,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                             case COMPARISON_GE : fprintf(f, "GE"); break;
                             case COMPARISON_IN : fprintf(f, "IN"); break;
                             case COMPARISON_NI : fprintf(f, "NI"); break;
+                            case COMPARISON_EX : fprintf(f, "EX"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_ID :

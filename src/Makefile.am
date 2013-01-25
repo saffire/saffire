@@ -145,7 +145,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/hash.c \
                        components/objects/tuple.c \
                        components/objects/userland.c \
-                       components/objects/list.c
+                       components/objects/list.c \
+                       components/objects/exception.c
 
 
 ########################################################################
@@ -173,6 +174,7 @@ noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
                   components/vm/frame.c \
+                  components/vm/thread.c \
                   components/vm/import.c \
                   include/vm/vm_opcodes.c
 

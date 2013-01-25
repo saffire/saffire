@@ -187,10 +187,7 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
 t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
     t_object *obj = vm_frame_find_identifier(frame, id);
-    if (obj != NULL) return obj;
-
-    error_and_die(1, "Cannot find attribute: %s\n", id);
-    return NULL;
+    return obj;
 }
 
 /**

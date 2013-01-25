@@ -759,7 +759,90 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_FOREACH :
                     break;
-                case T_FINALLY :
+                case T_TRY :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+
+                    sprintf(label1, "try_%03d_endfinally", clc);
+                    sprintf(label2, "try_%03d_endtryblock", clc);
+                    sprintf(label5, "try_%03d_finally", clc);
+
+                    // Setup finally block (if there is a finally)
+                    if (leaf->opr.ops[2]->type != typeAstNop) {
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
+                        dll_append(frame, asm_create_codeline(VM_SETUP_FINALLY, 1, opr1));
+                    }
+
+                    // Setup try block
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 1, opr1));
+
+                    // Try block
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+
+                    dll_append(frame, asm_create_labelline(label2));
+
+                    // Iterate all catches
+                    node = leaf->opr.ops[1];
+                    for (int i=0; i!=node->group.len; i++) {
+                        sprintf(label3, "try_%03d_match_%03d", clc, i);
+                        sprintf(label4, "try_%03d_nomatch_%03d", clc, i);
+
+                        dll_append(frame, asm_create_codeline(VM_DUP_TOP, 0));
+
+                        node2 = node->group.items[i];       // Catch group
+                        t_ast_element *node3 = node2->group.items[0];
+                        if (node3->opr.oper != T_CATCH) {
+                            error_and_die(1, "Expected a T_CATCH operator node\n");
+                        }
+                        t_ast_element *exception = node3->opr.ops[0];
+                        t_ast_element *identifier = node3->opr.ops[1];
+
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, exception->string.value, 0);
+                        dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_EX);
+                        dll_append(frame, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+                        dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                        dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, identifier->string.value, 0);
+                        dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr1));
+
+                        dll_append(frame, asm_create_labelline(label3));
+
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(node2->group.items[1]);
+
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                        dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+
+                        dll_append(frame, asm_create_labelline(label4));
+                    }
+
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
+
+                    // Setup finally block
+                    dll_append(frame, asm_create_labelline(label5));
+
+                    if (leaf->opr.ops[2]->type != typeAstNop) {
+                        dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(leaf->opr.ops[2]);
+                    }
+
+                    // End finally
+                    dll_append(frame, asm_create_labelline(label1));
+
+
+
+
                     break;
                 case T_SWITCH :
                     break;

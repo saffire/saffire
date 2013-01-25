@@ -29,22 +29,7 @@
 
     #include "objects/hash.h"
     #include "compiler/bytecode.h"
-
-    #define BLOCK_MAX_DEPTH             20          // This is the same depth as defined in python
-
-    #define BLOCK_TYPE_LOOP             1
-    #define BLOCK_TYPE_EXCEPTION        2
-    #define BLOCK_TYPE_FINALLY          3
-    #define BLOCK_TYPE_END_FINALLY      4
-
-    typedef struct _vm_frameblock {
-        int type;       // Type (any of the BLOCK_TYPE_*)
-        int ip;         // Saved instruction pointer
-        int ip_else;    // Saved instruction pointer to ELSE part
-        int sp;         // Saved stack pointer
-        int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
-    } t_vm_frameblock;
-
+    #include "block.h"
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.

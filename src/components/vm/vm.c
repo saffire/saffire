@@ -31,6 +31,7 @@
 #include "vm/vm_opcodes.h"
 #include "vm/block.h"
 #include "vm/frame.h"
+#include "vm/thread.h"
 #include "general/dll.h"
 #include "general/smm.h"
 #include "objects/object.h"
@@ -55,18 +56,7 @@ typedef struct _method_arg {
 #define REASON_CONTINUE     2
 #define REASON_BREAK        3
 #define REASON_BREAKELSE    4
-
-
-// Current running frame. Used all over the place
-t_vm_frame *current_frame = NULL;
-
-
-/**
- * returns the current running frame
- */
-t_vm_frame *vm_get_current_frame() {
-    return current_frame;
-}
+#define REASON_EXCEPTION    5
 
 
 /**
@@ -197,6 +187,9 @@ void vm_init(int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
+    t_thread *thread = smm_malloc(sizeof(t_thread));
+    current_thread = thread;
+
     gc_init();
     builtin_identifiers = ht_create();
     object_init();
@@ -224,13 +217,14 @@ t_object *_vm_execute(t_vm_frame *frame) {
 
 
     // Set the correct current frame
-    t_vm_frame *old_current_frame = vm_get_current_frame();
-    current_frame = frame;
+    t_vm_frame *old_current_frame = thread_get_current_frame();
+    thread_set_current_frame(frame);
 
     // Default return value;
     t_object *ret = Object_Null;
 
     for (;;) {
+
         // Room for some other stuff
 dispatch:
         // Increase number of executions done
@@ -443,6 +437,12 @@ dispatch:
             case VM_LOAD_ID :
                 name = vm_frame_get_name(frame, oparg1);
                 dst = vm_frame_get_identifier(frame, name);
+                if (dst == NULL) {
+                    reason = REASON_EXCEPTION;
+                    thread_set_exception(Object_AttributeException);
+                    goto block_end;
+                    break;
+                }
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
                 goto dispatch;
@@ -632,11 +632,11 @@ dispatch:
 
 
             case VM_SETUP_LOOP :
-                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, 0);
+                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, 0);
                 goto dispatch;
                 break;
             case VM_SETUP_ELSE_LOOP :
-                vm_push_block(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, frame->ip + oparg2);
+                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, frame->ip + oparg2);
                 goto dispatch;
                 break;
 
@@ -663,6 +663,17 @@ dispatch:
                 left_obj = vm_frame_stack_pop(frame);
                 right_obj = vm_frame_stack_pop(frame);
 
+                // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
+                // the base class!
+
+                // Exception compare is special case. We don't let classes handle that themselves, but we
+                // need to do it here.
+                if (oparg1 == COMPARISON_EX) {
+                    vm_frame_stack_push(frame, Object_True);
+                    goto dispatch;
+                    break;
+                }
+
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Cannot compare non-identical object types\n");
                 }
@@ -677,15 +688,16 @@ dispatch:
                 break;
 
             case VM_SETUP_FINALLY :
-                vm_push_block(frame, BLOCK_TYPE_FINALLY, frame->ip + oparg1, frame->sp, 0);
+                // @TODO: Remove setup_finally. It does nothing
                 goto dispatch;
                 break;
+
             case VM_SETUP_EXCEPT :
-                vm_push_block(frame, BLOCK_TYPE_EXCEPTION, frame->ip + oparg1, frame->sp, 0);
-                goto dispatch;
-                break;
-            case VM_END_FINALLY :
-                //
+                if (oparg2 == 0) {
+                    vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, 0);
+                } else {
+                    vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2);
+                }
                 goto dispatch;
                 break;
 
@@ -832,6 +844,21 @@ block_end:
             // Pop block. Not needed anymore.
             vm_pop_block(frame);
 
+            // If we have thrown an exception, we must unwind all blocks until we hit an exception
+            // block which has been created by SETUP_EXCEPT. After this, we will store our exception onto the stack
+            // since the catch-blocks expect this.
+            if (block->type == BLOCK_TYPE_EXCEPTION) {
+                while (frame->sp < block->sp) {
+                    DEBUG_PRINT("UNWIND Exception Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
+                    dst = vm_frame_stack_pop(frame);
+                    object_dec_ref(dst);
+                }
+
+                 vm_frame_stack_push(frame, thread_get_exception());
+                // Continue loop, now, the block->type is
+                continue;
+            }
+
             // Unwind the stack. Make sure we are at the same level as the caller block.
             while (frame->sp < block->sp) {
                 DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
@@ -840,14 +867,14 @@ block_end:
             }
 
             if (reason == REASON_BREAKELSE && block->type == BLOCK_TYPE_LOOP) {
-                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->ip_else);
-                frame->ip = block->ip_else;
+                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip_else);
+                frame->ip = block->handlers.loop.ip_else;
                 break;
             }
 
             if (reason == REASON_BREAK && block->type == BLOCK_TYPE_LOOP) {
-                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->ip);
-                frame->ip = block->ip;
+                DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip);
+                frame->ip = block->handlers.loop.ip;
                 break;
             }
         }
@@ -857,11 +884,20 @@ block_end:
             break;
         }
 
+        if (reason == REASON_EXCEPTION && (block->type == BLOCK_TYPE_EXCEPTION)) {
+            printf("   ----- EXCEPTION FOUND! -----\n");
+            if (block->handlers.exception.ip_finally != 0) {
+                frame->ip = block->handlers.exception.ip_finally;
+            } else {
+                frame->ip = block->handlers.exception.ip_catch;
+            }
+        }
+
     } // for (;;)
 
 
     // Restore current frame
-    current_frame = old_current_frame;
+    thread_set_current_frame(old_current_frame);
 
     return ret;
 }
@@ -877,7 +913,7 @@ int vm_execute(t_bytecode *bc) {
     // Execute the frame
     t_object *result = _vm_execute(initial_frame);
 
-    DEBUG_PRINT("*** Vm execution done\n");
+    DEBUG_PRINT("============================ VM execution done ============================\n");
 
     // Convert returned object to numerical, so we can use it as an error code
     if (!OBJECT_IS_NUMERICAL(result)) {
@@ -967,7 +1003,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
         // Create a new execution frame
-        t_vm_frame *new_frame = vm_frame_new(vm_get_current_frame(), callable_obj->code.bytecode);
+        t_vm_frame *new_frame = vm_frame_new(thread_get_current_frame(), callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;

@@ -75,6 +75,7 @@
     #define COMPARISON_GE     5
     #define COMPARISON_IN     6
     #define COMPARISON_NI     7
+    #define COMPARISON_EX     8
 
 
     // Standard operators
@@ -155,14 +156,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     13
+    #define OBJECT_TYPE_LEN     14
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser, objectTypeList
+                   objectTypeTuple, objectTypeUser, objectTypeList, objectTypeException
                  } t_objectype_enum;
 
 

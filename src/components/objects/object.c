@@ -53,7 +53,7 @@
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "callable", "list" };
+                                                 "hash", "tuple", "callable", "list", "exception" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -353,6 +353,7 @@ void object_init() {
     object_tuple_init();
     object_userland_init();
     object_list_init();
+    object_exception_init();
 }
 
 
@@ -372,6 +373,7 @@ void object_fini() {
     object_tuple_fini();
     object_userland_fini();
     object_list_fini();
+    object_exception_fini();
 }
 
 

@@ -24,30 +24,27 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __VM_THREAD_H__
+#define __VM_THREAD_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
     #include "vm/frame.h"
+    #include "objects/objects.h"
 
-    t_hash_table *builtin_identifiers;
+    /**
+     * All data relevant to a single thread
+     */
+    typedef struct _thread {
+        t_vm_frame *frame;
+        t_exception_object *exception;
+    } t_thread;
 
-    #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
-    #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
-    #define VM_RUNMODE_REPL         2       // Virtual machine run as REPL
+    t_thread *current_thread;
 
-    // Actual runmode of the VM (fastcgi, cli, rep
-    int vm_runmode;
-
-    void vm_init(int mode);
-    void vm_fini(void);
-    int vm_execute(t_bytecode *bc);
-    t_object *_vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
-    t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+    t_thread *thread_get_current(void);
+    t_vm_frame *thread_get_current_frame(void);
+    void thread_set_current_frame(t_vm_frame *frame);
+    void thread_set_exception(t_object *exception);
+    t_object *thread_get_exception(void);
+    int thread_exception_thrown(void);
 
 #endif
-
-

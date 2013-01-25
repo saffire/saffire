@@ -24,30 +24,26 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __OBJECT_EXCEPTION_H__
+#define __OBJECT_EXCEPTION_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
-    #include "vm/frame.h"
+    #include "objects/object.h"
 
-    t_hash_table *builtin_identifiers;
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        char    *message;
+        long    code;
+    } t_exception_object;
 
-    #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
-    #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
-    #define VM_RUNMODE_REPL         2       // Virtual machine run as REPL
+    t_exception_object Object_Exception_struct;
+    t_exception_object Object_Exception_AttributeException_struct;
+    t_exception_object Object_Exception_IndexException_struct;
 
-    // Actual runmode of the VM (fastcgi, cli, rep
-    int vm_runmode;
+    #define Object_Exception            ((t_object *)&Object_Exception_struct)
+    #define Object_AttributeException   ((t_object *)&Object_Exception_AttributeException_struct)
+    #define Object_IndexException       ((t_object *)&Object_Exception_IndexException_struct)
 
-    void vm_init(int mode);
-    void vm_fini(void);
-    int vm_execute(t_bytecode *bc);
-    t_object *_vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
-    t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+    void object_exception_init(void);
+    void object_exception_fini(void);
 
 #endif
-
-
