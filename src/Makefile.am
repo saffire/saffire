@@ -52,6 +52,8 @@ BUILT_SOURCES=components/compiler/lex.yy.c include/gitversion.h include/vm/vm_op
 AM_LFLAGS = --outfile=components/compiler/$(LEX_OUTPUT_ROOT).c --header-file=include/compiler/$(LEX_OUTPUT_ROOT).h
 AM_YFLAGS += -d
 
+.NOTPARALLEL: include/compiler/parser.tab.h components/compiler/parser.tab.c components/compiler/lex.yy.c
+
 # parser.tab.h cannot be used before parser.tab.c
 include/compiler/parser.tab.h: components/compiler/parser.tab.c
 	mv compiler/parser.tab.h include/compiler/parser.tab.h
