@@ -789,6 +789,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         sprintf(label3, "try_%03d_match_%03d", clc, i);
                         sprintf(label4, "try_%03d_nomatch_%03d", clc, i);
 
+                        if (i != 0) dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
                         dll_append(frame, asm_create_codeline(VM_DUP_TOP, 0));
 
                         node2 = node->group.items[i];       // Catch group

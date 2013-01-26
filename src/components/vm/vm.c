@@ -669,7 +669,11 @@ dispatch:
                 // Exception compare is special case. We don't let classes handle that themselves, but we
                 // need to do it here.
                 if (oparg1 == COMPARISON_EX) {
-                    vm_frame_stack_push(frame, Object_True);
+                    if (object_instance_of(right_obj, left_obj->name)) {
+                        vm_frame_stack_push(frame, Object_True);
+                    } else {
+                        vm_frame_stack_push(frame, Object_False);
+                    }
                     goto dispatch;
                     break;
                 }
@@ -684,11 +688,6 @@ dispatch:
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
-                goto dispatch;
-                break;
-
-            case VM_SETUP_FINALLY :
-                // @TODO: Remove setup_finally. It does nothing
                 goto dispatch;
                 break;
 
@@ -831,8 +830,11 @@ dispatch:
 block_end:
         // We have reached the end of a frameblock or frame. Only use the RET object from here on.
 
+
+        // This loop will unwind the stack until we hit the block we are looking for.
         while (reason != REASON_NONE && frame->block_cnt > 0) {
             block = vm_fetch_block(frame);
+            printf("Unwinding frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
 
             if (reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
                 DEBUG_PRINT("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
@@ -841,7 +843,8 @@ block_end:
                 break;
             }
 
-            // Pop block. Not needed anymore.
+            // Pop block. Not needed anymore @TODO: can we do this here, since we will be using "block" later on and
+            // we just removed the same "block" from the stack?
             vm_pop_block(frame);
 
             // If we have thrown an exception, we must unwind all blocks until we hit an exception
@@ -856,7 +859,7 @@ block_end:
 
                  vm_frame_stack_push(frame, thread_get_exception());
                 // Continue loop, pointing to the correct block type
-                continue;
+                 break;
             }
 
             // Unwind the stack. Make sure we are at the same level as the caller block.
@@ -879,19 +882,23 @@ block_end:
             }
         }
 
-        if (reason != REASON_NONE) {
-            // Break from the loop. We're done
-            break;
-        }
-
-        if (reason == REASON_EXCEPTION && (block->type == BLOCK_TYPE_EXCEPTION)) {
+        // blocks unwind, ready for exception?
+        if (reason == REASON_EXCEPTION && block && block->type == BLOCK_TYPE_EXCEPTION) {
             printf("   ----- EXCEPTION FOUND! -----\n");
             if (block->handlers.exception.ip_finally != 0) {
                 frame->ip = block->handlers.exception.ip_finally;
             } else {
                 frame->ip = block->handlers.exception.ip_catch;
             }
+            // Continue with handling the exception in the current vm frame.
+            reason = REASON_NONE;
         }
+
+        // Still not handled, break from this frame
+        if (reason != REASON_NONE) {
+            break;
+        }
+
 
     } // for (;;)
 
@@ -952,7 +959,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
 
     // Find attribute from class
     t_object *class_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
-    t_object *attrib_obj = object_find_actual_attribute(class_obj, method);
+    t_object *attrib_obj = object_find_actual_attribute(class_obj, (char *)method);
 
     // Check visibility
     if (! vm_check_visibility(class_obj, class_obj, attrib_obj)) {
