@@ -170,5 +170,8 @@ t_object_comparisons exception_cmps = {
 
 t_exception_object Object_Exception_struct       = { OBJECT_HEAD_INIT2("exception", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_CLASS, &exception_funcs), "Generic exception" };
 
-t_exception_object Object_Exception_AttributeException_struct = { OBJECT_HEAD_INIT2("attributeException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "Attribute is not found"};
-t_exception_object Object_Exception_IndexException_struct  = { OBJECT_HEAD_INIT2("indexException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "Index out of range" };
+t_exception_object Object_Exception_AttributeException_struct = { OBJECT_HEAD_INIT3("attributeException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, &Object_Exception_struct), "Attribute is not found"};
+t_exception_object Object_Exception_IndexException_struct  = { OBJECT_HEAD_INIT3("indexException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, &Object_Exception_struct), "Index out of range" };
+
+
+// Define

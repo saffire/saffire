@@ -767,11 +767,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     sprintf(label2, "try_%03d_endtryblock", clc);
                     sprintf(label5, "try_%03d_finally", clc);
 
-                    // Setup finally block (if there is a finally)
-                    if (leaf->opr.ops[2]->type != typeAstNop) {
-                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                        dll_append(frame, asm_create_codeline(VM_SETUP_FINALLY, 1, opr1));
-                    }
+
+                    //opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
 
                     // Setup try block
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
@@ -832,17 +829,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label5));
 
                     if (leaf->opr.ops[2]->type != typeAstNop) {
-                        dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                        //dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[2]);
                     }
 
-                    // End finally
-                    dll_append(frame, asm_create_labelline(label1));
-
-
-
-
+//                    // End finally
+//                    dll_append(frame, asm_create_labelline(label1));
                     break;
                 case T_SWITCH :
                     break;

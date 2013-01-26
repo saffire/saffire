@@ -53,5 +53,5 @@ void thread_set_exception(t_object *exception) {
 }
 
 t_object *thread_get_exception(void) {
-    return current_thread->exception;
+    return (t_object *)current_thread->exception;
 }

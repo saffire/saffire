@@ -263,4 +263,6 @@
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
     void object_remove_all_internal_attributes(t_object *obj);
 
+    int object_instance_of(t_object *obj, const char *instance);
+
 #endif

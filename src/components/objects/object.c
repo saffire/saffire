@@ -100,6 +100,28 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
 }
 
 
+int object_instance_of(t_object *obj, const char *instance) {
+    DEBUG_PRINT("object_instance_of(%s, %s)\n", obj->name, instance);
+
+    t_object *cur_obj = obj;
+    while (cur_obj != NULL) {
+        DEBUG_PRINT("  * Checking: %s against %s\n", cur_obj->name, instance);
+        // Check if name of object matches instance
+        if (strcmp(cur_obj->name, instance) == 0) {
+            return 1;
+        }
+
+        // @TODO: Also check interfaces
+
+        // Trickle down to parent object and try again
+        cur_obj = cur_obj->parent;
+    }
+
+    // Nothing found that matches :/
+    return 0;
+}
+
+
 /**
  * Calls a method from specified object. Returns NULL when method is not found.
  */

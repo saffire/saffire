@@ -105,7 +105,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
             // Check typehint / varargs
 
             if (is_vararg) {
-                // ... typehint found,
+                // the '...' typehint found.
                 vararg_obj = (t_list_object *)object_new(Object_List, 0);
 
                 // Add first argument
@@ -115,7 +115,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
                 // Make sure we add our List[] to the local_identifiers below
                 obj = (t_object *)vararg_obj;
-            } else if (strcmp(OBJ2STR(arg->typehint), obj->name)) {
+            } else if (! object_instance_of(obj, (const char *)OBJ2STR(arg->typehint))) {
                 // classname does not match the typehint
 
                 // @TODO: we need to check if object as a parent or interface that matches!
@@ -221,7 +221,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
     thread_set_current_frame(frame);
 
     // Default return value;
-    t_object *ret = Object_Null;
+    t_object *ret = NULL;
 
     for (;;) {
 
@@ -855,7 +855,7 @@ block_end:
                 }
 
                  vm_frame_stack_push(frame, thread_get_exception());
-                // Continue loop, now, the block->type is
+                // Continue loop, pointing to the correct block type
                 continue;
             }
 
@@ -879,7 +879,7 @@ block_end:
             }
         }
 
-        if (reason == REASON_RETURN) {
+        if (reason != REASON_NONE) {
             // Break from the loop. We're done
             break;
         }
@@ -909,11 +909,30 @@ block_end:
 int vm_execute(t_bytecode *bc) {
     // Create initial frame
     t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, bc);
+    thread_set_current_frame(initial_frame);
+
+    // Implicit load saffire
+    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
+    vm_frame_set_identifier(initial_frame, "saffire", obj);
 
     // Execute the frame
     t_object *result = _vm_execute(initial_frame);
 
+
     DEBUG_PRINT("============================ VM execution done ============================\n");
+
+    // Check if there was an uncaught exception (when result == NULL)
+    if (result == NULL) {
+        if (thread_exception_thrown()) {
+            // handle exception
+            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
+            result = object_new(Object_Numerical, 1);
+        } else {
+            // result was NULL, but no exception found, just threat like regular 0
+            result = object_new(Object_Numerical, 0);
+        }
+    }
+
 
     // Convert returned object to numerical, so we can use it as an error code
     if (!OBJECT_IS_NUMERICAL(result)) {
@@ -925,6 +944,42 @@ int vm_execute(t_bytecode *bc) {
 
     vm_frame_destroy(initial_frame);
     return ret_val;
+}
+
+
+t_object *object_internal_call(const char *class, const char *method, int arg_count, ...) {
+    // @TODO: This code is pretty much duplicated from LOAD_ATTR.
+
+    // Find attribute from class
+    t_object *class_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
+    t_object *attrib_obj = object_find_actual_attribute(class_obj, method);
+
+    // Check visibility
+    if (! vm_check_visibility(class_obj, class_obj, attrib_obj)) {
+        error_and_die(1, "visibility error!");
+    }
+
+    // Duplicate and bind class to attribute
+    t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
+    t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
+    memcpy(new_copy, callable_obj, sizeof(t_callable_object));
+    new_copy->binding = class_obj;
+
+    //  Create arguments DLL
+    va_list args;
+    va_start(args, arg_count);
+    t_dll *arg_list = dll_init();
+    for (int i=0; i!=arg_count; i++) {
+        t_object *obj = va_arg(args, t_object *);
+        dll_append(arg_list, obj);
+    }
+    va_end(args);
+
+    // Call method
+    t_object *ret = vm_object_call_args(class_obj, (t_object *)new_copy, arg_list);
+
+    dll_free(arg_list);
+    return ret;
 }
 
 
