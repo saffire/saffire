@@ -326,6 +326,12 @@ dispatch:
                     DEBUG_PRINT("Binding to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
+                    if (attrib_obj == NULL) {
+                        reason = REASON_EXCEPTION;
+                        thread_set_exception(Object_AttributeException);
+                        goto block_end;
+                        break;
+                    }
 
                     DEBUG_PRINT("     NAME: %s\n", OBJ2STR(name));
                     DEBUG_PRINT("     SEARCH: %s\n", object_debug(search_obj));
@@ -601,6 +607,13 @@ dispatch:
 
                     t_object *ret_obj = vm_object_call_args(self_obj, (t_object *)callable_obj, arg_list);
                     dll_free(arg_list);
+
+                    if (ret_obj == NULL) {
+                        reason = REASON_EXCEPTION;
+                        thread_set_exception(Object_AttributeException);
+                        goto block_end;
+                        break;
+                    }
 
                     object_inc_ref(ret_obj);
                     vm_frame_stack_push(frame, ret_obj);
