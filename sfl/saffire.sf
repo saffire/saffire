@@ -25,7 +25,7 @@ class saffire {
     }
 
     static public method uncaughtExceptionHandler(exception e) {
-        io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
+        io.printf("Uncaught '%s' at file %s, line %d: %s\n", e.name(), "<unknown>", 0, e.getMessage());
     }
 
 }
