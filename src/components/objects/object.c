@@ -226,6 +226,8 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
  * Increase reference to object.
  */
 void object_inc_ref(t_object *obj) {
+    if (! obj) return;
+
     obj->ref_count++;
 //    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
@@ -235,6 +237,8 @@ void object_inc_ref(t_object *obj) {
  * Decrease reference from object.
  */
 void object_dec_ref(t_object *obj) {
+    if (! obj) return;
+
     obj->ref_count--;
 //    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 

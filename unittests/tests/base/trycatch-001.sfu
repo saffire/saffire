@@ -2,28 +2,30 @@ title: Try/Catch tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
+import io;
 try {
-
-} catch (Exception e) {
-
+    foo.bar();
+} catch (exception e) {
+    io.print("caught\n");
 } finally {
-
+    io.print("finally\n");
 }
 ====
+caught
+finally
 @@@@
-!skip
-// Try multiple catches
+import io;
 try {
-
-} catch (Exception e) {
-
-} catch (Exception e) {
-
-} catch (Exception e) {
-
+    foo.bar();
+} catch (attributeException e) {
+    io.print("attribute\n");
+} catch (indexException e) {
+    io.print("index\n");
+} catch (exception e) {
+    io.print("exception\n");
 }
 ====
+attribute
 @@@@
 // Only try, no catch
 try {
@@ -68,3 +70,84 @@ try {
 }
 ====
 Error: line 3: syntax error, unexpected T_FINALLY, expecting T_CATCH
+@@@@
+// Pass finally
+import io;
+try {
+    io.print("try\n");
+} catch (exception e) {
+    io.print("exception\n");
+} finally {
+    io.print("finally\n");
+}
+====
+try
+finally
+@@@@@@
+// Return in try
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "bar";
+        } catch (exception e) {
+            io.print("exception\n");
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+io.print(f.bar());
+====
+try
+finally
+bar
+@@@@@@
+// Return in finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "bar";
+        } catch (exception e) {
+            io.print("exception\n");
+        } finally {
+            io.print("finally\n");
+            return "baz";
+        }
+    }
+}
+f = foo();
+io.print(f.bar());
+====
+try
+finally
+baz
+@@@@@@
+// Double exception
+import io;
+try {
+    io.print("try1\n");
+    foo.bar();
+    io.print("not executed\n");
+} catch (exception e) {
+    io.print("exception1\n");
+    try {
+        io.print("try2\n");
+        foo.bar();
+        io.print("not executed\n");
+    } catch (exception e) {
+        io.print("exception2\n");
+    } finally {
+        io.print("finally2\n");
+    }
+} finally {
+    io.print("finally1\n");
+}
+====
+try
+finally
+baz

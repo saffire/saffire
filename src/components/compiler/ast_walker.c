@@ -772,7 +772,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     // Setup try block
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
-                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 1, opr1));
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 2, opr1, opr2));
 
                     // Try block
                     stack_push(state->context, st_ctx_load);
@@ -824,6 +825,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
 
                     dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    // This END_FINALLY will be triggered if our catchblocks did not match our exception
                     dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
 
                     // Setup finally block
@@ -833,6 +835,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         //dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[2]);
+
+                        dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
                     }
 
 //                    // End finally

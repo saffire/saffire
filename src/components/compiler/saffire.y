@@ -284,7 +284,7 @@ jump_statement:
         T_BREAK ';'                 { saffire_validate_break();  $$ = ast_opr(T_BREAK, 0); }
     |   T_BREAKELSE ';'             { saffire_validate_breakelse();  $$ = ast_opr(T_BREAKELSE, 0); }
     |   T_CONTINUE ';'              { saffire_validate_continue();  $$ = ast_opr(T_CONTINUE, 0); }
-    |   T_RETURN ';'                { saffire_validate_return();  $$ = ast_opr(T_RETURN, 0); }
+    |   T_RETURN ';'                { saffire_validate_return();  $$ = ast_opr(T_RETURN, 1, ast_identifier("null")); }
     |   T_RETURN expression ';'     { saffire_validate_return();  $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { $$ = ast_opr(T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_opr(T_GOTO, 1, ast_string($2)); smm_free($2); }

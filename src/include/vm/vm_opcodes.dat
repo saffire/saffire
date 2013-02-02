@@ -17,9 +17,12 @@ RETURN               0x73
 BREAK_LOOP           0x74
 BREAKELSE_LOOP       0x75
 
+END_FINALLY          0x7A
+
 USE                  0x7E
 IMPORT               0x7F
 
+; 1 operand per opcode
 STORE_ID             0x80
 LOAD_CONST           0x81
 LOAD_ID              0x82
@@ -35,16 +38,12 @@ LOAD_GLOBAL          0x88
 STORE_GLOBAL         0x89
 DELETE_GLOBAL        0x8A
 
-
-; 1 operand per opcode
 SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
 BUILD_CLASS          0x93
 COMPARE_OP           0x95
 SETUP_FINALLY        0x96
-SETUP_EXCEPT         0x97
-END_FINALLY          0x98
 
 JUMP_IF_FIRST_FALSE  0xA0
 JUMP_IF_FIRST_TRUE   0xA1
@@ -63,5 +62,6 @@ CALL                 0xBF
 ; 2 operands per opcode
 SETUP_ELSE_LOOP      0xC1
 BUILD_ATTRIB         0xC2
+SETUP_EXCEPT         0xC3
 
 RESERVED             0xFF
