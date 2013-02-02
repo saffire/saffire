@@ -90,20 +90,46 @@ class foo {
     public method bar() {
         try {
             io.print("try\n");
-            return "bar";
+            return "1";
         } catch (exception e) {
             io.print("exception\n");
+            return "2";
         } finally {
             io.print("finally\n");
         }
     }
 }
 f = foo();
-io.print(f.bar());
+io.print(f.bar(),"\n");
 ====
 try
 finally
-bar
+1
+@@@@@@
+// Return in catch
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            foo.notexisting();
+            return "1";
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+        }
+        return "4";
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+exception
+finally
+2
 @@@@@@
 // Return in finally
 import io;
@@ -111,21 +137,22 @@ class foo {
     public method bar() {
         try {
             io.print("try\n");
-            return "bar";
+            return "1";
         } catch (exception e) {
             io.print("exception\n");
+            return "2";
         } finally {
             io.print("finally\n");
-            return "baz";
+            return "3";
         }
     }
 }
 f = foo();
-io.print(f.bar());
+io.print(f.bar(),"\n");
 ====
 try
 finally
-baz
+3
 @@@@@@
 // Double exception
 import io;
@@ -148,6 +175,32 @@ try {
     io.print("finally1\n");
 }
 ====
+try1
+exception1
+try2
+exception2
+finally2
+finally1
+@@@@@@
+// Return in try should not continue, but only do finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "1";
+            io.print("This should not be printed!\n");
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
 try
 finally
-baz
+1

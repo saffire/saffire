@@ -78,7 +78,7 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
     t_object *cur_obj = obj;
 
     while (attr == NULL) {
-        DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
+        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
 
         // Find the attribute in the current object
         attr = ht_find(cur_obj->attributes, attr_name);
@@ -94,7 +94,7 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
         cur_obj = cur_obj->parent;
     }
 
-    DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
+    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
 
     return attr;
 }

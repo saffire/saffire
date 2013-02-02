@@ -74,7 +74,7 @@ unsigned int vm_frame_get_operand(t_vm_frame *frame) {
  * Pops an object from the stack. Errors when the stack is empty
  */
 t_object *vm_frame_stack_pop(t_vm_frame *frame) {
-    DEBUG_PRINT("STACK POP(%d): %08lX %s\n", frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
         error_and_die(1, "Trying to pop from an empty stack");
@@ -91,7 +91,7 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
  * Pushes an object onto the stack. Errors when the stack is full
  */
 void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
-    DEBUG_PRINT("DBG PUSH: %s %08lX \n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
 
     if (frame->sp < 0) {
         error_and_die(1, "Trying to push to a full stack");
