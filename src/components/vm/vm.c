@@ -182,6 +182,8 @@ int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib)
     return 0;
 }
 
+int debug = 0;
+
 /**
  *
  */
@@ -240,6 +242,8 @@ dispatch:
         unsigned long cip = frame->ip;
 #endif
 
+        vm_frame_stack_debug(frame);
+
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
 
@@ -253,9 +257,11 @@ dispatch:
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s (0x%02X)\n" ANSI_RESET, cip, vm_code_names[vm_codes_offset[opcode]], oparg1);
         } else {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s\n", cip, vm_code_names[vm_codes_offset[opcode]]);
+            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s\n" ANSI_RESET, cip, vm_code_names[vm_codes_offset[opcode]]);
         }
 #endif
+
+        if (debug) getchar();
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
@@ -711,6 +717,8 @@ dispatch:
                 break;
 
             case VM_SETUP_EXCEPT :
+                debug = 1;
+
                 /* Fillers for end_finally. Either these are used, or other values get pushed (in case of a return in the try-block)
                  * In the latter case, the objects below gets cleaned by the stack unwinding. */
                 vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
@@ -845,6 +853,16 @@ dispatch:
                 goto block_end;
                 break;
 
+            case VM_START_FINALLY :
+                DEBUG_PRINT("Start finally!\n");
+
+                block = vm_fetch_block(frame);
+                block->handlers.exception.in_finally = 1;
+
+                vm_frame_block_debug(frame);
+                goto block_end;
+                break;
+
             case VM_END_FINALLY :
                 // Pop value (exception, or numerical) from the stack
                 ret = vm_frame_stack_pop(frame);
@@ -902,16 +920,20 @@ block_end:
  * change the IP pointer as well (continue, break, finally, catch etc)
  */
 t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
+    vm_frame_block_debug(frame);
+
     t_vm_frameblock *block = vm_fetch_block(frame);
 
     DEBUG_PRINT("init unwind_blocks: [curblocks %d]\n", frame->block_cnt);
-    DEBUG_PRINT("  Current reason: %d\n", *reason);
-    DEBUG_PRINT("  Block Type: %d\n", block->type);
 
     // Unwind block as long as there is a reason to unwind
     while (*reason != REASON_NONE && frame->block_cnt > 0) {
+        DEBUG_PRINT("  CUR block: %d\n", frame->block_cnt);
+        DEBUG_PRINT("  Current reason: %d\n", *reason);
+        DEBUG_PRINT("  Block Type: %d\n", block->type);
+
         block = vm_fetch_block(frame);
-        DEBUG_PRINT("Unwinding frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
+        DEBUG_PRINT("Cehcking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
 
         // Case 1: Continue inside a loop block
         if (*reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
@@ -924,8 +946,9 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             break;
         }
 
-// Case 2: Return inside try block
-        if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION) {
+
+        // Case 2: Return inside try (or catch) block, but not inside finally block
+        if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION && block->handlers.exception.in_finally == 0) {
             DEBUG_PRINT("CASE 2\n");
             /* We push the return value and the reason (REASON_RETURN) onto the stack, since END_FINALLY will expect
              * this. We have no real way to know if a try block has a return statement inside, so SETUP_EXCEPT will
@@ -945,6 +968,23 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             break;
         }
 
+        // Case 4: Exception raised, and we are an exception block.
+        if (*reason == REASON_EXCEPTION && block->type == BLOCK_TYPE_EXCEPTION) {
+            DEBUG_PRINT("CASE 4\n");
+
+            DEBUG_PRINT("   ----- EXCEPTION FOUND! -----\n");
+
+            // We throw the current exception onto the stack. The catch-blocks will expect this.
+            vm_frame_stack_push(frame, thread_get_exception());
+
+            // Continue with handling the exception in the current vm frame.
+            *reason = REASON_NONE;
+            frame->ip = block->handlers.exception.ip_catch;
+            break;
+        }
+
+
+    DEBUG_PRINT("unwind!");
         /*
          * All cases below here are pop the block.
          */
@@ -966,21 +1006,6 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
         if (*reason == REASON_EXCEPTION && block->type != BLOCK_TYPE_EXCEPTION) {
             DEBUG_PRINT("CASE 3\n");
             continue;
-        }
-
-        // Case 4: Exception raised, and we are an exception block.
-        if (*reason == REASON_EXCEPTION && block->type == BLOCK_TYPE_EXCEPTION) {
-            DEBUG_PRINT("CASE 4\n");
-
-            DEBUG_PRINT("   ----- EXCEPTION FOUND! -----\n");
-
-            // We throw the current exception onto the stack. The catch-blocks will expect this.
-            vm_frame_stack_push(frame, thread_get_exception());
-
-            // Continue with handling the exception in the current vm frame.
-            *reason = REASON_NONE;
-            frame->ip = block->handlers.exception.ip_catch;
-            break;
         }
 
         // Case 5: BreakElse inside a loop-block
@@ -1008,6 +1033,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
     // be handled by the parent frame.
 
     DEBUG_PRINT("fini unwind_blocks: [block_cnt: %d] %d\n", frame->block_cnt, *reason);
+    vm_frame_block_debug(frame);
     return block;
 }
 

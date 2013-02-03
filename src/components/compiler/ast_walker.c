@@ -832,6 +832,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label5));
 
                     if (leaf->opr.ops[2]->type != typeAstNop) {
+                        dll_append(frame, asm_create_codeline(VM_START_FINALLY, 0));
+
                         //dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[2]);
@@ -839,8 +841,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
                     }
 
-//                    // End finally
-//                    dll_append(frame, asm_create_labelline(label1));
                     break;
                 case T_SWITCH :
                     break;

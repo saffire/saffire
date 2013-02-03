@@ -47,7 +47,7 @@
 
         t_object **constants_objects;               // Constants converted to objects
 
-        int block_cnt;                              // Last used block number
+        int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
 
         //unsigned int time;                        // Total time spend in this bytecode block
