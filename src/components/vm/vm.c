@@ -58,7 +58,7 @@ typedef struct _method_arg {
 #define REASON_BREAKELSE    4
 #define REASON_EXCEPTION    5
 #define REASON_RERAISE      6
-#define REASON_FINALLY      7
+//#define REASON_FINALLY      7
 
 
 /**
@@ -240,9 +240,8 @@ dispatch:
 
 #ifdef __DEBUG
         unsigned long cip = frame->ip;
-#endif
-
         vm_frame_stack_debug(frame);
+#endif
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
@@ -261,7 +260,9 @@ dispatch:
         }
 #endif
 
-        if (debug) getchar();
+#ifdef __DEBUG
+//        if (debug) getchar();
+#endif
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
@@ -719,12 +720,11 @@ dispatch:
             case VM_SETUP_EXCEPT :
                 debug = 1;
 
-                /* Fillers for end_finally. Either these are used, or other values get pushed (in case of a return in the try-block)
-                 * In the latter case, the objects below gets cleaned by the stack unwinding. */
-                vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
-
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2);
 
+//                /* Fillers for end_finally. Either these are used, or other values get pushed (in case of a return in the try-block)
+//                 * In the latter case, the objects below gets cleaned by the stack unwinding. */
+//                vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
                 goto dispatch;
                 break;
 
@@ -859,34 +859,44 @@ dispatch:
                 block = vm_fetch_block(frame);
                 block->handlers.exception.in_finally = 1;
 
-                vm_frame_block_debug(frame);
                 goto block_end;
                 break;
 
             case VM_END_FINALLY :
-                // Pop value (exception, or numerical) from the stack
-                ret = vm_frame_stack_pop(frame);
-                object_dec_ref(ret);
+                block = vm_fetch_block(frame);
 
-                // A hack to check if ret is an object, or a plain number
-                if (OBJECT_IS_NUMERICAL(ret)) {
-                    // Try-block returned (or continue)
-                    reason = OBJ2NUM(ret);
-                    if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
-                        // If we popped return or continue, the actual ret value is still on the stack
-                        ret = vm_frame_stack_pop(frame);
-                        object_dec_ref(ret);
+                if (block->handlers.exception.return_pushed == 1) {
+                    // Pop value (exception, or numerical) from the stack
+                    ret = vm_frame_stack_pop(frame);
+                    object_dec_ref(ret);
+
+                    // A hack to check if ret is an object, or a plain number
+                    if (OBJECT_IS_NUMERICAL(ret)) {
+                        // Try-block returned (or continue)
+                        reason = OBJ2NUM(ret);
+                        if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
+                            // If we popped return or continue, the actual ret value is still on the stack
+                            ret = vm_frame_stack_pop(frame);
+                            object_dec_ref(ret);
+                        }
                     }
-                } else if (object_instance_of(ret, "exception")) {
-                    // Exception on the stack. We need to re-raise it to the parent frame
-                    reason = REASON_RERAISE;
-                    ret = NULL;
-                } else {
-                    // @TODO Something unexpected hsa been popped
-                    thread_set_exception(Object_AttributeException);
-                    reason = REASON_EXCEPTION;
-                    ret = NULL;
+                    goto block_end;
+                    break;
                 }
+
+//                } else if (object_instance_of(ret, "exception")) {
+//                    // Exception on the stack. We need to re-raise it to the parent frame
+//                    reason = REASON_RERAISE;
+//                    ret = NULL;
+//                } else {
+//                    // @TODO Something unexpected hsa been popped
+//                    thread_set_exception(Object_AttributeException);
+//                    reason = REASON_EXCEPTION;
+//                    ret = NULL;
+//                }
+                goto block_end;
+                break;
+
 
         } // switch(opcode) {
 
@@ -920,8 +930,6 @@ block_end:
  * change the IP pointer as well (continue, break, finally, catch etc)
  */
 t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
-    vm_frame_block_debug(frame);
-
     t_vm_frameblock *block = vm_fetch_block(frame);
 
     DEBUG_PRINT("init unwind_blocks: [curblocks %d]\n", frame->block_cnt);
@@ -933,7 +941,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
         DEBUG_PRINT("  Block Type: %d\n", block->type);
 
         block = vm_fetch_block(frame);
-        DEBUG_PRINT("Cehcking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
+        DEBUG_PRINT("Checking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
 
         // Case 1: Continue inside a loop block
         if (*reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
@@ -962,7 +970,10 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             vm_frame_stack_push(frame, ret);
             vm_frame_stack_push(frame, object_new(Object_Numerical, 1, *reason));
 
+            // Let the block know we just pushed a reason and ret
+            block->handlers.exception.return_pushed = 1;
             // Reset reason, and jump to our finally block
+
             *reason = REASON_NONE;
             frame->ip = block->handlers.exception.ip_finally;
             break;
@@ -1024,16 +1035,15 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             break;
         }
 
-        if (*reason == REASON_FINALLY && block->type == BLOCK_TYPE_EXCEPTION) {
-            *reason = REASON_NONE;
-        }
+//        if (*reason == REASON_FINALLY && block->type == BLOCK_TYPE_EXCEPTION) {
+//            *reason = REASON_NONE;
+//        }
     }
 
     // It might be possible that we unwind every block and still have a a reason different than REASON_NONE. This will
     // be handled by the parent frame.
 
     DEBUG_PRINT("fini unwind_blocks: [block_cnt: %d] %d\n", frame->block_cnt, *reason);
-    vm_frame_block_debug(frame);
     return block;
 }
 

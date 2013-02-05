@@ -77,6 +77,7 @@ void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, 
     block->handlers.exception.ip_catch = ip_catch;
     block->handlers.exception.ip_finally = ip_finally;
     block->handlers.exception.in_finally = 0;
+    block->handlers.exception.return_pushed = 0;
 }
 
 /**

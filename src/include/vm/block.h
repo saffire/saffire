@@ -43,6 +43,7 @@
                 int ip_catch;      // Saved instruction pointer to CATCH blocks
                 int ip_finally;    // Saved instruction pointer to FINALLY part
                 int in_finally;    // Are we currently handling the finally block?
+                int return_pushed;  // Is a return value pushed
             } exception;
         } handlers;
         int sp;         // Saved stack pointer

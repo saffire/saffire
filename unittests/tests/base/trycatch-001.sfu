@@ -204,3 +204,32 @@ io.print(f.bar(),"\n");
 try
 finally
 1
+@@@@@@
+// Return in try should not continue, but only do finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            i = 1;
+            io.print("try\n");
+            while (i < 10) {
+                io.print(i);
+                i = i + 1;
+                if (i == 5) {
+                  self.notexisting();
+                }
+            }
+            io.print("This should not be printed!\n");
+        } catch (exception e) {
+            io.print("exception\n");
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+12345exception
+finally
