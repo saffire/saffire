@@ -327,9 +327,14 @@ void vm_frame_destroy(t_vm_frame *frame) {
 
 #ifdef __DEBUG
 void vm_frame_stack_debug(t_vm_frame *frame) {
+    if (frame->sp == frame->bytecode->stack_size) {
+        //printf("\nEmpty framestack\n");
+        return;
+    }
+
     printf("\nFRAME STACK\n");
     printf("=======================\n");
-    for (int i=0; i!=frame->bytecode->stack_size; i++) {
+    for (int i=frame->sp; i<=frame->bytecode->stack_size-1; i++) {
         printf("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
     printf("\n");

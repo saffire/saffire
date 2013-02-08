@@ -51,6 +51,7 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     t_ast_element *ast = ast_generate_from_file(source_file);
     t_hash_table *asm_code = ast_walker(ast);
     t_bytecode *bc = assembler(asm_code);
+    bc->filename = smm_strdup(source_file);
 
     // Create a new frame and run it!
     t_vm_frame *module_frame = vm_frame_new(frame, bc);

@@ -224,6 +224,28 @@ t_object *_vm_execute(t_vm_frame *frame) {
     t_vm_frameblock *block;
 
 
+#ifdef DEBUG
+    printf(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
+    t_vm_frame *tb_frame = frame;
+    int tb_history = 0;
+    while (tb_frame) {
+        printf(ANSI_BRIGHTBLUE "#%d "
+                ANSI_BRIGHTYELLOW "%s:%d "
+                ANSI_BRIGHTGREEN "%s.%s "
+                ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
+                ANSI_RESET "\n",
+                tb_history,
+                tb_frame->bytecode->filename ? tb_frame->bytecode->filename : "<none>",
+                123,
+                "class",
+                "method"
+                );
+        tb_frame = tb_frame->parent;
+        tb_history++;
+    }
+    printf(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
+#endif
+
     // Set the correct current frame
     t_vm_frame *old_current_frame = thread_get_current_frame();
     thread_set_current_frame(frame);
@@ -252,11 +274,28 @@ dispatch:
 
 #ifdef __DEBUG
         if ((opcode & 0xC0) == 0xC0) {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s (0x%02X, 0x%02X)\n" ANSI_RESET, cip, vm_code_names[vm_codes_offset[opcode]], oparg1, oparg2);
+            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
+                        ANSI_RESET,
+                        cip,
+                        vm_code_names[vm_codes_offset[opcode]],
+                        oparg1, oparg2
+                    );
         } else if ((opcode & 0x80) == 0x80) {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s (0x%02X)\n" ANSI_RESET, cip, vm_code_names[vm_codes_offset[opcode]], oparg1);
+            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+                        ANSI_BRIGHTGREEN "%s (0x%02X) "
+                        ANSI_RESET,
+                        cip,
+                        vm_code_names[vm_codes_offset[opcode]],
+                        oparg1
+                    );
         } else {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX : " ANSI_BRIGHTGREEN " %s\n" ANSI_RESET, cip, vm_code_names[vm_codes_offset[opcode]]);
+            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+                        ANSI_BRIGHTGREEN "%s "
+                        ANSI_RESET,
+                        cip,
+                        vm_code_names[vm_codes_offset[opcode]]
+                    );
         }
 #endif
 

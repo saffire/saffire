@@ -50,6 +50,12 @@
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
 
+        char *filename;                             // Filename  @TODO: Not used. Using filename inside the bytecode
+        char *class;                                // Class (or NULL in global?)
+        char *method;                               // Method (or NULL in global?)
+        int param_count;                            // Number of arguments
+        t_object **params;                          // The arguments list (start offset on stack)
+
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
     };
