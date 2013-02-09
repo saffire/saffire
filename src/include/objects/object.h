@@ -148,6 +148,7 @@
     #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CALLABLE(obj)     (obj->type == objectTypeCallable)
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
+    #define OBJECT_IS_EXCEPTION(obj)    (obj->type == objectTypeException)
 
 
     // Convert object to value
