@@ -824,17 +824,17 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         dll_append(frame, asm_create_labelline(label4));
                     }
 
-//                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-//                    // This END_FINALLY will be triggered if our catchblocks did not match our exception
-//                    dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
+                    // Unhandled exception, just forward to finally.
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+
 
                     // Setup finally block
                     dll_append(frame, asm_create_labelline(label5));
 
                     if (leaf->opr.ops[2]->type != typeAstNop) {
-//                        dll_append(frame, asm_create_codeline(VM_START_FINALLY, 0));
-
-                        //dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[2]);
 

@@ -69,6 +69,7 @@
 
     t_object *vm_frame_stack_pop(t_vm_frame *frame);
     void vm_frame_stack_push(t_vm_frame *frame, t_object *obj);
+    void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj);
     t_object *vm_frame_stack_fetch_top(t_vm_frame *frame);
     t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx);
 

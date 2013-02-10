@@ -17,7 +17,6 @@ RETURN               0x73
 BREAK_LOOP           0x74
 BREAKELSE_LOOP       0x75
 
-START_FINALLY        0x79
 END_FINALLY          0x7A
 
 USE                  0x7E

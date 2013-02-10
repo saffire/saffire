@@ -95,11 +95,14 @@ void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
 
     if (frame->sp < 0) {
         error_and_die(1, "Trying to push to a full stack");
-
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
+}
 
+void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET, idx, object_debug(obj), (unsigned long)obj);
+    frame->stack[idx] = obj;
 }
 
 
