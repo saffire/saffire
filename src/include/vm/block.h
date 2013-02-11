@@ -27,11 +27,36 @@
 #ifndef __VM_BLOCK_H__
 #define __VM_BLOCK_H__
 
-    #include "vm/frame.h"
+    #define BLOCK_MAX_DEPTH             20          // This is the same depth as defined in python
 
-    void vm_push_block(t_vm_frame *frame, int type, int ip, int sp, int ip_else);
-    t_vm_frameblock *vm_pop_block(t_vm_frame *frame);
-    t_vm_frameblock *vm_fetch_block(t_vm_frame *frame);
+    #define BLOCK_TYPE_LOOP             1
+    #define BLOCK_TYPE_EXCEPTION        2
+
+    typedef struct _vm_frameblock {
+        int type;       // Type (any of the BLOCK_TYPE_*)
+        union {
+            struct {
+                int ip;         // Saved instruction pointer
+                int ip_else;    // Saved instruction pointer to ELSE part
+            } loop;
+            struct {
+                int ip_catch;           // Saved instruction pointer to CATCH blocks
+                int ip_finally;         // Saved instruction pointer to FINALLY block
+                int ip_end_finally;     // Saved instruction pointer to the end of FINALLY block
+
+                int in_finally;         // 1: We are currently handling the finally block
+            } exception;
+        } handlers;
+        int sp;         // Saved stack pointer
+        int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
+    } t_vm_frameblock;
+
+    struct _vm_frame;
+
+    void vm_push_block_loop(struct _vm_frame *frame, int type, int sp, int ip, int ip_else);
+    void vm_push_block_exception(struct _vm_frame *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally);
+    t_vm_frameblock *vm_pop_block(struct _vm_frame *frame);
+    t_vm_frameblock *vm_fetch_block(struct _vm_frame *frame);
 
 #endif
 

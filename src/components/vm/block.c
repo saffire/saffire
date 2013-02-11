@@ -30,13 +30,21 @@
 #include "debug.h"
 #include "general/output.h"
 
-/**
- *
- */
-void vm_push_block(t_vm_frame *frame, int type, int ip, int sp, int ip_else) {
+void vm_frame_block_debug(t_vm_frame *frame) {
+    DEBUG_PRINT("\nFRAME BLOCK STACK\n");
+    DEBUG_PRINT("=======================\n");
+    for (int i=0; i!=frame->block_cnt; i++) {
+        DEBUG_PRINT("  %02d %d\n", i, frame->blocks[i].type);
+    }
+    DEBUG_PRINT("\n");
+}
+
+static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
     t_vm_frameblock *block;
 
-    DEBUG_PRINT(">>> PUSH BLOCK [%d] (%04X %04X)\n", frame->block_cnt, ip, ip_else);
+    // @TODO: assert sp < frame->bytecode->max_sp
+
+    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
         printf("Too many blocks!");
@@ -47,12 +55,32 @@ void vm_push_block(t_vm_frame *frame, int type, int ip, int sp, int ip_else) {
     frame->block_cnt++;
 
     block->type = type;
-    block->ip = ip;
-    block->ip_else = ip_else;       // Else IP for while/else
     block->sp = sp;
     block->visited = 0;
+
+vm_frame_block_debug(frame);
+
+    return block;
 }
 
+/**
+ *
+ */
+void vm_push_block_loop(t_vm_frame *frame, int type, int sp, int ip, int ip_else) {
+    t_vm_frameblock *block = _create_block(frame, type, sp);
+
+    block->handlers.loop.ip = ip;
+    block->handlers.loop.ip_else = ip_else;       // Else IP for while/else
+}
+
+void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally) {
+    t_vm_frameblock *block = _create_block(frame, type, sp);
+
+    block->handlers.exception.ip_catch = ip_catch;
+    block->handlers.exception.ip_finally = ip_finally;
+    block->handlers.exception.ip_end_finally = ip_end_finally;
+    block->handlers.exception.in_finally = 0;
+}
 
 /**
  *
@@ -76,6 +104,5 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
  *
  */
 t_vm_frameblock *vm_fetch_block(t_vm_frame *frame) {
-    DEBUG_PRINT(">>> FETCH BLOCK\n");
     return &frame->blocks[frame->block_cnt - 1];
 }

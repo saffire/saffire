@@ -74,7 +74,7 @@ unsigned int vm_frame_get_operand(t_vm_frame *frame) {
  * Pops an object from the stack. Errors when the stack is empty
  */
 t_object *vm_frame_stack_pop(t_vm_frame *frame) {
-    DEBUG_PRINT("STACK POP(%d): %08lX %s\n", frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
         error_and_die(1, "Trying to pop from an empty stack");
@@ -91,15 +91,18 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
  * Pushes an object onto the stack. Errors when the stack is full
  */
 void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
-    DEBUG_PRINT("DBG PUSH: %s %08lX \n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
 
     if (frame->sp < 0) {
         error_and_die(1, "Trying to push to a full stack");
-
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
+}
 
+void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
+    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET, idx, object_debug(obj), (unsigned long)obj);
+    frame->stack[idx] = obj;
 }
 
 
@@ -187,10 +190,7 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
 t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
     t_object *obj = vm_frame_find_identifier(frame, id);
-    if (obj != NULL) return obj;
-
-    error_and_die(1, "Cannot find attribute: %s\n", id);
-    return NULL;
+    return obj;
 }
 
 /**
@@ -198,18 +198,6 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
  */
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
-
-
-//#ifdef __DEBUG
-//    t_hash_iter iter;
-//    ht_iter_init(&iter, frame->local_identifiers->ht);
-//    while (ht_iter_valid(&iter)) {
-//        char *k = ht_iter_key(&iter);
-//        t_object *v = ht_iter_value(&iter);
-//        DEBUG_PRINT("  K: %-20s %s\n", k, object_debug(v));
-//        ht_iter_next(&iter);
-//    }
-//#endif
 
     // Check locals first
     obj = ht_find(frame->local_identifiers->ht, id);
@@ -330,9 +318,14 @@ void vm_frame_destroy(t_vm_frame *frame) {
 
 #ifdef __DEBUG
 void vm_frame_stack_debug(t_vm_frame *frame) {
+    if (frame->sp == frame->bytecode->stack_size) {
+        //printf("\nEmpty framestack\n");
+        return;
+    }
+
     printf("\nFRAME STACK\n");
     printf("=======================\n");
-    for (int i=0; i!=frame->bytecode->stack_size; i++) {
+    for (int i=frame->sp; i<=frame->bytecode->stack_size-1; i++) {
         printf("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
     printf("\n");
