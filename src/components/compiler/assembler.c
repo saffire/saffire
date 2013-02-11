@@ -79,6 +79,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
         start_offset = bp->opcode_offset + 1;    // @TODO: Multibyte opcodes should be handled as well!
         if (((unsigned char)frame->code[bp->opcode_offset] & 0x80) == 0x80) start_offset += 2;
         if (((unsigned char)frame->code[bp->opcode_offset] & 0xC0) == 0xC0) start_offset += 2;
+        if (((unsigned char)frame->code[bp->opcode_offset] & 0xE0) == 0xE0) start_offset += 2;
 
         // Check if it needs to be absolute or relative
         if ((unsigned char)frame->code[bp->opcode_offset] != VM_BUILD_CLASS &&

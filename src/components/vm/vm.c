@@ -218,7 +218,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register t_object *left_obj, *right_obj;
     register char *name;
-    register unsigned int opcode, oparg1, oparg2;
+    register unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     register t_object *dst;
 
@@ -270,30 +270,47 @@ dispatch:
         // If high bit is set, get operand
         oparg1 = ((opcode & 0x80) == 0x80) ? vm_frame_get_operand(frame) : 0;
         oparg2 = ((opcode & 0xC0) == 0xC0) ? vm_frame_get_operand(frame) : 0;
+        oparg3 = ((opcode & 0xE0) == 0xE0) ? vm_frame_get_operand(frame) : 0;
 
 #ifdef __DEBUG
-        if ((opcode & 0xC0) == 0xC0) {
+        if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
+                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X, 0x%02X) "
+                        ANSI_BRIGHTYELLOW "[%s] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        oparg1, oparg2
+                        oparg1, oparg2, oparg3,
+                        frame->bytecode->filename
+                    );
+            } else if ((opcode & 0xC0) == 0xC0) {
+            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
+                        ANSI_BRIGHTYELLOW "[%s] "
+                        "\n" ANSI_RESET,
+                        cip,
+                        vm_code_names[vm_codes_offset[opcode]],
+                        oparg1, oparg2,
+                        frame->bytecode->filename
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X) "
+                        ANSI_BRIGHTYELLOW "[%s] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        oparg1
+                        oparg1,
+                        frame->bytecode->filename
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s "
+                        ANSI_BRIGHTYELLOW "[%s] "
                         "\n" ANSI_RESET,
                         cip,
-                        vm_code_names[vm_codes_offset[opcode]]
+                        vm_code_names[vm_codes_offset[opcode]],
+                        frame->bytecode->filename
                     );
         }
 #endif
@@ -882,7 +899,7 @@ dispatch:
             case VM_SETUP_EXCEPT :
                 debug = 1;
 
-                vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2);
+                vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
                 vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
 
                 goto dispatch;
@@ -894,8 +911,7 @@ dispatch:
                     reason = OBJ2NUM(ret);
 
                     if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
-                        t_vm_frameblock *block = vm_fetch_block(frame);
-                        ret = vm_frame_stack_fetch(frame, block->sp - 2);
+                        ret = vm_frame_stack_pop(frame);
                     }
                     goto block_end;
                     break;
@@ -925,7 +941,6 @@ block_end:
         if (reason != REASON_NONE) {
             break;
         }
-
 
     } // for (;;)
 
@@ -970,41 +985,50 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
         }
 
 
-//        // Case 2: Return inside try (or catch) block, but not inside finally block
-//        if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION && block->handlers.exception.in_finally == 0) {
-//            DEBUG_PRINT("CASE 2\n");
-//            /* We push the return value and the reason (REASON_RETURN) onto the stack, since END_FINALLY will expect
-//             * this. We have no real way to know if a try block has a return statement inside, so SETUP_EXCEPT will
-//             * push a REASON_NONE and a dummy retval onto the stack as well. END_EXCEPTION will catch this because
-//             * when the popped reason is REASON_NONE, no return has been called in the try block. Ultimately this
-//             * doesn't really matter. Because END_FINALLY will unwind the block, which means the variable-stack will
-//             * match prior to the exception-block, so the dummy variables will be removed as well (IF they were
-//             * present */
-//
-//
-//            // Clean current objects first
-//            t_object *tmp;
-//            tmp = vm_frame_stack_fetch(frame, block->sp + 1);
-//            object_dec_ref(tmp);
-//            tmp = vm_frame_stack_fetch(frame, block->sp + 2);
-//            object_dec_ref(tmp);
-//
-//            // Store ret and reason onto saved spots on the stack
-//            vm_frame_stack_modify(frame, block->sp + 1, object_new(Object_Numerical, 1, *reason));
-//            vm_frame_stack_modify(frame, block->sp + 2, ret);
-//
-//            /* Instead of actually returning, continue with executing the finally block. END_FINALLY will deal with
-//             * the delayed return. */
-//            *reason = REASON_NONE;
-//            frame->ip = block->handlers.exception.ip_finally;
-//            break;
-//        }
+        // Case 2: Return inside try (or catch) block, but not inside finally block
+        if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION) {
+            DEBUG_PRINT("CASE 2: RETURN IN TRY, CATCH OR FINALLY\n");
+            /* We push the return value and the reason (REASON_RETURN) onto the stack, since END_FINALLY will expect
+             * this. We have no real way to know if a try block has a return statement inside, so SETUP_EXCEPT will
+             * push a REASON_NONE and a dummy retval onto the stack as well. END_EXCEPTION will catch this because
+             * when the popped reason is REASON_NONE, no return has been called in the try block. Ultimately this
+             * doesn't really matter. Because END_FINALLY will unwind the block, which means the variable-stack will
+             * match prior to the exception-block, so the dummy variables will be removed as well (IF they were
+             * present */
+
+            vm_frame_stack_push(frame, ret);
+            vm_frame_stack_push(frame, object_new(Object_Numerical, 1, *reason));
+
+            /* Instead of actually returning, continue with executing the finally block. END_FINALLY will deal with
+             * the delayed return. */
+            *reason = REASON_NONE;
+
+            /* If we are BELOW the finally block, we ASSUME that we have to jump to the finally block. This could
+             * be triggered from both the try or a catch block (both are handled the same, so this distinction is not
+             * needed. However, when ABOVE, we ASSUME to be triggered from the finally block, and this we need to skip
+             * until the end of the finally */
+            DEBUG_PRINT("IP F : %02X %02X\n", frame->ip, block->handlers.exception.ip_finally);
+            DEBUG_PRINT("IP C : %02X %02X\n", frame->ip, block->handlers.exception.ip_catch);
+            DEBUG_PRINT("IP EF: %02X %02X\n", frame->ip, block->handlers.exception.ip_end_finally);
+
+            if (frame->ip <= block->handlers.exception.ip_finally) {
+                DEBUG_PRINT("RETTING into FINALLY\n");
+                frame->ip = block->handlers.exception.ip_finally;
+            } else if (frame->ip <= block->handlers.exception.ip_end_finally) {
+                DEBUG_PRINT("RETTING out from FINALLY\n");
+                frame->ip = block->handlers.exception.ip_end_finally;
+
+                *reason = REASON_FINALLY;
+            } else {
+                DEBUG_PRINT("Not retting in anything\n");
+                *reason = REASON_FINALLY;
+            }
+            break;
+        }
 
         // Case 4: Exception raised inside try
         if (*reason == REASON_EXCEPTION && block->type == BLOCK_TYPE_EXCEPTION) {
-            DEBUG_PRINT("CASE 4\n");
-
-            DEBUG_PRINT("   ----- EXCEPTION FOUND! -----\n");
+            DEBUG_PRINT("CASE 4: EXCEPTION TRIGGERED (IN TRY BLOCK)\n");
 
             // Clean up any remaining items on the variable stack, but keep the last "REASON_FINALLY"
             while (frame->sp < block->sp - 1) {
@@ -1013,15 +1037,12 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
                 object_dec_ref(dst);
             }
 
-
             // We throw the current exception onto the stack. The catch-blocks will expect this.
             vm_frame_stack_push(frame, thread_get_exception());
 
             // Continue with handling the exception in the current vm frame.
             *reason = REASON_NONE;
             frame->ip = block->handlers.exception.ip_catch;
-
-            //block->handlers.exception.in_exception = 1;
 
             break;
         }

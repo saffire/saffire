@@ -71,11 +71,13 @@ void vm_push_block_loop(t_vm_frame *frame, int type, int sp, int ip, int ip_else
     block->handlers.loop.ip_else = ip_else;       // Else IP for while/else
 }
 
-void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, int ip_finally) {
+void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally) {
     t_vm_frameblock *block = _create_block(frame, type, sp);
 
     block->handlers.exception.ip_catch = ip_catch;
     block->handlers.exception.ip_finally = ip_finally;
+    block->handlers.exception.ip_end_finally = ip_end_finally;
+    block->handlers.exception.in_finally = 0;
 }
 
 /**

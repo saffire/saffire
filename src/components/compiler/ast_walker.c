@@ -118,7 +118,7 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
 static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state) {
     char label1[MAX_LABEL_LEN], label2[MAX_LABEL_LEN], label3[MAX_LABEL_LEN];
     char label4[MAX_LABEL_LEN], label5[MAX_LABEL_LEN], label6[MAX_LABEL_LEN];
-    t_asm_opr *opr1, *opr2;
+    t_asm_opr *opr1, *opr2, *opr3;
     t_ast_element *node, *node2;
     t_ast_element *arglist;
     int i, clc, arg_count;
@@ -763,17 +763,15 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     state->loop_cnt++;
                     clc = state->loop_cnt;
 
-                    sprintf(label1, "try_%03d_endfinally", clc);
-                    sprintf(label2, "try_%03d_endtryblock", clc);
                     sprintf(label5, "try_%03d_finally", clc);
+                    sprintf(label2, "try_%03d_end_try", clc);
+                    sprintf(label1, "try_%03d_end_finally", clc);
 
-
-                    //opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-
-                    // Setup try block
+                    // Setup exception
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     opr2 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 2, opr1, opr2));
+                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
+                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 3, opr1, opr2, opr3));
 
                     // Try block
                     stack_push(state->context, st_ctx_load);
@@ -838,8 +836,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[2]);
 
-                        dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
                     }
+                    dll_append(frame, asm_create_labelline(label1));
+                    dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
 
                     break;
                 case T_SWITCH :
