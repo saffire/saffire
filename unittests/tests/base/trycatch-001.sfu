@@ -228,8 +228,8 @@ class foo {
     }
 }
 f = foo();
-io.print(f.bar(),"\n");
+f.bar();
 ====
 try
-12345exception
+1234exception
 finally

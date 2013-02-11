@@ -42,6 +42,8 @@ void vm_frame_block_debug(t_vm_frame *frame) {
 static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
     t_vm_frameblock *block;
 
+    // @TODO: assert sp < frame->bytecode->max_sp
+
     DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {

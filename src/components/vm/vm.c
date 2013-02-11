@@ -713,11 +713,11 @@ dispatch:
 
 
             case VM_SETUP_LOOP :
-                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, 0);
+                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->sp, frame->ip + oparg1, 0);
                 goto dispatch;
                 break;
             case VM_SETUP_ELSE_LOOP :
-                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->ip + oparg1, frame->sp, frame->ip + oparg2);
+                vm_push_block_loop(frame, BLOCK_TYPE_LOOP, frame->sp, frame->ip + oparg1, frame->ip + oparg2);
                 goto dispatch;
                 break;
 
