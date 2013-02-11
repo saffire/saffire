@@ -2,28 +2,30 @@ title: Try/Catch tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
+import io;
 try {
-
-} catch (Exception e) {
-
+    foo.bar();
+} catch (exception e) {
+    io.print("caught\n");
 } finally {
-
+    io.print("finally\n");
 }
 ====
+caught
+finally
 @@@@
-!skip
-// Try multiple catches
+import io;
 try {
-
-} catch (Exception e) {
-
-} catch (Exception e) {
-
-} catch (Exception e) {
-
+    foo.bar();
+} catch (attributeException e) {
+    io.print("attribute\n");
+} catch (indexException e) {
+    io.print("index\n");
+} catch (exception e) {
+    io.print("exception\n");
 }
 ====
+attribute
 @@@@
 // Only try, no catch
 try {
@@ -68,3 +70,166 @@ try {
 }
 ====
 Error: line 3: syntax error, unexpected T_FINALLY, expecting T_CATCH
+@@@@
+// Pass finally
+import io;
+try {
+    io.print("try\n");
+} catch (exception e) {
+    io.print("exception\n");
+} finally {
+    io.print("finally\n");
+}
+====
+try
+finally
+@@@@@@
+// Return in try
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "1";
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+finally
+1
+@@@@@@
+// Return in catch
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            foo.notexisting();
+            return "1";
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+        }
+        return "4";
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+exception
+finally
+2
+@@@@@@
+// Return in finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "1";
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+            return "3";
+        }
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+finally
+3
+@@@@@@
+// Double exception
+import io;
+try {
+    io.print("try1\n");
+    foo.bar();
+    io.print("not executed\n");
+} catch (exception e) {
+    io.print("exception1\n");
+    try {
+        io.print("try2\n");
+        foo.bar();
+        io.print("not executed\n");
+    } catch (exception e) {
+        io.print("exception2\n");
+    } finally {
+        io.print("finally2\n");
+    }
+} finally {
+    io.print("finally1\n");
+}
+====
+try1
+exception1
+try2
+exception2
+finally2
+finally1
+@@@@@@
+// Return in try should not continue, but only do finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            io.print("try\n");
+            return "1";
+            io.print("This should not be printed!\n");
+        } catch (exception e) {
+            io.print("exception\n");
+            return "2";
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+io.print(f.bar(),"\n");
+====
+try
+finally
+1
+@@@@@@
+// Return in try should not continue, but only do finally
+import io;
+class foo {
+    public method bar() {
+        try {
+            i = 1;
+            io.print("try\n");
+            while (i < 10) {
+                io.print(i);
+                i = i + 1;
+                if (i == 5) {
+                  self.notexisting();
+                }
+            }
+            io.print("This should not be printed!\n");
+        } catch (exception e) {
+            io.print("exception\n");
+        } finally {
+            io.print("finally\n");
+        }
+    }
+}
+f = foo();
+f.bar();
+====
+try
+1234exception
+finally

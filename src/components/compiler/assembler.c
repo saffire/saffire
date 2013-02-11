@@ -79,6 +79,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
         start_offset = bp->opcode_offset + 1;    // @TODO: Multibyte opcodes should be handled as well!
         if (((unsigned char)frame->code[bp->opcode_offset] & 0x80) == 0x80) start_offset += 2;
         if (((unsigned char)frame->code[bp->opcode_offset] & 0xC0) == 0xC0) start_offset += 2;
+        if (((unsigned char)frame->code[bp->opcode_offset] & 0xE0) == 0xE0) start_offset += 2;
 
         // Check if it needs to be absolute or relative
         if ((unsigned char)frame->code[bp->opcode_offset] != VM_BUILD_CLASS &&
@@ -457,6 +458,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                             case COMPARISON_GE : fprintf(f, "GE"); break;
                             case COMPARISON_IN : fprintf(f, "IN"); break;
                             case COMPARISON_NI : fprintf(f, "NI"); break;
+                            case COMPARISON_EX : fprintf(f, "EX"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_ID :

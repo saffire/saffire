@@ -96,7 +96,7 @@
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
-%token T_FQN T_ARGUMENT_LIST T_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
+%token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
 %token T_IMPORT T_FROM T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
 
@@ -284,7 +284,7 @@ jump_statement:
         T_BREAK ';'                 { saffire_validate_break();  $$ = ast_opr(T_BREAK, 0); }
     |   T_BREAKELSE ';'             { saffire_validate_breakelse();  $$ = ast_opr(T_BREAKELSE, 0); }
     |   T_CONTINUE ';'              { saffire_validate_continue();  $$ = ast_opr(T_CONTINUE, 0); }
-    |   T_RETURN ';'                { saffire_validate_return();  $$ = ast_opr(T_RETURN, 0); }
+    |   T_RETURN ';'                { saffire_validate_return();  $$ = ast_opr(T_RETURN, 1, ast_identifier("null")); }
     |   T_RETURN expression ';'     { saffire_validate_return();  $$ = ast_opr(T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { $$ = ast_opr(T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_opr(T_GOTO, 1, ast_string($2)); smm_free($2); }
@@ -293,22 +293,22 @@ jump_statement:
 
 /* try/catch try/catch/finally blocks */
 guarding_statement:
-        T_TRY compound_statement catch_list                               { $$ = ast_opr(T_TRY, 2, $2, $3); }
-    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { $$ = ast_opr(T_FINALLY, 3, $2, $3, $5); }
+        T_TRY compound_statement catch_list                               { $$ = ast_opr(T_TRY, 3, $2, $3, ast_nop()); }
+    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { $$ = ast_opr(T_TRY, 3, $2, $3, $5); }
 ;
 
 /* There can be multiple catches on a try{} block */
 catch_list:
-        catch            { $$ = $1; }
-    |   catch_list catch { $$ = ast_opr(T_LIST, 2, $1, $2); }
+        catch            { $$ = ast_group(1, $1); }
+    |   catch_list catch { $$ = ast_add($$, $2); }
 ;
 
 catch:
-        catch_header compound_statement { $$ = ast_opr(T_LIST, 2, $1, $2); }
+        catch_header compound_statement { $$ = ast_group(2, $1, $2); }
 ;
 
 catch_header:
-        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { $$ = ast_opr(T_CATCH, 2, ast_string($3), ast_string($4)); smm_free($3); smm_free($4); }
+        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { $$ = ast_opr(T_CATCH, 2, ast_identifier($3), ast_identifier($4)); smm_free($3); smm_free($4); }
 ;
 
 label_statement:

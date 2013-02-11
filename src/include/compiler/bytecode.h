@@ -84,6 +84,8 @@
 
         unsigned int identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
+
+        char *filename;                         // Filename
     };
 
 

@@ -53,7 +53,7 @@
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "callable", "list" };
+                                                 "hash", "tuple", "callable", "list", "exception" };
 
 
 int object_is_immutable(t_object *obj) {
@@ -78,7 +78,7 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
     t_object *cur_obj = obj;
 
     while (attr == NULL) {
-        DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
+        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
 
         // Find the attribute in the current object
         attr = ht_find(cur_obj->attributes, attr_name);
@@ -94,9 +94,31 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
         cur_obj = cur_obj->parent;
     }
 
-    DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
+    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
 
     return attr;
+}
+
+
+int object_instance_of(t_object *obj, const char *instance) {
+    DEBUG_PRINT("object_instance_of(%s, %s)\n", obj->name, instance);
+
+    t_object *cur_obj = obj;
+    while (cur_obj != NULL) {
+        DEBUG_PRINT("  * Checking: %s against %s\n", cur_obj->name, instance);
+        // Check if name of object matches instance
+        if (strcmp(cur_obj->name, instance) == 0) {
+            return 1;
+        }
+
+        // @TODO: Also check interfaces
+
+        // Trickle down to parent object and try again
+        cur_obj = cur_obj->parent;
+    }
+
+    // Nothing found that matches :/
+    return 0;
 }
 
 
@@ -204,6 +226,8 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
  * Increase reference to object.
  */
 void object_inc_ref(t_object *obj) {
+    if (! obj) return;
+
     obj->ref_count++;
 //    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
@@ -213,6 +237,8 @@ void object_inc_ref(t_object *obj) {
  * Decrease reference from object.
  */
 void object_dec_ref(t_object *obj) {
+    if (! obj) return;
+
     obj->ref_count--;
 //    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
@@ -353,6 +379,7 @@ void object_init() {
     object_tuple_init();
     object_userland_init();
     object_list_init();
+    object_exception_init();
 }
 
 
@@ -372,6 +399,7 @@ void object_fini() {
     object_tuple_fini();
     object_userland_fini();
     object_list_fini();
+    object_exception_fini();
 }
 
 

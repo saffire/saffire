@@ -29,22 +29,7 @@
 
     #include "objects/hash.h"
     #include "compiler/bytecode.h"
-
-    #define BLOCK_MAX_DEPTH             20          // This is the same depth as defined in python
-
-    #define BLOCK_TYPE_LOOP             1
-    #define BLOCK_TYPE_EXCEPTION        2
-    #define BLOCK_TYPE_FINALLY          3
-    #define BLOCK_TYPE_END_FINALLY      4
-
-    typedef struct _vm_frameblock {
-        int type;       // Type (any of the BLOCK_TYPE_*)
-        int ip;         // Saved instruction pointer
-        int ip_else;    // Saved instruction pointer to ELSE part
-        int sp;         // Saved stack pointer
-        int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
-    } t_vm_frameblock;
-
+    #include "block.h"
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
@@ -62,8 +47,14 @@
 
         t_object **constants_objects;               // Constants converted to objects
 
-        int block_cnt;                              // Last used block number
+        int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
+
+        char *filename;                             // Filename  @TODO: Not used. Using filename inside the bytecode
+        char *class;                                // Class (or NULL in global?)
+        char *method;                               // Method (or NULL in global?)
+        int param_count;                            // Number of arguments
+        t_object **params;                          // The arguments list (start offset on stack)
 
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
@@ -78,6 +69,7 @@
 
     t_object *vm_frame_stack_pop(t_vm_frame *frame);
     void vm_frame_stack_push(t_vm_frame *frame, t_object *obj);
+    void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj);
     t_object *vm_frame_stack_fetch_top(t_vm_frame *frame);
     t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx);
 

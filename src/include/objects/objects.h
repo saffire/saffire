@@ -39,5 +39,6 @@
     #include "regex.h"
     #include "string.h"
     #include "tuple.h"
+    #include "exception.h"
 
 #endif

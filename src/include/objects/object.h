@@ -75,6 +75,7 @@
     #define COMPARISON_GE     5
     #define COMPARISON_IN     6
     #define COMPARISON_NI     7
+    #define COMPARISON_EX     8
 
 
     // Standard operators
@@ -147,6 +148,7 @@
     #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CALLABLE(obj)     (obj->type == objectTypeCallable)
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
+    #define OBJECT_IS_EXCEPTION(obj)    (obj->type == objectTypeException)
 
 
     // Convert object to value
@@ -155,14 +157,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     13
+    #define OBJECT_TYPE_LEN     14
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser, objectTypeList
+                   objectTypeTuple, objectTypeUser, objectTypeList, objectTypeException
                  } t_objectype_enum;
 
 
@@ -261,5 +263,7 @@
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
     void object_remove_all_internal_attributes(t_object *obj);
+
+    int object_instance_of(t_object *obj, const char *instance);
 
 #endif

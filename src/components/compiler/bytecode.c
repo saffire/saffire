@@ -337,6 +337,10 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
     smm_free(bzip_buf);
 
+
+    // Set filename
+    bc->filename = smm_strdup(filename);
+
     // Return bytecode
     return bc;
 }
@@ -438,6 +442,10 @@ void bytecode_free(t_bytecode *bc) {
         smm_free(bc->identifiers[i]);
     }
     smm_free(bc->identifiers);
+
+    if (bc->filename) {
+        smm_free(bc->filename);
+    }
 
     smm_free(bc);
 }
