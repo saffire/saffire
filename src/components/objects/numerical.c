@@ -115,8 +115,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 
 //    if (in_place) {
@@ -135,8 +134,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 
 //    if (in_place) {
@@ -195,8 +193,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -215,8 +212,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -235,8 +231,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -255,8 +250,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -275,8 +269,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -295,8 +288,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {

@@ -78,7 +78,7 @@ SAFFIRE_METHOD(tuple, get) {
     t_numerical_object *index;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &index)) {
-        error_and_die(1, "Error while parsing argument list\n");
+        return NULL;
     }
 
     t_object *obj = ht_num_find(self->ht, OBJ2NUM(index));
@@ -93,7 +93,7 @@ SAFFIRE_METHOD(tuple, add) {
     t_object *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
-        error_and_die(1, "Error while parsing argument list\n");
+        return NULL;
     }
     ht_num_add(self->ht, self->ht->element_count, val);
     RETURN_SELF;
@@ -107,7 +107,7 @@ SAFFIRE_METHOD(tuple, remove) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        error_and_die(1, "Error while parsing argument list\n");
+        return NULL;
     }
 
     ht_remove(self->ht, key->value);

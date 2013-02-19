@@ -77,8 +77,7 @@ SAFFIRE_METHOD(hash, get) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
     t_object *obj = ht_find(self->ht, key->value);
@@ -93,8 +92,7 @@ SAFFIRE_METHOD(hash, exists) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
 	if (ht_exists(self->ht, key->value)) {
@@ -111,8 +109,7 @@ SAFFIRE_METHOD(hash, add) {
     t_string_object *key, *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &key, &val)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
     ht_add(self->ht, key->value, val);
@@ -126,8 +123,7 @@ SAFFIRE_METHOD(hash, remove) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
     ht_remove(self->ht, key->value);

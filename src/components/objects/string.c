@@ -216,7 +216,10 @@ SAFFIRE_METHOD(string, splice) {
     if (max > self->char_length) max = self->char_length;
 
     // Sanity check
-    if (max < min) error_and_die(1, "max < min!");
+    if (max < min) {
+        object_raise_exception(Object_SystemException, "max < min!");
+        return NULL;
+    }
 
     long min_idx = find_utf_idx(self, min);
     long max_idx = find_utf_idx(self, max);

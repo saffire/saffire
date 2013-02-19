@@ -1,0 +1,13 @@
+systemException
+    indexException
+    attributeException
+    typeException
+    callException
+        argumentException
+        callableException
+        visibilityException
+    importException
+
+ioException
+    fileException
+        fileNotFoundException
