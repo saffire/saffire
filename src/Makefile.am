@@ -133,6 +133,14 @@ libmodules_a_SOURCES = components/modules/module_api.c \
 ########################################################################
 # components/objects
 ########################################################################
+BUILT_SOURCES += include/objects/_exceptions.inc
+
+# Create _exceptions.incc and _exceptions.h
+include/objects/_exceptions.inc:
+	php include/objects/create_exceptions.php $(basename $@).dat $(basename $@).h $@
+
+CLEANFILES += include/objects/_exceptions.inc \
+              include/objects/_exceptions.h
 
 noinst_LIBRARIES += libobjects.a
 libobjects_a_SOURCES = components/objects/object.c \

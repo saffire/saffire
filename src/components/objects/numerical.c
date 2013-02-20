@@ -115,8 +115,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 
 //    if (in_place) {
@@ -135,8 +134,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 
 //    if (in_place) {
@@ -195,8 +193,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -215,8 +212,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -235,8 +231,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -255,8 +250,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -275,8 +269,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -295,8 +288,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
 
 //    // Parse the arguments
 //    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        error_and_die(1, "Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
+//        return NULL;
 //    }
 //
 //    if (in_place) {
@@ -364,13 +356,13 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  */
 void object_numerical_init(void) {
     Object_Numerical_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);

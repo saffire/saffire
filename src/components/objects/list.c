@@ -77,8 +77,7 @@ SAFFIRE_METHOD(list, get) {
     t_numerical_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &key)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
     t_object *obj = ht_num_find(self->ht, key->value);
@@ -93,8 +92,7 @@ SAFFIRE_METHOD(list, add) {
     t_object *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &val)) {
-        error_and_die(1, "Error while parsing argument list\n");
-        RETURN_NUMERICAL(0);
+        return NULL;
     }
 
     ht_num_add(self->ht, self->ht->element_count, val);
@@ -170,13 +168,13 @@ SAFFIRE_OPERATOR_METHOD(list, add) {
  */
 void object_list_init(void) {
     Object_List_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_List_struct, "ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_ctor);
-    object_add_internal_method((t_object *)&Object_List_struct, "dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_dtor);
+    object_add_internal_method((t_object *)&Object_List_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_ctor);
+    object_add_internal_method((t_object *)&Object_List_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_List_struct, "boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_List_struct, "null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_null);
-    object_add_internal_method((t_object *)&Object_List_struct, "numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_List_struct, "string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
+    object_add_internal_method((t_object *)&Object_List_struct, "__boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_List_struct, "__null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_null);
+    object_add_internal_method((t_object *)&Object_List_struct, "__numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_List_struct, "__string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_List_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
     object_add_internal_method((t_object *)&Object_List_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);

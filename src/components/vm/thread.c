@@ -24,7 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdlib.h>
+#include <stdarg.h>
 #include <vm/thread.h>
+
 
 // Current running thread. Don't change directory, but only through thread_switch() methods.
 t_thread *current_thread;
@@ -48,9 +51,22 @@ int thread_exception_thrown(void) {
     return (current_thread->exception != NULL);
 }
 
-void thread_set_exception(t_object *exception) {
+void thread_set_exception(t_object *exception, const char *message) {
     current_thread->exception = (t_exception_object *)exception;
 }
+
+void thread_set_exception_printf(t_object *exception, const char *format, ...) {
+    va_list args;
+    char *buf;
+
+    va_start(args, format);
+    vasprintf(&buf, format, args);
+    va_end(args);
+
+    thread_set_exception(exception, buf);
+    free(buf);
+}
+
 
 t_object *thread_get_exception(void) {
     return (t_object *)current_thread->exception;

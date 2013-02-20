@@ -36,12 +36,9 @@
     } t_exception_object;
 
     t_exception_object Object_Exception_struct;
-    t_exception_object Object_Exception_AttributeException_struct;
-    t_exception_object Object_Exception_IndexException_struct;
+    #define Object_Exception ((t_object *)&Object_Exception_struct)
 
-    #define Object_Exception            ((t_object *)&Object_Exception_struct)
-    #define Object_AttributeException   ((t_object *)&Object_Exception_AttributeException_struct)
-    #define Object_IndexException       ((t_object *)&Object_Exception_IndexException_struct)
+    #include "objects/_exceptions.h"
 
     void object_exception_init(void);
     void object_exception_fini(void);

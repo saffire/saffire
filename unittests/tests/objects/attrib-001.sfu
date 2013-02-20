@@ -8,14 +8,14 @@ class foo {
     protected property a;
     protected property b;
 
-    public method ctor(string arg1, string arg2, string arg3) {
+    public method __ctor(string arg1, string arg2, string arg3) {
         self.a = arg1;
         self.b = arg2;
         self.c = arg3;
-        io.print(self.string());
+        io.print(self.__string());
     }
 
-    public method dtor() {
+    public method __dtor() {
         io.print("dtor called!\n");
     }
 
@@ -27,8 +27,8 @@ class foo {
         return self.c;
     }
 
-    public method string() {
-        return "[FOO OBJECT WITH " + self.a.string() + " AND " + self.b.string() + " AND " + self.c.string() + "]\n";
+    public method __string() {
+        return "[FOO OBJECT WITH " + self.a.__string() + " AND " + self.b.__string() + " AND " + self.c.__string() + "]\n";
     }
 }
 
@@ -42,20 +42,20 @@ import io;
 
 class foo {
     public method f1() {
-        io.print("F1: ",self.name(), "\n");
+        io.print("F1: ",self.__name(), "\n");
     }
     public method f2() {
         self.f1();
     }
     public method f3() {
-        io.print("F3: ",self.name(), "\n");
+        io.print("F3: ",self.__name(), "\n");
     }
 }
 
 
 class bar extends foo {
     public method f1() {
-        io.print("BF1: ",self.name(), "\n");
+        io.print("BF1: ",self.__name(), "\n");
         self.f3();
         parent.f3();
         parent.f1();

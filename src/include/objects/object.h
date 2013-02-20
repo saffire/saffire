@@ -266,4 +266,6 @@
 
     int object_instance_of(t_object *obj, const char *instance);
 
+    void object_raise_exception(t_object *exception, char *format, ...);
+
 #endif

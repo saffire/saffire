@@ -58,7 +58,8 @@ SAFFIRE_METHOD(exception, setmessage) {
     t_string_object *message;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &message)) {
-        error_and_die(1, "Error while parsing argument list\n");
+        object_raise_exception(Object_ArgumentException, "error while parsing argument list");
+        return NULL;
     }
 
     self->message = message->value;
@@ -73,7 +74,7 @@ SAFFIRE_METHOD(exception, setcode) {
     t_numerical_object *code;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &code)) {
-        error_and_die(1, "Error while parsing argument list\n");
+        return NULL;
     }
 
     self->code = code->value;
@@ -103,28 +104,26 @@ SAFFIRE_COMPARISON_METHOD(exception, ne) {
  */
 
 
+void object_exception_add_generated_exceptions(void);
+
 /**
  * Initializes string methods and properties, these are used
  */
 void object_exception_init(void) {
     Object_Exception_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "getCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
 
-    Object_Exception_AttributeException_struct.attributes = Object_Exception_struct.attributes;
-    Object_Exception_IndexException_struct.attributes = Object_Exception_struct.attributes;
-
-    vm_populate_builtins("attributeException", Object_AttributeException);
-    vm_populate_builtins("indexException", Object_IndexException);
     vm_populate_builtins("exception", Object_Exception);
+    object_exception_add_generated_exceptions();
 }
 
 /**
@@ -168,10 +167,6 @@ t_object_comparisons exception_cmps = {
     NULL
 };
 
-t_exception_object Object_Exception_struct       = { OBJECT_HEAD_INIT2("exception", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_CLASS, &exception_funcs), "Generic exception" };
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT2("exception", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "", 0};
 
-t_exception_object Object_Exception_AttributeException_struct = { OBJECT_HEAD_INIT3("attributeException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, &Object_Exception_struct), "Attribute is not found"};
-t_exception_object Object_Exception_IndexException_struct  = { OBJECT_HEAD_INIT3("indexException", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, &Object_Exception_struct), "Index out of range" };
-
-
-// Define
+#include "objects/_exceptions.inc"
