@@ -3,11 +3,11 @@
  */
 
 class Foo {
-    public method ctor() {
+    public method __ctor() {
         io.print("Called when initializing");
     }
 
-    public method dtor() {
+    public method __dtor() {
         io.print("Called on destruction");
     }
 

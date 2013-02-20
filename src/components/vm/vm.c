@@ -198,6 +198,7 @@ void vm_init(int runmode) {
     vm_runmode = runmode;
 
     t_thread *thread = smm_malloc(sizeof(t_thread));
+    bzero(thread, sizeof(t_thread));
     current_thread = thread;
 
     gc_init();
@@ -579,7 +580,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -595,7 +596,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -609,7 +610,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -627,7 +628,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -1136,10 +1137,10 @@ int vm_execute(t_bytecode *bc) {
         if (thread_exception_thrown()) {
             // handle exception
             object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_new(Object_Numerical, 1);
+            result = object_new(Object_Numerical, 1, 1);
         } else {
             // result was NULL, but no exception found, just threat like regular 0
-            result = object_new(Object_Numerical, 0);
+            result = object_new(Object_Numerical, 1, 0);
         }
     }
 
@@ -1147,7 +1148,7 @@ int vm_execute(t_bytecode *bc) {
     // Convert returned object to numerical, so we can use it as an error code
     if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
-        t_object *result_numerical = object_find_attribute(result, "numerical");
+        t_object *result_numerical = object_find_attribute(result, "__numerical");
         result = vm_object_call(result, result_numerical, 0);
     }
     int ret_val = ((t_numerical_object *) result)->value;
@@ -1237,11 +1238,11 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     // If the object is a class, we can call it, ie instantiating it
     if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
         // Do actual instantiation (pass nothing)
-        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
+        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "__new");
         self_obj = vm_object_call((t_object *)callable_obj, new_obj, 0);
 
         // We continue the function, but using the constructor as our callable
-        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "__ctor");
     }
 
     // Check if the object is actually a callable

@@ -21,7 +21,7 @@ class Color {
     /**
      * Constructor for strings
      */
-    public method ctor(String color) {
+    public method __ctor(String color) {
         if ! color in self.pms {
             //throw Exception("Color not found!");
             a = 1;
@@ -32,13 +32,13 @@ class Color {
     /**
      * Constructor for numericals
      */
-    public method ctor(Numerical pms) {
+    public method __ctor(Numerical pms) {
         // Check if this PMS color exists
         if (! pms in self.pms.keys()) {
             throw Exception("PMS key not found!");
         }
 
-        self.ctor(self.pms[pms]);
+        self.__ctor(self.pms[pms]);
     }
 
     /**

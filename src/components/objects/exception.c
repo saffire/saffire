@@ -112,16 +112,17 @@ void object_exception_add_generated_exceptions(void);
 void object_exception_init(void) {
     Object_Exception_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "getCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
 
+    vm_populate_builtins("exception", Object_Exception);
     object_exception_add_generated_exceptions();
 }
 

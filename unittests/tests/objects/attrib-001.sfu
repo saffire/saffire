@@ -8,14 +8,14 @@ class foo {
     protected property a;
     protected property b;
 
-    public method ctor(string arg1, string arg2, string arg3) {
+    public method __ctor(string arg1, string arg2, string arg3) {
         self.a = arg1;
         self.b = arg2;
         self.c = arg3;
         io.print(self.string());
     }
 
-    public method dtor() {
+    public method __dtor() {
         io.print("dtor called!\n");
     }
 
