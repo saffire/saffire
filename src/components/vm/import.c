@@ -28,6 +28,7 @@
 #include <limits.h>
 #include "vm/vm.h"
 #include "vm/frame.h"
+#include "objects/objects.h"
 #include "compiler/ast.h"
 #include "compiler/ast_walker.h"
 #include "compiler/assembler.h"
@@ -104,7 +105,8 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
                 DEBUG_PRINT("   * Found a matching file. Whoohoo!\n");
                 t_object *obj = _import_class_from_file(frame, final_path, class);
                 if (! obj) {
-                    error_and_die(1, "Cannot find class '%s' in module '%s'\n", class, module);
+                    object_raise_exception(Object_ImportException, "Cannot find class '%s' in module '%s'", class, module);
+                    return NULL;
                 }
                 return obj;
             } else {
@@ -116,6 +118,6 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
         current_search_path++;
     }
 
-    error_and_die(1, "Cannot find module '%s'\n", module);
+    object_raise_exception(Object_SystemException, "Cannot find module '%s'", module);
     return NULL;
 }

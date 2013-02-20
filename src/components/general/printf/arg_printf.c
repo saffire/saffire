@@ -41,7 +41,7 @@ static long _get_long(t_dll_element **e) {
     t_object *obj = (t_object *)(*e)->data;
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
-        t_object *numerical_method = object_find_attribute(obj, "numerical");
+        t_object *numerical_method = object_find_attribute(obj, "__numerical");
         obj = vm_object_call(obj, numerical_method, 0);
     }
 
@@ -58,7 +58,7 @@ static unsigned char *_get_string(t_dll_element **e) {
     t_object *obj = (*e)->data;
 
     if (! OBJECT_IS_STRING(obj)) {
-        t_object *bool_method = object_find_attribute(obj, "string");
+        t_object *bool_method = object_find_attribute(obj, "__string");
         obj = vm_object_call(obj, bool_method, 0);
     }
 

@@ -216,7 +216,10 @@ SAFFIRE_METHOD(string, splice) {
     if (max > self->char_length) max = self->char_length;
 
     // Sanity check
-    if (max < min) error_and_die(1, "max < min!");
+    if (max < min) {
+        object_raise_exception(Object_SystemException, "max < min!");
+        return NULL;
+    }
 
     long min_idx = find_utf_idx(self, min);
     long max_idx = find_utf_idx(self, max);
@@ -350,14 +353,13 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_String_struct, "ctor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method((t_object *)&Object_String_struct, "ctor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method((t_object *)&Object_String_struct, "dtor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "boolean",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_String_struct, "null",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method((t_object *)&Object_String_struct, "numerical",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_String_struct, "string",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_String_struct, "__null",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_String_struct, "__string",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
     object_add_internal_method((t_object *)&Object_String_struct, "length",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);

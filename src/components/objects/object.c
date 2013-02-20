@@ -31,22 +31,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include "objects/object.h"
-#include "objects/string.h"
-#include "objects/boolean.h"
-#include "objects/null.h"
-#include "objects/base.h"
-#include "objects/numerical.h"
-#include "objects/regex.h"
-#include "objects/attrib.h"
-#include "objects/callable.h"
-#include "objects/hash.h"
-#include "objects/tuple.h"
-#include "objects/userland.h"
+#include "objects/objects.h"
 #include "general/dll.h"
 #include "debug.h"
 #include "gc/gc.h"
 #include "general/output.h"
 #include "general/smm.h"
+#include "vm/thread.h"
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
@@ -156,16 +147,16 @@ t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, .
 
     if (!func) {
         // No comparison found for this method
-        error_and_die(1, "Cannot find operator method");
-        return Object_False;
+        object_raise_exception(Object_CallException, "Cannot find operator method");
+        return NULL;
     }
 
     DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
 
     va_start(arg_list, arg_count);
     if (arg_count != 1) {
-        error_and_die(1, "Operators must have one argument!");
-        return Object_False;
+        object_raise_exception(Object_ArgumentException, "Operators must have only one argument");
+        return NULL;
     }
     t_object *obj2 = va_arg(arg_list, t_object *);
 
@@ -206,8 +197,8 @@ t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     if (!func) {
         // No comparison found for this method
-        error_and_die(1, "Cannot find compare method");
-        return Object_False;
+        object_raise_exception(Object_CallException, "Cannot find compare method");
+        return NULL;
     }
 
 
@@ -403,6 +394,9 @@ void object_fini() {
 }
 
 
+/**
+ *
+ */
 int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
     const char *ptr = speclist;
     int optional_argument = 0;
@@ -423,7 +417,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         ptr++;
     }
     if (cnt < dll->size) {
-        DEBUG_PRINT("At least %d arguments are needed. Only %ld are given", cnt, dll->size);
+        object_raise_exception(Object_ArgumentException, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
         result = 0;
         goto done;
     }
@@ -457,7 +451,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
                 continue;
                 break;
             default :
-                error_and_die(1, "Cannot parse argument '%c'\n", c);
+                object_raise_exception(Object_SystemException, "Error while parsing argument list: cannot parse argument: '%c'", c);
                 result = 0;
                 goto done;
                 break;
@@ -467,7 +461,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         t_object **storage_obj = va_arg(storage_list, t_object **);
         t_object *argument_obj = e->data;
         if (type != objectTypeAny && type != argument_obj->type) {
-            error_and_die(1, "Wanted a %s, but got a %s\n", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+            object_raise_exception(Object_ArgumentException, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
         }
@@ -501,12 +495,20 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
     ht_add(obj->attributes, name, attrib_obj);
 }
 
+
+/**
+ *
+ */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
     ht_replace(obj->attributes, name, attrib);
 }
 
+
+/**
+ *
+ */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
@@ -528,4 +530,20 @@ void object_remove_all_internal_attributes(t_object *obj) {
         // @TODO: We must remove and free attrib-objects here..
         ht_iter_next(&iter);
     }
+}
+
+
+/**
+ *
+ */
+void object_raise_exception(t_object *exception, char *format, ...) {
+    va_list args;
+    char *buf;
+
+    va_start(args, format);
+    vasprintf(&buf, format, args);
+    va_end(args);
+
+    thread_set_exception(exception, buf);
+    free(buf);
 }

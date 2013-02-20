@@ -27,11 +27,11 @@ class foo {
      */
 
     // Constructor, called during init of variable
-    public method ctor() {
+    public method __ctor() {
     }
 
     // Destructor, called during destroying the variable
-    public method dtor() {
+    public method __dtor() {
     }
 
     // [abstract] [final] [static] [private|public|protected] method ...

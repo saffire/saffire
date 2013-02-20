@@ -43,7 +43,8 @@
     t_thread *thread_get_current(void);
     t_vm_frame *thread_get_current_frame(void);
     void thread_set_current_frame(t_vm_frame *frame);
-    void thread_set_exception(t_object *exception);
+    void thread_set_exception(t_object *exception, const char *message);
+    void thread_set_exception_printf(t_object *exception, const char *format, ...);
     t_object *thread_get_exception(void);
     int thread_exception_thrown(void);
 

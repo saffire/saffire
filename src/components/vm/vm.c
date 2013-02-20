@@ -100,7 +100,9 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
         if (obj == NULL && ! is_vararg) {
-            error_and_die(1, "Not enough arguments passed, and no default values found");
+            object_raise_exception(Object_ArgumentException, "Not enough arguments passed, and no default values found");
+            // @TODO: Must return NULL
+            return NULL;
         }
 
         if (arg->typehint->type != objectTypeNull) {
@@ -121,7 +123,9 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
                 // classname does not match the typehint
 
                 // @TODO: we need to check if object as a parent or interface that matches!
-                error_and_die(1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+                object_raise_exception(Object_ArgumentException, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+                // @TODO: Must return NULL
+                return NULL;
             }
         }
 
@@ -140,7 +144,9 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
     // If there are more arguments passed, check if we can feed them to the vararg, if present
     if (given_count > 0) {
         if (vararg_obj == NULL) {
-            error_and_die(1, "No variable argument found, and too many arguments passed");
+            object_raise_exception(Object_ArgumentException, "No variable argument found, and too many arguments passed");
+            // @TODO: Must return NULL
+            return NULL;
         }
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
@@ -192,6 +198,7 @@ void vm_init(int runmode) {
     vm_runmode = runmode;
 
     t_thread *thread = smm_malloc(sizeof(t_thread));
+    bzero(thread, sizeof(t_thread));
     current_thread = thread;
 
     gc_init();
@@ -396,7 +403,7 @@ dispatch:
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_set_exception(Object_AttributeException);
+                        thread_set_exception(Object_AttributeException, "Attribute not found");
                         goto block_end;
                         break;
                     }
@@ -407,7 +414,9 @@ dispatch:
                     // DEBUG_PRINT("     ATTR: %s\n", object_debug(attrib_obj));
 
                     if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
-                        error_and_die(1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
+                        thread_set_exception_printf(Object_VisibilityException, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
                     }
 
                     register t_object *value;
@@ -447,10 +456,15 @@ dispatch:
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
-                        error_and_die(1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
+                        thread_set_exception_printf(Object_VisibilityException, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+
                     }
                     if (attrib_obj && ! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
-                        error_and_die(1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
+                        thread_set_exception_printf(Object_VisibilityException, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
                     }
 
                     register t_object *value = vm_frame_stack_pop(frame);
@@ -513,7 +527,7 @@ dispatch:
                 dst = vm_frame_get_identifier(frame, name);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    thread_set_exception(Object_AttributeException);
+                    thread_set_exception(Object_AttributeException, "Attribute not found");
                     goto block_end;
                     break;
                 }
@@ -566,7 +580,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -582,7 +596,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -596,7 +610,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -614,7 +628,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    register t_object *bool_method = object_find_attribute(dst, "boolean");
+                    register t_object *bool_method = object_find_attribute(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -677,8 +691,8 @@ dispatch:
                     dll_free(arg_list);
 
                     if (ret_obj == NULL) {
+                        // NULL returned means exception occured.
                         reason = REASON_EXCEPTION;
-                        thread_set_exception(Object_AttributeException);
                         goto block_end;
                         break;
                     }
@@ -759,9 +773,25 @@ dispatch:
                     break;
                 }
 
+                DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, left_obj->type);
+
+                // Compare types do not match
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Cannot compare non-identical object types\n");
+                    // Try an implicit cast if possible
+                    DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
+                    t_object *cast_method = object_find_attribute(right_obj, left_obj->name);
+                    if (! cast_method) {
+                        reason = REASON_EXCEPTION;
+                        thread_set_exception_printf(Object_TypeException, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
+                        goto block_end;
+                    }
+                    right_obj = vm_object_call(right_obj, cast_method, 0);
+                    if (! right_obj) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
                 }
+
                 dst = object_comparison(left_obj, oparg1, right_obj);
 
                 object_dec_ref(left_obj);
@@ -923,7 +953,7 @@ dispatch:
 
                 } else {
                     // This should not happen (oreally?)
-                    thread_set_exception(Object_AttributeException);
+                    thread_set_exception(Object_SystemException, "Unknown value on the stack during finally cleanup (probably a saffire-bug)");
                     reason = REASON_EXCEPTION;
                     goto block_end;
                     break;
@@ -1089,6 +1119,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             DEBUG_PRINT("CASE 6\n");
             DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip);
             frame->ip = block->handlers.loop.ip;
+            *reason = REASON_NONE;
             break;
         }
     }
@@ -1123,10 +1154,10 @@ int vm_execute(t_bytecode *bc) {
         if (thread_exception_thrown()) {
             // handle exception
             object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_new(Object_Numerical, 1);
+            result = object_new(Object_Numerical, 1, 1);
         } else {
             // result was NULL, but no exception found, just threat like regular 0
-            result = object_new(Object_Numerical, 0);
+            result = object_new(Object_Numerical, 1, 0);
         }
     }
 
@@ -1134,7 +1165,7 @@ int vm_execute(t_bytecode *bc) {
     // Convert returned object to numerical, so we can use it as an error code
     if (!OBJECT_IS_NUMERICAL(result)) {
         // Cast to numericak
-        t_object *result_numerical = object_find_attribute(result, "numerical");
+        t_object *result_numerical = object_find_attribute(result, "__numerical");
         result = vm_object_call(result, result_numerical, 0);
     }
     int ret_val = ((t_numerical_object *) result)->value;
@@ -1153,7 +1184,8 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
 
     // Check visibility
     if (! vm_check_visibility(class_obj, class_obj, attrib_obj)) {
-        error_and_die(1, "visibility error!");
+        object_raise_exception(Object_VisibilityException, "visibility error!");
+        return NULL;
     }
 
     // Duplicate and bind class to attribute
@@ -1223,16 +1255,17 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     // If the object is a class, we can call it, ie instantiating it
     if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
         // Do actual instantiation (pass nothing)
-        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "new");
+        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "__new");
         self_obj = vm_object_call((t_object *)callable_obj, new_obj, 0);
 
         // We continue the function, but using the constructor as our callable
-        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "ctor");
+        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "__ctor");
     }
 
     // Check if the object is actually a callable
     if (! OBJECT_IS_CALLABLE(callable_obj)) {
-        error_and_die(1, "This object is not a callable object!\n");
+        thread_set_exception(Object_CallableException, "Object is not from callable instance");
+        return NULL;
     }
 
 
@@ -1240,12 +1273,13 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
         // Check if we are bounded to a class or instantiation
         if (!self_obj) {
-            error_and_die(1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+            thread_set_exception_printf(Object_CallableException, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+            return NULL;
         }
 
         // Make sure we are not calling a non-static method from a static context
         if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
-            error_and_die(1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+            thread_set_exception_printf(Object_CallableException, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
         }
     }
 
@@ -1273,6 +1307,10 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 
         // @TODO: Destroy frame
         //vm_frame_destroy(new_frame);
+    }
+
+    if (dst == NULL) {
+        // exception occurred
     }
 
     return dst;
