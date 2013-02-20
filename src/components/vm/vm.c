@@ -773,9 +773,25 @@ dispatch:
                     break;
                 }
 
+                DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, left_obj->type);
+
+                // Compare types do not match
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Cannot compare non-identical object types\n");
+                    // Try an implicit cast if possible
+                    DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
+                    t_object *cast_method = object_find_attribute(right_obj, left_obj->name);
+                    if (! cast_method) {
+                        reason = REASON_EXCEPTION;
+                        thread_set_exception_printf(Object_TypeException, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
+                        goto block_end;
+                    }
+                    right_obj = vm_object_call(right_obj, cast_method, 0);
+                    if (! right_obj) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
                 }
+
                 dst = object_comparison(left_obj, oparg1, right_obj);
 
                 object_dec_ref(left_obj);
