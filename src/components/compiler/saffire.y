@@ -642,8 +642,8 @@ class_extends:
 
 /* implements a list of classes, or no implement at all */
 class_interface_implements:
-        T_IMPLEMENTS class_list { $$ = ast_opr(T_IMPLEMENTS, 1, $2); }
-    |   /* empty */             { $$ = ast_null(); }
+        T_IMPLEMENTS class_list { $$ = $2; }
+    |   /* empty */             { $$ = ast_group(0); }
 ;
 
 /* Comma separated list of classes (for extends and implements) */

@@ -180,8 +180,7 @@
         \
         t_object *parent;               /* Parent object (only t_base_object is allowed to have this NULL) */ \
         \
-        int implement_count;            /* Number of interfaces */ \
-        t_object **implements;          /* Actual interfaces */ \
+        t_dll *interfaces;              /* Actual interfaces */ \
         \
         t_hash_table *attributes;               /* Object attributes, properties or constants */ \
         t_object_operators *operators;          /* Object operators */ \
@@ -203,7 +202,6 @@
                 name,           /* name */                 \
                 flags,          /* flags */                \
                 base,           /* parent */               \
-                0,              /* implement count */      \
                 NULL,           /* implements */           \
                 NULL,           /* attribute */            \
                 operators,      /* operators */            \
@@ -265,6 +263,7 @@
     void object_remove_all_internal_attributes(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
+    int object_check_interface_implementations(t_object *obj);
 
     void object_raise_exception(t_object *exception, char *format, ...);
 

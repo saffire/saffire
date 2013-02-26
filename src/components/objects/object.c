@@ -547,3 +547,105 @@ void object_raise_exception(t_object *exception, char *format, ...) {
     thread_set_exception(exception, buf);
     free(buf);
 }
+
+
+static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_object *obj2) {
+    t_hash_table *ht1 = ((t_hash_object *)obj1->arguments)->ht;
+    t_hash_table *ht2 = ((t_hash_object *)obj2->arguments)->ht;
+
+    // Sanity check
+    if (ht1->element_count != ht2->element_count) {
+        return 0;
+    }
+
+    // No parameters found at all.
+    if (ht1->element_count == 0) return 1;
+
+
+    t_hash_iter iter1;
+    t_hash_iter iter2;
+    ht_iter_init(&iter1, ht1);
+    ht_iter_init(&iter2, ht2);
+    while (ht_iter_valid(&iter1)) {
+        t_method_arg *arg1 = ht_iter_value(&iter1);
+        t_method_arg *arg2 = ht_iter_value(&iter2);
+
+        DEBUG_PRINT("        - typehint1: '%-20s (%d)'  value1: '%-20s' \n", OBJ2STR(arg1->typehint), object_debug(arg1->value));
+        DEBUG_PRINT("        - typehint2: '%-20s (%d)'  value2: '%-20s' \n", OBJ2STR(arg2->typehint), object_debug(arg2->value));
+
+        if (strcmp(OBJ2STR(arg1->typehint), OBJ2STR(arg2->typehint)) != 0) {
+            return 0;
+        }
+
+        ht_iter_next(&iter1);
+        ht_iter_next(&iter2);
+    }
+    return 1;
+}
+
+static int _object_check_interface_implementations(t_object *obj, t_object *interface) {
+    if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
+        return 0;
+    }
+
+    // iterate all attributes from the interface
+    t_hash_iter iter;
+    ht_iter_init(&iter, interface->attributes);
+    while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key(&iter);
+        t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
+        DEBUG_PRINT(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
+
+        t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj, key);
+        if (! found_obj) {
+            thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
+            return 0;
+        }
+
+        DEBUG_PRINT("     - Found object : %s\n", object_debug((t_object *)found_obj));
+        DEBUG_PRINT("     - Matching     : %s\n", object_debug((t_object *)attribute));
+
+        if (found_obj->attrib_type != attribute->attrib_type ||
+            found_obj->visibility != attribute->visibility ||
+            found_obj->access != attribute->access) {
+            thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
+            return 0;
+        }
+
+        // If we are a callable, check arguments
+        if (OBJECT_IS_CALLABLE(found_obj->attribute)) {
+            DEBUG_PRINT("     - Checking parameter signatures\n");
+            if (!_object_check_matching_arguments((t_callable_object *)attribute->attribute, (t_callable_object *)found_obj->attribute)) {
+                thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', mismatching argument list for attribute '%s'", obj->name, interface->name, key);
+                return 0;
+            }
+        }
+
+        ht_iter_next(&iter);
+    }
+
+    return 1;
+}
+
+
+/**
+ * Iterates all interfaces found in this object, and see if the object actually implements it fully
+ */
+int object_check_interface_implementations(t_object *obj) {
+    DEBUG_PRINT("object_check_interface_implementations(%d)\n", obj->interfaces ? obj->interfaces->size : 0);
+
+    t_dll_element *elem = DLL_HEAD(obj->interfaces);
+    while (elem) {
+        t_object *interface = (t_object *)elem->data;
+
+        DEBUG_PRINT(ANSI_BRIGHTBLUE "* Checking interface: %s" ANSI_RESET "\n", interface->name);
+
+        if (! _object_check_interface_implementations(obj, interface)) {
+            return 0;
+        }
+        elem = DLL_NEXT(elem);
+    }
+
+    // Everything fully implemented
+    return 1;
+}

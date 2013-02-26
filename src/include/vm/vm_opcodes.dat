@@ -42,6 +42,7 @@ SETUP_LOOP           0x90
 
 CONTINUE_LOOP        0x92
 BUILD_CLASS          0x93
+BUILD_INTERFACE      0x94
 COMPARE_OP           0x95
 SETUP_FINALLY        0x96
 
