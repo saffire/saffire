@@ -44,13 +44,6 @@
 
 t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
 
-// A method-argument hash consists of name => structure
-typedef struct _method_arg {
-    t_object *value;
-    t_string_object *typehint;
-} t_method_arg;
-
-
 #define REASON_NONE         0       // No return status. Just end the execution
 #define REASON_RETURN       1       // Return statement given
 #define REASON_CONTINUE     2
@@ -859,15 +852,58 @@ dispatch:
                 break;
 
 
+            case VM_BUILD_INTERFACE :
             case VM_BUILD_CLASS :
                 {
+                    // Create a userland object, and fill it
+                    register t_userland_object *interface_or_class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
+                    memcpy(interface_or_class, Object_Userland, sizeof(t_userland_object));
+
+                    interface_or_class->file_identifiers = frame->local_identifiers;
+
                     // pop class name
                     register t_object *name_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(name_obj);
+                    interface_or_class->name = smm_strdup(OBJ2STR(name_obj));
 
                     // pop flags
                     register t_object *flags = vm_frame_stack_pop(frame);
                     object_dec_ref(flags);
+                    interface_or_class->flags = OBJ2NUM(flags);
+
+                    // depending on the opcode, we are building a class or an interface
+                    if (opcode == VM_BUILD_CLASS) {
+                        interface_or_class->flags |= OBJECT_TYPE_CLASS;
+                    } else {
+                        interface_or_class->flags |= OBJECT_TYPE_INTERFACE;
+                    }
+
+                    // Pop the number of interfaces
+                    interface_or_class->interfaces = dll_init();
+                    t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
+                    long interface_cnt = OBJ2NUM(interface_cnt_obj);
+                    DEBUG_PRINT("Number of interfaces we need to implement: %ld\n", interface_cnt);
+
+                    // Fetch all interface objects
+                    for (int i=0; i!=interface_cnt; i++) {
+                        register t_object *interface_name_obj = vm_frame_stack_pop(frame);
+                        DEBUG_PRINT("Implementing interface: %s\n", object_debug(interface_name_obj));
+
+                        // Check if the interface actually exists
+                        t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), OBJ2STR(interface_name_obj));
+                        if (! interface_obj) {
+                            reason = REASON_EXCEPTION;
+                            thread_set_exception_printf(Object_TypeException, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
+                            goto block_end;
+                        }
+                        if (! OBJECT_TYPE_IS_INTERFACE(interface_obj)) {
+                            reason = REASON_EXCEPTION;
+                            thread_set_exception_printf(Object_TypeException, "Object '%s' is not an interface", OBJ2STR(interface_name_obj));
+                            goto block_end;
+                        }
+
+                        dll_append(interface_or_class->interfaces, interface_obj);
+                    }
 
                     // pop parent code object (as string)
                     register t_object *parent_class_obj = vm_frame_stack_pop(frame);
@@ -882,16 +918,11 @@ dispatch:
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
                     }
                     object_inc_ref(parent_class);
+                    interface_or_class->parent = parent_class;
 
-                    // Create a userland object, and fill it
-                    register t_userland_object *class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
-                    memcpy(class, Object_Userland, sizeof(t_userland_object));
 
-                    class->name = smm_strdup(OBJ2STR(name_obj));
-                    class->flags = OBJ2NUM(flags) | OBJECT_TYPE_CLASS;
-                    class->parent = parent_class;
-                    class->file_identifiers = frame->local_identifiers;
-                    class->attributes = ht_create();
+                    // Fetch all attributes
+                    interface_or_class->attributes = ht_create();
 
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
@@ -902,21 +933,27 @@ dispatch:
                             // If we are a method, we will set the name.
                             t_callable_object *callable_obj = (t_callable_object *)attrib_obj->attribute;
                             callable_obj->name = OBJ2STR(name);
-                            callable_obj->binding = (t_object *)class;
+                            callable_obj->binding = (t_object *)interface_or_class;
                         }
 
                         // Add method attribute to class
-                        ht_add(class->attributes, OBJ2STR(name), attrib_obj);
+                        ht_add(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
 
-                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), class->name);
+                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
 
-                    object_inc_ref((t_object *)class);
-                    vm_frame_stack_push(frame, (t_object *)class);
+                    if (! object_check_interface_implementations((t_object *)interface_or_class)) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    object_inc_ref((t_object *)interface_or_class);
+                    vm_frame_stack_push(frame, (t_object *)interface_or_class);
                 }
 
                 goto dispatch;
                 break;
+
             case VM_RETURN :
                 // Pop "ret" from the stack
                 ret = vm_frame_stack_pop(frame);

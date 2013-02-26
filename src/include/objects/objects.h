@@ -30,6 +30,7 @@
     #include "userland.h"
     #include "attrib.h"
     #include "base.h"
+    #include "string.h"
     #include "boolean.h"
     #include "hash.h"
     #include "list.h"
@@ -37,7 +38,6 @@
     #include "null.h"
     #include "numerical.h"
     #include "regex.h"
-    #include "string.h"
     #include "tuple.h"
     #include "exception.h"
 
