@@ -26,7 +26,8 @@
 */
 #include <stdlib.h>
 #include <stdarg.h>
-#include <vm/thread.h>
+#include "vm/thread.h"
+#include "general/smm.h"
 
 
 // Current running thread. Don't change directory, but only through thread_switch() methods.
@@ -52,7 +53,9 @@ int thread_exception_thrown(void) {
 }
 
 void thread_set_exception(t_object *exception, const char *message) {
+    // @TODO: We must isolate this exception, since we are literally changing the exception message.
     current_thread->exception = (t_exception_object *)exception;
+    ((t_exception_object *)exception)->message = smm_strdup(message);
 }
 
 void thread_set_exception_printf(t_object *exception, const char *format, ...) {

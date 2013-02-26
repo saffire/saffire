@@ -31,6 +31,13 @@
     #include "objects/objects.h"
     #include "compiler/bytecode.h"
 
+    // A method-argument hash consists of name => structure
+    typedef struct _method_arg {
+        t_object *value;
+        t_string_object *typehint;
+    } t_method_arg;
+
+
     /* Callable flags, mostly method flags */
     #define CALLABLE_FLAG_STATIC              1      /* Static callable */
     #define CALLABLE_FLAG_ABSTRACT            2      /* Abstract callable */
@@ -71,7 +78,7 @@
         } code;
 
         t_object *binding;                  // Bound to a class (or NULL)
-        t_hash_object *arguments;     // Arguments (key => default value (or NULL))
+        t_hash_object *arguments;           // Arguments (key => default value (or NULL))
 
         // @TODO: Additional information for callable?
 //        int calls;                  // Number of calls made to this code

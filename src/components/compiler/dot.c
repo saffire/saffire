@@ -193,7 +193,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
 
         case typeAstClass :
             fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{N:%d|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
-            // Plot extends, implementations and body
+            // Plot body
             dot_node_iterate(fp, p->class.extends, cur_node_nr);
             dot_node_iterate(fp, p->class.implements, cur_node_nr);
             dot_node_iterate(fp, p->class.body, cur_node_nr);
