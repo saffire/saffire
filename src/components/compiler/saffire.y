@@ -93,7 +93,7 @@
 %left '+' '-'
 %left '*' '/'
 %token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
-%token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INTERFACE
+%token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INHERITS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
@@ -108,13 +108,13 @@
 %type <nPtr> statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement iteration_statement class_list while_statement
 %type <nPtr> guarding_statement expression catch_list catch ds_element ds_elements
-%type <nPtr> class_interface_implements method_argument_list interface_or_abstract_method_definition class_extends
+%type <nPtr> class_implements interface_inherits method_argument_list class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement class_constant_definition
 %type <nPtr> unary_expression primary_expression pe_no_parenthesis data_structure
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
-%type <nPtr> method_argument interface_inner_statement interface_method_definition interface_property_definition
+%type <nPtr> method_argument interface_inner_statement interface_method_declaration interface_property_declaration
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
@@ -552,21 +552,17 @@ interface_inner_statement_list:
 ;
 
 interface_inner_statement:
-        interface_method_definition   { $$ = $1; }
-    |   interface_property_definition { $$ = $1; }
+        interface_method_declaration   { $$ = $1; }
+    |   interface_property_declaration { $$ = $1; }
 ;
 
-interface_method_definition:
-    interface_or_abstract_method_definition { $$ = $1; }
-;
-
-interface_or_abstract_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method();  $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags($1), $5); smm_free($3); }
+interface_method_declaration:
+        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_init_method($2); sfc_fini_method();  $$ = ast_attribute($2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags(0), $4); smm_free($2); }
 ;
 
 class_method_definition:
         modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { sfc_init_method($3); sfc_validate_method_modifiers($1); } compound_statement { sfc_fini_method(); sfc_validate_abstract_method_body($1, $8);  $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, $8, sfc_mod_to_methodflags($1), $5); smm_free($3); }
-    |   interface_or_abstract_method_definition { $$ = $1; }
+    |   modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method();  $$ = ast_attribute($3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags($1), $5); smm_free($3); }
 ;
 
 method_argument_list:
@@ -594,15 +590,15 @@ class_definition:
 ;
 
 class_header:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_validate_class_modifiers($1); sfc_init_class(sfc_mod_to_methodflags($1), $3, $4, $5); smm_free($3); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_interface_implements { sfc_init_class( 0, $2, $3, $4); smm_free($2); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_implements { sfc_validate_class_modifiers($1); sfc_init_class(sfc_mod_to_methodflags($1), $3, $4, $5); smm_free($3); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_implements { sfc_init_class( 0, $2, $3, $4); smm_free($2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, $6); smm_free($3); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, ast_nop()); smm_free($3); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{' interface_inner_statement_list '}' { $$ = ast_interface(0, $2, $3, $5); smm_free($2); }
-    |                 T_INTERFACE T_IDENTIFIER class_interface_implements '{'                                '}' { $$ = ast_interface(0, $2, $3, ast_nop()); smm_free($2); };
+        modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, $6); smm_free($3); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(sfc_mod_to_methodflags($1), $3, $4, ast_nop()); smm_free($3); }
+    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { $$ = ast_interface(0, $2, $3, $5); smm_free($2); }
+    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { $$ = ast_interface(0, $2, $3, ast_nop()); smm_free($2); };
 ;
 
 class_property_definition:
@@ -615,7 +611,7 @@ class_constant_definition:
 ;
 
 
-interface_property_definition:
+interface_property_declaration:
         modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier($3)); smm_free($3); }
 ;
 
@@ -640,11 +636,18 @@ class_extends:
     |   /* empty */            { $$ = ast_null(); }
 ;
 
+/* inherits a list of interfaces, or no inherits at all */
+interface_inherits:
+        T_INHERITS class_list   { $$ = $2; }
+    |   /* empty */             { $$ = ast_group(0); }
+;
+
 /* implements a list of classes, or no implement at all */
-class_interface_implements:
+class_implements:
         T_IMPLEMENTS class_list { $$ = $2; }
     |   /* empty */             { $$ = ast_group(0); }
 ;
+
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
