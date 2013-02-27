@@ -942,7 +942,7 @@ dispatch:
                         DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
 
-                    if (! object_check_interface_implementations((t_object *)interface_or_class)) {
+                    if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)interface_or_class)) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }

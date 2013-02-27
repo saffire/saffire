@@ -161,6 +161,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "class"         { saffire_push_state(st_regex); return T_CLASS; }
 "extends"       { saffire_push_state(st_regex); return T_EXTENDS; }
 "implements"    { saffire_push_state(st_regex); return T_IMPLEMENTS; }
+"inherits"      { saffire_push_state(st_regex); return T_INHERITS; }
 "abstract"      { saffire_push_state(st_regex); return T_ABSTRACT; }
 "final"         { saffire_push_state(st_regex); return T_FINAL; }
 "interface"     { saffire_push_state(st_regex); return T_INTERFACE; }
