@@ -1,10 +1,16 @@
 #!/bin/sh
 
+apt-get update
+
 # Install compile tools
 apt-get install -y git-core make automake gcc pkg-config bison flex php5-cli
 
 # Install mandatory libraries
-apt-get install -y libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev
+apt-get install -y libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev libcunit1-dev
+
+# Symlink SFL library
+mkdir /usr/share/saffire
+ln -s /vagrant/sfl /usr/share/saffire/sfl
 
 # Create new MOTD
 cat << 'EOF' > /etc/motd.tail
@@ -18,9 +24,14 @@ All neccessary tools and libraries are installed to compile Saffire. Please run 
   $ make
   $ sudo make install
 
-This will compile and install a Saffire binary. You can use this string away by issueing:
+This will compile and install a Saffire binary in /usr/local/bin/saffire. From this point you can use 
+saffire by issuing:
 
   $ saffire help
+
+Or start executing your first saffire file with:
+
+  $ saffire ./hello.sf
 
 Have fun!
 The Saffire Group
