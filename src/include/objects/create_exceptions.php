@@ -10,9 +10,10 @@ $cur_level = -1;
 // Read exception
 $exceptions = array();
 foreach (file($argv[1]) as $line) {
-    // Skip empty lines
+    // Skip empty en comments lines
     $tmp = trim($line);
     if (empty($tmp)) continue;
+    if ($tmp[0] == '#') continue;
 
     $new_level = 0;
     while ($line[$new_level] == ' ') $new_level++;
