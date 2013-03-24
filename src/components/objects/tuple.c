@@ -279,6 +279,6 @@ t_object_funcs tuple_funcs = {
 
 // Intial object
 t_tuple_object Object_Tuple_struct = {
-    OBJECT_HEAD_INIT2("tuple", objectTypeTuple, NULL, NULL, OBJECT_TYPE_CLASS, &tuple_funcs),
+    OBJECT_HEAD_INIT("tuple", objectTypeTuple, OBJECT_TYPE_CLASS, &tuple_funcs),
     NULL
 };

@@ -94,6 +94,6 @@ t_object_funcs userland_funcs = {
 
 // Initial object
 t_userland_object Object_Userland_struct = {
-    OBJECT_HEAD_INIT2("user", objectTypeUser, NULL, NULL, OBJECT_TYPE_CLASS, &userland_funcs)
+    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &userland_funcs)
 };
 

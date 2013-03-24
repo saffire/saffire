@@ -167,7 +167,7 @@
 
     extern t_object Object_Base_struct;
 
-    #define OBJECT_HEAD_INIT3(name, type, operators, comparisons, flags, funcs, base) \
+    #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base) \
                 0,              /* initial refcount */     \
                 type,           /* scalar type */          \
                 name,           /* name */                 \

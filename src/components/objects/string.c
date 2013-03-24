@@ -493,8 +493,8 @@ t_object_comparisons string_cmps = {
 
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_TYPE_CLASS, &string_funcs),
-    L'\0',
+    OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs),
+    '\0',
     0,
     0,
     ""

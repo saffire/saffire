@@ -167,6 +167,6 @@ t_object_comparisons exception_cmps = {
     NULL
 };
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT2("exception", objectTypeException, NULL, &exception_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "", 0};
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "", 0};
 
 #include "objects/_exceptions.inc"

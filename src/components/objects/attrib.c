@@ -123,7 +123,7 @@ t_object_funcs attrib_funcs = {
 
 // Intial object
 t_attrib_object Object_Attrib_struct = {
-    OBJECT_HEAD_INIT2("attrib", objectTypeAttribute, NULL, NULL, OBJECT_TYPE_CLASS, &attrib_funcs),
+    OBJECT_HEAD_INIT("attrib", objectTypeAttribute, OBJECT_TYPE_CLASS, &attrib_funcs),
     0,
     0,
     0,

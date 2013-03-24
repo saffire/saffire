@@ -251,7 +251,7 @@ t_object_funcs list_funcs = {
 
 // Intial object
 t_list_object Object_List_struct = {
-    OBJECT_HEAD_INIT2("list", objectTypeList, NULL, NULL, OBJECT_TYPE_CLASS, &list_funcs),
-	NULL
+    OBJECT_HEAD_INIT("list", objectTypeList, OBJECT_TYPE_CLASS, &list_funcs),
+    NULL
 };
 

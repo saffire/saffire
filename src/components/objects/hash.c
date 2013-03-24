@@ -284,7 +284,7 @@ t_object_funcs hash_funcs = {
 
 // Intial object
 t_hash_object Object_Hash_struct = {
-    OBJECT_HEAD_INIT2("hash", objectTypeHash, NULL, NULL, OBJECT_TYPE_CLASS, &hash_funcs),
-	NULL
+    OBJECT_HEAD_INIT("hash", objectTypeHash, OBJECT_TYPE_CLASS, &hash_funcs),
+    NULL
 };
 

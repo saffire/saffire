@@ -504,6 +504,6 @@ t_object_comparisons numerical_cmps = {
 
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT2("numerical", objectTypeNumerical, &numerical_ops, &numerical_cmps, OBJECT_TYPE_CLASS, &numerical_funcs),
+    OBJECT_HEAD_INIT("numerical", objectTypeNumerical, OBJECT_TYPE_CLASS, &numerical_funcs),
     0
 };

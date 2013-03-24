@@ -305,6 +305,6 @@ t_object_comparisons boolean_cmps = {
     NULL
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_CLASS, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT2("boolean", objectTypeBoolean, &boolean_ops, &boolean_cmps, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_CLASS, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };
