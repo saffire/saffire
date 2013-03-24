@@ -67,42 +67,15 @@
     #define OPERATOR_SHR    9
 
 
-    #define COMPARISON_EQ     0       // Start at 0, to make sure function lookups work
-    #define COMPARISON_NE     1
-    #define COMPARISON_LT     2
-    #define COMPARISON_GT     3
-    #define COMPARISON_LE     4
-    #define COMPARISON_GE     5
-    #define COMPARISON_IN     6
-    #define COMPARISON_NI     7
-    #define COMPARISON_EX     8
-
-
-    // Standard operators
-    typedef struct _object_operators {
-        t_object *(*add)(t_object *, t_object *, int );
-        t_object *(*sub)(t_object *, t_object *, int );
-        t_object *(*mul)(t_object *, t_object *, int );
-        t_object *(*div)(t_object *, t_object *, int );
-        t_object *(*mod)(t_object *, t_object *, int );
-        t_object *(*and)(t_object *, t_object *, int );
-        t_object *(*or )(t_object *, t_object *, int );
-        t_object *(*xor)(t_object *, t_object *, int );
-        t_object *(*shl)(t_object *, t_object *, int );
-        t_object *(*shr)(t_object *, t_object *, int );
-    } t_object_operators;
-
-    // Standard operators
-    typedef struct _object_comparisons {
-        int (*eq)(t_object *, t_object *);
-        int (*ne)(t_object *, t_object *);
-        int (*lt)(t_object *, t_object *);
-        int (*gt)(t_object *, t_object *);
-        int (*le)(t_object *, t_object *);
-        int (*ge)(t_object *, t_object *);
-        int (*in)(t_object *, t_object *);
-        int (*ni)(t_object *, t_object *);
-    } t_object_comparisons;
+    #define COMPARISON_EQ     0     // Equals
+    #define COMPARISON_NE     1     // Not equals
+    #define COMPARISON_LT     2     // Less than
+    #define COMPARISON_GT     3     // Greater than
+    #define COMPARISON_LE     4     // Less or equal
+    #define COMPARISON_GE     5     // Greater or equal
+    #define COMPARISON_IN     6     // In set
+    #define COMPARISON_NI     7     // Not in set
+    #define COMPARISON_EX     8     // Compare exception
 
 
     // Object flags
@@ -182,11 +155,9 @@
         \
         t_dll *interfaces;              /* Actual interfaces */ \
         \
-        t_hash_table *attributes;               /* Object attributes, properties or constants */ \
-        t_object_operators *operators;          /* Object operators */ \
-        t_object_comparisons *comparisons;      /* Object comparisons */ \
+        t_hash_table *attributes;       /* Object attributes, properties or constants */ \
         \
-        t_object_funcs *funcs;                  /* Functions for internal maintenance (new, free, clone etc) */
+        t_object_funcs *funcs;          /* Functions for internal maintenance (new, free, clone etc) */
 
 
     // Actual "global" object. Every object is typed on this object.
@@ -204,27 +175,16 @@
                 base,           /* parent */               \
                 NULL,           /* implements */           \
                 NULL,           /* attribute */            \
-                operators,      /* operators */            \
-                comparisons,    /* comparisons */          \
                 funcs           /* functions */
 
     // Object header initialization without any functions or base
-    #define OBJECT_HEAD_INIT2(name, type, operators, comparisons, flags, funcs) \
-            OBJECT_HEAD_INIT3(name, type, operators, comparisons, flags, funcs, &Object_Base_struct)
-
-    // Object header initialization without any functions
-    #define OBJECT_HEAD_INIT(name, type, operators, comparisons, flags) \
-            OBJECT_HEAD_INIT2(name, type, operators, comparisons, flags, NULL)
-
+    #define OBJECT_HEAD_INIT(name, type, flags, funcs) \
+            OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, &Object_Base_struct)
 
     /*
      * Header macros
      */
     #define SAFFIRE_METHOD(obj, method) static t_object *object_##obj##_method_##method(t_##obj##_object *self, t_dll *arguments)
-
-    #define SAFFIRE_OPERATOR_METHOD(obj, opr) static t_object *object_##obj##_operator_##opr(t_object *_self, t_object *_other, int in_place)
-
-    #define SAFFIRE_COMPARISON_METHOD(obj, cmp) static int object_##obj##_comparison_##cmp(t_object *_self, t_object *_other)
 
     #define SAFFIRE_METHOD_ARGS arguments
 

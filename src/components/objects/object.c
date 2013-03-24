@@ -46,6 +46,15 @@ const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "code", "attribute", 
                                                  "null", "numerical", "regex", "string",
                                                  "hash", "tuple", "callable", "list", "exception" };
 
+// Object comparison methods. These should map on the COMPARISON_* defines
+const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_gt", "__cmp_le", "__cmp_ge",
+                                    "__cmp_in", "__cmp_ni", "__cmp_ex" };
+
+// Object operator methods. These should map on the OPERATOR_* defines
+const char *objectOprMethods[8] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
+                                    "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr" };
+
+
 
 int object_is_immutable(t_object *obj) {
     return ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE);
@@ -91,6 +100,9 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
 }
 
 
+/**
+ * Checks if an object is an instance of a class. Will check against parents too
+ */
 int object_instance_of(t_object *obj, const char *instance) {
     DEBUG_PRINT("object_instance_of(%s, %s)\n", obj->name, instance);
 
@@ -113,104 +125,7 @@ int object_instance_of(t_object *obj, const char *instance) {
 }
 
 
-/**
- * Calls a method from specified object. Returns NULL when method is not found.
- */
-t_object *object_operator(t_object *obj, int opr, int in_place, int arg_count, ...) {
-    t_object *cur_obj = obj;
-    va_list arg_list;
-    t_object *(*func)(t_object *, t_object *, int) = NULL;
 
-    // Try and find the correct operator (might be found of the base classes!)
-    while (cur_obj && cur_obj->operators != NULL) {
-        DEBUG_PRINT(">>> Finding operator '%d' on object %s\n", opr, cur_obj->name);
-
-        switch (opr) {
-            case OPERATOR_ADD : func = cur_obj->operators->add; break;
-            case OPERATOR_SUB : func = cur_obj->operators->sub; break;
-            case OPERATOR_MUL : func = cur_obj->operators->mul; break;
-            case OPERATOR_DIV : func = cur_obj->operators->div; break;
-            case OPERATOR_MOD : func = cur_obj->operators->mod; break;
-            case OPERATOR_AND : func = cur_obj->operators->and; break;
-            case OPERATOR_OR  : func = cur_obj->operators->or; break;
-            case OPERATOR_XOR : func = cur_obj->operators->xor; break;
-            case OPERATOR_SHL : func = cur_obj->operators->shl; break;
-            case OPERATOR_SHR : func = cur_obj->operators->shr; break;
-        }
-
-        // Found a function? We're done!
-        if (func) break;
-
-        // Try again in the parent object
-        cur_obj = cur_obj->parent;
-    }
-
-    if (!func) {
-        // No comparison found for this method
-        object_raise_exception(Object_CallException, "Cannot find operator method");
-        return NULL;
-    }
-
-    DEBUG_PRINT(">>> Calling operator %d on object %s\n", opr, obj->name);
-
-    va_start(arg_list, arg_count);
-    if (arg_count != 1) {
-        object_raise_exception(Object_ArgumentException, "Operators must have only one argument");
-        return NULL;
-    }
-    t_object *obj2 = va_arg(arg_list, t_object *);
-
-    // Call the actual operator and return the result
-    t_object *ret = func(obj, obj2, in_place);
-
-    return ret;
-}
-
-/**
- * Calls an comparison function. Returns true or false
- */
-t_object *object_comparison(t_object *obj1, int cmp, t_object *obj2) {
-    t_object *cur_obj = obj1;
-    int (*func)(t_object *, t_object *) = NULL;
-
-    // Try and find the correct operator (might be found of the base classes!)
-    while (cur_obj && cur_obj->comparisons != NULL) {
-        DEBUG_PRINT(">>> Finding comparison '%d' on object %s\n", cmp, cur_obj->name);
-
-        switch (cmp) {
-            case COMPARISON_EQ : func = cur_obj->comparisons->eq; break;
-            case COMPARISON_NE : func = cur_obj->comparisons->ne; break;
-            case COMPARISON_LT : func = cur_obj->comparisons->lt; break;
-            case COMPARISON_LE : func = cur_obj->comparisons->le; break;
-            case COMPARISON_GT : func = cur_obj->comparisons->gt; break;
-            case COMPARISON_GE : func = cur_obj->comparisons->ge; break;
-            case COMPARISON_IN : func = cur_obj->comparisons->in; break;
-            case COMPARISON_NI : func = cur_obj->comparisons->ni; break;
-        }
-
-        // Found a function? We're done!
-        if (func) break;
-
-        // Try again in the parent object
-        cur_obj = cur_obj->parent;
-    }
-
-    if (!func) {
-        // No comparison found for this method
-        object_raise_exception(Object_CallException, "Cannot find compare method");
-        return NULL;
-    }
-
-
-    DEBUG_PRINT(">>> Calling comparison %d on object %s\n", cmp, obj1->name);
-
-    // Call the actual equality operator and return the result
-    int ret = func(obj1, obj2);
-
-    DEBUG_PRINT("Result from the comparison: %d\n", ret);
-
-    return ret ? Object_True : Object_False;
-}
 
 
 /**

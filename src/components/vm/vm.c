@@ -539,7 +539,7 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(left_obj, oparg1, 0, 1, right_obj);
+                dst = vm_object_operator(left_obj, oparg1, 0, 1, right_obj);
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -1351,4 +1351,52 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     }
 
     return dst;
+}
+
+
+/**
+ * This method is called when we need to call an operator method. Even though eventually
+ * it is a normal method call to a _opr_* method, we go a different route so we can easily
+ * do custom optimizations later on.
+ */
+t_object *vm_object_operator(t_object *obj1, int opr, int in_place, int arg_count, ...) {
+    va_list arg_list;
+
+    char *opr_method = objectOprMethods[opr];
+    t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj1, opr_method);
+    if (! found_obj) {
+        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", key, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
+
+    // Call the actual operator and return the result
+    return vm_object_call(obj1, found_obj, 1, obj2);
+}
+
+/**
+ * Calls an comparison function. Returns true or false
+ */
+t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+    char *cmp_method = objectCmpMethods[cmp];
+
+    t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj1, cmp_method);
+    if (! found_obj) {
+        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", key, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
+
+    // Call the actual operator and return the result
+    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
+
+    // Implicit conversion to boolean if needed
+    if (! OBJECT_IS_BOOLEAN(ret)) {
+        t_object *bool_method = object_find_attribute(dst, "__boolean");
+        ret = vm_object_call(ret, bool_method, 0);
+    }
+
+    return ret;
 }
