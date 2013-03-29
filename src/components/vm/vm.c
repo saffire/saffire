@@ -535,10 +535,10 @@ dispatch:
 
             //
             case VM_OPERATOR :
-                left_obj = vm_frame_stack_pop(frame);
-                object_dec_ref(left_obj);
                 right_obj = vm_frame_stack_pop(frame);
                 object_dec_ref(right_obj);
+                left_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(left_obj);
 
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
