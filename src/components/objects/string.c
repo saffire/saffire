@@ -243,12 +243,10 @@ SAFFIRE_METHOD(string, splice) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(string, add) {
-    t_string_object *self = (t_string_object *)_other;
-    t_string_object *other = (t_string_object *)_self;
+    t_string_object *other;
 
-    if (in_place) {
-        //self->value += 1;
-        RETURN_SELF;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
     }
 
     int new_length = self->byte_length + other->byte_length;
@@ -262,84 +260,90 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
     RETURN_OBJECT(obj);
 }
 
-SAFFIRE_OPERATOR_METHOD(string, sl) {
-    t_string_object *self = (t_string_object *)_self;
-
-    // @TODO:    "foo" << 1 == "oo"
-    if (in_place) {
-        //self->value <<= 1;
-        RETURN_SELF;
-    }
-
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
-}
-
-SAFFIRE_OPERATOR_METHOD(string, sr) {
-    t_string_object *self = (t_string_object *)_self;
-
-    // @TODO:    "foo" >> 1 == "fo"
-    if (in_place) {
-        //self->value >>= 1;
-        RETURN_SELF;
-    }
-
-    t_string_object *obj = (t_string_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
-}
-
-
 /* ======================================================================
  *   Standard comparisons
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(string, eq) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) == 0);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    // @TODO: Assuming that every unique string will return the same object, we could do a object check instead of a strcmp
+    (strcmp(self->value, other->value) == 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, ne) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) != 0);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    // @TODO: Assuming that every unique string will return the same object, we could do a object check instead of a strcmp
+    (strcmp(self->value, other->value) != 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, lt) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) == -1);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strcmp(self->value, other->value) == -1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, gt) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) == 1);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strcmp(self->value, other->value) == 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, le) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) <= 0);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strcmp(self->value, other->value) <= 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, ge) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strcmp(self->value, other->value) >= 0);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strcmp(self->value, other->value) >= 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(string, in) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
+    t_string_object *other;
 
-    return (strstr(self->value, other->value) != NULL);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strstr(self->value, other->value) != NULL) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
-SAFFIRE_COMPARISON_METHOD(string, ni) {
-    t_string_object *self = (t_string_object *)_self;
-    t_string_object *other = (t_string_object *)_other;
 
-    return (strstr(self->value, other->value) == NULL);
+SAFFIRE_COMPARISON_METHOD(string, ni) {
+    t_string_object *other;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+        return NULL;
+    }
+
+    (strstr(self->value, other->value) == NULL) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 
@@ -368,6 +372,19 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "reverse",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
     object_add_internal_method((t_object *)&Object_String_struct, "splice",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+
+    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
+
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
 
     // Create string cache
     string_cache = ht_create();
@@ -466,35 +483,10 @@ t_object_funcs string_funcs = {
 #endif
 };
 
-t_object_operators string_ops = {
-    object_string_operator_add,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    object_string_operator_sl,
-    object_string_operator_sr
-};
-
-t_object_comparisons string_cmps = {
-    object_string_comparison_eq,
-    object_string_comparison_ne,
-    object_string_comparison_lt,
-    object_string_comparison_gt,
-    object_string_comparison_le,
-    object_string_comparison_ge,
-    object_string_comparison_in,
-    object_string_comparison_ni
-};
-
-
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT2("string", objectTypeString, &string_ops, &string_cmps, OBJECT_TYPE_CLASS, &string_funcs),
-    L'\0',
+    OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs),
+    '\0',
     0,
     0,
     ""

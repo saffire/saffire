@@ -54,11 +54,16 @@ t_hash_table *builtin_identifiers;         // Builtin identifiers like first-cla
 #define REASON_FINALLY      7       // No exception raised after finally
 
 
+extern char *objectOprMethods[];
+extern char *objectCmpMethods[];
+
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
  * callable. The arguments are placed onto the frame stack.
+ *
+ * Returns 1 in success, 0 on failure/exception is thrown
  */
-static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
+static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
     t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
     t_dll_element *e = DLL_HEAD(arg_list);
 
@@ -94,8 +99,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
         if (obj == NULL && ! is_vararg) {
             object_raise_exception(Object_ArgumentException, "Not enough arguments passed, and no default values found");
-            // @TODO: Must return NULL
-            return NULL;
+            return 0;
         }
 
         if (arg->typehint->type != objectTypeNull) {
@@ -117,8 +121,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
 
                 // @TODO: we need to check if object as a parent or interface that matches!
                 object_raise_exception(Object_ArgumentException, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
-                // @TODO: Must return NULL
-                return NULL;
+                return 0;
             }
         }
 
@@ -138,8 +141,7 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
     if (given_count > 0) {
         if (vararg_obj == NULL) {
             object_raise_exception(Object_ArgumentException, "No variable argument found, and too many arguments passed");
-            // @TODO: Must return NULL
-            return NULL;
+            return 0;
         }
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
@@ -149,6 +151,8 @@ static void _parse_calling_arguments(t_vm_frame *frame, t_callable_object *calla
         }
     }
 
+    // All ok
+    return 1;
 }
 
 
@@ -539,7 +543,12 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(left_obj, oparg1, 0, 1, right_obj);
+                dst = vm_object_operator(left_obj, oparg1, right_obj);
+                if (! dst) {
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+                    break;
+                }
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -555,7 +564,12 @@ dispatch:
                 if (left_obj->type != right_obj->type) {
                     error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
-                dst = object_operator(left_obj, oparg1, 1, 1, right_obj);
+                dst = vm_object_operator(left_obj, oparg1, right_obj);
+                if (! dst) {
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+                    break;
+                }
 
                 object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
@@ -785,7 +799,12 @@ dispatch:
                     }
                 }
 
-                dst = object_comparison(left_obj, oparg1, right_obj);
+                dst = vm_object_comparison(left_obj, oparg1, right_obj);
+                if (! dst) {
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+                    break;
+                }
 
                 object_dec_ref(left_obj);
                 object_dec_ref(right_obj);
@@ -1337,7 +1356,10 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
 
         // Parse calling arguments to see if they match our signatures
-        _parse_calling_arguments(new_frame, callable_obj, arg_list);
+        if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
+            // Exception thrown in the argument parsing
+            return NULL;
+        }
 
         // Execute frame, return the last object
         dst = _vm_execute(new_frame);
@@ -1351,4 +1373,52 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     }
 
     return dst;
+}
+
+
+/**
+ * This method is called when we need to call an operator method. Even though eventually
+ * it is a normal method call to a _opr_* method, we go a different route so we can easily
+ * do custom optimizations later on.
+ */
+t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
+    char *opr_method = objectOprMethods[opr];
+
+    t_object *found_obj = (t_object *)object_find_attribute(obj1, opr_method);
+    if (! found_obj) {
+        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
+
+    // Call the actual operator and return the result
+    return vm_object_call(obj1, found_obj, 1, obj2);
+}
+
+/**
+ * Calls an comparison function. Returns true or false
+ */
+t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+    char *cmp_method = objectCmpMethods[cmp];
+
+    t_object *found_obj = (t_object *)object_find_attribute(obj1, cmp_method);
+    if (! found_obj) {
+        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
+
+    // Call the actual operator and return the result
+    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
+    if (! ret) return ret;
+
+    // Implicit conversion to boolean if needed
+    if (! OBJECT_IS_BOOLEAN(ret)) {
+        t_object *bool_method = object_find_attribute(ret, "__boolean");
+        ret = vm_object_call(ret, bool_method, 0);
+    }
+
+    return ret;
 }

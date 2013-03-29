@@ -215,7 +215,7 @@ t_object_funcs callable_funcs = {
 
 // Initial object
 t_callable_object Object_Callable_struct = {
-    OBJECT_HEAD_INIT2("callable", objectTypeCallable, NULL, NULL, OBJECT_TYPE_CLASS, &callable_funcs),
+    OBJECT_HEAD_INIT("callable", objectTypeCallable, OBJECT_TYPE_CLASS, &callable_funcs),
     0,
     { NULL },
     NULL,

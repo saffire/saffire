@@ -29,7 +29,7 @@
 
     #include "objects/object.h"
 
-    typedef struct {
+    typedef struct _exeption_object {
         SAFFIRE_OBJECT_HEADER
         char    *message;
         long    code;
