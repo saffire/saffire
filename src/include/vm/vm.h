@@ -47,6 +47,8 @@
     void vm_populate_builtins(const char *name, void *data);
     t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
     t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+    t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);
+    t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2);
     t_object *object_internal_call(const char *class, const char *method, int arg_count, ...);
 
 #endif

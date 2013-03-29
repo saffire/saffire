@@ -110,195 +110,108 @@ SAFFIRE_METHOD(numerical, conv_string) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(numerical, add) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value += other->value;
-//        RETURN_SELF;
-//    }
-
-    t_object *obj = object_new(Object_Numerical, 1, self->value + other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, self->value + other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value -= other->value;
-//        RETURN_SELF;
-//    }
-
-    t_object *obj = object_new(Object_Numerical, 1, self->value - other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, self->value - other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_error("Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value *= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value * other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, self->value * other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        saffire_error("Error while parsing argument list\n");
-//        RETURN_NUMERICAL(0);
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value /= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value / other->value);
-    RETURN_OBJECT(obj);
+    if (other->value == 0) {
+        object_raise_exception(Object_DivideByZeroException, "Cannot divide by zero");
+        return NULL;
+    }
+
+    return object_new(Object_Numerical, 1, self->value / other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value %= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value % other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, self->value % other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value &= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value & other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, (self->value & other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value |= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value | other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, (self->value | other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value ^= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value ^ other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, (self->value ^ other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value <<= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value << other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, (self->value << other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-//    // Parse the arguments
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &other)) {
-//        return NULL;
-//    }
-//
-//    if (in_place) {
-//        DEBUG_PRINT("Add to self\n");
-//        self->value >>= other->value;
-//        RETURN_SELF;
-//    }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
 
-    t_object *obj = object_new(Object_Numerical, 1, self->value >> other->value);
-    RETURN_OBJECT(obj);
+    return object_new(Object_Numerical, 1, (self->value >> other->value));
 }
 
 
@@ -307,40 +220,63 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-    return (self->value == other->value);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value == other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(numerical, ne) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-    return (self->value != other->value);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value != other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(numerical, lt) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-    return (self->value < other->value);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value < other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(numerical, gt) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-    return (self->value > other->value);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value > other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(numerical, le) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
+    t_numerical_object *other;
 
-    return (self->value <= other->value);
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value <= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
-SAFFIRE_COMPARISON_METHOD(numerical, ge) {
-    t_numerical_object *self = (t_numerical_object *)_self;
-    t_numerical_object *other = (t_numerical_object *)_other;
 
-    return (self->value >= other->value);
+SAFFIRE_COMPARISON_METHOD(numerical, ge) {
+    t_numerical_object *other;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+        return NULL;
+    }
+
+    (self->value >= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 
@@ -367,6 +303,23 @@ void object_numerical_init(void) {
     object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
 
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_add",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_add);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sub",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sub);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_mul",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mul);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_div",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_div);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_mod",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mod);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_and",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_and);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_or",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_or);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_xor",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_xor);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sl",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sl);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sr",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sr);
+
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_eq",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ne",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_lt",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_lt);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_gt",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_gt);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_le",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_le);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ge",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ge);
 
     // Create a numerical cache
     numerical_cache = (t_numerical_object **)smm_malloc(sizeof(t_numerical_object *) * (NUMERICAL_CACHED_CNT + 1));
@@ -478,29 +431,6 @@ t_object_funcs numerical_funcs = {
 #endif
 };
 
-t_object_operators numerical_ops = {
-    object_numerical_operator_add,
-    object_numerical_operator_sub,
-    object_numerical_operator_mul,
-    object_numerical_operator_div,
-    object_numerical_operator_mod,
-    object_numerical_operator_and,
-    object_numerical_operator_or,
-    object_numerical_operator_xor,
-    object_numerical_operator_sl,
-    object_numerical_operator_sr
-};
-
-t_object_comparisons numerical_cmps = {
-    object_numerical_comparison_eq,
-    object_numerical_comparison_ne,
-    object_numerical_comparison_lt,
-    object_numerical_comparison_gt,
-    object_numerical_comparison_le,
-    object_numerical_comparison_ge,
-    NULL,
-    NULL
-};
 
 // Intial object
 t_numerical_object Object_Numerical_struct = {

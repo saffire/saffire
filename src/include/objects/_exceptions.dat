@@ -18,6 +18,9 @@ systemException
         visibilityException
     importException
 
+arithmeticException
+    divideByZeroException
+
 ioException
     fileException
         fileNotFoundException

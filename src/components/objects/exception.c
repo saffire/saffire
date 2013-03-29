@@ -92,10 +92,23 @@ SAFFIRE_METHOD(exception, setcode) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(exception, eq) {
-    return (_self == _other);
+    t_exception_object *other;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other)) {
+        return NULL;
+    }
+
+    (self == other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
+
 SAFFIRE_COMPARISON_METHOD(exception, ne) {
-    return (_self != _other);
+    t_exception_object *other;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other)) {
+        return NULL;
+    }
+
+    (self != other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 /* ======================================================================
@@ -119,8 +132,11 @@ void object_exception_init(void) {
 
     object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "setCode", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
+
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
 
     vm_populate_builtins("exception", Object_Exception);
     object_exception_add_generated_exceptions();
@@ -156,16 +172,6 @@ t_object_funcs exception_funcs = {
 #endif
 };
 
-t_object_comparisons exception_cmps = {
-    object_exception_comparison_eq,
-    object_exception_comparison_ne,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
 
 t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "", 0};
 

@@ -153,25 +153,12 @@ SAFFIRE_METHOD(tuple, conv_string) {
  *   Standard operators
  * ======================================================================
  */
-SAFFIRE_OPERATOR_METHOD(tuple, add) {
-    t_tuple_object *self = (t_tuple_object *)_self;
-
-    if (in_place) {
-        //self->value += 1;
-        RETURN_SELF;
-    }
-
-    t_tuple_object *obj = (t_tuple_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
-}
-
 
 
 /* ======================================================================
  *   Standard comparisons
  * ======================================================================
  */
-
 
 
 /* ======================================================================

@@ -51,8 +51,8 @@ const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_g
                                     "__cmp_in", "__cmp_ni", "__cmp_ex" };
 
 // Object operator methods. These should map on the OPERATOR_* defines
-const char *objectOprMethods[8] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
-                                    "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr" };
+const char *objectOprMethods[10] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
+                                     "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr" };
 
 
 
