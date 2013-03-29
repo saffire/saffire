@@ -137,18 +137,6 @@ SAFFIRE_METHOD(list, conv_string) {
  *   Standard operators
  * ======================================================================
  */
-SAFFIRE_OPERATOR_METHOD(list, add) {
-    t_list_object *self = (t_list_object *)_self;
-
-    if (in_place) {
-        //self->value += 1;
-        RETURN_SELF;
-    }
-
-    t_list_object *obj = (t_list_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
-}
-
 
 
 /* ======================================================================
@@ -176,9 +164,16 @@ void object_list_init(void) {
     object_add_internal_method((t_object *)&Object_List_struct, "__numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_List_struct, "__string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_List_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
-    object_add_internal_method((t_object *)&Object_List_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
-    object_add_internal_method((t_object *)&Object_List_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
+    object_add_internal_method((t_object *)&Object_List_struct, "length",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
+    object_add_internal_method((t_object *)&Object_List_struct, "add",            CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
+    object_add_internal_method((t_object *)&Object_List_struct, "get",            CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
+
+//    // list + element
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_add);
+//    // list << N  shifts elements from the list
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sl",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_sl);
+//    // list >> N  pops elements from the list
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_sr);
 
     vm_populate_builtins("list", (t_object *)&Object_List_struct);
 }
@@ -251,7 +246,7 @@ t_object_funcs list_funcs = {
 
 // Intial object
 t_list_object Object_List_struct = {
-    OBJECT_HEAD_INIT2("list", objectTypeList, NULL, NULL, OBJECT_TYPE_CLASS, &list_funcs),
-	NULL
+    OBJECT_HEAD_INIT("list", objectTypeList, OBJECT_TYPE_CLASS, &list_funcs),
+    NULL
 };
 

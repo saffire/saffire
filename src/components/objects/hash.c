@@ -168,18 +168,6 @@ SAFFIRE_METHOD(hash, conv_string) {
  *   Standard operators
  * ======================================================================
  */
-SAFFIRE_OPERATOR_METHOD(hash, add) {
-    t_hash_object *self = (t_hash_object *)_self;
-
-    if (in_place) {
-        //self->value += 1;
-        RETURN_SELF;
-    }
-
-    t_hash_object *obj = (t_hash_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
-}
-
 
 
 /* ======================================================================
@@ -212,6 +200,14 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
     object_add_internal_method((t_object *)&Object_Hash_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
     object_add_internal_method((t_object *)&Object_Hash_struct, "exists",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
+
+//    // hash + tuple[k,v]
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_add);
+//    // hash << N  shifts elements from the list
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sl",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sl);
+//    // hash >> N  pops elements from the list
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sr);
+
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }
@@ -284,7 +280,7 @@ t_object_funcs hash_funcs = {
 
 // Intial object
 t_hash_object Object_Hash_struct = {
-    OBJECT_HEAD_INIT2("hash", objectTypeHash, NULL, NULL, OBJECT_TYPE_CLASS, &hash_funcs),
-	NULL
+    OBJECT_HEAD_INIT("hash", objectTypeHash, OBJECT_TYPE_CLASS, &hash_funcs),
+    NULL
 };
 

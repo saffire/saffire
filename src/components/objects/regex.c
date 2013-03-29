@@ -250,7 +250,7 @@ t_object_funcs regex_funcs = {
 
 // Intial object
 t_regex_object Object_Regex_struct = {
-    OBJECT_HEAD_INIT2("regex", objectTypeRegex, NULL, NULL, OBJECT_TYPE_CLASS, &regex_funcs),
+    OBJECT_HEAD_INIT("regex", objectTypeRegex, OBJECT_TYPE_CLASS, &regex_funcs),
     NULL,
-    L'\0',
+    '\0',
 };

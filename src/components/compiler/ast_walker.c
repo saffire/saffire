@@ -340,7 +340,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Push parent class as NULL
             stack_push(state->context, st_ctx_load);
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "null", NULL);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "null", 0);
             dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
 
             // Push implements
