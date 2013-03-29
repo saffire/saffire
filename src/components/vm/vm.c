@@ -1393,16 +1393,7 @@ t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
     DEBUG_PRINT(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
 
     // Call the actual operator and return the result
-    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
-    if (! ret) return ret;
-
-    // Implicit conversion to boolean if needed
-    if (! OBJECT_IS_BOOLEAN(ret)) {
-        t_object *bool_method = object_find_attribute(ret, "__boolean");
-        ret = vm_object_call(ret, bool_method, 0);
-    }
-
-    return ret;
+    return vm_object_call(obj1, found_obj, 1, obj2);
 }
 
 /**
