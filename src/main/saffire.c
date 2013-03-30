@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
         command = "help";
         argc = 0;
     } else if (argc >= 2) {
-        // If the action is 'dashed', remote the dashes. This will change
+        // If the action is 'dashed', remove the dashes. This will change
         // "saffire --help", into "saffire help"
         while (argv[1][0] == '-') argv[1]++;
         command = argv[1];
