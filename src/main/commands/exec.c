@@ -41,6 +41,7 @@
 #include "debug.h"
 
 static int flag_no_verify = 0;
+int write_bytecode = 1;
 
 static int do_exec(void) {
     char *source_file = saffire_getopt_string(0);
@@ -58,7 +59,7 @@ static int do_exec(void) {
     int bytecode_exists = (access(bytecode_file, F_OK) == 0);
 
     if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
-        bc = bytecode_generate_diskfile(source_file, bytecode_file, NULL);
+        bc = bytecode_generate_diskfile(source_file, write_bytecode ? bytecode_file : NULL, NULL);
     } else {
         bc = bytecode_load(bytecode_file, flag_no_verify);
     }
@@ -90,7 +91,8 @@ static int do_exec(void) {
 static const char help[]   = "Executes a Saffire script.\n"
                              "\n"
                              "Global settings:\n"
-                             "   --no-verify      Don't verify signature from bytecode file (if any)\n"
+                             "   --no-verify            Don't verify signature from bytecode file (if any)\n"
+                             "   --no-write-bytecode    Don't write bytecode to disk\n"
                              "\n"
                              "This command executes a saffire script or bytecode file.\n";
 
@@ -99,8 +101,13 @@ static void opt_no_verify(void *data) {
     flag_no_verify = 1;
 }
 
+static void opt_no_write_bytecode(void *data) {
+    write_bytecode = 0;
+}
+
 static struct saffire_option exec_options[] = {
     { "no-verify", "", no_argument, opt_no_verify},
+    { "no-write-bytecode", "", no_argument, opt_no_write_bytecode}
 };
 
 /* Config actions */
