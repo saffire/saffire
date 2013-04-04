@@ -57,29 +57,30 @@ void dll_free(t_dll *dll) {
 
 
 /**
- * Append an element before the head of the DLL.
+ * Prepend an element before the head of the DLL.
  */
 t_dll_element *dll_prepend(t_dll *dll, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    // Correct pointer of the previous tail element
+    // Set head element data
+    e->data = data;
+    e->prev = NULL;
+    e->next = dll->head;
+
+    // First element, this becomes the tail as well
     if (dll->tail == NULL) {
         dll->tail = e;
     }
 
-    // Set head element data
-    e->prev = NULL;
-    e->next = dll->head;
-    e->data = data;
-
-    
+    // Already an head element present, make sure previous link is corrected
     if (dll->head != NULL) {
         dll->head->prev = e;
     }
+
+    // This element becomes the head
     dll->head = e;
 
-    // Set dll data
-
+    // Increase DLL size
     dll->size++;
 
     return e;
@@ -91,23 +92,25 @@ t_dll_element *dll_prepend(t_dll *dll, void *data) {
 t_dll_element *dll_append(t_dll *dll, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    // Correct pointer of previous tail element
+    // Set tail element data
+    e->data = data;
+    e->prev = dll->tail;
+    e->next = NULL;
+
+    // First element, this becomes the head as well
     if (dll->head == NULL) {
         dll->head = e;
     }
-    if (dll->tail == NULL) {
-        dll->tail = e;
-    } else {
+
+    // Already an tail element present, make sure next link is corrected
+    if (dll->tail != NULL) {
         dll->tail->next = e;
     }
 
-    // Set tail element data
-    e->prev = dll->tail;
-    e->next = NULL;
-    e->data = data;
-
-    // Set dll data
+    // This element becomes the tail
     dll->tail = e;
+
+    // Increase DLL size
     dll->size++;
 
     return e;
@@ -126,16 +129,21 @@ t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void
         return dll_prepend(dll, data);
     }
 
-    e->next = before_element;
     e->data = data;
+    e->prev = before_element->prev;
+    e->next = before_element;
 
-    before_element->prev->next = e;
+    if (before_element->prev) {
+        before_element->prev->next = e;
+    }
     before_element->prev = e;
 
-    dll->size++;
+
     if (before_element == dll->head) {
         dll->head = e;
     }
+
+    dll->size++;
 
     return e;
 }
@@ -147,20 +155,25 @@ t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void
 t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *after_element, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    // No element given, just prepend
+    // No element given, just append
     if (after_element == NULL) {
         return dll_append(dll, data);
     }
 
-    e->prev = after_element;
     e->data = data;
+    e->prev = after_element;
+    e->next = after_element->next;
 
+    if (after_element->next) {
+        after_element->next->prev = e;
+    }
     after_element->next = e;
 
-    dll->size++;
     if (after_element == dll->tail) {
         dll->tail = e;
     }
+
+    dll->size++;
 
     return e;
 }
@@ -170,23 +183,22 @@ t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *after_element, void *
  * Remove an element from the linked list
  */
 int dll_remove(t_dll *dll, t_dll_element *element) {
-    t_dll_element *tmp;
-
-    if (element == dll->head) {
-        dll->head = dll->head->next;
-    }
-    if (element == dll->tail) {
-        dll->tail = dll->tail->prev;
-    }
-
     dll->size--;
+
     if (dll->size == 0) {
         dll->head = NULL;
         dll->tail = NULL;
+    } else if (element == dll->head) {
+        dll->head = dll->head->next;
+        dll->head->prev = NULL;
+        return;
+    } else if (element == dll->tail) {
+        dll->tail = dll->tail->prev;
+        dll->tail->next = NULL;
+        return;
     } else {
-        tmp = element->next;
-        element->next = element->prev;
-        element->prev = tmp;
+        element->prev->next = element->next;
+        element->next->prev = element->prev;
     }
 
     return 1;
@@ -204,11 +216,11 @@ void dll_push(t_dll *dll, void *data) {
  */
 void *dll_pop(t_dll *dll) {
     t_dll_element *e = DLL_TAIL(dll);
-     if (!e) return NULL;
+    if (!e) return NULL;
 
-     void *ret = e->data;
-     dll_remove(dll, e);
-     return ret;
+    void *ret = e->data;
+    dll_remove(dll, e);
+    return ret;
 }
 
 /*
@@ -216,7 +228,7 @@ void *dll_pop(t_dll *dll) {
  */
 void *dll_top(t_dll *dll) {
     t_dll_element *e = DLL_TAIL(dll);
-     if (!e) return NULL;
+    if (!e) return NULL;
 
-     return e->data;
+    return e->data;
 }
