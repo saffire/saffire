@@ -340,7 +340,7 @@ assignment_expression:
 
 conditional_expression:
         conditional_or_expression { $$ = $1; }
-    |   conditional_or_expression '?' expression ':' conditional_expression { $$ = ast_opr('?', 2, $1, $3); }
+    |   conditional_or_expression '?' expression ':' conditional_expression { $$ = ast_opr('?', 3, $1, $3, $5); }
 ;
 
 conditional_or_expression:

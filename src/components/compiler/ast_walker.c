@@ -887,6 +887,42 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_SWITCH :
                     break;
                 case '?' :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+
+                    sprintf(label2, "ternaryif_%03d_pre_end", clc);
+                    sprintf(label5, "ternaryif_%03d_end", clc);
+                    sprintf(label6, "ternaryif_%03d_else", clc);
+
+                    // Comparison first
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label6, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[1]);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+
+                    // Always add else-label
+                    dll_append(frame, asm_create_labelline(label6));
+
+                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+
+                    // Do else body, if there is one
+                    if (leaf->opr.nops == 3) {
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(leaf->opr.ops[2]);
+                    }
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
+                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    dll_append(frame, asm_create_labelline(label5));
                     break;
 
 
