@@ -101,12 +101,16 @@ class UnitTester {
 
         // Output status
         $this->_output("Status\n");
-        $this->_output("\tTest files  : ".sprintf("%5d", $this->_results['total_files'])."\n");
-        $this->_output("\tTotal tests : ".sprintf("%5d", $this->_results['total_tests'])."\n");
-        $this->_output("\tPassed      : ".sprintf("%5d", $this->_results['passed'])." (".$this->_perc($this->_results['passed'], $this->_results['total_tests']).")\n");
-        $this->_output("\tFailed      : ".sprintf("%5d", $this->_results['failed'])." (".$this->_perc($this->_results['failed'], $this->_results['total_tests']).")\n");
-        $this->_output("\tIgnored     : ".sprintf("%5d", $this->_results['ignored'])." (".$this->_perc($this->_results['ignored'], $this->_results['total_tests']).")\n");
-        $this->_output("\tSkipped     : ".sprintf("%5d", $this->_results['skipped'])." (".$this->_perc($this->_results['skipped'], $this->_results['total_tests']).")\n");
+        $this->_output("    Test files  : ".sprintf("%5d", $this->_results['total_files'])."\n");
+        $this->_output("    Total tests : ".sprintf("%5d", $this->_results['total_tests'])."\n");
+        if ($this->_results['failed'] == 0) $this->_output("\033[42;37;1m");
+        $this->_output("    Passed      : ".sprintf("%5d", $this->_results['passed'])." (".$this->_perc($this->_results['passed'], $this->_results['total_tests']).")");
+        $this->_output("\033[0m\n");
+        if ($this->_results['failed'] > 0) $this->_output("\033[41;33;1m");
+        $this->_output("    Failed      : ".sprintf("%5d", $this->_results['failed'])." (".$this->_perc($this->_results['failed'], $this->_results['total_tests']).")");
+        $this->_output("\033[0m\n");
+        $this->_output("    Ignored     : ".sprintf("%5d", $this->_results['ignored'])." (".$this->_perc($this->_results['ignored'], $this->_results['total_tests']).")\n");
+        $this->_output("    Skipped     : ".sprintf("%5d", $this->_results['skipped'])." (".$this->_perc($this->_results['skipped'], $this->_results['total_tests']).")\n");
         $this->_output("\n");
 
 

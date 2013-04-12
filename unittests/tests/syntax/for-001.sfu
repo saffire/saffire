@@ -9,9 +9,12 @@ for (i=0; i!=10; i=i+1) {
 ====
 0123456789
 @@@@
-!skip we can't test endless loops :(
 // endless loop
-for (;;) ;
+i=0;
+for (;;) {
+    i = i + 1;
+    if (i == 1000) break;
+}
 
 ====
 @@@@
