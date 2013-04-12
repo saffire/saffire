@@ -690,7 +690,15 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Add comparison
                     dll_append(frame, asm_create_labelline(label3));
                     stack_push(state->context, st_ctx_load);
-                    WALK_LEAF(leaf->opr.ops[1]);
+
+                    if (leaf->opr.ops[1]->type == typeAstNop) {
+                        // Make sure that when we have no expression-statement inside the compare, we still
+                        // push TRUE, so the VM_JUMP_IF_FALSE won't crash
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "true", 0);
+                        dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+                    } else {
+                        WALK_LEAF(leaf->opr.ops[1]);
+                    }
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
                     dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
@@ -887,6 +895,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_SWITCH :
                     break;
                 case '?' :
+                    // @TODO: This is the same code as if-else.
                     state->loop_cnt++;
                     clc = state->loop_cnt;
 

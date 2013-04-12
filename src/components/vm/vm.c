@@ -780,7 +780,7 @@ dispatch:
                     break;
                 }
 
-                DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, left_obj->type);
+                DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
 
                 // Compare types do not match
                 if (left_obj->type != right_obj->type) {

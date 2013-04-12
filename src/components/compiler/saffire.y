@@ -261,7 +261,7 @@ iteration_statement:
         while_statement T_ELSE statement { $$ = ast_add($1, $3); }
     |   while_statement                  { $$ = $1; }
     |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave();  $$ = ast_opr(T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 3, $3, $4, $7); }
+    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $7, ast_nop()); }
     |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { $$ = ast_opr(T_FOR, 4, $3, $4, $5, $8); }
     |   T_FOREACH '(' expression T_AS ds_element                       ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 2, $3, $5); }
     |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(T_FOREACH, 3, $3, $5, $7); }
@@ -274,7 +274,7 @@ while_statement:
 
 /* An expression is anything that evaluates something */
 expression_statement:
-        ';'             { $$ = ast_opr(';', 0); }
+        ';'             { $$ = ast_nop(); }
     |   expression ';'  { $$ = $1; }
 ;
 
