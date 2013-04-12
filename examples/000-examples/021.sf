@@ -4,6 +4,7 @@
 
 import io;
 
+
 class Color {
     /* Available PMS colors */
     protected property pms = hash[ 0: "red", 1: "green", 2: "blue", 3: "orange", 4: "black", 5: "yellow" ];
@@ -44,21 +45,21 @@ class Color {
     /**
      *
      */
-    public method ::+(Color color) {
+    public method __opr_add(Color color) {
         return self.mix(color);
     }
 
     /**
      *
      */
-    public method ::+(String color) {
+    public method __opr_add(String color) {
         return self.mix(Color(color));
     }
 
     /**
      *
      */
-    public method ::+(Numerical pms) {
+    public method __opr_add(Numerical pms) {
         return self.mix(Color(pms));
     }
 
