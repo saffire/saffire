@@ -120,13 +120,10 @@
         struct _ast_element **items;
     } groupNode;
 
-    typedef void (*t_clean_handler)(t_dll*);
-
     typedef struct _ast_element {
-        nodeEnum type;              // Type of the node
-        int flags;                  // Current flag (used for interpreting)
-        unsigned long lineno;                 // Current line number for this AST element
-        t_clean_handler clean_handler;       //Function to clean up
+        nodeEnum type;                  // Type of the node
+        int flags;                      // Current flag (used for interpreting)
+        unsigned long lineno;           // Current line number for this AST element
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
