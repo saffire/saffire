@@ -92,7 +92,7 @@
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
-%token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT
+%token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT T_COALESCE
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INHERITS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
@@ -113,7 +113,7 @@
 %type <nPtr> if_statement switch_statement class_constant_definition
 %type <nPtr> unary_expression primary_expression pe_no_parenthesis data_structure
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
-%type <nPtr> catch_header conditional_expression assignment_expression real_scalar_value
+%type <nPtr> catch_header conditional_expression coalesce_expression assignment_expression real_scalar_value
 %type <nPtr> method_argument interface_inner_statement interface_method_declaration interface_property_declaration
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
@@ -334,7 +334,7 @@ expression:
 ;
 
 assignment_expression:
-        conditional_expression { $$ = $1; }
+        coalesce_expression { $$ = $1; }
     |   unary_expression assignment_operator assignment_expression { $$ = ast_assignment($2, $1, $3); }
 ;
 
@@ -372,6 +372,12 @@ equality_expression:
         regex_expression { $$ = $1; }
     |   equality_expression comparison_operator regex_expression { $$ = ast_comparison($2, $1, $3); }
 ;
+
+coalesce_expression:
+        conditional_expression { $$ = $1; }
+    |   T_IDENTIFIER T_COALESCE expression { $$ = ast_opr(T_COALESCE, 2, ast_identifier($1), $3); smm_free($1); }
+;
+
 
 comparison_operator:
         T_EQ { $$ = T_EQ; }

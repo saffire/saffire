@@ -127,6 +127,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 "||"        { saffire_push_state(st_regex); return T_OR; }
 "&&"        { saffire_push_state(st_regex); return T_AND; }
+"??"        { saffire_push_state(st_regex); return T_COALESCE; }
 
 "<<"        { saffire_push_state(st_regex); return T_SHIFT_LEFT; }
 ">>"        { saffire_push_state(st_regex); return T_SHIFT_RIGHT; }

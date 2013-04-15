@@ -894,6 +894,9 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     break;
                 case T_SWITCH :
                     break;
+                case T_COALESCE :
+
+                    break;
                 case '?' :
                     // @TODO: This is the same code as if-else.
                     state->loop_cnt++;
