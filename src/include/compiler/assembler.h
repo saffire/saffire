@@ -56,6 +56,7 @@
         int         opcode;             // Opcode
         int         opr_count;          // Number of operands
         t_asm_opr   **opr;              // Operand array
+        int         lineno;             // Source code line number
     } t_asm_line;
 
     typedef struct {
@@ -82,7 +83,7 @@
 
 
     t_asm_opr *asm_create_opr(int type, char *s, int l);
-    t_asm_line *asm_create_codeline(int opcode, int opr_cnt, ...);
+    t_asm_line *asm_create_codeline(int lineno, int opcode, int opr_cnt, ...);
     t_asm_line *asm_create_frameline(char *name);
     t_asm_line *asm_create_labelline(char *label);
 

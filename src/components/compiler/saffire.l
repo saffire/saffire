@@ -38,6 +38,18 @@
 #define YY_NO_INPUT 1
 #define YYPRINT 1
 
+#define step                                                \
+    do {                                                    \
+        yylloc.first_column   = yylloc.last_column + 1;     \
+        yylloc.last_column += strlen(yytext);               \
+    } while(0)
+
+#define step_nl                                             \
+    do {                                                    \
+        yylloc.first_line = yylloc.last_line = yylineno;    \
+        yylloc.first_column = 1;                            \
+        yylloc.last_column = 0;                             \
+    } while (0)
 
 static char *strbuf;
 
@@ -95,122 +107,129 @@ void saffire_pop_state() {
 lnum            [0-9]+
 /* identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
 identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
-whitespace      [ \t\n\r]+
+whitespace      [ \t\r]+
+newline         "\n"
 sl_comment      "//".+
 ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 %%
 
-{ml_comment}|{sl_comment} { }
-{whitespace} { }
+{ml_comment}|{sl_comment}   { }
+{whitespace}                { }
+{newline}                   { step_nl; }
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|]    { saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|]    { step; saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
 <st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    {
+    step;
     yylval.sVal = smm_strdup(yytext);
     return T_REGEX;
 }
 
-"..."       { saffire_push_state(st_regex); return T_ELLIPSIS; }
-".."        { saffire_push_state(st_regex); return T_TO; }
-"::"        { saffire_push_state(st_regex); return T_NS_SEP; }
-"~="        { saffire_push_state(st_regex); return T_RE; }
-">="        { saffire_push_state(st_regex); return T_GE; }
-"<="        { saffire_push_state(st_regex); return T_LE; }
-"=="        { saffire_push_state(st_regex); return T_EQ; }
-"!="        { saffire_push_state(st_regex); return T_NE; }
-"in"        { saffire_push_state(st_regex); return T_IN; }
+"..."       { step; saffire_push_state(st_regex); return T_ELLIPSIS; }
+".."        { step; saffire_push_state(st_regex); return T_TO; }
+"::"        { step; saffire_push_state(st_regex); return T_NS_SEP; }
+"~="        { step; saffire_push_state(st_regex); return T_RE; }
+">="        { step; saffire_push_state(st_regex); return T_GE; }
+"<="        { step; saffire_push_state(st_regex); return T_LE; }
+"=="        { step; saffire_push_state(st_regex); return T_EQ; }
+"!="        { step; saffire_push_state(st_regex); return T_NE; }
+"in"        { step; saffire_push_state(st_regex); return T_IN; }
 
-"||"        { saffire_push_state(st_regex); return T_OR; }
-"&&"        { saffire_push_state(st_regex); return T_AND; }
+"||"        { step; saffire_push_state(st_regex); return T_OR; }
+"&&"        { step; saffire_push_state(st_regex); return T_AND; }
 
-"<<"        { saffire_push_state(st_regex); return T_SHIFT_LEFT; }
-">>"        { saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
+"<<"        { step; saffire_push_state(st_regex); return T_SHIFT_LEFT; }
+">>"        { step; saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
 
-"="         { saffire_push_state(st_regex); return T_ASSIGNMENT; }
-"+="        { saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
-"-="        { saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
-"*="        { saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
-"/="        { saffire_push_state(st_regex); return T_DIV_ASSIGNMENT; }
-"%="        { saffire_push_state(st_regex); return T_MOD_ASSIGNMENT; }
-"&="        { saffire_push_state(st_regex); return T_AND_ASSIGNMENT; }
-"|="        { saffire_push_state(st_regex); return T_OR_ASSIGNMENT; }
-"^="        { saffire_push_state(st_regex); return T_XOR_ASSIGNMENT; }
-"<<="       { saffire_push_state(st_regex); return T_SL_ASSIGNMENT; }
-">>="       { saffire_push_state(st_regex); return T_SR_ASSIGNMENT; }
+"="         { step; saffire_push_state(st_regex); return T_ASSIGNMENT; }
+"+="        { step; saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
+"-="        { step; saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
+"*="        { step; saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
+"/="        { step; saffire_push_state(st_regex); return T_DIV_ASSIGNMENT; }
+"%="        { step; saffire_push_state(st_regex); return T_MOD_ASSIGNMENT; }
+"&="        { step; saffire_push_state(st_regex); return T_AND_ASSIGNMENT; }
+"|="        { step; saffire_push_state(st_regex); return T_OR_ASSIGNMENT; }
+"^="        { step; saffire_push_state(st_regex); return T_XOR_ASSIGNMENT; }
+"<<="       { step; saffire_push_state(st_regex); return T_SL_ASSIGNMENT; }
+">>="       { step; saffire_push_state(st_regex); return T_SR_ASSIGNMENT; }
 
-"++"        { saffire_push_state(st_div); return T_OP_INC; }
-"--"        { saffire_push_state(st_div); return T_OP_DEC; }
+"++"        { step; saffire_push_state(st_div); return T_OP_INC; }
+"--"        { step; saffire_push_state(st_div); return T_OP_DEC; }
 
-"while"     { saffire_push_state(st_regex); return T_WHILE; }
-"if"        { saffire_push_state(st_regex); return T_IF; }
-"else"      { saffire_push_state(st_regex); return T_ELSE; }
-"use"       { saffire_push_state(st_regex); return T_USE; }
-"as"        { saffire_push_state(st_regex); return T_AS; }
-"import"    { saffire_push_state(st_regex); return T_IMPORT; }
-"from"      { saffire_push_state(st_regex); return T_FROM; }
-"do"        { saffire_push_state(st_regex); return T_DO; }
-"for"       { saffire_push_state(st_regex); return T_FOR; }
-"foreach"   { saffire_push_state(st_regex); return T_FOREACH; }
-"switch"    { saffire_push_state(st_regex); return T_SWITCH; }
+"while"     { step; saffire_push_state(st_regex); return T_WHILE; }
+"if"        { step; saffire_push_state(st_regex); return T_IF; }
+"else"      { step; saffire_push_state(st_regex); return T_ELSE; }
+"use"       { step; saffire_push_state(st_regex); return T_USE; }
+"as"        { step; saffire_push_state(st_regex); return T_AS; }
+"import"    { step; saffire_push_state(st_regex); return T_IMPORT; }
+"from"      { step; saffire_push_state(st_regex); return T_FROM; }
+"do"        { step; saffire_push_state(st_regex); return T_DO; }
+"for"       { step; saffire_push_state(st_regex); return T_FOR; }
+"foreach"   { step; saffire_push_state(st_regex); return T_FOREACH; }
+"switch"    { step; saffire_push_state(st_regex); return T_SWITCH; }
 
-"class"         { saffire_push_state(st_regex); return T_CLASS; }
-"extends"       { saffire_push_state(st_regex); return T_EXTENDS; }
-"implements"    { saffire_push_state(st_regex); return T_IMPLEMENTS; }
-"inherits"      { saffire_push_state(st_regex); return T_INHERITS; }
-"abstract"      { saffire_push_state(st_regex); return T_ABSTRACT; }
-"final"         { saffire_push_state(st_regex); return T_FINAL; }
-"interface"     { saffire_push_state(st_regex); return T_INTERFACE; }
-"const"         { saffire_push_state(st_regex); return T_CONST; }
-"static"        { saffire_push_state(st_regex); return T_STATIC; }
+"class"         { step; saffire_push_state(st_regex); return T_CLASS; }
+"extends"       { step; saffire_push_state(st_regex); return T_EXTENDS; }
+"implements"    { step; saffire_push_state(st_regex); return T_IMPLEMENTS; }
+"inherits"      { step; saffire_push_state(st_regex); return T_INHERITS; }
+"abstract"      { step; saffire_push_state(st_regex); return T_ABSTRACT; }
+"final"         { step; saffire_push_state(st_regex); return T_FINAL; }
+"interface"     { step; saffire_push_state(st_regex); return T_INTERFACE; }
+"const"         { step; saffire_push_state(st_regex); return T_CONST; }
+"static"        { step; saffire_push_state(st_regex); return T_STATIC; }
 
-"public"        { saffire_push_state(st_regex); return T_PUBLIC; }
-"private"       { saffire_push_state(st_regex); return T_PRIVATE; }
-"protected"     { saffire_push_state(st_regex); return T_PROTECTED; }
-"method"        { saffire_push_state(st_regex); return T_METHOD; }
-"property"      { saffire_push_state(st_regex); return T_PROPERTY; }
+"public"        { step; saffire_push_state(st_regex); return T_PUBLIC; }
+"private"       { step; saffire_push_state(st_regex); return T_PRIVATE; }
+"protected"     { step; saffire_push_state(st_regex); return T_PROTECTED; }
+"method"        { step; saffire_push_state(st_regex); return T_METHOD; }
+"property"      { step; saffire_push_state(st_regex); return T_PROPERTY; }
 
-"catch"         { saffire_push_state(st_regex); return T_CATCH; }
-"finally"       { saffire_push_state(st_regex); return T_FINALLY; }
-"throw"         { saffire_push_state(st_regex); return T_THROW; }
-"return"        { saffire_push_state(st_regex); return T_RETURN; }
-"break"         { saffire_push_state(st_regex); return T_BREAK; }
-"breakelse"     { saffire_push_state(st_regex); return T_BREAKELSE; }
-"continue"      { saffire_push_state(st_regex); return T_CONTINUE; }
-"try"           { saffire_push_state(st_regex); return T_TRY; }
-"default"       { saffire_push_state(st_regex); return T_DEFAULT; }
-"goto"          { saffire_push_state(st_regex); return T_GOTO; }
-"case"          { saffire_push_state(st_regex); return T_CASE; }
+"catch"         { step; saffire_push_state(st_regex); return T_CATCH; }
+"finally"       { step; saffire_push_state(st_regex); return T_FINALLY; }
+"throw"         { step; saffire_push_state(st_regex); return T_THROW; }
+"return"        { step; saffire_push_state(st_regex); return T_RETURN; }
+"break"         { step; saffire_push_state(st_regex); return T_BREAK; }
+"breakelse"     { step; saffire_push_state(st_regex); return T_BREAKELSE; }
+"continue"      { step; saffire_push_state(st_regex); return T_CONTINUE; }
+"try"           { step; saffire_push_state(st_regex); return T_TRY; }
+"default"       { step; saffire_push_state(st_regex); return T_DEFAULT; }
+"goto"          { step; saffire_push_state(st_regex); return T_GOTO; }
+"case"          { step; saffire_push_state(st_regex); return T_CASE; }
 
-"self"          { saffire_push_state(st_regex); return T_SELF; }
-"parent"        { saffire_push_state(st_regex); return T_PARENT; }
+"self"          { step; saffire_push_state(st_regex); return T_SELF; }
+"parent"        { step; saffire_push_state(st_regex); return T_PARENT; }
 
-"yield"         { saffire_push_state(st_regex); return T_YIELD; }
+"yield"         { step; saffire_push_state(st_regex); return T_YIELD; }
 
 
 <st_div,st_regex>\"         {
+                                step;
                                 /* Opening string quote */
                                 saffire_push_state(st_string_dbl);
                                 strbuf = NULL;
                             }
 <st_div,st_regex>\'         {
+                                step;
                                 /* Opening string quote */
                                 saffire_push_state(st_string_sgl);
                                 strbuf = NULL;
                             }
 
-<st_string_dbl>\"               {
+<st_string_dbl>\"           {
+                                step;
                                 /* Closing double string quote */
                                 yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
                             }
-<st_string_sgl>\'               {
+<st_string_sgl>\'           {
+                                step;
                                 /* Closing Single string quote */
                                 yylval.sVal = smm_strdup(strbuf ? strbuf : "");
                                 smm_free(strbuf);
@@ -218,13 +237,18 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 return T_STRING;
                             }
 
-<st_string_sgl>\"           {   /* Double quote is just a double quote in single quoted string */
+<st_string_sgl>\"           {
+                                step;
+                                /* Double quote is just a double quote in single quoted string */
                                 strbuf = add_strbuf_char(strbuf, '\\'); }
-<st_string_dbl>\'           {   /* Single quote is just a single quote in double quoted string */
+<st_string_dbl>\'           {
+                                step;
+                                /* Single quote is just a single quote in double quoted string */
                                 strbuf = add_strbuf_char(strbuf, '\''); }
 
 <st_string_sgl,
  st_string_dbl>\n           {
+                                step_nl;
                                 /* Real newlines inside strings are not allowed */
                                 error("newline found in string\n");
                             }
@@ -233,12 +257,14 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_string_sgl,
  st_string_dbl>\\\"         { strbuf = add_strbuf_char(strbuf, '\"'); }
 <st_string_sgl,
- st_string_dbl>\\\'         { strbuf = add_strbuf_char(strbuf, '\''); }
+ st_string_dbl>\\\'         { step; strbuf = add_strbuf_char(strbuf, '\''); }
 
 <st_string_sgl,
- st_string_dbl>\\0          { strbuf = add_strbuf_char(strbuf, '\0'); }
+ st_string_dbl>\\0          { step; strbuf = add_strbuf_char(strbuf, '\0'); }
 <st_string_sgl,
  st_string_dbl>\\[0-7]{1,3} {
+                                step;
+
                                 /* Octal number */
                                 int result;
                                 (void) sscanf( yytext + 1, "%o", &result);
@@ -250,7 +276,9 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                             }
 <st_string_sgl,
  st_string_dbl>\\[xX][0-9A-Fa-f]{1,2} {
-                              /* Hexidecimal number */
+                                step;
+
+                                /* Hexidecimal number */
                                 int result;
                                 (void) sscanf(yytext + 2, "%X", &result);
                                 if (result > 0xff) {
@@ -262,40 +290,44 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                             }
 
 <st_string_sgl,
- st_string_dbl>\\[nN]           { strbuf = add_strbuf_char(strbuf, '\n'); }
+ st_string_dbl>\\[nN]           { step; strbuf = add_strbuf_char(strbuf, '\n'); }
 <st_string_sgl,
- st_string_dbl>\\[tT]           { strbuf = add_strbuf_char(strbuf, '\t'); }
+ st_string_dbl>\\[tT]           { step; strbuf = add_strbuf_char(strbuf, '\t'); }
 <st_string_sgl,
- st_string_dbl>\\[bB]           { strbuf = add_strbuf_char(strbuf, '\b'); }
+ st_string_dbl>\\[bB]           { step; strbuf = add_strbuf_char(strbuf, '\b'); }
 <st_string_sgl,
- st_string_dbl>\\[rR]           { strbuf = add_strbuf_char(strbuf, '\r'); }
+ st_string_dbl>\\[rR]           { step; strbuf = add_strbuf_char(strbuf, '\r'); }
 <st_string_sgl,
- st_string_dbl>\\[fF]           { strbuf = add_strbuf_char(strbuf, '\f'); }
+ st_string_dbl>\\[fF]           { step; strbuf = add_strbuf_char(strbuf, '\f'); }
 <st_string_sgl,
-  st_string_dbl>\\[vV]           { strbuf = add_strbuf_char(strbuf, '\v'); }
+  st_string_dbl>\\[vV]          { step; strbuf = add_strbuf_char(strbuf, '\v'); }
 <st_string_sgl,
  st_string_dbl>\\.              {
+                                step;
                                 /* Everything else is an unknown escape string */
                                 error("unknown escape '%s' in string\n", yytext);
                                 yyterminate();
                             }
-<st_string_dbl>[^\\"\n]*        { strbuf = add_strbuf(strbuf, yytext); }
-<st_string_sgl>[^\\'\n]*        { strbuf = add_strbuf(strbuf, yytext); }
+<st_string_dbl>[^\\"\n]*        { step; strbuf = add_strbuf(strbuf, yytext); }
+<st_string_sgl>[^\\'\n]*        { step; strbuf = add_strbuf(strbuf, yytext); }
 
 
 {identifier} {
+    step;
     saffire_push_state(st_div);
     yylval.sVal = smm_strdup(yytext);
     return T_IDENTIFIER;
 }
 
 {lnum} {
+    step;
     saffire_push_state(st_div);
     yylval.lVal = strtol(yytext, NULL, 10);
     return T_LNUM;
 }
 
 . {
+    step;
     error("Unknown token: '%s'\n", yytext);
     yyterminate();
 }
