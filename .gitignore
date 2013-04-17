@@ -45,5 +45,6 @@ src/include/vm/vm_opcodes.h
 src/include/gitversion.h
 src/utmain
 src/include/objects/_exceptions.h
-src/include/objects/_exceptions.inc$
+src/include/objects/_exceptions.inc
 html/
+test-driver
