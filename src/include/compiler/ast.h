@@ -145,26 +145,25 @@
     t_ast_element *ast_generate_from_file(const char *);
     t_ast_element *ast_generate_tree(FILE *fp);
 
-    t_ast_element *ast_string(char *value);
-    t_ast_element *ast_string_dup(t_ast_element *src);
-    t_ast_element *ast_numerical(int value);
-    t_ast_element *ast_identifier(char *var_name);
-    t_ast_element *ast_property(t_ast_element *class, t_ast_element *property);
-    t_ast_element *ast_opr(int opr, int nops, ...);
+    t_ast_element *ast_string(int lineno, char *value);
+    t_ast_element *ast_string_dup(int lineno, t_ast_element *src);
+    t_ast_element *ast_numerical(int lineno, int value);
+    t_ast_element *ast_identifier(int lineno, char *var_name);
+    t_ast_element *ast_property(int lineno, t_ast_element *class, t_ast_element *property);
+    t_ast_element *ast_opr(int lineno, int opr, int nops, ...);
     t_ast_element *ast_group(int len, ...);
     t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
-//    t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_string_concat(t_ast_element *src, char *s);
     t_ast_element *ast_concat(t_ast_element *src, char *s);
-    t_ast_element *ast_class(t_class *class, t_ast_element *body);
-    t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
+    t_ast_element *ast_class(int lineno, t_class *class, t_ast_element *body);
+    t_ast_element *ast_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_nop(void);
     t_ast_element *ast_null(void);
-    t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_operator(int op, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_attribute(char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
+    t_ast_element *ast_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
 
 
     void ast_free_node(t_ast_element *p);
