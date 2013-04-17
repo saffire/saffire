@@ -1,0 +1,41 @@
+title: if/else control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+i=0;
+i++;
+io.print(i);
+======
+1
+@@@@@@
+import io;
+
+i=0;
+io.print(i++);
+io.print(++i);
+io.print(i);
+======
+113
+@@@@@@
+import io;
+
+for (i=0; i!=10; i++) {
+    io.print(i);
+}
+======
+001
+@@@@@@
+import io;
+
+i=10;
+if (++i > 10) {
+  io.print("true");
+} else {
+  io.print("false");
+}
+======
+true
+
+

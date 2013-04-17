@@ -40,7 +40,6 @@ extern int yylex_destroy();
 extern void yyerror(t_ast_element *ast, const char *err);
 extern int yyparse(unsigned long *ptr);
 extern FILE *yyin;
-extern int yylineno;
 
 #ifdef __PARSEDEBUG
 extern int yydebug;
@@ -65,6 +64,8 @@ t_ast_element *ast_generate_tree(FILE *fp) {
     yyin = fp;
 
     unsigned long ptr = 0;
+    yylloc.first_line = yylloc.last_line = 1;
+    yylloc.first_column = yylloc.last_column = 0;
     yyparse(&ptr);
     yylex_destroy();
 
@@ -86,15 +87,17 @@ static t_ast_element *ast_alloc_element(void) {
     if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
         yyerror(p, "Out of memory");   /* LCOV_EXCL_LINE */
     }
-    p->lineno = yylineno;
-    p->clean_handler = NULL;
+
+    // Default, no linenumber info is present
+    p->lineno = 0;
 
     return p;
 }
 
-t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right) {
+t_ast_element *ast_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstBool;
     p->boolop.op = boolop;
     p->boolop.l = left;
@@ -102,9 +105,10 @@ t_ast_element *ast_boolop(int boolop, t_ast_element *left, t_ast_element *right)
 
     return p;
 }
-t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right) {
+t_ast_element *ast_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstAssignment;
     p->assignment.op = op;
     p->assignment.l = left;
@@ -112,9 +116,10 @@ t_ast_element *ast_assignment(int op, t_ast_element *left, t_ast_element *right)
 
     return p;
 }
-t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right) {
+t_ast_element *ast_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstComparison;
     p->comparison.cmp = cmp;
     p->comparison.l = left;
@@ -122,9 +127,10 @@ t_ast_element *ast_comparison(int cmp, t_ast_element *left, t_ast_element *right
 
     return p;
 }
-t_ast_element *ast_operator(int op, t_ast_element *left, t_ast_element *right) {
+t_ast_element *ast_operator(int lineno, int op, t_ast_element *left, t_ast_element *right) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstOperator;
     p->operator.op = op;
     p->operator.l = left;
@@ -136,9 +142,10 @@ t_ast_element *ast_operator(int op, t_ast_element *left, t_ast_element *right) {
 /**
  * Creates a string node
  */
-t_ast_element *ast_string(char *value) {
+t_ast_element *ast_string(int lineno, char *value) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstString;
     p->string.value = smm_strdup(value);
 
@@ -146,9 +153,10 @@ t_ast_element *ast_string(char *value) {
 }
 
 
-t_ast_element *ast_string_dup(t_ast_element *src) {
+t_ast_element *ast_string_dup(int lineno, t_ast_element *src) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstString;
     p->string.value = smm_strdup(src->string.value);
 
@@ -160,9 +168,10 @@ t_ast_element *ast_string_dup(t_ast_element *src) {
 /**
  * Creates a numerical node
  */
-t_ast_element *ast_numerical(int value) {
+t_ast_element *ast_numerical(int lineno, int value) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstNumerical;
     p->numerical.value = value;
 
@@ -173,9 +182,10 @@ t_ast_element *ast_numerical(int value) {
 /**
  * Creates a identifier node
  */
-t_ast_element *ast_identifier(char *var_name) {
+t_ast_element *ast_identifier(int lineno, char *var_name) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstIdentifier;
     p->identifier.name = smm_strdup(var_name);
     return p;
@@ -184,9 +194,10 @@ t_ast_element *ast_identifier(char *var_name) {
 /**
  * Creates a identifier node
  */
-t_ast_element *ast_property(t_ast_element *class, t_ast_element *property) {
+t_ast_element *ast_property(int lineno, t_ast_element *class, t_ast_element *property) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstProperty;
     p->property.class = class;
     p->property.property = property;
@@ -253,36 +264,6 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
 }
 
 
-///**
-// * Add all the children of a node to the src node.
-// */
-//t_ast_element *ast_add_children(t_ast_element *src, t_ast_element *new_element) {
-//    if (src->type != typeAstOpr) {
-//        yyerror(src, "Cannot add to non-opr element");   /* LCOV_EXCL_LINE */
-//    }
-//    if (new_element->type != typeAstOpr) {
-//        yyerror(src, "We can only add child elements from a opr element");   /* LCOV_EXCL_LINE */
-//    }
-//
-//    // Allocate or resize operator memory
-//    if (src->opr.ops) {
-//        src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops + new_element->opr.nops) * sizeof(t_ast_element));
-//    } else {
-//        src->opr.ops = smm_malloc(new_element->opr.nops * sizeof(t_ast_element));
-//    }
-//    if (src->opr.ops == NULL) {
-//        yyerror(src, "Out of memory");   /* LCOV_EXCL_LINE */
-//    }
-//
-//    // Add new operator
-//    for (int i=0; i!=new_element->opr.nops; i++) {
-//        src->opr.ops[src->opr.nops] = new_element->opr.ops[i];
-//        src->opr.nops++;
-//    }
-//
-//    return src;
-//}
-
 t_ast_element *ast_group(int len, ...) {
     t_ast_element *p = ast_alloc_element();
     va_list ap;
@@ -311,14 +292,16 @@ t_ast_element *ast_group(int len, ...) {
 /**
  * Create an operator node
  */
-t_ast_element *ast_opr(int opr, int nops, ...) {
+t_ast_element *ast_opr(int lineno, int opr, int nops, ...) {
     t_ast_element *p = ast_alloc_element();
     va_list ap;
 
+    p->lineno = lineno;
     p->type = typeAstOpr;
     p->opr.oper = opr;
     p->opr.nops = nops;
     p->opr.ops = NULL;
+    p->lineno = lineno;
 
     if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
         yyerror(p, "Out of memory");   /* LCOV_EXCL_LINE */
@@ -360,9 +343,10 @@ t_ast_element *ast_string_concat(t_ast_element *src, char *s) {
 /**
  * Create a class node.
  */
-t_ast_element *ast_class(t_class *class, t_ast_element *body) {
+t_ast_element *ast_class(int lineno, t_class *class, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstClass;
     p->class.modifiers = class->modifiers;
     p->class.name = smm_strdup(class->name);
@@ -379,9 +363,10 @@ t_ast_element *ast_class(t_class *class, t_ast_element *body) {
 /**
  * Create an interface node
  */
-t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
+t_ast_element *ast_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstInterface;
     p->interface.modifiers = modifiers;
     p->interface.name = smm_strdup(name);
@@ -395,9 +380,10 @@ t_ast_element *ast_interface(int modifiers, char *name, t_ast_element *implement
 /**
  * Create a attribute node
  */
-t_ast_element *ast_attribute(char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments) {
+t_ast_element *ast_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments) {
     t_ast_element *p = ast_alloc_element();
 
+    p->lineno = lineno;
     p->type = typeAstAttribute;
     p->attribute.name = smm_strdup(name);
     p->attribute.attrib_type = attrib_type;
