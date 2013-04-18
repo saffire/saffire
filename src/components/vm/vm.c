@@ -783,7 +783,8 @@ dispatch:
                 DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
 
                 // Compare types do not match
-                if (left_obj->type != right_obj->type) {
+                if (left_obj->type != right_obj->type && !(OBJECT_IS_NULL(left_obj) || OBJECT_IS_NULL(right_obj))) {
+
                     // Try an implicit cast if possible
                     DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
                     t_object *cast_method = object_find_attribute(right_obj, left_obj->name);

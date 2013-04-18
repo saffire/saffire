@@ -1,0 +1,18 @@
+title: Null coalesce tests
+author: Kevin Daudt <ikke@ikke.info>
+
+**********
+// Null test
+import io;
+a = null;
+b = a ?? "default";
+io.print(a);
+====
+default
+@@@@
+// Non-null test
+a = "value";
+b = a ?? "default";
+io.print(a);
+====
+value
