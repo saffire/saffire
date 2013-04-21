@@ -1,5 +1,10 @@
 #!/bin/sh
 
+#
+# This is a simple provisioning script that will create a propper
+#
+#
+
 apt-get update
 
 # Install compile tools
@@ -9,7 +14,7 @@ apt-get install -y git-core make automake gcc pkg-config bison flex php5-cli
 apt-get install -y libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev libcunit1-dev
 
 # Symlink SFL library
-mkdir /usr/share/saffire
+mkdir -p /usr/share/saffire/modules
 ln -s /vagrant/sfl /usr/share/saffire/sfl
 
 # Create new MOTD

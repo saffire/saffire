@@ -27,20 +27,12 @@ Installing Saffire
 ------------------
 There are two ways to install Saffire. The easy way, and the hard way :) The easy way consists of setting up a
 virtualbox environment that will automatically install everything you need through the help of vagrant. The hard way,
-well, you do everything yourself. Please read the information in the INSTALL.md file on how to install Saffire.
+well, you do everything yourself. Please read the information in the documentation/Installation.md file on how to install
+Saffire.
 
 
-
-
-Generating a configuration file
--------------------------------
-It's easy to get a default configuration.
-
-    saffire config generate > saffire.ini
-
-Copy this saffire.ini to /etc/saffire/saffire.ini. For most users, this configuration should be pretty ok. If you like
-to modify this configuration, either manually edit the file, or use the 'saffire config' options:
-
-    saffire config set global.timezone "Europe/Amsterdam"
-
-This will automatically save a "timezone = Europe/Amsterdam" line under the "global" section of your ini file.
+Using Saffire
+-------------
+Saffire is under construction and experience heavy redesign on occasion for as long as we haven't hit a stable release.
+Obviously, the closer we get, the less things will change and the current base is getting pretty solid fortunately.
+Please checkout the documentation/Usage.md file in order to figure out how to start with Saffire.

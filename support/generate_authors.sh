@@ -1,10 +1,8 @@
 #!/bin/sh
 
 cat << EOH
-Saffire is created by:
- Joshua Thijssen
+Saffire is originally created by Joshua Thijssen, with the help of (many) contributors:
 
-Contributors:
 EOH
 
 git log --format='%aN <%aE>' | sort |  uniq -c | sort -nr
