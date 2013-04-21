@@ -116,50 +116,50 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
     fprintf(fp, "\tN_%d [", cur_node_nr);
     switch (p->type) {
         case typeAstString :
-            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, sanitize(p->string.value));
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->lineno, sanitize(p->string.value));
             break;
 
         case typeAstNumerical :
-            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{N:%d|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->numerical.value);
+            fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->lineno, p->numerical.value);
             break;
 
         case typeAstIdentifier :
-            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled\",label=\"{N:%d|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->identifier.name);
+            fprintf(fp, "fillcolor=darkolivegreen1,style=\"filled\",label=\"{%d (#%ld)|Type=Variable|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->lineno, p->identifier.name);
             break;
 
         case typeAstBool :
-            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Bool|Operator=%s} \"]\n", cur_node_nr, p->boolop.op ? "AND" : "OR");
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{%d (#%ld)|Type=Bool|Operator=%s} \"]\n", cur_node_nr, p->lineno, p->boolop.op ? "AND" : "OR");
             dot_node_iterate(fp, p->boolop.l, cur_node_nr);
             dot_node_iterate(fp, p->boolop.r, cur_node_nr);
             break;
 
         case typeAstAssignment :
-            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Assignment|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->assignment.op), p->assignment.op);
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{%d (#%ld)|Type=Assignment|Operator=%s (%d)} \"]\n", cur_node_nr, p->lineno, get_token_string(p->assignment.op), p->assignment.op);
             dot_node_iterate(fp, p->assignment.l, cur_node_nr);
             dot_node_iterate(fp, p->assignment.r, cur_node_nr);
             break;
 
         case typeAstProperty :
-            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Property} \"]\n", cur_node_nr);
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{%d (#%ld)|Type=Property} \"]\n", cur_node_nr, p->lineno);
             dot_node_iterate(fp, p->property.class, cur_node_nr);
             dot_node_iterate(fp, p->property.property, cur_node_nr);
             break;
 
 
         case typeAstComparison :
-            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{N:%d|Type=Comparison|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->comparison.cmp), p->comparison.cmp);
+            fprintf(fp, "fillcolor=burlywood2,style=\"filled\",label=\"{%d (#%ld)|Type=Comparison|Operator=%s (%d)} \"]\n", cur_node_nr, p->lineno, get_token_string(p->comparison.cmp), p->comparison.cmp);
             dot_node_iterate(fp, p->comparison.l, cur_node_nr);
             dot_node_iterate(fp, p->comparison.r, cur_node_nr);
             break;
 
         case typeAstOperator:
-            fprintf(fp, "fillcolor=burlywood1,style=\"filled\",label=\"{N:%d|Type=Operator|Operator=%s (%d)} \"]\n", cur_node_nr, get_token_string(p->operator.op), p->operator.op);
+            fprintf(fp, "fillcolor=burlywood1,style=\"filled\",label=\"{%d (#%ld)|Type=Operator|Operator=%s (%d)} \"]\n", cur_node_nr, p->lineno, get_token_string(p->operator.op), p->operator.op);
             dot_node_iterate(fp, p->operator.l, cur_node_nr);
             dot_node_iterate(fp, p->operator.r, cur_node_nr);
             break;
 
         case typeAstGroup :
-            fprintf(fp, "label=\"{N:%d|Type=Group|Length=%d} \"]\n", cur_node_nr, p->group.len);
+            fprintf(fp, "label=\"{%d (#%ld)|Type=Group|Length=%d} \"]\n", cur_node_nr, p->lineno, p->group.len);
 
             // Plot all the items in the group
             for (int i=0; i!=p->group.len; i++) {
@@ -168,7 +168,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             break;
 
         case typeAstOpr :
-            fprintf(fp, "label=\"{N:%d|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
+            fprintf(fp, "label=\"{%d (#%ld)|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, p->lineno, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
 
             // Plot all the operands
             for (int i=0; i!=p->opr.nops; i++) {
@@ -177,22 +177,22 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             break;
 
         case typeAstNull :
-            fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{N:%d|Type=NULL}\"]\n", cur_node_nr);
+            fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=NULL}\"]\n", cur_node_nr, p->lineno);
             break;
 
         case typeAstNop :
-            fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{N:%d|Type=NOP}\"]\n", cur_node_nr);
+            fprintf(fp, "fillcolor=darkslategray1,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=NOP}\"]\n", cur_node_nr, p->lineno);
             break;
 
         case typeAstInterface :
-            fprintf(fp, "fillcolor=darkseagreen,style=\"filled\",label=\"{N:%d|Type=Interface|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->interface.name, show_modifiers(p->interface.modifiers), p->interface.modifiers);
+            fprintf(fp, "fillcolor=darkseagreen,style=\"filled\",label=\"{%d (#%ld)|Type=Interface|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->lineno, p->interface.name, show_modifiers(p->interface.modifiers), p->interface.modifiers);
             // Plot implementations and body
             dot_node_iterate(fp, p->interface.implements, cur_node_nr);
             dot_node_iterate(fp, p->interface.body, cur_node_nr);
             break;
 
         case typeAstClass :
-            fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{N:%d|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
+            fprintf(fp, "fillcolor=darksalmon,style=\"filled\",label=\"{%d (#%ld)|Type=Class|Name=%s|Modifiers=%s (%d)}\"]\n", cur_node_nr, p->lineno, p->class.name, show_modifiers(p->class.modifiers), p->class.modifiers);
             // Plot body
             dot_node_iterate(fp, p->class.extends, cur_node_nr);
             dot_node_iterate(fp, p->class.implements, cur_node_nr);
@@ -202,26 +202,26 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
         case typeAstAttribute:
             switch(p->attribute.attrib_type) {
                 case ATTRIB_TYPE_METHOD :
-                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Method)|Name=%s|Access=%s|Visiblity=%s|method_flags=%s}\"]\n",
-                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility), show_modifiers(p->attribute.method_flags));
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{%d (#%ld)|Type=Attribute (Method)|Name=%s|Access=%s|Visiblity=%s|method_flags=%s}\"]\n",
+                        cur_node_nr, p->lineno, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility), show_modifiers(p->attribute.method_flags));
 
                     // Plot arguments
                     dot_node_iterate(fp, p->attribute.arguments, cur_node_nr);
                     break;
                 case ATTRIB_TYPE_PROPERTY :
-                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Property)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
-                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{%d (#%ld)|Type=Attribute (Property)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
+                        cur_node_nr, p->lineno, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
                     break;
                 case ATTRIB_TYPE_CONSTANT :
-                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{N:%d|Type=Attribute (Constant)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
-                        cur_node_nr, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
+                    fprintf(fp, "fillcolor=lightskyblue,style=\"filled\",label=\"{%d (#%ld)|Type=Attribute (Constant)|Name=%s|Access=%s|Visiblity=%s}\"]\n",
+                        cur_node_nr, p->lineno, p->attribute.name, show_attr_access(p->attribute.access), show_attr_visibility(p->attribute.visibility));
                     break;
             }
             dot_node_iterate(fp, p->attribute.value, cur_node_nr);
             break;
 
         default :
-            fprintf(fp, "style=\"filled,rounded\",fillcolor=firebrick1,label=\"{N:%d|Type=UNKNOWN|Value=%d}\"]\n", node_nr, p->type);
+            fprintf(fp, "style=\"filled,rounded\",fillcolor=firebrick1,label=\"{%d (#%ld)|Type=UNKNOWN|Value=%d}\"]\n", node_nr, p->lineno, p->type);
             break;
     }
 

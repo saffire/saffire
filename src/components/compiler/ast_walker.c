@@ -85,21 +85,21 @@ static int multi_assignment = 0;
 /**
  * Load or store a constant or id. Depends on the state what actually will be done
  */
-static void _load_or_store(t_asm_opr *opr, t_dll *frame, t_state *state) {
+static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *state) {
     enum context ctx = (enum context)stack_peek(state->context);
     enum type type  = (enum type)stack_peek(state->type);
 
     switch (ctx) {
         case st_ctx_load :
             if (type == st_type_id) {
-                dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr));
+                dll_append(frame, asm_create_codeline(lineno, VM_LOAD_ID, 1, opr));
             } else if (type == st_type_const) {
-                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr));
+                dll_append(frame, asm_create_codeline(lineno, VM_LOAD_CONST, 1, opr));
             }
             break;
         case st_ctx_store :
             // Store is always to ID!
-            dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr));
+            dll_append(frame, asm_create_codeline(lineno, VM_STORE_ID, 1, opr));
             break;
         default :
             error_and_die(1, "Unknown load/store state for %d!", opr->type);
@@ -136,33 +136,33 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             enum context ctx = (enum context)stack_peek(state->context);
             if (ctx == st_ctx_load) {
-                dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ATTRIB, 1, opr1));
             } else {
-                dll_append(frame, asm_create_codeline(VM_STORE_ATTRIB, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ATTRIB, 1, opr1));
             }
             break;
 
         case typeAstString :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->string.value, 0);
             stack_push(state->type, (void *)st_type_const);
-            _load_or_store(opr1, frame, state);
+            _load_or_store(leaf->lineno, opr1, frame, state);
             stack_pop(state->type);
             break;
         case typeAstNumerical :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->numerical.value);
             stack_push(state->type, (void *)st_type_const);
-            _load_or_store(opr1, frame, state);
+            _load_or_store(leaf->lineno, opr1, frame, state);
             stack_pop(state->type);
             break;
         case typeAstNull :
             // Store null
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
             break;
         case typeAstIdentifier :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->identifier.name, 0);
             stack_push(state->type, (void *)st_type_id);
-            _load_or_store(opr1, frame, state);
+            _load_or_store(leaf->lineno, opr1, frame, state);
             stack_pop(state->type);
             break;
         case typeAstNop :
@@ -196,7 +196,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, op);
-            dll_append(frame, asm_create_codeline(VM_OPERATOR, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_OPERATOR, 1, opr1));
             break;
 
         case typeAstComparison :
@@ -229,7 +229,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
-            dll_append(frame, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr1));
             break;
         case typeAstAssignment :
             if (leaf->assignment.r->type == typeAstAssignment) {
@@ -247,7 +247,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             stack_pop(state->call_state);
 
             if (multi_assignment) {
-                dll_append(frame, asm_create_codeline(VM_DUP_TOP, 0));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
                 multi_assignment--;
             }
 
@@ -269,8 +269,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 WALK_LEAF(leaf->boolop.l);
 
                 opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
-                dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                 WALK_LEAF(leaf->boolop.r);
 
@@ -286,8 +286,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 WALK_LEAF(leaf->boolop.l);
 
                 opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                dll_append(frame, asm_create_codeline(VM_JUMP_IF_TRUE, 1, opr1));
-                dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_TRUE, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                 WALK_LEAF(leaf->boolop.r);
 
@@ -313,24 +313,24 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Push the number of implements we actually found
             node = leaf->class.implements;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, node->group.len);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push flags
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->class.modifiers);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push the name
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->class.name, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Build class code
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, state->attributes);
-            dll_append(frame, asm_create_codeline(VM_BUILD_CLASS, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_CLASS, 1, opr1));
             state->attributes = 0;
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->class.name, 0);
-            dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
 
             break;
 
@@ -341,7 +341,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Push parent class as NULL
             stack_push(state->context, st_ctx_load);
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "null", 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push implements
             stack_push(state->context, st_ctx_load);
@@ -350,24 +350,24 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Push the number of implements we actually found
             node = leaf->interface.implements;
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, node->group.len);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push flags
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->interface.modifiers);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push the name
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->interface.name, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Build class code
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, state->attributes);
-            dll_append(frame, asm_create_codeline(VM_BUILD_INTERFACE, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_INTERFACE, 1, opr1));
             state->attributes = 0;
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->interface.name, 0);
-            dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
             break;
 
         case typeAstAttribute :
@@ -393,7 +393,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 // Push method flags
                 opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.method_flags);
-                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
 
                 // Push body
@@ -402,7 +402,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 sprintf(label1, "frame_%03d", clc);
 
                 opr1 = asm_create_opr(ASM_LINE_TYPE_OP_CODE, label1, 0);
-                dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
                 // Walk the body inside a new frame!
                 _ast_walker(leaf->attribute.value, output, label1);
@@ -421,20 +421,20 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Store visibility
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.visibility);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Store access
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->attribute.access);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Create constant
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.attrib_type);
             opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
-            dll_append(frame, asm_create_codeline(VM_BUILD_ATTRIB, 2, opr1, opr2));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_ATTRIB, 2, opr1, opr2));
 
             // Name of the id to store the constant into
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->attribute.name, 0);
-            dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             state->attributes++;
             break;
@@ -459,11 +459,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[2]);
 
-                    dll_append(frame, asm_create_codeline(VM_IMPORT, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_IMPORT, 0));
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
                     break;
 
                 case T_CALL_ARGUMENT_LIST :
@@ -478,7 +478,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_push(state->call_state, (void *)st_call_stay);
                     WALK_LEAF(leaf->opr.ops[0]);
                     stack_pop(state->call_state);
-                    dll_append(frame, asm_create_codeline(VM_RETURN, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_RETURN, 0));
 
                     break;
 
@@ -495,19 +495,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label6, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
 
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[1]);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
 
                     // Always add else-label
                     dll_append(frame, asm_create_labelline(label6));
 
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                     // Do else body, if there is one
                     if (leaf->opr.nops == 3) {
@@ -516,16 +516,16 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
                     dll_append(frame, asm_create_labelline(label5));
                     break;
 
                 case T_BREAKELSE :
-                    dll_append(frame, asm_create_codeline(VM_BREAKELSE_LOOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_BREAKELSE_LOOP, 0));
                     break;
                 case T_BREAK :
-                    dll_append(frame, asm_create_codeline(VM_BREAK_LOOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_BREAK_LOOP, 0));
                     break;
                 case T_CONTINUE :
                     // We need to find the label1 for the first encountered start state!
@@ -539,7 +539,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // If we need to break out several loops (ie: break 2) we need to traverse back multiple
                     // loop blocks
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, state->blocks[i].label, 0);
-                    dll_append(frame, asm_create_codeline(VM_CONTINUE_LOOP, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_CONTINUE_LOOP, 1, opr1));
 
                     state->block_cnt = i+1;
                     break;
@@ -562,7 +562,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     sprintf(label5, "dowhile_%03d_end", clc);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_SETUP_LOOP, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_LOOP, 1, opr1));
                     dll_append(frame, asm_create_labelline(label1));
 
                     // Body
@@ -574,16 +574,16 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[1]);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
                     dll_append(frame, asm_create_labelline(label2));
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
                     dll_append(frame, asm_create_labelline(label5));
 
                     state->block_cnt--;
@@ -609,10 +609,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     if (leaf->opr.nops == 3) {
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
                         opr2 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label6, 0);
-                        dll_append(frame, asm_create_codeline(VM_SETUP_ELSE_LOOP, 2, opr1, opr2));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_ELSE_LOOP, 2, opr1, opr2));
                     } else {
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                        dll_append(frame, asm_create_codeline(VM_SETUP_LOOP, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_LOOP, 1, opr1));
                     }
 
                     dll_append(frame, asm_create_labelline(label1));
@@ -622,11 +622,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);
                     if (leaf->opr.nops == 3) {
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
-                        dll_append(frame, asm_create_codeline(VM_JUMP_IF_FIRST_FALSE, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FIRST_FALSE, 1, opr1));
                     }
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
 
                     // Body
@@ -635,14 +635,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     // Back to start
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
 
                     // Add else (if any)
                     if (leaf->opr.nops == 3) {
                         dll_append(frame, asm_create_labelline(label4));
-                        dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-                        dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
                         dll_append(frame, asm_create_labelline(label6));
 
                         // Add else body
@@ -650,13 +650,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         WALK_LEAF(leaf->opr.ops[2]);
 
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                        dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
                     }
 
                     dll_append(frame, asm_create_labelline(label2));
 
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
                     dll_append(frame, asm_create_labelline(label5));
 
                     state->block_cnt--;
@@ -685,7 +685,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_SETUP_LOOP, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_LOOP, 1, opr1));
 
                     // Add comparison
                     dll_append(frame, asm_create_labelline(label3));
@@ -695,14 +695,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         // Make sure that when we have no expression-statement inside the compare, we still
                         // push TRUE, so the VM_JUMP_IF_FALSE won't crash
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "true", 0);
-                        dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
                     } else {
                         WALK_LEAF(leaf->opr.ops[1]);
                     }
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                     // Add body
                     stack_push(state->context, st_ctx_load);
@@ -714,11 +714,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[2]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label3, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
                     dll_append(frame, asm_create_labelline(label4));
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(VM_POP_BLOCK, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
 
                     dll_append(frame, asm_create_labelline(label5));
 
@@ -739,12 +739,12 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     int arg_count = leaf->opr.ops[1]->group.len;
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count-1);
 
-                    dll_append(frame, asm_create_codeline(VM_CALL, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_CALL, 1, opr1));
 
                     // Pop the item after the call, but only when we need so.
                     enum call_state cs = (enum call_state)stack_peek(state->call_state);
                     if (!cs || cs == st_call_pop) {
-                        dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
                     }
 
                     break;
@@ -761,11 +761,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);       // Load object to subscribe
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "splice", 0);
-                    dll_append(frame, asm_create_codeline(VM_LOAD_ATTRIB, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ATTRIB, 1, opr1));
 
                     // Call splice
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 2);
-                    dll_append(frame, asm_create_codeline(VM_CALL, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_CALL, 1, opr1));
                     break;
 
                 case T_DATASTRUCT :
@@ -782,18 +782,18 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                             WALK_LEAF(node2->group.items[j]);
                         }
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node2->group.len);
-                        dll_append(frame, asm_create_codeline(VM_BUILD_TUPLE, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_TUPLE, 1, opr1));
                     }
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node->group.len);
-                    dll_append(frame, asm_create_codeline(VM_BUILD_DATASTRUCT, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_DATASTRUCT, 1, opr1));
                     break;
 
                 case T_GOTO :
                     node = leaf->opr.ops[0];
                     sprintf(label1, "userlabel_%s", node->string.value);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1   , 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
                     break;
 
                 case T_LABEL :
@@ -822,14 +822,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     opr2 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
-                    dll_append(frame, asm_create_codeline(VM_SETUP_EXCEPT, 3, opr1, opr2, opr3));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_EXCEPT, 3, opr1, opr2, opr3));
 
                     // Try block
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_FORWARD, 1, opr1));
 
                     dll_append(frame, asm_create_labelline(label2));
 
@@ -839,8 +839,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         sprintf(label3, "try_%03d_match_%03d", clc, i);
                         sprintf(label4, "try_%03d_nomatch_%03d", clc, i);
 
-                        if (i != 0) dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
-                        dll_append(frame, asm_create_codeline(VM_DUP_TOP, 0));
+                        if (i != 0) dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
 
                         node2 = node->group.items[i];       // Catch group
                         t_ast_element *node3 = node2->group.items[0];
@@ -851,16 +851,16 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         t_ast_element *identifier = node3->opr.ops[1];
 
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, exception->string.value, 0);
-                        dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_EX);
-                        dll_append(frame, asm_create_codeline(VM_COMPARE_OP, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr1));
 
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
-                        dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
-                        dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, identifier->string.value, 0);
-                        dll_append(frame, asm_create_codeline(VM_STORE_ID, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
 
                         dll_append(frame, asm_create_labelline(label3));
 
@@ -868,16 +868,16 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         WALK_LEAF(node2->group.items[1]);
 
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                        dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_FORWARD, 1, opr1));
 
                         dll_append(frame, asm_create_labelline(label4));
                     }
 
                     // Unhandled exception, just forward to finally.
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_FORWARD, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_FORWARD, 1, opr1));
 
 
                     // Setup finally block
@@ -889,7 +889,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     }
                     dll_append(frame, asm_create_labelline(label1));
-                    dll_append(frame, asm_create_codeline(VM_END_FINALLY, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_END_FINALLY, 0));
 
                     break;
                 case T_SWITCH :
@@ -959,19 +959,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label6, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_IF_FALSE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
 
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[1]);
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
 
                     // Always add else-label
                     dll_append(frame, asm_create_labelline(label6));
 
-                    dll_append(frame, asm_create_codeline(VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                     // Do else body, if there is one
                     if (leaf->opr.nops == 3) {
@@ -980,7 +980,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
-                    dll_append(frame, asm_create_codeline(VM_JUMP_ABSOLUTE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
 
                     dll_append(frame, asm_create_labelline(label5));
                     break;
@@ -1057,12 +1057,12 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     t_asm_opr *opr1;
     if (strcmp(name, "main") == 0) {
         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
-        dll_append(frame, asm_create_codeline(VM_LOAD_CONST, 1, opr1));
+        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
     } else {
         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
-        dll_append(frame, asm_create_codeline(VM_LOAD_ID, 1, opr1));
+        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
     }
-    dll_append(frame, asm_create_codeline(VM_RETURN, 0));
+    dll_append(frame, asm_create_codeline(leaf->lineno, VM_RETURN, 0));
 
     // Clean up state structure
     _ast_state_fini(state);

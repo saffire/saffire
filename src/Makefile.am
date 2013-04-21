@@ -135,7 +135,7 @@ libmodules_a_SOURCES = components/modules/module_api.c \
 ########################################################################
 BUILT_SOURCES += include/objects/_exceptions.inc
 
-# Create _exceptions.incc and _exceptions.h
+# Create _exceptions.inc and _exceptions.h
 include/objects/_exceptions.inc:
 	php include/objects/create_exceptions.php $(basename $@).dat $(basename $@).h $@
 

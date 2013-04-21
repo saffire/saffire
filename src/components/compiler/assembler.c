@@ -346,12 +346,13 @@ t_asm_opr *asm_create_opr(int type, char *s, int l) {
 /**
  * Create a code line, with 0 or more operands
  */
-t_asm_line *asm_create_codeline(int opcode, int opr_cnt, ...) {
+t_asm_line *asm_create_codeline(int lineno, int opcode, int opr_cnt, ...) {
     t_asm_line *line = smm_malloc(sizeof(t_asm_line));
     line->type = ASM_LINE_TYPE_CODE;
     line->opcode = opcode;
     line->opr_count = opr_cnt;
     line->opr = smm_malloc(sizeof(t_asm_opr *) * opr_cnt);
+    line->lineno = lineno;
 
     va_list oprs;
     va_start(oprs, opr_cnt);
@@ -402,6 +403,8 @@ t_bytecode *assembler(t_hash_table *asm_code) {
 }
 
 
+static int last_lineno = 0;
+
 /**
  * Ouput a complete frame
  */
@@ -414,6 +417,12 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
             fprintf(f, "#%s:", line->s);
         }
         if (line->type == ASM_LINE_TYPE_CODE) {
+            if (last_lineno != line->lineno) {
+                if (line->lineno != 1) fprintf(f, "\n");
+                fprintf(f, "; Line %d : \n", line->lineno);
+                last_lineno = line->lineno;
+            }
+
             fprintf(f, "    %-20s", vm_code_names[vm_codes_offset[line->opcode]]);
 
             // Output additional operands
