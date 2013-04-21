@@ -894,6 +894,59 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     break;
                 case T_SWITCH :
                     break;
+                case T_COALESCE :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+
+                    sprintf(label1, "coalesce_%03d_default", clc);
+                    sprintf(label2, "coalesce_%03d_end", clc);
+
+                    //Load null
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+
+                    //Load identifier
+                    node = leaf->opr.ops[0];
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
+
+                    //Compare
+                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_NE);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr3));
+
+                    //Go to default if value == null
+                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr3));
+
+                    //Clean up comparison?
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    //Load identifier
+                    node = leaf->opr.ops[0];
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
+
+                    //Did what we have to do
+                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
+
+                    //Values was null
+                    dll_append(frame, asm_create_labelline(label1));
+                    //Clean up comparison?
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    //Walk the expression in the second operand, and store the result
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[1]);
+
+                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
+
+                    //The end!
+                    dll_append(frame, asm_create_labelline(label2));
+
+
+                    break;
                 case '?' :
                     // @TODO: This is the same code as if-else.
                     state->loop_cnt++;

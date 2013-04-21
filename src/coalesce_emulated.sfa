@@ -1,0 +1,31 @@
+    LOAD_CONST          "io"
+    LOAD_CONST          "io"
+    IMPORT              
+    STORE_ID            io
+
+    LOAD_ID             null
+    STORE_ID            a
+
+    LOAD_ID             null
+    LOAD_ID             a
+    COMPARE_OP          NE
+    JUMP_IF_FALSE       #if_001_else
+
+    POP_TOP             
+    LOAD_ID             a
+    STORE_ID            b
+    JUMP_ABSOLUTE       #if_001_end
+#if_001_else:
+    POP_TOP             
+    LOAD_CONST          "default"
+    STORE_ID            b
+    JUMP_ABSOLUTE       #if_001_end
+#if_001_end:
+    LOAD_ID             b
+    LOAD_ID             null
+    LOAD_ID             io
+    LOAD_ATTRIB         "print"
+    CALL                $1
+    POP_TOP             
+    LOAD_CONST          $0
+    RETURN              

@@ -65,6 +65,7 @@
     #define OPERATOR_XOR    7
     #define OPERATOR_SHL    8
     #define OPERATOR_SHR    9
+    #define OPERATOR_COA    10
 
 
     #define COMPARISON_EQ     0     // Equals
