@@ -17,75 +17,19 @@ in channel \#saffire.
 
 Contributing:
 -------------
-We LOVE new contributers. Please join the \#saffire channel at IRC (freenode) for more information about contributing
+We LOVE new contributors. Please join the \#saffire channel at IRC (freenode) for more information about contributing
 to the project. There is no need have deep knowledge of C or knowing lots about compilers and stuff. There are lots of
-other things that needs to be done, and all the help on every level is welcome! Also, we love to meet new people, so
+other things that needs to be done and all the help on every level is welcome! Also, we love to meet new people, so
 come and say hi to us.
 
 
-Installation on vagrant:
-------------------------
-If you don't want to clutter up your local, or just want to test out Saffire, it's possible to use vagrant for
-development. Make sure you have vagrant and virtualbox installed on your local system. After that, just clone the
-Saffire repository onto your local system, go inside the directory and type:
-
-    vagrant up
-
-It should download a ubuntu 64bit basebox and automatically install all the packages you need in order to compile
-Saffire. Once the box has started, issue the following:
-
-    vagrant ssh
-    cd /vagrant
-    sh autogen.sh
-    ./configure [--enable-debug] [--enable-parsedebug]
-    make
-    sudo make install
-
-This will compile and install Saffire in your vagrant box, where you can experiment all you like.
+Installing Saffire
+------------------
+There are two ways to install Saffire. The easy way, and the hard way :) The easy way consists of setting up a
+virtualbox environment that will automatically install everything you need through the help of vagrant. The hard way,
+well, you do everything yourself. Please read the information in the INSTALL.md file on how to install Saffire.
 
 
-Installation on your local system:
-----------------------------------
-Make sure you have the following tools installed:
-- automake
-- pkg-config
-- make
-- flex
-- bison
-- gcc
-
-Plus, you will need to following libraries and header files:
-- libedit
-- libfcgi
-- libbz2
-- libaugeas
-- libpcre3
-
-To install these packages on Ubuntu or Debian, please use the following commands:
-
-    sudo apt-get install automake make flex bison gcc pkg-config
-    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libaugeas-dev libpcre3-dev
-
-On RedHat/CentOS systems, the library development packages are probably ends with -devel.
-
-After installation of the packages, clone the github repository (either your own, or from the Saffire github repo):
-    
-    git clone https://github.com/saffire/saffire.git
-
-After this, you can compile and install Saffire:
-
-    cd saffire
-    sh autogen.sh
-    ./configure [--enable-debug] [--enable-parsedebug]
-    make
-    sudo make install
-
-If everything goes according to plan, you will have a /usr/local/bin/saffire binary up and running. You can test this
-with the following command:
-
-    saffire
-
-This should display an initial help file.
 
 
 Generating a configuration file
