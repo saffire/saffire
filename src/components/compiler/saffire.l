@@ -207,6 +207,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "yield"         { step; saffire_push_state(st_regex); return T_YIELD; }
 
 
+
 <st_div,st_regex>\"         {
                                 step;
                                 /* Opening string quote */

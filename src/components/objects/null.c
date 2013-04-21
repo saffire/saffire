@@ -51,6 +51,16 @@ SAFFIRE_METHOD(null, conv_string) {
     RETURN_STRING("null");
 }
 
+SAFFIRE_COMPARISON_METHOD(null, ne) {
+    t_object* obj = DLL_HEAD(arguments)->data;
+
+    if(OBJECT_IS_NULL(obj)) {
+        RETURN_FALSE;
+    } else {
+        RETURN_TRUE;
+    }
+}
+
 
 /* ======================================================================
  *   Global object management functions and data
@@ -68,6 +78,8 @@ void object_null_init(void) {
     object_add_internal_method((t_object *)&Object_Null_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
     object_add_internal_method((t_object *)&Object_Null_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_Null_struct, "__string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
+
+    object_add_internal_method((t_object *)&Object_Null_struct, "__cmp_ne",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
 
     vm_populate_builtins("null", Object_Null);
 }
