@@ -1,3 +1,5 @@
+// imports the io class into the current namespace
 import io;
 
+// Call the print method from our (imported) io class with a single argument
 io.print("Hello world!\n");
