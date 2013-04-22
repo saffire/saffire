@@ -335,8 +335,13 @@ expression:
 ;
 
 assignment_expression:
-        conditional_expression { $$ = $1; }
+        coalesce_expression { $$ = $1; }
     |   unary_expression assignment_operator assignment_expression { $$ = ast_assignment(@1.first_line, $2, $1, $3); }
+;
+
+coalesce_expression:
+        conditional_expression { $$ = $1; }
+    |   conditional_expression T_COALESCE expression { $$ = ast_opr(@1.first_line, T_COALESCE, 2, $1, $3); }
 ;
 
 conditional_expression:
@@ -372,11 +377,6 @@ and_expression:
 equality_expression:
         regex_expression { $$ = $1; }
     |   equality_expression comparison_operator regex_expression { $$ = ast_comparison(@2.first_line, $2, $1, $3); }
-;
-
-coalesce_expression:
-        conditional_expression { $$ = $1; }
-    |   T_IDENTIFIER T_COALESCE expression { $$ = ast_opr(T_COALESCE, 2, ast_identifier($1), $3); smm_free($1); }
 ;
 
 
