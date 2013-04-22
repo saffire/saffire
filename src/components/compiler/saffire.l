@@ -130,6 +130,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_REGEX;
 }
 
+"??"        { step; saffire_push_state(st_regex); return T_COALESCE; }
 "..."       { step; saffire_push_state(st_regex); return T_ELLIPSIS; }
 ".."        { step; saffire_push_state(st_regex); return T_TO; }
 "::"        { step; saffire_push_state(st_regex); return T_NS_SEP; }

@@ -1,0 +1,85 @@
+title: coalesce tests
+author: Joshua Thijssen <jthijssen@noxlogic.nl>
+
+**********
+// Simple null coalesce
+import io;
+
+a = null;
+b = a ?? "default";
+io.print(b, "\n");
+====
+default
+@@@@
+// Simple null coalesce with non-false value
+import io;
+
+a = "value";
+b = a ?? "default";
+io.print(b, "\n");
+====
+value
+@@@@
+// empty string, will result default value
+import io;
+
+b = "" ?? "default";
+io.print(b, "\n");
+====
+default
+@@@@
+// numerical 0, will result default value
+import io;
+b = 0 ?? "default";
+io.print(b, "\n");
+====
+default
+@@@@
+// numerical 1, just prints 1
+import io;
+b = 1 ?? "default";
+io.print(b, "\n");
+====
+1
+@@@@
+// Check if we can use result from methods
+import io;
+
+class foo {
+    public method bar() {
+        return false;
+    }
+    public method baz() {
+        return true;
+    }
+}
+
+b = foo.bar() ?? "default";
+io.print(b, "\n");
+b = foo.baz() ?? "default";
+io.print(b, "\n");
+====
+default
+true
+@@@@
+// Chaining coalesce
+import io;
+
+io.print((null ?? null ?? null), "\n");
+io.print((null ?? "b"  ?? null), "\n");
+io.print((null ?? null ?? "c" ), "\n");
+io.print(("a"  ?? null ?? null), "\n");
+io.print(("a"  ?? "b"  ?? null), "\n");
+io.print((null ?? "b"  ?? "c" ), "\n");
+io.print(("a"  ?? "b"  ?? "c" ), "\n");
+=====
+null
+b
+c
+a
+a
+b
+a
+
+
+
