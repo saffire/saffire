@@ -38,7 +38,6 @@
 /**
  * Converts assembler codes into bytecode
  */
-//t_hash_table *frames;               // All frames in this bytecode. "main" is always defined
 
 struct _backpatch {
     long opcode_offset;             // Points to the opcode that we are actually patching
@@ -409,6 +408,7 @@ static int last_lineno = 0;
  * Ouput a complete frame
  */
 static void _assembler_output_frame(t_dll *frame, FILE *f) {
+    int oprcnt = 0;
     t_dll_element *e = DLL_HEAD(frame);
     while (e) {
         t_asm_line *line = (t_asm_line *)e->data;
@@ -417,13 +417,16 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
             fprintf(f, "#%s:", line->s);
         }
         if (line->type == ASM_LINE_TYPE_CODE) {
-            if (last_lineno != line->lineno) {
+            if (last_lineno != line->lineno && line->lineno) {
                 if (line->lineno != 1) fprintf(f, "\n");
-                fprintf(f, "; Line %d : \n", line->lineno);
+                fprintf(f, "% 5d     ", line->lineno);
                 last_lineno = line->lineno;
+            } else {
+                fprintf(f, "          ");
             }
 
-            fprintf(f, "    %-20s", vm_code_names[vm_codes_offset[line->opcode]]);
+            fprintf(f, "%5d %-20s", oprcnt, vm_code_names[vm_codes_offset[line->opcode]]);
+            oprcnt++;
 
             // Output additional operands
             for (int i=0; i!=line->opr_count; i++) {
@@ -478,6 +481,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                 if (i < line->opr_count-1) {
                     fprintf(f, ", ");
                 }
+                oprcnt++;
             }
         }
         fprintf(f, "\n");
