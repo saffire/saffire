@@ -149,6 +149,11 @@ static const char *get_filename_extension(const char *filename) {
  * Main Saffire entry point
  */
 int main(int argc, char *argv[]) {
+
+    dbgp_init();
+
+
+
     char *command = "";
 
     // Save originals. Commands like 'help' will need them..

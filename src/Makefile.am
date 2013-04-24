@@ -129,6 +129,13 @@ libmodules_a_SOURCES = components/modules/module_api.c \
                        components/modules/io.c \
                        components/modules/saffire.c
 
+########################################################################
+# components/debugger
+########################################################################
+
+noinst_LIBRARIES += libddebugger.a
+libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c
+
 
 ########################################################################
 # components/objects
@@ -212,7 +219,8 @@ SAFFIRE_LIBS = \
                  libvm.a \
                  libgc.a \
                  libgeneral.a \
-                 libmodules.a
+                 libmodules.a \
+                 libdebugger.a 
 
 
 bin_PROGRAMS = saffire
