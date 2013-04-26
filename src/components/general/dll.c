@@ -191,11 +191,11 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
     } else if (element == dll->head) {
         dll->head = dll->head->next;
         dll->head->prev = NULL;
-        return;
+        return 1;
     } else if (element == dll->tail) {
         dll->tail = dll->tail->prev;
         dll->tail->next = NULL;
-        return;
+        return 1;
     } else {
         element->prev->next = element->next;
         element->next->prev = element->prev;

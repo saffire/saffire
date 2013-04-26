@@ -901,50 +901,43 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     sprintf(label1, "coalesce_%03d_default", clc);
                     sprintf(label2, "coalesce_%03d_end", clc);
 
-                    //Load null
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+                    // Walk default operand expression
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
 
-                    //Load identifier
-                    node = leaf->opr.ops[0];
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
+                    // Duplicate identifier
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
 
-                    //Compare
-                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_NE);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr3));
-
-                    //Go to default if value == null
+                    // Go to default if value == null
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr3));
 
-                    //Clean up comparison?
+                    // Clean up comparison?
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
-                    //Load identifier
-                    node = leaf->opr.ops[0];
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
-
-                    //Did what we have to do
+                    // Jump to end
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
 
-                    //Values was null
+                    // Value was null
                     dll_append(frame, asm_create_labelline(label1));
-                    //Clean up comparison?
+
+                    // Clean up comparison?
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
-                    //Walk the expression in the second operand, and store the result
+                    // Clean up dupped identifier value
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    // Walk the expression in the second operand, and store the result
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[1]);
 
+                    // Jump to end
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
 
-                    //The end!
+                    // End
                     dll_append(frame, asm_create_labelline(label2));
-
 
                     break;
                 case '?' :
