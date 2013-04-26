@@ -212,6 +212,14 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
         smm_free(s);
     }
 
+    // Read lineno's
+    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_len);
+    bytecode->lino = NULL;
+    if (bytecode->lino_len > 0) {
+        bytecode->lino = smm_malloc(bytecode->lino_len);
+        _read_buffer(bincode, &pos, bytecode->lino_len, bytecode->lino);
+    }
+
     return bytecode;
 }
 
@@ -259,6 +267,10 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
         _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->identifiers[i]->len);
         _write_buffer(bincode, bincode_off, bytecode->identifiers[i]->len, bytecode->identifiers[i]->s);
     }
+
+    // Write linenumber offsets
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_len);
+    _write_buffer(bincode, bincode_off, bytecode->lino_len, bytecode->lino);
 
     return 1;
 }
@@ -633,6 +645,22 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
         e = DLL_NEXT(e);
     }
 
+    // Add (fixed) lineno's for now...
+    bc->lino_len = 13;
+    bc->lino = malloc(13);
+    bc->lino[0] = 0;
+    bc->lino[1] = 1;
+    bc->lino[2] = 10;
+    bc->lino[3] = 1;
+    bc->lino[4] = 5;
+    bc->lino[5] = 1;
+    bc->lino[6] = 20;
+    bc->lino[7] = 6;
+    bc->lino[8] = 151;
+    bc->lino[9] = 127;
+    bc->lino[10] = 1;
+    bc->lino[11] = 1;
+    bc->lino[12] = 1;
     return bc;
 }
 

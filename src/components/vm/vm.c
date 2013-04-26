@@ -212,6 +212,42 @@ void vm_fini(void) {
 }
 
 
+int lineno_lowerbound = -1;              // Lower bytecode offset for this line
+int lineno_upperbound = -1;             // Upper bytecode offset for this line
+int lineno_current_line = 0;            // Current line pointer
+int lineno_current_lino_offset = 0;     // Current offset in the bytecode lineno table
+
+int getlineno(t_vm_frame *frame, int cip) {
+    printf ("CIP: %d\n", cip);
+    printf ("LLB: %d\n", lineno_lowerbound);
+    printf ("LUB: %d\n", lineno_upperbound);
+
+    if (lineno_lowerbound >= cip && cip <= lineno_upperbound) {
+        return lineno_current_line;
+    }
+
+    int delta_lino = 0;
+    int delta_line = 0;
+
+    // @TODO: Check if lino_offset doesn't go out of bounds
+
+    int i;
+    do {
+        i = (frame->bytecode->lino[lineno_current_lino_offset++] & 127);
+        delta_lino += i;
+    } while (i > 127);
+    do {
+        i = (frame->bytecode->lino[lineno_current_lino_offset++] & 127);
+        delta_line += i;
+    } while (i > 127);
+
+    lineno_lowerbound = lineno_upperbound;
+    lineno_upperbound += delta_lino;
+    lineno_current_line += delta_line;
+
+    return lineno_current_line;
+}
+
 
 t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
 
@@ -280,41 +316,45 @@ dispatch:
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X, 0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->bytecode->filename
+                        frame->bytecode->filename,
+                        getlineno(frame, cip)
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->bytecode->filename
+                        frame->bytecode->filename,
+                        getlineno(frame, cip)
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->bytecode->filename
+                        frame->bytecode->filename,
+                        getlineno(frame, cip)
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->bytecode->filename
+                        frame->bytecode->filename,
+                        getlineno(frame, cip)
                     );
         }
 #endif

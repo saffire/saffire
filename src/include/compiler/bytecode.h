@@ -60,7 +60,7 @@
         union {
             char *s;                    // String
             long l;                     // Long
-            t_bytecode *code;     // Code block
+            t_bytecode *code;           // Code block
             void *ptr;                  // Generic pointer
             t_object *obj;              // Object
         } data;
@@ -84,6 +84,9 @@
 
         unsigned int identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
+
+        unsigned int lino_len;                  // Lenght of linenumbers offset block
+        unsigned char *lino;                    // Linenumber offsets
 
         char *filename;                         // Filename
     };
