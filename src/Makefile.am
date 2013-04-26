@@ -19,7 +19,7 @@ else
 endif
 
 # Add top include dir
-AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS)
+AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS) ${libxml2_CFLAGS}
 
 # Complain about everything, except unused functions
 AM_CFLAGS += -Wall -Wno-unused-function
@@ -133,8 +133,11 @@ libmodules_a_SOURCES = components/modules/module_api.c \
 # components/debugger
 ########################################################################
 
-noinst_LIBRARIES += libddebugger.a
-libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c
+noinst_LIBRARIES += libdebugger.a
+libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c \
+                        components/debugger/dbgp/xml.c \
+                        components/debugger/dbgp/sock.c \
+                        components/debugger/dbgp/args.c
 
 
 ########################################################################
@@ -220,12 +223,12 @@ SAFFIRE_LIBS = \
                  libgc.a \
                  libgeneral.a \
                  libmodules.a \
-                 libdebugger.a 
+                 libdebugger.a
 
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
+saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) ${libxml2_LIBS} -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
@@ -248,7 +251,7 @@ libtests_a_SOURCES = ../unittests/core/main.c
 TESTS = utmain
 check_PROGRAMS = utmain
 
-utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread -lcunit
+utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) ${libxml2_LIBS} -lpthread -lcunit
 
 utmain_SOURCES = \
                     ../unittests/core/main.c \
