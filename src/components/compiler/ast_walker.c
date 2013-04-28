@@ -27,12 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 #include "compiler/bytecode.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "compiler/parser.tab.h"
 #include "general/output.h"
-#include "compiler/assembler.h"
 #include "general/smm.h"
 #include "general/stack.h"
 #include "general/dll.h"

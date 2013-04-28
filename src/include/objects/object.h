@@ -31,7 +31,7 @@
     #include <stdarg.h>
     #include "general/hashtable.h"
     #include "general/dll.h"
-    #include "compiler/ast.h"
+    #include "compiler/ast_nodes.h"
 
     typedef struct _bytecode t_bytecode;
     typedef struct _vm_frame t_vm_frame;

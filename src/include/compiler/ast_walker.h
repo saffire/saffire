@@ -27,10 +27,8 @@
 #ifndef __AST_WALKER_H__
 #define __AST_WALKER_H__
 
-    #include "compiler/ast.h"
-    #include "compiler/assembler.h"
-    #include "general/smm.h"
-    #include "general/dll.h"
+    #include "compiler/ast_nodes.h"
+    #include "general/hashtable.h"
 
     t_hash_table *ast_walker(t_ast_element *ast);
 

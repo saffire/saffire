@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 #include "general/output.h"
 #include "general/smm.h"
 #include "general/dll.h"
@@ -379,7 +379,7 @@ t_asm_line *asm_create_labelline(char *label) {
 /**
  *
  */
-t_bytecode *assembler(t_hash_table *asm_code) {
+t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     t_hash_iter iter;
 
     // Init
@@ -396,7 +396,8 @@ t_bytecode *assembler(t_hash_table *asm_code) {
         ht_iter_next(&iter);
     }
 
-    t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main");
+    t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
+    bc->filename = filename ? strdup(filename) : NULL;
     ht_destroy(assembled_frames);
     return bc;
 }

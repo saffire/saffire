@@ -78,12 +78,12 @@ CLEANFILES = components/compiler/parser.tab.c \
 noinst_LIBRARIES += libcompiler.a
 libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/lex.yy.c \
-                        components/compiler/ast.c \
-                        components/compiler/dot.c \
+                        components/compiler/parser.c \
+                        components/compiler/ast_nodes.c \
                         components/compiler/bytecode.c \
-                        components/compiler/compiler.c \
                         components/compiler/ast_walker.c \
-                        components/compiler/assembler.c
+                        components/compiler/output/dot.c \
+                        components/compiler/output/asm.c
 
 
 ########################################################################

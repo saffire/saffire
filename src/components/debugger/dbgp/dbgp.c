@@ -140,7 +140,7 @@ xmlNodePtr do_command_context_get(int argc, char *argv[]) {
     xmlNodePtr node;
     char buf[100];
 
-    int depth = 0;
+//    int depth = 0;
     int context_id = 0;
 
     xmlNodePtr root_node = dbgp_xml_create_response("context_get", argc, argv);

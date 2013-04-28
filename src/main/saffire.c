@@ -99,7 +99,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
     // Iterate structure and find correct action depending on the argument signature
     struct command_action *action = cmd->info->actions;
     while (action->name) {
-        
+
         // Match action or an empty action
         if (! strcmp(action->name, "") || ! strcmp(action->name, dst_action)) {
 
@@ -150,9 +150,8 @@ static const char *get_filename_extension(const char *filename) {
  */
 int main(int argc, char *argv[]) {
 
-    dbgp_init();
-
-
+//    dbgp_init();
+//    exit(1);
 
     char *command = "";
 

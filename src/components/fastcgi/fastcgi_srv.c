@@ -44,6 +44,7 @@
 #include "general/path_handling.h"
 #include "vm/vm.h"
 #include "compiler/ast_walker.h"
+#include "compiler/output/asm.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
@@ -163,7 +164,7 @@ static int fcgi_loop(void) {
                 smm_free(bytecode_file);
                 continue;
             }
-            bc = assembler(asm_code);
+            bc = assembler(asm_code, source_file);
             bytecode_save(bytecode_file, source_file, bc);
         } else {
             bc = bytecode_load(bytecode_file, 0);

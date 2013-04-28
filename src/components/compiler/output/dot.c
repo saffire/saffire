@@ -28,11 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "general/output.h"
-#include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "objects/attrib.h"
 #include "objects/callable.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/smm.h"
 #include "general/path_handling.h"
 

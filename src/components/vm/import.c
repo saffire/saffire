@@ -29,9 +29,9 @@
 #include "vm/vm.h"
 #include "vm/frame.h"
 #include "objects/objects.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 #include "general/path_handling.h"
 #include "general/output.h"
 #include "debug.h"
@@ -51,7 +51,7 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     // Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
     t_hash_table *asm_code = ast_walker(ast);
-    t_bytecode *bc = assembler(asm_code);
+    t_bytecode *bc = assembler(asm_code, source_file);
     bc->filename = smm_strdup(source_file);
 
     // Create a new frame and run it!

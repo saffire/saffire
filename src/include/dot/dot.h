@@ -27,7 +27,7 @@
 #ifndef __DOT_H__
 #define __DOT_H__
 
-    #include "compiler/ast.h"
+    #include "compiler/ast_nodes.h"
 
     void dot_generate(t_ast_element *ast, const char *outputfile);
 

@@ -30,12 +30,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "general/output.h"
-#include "compiler/compiler.h"
+#include "compiler/parser.h"
 #include "compiler/parser.tab.h"
 #include "general/smm.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 
-//extern void yylex_destroy
 extern int yylex_destroy();
 extern void yyerror(t_ast_element *ast, const char *err);
 extern int yyparse(unsigned long *ptr);
@@ -47,41 +46,10 @@ extern int yy_flex_debug;
 #endif
 
 
-
 /**
- * Compile a a file into an AST (through bison). Returns the AST root node.
+ * Allocate a new element (untyped) ast_node element
  */
-t_ast_element *ast_generate_tree(FILE *fp) {
-    // Initialize system
-    sfc_init();
-
-#ifdef __PARSEDEBUG
-    yydebug = 1;
-    yy_flex_debug = 1;
-#endif
-
-    // Parse the file input, will return the tree in the global ast_root variable
-    yyin = fp;
-
-    unsigned long ptr = 0;
-    yylloc.first_line = yylloc.last_line = 1;
-    yylloc.first_column = yylloc.last_column = 0;
-    yyparse(&ptr);
-    yylex_destroy();
-
-    t_ast_element *ast = (t_ast_element *)ptr;
-
-    sfc_fini();
-
-    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
-    return ast;
-}
-
-
-/**
- * Allocate a new element
- */
-static t_ast_element *ast_alloc_element(void) {
+static t_ast_element *ast_node_alloc_element(void) {
     t_ast_element *p;
 
     if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
@@ -94,8 +62,12 @@ static t_ast_element *ast_alloc_element(void) {
     return p;
 }
 
-t_ast_element *ast_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right) {
-    t_ast_element *p = ast_alloc_element();
+
+/**
+ * Boolean comparison node: left AND,OR right
+ */
+t_ast_element *ast_node_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstBool;
@@ -105,8 +77,12 @@ t_ast_element *ast_boolop(int lineno, int boolop, t_ast_element *left, t_ast_ele
 
     return p;
 }
-t_ast_element *ast_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right) {
-    t_ast_element *p = ast_alloc_element();
+
+/**
+ * Assignment node: "left =,+=,/=,.. right"
+ */
+t_ast_element *ast_node_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstAssignment;
@@ -116,8 +92,11 @@ t_ast_element *ast_assignment(int lineno, int op, t_ast_element *left, t_ast_ele
 
     return p;
 }
-t_ast_element *ast_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right) {
-    t_ast_element *p = ast_alloc_element();
+/**
+ * Comparison node: "left <,>,<=,>= right"
+ */
+t_ast_element *ast_node_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstComparison;
@@ -127,8 +106,12 @@ t_ast_element *ast_comparison(int lineno, int cmp, t_ast_element *left, t_ast_el
 
     return p;
 }
-t_ast_element *ast_operator(int lineno, int op, t_ast_element *left, t_ast_element *right) {
-    t_ast_element *p = ast_alloc_element();
+
+/**
+ * Operator node: "left +,-,/,shl,shr right"
+ */
+t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_element *right) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstOperator;
@@ -140,10 +123,10 @@ t_ast_element *ast_operator(int lineno, int op, t_ast_element *left, t_ast_eleme
 }
 
 /**
- * Creates a string node
+ * String node
  */
-t_ast_element *ast_string(int lineno, char *value) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_string(int lineno, char *value) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstString;
@@ -152,9 +135,11 @@ t_ast_element *ast_string(int lineno, char *value) {
     return p;
 }
 
-
-t_ast_element *ast_string_dup(int lineno, t_ast_element *src) {
-    t_ast_element *p = ast_alloc_element();
+/**
+ * Duplicate AST string node
+ */
+t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstString;
@@ -163,13 +148,11 @@ t_ast_element *ast_string_dup(int lineno, t_ast_element *src) {
     return p;
 }
 
-
-
 /**
  * Creates a numerical node
  */
-t_ast_element *ast_numerical(int lineno, int value) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_numerical(int lineno, int value) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstNumerical;
@@ -178,12 +161,11 @@ t_ast_element *ast_numerical(int lineno, int value) {
     return p;
 }
 
-
 /**
  * Creates a identifier node
  */
-t_ast_element *ast_identifier(int lineno, char *var_name) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_identifier(int lineno, char *var_name) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstIdentifier;
@@ -192,10 +174,10 @@ t_ast_element *ast_identifier(int lineno, char *var_name) {
 }
 
 /**
- * Creates a identifier node
+ * Creates a property node
  */
-t_ast_element *ast_property(int lineno, t_ast_element *class, t_ast_element *property) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_property(int lineno, t_ast_element *class, t_ast_element *property) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstProperty;
@@ -205,22 +187,21 @@ t_ast_element *ast_property(int lineno, t_ast_element *class, t_ast_element *pro
     return p;
 }
 
-
 /**
- * Creates a nop node
+ * Creates a nop node. This does not generate any code. It's just for filling AST-trees so they are in sync (for instance: if/then/nop if/then/else)
  */
-t_ast_element *ast_nop(void) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_nop(void) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->type = typeAstNop;
     return p;
 }
 
 /**
- * Creates a null node
+ * Creates a identifier node with "null" node.
  */
-t_ast_element *ast_null(void) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_null(void) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->type = typeAstNull;
     return p;
@@ -228,9 +209,9 @@ t_ast_element *ast_null(void) {
 
 
 /**
- * Add a node to an existing operator node. This allows to have multiple children in later stages (like lists)
+ * Add a node to an existing operator node. This allows to add children later inside a tree (like lists)
  */
-t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
+t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element) {
     if (src->type == typeAstGroup) {
         // Resize memory
         src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
@@ -264,8 +245,11 @@ t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element) {
 }
 
 
-t_ast_element *ast_group(int len, ...) {
-    t_ast_element *p = ast_alloc_element();
+/**
+ * Create a group node. This can contain 0 or more initial elements.
+ */
+t_ast_element *ast_node_group(int len, ...) {
+    t_ast_element *p = ast_node_alloc_element();
     va_list ap;
 
     p->type = typeAstGroup;
@@ -290,10 +274,12 @@ t_ast_element *ast_group(int len, ...) {
 
 
 /**
- * Create an operator node
+ * Create an operator node with 0 or more operands. More operands can be added later through ast_node_add()
+ *
+ * Note: this is not the same as ast_node_operator(), which generated +-/& operator codes.
  */
-t_ast_element *ast_opr(int lineno, int opr, int nops, ...) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
+    t_ast_element *p = ast_node_alloc_element();
     va_list ap;
 
     p->lineno = lineno;
@@ -323,28 +309,26 @@ t_ast_element *ast_opr(int lineno, int opr, int nops, ...) {
 /**
  * Concatenates an identifier node onto an existing identifier node
  */
-t_ast_element *ast_concat(t_ast_element *src, char *s) {
+t_ast_element *ast_node_concat(t_ast_element *src, char *s) {
     src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s) + 1);
     strcat(src->identifier.name, s);
     return src;
 }
 
-
 /**
  * Concatenates an string node onto an existing string node
  */
-t_ast_element *ast_string_concat(t_ast_element *src, char *s) {
+t_ast_element *ast_node_string_concat(t_ast_element *src, char *s) {
     src->string.value = smm_realloc(src->string.value, strlen(src->string.value) + strlen(s) + 1);
     strcat(src->string.value, s);
     return src;
 }
 
-
 /**
  * Create a class node.
  */
-t_ast_element *ast_class(int lineno, t_class *class, t_ast_element *body) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstClass;
@@ -359,12 +343,11 @@ t_ast_element *ast_class(int lineno, t_class *class, t_ast_element *body) {
     return p;
 }
 
-
 /**
  * Create an interface node
  */
-t_ast_element *ast_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstInterface;
@@ -376,12 +359,11 @@ t_ast_element *ast_interface(int lineno, int modifiers, char *name, t_ast_elemen
     return p;
 }
 
-
 /**
  * Create a attribute node
  */
-t_ast_element *ast_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments) {
-    t_ast_element *p = ast_alloc_element();
+t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments) {
+    t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstAttribute;
@@ -467,11 +449,38 @@ void ast_free_node(t_ast_element *p) {
                 smm_free(p->group.items);
             }
             break;
-
     }
     smm_free(p);
 }
 
+/**
+ * Compiles a file into an AST (through bison). Returns the AST root node.
+ */
+t_ast_element *ast_generate_tree(FILE *fp) {
+    // Initialize system
+    parser_init();
+
+#ifdef __PARSEDEBUG
+    yydebug = 1;
+    yy_flex_debug = 1;
+#endif
+
+    // Parse the file input, will return the tree in the global ast_root variable
+    yyin = fp;
+
+    unsigned long ptr = 0;
+    yylloc.first_line = yylloc.last_line = 1;
+    yylloc.first_column = yylloc.last_column = 0;
+    yyparse(&ptr);
+    yylex_destroy();
+
+    t_ast_element *ast = (t_ast_element *)ptr;
+
+    parser_fini();
+
+    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
+    return ast;
+}
 
 /**
  * Generate an AST from a source file

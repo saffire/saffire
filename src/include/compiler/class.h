@@ -28,7 +28,7 @@
 #define __CLASS_H__
 
     #include "general/hashtable.h"
-    #include "compiler/ast.h"
+    #include "compiler/ast_nodes.h"
 
     /**
      * Primary start of a class structure. Will change

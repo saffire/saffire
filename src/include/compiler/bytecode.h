@@ -28,7 +28,7 @@
 #define __BYTECODE_H__
 
     #include <stdint.h>
-    #include "compiler/ast.h"
+    #include "compiler/ast_nodes.h"
     #include "general/dll.h"
     #include "objects/object.h"
 
@@ -85,7 +85,8 @@
         unsigned int identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
 
-        unsigned int lino_len;                  // Lenght of linenumbers offset block
+        unsigned int lino_offset;               // Initial linenumber offset
+        unsigned int lino_length;               // Length of linenumbers offset block
         unsigned char *lino;                    // Linenumber offsets
 
         char *filename;                         // Filename
@@ -96,7 +97,7 @@
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);
 
-    t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name);
+    t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int startline);
 
     int bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
     t_bytecode *bytecode_load(const char *filename, int verify_signature);

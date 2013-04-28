@@ -35,9 +35,8 @@
 #include "general/bzip2.h"
 #include "general/config.h"
 #include "general/hashtable.h"
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 #include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
 
 
 /**
@@ -213,11 +212,12 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
     }
 
     // Read lineno's
-    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_len);
+    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_offset);
+    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_length);
     bytecode->lino = NULL;
-    if (bytecode->lino_len > 0) {
-        bytecode->lino = smm_malloc(bytecode->lino_len);
-        _read_buffer(bincode, &pos, bytecode->lino_len, bytecode->lino);
+    if (bytecode->lino_length > 0) {
+        bytecode->lino = smm_malloc(bytecode->lino_length);
+        _read_buffer(bincode, &pos, bytecode->lino_length, bytecode->lino);
     }
 
     return bytecode;
@@ -269,8 +269,9 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
     }
 
     // Write linenumber offsets
-    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_len);
-    _write_buffer(bincode, bincode_off, bytecode->lino_len, bytecode->lino);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_offset);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_length);
+    _write_buffer(bincode, bincode_off, bytecode->lino_length, bytecode->lino);
 
     return 1;
 }
@@ -602,7 +603,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 /**
  *
  */
-t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
+t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int startline) {
     t_dll_element *e;
 
     // Seek frame
@@ -625,7 +626,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
         t_asm_constant *c = (t_asm_constant *)e->data;
         switch (c->type) {
             case const_code :
-                _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s));
+                _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s, 1));
                 break;
             case const_string :
                 _new_constant_string(bc, c->data.s);
@@ -646,7 +647,8 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
     }
 
     // Add (fixed) lineno's for now...
-    bc->lino_len = 13;
+    bc->lino_offset = startline; // 0xAA
+    bc->lino_length = 13;
     bc->lino = malloc(13);
     bc->lino[0] = 0;
     bc->lino[1] = 1;
@@ -682,7 +684,9 @@ t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *byte
         return NULL;
     }
 
-    t_bytecode *bc = assembler(asm_code);
+    //t_bytecode *bc = ast2bc(ast);
+
+    t_bytecode *bc = assembler(asm_code, source_file);
     if (! bc) {
         ast_free_node(ast);
         assembler_free(asm_code);

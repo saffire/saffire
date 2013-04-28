@@ -30,7 +30,7 @@
 #include <string.h>
 #include "general/output.h"
 #include "commands/command.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/parse_options.h"
 #include "general/path_handling.h"
 #include "general/smm.h"

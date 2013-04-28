@@ -29,11 +29,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include "general/output.h"
-#include "compiler/compiler.h"
+#include "compiler/parser.h"
 #include "compiler/parser.tab.h"
 #include "objects/callable.h"
 
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/smm.h"
 #include "objects/attrib.h"
 
@@ -44,7 +44,7 @@ extern int yylineno;
 /**
  * Convert modifier list to visibility flags for astAttribute nodes.
  */
-char sfc_mod_to_visibility(long modifiers) {
+char parser_mod_to_visibility(long modifiers) {
     modifiers &= MODIFIER_MASK_VISIBILITY;
 
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == MODIFIER_PUBLIC) return ATTRIB_VISIBILITY_PUBLIC;
@@ -57,7 +57,7 @@ char sfc_mod_to_visibility(long modifiers) {
 /**
  * Convert modifier list to method flags for astAttribute nodes.
  */
-char sfc_mod_to_methodflags(long modifiers) {
+char parser_mod_to_methodflags(long modifiers) {
     char ret = 0;
 
     if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= CALLABLE_FLAG_STATIC;
@@ -71,7 +71,7 @@ char sfc_mod_to_methodflags(long modifiers) {
 /**
  * Validate class modifiers
  */
-void sfc_validate_class_modifiers(long modifiers) {
+void parser_validate_class_modifiers(long modifiers) {
     // Classes do not have a visibility
     if (modifiers & MODIFIER_MASK_VISIBILITY) {
         line_error_and_die(1, yylineno, "Classes cannot have a visibility");
@@ -82,7 +82,7 @@ void sfc_validate_class_modifiers(long modifiers) {
 /**
  * Validate abstract method body
  */
-void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
+void parser_validate_abstract_method_body(long modifiers, t_ast_element *body) {
     // If the method is not abstract, we don't need to check
     if ((modifiers & MODIFIER_ABSTRACT) == 0) {
         return;
@@ -100,7 +100,7 @@ void sfc_validate_abstract_method_body(long modifiers, t_ast_element *body) {
 /**
  * Validate method modifiers
  */
-void sfc_validate_method_modifiers(long modifiers) {
+void parser_validate_method_modifiers(long modifiers) {
     // Make sure we have at least 1 visibility bit set
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, yylineno, "Methods must define a visibility");
@@ -116,7 +116,7 @@ void sfc_validate_method_modifiers(long modifiers) {
 /**
  * Validate property modifiers
  */
-void sfc_validate_property_modifiers(long modifiers) {
+void parser_validate_property_modifiers(long modifiers) {
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, yylineno, "Methods must define a visibility");
     }
@@ -126,7 +126,7 @@ void sfc_validate_property_modifiers(long modifiers) {
 /**
  * Checks if modifier flags are allowed (does not check the context (class, method, property etc).
  */
-void sfc_validate_flags(long cur_flags, long new_flag) {
+void parser_validate_flags(long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBILITY) && (new_flag & MODIFIER_MASK_VISIBILITY)) {
         line_error_and_die(1, yylineno, "Cannot have multiple visiblity masks");
@@ -147,7 +147,7 @@ void sfc_validate_flags(long cur_flags, long new_flag) {
 /**
  * Validate a constant
  */
-void sfc_validate_constant(char *name) {
+void parser_validate_constant(char *name) {
     // Check if the class exists in the class table
     if (global_table->active_class) {
         // inside the current class
@@ -174,21 +174,21 @@ void sfc_validate_constant(char *name) {
 /**
  * Enter a method, and validate method name
  */
-void sfc_init_method(const char *name) {
+void parser_init_method(const char *name) {
     global_table->in_method = 1;
 }
 
 /**
  * Leave a method
  */
-void sfc_fini_method() {
+void parser_fini_method() {
     global_table->in_method = 0;
 }
 
 /**
  * Initialize a class
  */
-void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
+void parser_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
         line_error_and_die(1, yylineno, "You cannot define a class inside another class");
@@ -233,7 +233,7 @@ void sfc_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_ele
 /**
  * End a class
  */
-void sfc_fini_class(void) {
+void parser_fini_class(void) {
     // Cannot close a class when we are not inside one
     if (global_table->in_class == 0) {
         line_error_and_die(1, yylineno, "Closing a class, but we weren't inside one to begin with");
@@ -258,7 +258,7 @@ void sfc_fini_class(void) {
 /**
  * Initialize the compiler global table
  */
-static void sfc_init_global_table(void) {
+static void parser_init_global_table(void) {
     // Allocate table memory
     global_table = (t_global_table *)smm_malloc(sizeof(t_global_table));
 
@@ -276,7 +276,7 @@ static void sfc_init_global_table(void) {
     global_table->current_switch = NULL;
 }
 
-static void sfc_fini_global_table(void) {
+static void parser_fini_global_table(void) {
     // Iterate over classes and remove all info
     t_hash_table *ht = global_table->classes;
 
@@ -308,7 +308,7 @@ static void sfc_fini_global_table(void) {
 /**
  * Enter a control-loop
  */
-void sfc_loop_enter(void) {
+void parser_loop_enter(void) {
     // Increase loop counter, since we are entering a new loop
     global_table->in_loop_counter++;
 }
@@ -317,7 +317,7 @@ void sfc_loop_enter(void) {
 /**
  * Leave a loop.
  */
-void sfc_loop_leave(void) {
+void parser_loop_leave(void) {
     // Not possible to leave a loop when we aren't inside any
     if (global_table->in_loop_counter <= 0) {
         line_error_and_die(1, yylineno, "Somehow, we are trying to leave a loop from the outer scope");
@@ -331,7 +331,7 @@ void sfc_loop_leave(void) {
 /**
  * Begin switch statement
  */
-void sfc_switch_begin(void) {
+void parser_switch_begin(void) {
     // Allocate switch structure
     t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
 
@@ -350,7 +350,7 @@ void sfc_switch_begin(void) {
 /**
  * End switch statement
  */
-void sfc_switch_end(void) {
+void parser_switch_end(void) {
     t_switch_struct *ss = global_table->current_switch;
 
     // set current to the parent
@@ -364,14 +364,14 @@ void sfc_switch_end(void) {
 /**
  * Check case label
  */
-void sfc_switch_case(void) {
+void parser_switch_case(void) {
 }
 
 
 /**
  * Check if a default label is valid
  */
-void sfc_switch_default(void) {
+void parser_switch_default(void) {
     t_switch_struct *ss = global_table->current_switch;
 
     if (ss == NULL) {
@@ -416,7 +416,7 @@ void saffire_validate_break() {
     }
 }
 
-void sfc_check_permitted_identifiers(const char *name) {
+void parser_check_permitted_identifiers(const char *name) {
     if (! strcmp(name, "null")) return;
     if (! strcmp(name, "false")) return;
     if (! strcmp(name, "true")) return;
@@ -450,10 +450,10 @@ void saffire_validate_breakelse() {
 /**
  * Initialize the saffire_compiler
  */
-void sfc_init(void) {
-    sfc_init_global_table();
+void parser_init(void) {
+    parser_init_global_table();
 }
 
-void sfc_fini(void) {
-    sfc_fini_global_table();
+void parser_fini(void) {
+    parser_fini_global_table();
 }

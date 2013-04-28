@@ -44,9 +44,9 @@
 #include "debug.h"
 #include "general/config.h"
 #include "dot/dot.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 
 extern char *vm_code_names[];
 extern int vm_codes_index[];
@@ -95,7 +95,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the assembler lines to bytecode
-    t_bytecode *bc = assembler(asm_code);
+    t_bytecode *bc = assembler(asm_code, source_file);
     if (! bc) {
         ret = 1;
         goto cleanup;

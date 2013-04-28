@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __ASSEMBLER_H__
-#define __ASSEMBLER_H__
+#ifndef __OUTPUT_ASM_H__
+#define __OUTPUT_ASM_H__
 
     #include "compiler/bytecode.h"
     #include "general/smm.h"
@@ -87,7 +87,7 @@
     t_asm_line *asm_create_frameline(char *name);
     t_asm_line *asm_create_labelline(char *label);
 
-    t_bytecode *assembler(t_hash_table *asm_code);
+    t_bytecode *assembler(t_hash_table *asm_code, const char *filename);
     void assembler_output(t_hash_table *asm_code, char *output_path);
     void assembler_free(t_hash_table *asm_code);
 

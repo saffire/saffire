@@ -31,7 +31,7 @@
 #include <sys/stat.h>
 #include "objects/object.h"
 #include "modules/module_api.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/smm.h"
 #include "commands/command.h"
 #include "general/parse_options.h"
