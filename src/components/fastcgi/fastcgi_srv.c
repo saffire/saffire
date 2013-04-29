@@ -43,7 +43,7 @@
 #include "general/smm.h"
 #include "general/path_handling.h"
 #include "vm/vm.h"
-#include "compiler/ast_walker.h"
+#include "compiler/ast_to_asm.h"
 #include "compiler/output/asm.h"
 
 /**
@@ -158,7 +158,7 @@ static int fcgi_loop(void) {
                 smm_free(bytecode_file);
                 continue;
             }
-            t_hash_table *asm_code = ast_walker(ast);
+            t_hash_table *asm_code = ast_to_asm(ast);
             if (! asm_code) {
                 error("Cannot create assembler</h1>");
                 smm_free(bytecode_file);

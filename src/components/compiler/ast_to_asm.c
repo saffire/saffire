@@ -26,7 +26,7 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "compiler/ast_walker.h"
+#include "compiler/ast_to_asm.h"
 #include "compiler/output/asm.h"
 #include "compiler/bytecode.h"
 #include "compiler/ast_nodes.h"
@@ -107,7 +107,7 @@ static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *st
 
 
 static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state);
-static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *name);
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name);
 
 
 
@@ -404,7 +404,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
                 // Walk the body inside a new frame!
-                _ast_walker(leaf->attribute.value, output, label1);
+                _ast_to_frame(leaf->attribute.value, output, label1);
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
@@ -1036,7 +1036,7 @@ void _ast_state_fini(t_state *state) {
 /**
  * Initialize a new frame and walk the leaf into this frame
  */
-static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *name) {
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name) {
     // Initialize state structure
     t_state *state = _ast_state_init();
 
@@ -1066,10 +1066,10 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
 /**
  * Walk a complete AST (all frames, starting with the main frame and root of the AST)
  */
-t_hash_table *ast_walker(t_ast_element *ast) {
+t_hash_table *ast_to_asm(t_ast_element *ast) {
     t_hash_table *output = ht_create();
 
-    _ast_walker(ast, output, "main");
+    _ast_to_frame(ast, output, "main");
 
     return output;
 }

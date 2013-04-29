@@ -45,7 +45,7 @@
 #include "general/config.h"
 #include "dot/dot.h"
 #include "compiler/ast_nodes.h"
-#include "compiler/ast_walker.h"
+#include "compiler/ast_to_asm.h"
 #include "compiler/output/asm.h"
 
 extern char *vm_code_names[];
@@ -82,7 +82,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the AST to assembler lines
-    asm_code = ast_walker(ast);
+    asm_code = ast_to_asm(ast);
     if (! asm_code) {
         ret = 1;
         goto cleanup;

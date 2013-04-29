@@ -24,12 +24,12 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __AST_WALKER_H__
-#define __AST_WALKER_H__
+#ifndef __AST_TO_ASM_H__
+#define __AST_TO_ASM_H__
 
     #include "compiler/ast_nodes.h"
     #include "general/hashtable.h"
 
-    t_hash_table *ast_walker(t_ast_element *ast);
+    t_hash_table *ast_to_asm(t_ast_element *ast);
 
 #endif

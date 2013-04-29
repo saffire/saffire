@@ -81,7 +81,7 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/parser.c \
                         components/compiler/ast_nodes.c \
                         components/compiler/bytecode.c \
-                        components/compiler/ast_walker.c \
+                        components/compiler/ast_to_asm.c \
                         components/compiler/output/dot.c \
                         components/compiler/output/asm.c
 
