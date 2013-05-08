@@ -2,4 +2,22 @@
 import io;
 
 // Call the print method from our (imported) io class with a single argument
-io.print("Hello world!\n");
+io.print("Hello world!");
+
+
+class foo {
+    public property a = 2;
+
+    public method bar(numerical b) {
+        return self.a * b;
+    }
+
+    public method foo(test b) {
+    }
+}
+
+
+io.print("Oh hai again!");
+f = foo();
+b = f.bar(5);
+io.print("The number is ",b);

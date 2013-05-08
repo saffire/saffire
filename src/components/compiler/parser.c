@@ -37,9 +37,6 @@
 #include "general/smm.h"
 #include "objects/attrib.h"
 
-extern void yyerror(const char *err);
-extern int yylineno;
-
 
 /**
  * Convert modifier list to visibility flags for astAttribute nodes.
@@ -71,10 +68,10 @@ char parser_mod_to_methodflags(long modifiers) {
 /**
  * Validate class modifiers
  */
-void parser_validate_class_modifiers(long modifiers) {
+void parser_validate_class_modifiers(int lineno, long modifiers) {
     // Classes do not have a visibility
     if (modifiers & MODIFIER_MASK_VISIBILITY) {
-        line_error_and_die(1, yylineno, "Classes cannot have a visibility");
+        line_error_and_die(1, lineno, "Classes cannot have a visibility");
     }
 }
 
@@ -82,7 +79,7 @@ void parser_validate_class_modifiers(long modifiers) {
 /**
  * Validate abstract method body
  */
-void parser_validate_abstract_method_body(long modifiers, t_ast_element *body) {
+void parser_validate_abstract_method_body(int lineno, long modifiers, t_ast_element *body) {
     // If the method is not abstract, we don't need to check
     if ((modifiers & MODIFIER_ABSTRACT) == 0) {
         return;
@@ -92,7 +89,7 @@ void parser_validate_abstract_method_body(long modifiers, t_ast_element *body) {
 
     // Check if we have a body
     if (body->type != typeAstNull) {
-        line_error_and_die(1, yylineno, "Abstract methods cannot have a body");
+        line_error_and_die(1, lineno, "Abstract methods cannot have a body");
     }
 }
 
@@ -100,15 +97,15 @@ void parser_validate_abstract_method_body(long modifiers, t_ast_element *body) {
 /**
  * Validate method modifiers
  */
-void parser_validate_method_modifiers(long modifiers) {
+void parser_validate_method_modifiers(int lineno, long modifiers) {
     // Make sure we have at least 1 visibility bit set
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
-        line_error_and_die(1, yylineno, "Methods must define a visibility");
+        line_error_and_die(1, lineno, "Methods must define a visibility");
     }
 
     // Check if abstract and private are set. This is not allowed
     if ((modifiers & (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) == (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) {
-        line_error_and_die(1, yylineno, "Abstract methods cannot be private");
+        line_error_and_die(1, lineno, "Abstract methods cannot be private");
     }
 }
 
@@ -116,9 +113,9 @@ void parser_validate_method_modifiers(long modifiers) {
 /**
  * Validate property modifiers
  */
-void parser_validate_property_modifiers(long modifiers) {
+void parser_validate_property_modifiers(int lineno, long modifiers) {
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
-        line_error_and_die(1, yylineno, "Methods must define a visibility");
+        line_error_and_die(1, lineno, "Methods must define a visibility");
     }
 }
 
@@ -126,20 +123,20 @@ void parser_validate_property_modifiers(long modifiers) {
 /**
  * Checks if modifier flags are allowed (does not check the context (class, method, property etc).
  */
-void parser_validate_flags(long cur_flags, long new_flag) {
+void parser_validate_flags(int lineno, long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBILITY) && (new_flag & MODIFIER_MASK_VISIBILITY)) {
-        line_error_and_die(1, yylineno, "Cannot have multiple visiblity masks");
+        line_error_and_die(1, lineno, "Cannot have multiple visiblity masks");
     }
 
     // Is one of the new flags already been set?
     if (cur_flags & new_flag) {
-        line_error_and_die(1, yylineno, "Modifiers can only be set once");
+        line_error_and_die(1, lineno, "Modifiers can only be set once");
     }
 
     // Make sure abstract and final are not both set.
     if (((cur_flags | new_flag) & (MODIFIER_ABSTRACT | MODIFIER_FINAL)) == (MODIFIER_ABSTRACT | MODIFIER_FINAL)) {
-       line_error_and_die(1, yylineno, "Abstract members cannot be made final");
+       line_error_and_die(1, lineno, "Abstract members cannot be made final");
     }
 }
 
@@ -147,13 +144,13 @@ void parser_validate_flags(long cur_flags, long new_flag) {
 /**
  * Validate a constant
  */
-void parser_validate_constant(char *name) {
+void parser_validate_constant(int lineno, char *name) {
     // Check if the class exists in the class table
     if (global_table->active_class) {
         // inside the current class
 
         if (ht_exists(global_table->active_class->constants, name)) {
-            line_error_and_die(1, yylineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
+            line_error_and_die(1, lineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -162,7 +159,7 @@ void parser_validate_constant(char *name) {
     } else {
         // Global scope
         if (ht_exists(global_table->constants, name)) {
-            line_error_and_die(1, yylineno, "Constant '%s' has already be defined in the global scope", name);
+            line_error_and_die(1, lineno, "Constant '%s' has already be defined in the global scope", name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -188,15 +185,15 @@ void parser_fini_method() {
 /**
  * Initialize a class
  */
-void parser_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
+void parser_init_class(int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
-        line_error_and_die(1, yylineno, "You cannot define a class inside another class");
+        line_error_and_die(1, lineno, "You cannot define a class inside another class");
     }
 
     // Check if the class exists in the class table
     if (ht_exists(global_table->classes, name)) {
-        line_error_and_die(1, yylineno, "This class is already defined");
+        line_error_and_die(1, lineno, "This class is already defined");
     }
 
     // Initialize and populte a new class structure
@@ -218,7 +215,7 @@ void parser_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_
     new_class->num_interfaces = 0;
 
     new_class->filename = "";
-    new_class->line_start = yylineno;
+    new_class->line_start = lineno;
     new_class->line_end = 0;
 
     // Save structure to the global class hash and set as the active class
@@ -233,19 +230,19 @@ void parser_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_
 /**
  * End a class
  */
-void parser_fini_class(void) {
+void parser_fini_class(int lineno) {
     // Cannot close a class when we are not inside one
     if (global_table->in_class == 0) {
-        line_error_and_die(1, yylineno, "Closing a class, but we weren't inside one to begin with");
+        line_error_and_die(1, lineno, "Closing a class, but we weren't inside one to begin with");
     }
 
     // Is there an active class?
     if (global_table->active_class == NULL) {
-        line_error_and_die(1, yylineno, "Somehow we try to close the global scope");
+        line_error_and_die(1, lineno, "Somehow we try to close the global scope");
     }
 
     // Set line ending
-    (global_table->active_class)->line_end = yylineno;
+    (global_table->active_class)->line_end = lineno;
 
     // Close class, move back to global scope
     global_table->active_class = NULL;
@@ -317,10 +314,10 @@ void parser_loop_enter(void) {
 /**
  * Leave a loop.
  */
-void parser_loop_leave(void) {
+void parser_loop_leave(int lineno) {
     // Not possible to leave a loop when we aren't inside any
     if (global_table->in_loop_counter <= 0) {
-        line_error_and_die(1, yylineno, "Somehow, we are trying to leave a loop from the outer scope");
+        line_error_and_die(1, lineno, "Somehow, we are trying to leave a loop from the outer scope");
     }
 
     // Decrease loop counter, since we are going down one loop
@@ -331,7 +328,7 @@ void parser_loop_leave(void) {
 /**
  * Begin switch statement
  */
-void parser_switch_begin(void) {
+void parser_switch_begin(int lineno) {
     // Allocate switch structure
     t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
 
@@ -350,7 +347,7 @@ void parser_switch_begin(void) {
 /**
  * End switch statement
  */
-void parser_switch_end(void) {
+void parser_switch_end(int lineno) {
     t_switch_struct *ss = global_table->current_switch;
 
     // set current to the parent
@@ -364,23 +361,23 @@ void parser_switch_end(void) {
 /**
  * Check case label
  */
-void parser_switch_case(void) {
+void parser_switch_case(int lineno) {
 }
 
 
 /**
  * Check if a default label is valid
  */
-void parser_switch_default(void) {
+void parser_switch_default(int lineno) {
     t_switch_struct *ss = global_table->current_switch;
 
     if (ss == NULL) {
-        line_error_and_die(1, yylineno, "Default label expected inside a switch statement");
+        line_error_and_die(1, lineno, "Default label expected inside a switch statement");
     }
 
     // Check if default already exists
     if (ss->has_default) {
-        line_error_and_die(1, yylineno, "default label already supplied");
+        line_error_and_die(1, lineno, "default label already supplied");
     }
 
     ss->has_default = 1;
@@ -390,7 +387,8 @@ void parser_switch_default(void) {
 /**
  * Make sure a label is not a variable
  */
-void saffire_check_label(const char *name) {
+void parser_check_label(int lineno, const char *name) {
+    //struct yyguts_t *yyg = (struct yyguts_t *)scanner;
     // @TODO: We need to do a check on labels, to see if the current block has already defined the label
 }
 
@@ -399,9 +397,9 @@ void saffire_check_label(const char *name) {
  * Make sure return happens inside a method
  *
  */
-void saffire_validate_return() {
+void parser_validate_return(int lineno) {
     if (global_table->in_method == 0) {
-        line_error_and_die(1, yylineno, "Cannot use return outside a method");
+        line_error_and_die(1, lineno, "Cannot use return outside a method");
     }
 }
 
@@ -410,17 +408,17 @@ void saffire_validate_return() {
  * Make sure break happens inside a loop
  *
  */
-void saffire_validate_break() {
+void parser_validate_break(int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, yylineno, "We can only break inside a loop");
+        line_error_and_die(1, lineno, "We can only break inside a loop");
     }
 }
 
-void parser_check_permitted_identifiers(const char *name) {
+void parser_check_permitted_identifiers(int lineno, const char *name) {
     if (! strcmp(name, "null")) return;
     if (! strcmp(name, "false")) return;
     if (! strcmp(name, "true")) return;
-    line_error_and_die(1, yylineno, "Incorrect identifier");
+    line_error_and_die(1, lineno, "Incorrect identifier");
 }
 
 
@@ -429,9 +427,9 @@ void parser_check_permitted_identifiers(const char *name) {
  * Make sure continue happens inside a loop
  *
  */
-void saffire_validate_continue() {
+void parser_validate_continue(int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, yylineno, "We can only continue inside a loop");
+        line_error_and_die(1, lineno, "We can only continue inside a loop");
     }
 }
 
@@ -440,9 +438,9 @@ void saffire_validate_continue() {
  * Make sure breakelse happens inside a loop
  *
  */
-void saffire_validate_breakelse() {
+void parser_validate_breakelse(int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, yylineno, "We can only breakelse inside a loop");
+        line_error_and_die(1, lineno, "We can only breakelse inside a loop");
     }
 }
 

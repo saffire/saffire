@@ -28,57 +28,163 @@
 #include <stdlib.h>
 #include <string.h>
 #include <histedit.h>
+#include "compiler/saffire_parser.h"
+#include "compiler/parser.tab.h"
+#include "compiler/lex.yy.h"
+
+int yyparse (yyscan_t scanner, SaffireParser *saffireParser);
+
+typedef struct repl_argstruct {
+    EditLine    *el;
+    History     *hist;
+    HistEvent   ev;
+
+    char        *ps1;           // prompt to start statement
+    char        *ps2;           // prompt to continue statement
+    char        *context;       // prompt for context
+    int         lineno;         // Current Line number
+
+
+    int         atStart;        // True before scanner sees printable chars on line
+    char        *echo;          // result of last statement to display
+    int         completeLine;   // Managed by yyread
+} repl_argstruct_t;
+
 
 #define HIST_FILE ".saffire_history"
 
-#define MAX_PROMPT_SIZE 40
-char cur_prompt[MAX_PROMPT_SIZE];
 
-static int statement_count = 1;
+#define MAX_PROMPT_SIZE 100
+char cur_prompt[MAX_PROMPT_SIZE+1];
 
-// @TODO: saffire.prompt will actually set the current prompt.. saffire.prompt("%n>");  %n == current stament count?
-
+/**
+ *
+ */
 char *prompt(EditLine *el) {
-    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "%d> ", statement_count);
+    yyscan_t scanner;
+    el_get(el, EL_CLIENTDATA, (yyscan_t)&scanner);
+
+    SaffireParser *sp = (SaffireParser *)yyget_extra(scanner);
+    repl_argstruct_t *args = (repl_argstruct_t *)sp->yyparse_args;
+
+    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "(\033[32m%d\033[0m) [\033[33m%s\033[0m] %s", args->lineno, args->context, args->atStart ? args->ps1 : args->ps2);
     return cur_prompt;
 }
 
-int repl(void) {
-    EditLine *el;
-    History *hist;
-    HistEvent ev;
-    int count;
+int repl_readline(void *_as, int lineno, char *buf, int max) {
+    repl_argstruct_t *as = (repl_argstruct_t *)_as;
 
-    printf("Interactive/REPL mode is not yet implemented. Use CTRL-C to quit.\n");
+    // We need to set the linenumber inside our structure, otherwise prompt() does not know the correct linenumber
+    as->lineno = lineno;
+
+    int count;
+    const char *line = el_gets(as->el, &count);
+    if (count > 0) {
+        history(as->hist, &as->ev, H_SAVE, HIST_FILE);
+        history(as->hist, &as->ev, H_ENTER, line);
+    }
+
+    // Make sure we don't overflow our 'buf'.
+    // @TODO: What to do with the remaining characters???
+    if (count > max) count = max;
+
+    strncpy(buf, line, count);
+    return count;
+}
+
+int repl(void) {
+    /*
+     * Init history and setup repl argument structure
+     */
+    repl_argstruct_t repl_as;
+
+    repl_as.ps1 = strdup(">");
+    repl_as.ps2 = strdup("...>");
+    repl_as.context = strdup("global");
+    repl_as.completeLine = 0;
+    repl_as.atStart = 1;
+    repl_as.echo = NULL;
+
 
     // initialize EditLine library
-    el = el_init("saffire", stdin, stdout, stderr);
-    el_set(el, EL_PROMPT, &prompt);
-    el_set(el, EL_EDITOR, "emacs");
+    repl_as.el = el_init("saffire", stdin, stdout, stderr);
+    el_set(repl_as.el, EL_PROMPT, &prompt);
+    el_set(repl_as.el, EL_EDITOR, "emacs");
 
     // Initialize history
-    hist = history_init();
-    if (! hist) {
+    repl_as.hist = history_init();
+    if (! repl_as.hist) {
         fprintf(stderr, "Warning: cannot initialize history\n");
     }
-    history(hist, &ev, H_SETSIZE, 800);
-    el_set(el, EL_HIST, history, hist);
+    history(repl_as.hist, &repl_as.ev, H_SETSIZE, 800);
+    el_set(repl_as.el, EL_HIST, history, repl_as.hist);
 
     // Load history file
-    history(hist, &ev, H_LOAD, HIST_FILE);
+    history(repl_as.hist, &repl_as.ev, H_LOAD, HIST_FILE);
 
-    while (1) {
-        const char *line = el_gets(el, &count);
-        if (count > 0) {
-            statement_count++;
-            history(hist, &ev, H_ENTER, line);
-            history(hist, &ev, H_SAVE, HIST_FILE);
-//            printf("LINE: %s", line);
+
+    /*
+     * Init parser structures
+     */
+    SaffireParser sp;
+    yyscan_t scanner;
+
+    // Initialize saffire structure
+    sp.mode = SAFFIRE_EXECMODE_REPL;
+    sp.filehandle = NULL;
+    sp.eof = 0;
+    sp.ast = NULL;
+    sp.error = NULL;
+    sp.yyparse = repl_readline;
+    sp.yyparse_args = (void *)&repl_as;
+
+    // Initialize scanner structure and hook the saffire structure as extra info
+    yylex_init_extra(&sp, &scanner);
+
+    // We need to link our scanner into the editline, so we can use it inside the prompt() function
+    el_set(repl_as.el, EL_CLIENTDATA, scanner);
+
+    printf("Saffire interactive/REPL mode. Use CTRL-C to quit.\n");
+
+
+    /*
+     * Global initialization
+     */
+    parser_init();
+
+    // Mainloop
+    while (! sp.eof) {
+        // New 'parse' loop
+        repl_as.atStart = 1;
+        int status = yyparse(scanner, &sp);
+        printf("Returning from yyparse() with status %d\n", status);
+
+        // Did something went wrong?
+        if (status) {
+            if (sp.error) {
+                fprintf(stdout, "Error: %s\n", sp.error);
+                free(sp.error);
+            }
+            continue;
+        }
+
+        // Do something with our data
+
+        if (sp.mode == SAFFIRE_EXECMODE_REPL && repl_as.echo != NULL)  {
+            printf("repl output: '%s'\n", repl_as.echo);
+            free(repl_as.echo);
+            repl_as.echo = NULL;
         }
     }
 
-    history_end(hist);
-    el_end(el);
+    // Here be generic finalization
+    parser_fini();
+
+    // Destroy scanner structure
+    yylex_destroy(scanner);
+
+    history_end(repl_as.hist);
+    el_end(repl_as.el);
 
     return 0;
 }

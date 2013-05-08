@@ -58,7 +58,7 @@ struct command commands[] = {
                                         { "exec",     &info_exec },
                                         { "bytecode", &info_bytecode },
                                         { NULL, NULL }
-                                    };
+                                };
 
 // Original argc and argv. Since we are moving around the argument pointers.
 int original_argc;

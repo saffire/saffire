@@ -24,12 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SAFFIRE_PARSER_H__
-#define __SAFFIRE_PARSER_H__
+#ifndef __COMPILER_PARSER_H__
+#define __COMPILER_PARSER_H__
 
     #include "compiler/ast_nodes.h"
     #include "compiler/class.h"
     #include "general/hashtable.h"
+
+    #include "compiler/saffire_parser.h"
+    #include "compiler/parser.tab.h"
+    #include "compiler/lex.yy.h"
 
     /* @TODO: These should not be here */
     #define MODIFIER_PUBLIC              1
@@ -68,35 +72,35 @@
     void parser_init(void);
     void parser_fini(void);
 
-    void parser_init_class(int modifiers, char *name, t_ast_element *extends, t_ast_element *implements);
-    void parser_fini_class(void);
+    void parser_init_class(int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements);
+    void parser_fini_class(int lineno);
 
-    void parser_switch_case(void);
-    void parser_switch_default(void);
-    void parser_switch_end(void);
-    void parser_switch_begin(void);
+    void parser_switch_case(int lineno);
+    void parser_switch_default(int lineno);
+    void parser_switch_end(int lineno);
+    void parser_switch_begin(int lineno);
 
-    void saffire_check_label(const char *name);
+    void parser_check_label(int lineno, const char *name);
 
-    void parser_check_permitted_identifiers(const char *name);
+    void parser_check_permitted_identifiers(int lineno, const char *name);
     char *parser_build_var(int argc, ...);
 
-    void saffire_validate_return();
-    void saffire_validate_break();
-    void saffire_validate_continue();
-    void saffire_validate_breakelse();
+    void parser_validate_return(int lineno);
+    void parser_validate_break(int lineno);
+    void parser_validate_continue(int lineno);
+    void parser_validate_breakelse(int lineno);
 
     void parser_loop_enter(void);
-    void parser_loop_leave(void);
+    void parser_loop_leave(int lineno);
 
     void parser_init_method(const char *name);
     void parser_fini_method(void);
-    void parser_validate_constant(char *constant);
-    void parser_validate_abstract_method_body(long modifiers, t_ast_element *body);
-    void parser_validate_class_modifiers(long modifiers);
-    void parser_validate_method_modifiers(long modifiers);
-    void parser_validate_property_modifiers(long modifiers);
-    void parser_validate_flags(long cur_flags, long new_flag);
+    void parser_validate_constant(int lineno, char *constant);
+    void parser_validate_abstract_method_body(int lineno, long modifiers, t_ast_element *body);
+    void parser_validate_class_modifiers(int lineno, long modifiers);
+    void parser_validate_method_modifiers(int lineno, long modifiers);
+    void parser_validate_property_modifiers(int lineno, long modifiers);
+    void parser_validate_flags(int lineno, long cur_flags, long new_flag);
 
     char parser_mod_to_visibility(long modifiers);
     char parser_mod_to_methodflags(long modifiers);
