@@ -115,7 +115,10 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             }
 
             // Parse the rest of the arguments, confirming the action's signature
-            saffire_parse_signature(argc, argv, action->arglist);
+            char *error;
+            if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
+                error_and_die(1, "%s. Use 'saffire help %s' for more information\n", error, action->name);
+            }
 
             // Execute action
             return action->func();
@@ -158,7 +161,6 @@ int main(int argc, char *argv[]) {
     // Save originals. Commands like 'help' will need them..
     original_argc = argc;
     original_argv = argv;
-
 
     // Find command, and set the argc & argv to point to the item AFTER the command
     if (argc == 1) {

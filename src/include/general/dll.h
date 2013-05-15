@@ -55,6 +55,7 @@
     void dll_push(t_dll *dll, void *data);
     void *dll_pop(t_dll *dll);
     void *dll_top(t_dll *dll);
+    t_dll_element *dll_seek_offset(t_dll *dll, int offset);
 
 #endif
 

@@ -19,7 +19,7 @@ else
 endif
 
 # Add top include dir
-AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS) ${libxml2_CFLAGS}
+AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) ${libxml2_CFLAGS}
 
 # Complain about everything, except unused functions
 AM_CFLAGS += -Wall -Wno-unused-function
@@ -117,7 +117,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/config.c \
                        components/general/output.c \
                        components/general/mutex.c \
-                       components/general/printf/arg_printf.c
+                       components/general/printf/arg_printf.c \
+                       components/general/ini.c
 
 
 ########################################################################
@@ -257,4 +258,6 @@ utmain_SOURCES = \
                     ../unittests/core/main.c \
                     ../unittests/core/hashtable/hashtable.c \
                     ../unittests/core/dll/dll.c \
-                    ../unittests/core/bz2/bz2.c
+                    ../unittests/core/bz2/bz2.c \
+                    ../unittests/core/ini/ini.c
+

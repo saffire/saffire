@@ -24,37 +24,36 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __PARSE_OPTIONS_H__
-#define __PARSE_OPTIONS_H__
+#ifndef __INI_H__
+#define __INI_H__
 
-    // Might be already defined if getopt is included
-    #ifndef no_argument
-        #define     no_argument         0
-    #endif
-    #ifndef required_argument
-        #define     required_argument   1
-    #endif
-    #ifndef optional_argument
-        #define     optional_argument   2
-    #endif
+    #include "general/dll.h"
+    #include "general/hashtable.h"
 
-    char **saffire_params;
-    int saffire_params_count;
+    typedef struct _ini {
+        // Publicly available stuff
+        t_hash_table *keys;
 
-    struct saffire_option {
-        const char *longname;
-        const char *shortname;
-        int has_arg;                // no_argument,
-        void(*func)(void *);        // Function to call when this setting is found
-    };
+        // --- Not so public part
+        struct _private {
+            t_dll *ini_lines;
+            t_hash_table *section_endings;
+        } _private;
+    } t_ini;
 
-    void saffire_parse_options(int, char **, struct saffire_option *options[]);
-    int saffire_parse_signature(int argc, char **argv, char *signature, char **error);
-    char *saffire_getopt_string(int idx);
-    char saffire_getopt_bool(int idx);
-    long saffire_getopt_int(int idx);
+    typedef struct _ini_element {
+        char *value;
+        int offset;
+    } t_ini_element;
 
-    int to_bool(char *value);
+
+
+    t_ini *ini_read(const char *filename);
+    void ini_free(t_ini *ini);
+    t_hash_table *ini_match(t_ini *ini, const char *pattern);
+    char *ini_find(t_ini *ini, const char *key);
+    void ini_add(t_ini *ini, const char *key, const char *val);
+    int ini_remove(t_ini *ini, const char *key);
+    int ini_save(t_ini *ini, const char *filename);
 
 #endif
-

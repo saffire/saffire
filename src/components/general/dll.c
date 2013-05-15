@@ -232,3 +232,18 @@ void *dll_top(t_dll *dll) {
 
     return e->data;
 }
+
+/**
+ * Searches for specfici offset
+ */
+t_dll_element *dll_seek_offset(t_dll *dll, int offset) {
+    if (offset < 0 || offset >= dll->size) return NULL;
+
+    t_dll_element *e = DLL_HEAD(dll);
+    while (offset) {
+        offset--;
+        e = DLL_NEXT(e);
+    }
+
+    return e;
+}

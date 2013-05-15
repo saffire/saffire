@@ -154,7 +154,6 @@ static int _compile_directory(const char *path, int sign, char *gpg_key) {
 
                 ret += _compile_file(new_path, sign, gpg_key);
             }
-
         }
     } while (dp);
 

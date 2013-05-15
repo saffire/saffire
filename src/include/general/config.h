@@ -29,11 +29,13 @@
 
     #include "general/hashtable.h"
 
+    int config_init(char *path);
+
     int config_set_string(const char *key, const char *value);
     char *config_get_string(const char *key, const char *default_value);
     char config_get_bool(const char *key, char default_value);
     long config_get_long(const char *key, long default_value);
 
-    int config_get_matches(const char *pattern, char ***matches);
+    t_hash_table *config_get_matches(const char *pattern, int wildcard);
 
 #endif
