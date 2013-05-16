@@ -137,9 +137,9 @@ int repl(void) {
     el_set(repl_as.el, EL_CLIENTDATA, scanner);
 
 
+    // Display the logo if needed
     if (config_get_bool("repl.logo", 1) == 1) {
         output(repl_logo);
-        //printf("Saffire interactive/REPL mode. Use CTRL-C to quit.\n");
     }
 
     /*

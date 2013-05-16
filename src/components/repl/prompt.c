@@ -175,7 +175,4 @@ char *repl_prompt(EditLine *el) {
     // Generate a complete prompt
     repl_convert_prompt(cur_prompt, MAX_PROMPT_SIZE-1, args);
     return cur_prompt;
-
-//    snprintf(cur_prompt, MAX_PROMPT_SIZE-1, "(\033[32m%d\033[0m) [\033[33m%s\033[0m] %s", args->lineno, args->context, args->atStart ? args->ps1 : args->ps2);
-//    return cur_prompt;
 }
