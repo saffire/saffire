@@ -175,7 +175,8 @@ libobjects_a_SOURCES = components/objects/object.c \
 ########################################################################
 
 noinst_LIBRARIES += librepl.a
-librepl_a_SOURCES = components/repl/repl.c
+librepl_a_SOURCES = components/repl/repl.c \
+                    components/repl/prompt.c
 
 
 ########################################################################

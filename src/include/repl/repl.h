@@ -27,6 +27,25 @@
 #ifndef __REPL_H__
 #define __REPL_H__
 
+    #include <histedit.h>
+
+    typedef struct repl_argstruct {
+        EditLine    *el;
+        History     *hist;
+        HistEvent   ev;
+
+        char        *ps1;           // prompt to start statement
+        char        *ps2;           // prompt to continue statement
+        char        *context;       // prompt for context
+        int         lineno;         // Current Line number
+
+
+        int         atStart;        // True before scanner sees printable chars on line
+        char        *echo;          // result of last statement to display
+        int         completeLine;   // Managed by yyread
+    } repl_argstruct_t;
+
+
     int repl(void);
 
 #endif

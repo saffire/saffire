@@ -98,6 +98,7 @@ static const char *default_ini[] = {
     "#   %d   Date (dd/mm/yyyy)",
     "#   %D   Date (mm/dd/yyyy)",
     "#   %l   Line number",
+    "#   %n   Newline",
     "#   %x   Context",
     "#   %t   time (h:i:s)",
     "#   %T   time (H:i:s)",
@@ -105,6 +106,18 @@ static const char *default_ini[] = {
     "",
     "# Second command prompt which is used when entering more lines",
     "ps2 = ... >",
+    "",
+    "# Readline editor mode: emacs or vi",
+    "editor = emacs",
+    "",
+    "# History file to save repl history",
+    "history.file = ~/.saffire.history",
+    "",
+    "# Maximum number of items in the history file",
+    "history.size = 800",
+    "",
+    "# Display the saffire logo upon start of the repl",
+    "logo = false"
 };
 
 // Default INI file @TODO: platform specific!
