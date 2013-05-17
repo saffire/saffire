@@ -61,6 +61,7 @@
 
     #define saffire_push_state(state) yy_push_state(state, yyscanner)
     #define saffire_pop_state() yy_pop_state(yyscanner)
+    #define saffire_top_state() yy_top_state(yyscanner)
 
 
 
@@ -134,7 +135,7 @@
 %option noyyfree noyyrealloc noyyalloc
 
 /* suppress -Wall warning about yyunput */
-%option nounput noyy_top_state
+%option nounput
 
 
 /* Our actual lexemes */
@@ -405,3 +406,4 @@ size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *saffire_parser, int
     }
     return len;
 }
+
