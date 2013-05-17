@@ -29,6 +29,8 @@
     #include <stdlib.h>
     #include <string.h>
     #include <unistd.h>
+    #include <ctype.h>
+    #include "repl/repl.h"
 
     #include "general/output.h"
     #include "general/smm.h"
@@ -51,6 +53,10 @@
     // Redefine the YY_INPUT macro so we decide on how to read characters
     #undef YY_INPUT
     #define YY_INPUT(buf, result, max_size) result = yyread(yyin, buf, max_size, yyextra, yylineno)
+
+
+    // Set the useraction macro. Make sure that when we have typed something, we are not atStart anymore (so we can display the ps2 prompt)
+    #define YY_USER_ACTION  if (!isspace(*yytext)) { repl_argstruct_t *args = yyextra->yyparse_args; if (args) args->atStart = 0;  }
 
 
     #define saffire_push_state(state) yy_push_state(state, yyscanner)

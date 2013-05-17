@@ -199,7 +199,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'b' :
                 // Try and convert to boolean
                 if (to_bool(argv[argp]) == -1) {
-                    *error = asprintf("Found '%s', but expected a boolean value", argv[argp]);
+                    asprintf(error, "Found '%s', but expected a boolean value", argv[argp]);
                     return 0;
                 }
 
@@ -207,13 +207,13 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'l' :
                 // Convert to long. string("0") should be ok too!
                 if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
-                    *error = asprintf("Found '%s', but expected a numerical value", argv[argp]);
+                    asprintf(error, "Found '%s', but expected a numerical value", argv[argp]);
                     return 0;
                 }
 
                 break;
             default :
-                *error = asprintf("Incorrect signature command '%c' found", signature[idx]);
+                asprintf(error, "Incorrect signature command '%c' found", signature[idx]);
                 return 0;
         }
     }

@@ -32,6 +32,7 @@
     #include <stdio.h>
     #include "general/output.h"
     #include "general/smm.h"
+    #include "general/hashtable.h"
     #include "compiler/parser.h"
     #include "compiler/ast_nodes.h"
     #include "objects/objects.h"
@@ -39,7 +40,6 @@
     #include "compiler/saffire_parser.h"
     #include "compiler/parser.tab.h"
     #include "compiler/lex.yy.h"
-
 
     // Push and pop for parser states
     void saffire_push_state(int state);
@@ -60,6 +60,8 @@
 
     int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
 
+    void yy_exec(t_ast_element *ast, SaffireParser *sp);
+
 %}
 
 %define api.pure
@@ -79,28 +81,31 @@
 }
 
 %token END 0 "end of file"
-%token <lVal> T_LNUM
-%token <sVal> T_STRING T_IDENTIFIER T_REGEX
+%token <lVal> T_LNUM "numerical value"
+%token <sVal> T_STRING "string" T_IDENTIFIER "identifier" T_REGEX "regular expression"
 
 %type <lVal> modifier modifier_list assignment_operator comparison_operator
 
 /* These must be sorted and used properly */
-%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
+%token T_WHILE "while" T_IF "if" T_USE "use" T_AS "as" T_DO "do"
+%token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
 %nonassoc T_ELSE
 %token T_OP_INC T_OP_DEC T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
-%token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
-%token T_SELF T_PARENT T_NS_SEP T_TO
+%token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
+%token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
+%token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
+%token T_SELF "self" T_PARENT "parent" T_NS_SEP T_TO
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
-%token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT T_COALESCE
+%token T_AND "and" T_OR "or" T_SHIFT_LEFT "shift left" T_SHIFT_RIGHT "shift right" T_COALESCE "coalesce (??)"
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INHERITS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
-%token T_IMPORT T_FROM T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
+%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
 
 /* reserved for later use */
 %token T_YIELD
@@ -161,8 +166,8 @@ use_statement_list:
 
 /* A use-statement list with at least one use statement */
 non_empty_use_statement_list:
-        use_statement { $$ = ast_node_group(1, $1); }
-    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); }
+        use_statement { $$ = ast_node_group(1, $1); yy_exec($1, saffireParser); }
+    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); yy_exec($2, saffireParser); }
 ;
 
 use_statement:
@@ -188,8 +193,8 @@ top_statement_list:
 
 /* A top-statement list with at least one top statement */
 non_empty_top_statement_list:
-        top_statement                              { $$ = ast_node_group(1, $1); }
-    |   non_empty_top_statement_list top_statement { $$ = ast_node_add($$, $2); }
+        top_statement                              { $$ = ast_node_group(1, $1); yy_exec($1, saffireParser); }
+    |   non_empty_top_statement_list top_statement { $$ = ast_node_add($$, $2); yy_exec($2, saffireParser); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -722,6 +727,13 @@ char *get_token_string(int token) {
     return "<unknown>";
 }
 
-void yyprint(FILE *file, int type, const union YYSTYPE * const value) {
-    fprintf (file, "(%d) %s", type, value);
+
+/**
+ * Hook that will be called on each finalized (top/use) statement. Usefull to handle
+ * interactive sessions like the repl.
+ */
+void yy_exec(t_ast_element *ast, SaffireParser *sp) {
+    // Check if we need to handle the instructions (hook for mostly the repl)
+    if (! sp->yyexec) return;
+    sp->yyexec(ast, sp);
 }

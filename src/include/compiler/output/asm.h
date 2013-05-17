@@ -88,7 +88,8 @@
     t_asm_line *asm_create_labelline(char *label);
 
     t_bytecode *assembler(t_hash_table *asm_code, const char *filename);
-    void assembler_output(t_hash_table *asm_code, char *output_path);
     void assembler_free(t_hash_table *asm_code);
+    void assembler_output(t_hash_table *asm_code, char *output_path);
+    void assembler_output_stream(t_hash_table *asm_code, FILE *f);
 
 #endif

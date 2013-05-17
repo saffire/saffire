@@ -498,6 +498,12 @@ void assembler_output(t_hash_table *asm_code, char *output_path) {
     FILE *f = fopen(output_path, "w");
     if (! f) return;
 
+    assembler_output_stream(asm_code, f);
+
+    fclose(f);
+}
+
+void assembler_output_stream(t_hash_table *asm_code, FILE *f) {
     t_hash_iter iter;
 
     ht_iter_init(&iter, asm_code);
@@ -514,7 +520,4 @@ void assembler_output(t_hash_table *asm_code, char *output_path) {
 
         ht_iter_next(&iter);
     }
-
-
-    fclose(f);
 }

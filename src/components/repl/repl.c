@@ -36,6 +36,8 @@
 #include "repl/repl.h"
 #include "general/output.h"
 #include "version.h"
+#include "compiler/output/asm.h"
+#include "compiler/ast_to_asm.h"
 
 const char *repl_logo = "   _____        ,__  ,__                \n"
                         "  (        ___  /  ` /  ` ` .___    ___ \n"
@@ -76,6 +78,22 @@ int repl_readline(void *_as, int lineno, char *buf, int max) {
 
     strncpy(buf, line, count);
     return count;
+}
+
+
+void repl_exec(t_ast_element *ast, SaffireParser *sp) {
+    printf("\033[32;1m");
+    printf("---- repl_exec ------------------------------------------------\n");
+
+    t_hash_table *ht = ast_to_asm(ast);
+    assembler_output_stream(ht, stdout);
+
+    printf("---------------------------------------------------------------\n");
+    printf("\033[0m");
+    printf("\n");
+
+    repl_argstruct_t *args = (repl_argstruct_t *)sp->yyparse_args;
+    args->atStart = 1;
 }
 
 
@@ -129,6 +147,7 @@ int repl(void) {
     sp.error = NULL;
     sp.yyparse = repl_readline;
     sp.yyparse_args = (void *)&repl_as;
+    sp.yyexec = repl_exec;
 
     // Initialize scanner structure and hook the saffire structure as extra info
     yylex_init_extra(&sp, &scanner);
@@ -152,7 +171,7 @@ int repl(void) {
         // New 'parse' loop
         repl_as.atStart = 1;
         int status = yyparse(scanner, &sp);
-        printf("Returning from yyparse() with status %d\n", status);
+        printf("Repl: yyparse() returned %d\n", status);
 
         // Did something went wrong?
         if (status) {
