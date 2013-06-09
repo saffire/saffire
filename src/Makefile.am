@@ -230,7 +230,7 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) ${libxml2_LIBS} -lpthread
+saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
@@ -253,7 +253,7 @@ libtests_a_SOURCES = ../unittests/core/main.c
 TESTS = utmain
 check_PROGRAMS = utmain
 
-utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) ${libxml2_LIBS} -lpthread -lcunit
+utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread -lcunit
 
 utmain_SOURCES = \
                     ../unittests/core/main.c \

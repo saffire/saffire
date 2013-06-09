@@ -25,6 +25,6 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-t_bytecode *ast2bc(t_ast_element *root) {
+t_bytecode *ast_to_bytecode(t_ast_element *root) {
 
 }

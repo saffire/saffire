@@ -41,7 +41,7 @@
 /**
  * Convert modifier list to visibility flags for astAttribute nodes.
  */
-char parser_mod_to_visibility(long modifiers) {
+char parser_mod_to_visibility(SaffireParser *sp, int lineno, long modifiers) {
     modifiers &= MODIFIER_MASK_VISIBILITY;
 
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == MODIFIER_PUBLIC) return ATTRIB_VISIBILITY_PUBLIC;
@@ -54,7 +54,7 @@ char parser_mod_to_visibility(long modifiers) {
 /**
  * Convert modifier list to method flags for astAttribute nodes.
  */
-char parser_mod_to_methodflags(long modifiers) {
+char parser_mod_to_methodflags(SaffireParser *sp, int lineno, long modifiers) {
     char ret = 0;
 
     if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= CALLABLE_FLAG_STATIC;
@@ -68,7 +68,7 @@ char parser_mod_to_methodflags(long modifiers) {
 /**
  * Validate class modifiers
  */
-void parser_validate_class_modifiers(int lineno, long modifiers) {
+void parser_validate_class_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     // Classes do not have a visibility
     if (modifiers & MODIFIER_MASK_VISIBILITY) {
         line_error_and_die(1, lineno, "Classes cannot have a visibility");
@@ -79,7 +79,7 @@ void parser_validate_class_modifiers(int lineno, long modifiers) {
 /**
  * Validate abstract method body
  */
-void parser_validate_abstract_method_body(int lineno, long modifiers, t_ast_element *body) {
+void parser_validate_abstract_method_body(SaffireParser *sp, int lineno, long modifiers, t_ast_element *body) {
     // If the method is not abstract, we don't need to check
     if ((modifiers & MODIFIER_ABSTRACT) == 0) {
         return;
@@ -97,7 +97,7 @@ void parser_validate_abstract_method_body(int lineno, long modifiers, t_ast_elem
 /**
  * Validate method modifiers
  */
-void parser_validate_method_modifiers(int lineno, long modifiers) {
+void parser_validate_method_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     // Make sure we have at least 1 visibility bit set
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, lineno, "Methods must define a visibility");
@@ -113,7 +113,7 @@ void parser_validate_method_modifiers(int lineno, long modifiers) {
 /**
  * Validate property modifiers
  */
-void parser_validate_property_modifiers(int lineno, long modifiers) {
+void parser_validate_property_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
         line_error_and_die(1, lineno, "Methods must define a visibility");
     }
@@ -123,7 +123,7 @@ void parser_validate_property_modifiers(int lineno, long modifiers) {
 /**
  * Checks if modifier flags are allowed (does not check the context (class, method, property etc).
  */
-void parser_validate_flags(int lineno, long cur_flags, long new_flag) {
+void parser_validate_flags(SaffireParser *sp, int lineno, long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBILITY) && (new_flag & MODIFIER_MASK_VISIBILITY)) {
         line_error_and_die(1, lineno, "Cannot have multiple visiblity masks");
@@ -144,7 +144,7 @@ void parser_validate_flags(int lineno, long cur_flags, long new_flag) {
 /**
  * Validate a constant
  */
-void parser_validate_constant(int lineno, char *name) {
+void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
     // Check if the class exists in the class table
     if (global_table->active_class) {
         // inside the current class
@@ -171,21 +171,21 @@ void parser_validate_constant(int lineno, char *name) {
 /**
  * Enter a method, and validate method name
  */
-void parser_init_method(const char *name) {
+void parser_init_method(SaffireParser *sp, int lineno, const char *name) {
     global_table->in_method = 1;
 }
 
 /**
  * Leave a method
  */
-void parser_fini_method() {
+void parser_fini_method(SaffireParser *sp, int lineno) {
     global_table->in_method = 0;
 }
 
 /**
  * Initialize a class
  */
-void parser_init_class(int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
+void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
         line_error_and_die(1, lineno, "You cannot define a class inside another class");
@@ -230,7 +230,7 @@ void parser_init_class(int lineno, int modifiers, char *name, t_ast_element *ext
 /**
  * End a class
  */
-void parser_fini_class(int lineno) {
+void parser_fini_class(SaffireParser *sp, int lineno) {
     // Cannot close a class when we are not inside one
     if (global_table->in_class == 0) {
         line_error_and_die(1, lineno, "Closing a class, but we weren't inside one to begin with");
@@ -250,6 +250,150 @@ void parser_fini_class(int lineno) {
     // Not inside a class anymore
     global_table->in_class = 0;
 }
+
+
+/**
+ * Enter a control-loop
+ */
+void parser_loop_enter(SaffireParser *sp, int lineno) {
+    // Increase loop counter, since we are entering a new loop
+    global_table->in_loop_counter++;
+}
+
+
+/**
+ * Leave a loop.
+ */
+void parser_loop_leave(SaffireParser *sp, int lineno) {
+    // Not possible to leave a loop when we aren't inside any
+    if (global_table->in_loop_counter <= 0) {
+        line_error_and_die(1, lineno, "Somehow, we are trying to leave a loop from the outer scope");
+    }
+
+    // Decrease loop counter, since we are going down one loop
+    global_table->in_loop_counter--;
+}
+
+
+/**
+ * Begin switch statement
+ */
+void parser_switch_begin(SaffireParser *sp, int lineno) {
+    // Allocate switch structure
+    t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
+
+    // Set default values
+    ss->has_default = 0;
+
+    // Add the current switch as the parent
+    t_switch_struct *tmp =  global_table->current_switch;
+    ss->parent = tmp;
+
+    // Set current switch to the new switch
+    global_table->current_switch = ss;
+}
+
+
+/**
+ * End switch statement
+ */
+void parser_switch_end(SaffireParser *sp, int lineno) {
+    t_switch_struct *ss = global_table->current_switch;
+
+    // set current to the parent
+    global_table->current_switch = ss->parent;
+
+    // Free switch structure
+    smm_free(ss);
+}
+
+
+/**
+ * Check case label
+ */
+void parser_switch_case(SaffireParser *sp, int lineno) {
+}
+
+
+/**
+ * Check if a default label is valid
+ */
+void parser_switch_default(SaffireParser *sp, int lineno) {
+    t_switch_struct *ss = global_table->current_switch;
+
+    if (ss == NULL) {
+        line_error_and_die(1, lineno, "Default label expected inside a switch statement");
+    }
+
+    // Check if default already exists
+    if (ss->has_default) {
+        line_error_and_die(1, lineno, "default label already supplied");
+    }
+
+    ss->has_default = 1;
+}
+
+
+/**
+ * Make sure a label is not a variable
+ */
+void parser_check_label(SaffireParser *sp, int lineno, const char *name) {
+    //struct yyguts_t *yyg = (struct yyguts_t *)scanner;
+    // @TODO: We need to do a check on labels, to see if the current block has already defined the label
+}
+
+
+/**
+ * Make sure return happens inside a method
+ *
+ */
+void parser_validate_return(SaffireParser *sp, int lineno) {
+    if (global_table->in_method == 0) {
+        line_error_and_die(1, lineno, "Cannot use return outside a method");
+    }
+}
+
+
+/**
+ * Make sure break happens inside a loop
+ *
+ */
+void parser_validate_break(SaffireParser *sp, int lineno) {
+    if (global_table->in_loop_counter == 0) {
+        line_error_and_die(1, lineno, "We can only break inside a loop");
+    }
+}
+
+void parser_check_permitted_identifiers(SaffireParser *sp, int lineno, const char *name) {
+    if (! strcmp(name, "null")) return;
+    if (! strcmp(name, "false")) return;
+    if (! strcmp(name, "true")) return;
+    line_error_and_die(1, lineno, "Incorrect identifier");
+}
+
+
+
+/**
+ * Make sure continue happens inside a loop
+ *
+ */
+void parser_validate_continue(SaffireParser *sp, int lineno) {
+    if (global_table->in_loop_counter == 0) {
+        line_error_and_die(1, lineno, "We can only continue inside a loop");
+    }
+}
+
+
+/**
+ * Make sure breakelse happens inside a loop
+ *
+ */
+void parser_validate_breakelse(SaffireParser *sp, int lineno) {
+    if (global_table->in_loop_counter == 0) {
+        line_error_and_die(1, lineno, "We can only breakelse inside a loop");
+    }
+}
+
 
 
 /**
@@ -300,150 +444,6 @@ static void parser_fini_global_table(void) {
     // Free actual global table
     smm_free(global_table);
 }
-
-
-/**
- * Enter a control-loop
- */
-void parser_loop_enter(void) {
-    // Increase loop counter, since we are entering a new loop
-    global_table->in_loop_counter++;
-}
-
-
-/**
- * Leave a loop.
- */
-void parser_loop_leave(int lineno) {
-    // Not possible to leave a loop when we aren't inside any
-    if (global_table->in_loop_counter <= 0) {
-        line_error_and_die(1, lineno, "Somehow, we are trying to leave a loop from the outer scope");
-    }
-
-    // Decrease loop counter, since we are going down one loop
-    global_table->in_loop_counter--;
-}
-
-
-/**
- * Begin switch statement
- */
-void parser_switch_begin(int lineno) {
-    // Allocate switch structure
-    t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
-
-    // Set default values
-    ss->has_default = 0;
-
-    // Add the current switch as the parent
-    t_switch_struct *tmp =  global_table->current_switch;
-    ss->parent = tmp;
-
-    // Set current switch to the new switch
-    global_table->current_switch = ss;
-}
-
-
-/**
- * End switch statement
- */
-void parser_switch_end(int lineno) {
-    t_switch_struct *ss = global_table->current_switch;
-
-    // set current to the parent
-    global_table->current_switch = ss->parent;
-
-    // Free switch structure
-    smm_free(ss);
-}
-
-
-/**
- * Check case label
- */
-void parser_switch_case(int lineno) {
-}
-
-
-/**
- * Check if a default label is valid
- */
-void parser_switch_default(int lineno) {
-    t_switch_struct *ss = global_table->current_switch;
-
-    if (ss == NULL) {
-        line_error_and_die(1, lineno, "Default label expected inside a switch statement");
-    }
-
-    // Check if default already exists
-    if (ss->has_default) {
-        line_error_and_die(1, lineno, "default label already supplied");
-    }
-
-    ss->has_default = 1;
-}
-
-
-/**
- * Make sure a label is not a variable
- */
-void parser_check_label(int lineno, const char *name) {
-    //struct yyguts_t *yyg = (struct yyguts_t *)scanner;
-    // @TODO: We need to do a check on labels, to see if the current block has already defined the label
-}
-
-
-/**
- * Make sure return happens inside a method
- *
- */
-void parser_validate_return(int lineno) {
-    if (global_table->in_method == 0) {
-        line_error_and_die(1, lineno, "Cannot use return outside a method");
-    }
-}
-
-
-/**
- * Make sure break happens inside a loop
- *
- */
-void parser_validate_break(int lineno) {
-    if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only break inside a loop");
-    }
-}
-
-void parser_check_permitted_identifiers(int lineno, const char *name) {
-    if (! strcmp(name, "null")) return;
-    if (! strcmp(name, "false")) return;
-    if (! strcmp(name, "true")) return;
-    line_error_and_die(1, lineno, "Incorrect identifier");
-}
-
-
-
-/**
- * Make sure continue happens inside a loop
- *
- */
-void parser_validate_continue(int lineno) {
-    if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only continue inside a loop");
-    }
-}
-
-
-/**
- * Make sure breakelse happens inside a loop
- *
- */
-void parser_validate_breakelse(int lineno) {
-    if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only breakelse inside a loop");
-    }
-}
-
 
 /**
  * Initialize the saffire_compiler
