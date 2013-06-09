@@ -33,7 +33,7 @@
     #include "general/output.h"
     #include "general/smm.h"
     #include "general/hashtable.h"
-    #include "compiler/parser.h"
+    #include "compiler/parser_helpers.h"
     #include "compiler/ast_nodes.h"
     #include "objects/objects.h"
     #include "debug.h"
@@ -60,7 +60,7 @@
 
     int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
 
-    void yy_exec(t_ast_element *ast, SaffireParser *sp);
+    void yy_exec(SaffireParser *sp);
 
 %}
 
@@ -151,7 +151,12 @@
 
 saffire:
         /* We must convert our ast_root address to an unsigned long */
-        program { saffireParser->ast = $1; }
+        program {
+            printf("End of file '%s'\n", saffireParser->filename);
+            saffireParser->ast = $1;
+            saffireParser->eof = 1;
+            yy_exec(saffireParser);
+        }
 ;
 
 program:
@@ -166,8 +171,8 @@ use_statement_list:
 
 /* A use-statement list with at least one use statement */
 non_empty_use_statement_list:
-        use_statement { $$ = ast_node_group(1, $1); yy_exec($1, saffireParser); }
-    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); yy_exec($2, saffireParser); }
+        use_statement { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
+    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
 ;
 
 use_statement:
@@ -183,6 +188,7 @@ use_statement:
     |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, $2)); }
         /* import <foo> */
     |   T_IMPORT T_IDENTIFIER                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2)); }
+    |   error ';' { yyerrok; }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -193,8 +199,8 @@ top_statement_list:
 
 /* A top-statement list with at least one top statement */
 non_empty_top_statement_list:
-        top_statement                              { $$ = ast_node_group(1, $1); yy_exec($1, saffireParser); }
-    |   non_empty_top_statement_list top_statement { $$ = ast_node_add($$, $2); yy_exec($2, saffireParser); }
+        top_statement                              { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
+    |   non_empty_top_statement_list top_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -242,7 +248,7 @@ if_statement:
 
 /* Switch statement */
 switch_statement:
-        T_SWITCH '(' conditional_expression ')' { parser_loop_enter(); parser_switch_begin(@1.first_line); } '{' case_statements '}' { parser_loop_leave(@1.first_line); parser_switch_end(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
+        T_SWITCH '(' conditional_expression ')' { parser_loop_enter(saffireParser, @1.first_line); parser_switch_begin(saffireParser, @1.first_line); } '{' case_statements '}' { parser_loop_leave(saffireParser, @1.first_line); parser_switch_end(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
 ;
 
 case_statements:
@@ -251,10 +257,10 @@ case_statements:
 ;
 
 case_statement:
-        T_CASE conditional_expression ':'   { parser_switch_case(@1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
-    |   T_CASE conditional_expression ':'   { parser_switch_case(@1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
-    |   T_DEFAULT ':'                       { parser_switch_default(@1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
-    |   T_DEFAULT ':'                       { parser_switch_default(@1.first_line); } { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
+        T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
+    |   T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
+    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
+    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
 ;
 
 
@@ -262,32 +268,38 @@ case_statement:
 iteration_statement:
         while_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   while_statement                  { $$ = $1; }
-    |   T_DO { parser_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { parser_loop_leave(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' { parser_loop_enter(); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS ds_element                       ')' { parser_loop_enter(); } statement { parser_loop_leave(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
-    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { parser_loop_enter(); } statement { parser_loop_leave(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
+    |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' conditional_expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
+    |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
+    |   T_FOR '(' expression_statement expression_statement expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOREACH '(' expression T_AS ds_element                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
+    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
 ;
 
 /* while is separate otherwise we cannot find it's else */
 while_statement:
-        T_WHILE '(' conditional_expression ')' { parser_loop_enter(); } statement { parser_loop_leave(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_WHILE, 2, $3, $6); }
+        T_WHILE '(' conditional_expression ')' {
+            parser_loop_enter(saffireParser, @1.first_line);
+        } statement {
+            parser_loop_leave(saffireParser, @1.first_line);
+            $$ = ast_node_opr(@1.first_line, T_WHILE, 2, $3, $6);
+        }
 ;
 
 /* An expression is anything that evaluates something */
 expression_statement:
         ';'             { $$ = ast_node_nop(); }
     |   expression ';'  { $$ = $1; }
+    |   error ';'       { yyerrok; }
 ;
 
 
 /* Jumps to another part of the code */
 jump_statement:
-        T_BREAK ';'                 { parser_validate_break(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAK, 0); }
-    |   T_BREAKELSE ';'             { parser_validate_breakelse(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAKELSE, 0); }
-    |   T_CONTINUE ';'              { parser_validate_continue(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_CONTINUE, 0); }
-    |   T_RETURN ';'                { parser_validate_return(@1.first_line);    $$ = ast_node_opr(@1.first_line, T_RETURN, 1, ast_node_identifier(@1.first_line, "null")); }
-    |   T_RETURN expression ';'     { parser_validate_return(@1.first_line);  $$ = ast_node_opr(@1.first_line, T_RETURN, 1, $2); }
+        T_BREAK ';'                 { parser_validate_break(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAK, 0); }
+    |   T_BREAKELSE ';'             { parser_validate_breakelse(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAKELSE, 0); }
+    |   T_CONTINUE ';'              { parser_validate_continue(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_CONTINUE, 0); }
+    |   T_RETURN ';'                { parser_validate_return(saffireParser, @1.first_line);    $$ = ast_node_opr(@1.first_line, T_RETURN, 1, ast_node_identifier(@1.first_line, "null")); }
+    |   T_RETURN expression ';'     { parser_validate_return(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { $$ = ast_node_opr(@1.first_line, T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_string(@2.first_line, $2)); smm_free($2); }
     |   T_GOTO T_LNUM ';'           { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_numerical(@2.first_line, $2)); }                 // @TODO: Should support goto 3; ?
@@ -314,7 +326,7 @@ catch_header:
 ;
 
 label_statement:
-        T_IDENTIFIER ':'    { parser_check_label(@1.first_line, $1);  $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_string(@1.first_line, $1)); smm_free($1); }
+        T_IDENTIFIER ':'    { parser_check_label(saffireParser, @1.first_line, $1);  $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_string(@1.first_line, $1)); smm_free($1); }
     |   T_LNUM ':'          { $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_numerical(@1.first_line, $1)); }  /* @TODO: should we support goto 4; ? */
 ;
 
@@ -462,7 +474,7 @@ real_scalar_value:
 /* Any number, any string, any regex or null|true|false */
 scalar_value:
         real_scalar_value   { $$ = $1; }
-    |   T_IDENTIFIER        { parser_check_permitted_identifiers(@1.first_line, $1);  $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
+    |   T_IDENTIFIER        { parser_check_permitted_identifiers(saffireParser, @1.first_line, $1);  $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
 ;
 
 /* This is primary expression */
@@ -565,12 +577,26 @@ interface_inner_statement:
 ;
 
 interface_method_declaration:
-        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_init_method($2); parser_fini_method();  $$ = ast_node_attribute(@1.first_line, $2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(0), $4); smm_free($2); }
+        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_init_method(saffireParser, @1.first_line, $2); parser_fini_method(saffireParser, @1.first_line);  $$ = ast_node_attribute(@1.first_line, $2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, 0), $4); smm_free($2); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { parser_init_method($3); parser_validate_method_modifiers(@1.first_line, $1); } compound_statement { parser_fini_method(); parser_validate_abstract_method_body(@1.first_line, $1, $8);  $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility($1), ATTRIB_ACCESS_RO, $8, parser_mod_to_methodflags($1), $5); smm_free($3); }
-    |   modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_validate_method_modifiers(@1.first_line, $1); parser_init_method($3); parser_fini_method();  $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility($1), ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags($1), $5); smm_free($3); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' {
+            parser_init_method(saffireParser, @1.first_line, $3);
+            parser_validate_method_modifiers(saffireParser, @1.first_line, $1);
+        } compound_statement {
+            parser_fini_method(saffireParser, @1.first_line);
+            parser_validate_abstract_method_body(saffireParser, @1.first_line, $1, $8);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $8, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $5);
+            smm_free($3);
+        }
+    |   modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   {
+            parser_validate_method_modifiers(saffireParser, @1.first_line, $1);
+            parser_init_method(saffireParser, @1.first_line, $3);
+            parser_fini_method(saffireParser, @1.first_line);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $5);
+            smm_free($3);
+        }
 ;
 
 method_argument_list:
@@ -593,39 +619,47 @@ method_argument:
 ;
 
 class_definition:
-        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, $3); parser_fini_class(@1.first_line); }
-    |   class_header '{'                            '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, ast_node_nop()); parser_fini_class(@1.first_line); }
+        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
+    |   class_header '{'                            '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
 ;
 
 class_header:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_implements { parser_validate_class_modifiers(@1.first_line, $1); parser_init_class(@1.first_line, parser_mod_to_methodflags($1), $3, $4, $5); smm_free($3); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_implements { parser_init_class(@1.first_line, 0, $2, $3, $4); smm_free($2); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_implements { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); parser_init_class(saffireParser, @1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, $5); smm_free($3); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_implements { parser_init_class(saffireParser, @1.first_line, 0, $2, $3, $4); smm_free($2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { parser_validate_class_modifiers(@1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags($1), $3, $4, $6); smm_free($3); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { parser_validate_class_modifiers(@1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags($1), $3, $4, ast_node_nop()); smm_free($3); }
+        modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, $6); smm_free($3); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, ast_node_nop()); smm_free($3); }
     |                 T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { $$ = ast_node_interface(@1.first_line, 0, $2, $3, $5); smm_free($2); }
     |                 T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { $$ = ast_node_interface(@1.first_line, 0, $2, $3, ast_node_nop()); smm_free($2); };
 ;
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { parser_validate_property_modifiers(@1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility($1), ATTRIB_ACCESS_RW, $5, 0, ast_node_nop()); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { parser_validate_property_modifiers(@1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility($1), ATTRIB_ACCESS_RW, ast_node_null(), 0, ast_node_nop()); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   {
+            parser_validate_property_modifiers(saffireParser, @1.first_line, $1);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, $5, 0, ast_node_nop());
+            smm_free($3);
+        }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';' {
+        parser_validate_property_modifiers(saffireParser, @1.first_line, $1);
+        $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, ast_node_null(), 0, ast_node_nop());
+        smm_free($3);
+    }
 ;
 
 class_constant_definition:
-        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(@1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility($1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
+        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
 ;
 
 
 interface_property_declaration:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { parser_validate_property_modifiers(@1.first_line, $1); $$ = ast_node_opr(@1.first_line, T_PROPERTY, 2, parser_mod_to_visibility($1), ast_node_identifier(@3.first_line, $3)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_opr(@1.first_line, T_PROPERTY, 2, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ast_node_identifier(@3.first_line, $3)); smm_free($3); }
 ;
 
 modifier_list:
         modifier               { $$ = $1; }
-    |   modifier_list modifier { parser_validate_flags(@1.first_line, $$, $2); $$ |= $2; }
+    |   modifier_list modifier { parser_validate_flags(saffireParser, @1.first_line, $$, $2); $$ |= $2; }
 ;
 
 /* Property and method modifiers. */
@@ -729,11 +763,20 @@ char *get_token_string(int token) {
 
 
 /**
- * Hook that will be called on each finalized (top/use) statement. Usefull to handle
+ * Hook that will be called on each finalized (top/use) statement. Useful to handle
  * interactive sessions like the repl.
  */
-void yy_exec(t_ast_element *ast, SaffireParser *sp) {
+void yy_exec(SaffireParser *sp) {
     // Check if we need to handle the instructions (hook for mostly the repl)
-    if (! sp->yyexec) return;
-    sp->yyexec(ast, sp);
+    if (! sp->yyexec) {
+        printf("\n\n\n\nSeems that '%s' does not have a yyexec()\n\n\n\n", sp->filename);
+        return;
+    }
+
+    if (! sp->ast) {
+        printf("\n\n\nSeems that we don't have a AST\n\n\n");
+    }
+
+    sp->yyexec(sp);
+    sp->ast = NULL;
 }

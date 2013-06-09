@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "general/output.h"
-#include "compiler/parser.h"
+#include "compiler/parser_helpers.h"
 #include "compiler/parser.tab.h"
 #include "general/smm.h"
 #include "compiler/ast_nodes.h"
@@ -443,53 +443,84 @@ void ast_free_node(t_ast_element *p) {
     smm_free(p);
 }
 
+int yyparse (yyscan_t scanner, SaffireParser *saffireParser);
+
 /**
  * Compiles a file into an AST (through bison). Returns the AST root node.
  */
-/*
-t_ast_element *ast_generate_tree(FILE *fp) {
-    // Initialize system
-    parser_init();
+t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
+    /*
+     * Init parser structures
+     */
+    SaffireParser sp;
+    yyscan_t scanner;
 
-#ifdef __PARSEDEBUG
-    yydebug = 1;
-    yy_flex_debug = 1;
-#endif
+    // Initialize saffire structure
+    sp.mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
+    sp.file = fp;
+    sp.filename = filename;
+    sp.eof = 0;
+    sp.ast = NULL;
+    sp.error = NULL;
+    sp.yyparse = NULL;
+    sp.yyparse_args = NULL;
+    sp.yyexec = NULL;
 
-    // Parse the file input, will return the tree in the global ast_root variable
-    yyin = fp;
+    // Initialize scanner structure and hook the saffire structure as extra info
+    yylex_init_extra(&sp, &scanner);
 
-    unsigned long ptr = 0;
-    yylloc.first_line = yylloc.last_line = 1;
-    yylloc.first_column = yylloc.last_column = 0;
-    yyparse(&ptr);
-    yylex_destroy();
+    //int status = yyparse(scanner, &sp);
+    yyparse(scanner, &sp);
 
-    t_ast_element *ast = (t_ast_element *)ptr;
+    return sp.ast;
 
-    parser_fini();
+//    // Initialize system
+//    parser_init();
 
-    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
-    return ast;
+//#ifdef __PARSEDEBUG
+//    yydebug = 1;
+//    yy_flex_debug = 1;
+//#endif
+
+//    // Parse the file input, will return the tree in the global ast_root variable
+//    yyin = fp;
+//
+//    unsigned long ptr = 0;
+//    yylloc.first_line = yylloc.last_line = 1;
+//    yylloc.first_column = yylloc.last_column = 0;
+//    yyparse(&ptr);
+//    yylex_destroy();
+//
+//    t_ast_element *ast = (t_ast_element *)ptr;
+//
+//    parser_fini();
+//
+//    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
+//    return ast;
 }
-*/
+
 /**
  * Generate an AST from a source file
  */
 t_ast_element *ast_generate_from_file(const char *source_file) {
-    // @TODO: Fix me
-    return NULL;
-
+    FILE *fp;
+    char *fp_name;
 
     // Open file, or use stdin if needed
-    FILE *fp = (! strcmp(source_file,"-") ) ? stdin : fopen(source_file, "r");
+    if (! strcmp(source_file, "-")) {
+        fp = stdin;
+        fp_name = "<stdin>";
+    } else {
+        fp = fopen(source_file, "r");
+        fp_name = source_file;
+    }
     if (!fp) {
         error("Could not open file: %s\n", source_file);
         return NULL;
     }
 
     // Generate source file into an AST tree
-    t_ast_element *ast = ast_generate_tree(fp);
+    t_ast_element *ast = ast_generate_tree(fp, fp_name);
 
     // Close file
     fclose(fp);

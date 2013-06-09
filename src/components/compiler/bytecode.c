@@ -678,7 +678,7 @@ t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *byte
     t_ast_element *ast = ast_generate_from_file(source_file);
     if (! ast) return NULL;
 
-    t_hash_table *asm_code = ast_to_asm(ast);
+    t_hash_table *asm_code = ast_to_asm(ast, 1);
     if (! asm_code) {
         ast_free_node(ast);
         return NULL;

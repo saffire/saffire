@@ -72,9 +72,9 @@ static int do_exec(void) {
     }
 
 
-    vm_init(VM_RUNMODE_CLI);
-    int exitcode = vm_execute(bc);
-    vm_fini();
+    t_vm_frame *initial_frame = vm_init(VM_RUNMODE_CLI);
+    int exitcode = vm_execute(initial_frame, bc);
+    vm_fini(initial_frame);
 
     bytecode_free(bc);
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);

@@ -28,9 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <histedit.h>
+#include <signal.h>
 #include "compiler/saffire_parser.h"
 #include "compiler/parser.tab.h"
-#include "compiler/parser.h"
 #include "compiler/lex.yy.h"
 #include "general/config.h"
 #include "repl/repl.h"
@@ -38,6 +38,7 @@
 #include "version.h"
 #include "compiler/output/asm.h"
 #include "compiler/ast_to_asm.h"
+#include "vm/vm.h"
 
 const char *repl_logo = "   _____        ,__  ,__                \n"
                         "  (        ___  /  ` /  ` ` .___    ___ \n"
@@ -46,25 +47,30 @@ const char *repl_logo = "   _____        ,__  ,__                \n"
                         " \\___.'  `.__/| |    |    / /     `.___,\n"
                         "                /    /                  \n"
                         "\n"
-                        saffire_version " interactive/REPL mode. Use CTRL-C to quit.\n";
+                        saffire_version " interactive/REPL mode. Use CTRL-D to quit.\n";
 
-// Forward define
+// Forward defines
 char *repl_prompt(EditLine *el);
-
 int yyparse (yyscan_t scanner, SaffireParser *saffireParser);
 
 
+// Default history file
 #define DEFAULT_HIST_FILE ".saffire_history"
 
+// Actual history file
 char *hist_file = DEFAULT_HIST_FILE;
 
 
+/**
+ * Callback function that is called by yyparse whenever it needs data
+ */
 int repl_readline(void *_as, int lineno, char *buf, int max) {
     repl_argstruct_t *as = (repl_argstruct_t *)_as;
 
     // We need to set the linenumber inside our structure, otherwise prompt() does not know the correct linenumber
     as->lineno = lineno;
 
+    // Let editline get a bit of input from the user.
     int count;
     const char *line = el_gets(as->el, &count);
     if (count > 0) {
@@ -81,12 +87,17 @@ int repl_readline(void *_as, int lineno, char *buf, int max) {
 }
 
 
+/**
+ * Callback function that is called by yyexec whenever parsed data has been converted to an AST
+ */
 void repl_exec(t_ast_element *ast, SaffireParser *sp) {
     printf("\033[32;1m");
     printf("---- repl_exec ------------------------------------------------\n");
 
-    t_hash_table *ht = ast_to_asm(ast);
-    assembler_output_stream(ht, stdout);
+    t_hash_table *asm_code = ast_to_asm(ast, 0);
+    assembler_output_stream(asm_code, stdout);
+    t_bytecode *bc = assembler(asm_code, NULL);
+    vm_execute(sp->initial_frame, bc);
 
     printf("---------------------------------------------------------------\n");
     printf("\033[0m");
@@ -98,11 +109,18 @@ void repl_exec(t_ast_element *ast, SaffireParser *sp) {
 
 
 
+/**
+ * Main repl function
+ */
 int repl(void) {
+    // Ignore CTRL-C. We use CTRL-D to represent EOF / exit
+    signal(SIGINT, SIG_IGN);
+
+    // @TODO: remove configuration reading like this
     config_init("/etc/saffire/saffire.ini");
 
     /*
-     * Init history and setup repl argument structure
+     * Initialize our repl argument structure
      */
     repl_argstruct_t repl_as;
 
@@ -140,8 +158,8 @@ int repl(void) {
     yyscan_t scanner;
 
     // Initialize saffire structure
-    sp.mode = SAFFIRE_EXECMODE_REPL;
-    sp.filehandle = NULL;
+    sp.mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
+    sp.file = NULL;
     sp.eof = 0;
     sp.ast = NULL;
     sp.error = NULL;
@@ -162,15 +180,19 @@ int repl(void) {
     }
 
     /*
-     * Global initialization
+     * Global initialization of the parser and vm
      */
     parser_init();
 
-    // Mainloop
+    // Set initial frame
+    sp.initial_frame = vm_init(VM_RUNMODE_REPL);
+
+    // Main loop of the REPL
     while (! sp.eof) {
         // New 'parse' loop
         repl_as.atStart = 1;
         int status = yyparse(scanner, &sp);
+
         printf("Repl: yyparse() returned %d\n", status);
 
         // Did something went wrong?
@@ -192,11 +214,13 @@ int repl(void) {
     }
 
     // Here be generic finalization
+    vm_fini(sp.initial_frame);
     parser_fini();
 
     // Destroy scanner structure
     yylex_destroy(scanner);
 
+    // Destroy everything else
     history_end(repl_as.hist);
     el_end(repl_as.el);
 

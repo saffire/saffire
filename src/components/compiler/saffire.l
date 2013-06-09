@@ -386,24 +386,31 @@ void flush_buffer(yyscan_t *yyscanner) {
  * mode it will read from file, or display prompts and fetches data.
  */
 size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *saffire_parser, int lineno) {
-
     // Call our custom yyparse function if we have defined one
-    if (saffire_parser->yyparse != NULL) {
+    if (
+        saffire_parser->yyparse != NULL) {
         return saffire_parser->yyparse(saffire_parser->yyparse_args, lineno, buf, max);
     }
 
-    // Use our default yyparse() method.
-    if (feof(f)) {
-        // Signal the main loop that we reached end of file
+//    // Use our default yyparse() method.
+//    if (feof(saffire_parser->file)) {
+//        // Signal the main loop that we reached end of file
+//    }
+
+    printf("Doing normal yyparse\n");
+
+    // Read (part of) file
+    size_t len = fread(buf, 1, max, saffire_parser->file);
+
+    if (len == 0 && ferror(saffire_parser->file)) {
+        saffire_parser->error = strdup("Error while reading file");
+    }
+
+    if (len == 0) {
         saffire_parser->eof = 1;
         return YY_NULL;
     }
 
-    // Read (part of) file
-    size_t len = fread(buf, 1, max, f);
-    if (len == 0 && ferror(f)) {
-        saffire_parser->error = strdup("Error while reading file");
-    }
     return len;
 }
 

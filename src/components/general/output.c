@@ -108,11 +108,11 @@ void error_and_die(int exitcode, const char *format, ...) {
 /**
  * Ouputs error (to stderr) and exists with code.
  */
-void line_error_and_die(int exitcode, int lineno, const char *format, ...) {
+void line_error_and_die(int exitcode, char *filename, int lineno, const char *format, ...) {
     va_list args;
 
-    char buf[100];
-    snprintf(buf, 99, "Error in line %d: ", lineno);
+    char buf[255];
+    snprintf(buf, 254, "Error in %s on line %d: ", filename, lineno);
     _output(stderr, buf, NULL);
 
     va_start(args, format);

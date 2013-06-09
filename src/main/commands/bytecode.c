@@ -82,7 +82,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the AST to assembler lines
-    asm_code = ast_to_asm(ast);
+    asm_code = ast_to_asm(ast, 1);
     if (! asm_code) {
         ret = 1;
         goto cleanup;

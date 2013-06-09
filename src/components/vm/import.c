@@ -50,7 +50,7 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
 
     // Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
-    t_hash_table *asm_code = ast_to_asm(ast);
+    t_hash_table *asm_code = ast_to_asm(ast, 1);
     t_bytecode *bc = assembler(asm_code, source_file);
     bc->filename = smm_strdup(source_file);
 

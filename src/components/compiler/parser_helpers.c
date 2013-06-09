@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "general/output.h"
-#include "compiler/parser.h"
+#include "compiler/parser_helpers.h"
 #include "compiler/parser.tab.h"
 #include "objects/callable.h"
 
@@ -71,7 +71,7 @@ char parser_mod_to_methodflags(SaffireParser *sp, int lineno, long modifiers) {
 void parser_validate_class_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     // Classes do not have a visibility
     if (modifiers & MODIFIER_MASK_VISIBILITY) {
-        line_error_and_die(1, lineno, "Classes cannot have a visibility");
+        line_error_and_die(1, sp->filename, lineno, "Classes cannot have a visibility");
     }
 }
 
@@ -89,7 +89,7 @@ void parser_validate_abstract_method_body(SaffireParser *sp, int lineno, long mo
 
     // Check if we have a body
     if (body->type != typeAstNull) {
-        line_error_and_die(1, lineno, "Abstract methods cannot have a body");
+        line_error_and_die(1, sp->filename, lineno, "Abstract methods cannot have a body");
     }
 }
 
@@ -100,12 +100,12 @@ void parser_validate_abstract_method_body(SaffireParser *sp, int lineno, long mo
 void parser_validate_method_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     // Make sure we have at least 1 visibility bit set
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
-        line_error_and_die(1, lineno, "Methods must define a visibility");
+        line_error_and_die(1, sp->filename, lineno, "Methods must define a visibility");
     }
 
     // Check if abstract and private are set. This is not allowed
     if ((modifiers & (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) == (MODIFIER_ABSTRACT | MODIFIER_PRIVATE)) {
-        line_error_and_die(1, lineno, "Abstract methods cannot be private");
+        line_error_and_die(1, sp->filename, lineno, "Abstract methods cannot be private");
     }
 }
 
@@ -115,7 +115,7 @@ void parser_validate_method_modifiers(SaffireParser *sp, int lineno, long modifi
  */
 void parser_validate_property_modifiers(SaffireParser *sp, int lineno, long modifiers) {
     if ((modifiers & MODIFIER_MASK_VISIBILITY) == 0) {
-        line_error_and_die(1, lineno, "Methods must define a visibility");
+        line_error_and_die(1, sp->filename, lineno, "Methods must define a visibility");
     }
 }
 
@@ -126,17 +126,17 @@ void parser_validate_property_modifiers(SaffireParser *sp, int lineno, long modi
 void parser_validate_flags(SaffireParser *sp, int lineno, long cur_flags, long new_flag) {
     // Only one of the visibility flags must be set
     if ((cur_flags & MODIFIER_MASK_VISIBILITY) && (new_flag & MODIFIER_MASK_VISIBILITY)) {
-        line_error_and_die(1, lineno, "Cannot have multiple visiblity masks");
+        line_error_and_die(1, sp->filename, lineno, "Cannot have multiple visiblity masks");
     }
 
     // Is one of the new flags already been set?
     if (cur_flags & new_flag) {
-        line_error_and_die(1, lineno, "Modifiers can only be set once");
+        line_error_and_die(1, sp->filename, lineno, "Modifiers can only be set once");
     }
 
     // Make sure abstract and final are not both set.
     if (((cur_flags | new_flag) & (MODIFIER_ABSTRACT | MODIFIER_FINAL)) == (MODIFIER_ABSTRACT | MODIFIER_FINAL)) {
-       line_error_and_die(1, lineno, "Abstract members cannot be made final");
+       line_error_and_die(1, sp->filename, lineno, "Abstract members cannot be made final");
     }
 }
 
@@ -150,7 +150,7 @@ void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
         // inside the current class
 
         if (ht_exists(global_table->active_class->constants, name)) {
-            line_error_and_die(1, lineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
+            line_error_and_die(1, sp->filename, lineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -159,7 +159,7 @@ void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
     } else {
         // Global scope
         if (ht_exists(global_table->constants, name)) {
-            line_error_and_die(1, lineno, "Constant '%s' has already be defined in the global scope", name);
+            line_error_and_die(1, sp->filename, lineno, "Constant '%s' has already be defined in the global scope", name);
         }
 
         // Save structure to the global class hash and set as the active class
@@ -188,12 +188,12 @@ void parser_fini_method(SaffireParser *sp, int lineno) {
 void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
     if (global_table->in_class == 1) {
-        line_error_and_die(1, lineno, "You cannot define a class inside another class");
+        line_error_and_die(1, sp->filename, lineno, "You cannot define a class inside another class");
     }
 
     // Check if the class exists in the class table
     if (ht_exists(global_table->classes, name)) {
-        line_error_and_die(1, lineno, "This class is already defined");
+        line_error_and_die(1, sp->filename, lineno, "This class is already defined");
     }
 
     // Initialize and populte a new class structure
@@ -233,12 +233,12 @@ void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name,
 void parser_fini_class(SaffireParser *sp, int lineno) {
     // Cannot close a class when we are not inside one
     if (global_table->in_class == 0) {
-        line_error_and_die(1, lineno, "Closing a class, but we weren't inside one to begin with");
+        line_error_and_die(1, sp->filename, lineno, "Closing a class, but we weren't inside one to begin with");
     }
 
     // Is there an active class?
     if (global_table->active_class == NULL) {
-        line_error_and_die(1, lineno, "Somehow we try to close the global scope");
+        line_error_and_die(1, sp->filename, lineno, "Somehow we try to close the global scope");
     }
 
     // Set line ending
@@ -267,7 +267,7 @@ void parser_loop_enter(SaffireParser *sp, int lineno) {
 void parser_loop_leave(SaffireParser *sp, int lineno) {
     // Not possible to leave a loop when we aren't inside any
     if (global_table->in_loop_counter <= 0) {
-        line_error_and_die(1, lineno, "Somehow, we are trying to leave a loop from the outer scope");
+        line_error_and_die(1, sp->filename, lineno, "Somehow, we are trying to leave a loop from the outer scope");
     }
 
     // Decrease loop counter, since we are going down one loop
@@ -322,12 +322,12 @@ void parser_switch_default(SaffireParser *sp, int lineno) {
     t_switch_struct *ss = global_table->current_switch;
 
     if (ss == NULL) {
-        line_error_and_die(1, lineno, "Default label expected inside a switch statement");
+        line_error_and_die(1, sp->filename, lineno, "Default label expected inside a switch statement");
     }
 
     // Check if default already exists
     if (ss->has_default) {
-        line_error_and_die(1, lineno, "default label already supplied");
+        line_error_and_die(1, sp->filename, lineno, "default label already supplied");
     }
 
     ss->has_default = 1;
@@ -349,7 +349,7 @@ void parser_check_label(SaffireParser *sp, int lineno, const char *name) {
  */
 void parser_validate_return(SaffireParser *sp, int lineno) {
     if (global_table->in_method == 0) {
-        line_error_and_die(1, lineno, "Cannot use return outside a method");
+        line_error_and_die(1, sp->filename, lineno, "Cannot use return outside a method");
     }
 }
 
@@ -360,7 +360,7 @@ void parser_validate_return(SaffireParser *sp, int lineno) {
  */
 void parser_validate_break(SaffireParser *sp, int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only break inside a loop");
+        line_error_and_die(1, sp->filename, lineno, "We can only break inside a loop");
     }
 }
 
@@ -368,7 +368,8 @@ void parser_check_permitted_identifiers(SaffireParser *sp, int lineno, const cha
     if (! strcmp(name, "null")) return;
     if (! strcmp(name, "false")) return;
     if (! strcmp(name, "true")) return;
-    line_error_and_die(1, lineno, "Incorrect identifier");
+
+    line_error_and_die(1, sp->filename, lineno, "Incorrect identifier: '%s'", name);
 }
 
 
@@ -379,7 +380,7 @@ void parser_check_permitted_identifiers(SaffireParser *sp, int lineno, const cha
  */
 void parser_validate_continue(SaffireParser *sp, int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only continue inside a loop");
+        line_error_and_die(1, sp->filename, lineno, "We can only continue inside a loop");
     }
 }
 
@@ -390,7 +391,7 @@ void parser_validate_continue(SaffireParser *sp, int lineno) {
  */
 void parser_validate_breakelse(SaffireParser *sp, int lineno) {
     if (global_table->in_loop_counter == 0) {
-        line_error_and_die(1, lineno, "We can only breakelse inside a loop");
+        line_error_and_die(1, sp->filename, lineno, "We can only breakelse inside a loop");
     }
 }
 

@@ -32,7 +32,6 @@
 #include "repl/repl.h"
 #include "compiler/saffire_parser.h"
 #include "compiler/parser.tab.h"
-#include "compiler/parser.h"
 #include "compiler/lex.yy.h"
 
 // Maximum size of the prompt that will be displayed
@@ -76,6 +75,9 @@ int str_append_str(char *buf, long buf_len, char *s) {
 }
 
 
+/**
+ * Expands the placeholders inside a given prompt.
+ */
 static void repl_convert_prompt(char *buf, int buf_len, repl_argstruct_t *args) {
     char *p = args->atStart ? args->ps1 : args->ps2;
 
@@ -162,7 +164,7 @@ static void repl_convert_prompt(char *buf, int buf_len, repl_argstruct_t *args) 
 }
 
 /**
- *
+ * Returns the prompt to use by editline
  */
 char *repl_prompt(EditLine *el) {
     yyscan_t scanner;
@@ -170,7 +172,6 @@ char *repl_prompt(EditLine *el) {
 
     SaffireParser *sp = (SaffireParser *)yyget_extra(scanner);
     repl_argstruct_t *args = (repl_argstruct_t *)sp->yyparse_args;
-
 
     // Generate a complete prompt
     repl_convert_prompt(cur_prompt, MAX_PROMPT_SIZE-1, args);

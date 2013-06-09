@@ -30,6 +30,6 @@
     #include "compiler/ast_nodes.h"
     #include "general/hashtable.h"
 
-    t_hash_table *ast_to_asm(t_ast_element *ast);
+    t_hash_table *ast_to_asm(t_ast_element *ast, int append_return_statement);
 
 #endif

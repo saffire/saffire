@@ -234,42 +234,35 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 
-/**
-* Creates and initializes a new frame
-*/
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
-    t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
-    bzero(cfr, sizeof(t_vm_frame));
-
-    cfr->parent = parent_frame;
-    cfr->bytecode = bytecode;
-    cfr->ip = 0;
-    cfr->sp = bytecode->stack_size;
+void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
+    frame->bytecode = bytecode;
+    frame->ip = 0;
+    frame->sp = bytecode->stack_size;
 
     // Setup variable stack
-    cfr->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
-    bzero(cfr->stack, bytecode->stack_size * sizeof(t_object *));
+    frame->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
+    bzero(frame->stack, bytecode->stack_size * sizeof(t_object *));
 
     // Set the variable hashes
-    if (parent_frame == NULL) {
+    if (frame->parent == NULL) {
         // Initial frame, so create a new global identifier hash
-        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-        cfr->local_identifiers = cfr->global_identifiers;
+        frame->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+        frame->local_identifiers = frame->global_identifiers;
     } else {
         // otherwise link globals from the parent
-        cfr->global_identifiers = parent_frame->global_identifiers;
+        frame->global_identifiers = frame->parent->global_identifiers;
         // And create new local identifier hash
-        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+        frame->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
 
         // By default, don't create file identifiers
-        cfr->file_identifiers = NULL;
+        frame->file_identifiers = NULL;
     }
 
     // Create builtin-identifiers
-    cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
+    frame->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
 
     // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
-    cfr->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
+    frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
         t_object *obj = Object_Null;
 
@@ -289,7 +282,45 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
                 break;
         }
         object_inc_ref(obj);
-        cfr->constants_objects[i] = obj;
+        frame->constants_objects[i] = obj;
+    }
+}
+
+/**
+* Creates and initializes a new frame
+*/
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
+    t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
+    bzero(cfr, sizeof(t_vm_frame));
+
+    cfr->parent = parent_frame;
+
+    if (bytecode) {
+        vm_attach_bytecode(cfr, bytecode);
+    } else {
+        cfr->bytecode = NULL;
+        cfr->ip = 0;
+        cfr->sp = 0;
+
+        cfr->stack = NULL;
+
+        // Set the variable hashes
+        if (cfr->parent == NULL) {
+            // Initial frame, so create a new global identifier hash
+            cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+            cfr->local_identifiers = cfr->global_identifiers;
+        } else {
+            // otherwise link globals from the parent
+            cfr->global_identifiers = cfr->parent->global_identifiers;
+            // And create new local identifier hash
+            cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+
+            // By default, don't create file identifiers
+            cfr->file_identifiers = NULL;
+        }
+
+        cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
+        cfr->constants_objects = NULL;
     }
 
     return cfr;

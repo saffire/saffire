@@ -190,7 +190,7 @@ int debug = 0;
 /**
  *
  */
-void vm_init(int runmode) {
+t_vm_frame *vm_init(int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
@@ -202,9 +202,21 @@ void vm_init(int runmode) {
     builtin_identifiers = ht_create();
     object_init();
     module_init();
+
+    // Create initial frame
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL);
+    thread_set_current_frame(initial_frame);
+
+    // Implicit load saffire
+    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
+    vm_frame_set_identifier(initial_frame, "saffire", obj);
+
+    return initial_frame;
 }
 
-void vm_fini(void) {
+void vm_fini(t_vm_frame *frame) {
+    vm_frame_destroy(frame);
+
     module_fini();
     object_fini();
     ht_destroy(builtin_identifiers);
@@ -212,7 +224,7 @@ void vm_fini(void) {
 }
 
 
-int lineno_lowerbound = -1;              // Lower bytecode offset for this line
+int lineno_lowerbound = -1;             // Lower bytecode offset for this line
 int lineno_upperbound = -1;             // Upper bytecode offset for this line
 int lineno_current_line = 0;            // Current line pointer
 int lineno_current_lino_offset = 0;     // Current offset in the bytecode lineno table
@@ -254,7 +266,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
 /**
  *
  */
-t_object *_vm_execute(t_vm_frame *frame) {
+t_object *_vm_execute(t_vm_frame *frame, t_bytecode *bytecode) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register t_object *left_obj, *right_obj;
     register char *name;
@@ -1231,43 +1243,36 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 /**
  *
  */
-int vm_execute(t_bytecode *bc) {
-    // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, bc);
-    thread_set_current_frame(initial_frame);
-
-    // Implicit load saffire
-    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
-    vm_frame_set_identifier(initial_frame, "saffire", obj);
+int vm_execute(t_vm_frame *frame, t_bytecode *bytecode) {
+    // Setup bytecode into the frame (or not?)
 
     // Execute the frame
-    t_object *result = _vm_execute(initial_frame);
-
+    t_object *result = _vm_execute(frame, bytecode);
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 
-    // Check if there was an uncaught exception (when result == NULL)
-    if (result == NULL) {
-        if (thread_exception_thrown()) {
-            // handle exception
-            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_new(Object_Numerical, 1, 1);
-        } else {
-            // result was NULL, but no exception found, just threat like regular 0
-            result = object_new(Object_Numerical, 1, 0);
-        }
-    }
+//    // Check if there was an uncaught exception (when result == NULL)
+//    if (result == NULL) {
+//        if (thread_exception_thrown()) {
+//            // handle exception
+//            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
+//            result = object_new(Object_Numerical, 1, 1);
+//        } else {
+//            // result was NULL, but no exception found, just threat like regular 0
+//            result = object_new(Object_Numerical, 1, 0);
+//        }
+//    }
+//
+//    // Convert returned object to numerical, so we can use it as an error code
+//    if (!OBJECT_IS_NUMERICAL(result)) {
+//        // Cast to numericak
+//        t_object *result_numerical = object_find_attribute(result, "__numerical");
+//        result = vm_object_call(result, result_numerical, 0);
+//    }
+//    int ret_val = ((t_numerical_object *) result)->value;
 
-
-    // Convert returned object to numerical, so we can use it as an error code
-    if (!OBJECT_IS_NUMERICAL(result)) {
-        // Cast to numericak
-        t_object *result_numerical = object_find_attribute(result, "__numerical");
-        result = vm_object_call(result, result_numerical, 0);
-    }
-    int ret_val = ((t_numerical_object *) result)->value;
-
-    vm_frame_destroy(initial_frame);
+//    vm_frame_destroy(frame);
+    int ret_val = 1;
     return ret_val;
 }
 
@@ -1403,7 +1408,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Execute frame, return the last object
-        dst = _vm_execute(new_frame);
+        dst = _vm_execute(new_frame, NULL);
 
         // @TODO: Destroy frame
         //vm_frame_destroy(new_frame);

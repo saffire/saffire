@@ -114,7 +114,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    vm_init(VM_RUNMODE_FASTCGI);
+    t_vm_frame *initial_frame = vm_init(VM_RUNMODE_FASTCGI);
 
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
@@ -158,7 +158,7 @@ static int fcgi_loop(void) {
                 smm_free(bytecode_file);
                 continue;
             }
-            t_hash_table *asm_code = ast_to_asm(ast);
+            t_hash_table *asm_code = ast_to_asm(ast, 1);
             if (! asm_code) {
                 error("Cannot create assembler</h1>");
                 smm_free(bytecode_file);
@@ -179,14 +179,14 @@ static int fcgi_loop(void) {
 
         smm_free(bytecode_file);
 
-        vm_execute(bc);
+        vm_execute(initial_frame, bc);
 
         bytecode_free(bc);
     }
 
 
     // Finish virtual machine
-    vm_fini();
+    vm_fini(initial_frame);
 
     exit(0);
 }

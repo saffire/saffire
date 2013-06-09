@@ -28,6 +28,7 @@
 #define __COMPILER_SAFFIRE_PARSER_H__
 
     #include "compiler/ast_nodes.h"
+    #include "vm/frame.h"
 
 // @TODO: VM running mode into this structure
 
@@ -39,13 +40,15 @@
     struct SaffireParser {
         int     mode;                       // SAFFIRE_EXECMODE_* constants
 
-        FILE    *filehandle;                // FILE to read from (or NULL)
+        FILE    *file;                      // FILE to read from (or NULL)
+        char    *filename;                  // Actual filename
 
         int     (*yyparse)(void *, int, char *, int);    // actual yyparse function, or NULL to use the default one
         void    *yyparse_args;              // Pointer to argument structure. Actual context known to the called yyparse method
 
-        void    (*yyexec)(t_ast_element *, SaffireParser *);
+        void    (*yyexec)(SaffireParser *); // Actual executor for the saffire parser ast.
 
+        t_vm_frame *initial_frame;          // Initial frame to run the bytecode in
         t_ast_element  *ast;                // Generated AST element
 
         char    *error;                     // Returned error

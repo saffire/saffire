@@ -44,7 +44,7 @@
 
 extern char *get_token_string(int token);
 
-#define WALK_LEAF(leaf) __ast_walker(leaf, output, frame, state)
+#define WALK_LEAF(leaf) __ast_walker(leaf, output, frame, state, append_return_statement)
 
 // state enums
 enum context { st_ctx_load, st_ctx_store };
@@ -106,15 +106,15 @@ static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *st
 }
 
 
-static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state);
-static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name);
+static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state, int append_return_statement);
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name, int append_return_statement);
 
 
 
 /**
  * Walk the leaf into the frame. Can create new frames if needed (method bodies etc)
  */
-static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state) {
+static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state, int append_return_statement) {
     char label1[MAX_LABEL_LEN], label2[MAX_LABEL_LEN], label3[MAX_LABEL_LEN];
     char label4[MAX_LABEL_LEN], label5[MAX_LABEL_LEN], label6[MAX_LABEL_LEN];
     t_asm_opr *opr1, *opr2, *opr3;
@@ -404,7 +404,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
                 // Walk the body inside a new frame!
-                _ast_to_frame(leaf->attribute.value, output, label1);
+                _ast_to_frame(leaf->attribute.value, output, label1, append_return_statement);
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
@@ -1017,7 +1017,7 @@ t_state *_ast_state_init() {
  * Finalizes a state structure
  */
 void _ast_state_fini(t_state *state) {
-    // @TODO: Troubles when trying to free the stack (dll_free in endless loop). Needs fixing!
+    // @TODO: Troubles when trying to free the stack (dll_free in endless loop). Needs fixing! It's probably already fixed!
 /*
     stack_free(state->context);
     stack_free(state->side);
@@ -1036,7 +1036,7 @@ void _ast_state_fini(t_state *state) {
 /**
  * Initialize a new frame and walk the leaf into this frame
  */
-static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name) {
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name, int append_return_statement) {
     // Initialize state structure
     t_state *state = _ast_state_init();
 
@@ -1045,18 +1045,20 @@ static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char 
     ht_add(output, name, frame);
 
     // Walk the leaf and store in the frame
-    __ast_walker(leaf, output, frame, state);
+    __ast_walker(leaf, output, frame, state, append_return_statement);
 
-    // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
-    t_asm_opr *opr1;
-    if (strcmp(name, "main") == 0) {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
-        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
-    } else {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
-        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+    if (append_return_statement) {
+        // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
+        t_asm_opr *opr1;
+        if (strcmp(name, "main") == 0) {
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
+        } else {
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+        }
+        dll_append(frame, asm_create_codeline(leaf->lineno, VM_RETURN, 0));
     }
-    dll_append(frame, asm_create_codeline(leaf->lineno, VM_RETURN, 0));
 
     // Clean up state structure
     _ast_state_fini(state);
@@ -1066,10 +1068,10 @@ static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char 
 /**
  * Walk a complete AST (all frames, starting with the main frame and root of the AST)
  */
-t_hash_table *ast_to_asm(t_ast_element *ast) {
+t_hash_table *ast_to_asm(t_ast_element *ast, int append_return_statement) {
     t_hash_table *output = ht_create();
 
-    _ast_to_frame(ast, output, "main");
+    _ast_to_frame(ast, output, "main", append_return_statement);
 
     return output;
 }
