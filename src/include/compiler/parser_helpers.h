@@ -31,9 +31,9 @@
     #include "compiler/class.h"
     #include "general/hashtable.h"
 
-    #include "compiler/saffire_parser.h"
-    #include "compiler/parser.tab.h"
-    #include "compiler/lex.yy.h"
+//    #include "compiler/saffire_parser.h"
+//    #include "compiler/parser.tab.h"
+//    #include "compiler/lex.yy.h"
 
     /* @TODO: These should not be here */
     #define MODIFIER_PUBLIC              1
@@ -45,32 +45,12 @@
 
     #define MODIFIER_MASK_VISIBILITY      (MODIFIER_PUBLIC | MODIFIER_PROTECTED | MODIFIER_PRIVATE)
 
+    typedef struct SaffireParser SaffireParser;
+    typedef struct _parserinfo t_parserinfo;
 
-    typedef struct switch_struct {
-        int has_default;                // 1: a default is present. 0: no default
-        struct switch_struct *parent;   // Pointer to parent switch statement (or NULL when we are at the first)
-    } t_switch_struct;
 
-    /**
-     * Global compile table with information needed during compilation of the code
-     */
-    typedef struct global_table {
-        t_hash_table *constants;          // Table of all constants defined (globally)
-        t_hash_table *classes;            // Table of all FQCN classes
-
-        t_class *active_class;            // Current active class
-
-        int in_class;                     // 1 when we are inside a class, 0 otherwise
-        int in_loop_counter;              // incremental loop counter. (deals with while() inside while() etc)
-        int in_method;                    // 1 when we are inside a method, 0 otherwise
-        t_switch_struct *switches;        // Linked list of switch statements
-        t_switch_struct *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
-    } t_global_table;
-
-    t_global_table *global_table;      // A global table with compilation info
-
-    void parser_init(void);
-    void parser_fini(void);
+    t_parserinfo *alloc_parserinfo(void);
+    void free_parserinfo(t_parserinfo *pi);
 
     void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements);
     void parser_fini_class(SaffireParser *sp, int lineno);

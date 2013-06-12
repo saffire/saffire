@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include "general/output.h"
 #include "compiler/parser_helpers.h"
+#include "compiler/saffire_parser.h"
 #include "compiler/parser.tab.h"
 #include "objects/callable.h"
 
@@ -146,24 +147,24 @@ void parser_validate_flags(SaffireParser *sp, int lineno, long cur_flags, long n
  */
 void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
     // Check if the class exists in the class table
-    if (global_table->active_class) {
+    if (sp->parserinfo->active_class) {
         // inside the current class
 
-        if (ht_exists(global_table->active_class->constants, name)) {
-            line_error_and_die(1, sp->filename, lineno, "Constant '%s' has already be defined in class '%s'", name, global_table->active_class->name);
+        if (ht_exists(sp->parserinfo->active_class->constants, name)) {
+            line_error_and_die(1, sp->filename, lineno, "Constant '%s' has already be defined in class '%s'", name, sp->parserinfo->active_class->name);
         }
 
         // Save structure to the global class hash and set as the active class
-        ht_add(global_table->active_class->constants, name, name);
+        ht_add(sp->parserinfo->active_class->constants, name, name);
 
     } else {
         // Global scope
-        if (ht_exists(global_table->constants, name)) {
+        if (ht_exists(sp->parserinfo->constants, name)) {
             line_error_and_die(1, sp->filename, lineno, "Constant '%s' has already be defined in the global scope", name);
         }
 
         // Save structure to the global class hash and set as the active class
-        ht_add(global_table->constants, name, name);
+        ht_add(sp->parserinfo->constants, name, name);
     }
 
 }
@@ -172,14 +173,14 @@ void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
  * Enter a method, and validate method name
  */
 void parser_init_method(SaffireParser *sp, int lineno, const char *name) {
-    global_table->in_method = 1;
+    sp->parserinfo->in_method = 1;
 }
 
 /**
  * Leave a method
  */
 void parser_fini_method(SaffireParser *sp, int lineno) {
-    global_table->in_method = 0;
+    sp->parserinfo->in_method = 0;
 }
 
 /**
@@ -187,12 +188,12 @@ void parser_fini_method(SaffireParser *sp, int lineno) {
  */
 void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name, t_ast_element *extends, t_ast_element *implements) {
     // Are we inside a class already, if so, we cannot add another class
-    if (global_table->in_class == 1) {
+    if (sp->parserinfo->in_class == 1) {
         line_error_and_die(1, sp->filename, lineno, "You cannot define a class inside another class");
     }
 
     // Check if the class exists in the class table
-    if (ht_exists(global_table->classes, name)) {
+    if (ht_exists(sp->parserinfo->classes, name)) {
         line_error_and_die(1, sp->filename, lineno, "This class is already defined");
     }
 
@@ -219,11 +220,11 @@ void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name,
     new_class->line_end = 0;
 
     // Save structure to the global class hash and set as the active class
-    ht_add(global_table->classes, name, new_class);
-    global_table->active_class = new_class;
+    ht_add(sp->parserinfo->classes, name, new_class);
+    sp->parserinfo->active_class = new_class;
 
     // We are currently inside a class.
-    global_table->in_class = 1;
+    sp->parserinfo->in_class = 1;
 }
 
 
@@ -232,23 +233,23 @@ void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name,
  */
 void parser_fini_class(SaffireParser *sp, int lineno) {
     // Cannot close a class when we are not inside one
-    if (global_table->in_class == 0) {
+    if (sp->parserinfo->in_class == 0) {
         line_error_and_die(1, sp->filename, lineno, "Closing a class, but we weren't inside one to begin with");
     }
 
     // Is there an active class?
-    if (global_table->active_class == NULL) {
+    if (sp->parserinfo->active_class == NULL) {
         line_error_and_die(1, sp->filename, lineno, "Somehow we try to close the global scope");
     }
 
     // Set line ending
-    (global_table->active_class)->line_end = lineno;
+    (sp->parserinfo->active_class)->line_end = lineno;
 
     // Close class, move back to global scope
-    global_table->active_class = NULL;
+    sp->parserinfo->active_class = NULL;
 
     // Not inside a class anymore
-    global_table->in_class = 0;
+    sp->parserinfo->in_class = 0;
 }
 
 
@@ -257,7 +258,7 @@ void parser_fini_class(SaffireParser *sp, int lineno) {
  */
 void parser_loop_enter(SaffireParser *sp, int lineno) {
     // Increase loop counter, since we are entering a new loop
-    global_table->in_loop_counter++;
+    sp->parserinfo->in_loop_counter++;
 }
 
 
@@ -266,12 +267,12 @@ void parser_loop_enter(SaffireParser *sp, int lineno) {
  */
 void parser_loop_leave(SaffireParser *sp, int lineno) {
     // Not possible to leave a loop when we aren't inside any
-    if (global_table->in_loop_counter <= 0) {
+    if (sp->parserinfo->in_loop_counter <= 0) {
         line_error_and_die(1, sp->filename, lineno, "Somehow, we are trying to leave a loop from the outer scope");
     }
 
     // Decrease loop counter, since we are going down one loop
-    global_table->in_loop_counter--;
+    sp->parserinfo->in_loop_counter--;
 }
 
 
@@ -280,17 +281,16 @@ void parser_loop_leave(SaffireParser *sp, int lineno) {
  */
 void parser_switch_begin(SaffireParser *sp, int lineno) {
     // Allocate switch structure
-    t_switch_struct *ss = (t_switch_struct *)smm_malloc(sizeof(t_switch_struct));
+    struct _pi_switch *ss = (struct _pi_switch *)smm_malloc(sizeof(struct _pi_switch));
 
     // Set default values
     ss->has_default = 0;
 
     // Add the current switch as the parent
-    t_switch_struct *tmp =  global_table->current_switch;
-    ss->parent = tmp;
+    ss->parent = sp->parserinfo->current_switch;
 
     // Set current switch to the new switch
-    global_table->current_switch = ss;
+    sp->parserinfo->current_switch = ss;
 }
 
 
@@ -298,10 +298,10 @@ void parser_switch_begin(SaffireParser *sp, int lineno) {
  * End switch statement
  */
 void parser_switch_end(SaffireParser *sp, int lineno) {
-    t_switch_struct *ss = global_table->current_switch;
+    struct _pi_switch *ss = sp->parserinfo->current_switch;
 
     // set current to the parent
-    global_table->current_switch = ss->parent;
+    sp->parserinfo->current_switch = ss->parent;
 
     // Free switch structure
     smm_free(ss);
@@ -319,7 +319,7 @@ void parser_switch_case(SaffireParser *sp, int lineno) {
  * Check if a default label is valid
  */
 void parser_switch_default(SaffireParser *sp, int lineno) {
-    t_switch_struct *ss = global_table->current_switch;
+    struct _pi_switch *ss = sp->parserinfo->current_switch;
 
     if (ss == NULL) {
         line_error_and_die(1, sp->filename, lineno, "Default label expected inside a switch statement");
@@ -348,7 +348,7 @@ void parser_check_label(SaffireParser *sp, int lineno, const char *name) {
  *
  */
 void parser_validate_return(SaffireParser *sp, int lineno) {
-    if (global_table->in_method == 0) {
+    if (sp->parserinfo->in_method == 0) {
         line_error_and_die(1, sp->filename, lineno, "Cannot use return outside a method");
     }
 }
@@ -359,7 +359,7 @@ void parser_validate_return(SaffireParser *sp, int lineno) {
  *
  */
 void parser_validate_break(SaffireParser *sp, int lineno) {
-    if (global_table->in_loop_counter == 0) {
+    if (sp->parserinfo->in_loop_counter == 0) {
         line_error_and_die(1, sp->filename, lineno, "We can only break inside a loop");
     }
 }
@@ -379,7 +379,7 @@ void parser_check_permitted_identifiers(SaffireParser *sp, int lineno, const cha
  *
  */
 void parser_validate_continue(SaffireParser *sp, int lineno) {
-    if (global_table->in_loop_counter == 0) {
+    if (sp->parserinfo->in_loop_counter == 0) {
         line_error_and_die(1, sp->filename, lineno, "We can only continue inside a loop");
     }
 }
@@ -390,7 +390,7 @@ void parser_validate_continue(SaffireParser *sp, int lineno) {
  *
  */
 void parser_validate_breakelse(SaffireParser *sp, int lineno) {
-    if (global_table->in_loop_counter == 0) {
+    if (sp->parserinfo->in_loop_counter == 0) {
         line_error_and_die(1, sp->filename, lineno, "We can only breakelse inside a loop");
     }
 }
@@ -398,29 +398,28 @@ void parser_validate_breakelse(SaffireParser *sp, int lineno) {
 
 
 /**
- * Initialize the compiler global table
+ * Initialize the parser table with parser state information
  */
-static void parser_init_global_table(void) {
+t_parserinfo *alloc_parserinfo() {
     // Allocate table memory
-    global_table = (t_global_table *)smm_malloc(sizeof(t_global_table));
+    t_parserinfo *pi = (t_parserinfo *)smm_malloc(sizeof(t_parserinfo));
 
     // Initialize table
-    global_table->constants = ht_create();
-    global_table->classes = ht_create();
-    global_table->active_class = NULL;
+    pi->constants = ht_create();
+    pi->classes = ht_create();
+    pi->active_class = NULL;
 
-    global_table->in_class = 0;
-    global_table->in_method = 0;
-    global_table->in_loop_counter = 0;
+    pi->in_class = 0;
+    pi->in_method = 0;
+    pi->in_loop_counter = 0;
 
-
-    global_table->switches = NULL;
-    global_table->current_switch = NULL;
+    pi->switches = NULL;
+    pi->current_switch = NULL;
 }
 
-static void parser_fini_global_table(void) {
+void free_parserinfo(t_parserinfo *pi) {
     // Iterate over classes and remove all info
-    t_hash_table *ht = global_table->classes;
+    t_hash_table *ht = pi->classes;
 
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
@@ -439,20 +438,9 @@ static void parser_fini_global_table(void) {
     }
 
     // Destroy global constant and classes tables
-    ht_destroy(global_table->constants);
-    ht_destroy(global_table->classes);
+    ht_destroy(pi->constants);
+    ht_destroy(pi->classes);
 
     // Free actual global table
-    smm_free(global_table);
-}
-
-/**
- * Initialize the saffire_compiler
- */
-void parser_init(void) {
-    parser_init_global_table();
-}
-
-void parser_fini(void) {
-    parser_fini_global_table();
+    smm_free(pi);
 }

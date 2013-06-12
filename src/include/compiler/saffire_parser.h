@@ -27,15 +27,39 @@
 #ifndef __COMPILER_SAFFIRE_PARSER_H__
 #define __COMPILER_SAFFIRE_PARSER_H__
 
+    #include "compiler/parser_helpers.h"
     #include "compiler/ast_nodes.h"
     #include "vm/frame.h"
 
-// @TODO: VM running mode into this structure
+// @TODO: Add VM running mode into this structure
 
+
+    // @TODO: Should these be here?
     #define SAFFIRE_EXECMODE_REPL       1
     #define SAFFIRE_EXECMODE_FILE       2
 
-    typedef struct SaffireParser SaffireParser;
+
+
+    struct _pi_switch {
+        int has_default;                // 1: a default is present. 0: no default
+        struct _pi_switch *parent;      // Pointer to parent switch statement (or NULL when we are at the first)
+    };
+
+    /**
+     * Global compile table with information needed during compilation of the code
+     */
+    struct _parserinfo {
+        t_hash_table *constants;             // Table of all constants defined (globally)
+        t_hash_table *classes;               // Table of all FQCN classes
+
+        t_class *active_class;               // Current active class
+
+        int in_class;                        // 1 when we are inside a class, 0 otherwise
+        int in_loop_counter;                 // incremental loop counter. (deals with while() inside while() etc)
+        int in_method;                       // 1 when we are inside a method, 0 otherwise
+        struct _pi_switch *switches;        // Linked list of switch statements
+        struct _pi_switch *current_switch;  // Pointer to the current switch statement (or NULL when not in switch)
+    };
 
     struct SaffireParser {
         int     mode;                       // SAFFIRE_EXECMODE_* constants
@@ -49,7 +73,10 @@
         void    (*yyexec)(SaffireParser *); // Actual executor for the saffire parser ast.
 
         t_vm_frame *initial_frame;          // Initial frame to run the bytecode in
-        t_ast_element  *ast;                // Generated AST element
+
+        t_parserinfo *parserinfo;           // Structure with all relevant parser info
+
+        t_ast_element  *ast;                // Generated AST element.
 
         char    *error;                     // Returned error
         int     eof;                        // End of file reached, or user quits repl

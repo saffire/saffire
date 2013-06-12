@@ -162,8 +162,8 @@
     t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
 
 
-    t_ast_element *ast_generate_from_file(const char *);
-    t_ast_element *ast_generate_tree(FILE *fp, char *filename);
+    t_ast_element *ast_generate_from_file(const char *filename);
+    t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode);
     void ast_free_node(t_ast_element *p);
 
 #endif

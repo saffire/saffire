@@ -31,9 +31,11 @@
 #include <stdarg.h>
 #include "general/output.h"
 #include "compiler/parser_helpers.h"
+#include "compiler/saffire_parser.h"
 #include "compiler/parser.tab.h"
 #include "general/smm.h"
 #include "compiler/ast_nodes.h"
+#include "compiler/lex.yy.h"
 
 
 /**
@@ -448,7 +450,7 @@ int yyparse (yyscan_t scanner, SaffireParser *saffireParser);
 /**
  * Compiles a file into an AST (through bison). Returns the AST root node.
  */
-t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
+t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode) {
     /*
      * Init parser structures
      */
@@ -456,7 +458,7 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     yyscan_t scanner;
 
     // Initialize saffire structure
-    sp.mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
+    sp.mode = mode;
     sp.file = fp;
     sp.filename = filename;
     sp.eof = 0;
@@ -465,38 +467,23 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     sp.yyparse = NULL;
     sp.yyparse_args = NULL;
     sp.yyexec = NULL;
+    sp.parserinfo = alloc_parserinfo();
 
     // Initialize scanner structure and hook the saffire structure as extra info
     yylex_init_extra(&sp, &scanner);
 
     //int status = yyparse(scanner, &sp);
     yyparse(scanner, &sp);
+    t_ast_element *ast = sp.ast;
 
-    return sp.ast;
+    // Since we've done the complete file, we don't need anything
+    free_parserinfo(sp.parserinfo);
+    sp.parserinfo = NULL;
 
-//    // Initialize system
-//    parser_init();
+    // @TODO: Cleanup sp structure?
 
-//#ifdef __PARSEDEBUG
-//    yydebug = 1;
-//    yy_flex_debug = 1;
-//#endif
 
-//    // Parse the file input, will return the tree in the global ast_root variable
-//    yyin = fp;
-//
-//    unsigned long ptr = 0;
-//    yylloc.first_line = yylloc.last_line = 1;
-//    yylloc.first_column = yylloc.last_column = 0;
-//    yyparse(&ptr);
-//    yylex_destroy();
-//
-//    t_ast_element *ast = (t_ast_element *)ptr;
-//
-//    parser_fini();
-//
-//    // Returning a global var. We should change this by having the root node returned by yyparse() if this is possible
-//    return ast;
+    return ast;
 }
 
 /**
@@ -520,7 +507,7 @@ t_ast_element *ast_generate_from_file(const char *source_file) {
     }
 
     // Generate source file into an AST tree
-    t_ast_element *ast = ast_generate_tree(fp, fp_name);
+    t_ast_element *ast = ast_generate_tree(fp, fp_name, SAFFIRE_EXECMODE_FILE);
 
     // Close file
     fclose(fp);

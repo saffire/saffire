@@ -90,16 +90,22 @@ int repl_readline(void *_as, int lineno, char *buf, int max) {
 /**
  * Callback function that is called by yyexec whenever parsed data has been converted to an AST
  */
-void repl_exec(t_ast_element *ast, SaffireParser *sp) {
-    printf("\033[32;1m");
-    printf("---- repl_exec ------------------------------------------------\n");
+void repl_exec(SaffireParser *sp) {
+    if (! sp->ast) {
+        printf("\033[34;1m");
+        printf("No repl_exec needed, as there is no ast right now.\n");
+    } else {
+        printf("\033[32;1m");
+        printf("---- repl_exec ------------------------------------------------\n");
 
-    t_hash_table *asm_code = ast_to_asm(ast, 0);
-    assembler_output_stream(asm_code, stdout);
-    t_bytecode *bc = assembler(asm_code, NULL);
-    vm_execute(sp->initial_frame, bc);
+        t_hash_table *asm_code = ast_to_asm(sp->ast, 0);
+        assembler_output_stream(asm_code, stdout);
+        t_bytecode *bc = assembler(asm_code, NULL);
+        bc = 0;
+        //vm_execute(sp->initial_frame, bc);
 
-    printf("---------------------------------------------------------------\n");
+        printf("---------------------------------------------------------------\n");
+    }
     printf("\033[0m");
     printf("\n");
 
@@ -154,21 +160,23 @@ int repl(void) {
     /*
      * Init parser structures
      */
-    SaffireParser sp;
+    SaffireParser *sp = (SaffireParser *)malloc(sizeof(SaffireParser));
     yyscan_t scanner;
 
     // Initialize saffire structure
-    sp.mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
-    sp.file = NULL;
-    sp.eof = 0;
-    sp.ast = NULL;
-    sp.error = NULL;
-    sp.yyparse = repl_readline;
-    sp.yyparse_args = (void *)&repl_as;
-    sp.yyexec = repl_exec;
+    sp->mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
+    sp->file = NULL;
+    sp->filename = "<console>";
+    sp->eof = 0;
+    sp->ast = NULL;
+    sp->error = NULL;
+    sp->yyparse = repl_readline;
+    sp->yyparse_args = (void *)&repl_as;
+    sp->yyexec = repl_exec;
+    sp->parserinfo = alloc_parserinfo();
 
     // Initialize scanner structure and hook the saffire structure as extra info
-    yylex_init_extra(&sp, &scanner);
+    yylex_init_extra(sp, &scanner);
 
     // We need to link our scanner into the editline, so we can use it inside the repl_prompt() function
     el_set(repl_as.el, EL_CLIENTDATA, scanner);
@@ -180,33 +188,32 @@ int repl(void) {
     }
 
     /*
-     * Global initialization of the parser and vm
+     * Global initializationt_parserinfo
      */
-    parser_init();
 
-    // Set initial frame
-    sp.initial_frame = vm_init(VM_RUNMODE_REPL);
+    // Initialize runner
+    sp->initial_frame = vm_init(VM_RUNMODE_REPL);
 
     // Main loop of the REPL
-    while (! sp.eof) {
+    while (! sp->eof) {
         // New 'parse' loop
         repl_as.atStart = 1;
-        int status = yyparse(scanner, &sp);
+        int status = yyparse(scanner, sp);
 
         printf("Repl: yyparse() returned %d\n", status);
 
         // Did something went wrong?
         if (status) {
-            if (sp.error) {
-                fprintf(stdout, "Error: %s\n", sp.error);
-                free(sp.error);
+            if (sp->error) {
+                fprintf(stdout, "Error: %s\n", sp->error);
+                free(sp->error);
             }
             continue;
         }
 
         // Do something with our data
 
-        if (sp.mode == SAFFIRE_EXECMODE_REPL && repl_as.echo != NULL)  {
+        if (sp->mode == SAFFIRE_EXECMODE_REPL && repl_as.echo != NULL)  {
             printf("repl output: '%s'\n", repl_as.echo);
             free(repl_as.echo);
             repl_as.echo = NULL;
@@ -214,8 +221,9 @@ int repl(void) {
     }
 
     // Here be generic finalization
-    vm_fini(sp.initial_frame);
-    parser_fini();
+    vm_fini(sp->initial_frame);
+
+    free_parserinfo(sp->parserinfo);
 
     // Destroy scanner structure
     yylex_destroy(scanner);

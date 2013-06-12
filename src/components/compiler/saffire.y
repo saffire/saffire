@@ -619,8 +619,8 @@ method_argument:
 ;
 
 class_definition:
-        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
-    |   class_header '{'                            '}' { $$ = ast_node_class(@1.first_line, global_table->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
+        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@1.first_line, saffireParser->parserinfo->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
+    |   class_header '{'                            '}' { $$ = ast_node_class(@1.first_line, saffireParser->parserinfo->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
 ;
 
 class_header:
@@ -735,7 +735,7 @@ extern int flush_buffer(yyscan_t scanner);
  * Displays error based on location, scanner and interpreter structure. Will continue or fail depending on interpreter mode
  */
 int yyerror(YYLTYPE *yylloc, yyscan_t scanner, SaffireParser *sp, const char *message) {
-    printf("yyparse() error at line %d: %s\n", yylloc->first_line, message);
+    printf("yyparse() error in '%s' at line %d: %s\n", sp->filename, yylloc->first_line, message);
 
     // Flush current buffer, and return when we are in interactive/REPL mode.
     if (sp->mode == SAFFIRE_EXECMODE_REPL) {
