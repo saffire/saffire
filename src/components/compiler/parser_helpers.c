@@ -476,16 +476,12 @@ void free_parserinfo(t_parserinfo *pi) {
 void parser_error(SaffireParser *sp, int lineno, const char *format, ...) {
     va_list args;
 
-    char buf[255];
-    snprintf(buf, 254, "Error in %s on line %d: ", sp->filename, lineno);
-    warning(buf);
-
     char errorbuf[2048];
     va_start(args, format);
     snprintf(errorbuf, 2047, format, args);
-    warning(errorbuf);
     va_end(args);
-    warning("\n");
+
+    warning("in %s on line %d: %s", sp->filename, lineno, errorbuf);
 
     // @TODO: Check our parsermode, if it's REPL, we can continue, if it's file, we cannot.
     // @TODO: maybe we should not do this here, but somewhere else..

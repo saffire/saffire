@@ -35,10 +35,10 @@
 /**
  * Generic output handlers that write to stdout
  */
-static int _stdio_output_char_helper (char c) {
+static int _stdio_output_char_helper(char c) {
     return fwrite(&c, 1, 1, stdout);
 }
-static int _stdio_output_string_helper (char *s) {
+static int _stdio_output_string_helper(char *s) {
     return fwrite(s, strlen(s), 1, stdout);
 }
 
@@ -83,10 +83,16 @@ void output(const char *format, ...) {
 void warning(const char *format, ...) {
     va_list args;
 
+    _output(stderr, "\033[43;30m", NULL);
+
     _output(stderr, "Warning: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
+
+    _output(stderr, "\033[0m", NULL);
+
+    fflush(stdout);
 }
 
 
@@ -96,10 +102,14 @@ void warning(const char *format, ...) {
 void fatal_error(int exitcode, const char *format, ...) {
     va_list args;
 
+    _output(stderr, "\033[41;33;1m", NULL);
+
     _output(stderr, "Fatal error: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
+
+    _output(stderr, "\033[0m", NULL);
 
     exit(exitcode);
 }
