@@ -117,7 +117,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             // Parse the rest of the arguments, confirming the action's signature
             char *error;
             if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
-                error_and_die(1, "%s. Use 'saffire help %s' for more information\n", error, action->name);
+                fatal_error(1, "%s. Use 'saffire help %s' for more information\n", error, action->name);
             }
 
             // Execute action

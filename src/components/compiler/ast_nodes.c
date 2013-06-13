@@ -45,7 +45,7 @@ static t_ast_element *ast_node_alloc_element(void) {
     t_ast_element *p;
 
     if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
-        error_and_die(1, "Out of memory");   /* LCOV_EXCL_LINE */
+        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Default, no linenumber info is present
@@ -208,7 +208,7 @@ t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element) {
         // Resize memory
         src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
         if (src->group.items == NULL) {
-            error_and_die(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
         }
 
         // Add new operator
@@ -222,7 +222,7 @@ t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element) {
         // Resize memory
         src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
         if (src->opr.ops == NULL) {
-            error_and_die(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
         }
 
         // Add new operator
@@ -232,7 +232,7 @@ t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element) {
         return src;
     }
 
-    error_and_die(1, "Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
+    fatal_error(1, "Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
     return NULL;
 }
 
@@ -249,7 +249,7 @@ t_ast_element *ast_node_group(int len, ...) {
     p->group.items = NULL;
 
     if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
-        error_and_die(1, "Out of memory");   /* LCOV_EXCL_LINE */
+        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Add additional nodes (they can be added later with ast_add())
@@ -282,7 +282,7 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
     p->lineno = lineno;
 
     if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
-        error_and_die(1, "Out of memory");   /* LCOV_EXCL_LINE */
+        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
     // Add additional nodes (they can be added later with ast_add())
@@ -499,10 +499,10 @@ t_ast_element *ast_generate_from_file(const char *source_file) {
         fp_name = "<stdin>";
     } else {
         fp = fopen(source_file, "r");
-        fp_name = source_file;
+        fp_name = (char *)source_file;
     }
     if (!fp) {
-        error("Could not open file: %s\n", source_file);
+        fatal_error(1, "Could not open file: %s\n", source_file);
         return NULL;
     }
 

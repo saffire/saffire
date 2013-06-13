@@ -60,7 +60,7 @@ static void _free_constant(t_bytecode_constant *c) {
              bytecode_free(c->data.code);
              break;
          default :
-             error_and_die(1, "Unknown constant type %d\n", c->type);
+             fatal_error(1, "Unknown constant type %d\n", c->type);
              break;
      }
 }
@@ -193,7 +193,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
                 _new_constant_code(bytecode, child_bytecode);
                 break;
             default :
-                error_and_die(1, "Unknown constant type %d\n", type);
+                fatal_error(1, "Unknown constant type %d\n", type);
                 break;
         }
     }
@@ -256,7 +256,7 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
-                error_and_die(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
+                fatal_error(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
                 break;
         }
     }
@@ -317,7 +317,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
         // Verify signature
         if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
-            error_and_die(1, "The signature for this bytecode is INVALID!");
+            fatal_error(1, "The signature for this bytecode is INVALID!");
         }
     }
 
@@ -327,12 +327,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     unsigned int bzip_buf_len = header.bytecode_uncompressed_len;
     char *bzip_buf = smm_malloc(bzip_buf_len);
     if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-        error_and_die(1, "Error while decompressing data");
+        fatal_error(1, "Error while decompressing data");
     }
 
     // Sanity check. These should match
     if (bzip_buf_len != header.bytecode_uncompressed_len) {
-        error_and_die(1, "Header information does not match with the size of the uncompressed data block");
+        fatal_error(1, "Header information does not match with the size of the uncompressed data block");
     }
 
     // Free unpacked binary code. We don't need it anymore
@@ -345,7 +345,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     // Convert binary to bytecode
     t_bytecode *bc = bytecode_bin2bc(bincode);
     if (! bc) {
-        error_and_die(1, "Could not convert bytecode data");
+        fatal_error(1, "Could not convert bytecode data");
     }
 
     smm_free(bzip_buf);
@@ -368,7 +368,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
 
     // Convert bytecode to bincode
     if (! bytecode_bc2bin(bc, &bincode_len, &bincode)) {
-        error_and_die(1, "Could not convert bytecode data");
+        fatal_error(1, "Could not convert bytecode data");
         return 0;
     }
 
@@ -398,7 +398,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
     unsigned int bzip_buf_len = 0;
     char *bzip_buf = NULL;
     if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
-        error_and_die(1, "Error while compressing data");
+        fatal_error(1, "Error while compressing data");
     }
 
     // Forget about the original bincode and replace it with out bzip2 data.
@@ -575,7 +575,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
         _gpg_key = gpg_key;
     }
     if (_gpg_key == NULL) {
-        error("Cannot find GPG key. Please set the correct GPG key inside your INI file");
+        fatal_error(1, "Cannot find GPG key. Please set the correct GPG key inside your INI file");
         return 1;
     }
     gpg_sign(_gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);

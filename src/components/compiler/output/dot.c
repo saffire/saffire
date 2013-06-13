@@ -233,7 +233,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
 void dot_generate(t_ast_element *ast, const char *outputfile) {
     FILE *fp = fopen(outputfile, "w");
     if (!fp) {
-        error("Cannot open %s for writing\n", outputfile);
+        fatal_error(1, "Cannot open %s for writing\n", outputfile);
         return;
     }
 

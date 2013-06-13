@@ -42,7 +42,7 @@ void *smm_malloc(size_t size) {
     smm_malloc_calls++;
     void *ptr = malloc(size);
     if (ptr == NULL) {
-        error_and_die(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
+        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
     }
     return ptr;
 }

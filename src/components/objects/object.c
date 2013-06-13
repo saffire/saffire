@@ -428,7 +428,7 @@ void object_add_constant(t_object *obj, char *name, int visibility, t_object *co
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
     if (ht_exists(obj->attributes, name)) {
-        error_and_die(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
+        fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
     ht_add(obj->attributes, name, attrib);
 }

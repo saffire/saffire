@@ -75,10 +75,10 @@ extern int (*output_char_helper)(char c);
 extern int (*output_string_helper)(char *s);
 
 
-static int _fcgi_output_char_helper (char c) {
+static int _fcgi_output_char_helper(char c) {
     return FCGX_PutChar(c, fcgi_out);
 }
-static int _fcgi_output_string_helper (char *s) {
+static int _fcgi_output_string_helper(char *s) {
     return FCGX_PutS(s, fcgi_out);
 }
 
@@ -114,7 +114,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    t_vm_frame *initial_frame = vm_init(VM_RUNMODE_FASTCGI);
+    t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_FASTCGI);
 
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
@@ -160,7 +160,7 @@ static int fcgi_loop(void) {
             }
             t_hash_table *asm_code = ast_to_asm(ast, 1);
             if (! asm_code) {
-                error("Cannot create assembler</h1>");
+                fatal_error(1, "Cannot create assembler</h1>");
                 smm_free(bytecode_file);
                 continue;
             }
@@ -172,7 +172,7 @@ static int fcgi_loop(void) {
 
         // Something went wrong with the bytecode loading or generating
         if (!bc) {
-            error("Error while loading bytecode</h1>");
+            fatal_error(1, "Error while loading bytecode</h1>");
             smm_free(bytecode_file);
             continue;
         }

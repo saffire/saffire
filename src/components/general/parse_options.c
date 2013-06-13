@@ -83,7 +83,7 @@ static void process_argument(int idx, int argc, char *argv[], struct saffire_opt
 
     // Need additional argument, but found none
     if (! has_next_arg && opt->has_arg == required_argument) {
-        error_and_die(1, "Option '%s' requires an argument\n", argv[idx]);
+        fatal_error(1, "Option '%s' requires an argument\n", argv[idx]);
     }
 
     if (has_next_arg && opt->has_arg == required_argument) {
@@ -139,7 +139,7 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
 
         // Unknown option found
         if (! found) {
-            error_and_die(1, "saffire: invalid option '%s'\n"
+            fatal_error(1, "saffire: invalid option '%s'\n"
                              "Try 'saffire help config' for more information\n", argv[idx]);
         }
     }
@@ -249,7 +249,7 @@ char saffire_getopt_bool(int idx) {
     if (idx > saffire_params_count) return 0;
     int ret = to_bool(saffire_params[idx]);
     if (ret == -1) {
-        error_and_die(1, "Incorrect boolean value");
+        fatal_error(1, "Incorrect boolean value");
     }
 
     return ret;

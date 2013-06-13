@@ -37,6 +37,9 @@
 #include "debug.h"
 
 
+/*
+ * @TODO: Modules are search in this order on these paths. They are currently hardcoded
+ */
 const char *module_search_path[] = {
     ".",
     "/usr/share/saffire/modules",
@@ -48,7 +51,7 @@ const char *module_search_path[] = {
 static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, char *class) {
     DEBUG_PRINT(" * _import_class_from_file(%s, %s)\n", source_file, class);
 
-    // Don't care about cached bytecode for now! Compile source to BC
+    // @TODO: Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
     t_hash_table *asm_code = ast_to_asm(ast, 1);
     t_bytecode *bc = assembler(asm_code, source_file);
@@ -56,17 +59,13 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
 
     // Create a new frame and run it!
     t_vm_frame *module_frame = vm_frame_new(frame, bc);
-    _vm_execute(module_frame);
+    vm_execute(module_frame, NULL);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
 
     t_object *obj = vm_frame_find_identifier(module_frame, class);
     DEBUG_PRINT("FOUND: %08X\n", (unsigned int)obj);
     return obj;
-
-//    // Let's see if the object is now present...
-//
-//    return NULL;
 }
 
 /**

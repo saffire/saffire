@@ -190,7 +190,7 @@ int debug = 0;
 /**
  *
  */
-t_vm_frame *vm_init(int runmode) {
+t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
@@ -205,6 +205,8 @@ t_vm_frame *vm_init(int runmode) {
 
     // Create initial frame
     t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL);
+    initial_frame->sp = sp;
+
     thread_set_current_frame(initial_frame);
 
     // Implicit load saffire
@@ -377,7 +379,7 @@ dispatch:
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
-            error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
+            fatal_error(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
         }
 
 
@@ -593,7 +595,7 @@ dispatch:
                 object_dec_ref(left_obj);
 
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
+                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
@@ -614,7 +616,7 @@ dispatch:
                 object_dec_ref(right_obj);
 
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
+                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
@@ -1248,6 +1250,9 @@ int vm_execute(t_vm_frame *frame, t_bytecode *bytecode) {
 
     // Execute the frame
     t_object *result = _vm_execute(frame, bytecode);
+
+    // @TODO: remove me
+    result = NULL;
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 

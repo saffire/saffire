@@ -50,7 +50,7 @@ static int do_exec(void) {
 
     // Check if sourcefile exists
     if (stat(source_file, &source_stat) != 0) {
-        error("Source file '%s' does not exist.\n", source_file);
+        warning("Source file '%s' does not exist.\n", source_file);
         return 1;
     }
 
@@ -67,12 +67,12 @@ static int do_exec(void) {
 
     // Something went wrong with the bytecode loading or generating
     if (!bc) {
-        error("Error while loading bytecode\n");
+        warning("Error while loading bytecode\n");
         return 1;
     }
 
 
-    t_vm_frame *initial_frame = vm_init(VM_RUNMODE_CLI);
+    t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_CLI);
     int exitcode = vm_execute(initial_frame, bc);
     vm_fini(initial_frame);
 

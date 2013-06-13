@@ -101,7 +101,7 @@ static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *st
             dll_append(frame, asm_create_codeline(lineno, VM_STORE_ID, 1, opr));
             break;
         default :
-            error_and_die(1, "Unknown load/store state for %d!", opr->type);
+            fatal_error(1, "Unknown load/store state for %d!", opr->type);
     }
 }
 
@@ -224,7 +224,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_GE : tmp = COMPARISON_GE; break;
                 case T_LE : tmp = COMPARISON_LE; break;
                 default :
-                    error_and_die(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
+                    fatal_error(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
@@ -532,7 +532,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     while (i >= 0 && state->blocks[i].type != BLOCK_TYPE_LOOP) i--;
 
                     if (i < 0) {
-                        error_and_die(1, "No loop block found to continue too.");
+                        fatal_error(1, "No loop block found to continue too.");
                     }
 
                     // If we need to break out several loops (ie: break 2) we need to traverse back multiple
@@ -800,7 +800,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Check for duplicate label inside current block
                     sprintf(label1, "userlabel_%s", node->string.value);
                     if (ht_exists(state->blocks[state->block_cnt].labels, label1)) {
-                        error_and_die(1, "Duplicate label '%s' found\n", node->string.value);
+                        fatal_error(1, "Duplicate label '%s' found\n", node->string.value);
                     }
                     ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
@@ -844,7 +844,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         node2 = node->group.items[i];       // Catch group
                         t_ast_element *node3 = node2->group.items[0];
                         if (node3->opr.oper != T_CATCH) {
-                            error_and_die(1, "Expected a T_CATCH operator node\n");
+                            fatal_error(1, "Expected a T_CATCH operator node\n");
                         }
                         t_ast_element *exception = node3->opr.ops[0];
                         t_ast_element *identifier = node3->opr.ops[1];
@@ -982,11 +982,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
 
                 default :
-                    error_and_die(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
+                    fatal_error(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
             }
             break;
         default :
-            error_and_die(1, "Unknown AST type : %d\n", leaf->type);
+            fatal_error(1, "Unknown AST type : %d\n", leaf->type);
     }
 }
 

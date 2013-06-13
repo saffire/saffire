@@ -33,13 +33,14 @@
     #include "repl/repl.h"
 
     #include "general/output.h"
+    #include "compiler/parser_helpers.h"
     #include "general/smm.h"
     #include "compiler/ast_nodes.h"
     #include "compiler/parser.tab.h"
     #include "compiler/saffire_parser.h"
 
     // Forward defines
-    size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *saffire_parser, int lineno);
+    size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno);
     int yyerror(YYLTYPE *, SaffireParser *, const char *);
     static void yy_push_state(int, yyscan_t);
     static void yy_pop_state(yyscan_t);
@@ -108,7 +109,7 @@
 %s st_regex
 %s st_div
 
-/* Important: exclusive states! Matches no other lexems (like identifier, whitespace etc) */
+/* Important: exclusive states! Matches no other lexemes (like identifier, whitespace etc) */
 %x st_string_dbl
 %x st_string_sgl
 
@@ -287,7 +288,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
  st_string_dbl>\n           {
                                 do_yylloc_nl;
                                 /* Real newlines inside strings are not allowed */
-                                error("newline found in string\n");
+                                parser_error((SaffireParser *)yyextra, yylloc->first_line, "newline found in string\n");
                             }
 <st_string_sgl,
  st_string_dbl>\\\\         { strbuf = add_strbuf_char(strbuf, '\\'); }
@@ -306,7 +307,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 int result;
                                 (void) sscanf( yytext + 1, "%o", &result);
                                 if (result > 0xff) {
-                                    error("octal value '%s' is out of bounds\n", yytext);
+                                    parser_error((SaffireParser *)yyextra, yylloc->first_line, "octal value '%s' is out of bounds\n", yytext);
                                     yyterminate();
                                 }
                                 strbuf = add_strbuf_char(strbuf, (char)result);
@@ -319,7 +320,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 int result;
                                 (void) sscanf(yytext + 2, "%X", &result);
                                 if (result > 0xff) {
-                                    error("hex value '%s' is out of bounds\n", yytext);
+                                    parser_error((SaffireParser *)yyextra, yylloc->first_line, "hex value '%s' is out of bounds\n", yytext);
                                     yyterminate();
                                 }
                                 strbuf = add_strbuf_char(strbuf, (char)result);
@@ -342,7 +343,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
  st_string_dbl>\\.              {
                                 do_yylloc;
                                 /* Everything else is an unknown escape string */
-                                error("unknown escape '%s' in string\n", yytext);
+                                parser_error((SaffireParser *)yyextra, yylloc->first_line, "unknown escape '%s' in string\n", yytext);
                                 yyterminate();
                             }
 <st_string_dbl>[^\\"\n]*        { do_yylloc; strbuf = add_strbuf(strbuf, yytext); }
@@ -365,7 +366,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 . {
     do_yylloc;
-    error("Unknown token: '%s'\n", yytext);
+    parser_error((SaffireParser *)yyextra, yylloc->first_line, "Unknown token: '%s'\n", yytext);
     yyterminate();
 }
 
@@ -385,29 +386,24 @@ void flush_buffer(yyscan_t *yyscanner) {
  * This is the main character read function (as defined through YY_INPUT). Depending on saffire execution
  * mode it will read from file, or display prompts and fetches data.
  */
-size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *saffire_parser, int lineno) {
+size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno) {
     // Call our custom yyparse function if we have defined one
     if (
-        saffire_parser->yyparse != NULL) {
-        return saffire_parser->yyparse(saffire_parser->yyparse_args, lineno, buf, max);
+        sp->yyparse != NULL) {
+        return sp->yyparse(sp->yyparse_args, lineno, buf, max);
     }
-
-//    // Use our default yyparse() method.
-//    if (feof(saffire_parser->file)) {
-//        // Signal the main loop that we reached end of file
-//    }
 
     printf("Doing normal yyparse\n");
 
     // Read (part of) file
-    size_t len = fread(buf, 1, max, saffire_parser->file);
+    size_t len = fread(buf, 1, max, sp->file);
 
-    if (len == 0 && ferror(saffire_parser->file)) {
-        saffire_parser->error = strdup("Error while reading file");
+    if (len == 0 && ferror(sp->file)) {
+        sp->error = strdup("Error while reading file");
     }
 
     if (len == 0) {
-        saffire_parser->eof = 1;
+        sp->eof = 1;
         return YY_NULL;
     }
 

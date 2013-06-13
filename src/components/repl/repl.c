@@ -187,12 +187,8 @@ int repl(void) {
         output(repl_logo);
     }
 
-    /*
-     * Global initializationt_parserinfo
-     */
-
     // Initialize runner
-    sp->initial_frame = vm_init(VM_RUNMODE_REPL);
+    t_vm_frame *initial_frame = vm_init(sp, VM_RUNMODE_REPL);
 
     // Main loop of the REPL
     while (! sp->eof) {
@@ -220,10 +216,13 @@ int repl(void) {
         }
     }
 
-    // Here be generic finalization
-    vm_fini(sp->initial_frame);
 
+    /*
+     * Here be generic finalization
+     */
     free_parserinfo(sp->parserinfo);
+
+    vm_fini(initial_frame);
 
     // Destroy scanner structure
     yylex_destroy(scanner);

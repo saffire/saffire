@@ -48,6 +48,7 @@
     typedef struct SaffireParser SaffireParser;
     typedef struct _parserinfo t_parserinfo;
 
+    void parser_error(SaffireParser *sp, int lineno, const char *format, ...);
 
     t_parserinfo *alloc_parserinfo(void);
     void free_parserinfo(t_parserinfo *pi);

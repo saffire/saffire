@@ -78,47 +78,28 @@ void output(const char *format, ...) {
 
 
 /**
- * Ouputs error (to stderr)
+ * Output warning (to stderr)
  */
-void error(const char *format, ...) {
+void warning(const char *format, ...) {
     va_list args;
 
-    _output(stderr, "Error: ", NULL);
+    _output(stderr, "Warning: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
-
-}
-
-/**
- * Ouputs error (to stderr) and exists with code.
- */
-void error_and_die(int exitcode, const char *format, ...) {
-    va_list args;
-
-    _output(stderr, "Error: ", NULL);
-    va_start(args, format);
-    _output(stderr, format, args);
-    va_end(args);
-
-    exit(exitcode);
 }
 
 
 /**
  * Ouputs error (to stderr) and exists with code.
  */
-void line_error_and_die(int exitcode, char *filename, int lineno, const char *format, ...) {
+void fatal_error(int exitcode, const char *format, ...) {
     va_list args;
 
-    char buf[255];
-    snprintf(buf, 254, "Error in %s on line %d: ", filename, lineno);
-    _output(stderr, buf, NULL);
-
+    _output(stderr, "Fatal error: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
-    _output(stderr, "\n", NULL);
 
     exit(exitcode);
 }
@@ -129,3 +110,6 @@ void line_error_and_die(int exitcode, char *filename, int lineno, const char *fo
 void output_printf(const char *format, t_dll *args) {
     arg_printf(format, args, output_char_helper);
 }
+
+
+

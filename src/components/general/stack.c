@@ -54,7 +54,7 @@ void stack_push(t_stack *stack, void *data) {
  */
 void *stack_pop(t_stack *stack) {
     if (stack->dll->size <= 0) {
-        error_and_die(1, "cannot pop from an empty stack!\n");
+        fatal_error(1, "cannot pop from an empty stack!\n");
     }
     t_dll_element *e = DLL_TAIL(stack->dll);
 

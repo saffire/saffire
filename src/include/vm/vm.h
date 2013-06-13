@@ -30,6 +30,7 @@
     #include "compiler/bytecode.h"
     #include "objects/hash.h"
     #include "vm/frame.h"
+    #include "compiler/saffire_parser.h"
 
     t_hash_table *builtin_identifiers;
 
@@ -40,7 +41,7 @@
     // Actual runmode of the VM (fastcgi, cli, rep
     int vm_runmode;
 
-    t_vm_frame *vm_init(int runmode);
+    t_vm_frame *vm_init(SaffireParser *sp, int runmode);
     void vm_fini(t_vm_frame *frame);
     int vm_execute(t_vm_frame *frame, t_bytecode *bc);
     //t_object *_vm_execute(t_vm_frame *frame, t_bytecode *bytecode);
