@@ -72,8 +72,13 @@ static int do_exec(void) {
     }
 
 
+
+    // Create initial frame and attach our bytecode to it
     t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_CLI);
-    int exitcode = vm_execute(initial_frame, bc);
+    vm_attach_bytecode(initial_frame, bc);
+
+    // Run the frame
+    int exitcode = vm_execute(initial_frame);
     vm_fini(initial_frame);
 
     bytecode_free(bc);

@@ -152,7 +152,6 @@
 saffire:
         /* We must convert our ast_root address to an unsigned long */
         program {
-            printf("End of file '%s'\n", saffireParser->filename);
             saffireParser->ast = $1;
             saffireParser->eof = 1;
             yy_exec(saffireParser);
@@ -769,12 +768,12 @@ char *get_token_string(int token) {
 void yy_exec(SaffireParser *sp) {
     // Check if we need to handle the instructions (hook for mostly the repl)
     if (! sp->yyexec) {
-        printf("\n\n\n\nSeems that '%s' does not have a yyexec()\n\n\n\n", sp->filename);
         return;
     }
 
+    // No AST to run
     if (! sp->ast) {
-        printf("\n\n\nSeems that we don't have a AST\n\n\n");
+        return;
     }
 
     sp->yyexec(sp);

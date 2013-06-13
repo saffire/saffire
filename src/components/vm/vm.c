@@ -268,14 +268,13 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
 /**
  *
  */
-t_object *_vm_execute(t_vm_frame *frame, t_bytecode *bytecode) {
+t_object *_vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register t_object *left_obj, *right_obj;
     register char *name;
     register unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     register t_object *dst;
-
 
 #ifdef DEBUG
     printf(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
@@ -1245,11 +1244,11 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 /**
  *
  */
-int vm_execute(t_vm_frame *frame, t_bytecode *bytecode) {
+int vm_execute(t_vm_frame *frame) {
     // Setup bytecode into the frame (or not?)
 
     // Execute the frame
-    t_object *result = _vm_execute(frame, bytecode);
+    t_object *result = _vm_execute(frame);
 
     // @TODO: remove me
     result = NULL;
@@ -1413,7 +1412,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Execute frame, return the last object
-        dst = _vm_execute(new_frame, NULL);
+        dst = _vm_execute(new_frame);
 
         // @TODO: Destroy frame
         //vm_frame_destroy(new_frame);
@@ -1473,3 +1472,6 @@ t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     return ret;
 }
+
+
+

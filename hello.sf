@@ -2,7 +2,7 @@
 import io;
 
 // Call the print method from our (imported) io class with a single argument
-io.print("Hello world!");
+io.print("Hello world!\n");
 
 
 class foo {
@@ -17,7 +17,7 @@ class foo {
 }
 
 
-io.print("Oh hai again!");
+io.print("Oh hai again!\n");
 f = foo();
 b = f.bar(5);
-io.print("The number is ",b);
+io.print("The number is ",b," and ", f.bar(7),".\n");
