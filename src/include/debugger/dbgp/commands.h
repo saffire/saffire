@@ -24,34 +24,36 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_H__
-#define __VM_H__
+#ifndef __DEBUGGER_DBGP_COMMANDS_H__
+#define __DEBUGGER_DBGP_COMMANDS_H__
 
-    #include "compiler/bytecode.h"
-    #include "objects/hash.h"
-    #include "vm/frame.h"
-    #include "compiler/saffire_parser.h"
+    #include "debugger/dbgp/xml.h"
+    #include "debugger/dbgp/dbgp.h"
 
-    t_hash_table *builtin_identifiers;
+    struct dbgp_command {
+        char *command;
+        xmlNodePtr (*func)(t_debuginfo *di, int argc, char *argv[]);
+    };
 
-    #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
-    #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
-    #define VM_RUNMODE_REPL         2       // Virtual machine run as REPL
-    #define VM_RUNMODE_DEBUG      128       // Debugging should be activated
+    #define DBGP_CMD_DEF(name) \
+        xmlNodePtr do_command_##name(t_debuginfo *di, int argc, char *argv[])
 
-    // Actual runmode of the VM (fastcgi, cli, rep
-    int vm_runmode;
+    #define DBGP_CMD_REF(name) \
+        &do_command_##name
 
-    t_vm_frame *vm_init(SaffireParser *sp, int runmode);
-    void vm_fini(t_vm_frame *frame);
-    int vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
-    t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
-    t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);
-    t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2);
-    t_object *object_internal_call(const char *class, const char *method, int arg_count, ...);
 
-#endif
+    DBGP_CMD_DEF(context_names);
+    DBGP_CMD_DEF(context_get);
+    DBGP_CMD_DEF(stack_get);
+    DBGP_CMD_DEF(breakpoint_get);
+    DBGP_CMD_DEF(breakpoint_set);
+    DBGP_CMD_DEF(breakpoint_list);
+    DBGP_CMD_DEF(breakpoint_remove);
+    DBGP_CMD_DEF(breakpoint_update);
+    DBGP_CMD_DEF(step_into);
+    DBGP_CMD_DEF(step_over);
+    DBGP_CMD_DEF(detach);
+    DBGP_CMD_DEF(run);
 
+#endif // __DEBUGGER_DBGP_COMMANDS_H__
 

@@ -5,6 +5,7 @@ import io;
 io.print("Hello world!\n");
 
 
+
 class foo {
     public property a = 2;
 

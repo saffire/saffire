@@ -646,23 +646,55 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
         e = DLL_NEXT(e);
     }
 
-    // Add (fixed) lineno's for now...
-    bc->lino_offset = startline; // 0xAA
-    bc->lino_length = 13;
-    bc->lino = malloc(13);
-    bc->lino[0] = 0;
-    bc->lino[1] = 1;
-    bc->lino[2] = 10;
-    bc->lino[3] = 1;
-    bc->lino[4] = 5;
-    bc->lino[5] = 1;
-    bc->lino[6] = 20;
-    bc->lino[7] = 6;
-    bc->lino[8] = 151;
-    bc->lino[9] = 127;
-    bc->lino[10] = 1;
-    bc->lino[11] = 1;
-    bc->lino[12] = 1;
+
+    // Create line numbers
+    int ip = 0, old_ip = 0;
+    t_dll *lc = dll_init();
+    dll_append(lc, ip);
+
+    while (ip < bc->code_len) {
+        unsigned char opcode = frame->bytecode->code[frame->ip];
+        ip++;
+
+        // If high bit is set, get operand
+        ((opcode & 0x80) == 0x80) ? ip += 2 : 0;
+        ((opcode & 0xC0) == 0xC0) ? ip += 2 : 0;
+        ((opcode & 0xE0) == 0xE0) ? ip += 2 : 0;
+
+        // Store diff with old_ip
+        int delta = ip - old_ip;
+
+        dll_append(lc, ip);
+    }
+
+    // Convert our linenumber DLL into a normal array
+    bc->lineno_offset = startline;
+    bc->lino_length = lc->count;
+    bc->lino = (char *)malloc(bc->lino_length);
+    e = DLL_HEAD(lc);
+    for (int i=0; i!=lc->count; i++) {
+        bc->lineno[i] = (char *)e->data;
+        e = DLL_NEXT(e);
+    }
+    dll_free(lc);
+
+//    // Add (fixed) lineno's for now...
+//    bc->lino_offset = startline; // 0xAA
+//    bc->lino_length = 13;
+//    bc->lino = malloc(13);
+//    bc->lino[0] = 0;
+//    bc->lino[1] = 1;
+//    bc->lino[2] = 10;
+//    bc->lino[3] = 1;
+//    bc->lino[4] = 5;
+//    bc->lino[5] = 1;
+//    bc->lino[6] = 20;
+//    bc->lino[7] = 6;
+//    bc->lino[8] = 151;
+//    bc->lino[9] = 127;
+//    bc->lino[10] = 1;
+//    bc->lino[11] = 1;
+//    bc->lino[12] = 1;
     return bc;
 }
 

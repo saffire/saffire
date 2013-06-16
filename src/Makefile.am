@@ -138,7 +138,8 @@ noinst_LIBRARIES += libdebugger.a
 libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c \
                         components/debugger/dbgp/xml.c \
                         components/debugger/dbgp/sock.c \
-                        components/debugger/dbgp/args.c
+                        components/debugger/dbgp/args.c \
+                        components/debugger/dbgp/commands.c
 
 
 ########################################################################

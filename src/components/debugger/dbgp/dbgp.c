@@ -26,23 +26,24 @@
 */
 #include <stdio.h>
 #include <unistd.h>
-//#include <sys/types.h>
-//#include <arpa/inet.h>
-//#include <libxml/parser.h>
-//#include <libxml/tree.h>
 #include <string.h>
 #include "general/config.h"
 #include "debugger/dbgp/xml.h"
 #include "debugger/dbgp/args.h"
 #include "debugger/dbgp/sock.h"
+#include "debugger/dbgp/dbgp.h"
+#include "debugger/dbgp/commands.h"
+#include "general/output.h"
+#include "debug.h"
 
-
+extern struct dbgp_command dbgp_commands[];
+extern char *dbgp_status_names[5];
 
 
 /**
  * Read actual command line
  */
-static void read_commandline(int sockfd, int *argc, char ***argv) {
+static void dbgp_read_commandline(int sockfd, int *argc, char ***argv) {
     char *buffer = NULL;
     int buffer_len= 0;
 
@@ -73,175 +74,20 @@ static void read_commandline(int sockfd, int *argc, char ***argv) {
 
 
 /**
- */
-xmlNodePtr do_command_context_names(int argc, char *argv[]) {
-    xmlNodePtr node;
-
-    xmlNodePtr root_node = dbgp_xml_create_response("context_names", argc, argv);
-
-    node = xmlNewChild(root_node, NULL, BAD_CAST "context", NULL);
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "Locals");
-    xmlNewProp(node, BAD_CAST "id", BAD_CAST "0");
-
-    node = xmlNewChild(root_node, NULL, BAD_CAST "context", NULL);
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "Globals");
-    xmlNewProp(node, BAD_CAST "id", BAD_CAST "1");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_step_into(int argc, char *argv[]) {
-    // TODO: set state DEBUGGER_RUNNING
-
-    xmlNodePtr root_node = dbgp_xml_create_response("step_into", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST "starting");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_step_over(int argc, char *argv[]) {
-    // TODO: set state DEBUGGER_RUNNING
-
-    xmlNodePtr root_node = dbgp_xml_create_response("step_over", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST "starting");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_breakpoint_set(int argc, char *argv[]) {
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_set", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "state", BAD_CAST "STATE");
-    xmlNewProp(root_node, BAD_CAST "id", BAD_CAST "1");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_stack_get(int argc, char *argv[]) {
-    xmlNodePtr node;
-
-    // Check for -d depth
-
-    xmlNodePtr root_node = dbgp_xml_create_response("stack_get", argc, argv);
-
-//    node = xmlNewChild(root_node, NULL, BAD_CAST "stack_level", NULL);
-//    xmlNewProp(node, BAD_CAST "level", BAD_CAST "0");
-//    xmlNewProp(node, BAD_CAST "type", BAD_CAST "eval");
-
-    node = xmlNewChild(root_node, NULL, BAD_CAST "stack_level", NULL);
-    xmlNewProp(node, BAD_CAST "level", BAD_CAST "0");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "file");
-    xmlNewProp(node, BAD_CAST "filename", BAD_CAST "/home/jthijssen/saffire/hello.sf");
-    xmlNewProp(node, BAD_CAST "lineno", BAD_CAST "1");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_context_get(int argc, char *argv[]) {
-    xmlNodePtr node;
-    char buf[100];
-
-//    int depth = 0;
-    int context_id = 0;
-
-    xmlNodePtr root_node = dbgp_xml_create_response("context_get", argc, argv);
-    sprintf(buf, "%d", context_id);
-    xmlNewProp(root_node, BAD_CAST "context", BAD_CAST buf);
-
-    node = xmlNewChild(root_node, NULL, BAD_CAST "property", BAD_CAST "0xdeadbeef");
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "a");
-    xmlNewProp(node, BAD_CAST "fullname", BAD_CAST "self.a");
-    xmlNewProp(node, BAD_CAST "classname", BAD_CAST "foobar");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "numerical");
-
-    node = xmlNewChild(root_node, NULL, BAD_CAST "property", NULL);
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "f");
-    xmlNewProp(node, BAD_CAST "fullname", BAD_CAST "f");
-    xmlNewProp(node, BAD_CAST "classname", BAD_CAST "numerical");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "numerical");
-
-
-    return root_node;
-}
-
-xmlNodePtr do_command_detach(int argc, char *argv[]) {
-    // TODO: set state DEBUGGER_DETACHED
-
-    xmlNodePtr root_node = dbgp_xml_create_response("detach", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST "running");
-
-    return root_node;
-}
-
-xmlNodePtr do_command_run(int argc, char *argv[]) {
-    // TODO: set state DEBUGGER_RUNNING
-
-    xmlNodePtr root_node = dbgp_xml_create_response("run", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST "running");
-
-    return root_node;
-}
-
-struct dbgp_command {
-    char *command;
-    xmlNodePtr (*func)(int argc, char *argv[]);
-};
-
-struct dbgp_command dbgp_commands[] = {
-    { "context_names", &do_command_context_names },
-    { "context_get", &do_command_context_get },
-
-    { "eval", &do_command_context_names },
-    { "feature_set", &do_command_context_names },
-    { "feature_get", &do_command_context_names },
-
-    { "typemap_get", &do_command_context_names },
-    { "property_get", &do_command_context_names },
-    { "property_set", &do_command_context_names },
-    { "property_value", &do_command_context_names },
-
-    { "source", &do_command_context_names },
-    { "stack_get", &do_command_stack_get },
-    { "stack_depth", &do_command_stack_get },
-    { "status", &do_command_stack_get },
-
-    { "stderr", &do_command_stack_get },
-    { "stdout", &do_command_stack_get },
-
-    { "breakpoint_get", &do_command_breakpoint_set },
-    { "breakpoint_set", &do_command_breakpoint_set },
-    { "breakpoint_list", &do_command_breakpoint_set },
-    { "breakpoint_remove", &do_command_breakpoint_set },
-    { "breakpoint_update", &do_command_breakpoint_set },
-
-    { "step_into", &do_command_step_into },
-    { "step_over", &do_command_step_over },
-    { "step_out", &do_command_step_over },
-    { "stop", &do_command_detach },
-    { "detach", &do_command_detach },
-    { "run", &do_command_run },
-    { NULL, NULL }
-};
-
-/**
  * Read commandline and execute the found commands
  */
-static void parse_incoming_command(int sockfd) {
-    char **argv;
-    int argc;
-    read_commandline(sockfd, &argc, &argv);
-
+static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[]) {
     for (int i=0; i!=argc; i++) {
         printf ("  Arg %d : '%s'\n", i, argv[i]);
     }
-
 
     struct dbgp_command *p = dbgp_commands;
     while (p->command) {
         if (! strcmp(argv[0], p->command)) {
             // Do command
-            xmlNodePtr root_node = p->func(argc, argv);
+            xmlNodePtr root_node = p->func(di, argc, argv);
             if (root_node) {
-                dbgp_xml_send(sockfd, root_node);
+                dbgp_xml_send(di->sock_fd, root_node);
             }
             break;
         }
@@ -251,40 +97,78 @@ static void parse_incoming_command(int sockfd) {
     if (p->command == NULL) {
         printf("Command '%s' not found.\n", p->command);
     }
-
-    dbgp_args_free(argv);
 }
 
 
+/**
+ *
+ */
+t_debuginfo *dbgp_init(void) {
+    DEBUG_PRINT(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
 
-void dbgp_init(void) {
-    int sockfd;
+    t_debuginfo *di = (t_debuginfo *)malloc(sizeof(t_debuginfo));
+
+    //  Initialize structure
+    di->sock_fd = 0;
+    di->attached = 1;
+    di->step_into = 0;
+    di->state = DBGP_STATE_STARTING;
+    di->breakpoint_id = 1000;
+        di->breakpoints = ht_create();
+
+
+    // Create a connection to the IDE.
+    // @TODO: We should have a --wait flag, so when there is no connection, at least it will wait and retry every
+    // second to create a connection. Up to a maximum of 100 times or so?
     do {
-        sockfd = dbgp_sock_init();
-        if (sockfd == -1) {
+        di->sock_fd = dbgp_sock_init();
+        if (di->sock_fd == -1) {
             printf("Can't connect to listening socket. Are you sure that the IDE is listening for debug connections?\n");
             sleep(1);
         }
-    } while (sockfd == -1);
+    } while (di->sock_fd == -1);
 
     dbgp_xml_init();
 
-    // Send out init
+    // Send out init packet
     xmlNodePtr init_node = dbgp_xml_create_init_node();
-    dbgp_xml_send(sockfd, init_node);
+    dbgp_xml_send(di->sock_fd, init_node);
 
-    // Parse commands and do stuff
-    for (;;) {
-        parse_incoming_command(sockfd);
-    }
+    // Do data transfers and such
+    dbgp_parse_incoming_commands(di);
 
-    // End
-    dbgp_xml_fini();
-    dbgp_sock_fini(sockfd);
-
-//    char *debugger_host = config_get_string("debugger.host", "127.0.0.1");
-//    long debugger_port = config_get_long("debugger.port", "9000");
+    return di;
 }
 
-void dbgp_fini(void) {
+
+/**
+ *
+ */
+void dbgp_fini(t_debuginfo *di) {
+    ht_destroy(di->breakpoints);
+    dbgp_xml_fini();
+    dbgp_sock_fini(di->sock_fd);
+}
+
+
+
+/**
+ *
+ */
+void dbgp_parse_incoming_commands(t_debuginfo *di) {
+    char **argv;
+    int argc;
+
+    printf("\n\n\nPARSING!\n\n\n\n\n\n");
+
+    // Repeat fetching commands until our certain status
+
+    while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED) {
+        printf("current DI-State: %s (%d)\n", dbgp_status_names[di->state], di->state);
+        dbgp_read_commandline(di->sock_fd, &argc, &argv);
+        dbgp_parse_incoming_command(di, argc, argv);
+        dbgp_args_free(argv);
+    }
+
+    printf("\n\n\nDONE PARSING!\n\n\n\n\n\n");
 }

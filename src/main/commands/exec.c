@@ -28,6 +28,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include "objects/object.h"
 #include "modules/module_api.h"
@@ -40,8 +42,10 @@
 #include "general/output.h"
 #include "debug.h"
 
+static int flag_debug = 0;
 static int flag_no_verify = 0;
 int write_bytecode = 1;
+
 
 static int do_exec(void) {
     char *source_file = saffire_getopt_string(0);
@@ -53,6 +57,10 @@ static int do_exec(void) {
         warning("Source file '%s' does not exist.\n", source_file);
         return 1;
     }
+
+    char full_source_path[PATH_MAX+1];
+    char *ptr;
+    ptr = realpath(source_file, full_source_path);
 
     // Check if bytecode exists, or has a correct timestamp
     char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
@@ -71,11 +79,11 @@ static int do_exec(void) {
         return 1;
     }
 
-
-
     // Create initial frame and attach our bytecode to it
-    t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_CLI);
-    vm_attach_bytecode(initial_frame, bc);
+    int runmode = VM_RUNMODE_CLI;
+    if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
+    t_vm_frame *initial_frame = vm_init(NULL, runmode);
+    vm_attach_bytecode(initial_frame, bc, full_source_path);
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
@@ -96,11 +104,16 @@ static int do_exec(void) {
 static const char help[]   = "Executes a Saffire script.\n"
                              "\n"
                              "Global settings:\n"
+                             "   --debug                Start debugger connection\n"
                              "   --no-verify            Don't verify signature from bytecode file (if any)\n"
                              "   --no-write-bytecode    Don't write bytecode to disk\n"
                              "\n"
                              "This command executes a saffire script or bytecode file.\n";
 
+
+static void opt_debug(void *data) {
+    flag_debug = 1;
+}
 
 static void opt_no_verify(void *data) {
     flag_no_verify = 1;
@@ -112,7 +125,8 @@ static void opt_no_write_bytecode(void *data) {
 
 static struct saffire_option exec_options[] = {
     { "no-verify", "", no_argument, opt_no_verify},
-    { "no-write-bytecode", "", no_argument, opt_no_write_bytecode}
+    { "no-write-bytecode", "", no_argument, opt_no_write_bytecode},
+    { "debug", "", no_argument, opt_debug }
 };
 
 /* Config actions */

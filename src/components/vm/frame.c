@@ -234,10 +234,12 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 
-void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
+void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode, char *source_file) {
     frame->bytecode = bytecode;
     frame->ip = 0;
     frame->sp = bytecode->stack_size;
+
+    frame->source_filename = (source_file) ? smm_strdup(source_file) : NULL;
 
     // Setup variable stack
     frame->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
@@ -289,14 +291,22 @@ void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode, char *source_filename) {
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
+
+    cfr->source_filename = source_filename ? smm_strdup(source_filename) : NULL;
+
+    cfr->lineno_lowerbound = -1;
+    cfr->lineno_upperbound = -1;
+    cfr->lineno_current_line = 0;
+    cfr->lineno_current_lino_offset = 0;
+
 
     cfr->parent = parent_frame;
 
     if (bytecode) {
-        vm_attach_bytecode(cfr, bytecode);
+        vm_attach_bytecode(cfr, bytecode, source_filename);
     } else {
         cfr->bytecode = NULL;
         cfr->ip = 0;
@@ -332,6 +342,10 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
 void vm_frame_destroy(t_vm_frame *frame) {
     // @TODO: Remove identifiers in the local_identifiers hash object
     object_free((t_object *)frame->local_identifiers);
+
+    if (frame->source_filename) {
+        smm_free(frame->source_filename);
+    }
 
     // Destroy global identifiers when this frame is the initial one
     if (! frame->parent) {

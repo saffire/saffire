@@ -393,8 +393,6 @@ size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno) {
         return sp->yyparse(sp->yyparse_args, lineno, buf, max);
     }
 
-    printf("Doing normal yyparse\n");
-
     // Read (part of) file
     size_t len = fread(buf, 1, max, sp->file);
 

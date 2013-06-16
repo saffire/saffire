@@ -41,6 +41,7 @@
 #include "general/output.h"
 #include "vm/import.h"
 #include "gc/gc.h"
+#include "debugger/dbgp/dbgp.h"
 
 t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
 
@@ -186,13 +187,21 @@ int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib)
 }
 
 int debug = 0;
+t_debuginfo *debug_info;
 
 /**
  *
  */
 t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
+printf("RUNMODE: %d\n", runmode);
+
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
+
+    // Enable debugging
+    if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        debug_info = dbgp_init();
+    }
 
     t_thread *thread = smm_malloc(sizeof(t_thread));
     bzero(thread, sizeof(t_thread));
@@ -204,8 +213,8 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     module_init();
 
     // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL);
-    initial_frame->sp = sp;
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
+    //initial_frame->sp = sp;
 
     thread_set_current_frame(initial_frame);
 
@@ -226,18 +235,16 @@ void vm_fini(t_vm_frame *frame) {
 }
 
 
-int lineno_lowerbound = -1;             // Lower bytecode offset for this line
-int lineno_upperbound = -1;             // Upper bytecode offset for this line
-int lineno_current_line = 0;            // Current line pointer
-int lineno_current_lino_offset = 0;     // Current offset in the bytecode lineno table
 
 int getlineno(t_vm_frame *frame, int cip) {
-    printf ("CIP: %d\n", cip);
-    printf ("LLB: %d\n", lineno_lowerbound);
-    printf ("LUB: %d\n", lineno_upperbound);
+    if (strstr(frame->source_filename, "hello.sf") != NULL) {
+        printf ("CIP: %d\n", cip);
+        printf ("LLB: %d\n", frame->lineno_lowerbound);
+        printf ("LUB: %d\n", frame->lineno_upperbound);
+    }
 
-    if (lineno_lowerbound >= cip && cip <= lineno_upperbound) {
-        return lineno_current_line;
+    if (frame->lineno_lowerbound >= cip && cip <= frame->lineno_upperbound) {
+        return frame->lineno_current_line;
     }
 
     int delta_lino = 0;
@@ -247,19 +254,19 @@ int getlineno(t_vm_frame *frame, int cip) {
 
     int i;
     do {
-        i = (frame->bytecode->lino[lineno_current_lino_offset++] & 127);
+        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
     } while (i > 127);
     do {
-        i = (frame->bytecode->lino[lineno_current_lino_offset++] & 127);
+        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
     } while (i > 127);
 
-    lineno_lowerbound = lineno_upperbound;
-    lineno_upperbound += delta_lino;
-    lineno_current_line += delta_line;
+    frame->lineno_lowerbound = frame->lineno_upperbound;
+    frame->lineno_upperbound += delta_lino;
+    frame->lineno_current_line += delta_line;
 
-    return lineno_current_line;
+    return frame->lineno_current_line;
 }
 
 
@@ -312,10 +319,59 @@ dispatch:
         // Increase number of executions done
         frame->executions++;
 
-#ifdef __DEBUG
+
+
+
         unsigned long cip = frame->ip;
+#ifdef __DEBUG
         vm_frame_stack_debug(frame);
 #endif
+
+
+
+
+        // Only do this when we are debugging and the debugger is attached
+        if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG && debug_info->attached) {
+            printf("FILENAME: %s (%d)\n", frame->source_filename, getlineno(frame, cip));
+
+            printf("Debug breakpoints\n");
+            printf("-----------------\n");
+            t_hash_iter iter;
+
+            for (ht_iter_init(&iter, debug_info->breakpoints); ht_iter_valid(&iter); ht_iter_next(&iter)) {
+                // Fetch breakpoint
+                char *id = ht_iter_key(&iter);
+                t_breakpoint *bp = ht_find(debug_info->breakpoints, id);
+
+                printf("%s %d %s(%d)\n", bp->id, bp->state, bp->filename, bp->lineno);
+
+                // Skip if not enabled
+                if (bp->state == 0) continue;
+
+                if (bp->type == DBGP_BREAKPOINT_TYPE_LINE) {
+                    // Check line number first, easier match
+                    printf("Checking line BP\n");
+                    if (bp->lineno == getlineno(frame, cip) && strcmp(bp->filename, frame->source_filename) == 0) {
+                        printf("Matched!");
+                        // Matched line breakpoint!
+                    }
+                }
+            }
+
+            if (debug_info->step_into == 1) {
+                debug_info->step_into = 0;
+
+//                dbgp_send_response("step_into");
+
+                debug_info->state = DBGP_STATE_BREAK;
+                dbgp_parse_incoming_commands(debug_info);
+            }
+//
+        }
+
+
+
+
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
@@ -372,9 +428,9 @@ dispatch:
         }
 #endif
 
-#ifdef __DEBUG
-        if (debug) getchar();
-#endif
+
+
+
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
@@ -1037,8 +1093,6 @@ dispatch:
                 break;
 
             case VM_SETUP_EXCEPT :
-                debug = 1;
-
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
                 vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
 
@@ -1395,7 +1449,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
         // Create a new execution frame
-        t_vm_frame *new_frame = vm_frame_new(thread_get_current_frame(), callable_obj->code.bytecode);
+        t_vm_frame *cur_frame = thread_get_current_frame();
+        t_vm_frame *new_frame = vm_frame_new(cur_frame, callable_obj->code.bytecode, cur_frame->source_filename);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
