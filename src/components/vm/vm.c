@@ -193,15 +193,8 @@ t_debuginfo *debug_info;
  *
  */
 t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
-printf("RUNMODE: %d\n", runmode);
-
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
-
-    // Enable debugging
-    if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
-        debug_info = dbgp_init();
-    }
 
     t_thread *thread = smm_malloc(sizeof(t_thread));
     bzero(thread, sizeof(t_thread));
@@ -213,19 +206,34 @@ printf("RUNMODE: %d\n", runmode);
     module_init();
 
     // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL);
     //initial_frame->sp = sp;
 
     thread_set_current_frame(initial_frame);
 
-    // Implicit load saffire
+    // Initialize debugging if needed
+    if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        debug_info = dbgp_init(initial_frame);
+    }
+
+
+    vm_runmode &= ~VM_RUNMODE_DEBUG;
+
+    // Implicit load the saffire module
     t_object *obj = vm_import(initial_frame, "saffire", "saffire");
     vm_frame_set_identifier(initial_frame, "saffire", obj);
+
+    vm_runmode = runmode;
 
     return initial_frame;
 }
 
 void vm_fini(t_vm_frame *frame) {
+    // Initialize debugging if needed
+    if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        dbgp_fini(debug_info, frame);
+    }
+
     vm_frame_destroy(frame);
 
     module_fini();
@@ -236,14 +244,8 @@ void vm_fini(t_vm_frame *frame) {
 
 
 
-int getlineno(t_vm_frame *frame, int cip) {
-    if (strstr(frame->source_filename, "hello.sf") != NULL) {
-        printf ("CIP: %d\n", cip);
-        printf ("LLB: %d\n", frame->lineno_lowerbound);
-        printf ("LUB: %d\n", frame->lineno_upperbound);
-    }
-
-    if (frame->lineno_lowerbound >= cip && cip <= frame->lineno_upperbound) {
+int getlineno(t_vm_frame *frame) {
+    if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
         return frame->lineno_current_line;
     }
 
@@ -252,14 +254,21 @@ int getlineno(t_vm_frame *frame, int cip) {
 
     // @TODO: Check if lino_offset doesn't go out of bounds
 
+    printf("LINO_MAX: %d\n", frame->bytecode->lino_length);
+    printf("LINO_OFF: %d\n", frame->lineno_current_lino_offset);
+
+    if (frame->lineno_current_lino_offset >= frame->bytecode->lino_length) {
+        return frame->lineno_current_line;
+    }
+
     int i;
     do {
         i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
-        delta_lino += i;
+        delta_line += i;
     } while (i > 127);
     do {
         i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
-        delta_line += i;
+        delta_lino += i;
     } while (i > 127);
 
     frame->lineno_lowerbound = frame->lineno_upperbound;
@@ -283,6 +292,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
     long reason = REASON_NONE;
     register t_object *dst;
 
+
 #ifdef DEBUG
     printf(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
     t_vm_frame *tb_frame = frame;
@@ -294,7 +304,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
                 ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
                 ANSI_RESET "\n",
                 tb_history,
-                tb_frame->bytecode->filename ? tb_frame->bytecode->filename : "<none>",
+                tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
                 123,
                 "class",
                 "method"
@@ -314,62 +324,25 @@ t_object *_vm_execute(t_vm_frame *frame) {
 
     for (;;) {
 
+
         // Room for some other stuff
 dispatch:
         // Increase number of executions done
         frame->executions++;
 
 
-
-
+        int ln = getlineno(frame);
         unsigned long cip = frame->ip;
 #ifdef __DEBUG
-        vm_frame_stack_debug(frame);
+        //vm_frame_stack_debug(frame);
 #endif
-
 
 
 
         // Only do this when we are debugging and the debugger is attached
         if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG && debug_info->attached) {
-            printf("FILENAME: %s (%d)\n", frame->source_filename, getlineno(frame, cip));
-
-            printf("Debug breakpoints\n");
-            printf("-----------------\n");
-            t_hash_iter iter;
-
-            for (ht_iter_init(&iter, debug_info->breakpoints); ht_iter_valid(&iter); ht_iter_next(&iter)) {
-                // Fetch breakpoint
-                char *id = ht_iter_key(&iter);
-                t_breakpoint *bp = ht_find(debug_info->breakpoints, id);
-
-                printf("%s %d %s(%d)\n", bp->id, bp->state, bp->filename, bp->lineno);
-
-                // Skip if not enabled
-                if (bp->state == 0) continue;
-
-                if (bp->type == DBGP_BREAKPOINT_TYPE_LINE) {
-                    // Check line number first, easier match
-                    printf("Checking line BP\n");
-                    if (bp->lineno == getlineno(frame, cip) && strcmp(bp->filename, frame->source_filename) == 0) {
-                        printf("Matched!");
-                        // Matched line breakpoint!
-                    }
-                }
-            }
-
-            if (debug_info->step_into == 1) {
-                debug_info->step_into = 0;
-
-//                dbgp_send_response("step_into");
-
-                debug_info->state = DBGP_STATE_BREAK;
-                dbgp_parse_incoming_commands(debug_info);
-            }
-//
+            dbgp_debug(debug_info, frame);
         }
-
-
 
 
 
@@ -390,8 +363,8 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->bytecode->filename,
-                        getlineno(frame, cip)
+                        frame->bytecode->source_filename,
+                        ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
@@ -401,8 +374,8 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->bytecode->filename,
-                        getlineno(frame, cip)
+                        frame->bytecode->source_filename,
+                        ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
@@ -412,8 +385,8 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->bytecode->filename,
-                        getlineno(frame, cip)
+                        frame->bytecode->source_filename,
+                        ln
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
@@ -422,8 +395,8 @@ dispatch:
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->bytecode->filename,
-                        getlineno(frame, cip)
+                        frame->bytecode->source_filename,
+                        ln
                     );
         }
 #endif
@@ -1450,7 +1423,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     } else {
         // Create a new execution frame
         t_vm_frame *cur_frame = thread_get_current_frame();
-        t_vm_frame *new_frame = vm_frame_new(cur_frame, callable_obj->code.bytecode, cur_frame->source_filename);
+        t_vm_frame *new_frame = vm_frame_new(cur_frame, callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;

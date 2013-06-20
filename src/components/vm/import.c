@@ -55,10 +55,10 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     t_ast_element *ast = ast_generate_from_file(source_file);
     t_hash_table *asm_code = ast_to_asm(ast, 1);
     t_bytecode *bc = assembler(asm_code, source_file);
-    bc->filename = smm_strdup(source_file);
+    bc->source_filename = smm_strdup(source_file);
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, bc, source_file);
+    t_vm_frame *module_frame = vm_frame_new(frame, bc);
     vm_execute(module_frame);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");

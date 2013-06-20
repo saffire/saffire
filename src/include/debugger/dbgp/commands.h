@@ -52,7 +52,9 @@
     DBGP_CMD_DEF(breakpoint_update);
     DBGP_CMD_DEF(step_into);
     DBGP_CMD_DEF(step_over);
+    DBGP_CMD_DEF(step_out);
     DBGP_CMD_DEF(detach);
+    DBGP_CMD_DEF(stop);
     DBGP_CMD_DEF(run);
 
 #endif // __DEBUGGER_DBGP_COMMANDS_H__

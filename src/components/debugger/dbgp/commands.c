@@ -34,44 +34,47 @@
 #include "debugger/dbgp/commands.h"
 #include "debug.h"
 #include "general/smm.h"
+#include "objects/objects.h"
+#include "general/base64.h"
 
 // Status names. Mapped
 char *dbgp_status_names[5] = { "starting", "stopping", "stopped", "running", "break" };
 
 struct dbgp_command dbgp_commands[] = {
-    { "context_names", DBGP_CMD_REF(context_names) },
-    { "context_get", DBGP_CMD_REF(context_get) },
+    { "context_names",      DBGP_CMD_REF(context_names)     },
+    { "context_get",        DBGP_CMD_REF(context_get)       },
 
-    { "eval", DBGP_CMD_REF(context_names) },
-    { "feature_set", DBGP_CMD_REF(context_names) },
-    { "feature_get", DBGP_CMD_REF(context_names) },
+    { "eval",               DBGP_CMD_REF(context_names)     },
+    { "feature_set",        DBGP_CMD_REF(context_names)     },
+    { "feature_get",        DBGP_CMD_REF(context_names)     },
 
-    { "typemap_get", DBGP_CMD_REF(context_names) },
-    { "property_get", DBGP_CMD_REF(context_names) },
-    { "property_set", DBGP_CMD_REF(context_names) },
-    { "property_value", DBGP_CMD_REF(context_names) },
+    { "typemap_get",        DBGP_CMD_REF(context_names)     },
+    { "property_get",       DBGP_CMD_REF(context_names)     },
+    { "property_set",       DBGP_CMD_REF(context_names)     },
+    { "property_value",     DBGP_CMD_REF(context_names)     },
 
-    { "source", DBGP_CMD_REF(context_names) },
-    { "stack_get", DBGP_CMD_REF(stack_get) },
-    { "stack_depth", DBGP_CMD_REF(stack_get) },
-    { "status", DBGP_CMD_REF(stack_get) },
+    { "source",             DBGP_CMD_REF(context_names)     },
+    { "stack_get",          DBGP_CMD_REF(stack_get)         },
+//    { "stack_depth",        DBGP_CMD_REF(stack_get)         },
+//    { "status",             DBGP_CMD_REF(stack_get)         },
+//
+//    { "stderr",             DBGP_CMD_REF(stack_get)         },
+//    { "stdout",             DBGP_CMD_REF(stack_get)         },
 
-    { "stderr", DBGP_CMD_REF(stack_get) },
-    { "stdout", DBGP_CMD_REF(stack_get) },
+    { "breakpoint_get",     DBGP_CMD_REF(breakpoint_get)    },
+    { "breakpoint_set",     DBGP_CMD_REF(breakpoint_set)    },
+    { "breakpoint_list",    DBGP_CMD_REF(breakpoint_list)   },
+    { "breakpoint_remove",  DBGP_CMD_REF(breakpoint_remove) },
+    { "breakpoint_update",  DBGP_CMD_REF(breakpoint_update) },
 
-    { "breakpoint_get", DBGP_CMD_REF(breakpoint_get) },
-    { "breakpoint_set", DBGP_CMD_REF(breakpoint_set) },
-    { "breakpoint_list", DBGP_CMD_REF(breakpoint_list) },
-    { "breakpoint_remove", DBGP_CMD_REF(breakpoint_remove) },
-    { "breakpoint_update", DBGP_CMD_REF(breakpoint_update) },
+    { "step_into",          DBGP_CMD_REF(step_into)         },
+    { "step_over",          DBGP_CMD_REF(step_over)         },
+    { "step_out",           DBGP_CMD_REF(step_out)          },
+    { "stop",               DBGP_CMD_REF(stop)              },
+    { "detach",             DBGP_CMD_REF(detach)            },
+    { "run",                DBGP_CMD_REF(run)               },
 
-    { "step_into", &do_command_step_into },
-    { "step_over", &do_command_step_over },
-    { "step_out", &do_command_step_over },
-    { "stop", &do_command_detach },
-    { "detach", &do_command_detach },
-    { "run", &do_command_run },
-    { NULL, NULL }
+    { NULL,                 NULL                            }
 };
 
 
@@ -82,7 +85,7 @@ struct dbgp_command dbgp_commands[] = {
 DBGP_CMD_DEF(context_names) {
     xmlNodePtr node;
 
-    xmlNodePtr root_node = dbgp_xml_create_response("context_names", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     node = xmlNewChild(root_node, NULL, BAD_CAST "context", NULL);
     xmlNewProp(node, BAD_CAST "name", BAD_CAST "Locals");
@@ -93,7 +96,7 @@ DBGP_CMD_DEF(context_names) {
     xmlNewProp(node, BAD_CAST "id", BAD_CAST "1");
 
     node = xmlNewChild(root_node, NULL, BAD_CAST "context", NULL);
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "Class");
+    xmlNewProp(node, BAD_CAST "name", BAD_CAST "Built-ins");
     xmlNewProp(node, BAD_CAST "id", BAD_CAST "2");
 
 
@@ -106,11 +109,14 @@ DBGP_CMD_DEF(context_names) {
  */
 DBGP_CMD_DEF(step_into) {
     di->state = DBGP_STATE_RUNNING;
+    di->step_into = 1;
 
-    xmlNodePtr root_node = dbgp_xml_create_response("step_into", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
-
-    return root_node;
+    if (di->frame == NULL || di->frame->bytecode == NULL || di->frame->bytecode->source_filename == NULL) {
+        di->step_data.frame = NULL;
+    } else {
+        di->step_data.frame = di->frame;
+    }
+    return NULL;
 }
 
 
@@ -119,12 +125,23 @@ DBGP_CMD_DEF(step_into) {
  */
 DBGP_CMD_DEF(step_over) {
     di->state = DBGP_STATE_RUNNING;
-
-    xmlNodePtr root_node = dbgp_xml_create_response("step_over", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
-
-    return root_node;
+    di->step_over = 1;
+    di->step_data.loc.file = smm_strdup(di->frame->bytecode->source_filename);
+    di->step_data.loc.line = di->frame->lineno_current_line;
+    return NULL;
 }
+
+
+/**
+ *
+ */
+DBGP_CMD_DEF(step_out) {
+    di->state = DBGP_STATE_RUNNING;
+    di->step_out = 1;
+    di->step_data.frame = di->frame;
+    return NULL;
+}
+
 
 
 /**
@@ -132,20 +149,36 @@ DBGP_CMD_DEF(step_over) {
  */
 DBGP_CMD_DEF(stack_get) {
     xmlNodePtr node;
+    char xmlbuf[1000];
 
-    // Check for -d depth
+    int i = dbgp_args_find("-d", argc, argv);
+    int depth = (i == -1) ? 0 : atoi(argv[i+1]);
 
-    xmlNodePtr root_node = dbgp_xml_create_response("stack_get", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
 
-//    node = xmlNewChild(root_node, NULL, BAD_CAST "stack_level", NULL);
-//    xmlNewProp(node, BAD_CAST "level", BAD_CAST "0");
-//    xmlNewProp(node, BAD_CAST "type", BAD_CAST "eval");
+    t_vm_frame *frame = di->frame;
 
-    node = xmlNewChild(root_node, NULL, BAD_CAST "stack_level", NULL);
-    xmlNewProp(node, BAD_CAST "level", BAD_CAST "0");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "file");
-    xmlNewProp(node, BAD_CAST "filename", BAD_CAST "/home/jthijssen/saffire/hello.sf");
-    xmlNewProp(node, BAD_CAST "lineno", BAD_CAST "1");
+    int level = 0;
+    while (frame) {
+        node = xmlNewChild(root_node, NULL, BAD_CAST "stack_level", NULL);
+        snprintf(xmlbuf, 999, "%d", level);
+        xmlNewProp(node, BAD_CAST "level", BAD_CAST xmlbuf);
+        xmlNewProp(node, BAD_CAST "type", BAD_CAST "file");
+
+        xmlNewProp(node, BAD_CAST "where", BAD_CAST "somewhere");
+
+        snprintf(xmlbuf, 999, "file://%s", frame->bytecode->source_filename);
+        xmlNewProp(node, BAD_CAST "filename", BAD_CAST xmlbuf);
+        snprintf(xmlbuf, 999, "%d", frame->lineno_current_line);
+        xmlNewProp(node, BAD_CAST "lineno", BAD_CAST xmlbuf);
+
+        level++;
+        frame = frame->parent;
+
+        // Check if we hit max depth
+        if (level == depth) frame = NULL;
+    }
+
 
     return root_node;
 }
@@ -157,26 +190,83 @@ DBGP_CMD_DEF(stack_get) {
 DBGP_CMD_DEF(context_get) {
     xmlNodePtr node;
     char xmlbuf[1000];
+    char *basebuf;
+    size_t basebuflen;
 
-//    int depth = 0;
-    int context_id = 0;
+    int i = dbgp_args_find("-c", argc, argv);
+    int context_id = atoi(argv[i+1]);
 
-    xmlNodePtr root_node = dbgp_xml_create_response("context_get", argc, argv);
+
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
     snprintf(xmlbuf, 999, "%d", context_id);
     xmlNewProp(root_node, BAD_CAST "context", BAD_CAST xmlbuf);
 
-    node = xmlNewChild(root_node, NULL, BAD_CAST "property", BAD_CAST "0xdeadbeef");
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "a");
-    xmlNewProp(node, BAD_CAST "fullname", BAD_CAST "self.a");
-    xmlNewProp(node, BAD_CAST "classname", BAD_CAST "foobar");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "numerical");
+    t_vm_frame *frame = di->frame;
 
-    node = xmlNewChild(root_node, NULL, BAD_CAST "property", NULL);
-    xmlNewProp(node, BAD_CAST "name", BAD_CAST "f");
-    xmlNewProp(node, BAD_CAST "fullname", BAD_CAST "f");
-    xmlNewProp(node, BAD_CAST "classname", BAD_CAST "numerical");
-    xmlNewProp(node, BAD_CAST "type", BAD_CAST "numerical");
 
+    t_hash_table *ht;
+    if (context_id == 0) {
+        ht = frame->local_identifiers->ht;
+    } else if (context_id == 1) {
+        ht = frame->global_identifiers->ht;
+    } else {
+        ht = frame->builtin_identifiers->ht;
+    }
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key(&iter);
+        t_object *obj = ht_iter_value(&iter);
+
+        if (OBJECT_TYPE_IS_INSTANCE(obj)) {
+
+            node = xmlNewChild(root_node, NULL, BAD_CAST "property", NULL);
+
+            if (OBJECT_IS_NUMERICAL(obj)) {
+                xmlNewProp(node, BAD_CAST "type", BAD_CAST "int");
+
+                snprintf(xmlbuf, 999, "%ld", ((t_numerical_object *)obj)->value);
+                xmlNodeSetContent(node, BAD_CAST xmlbuf);
+
+            } else if (OBJECT_IS_BOOLEAN(obj)) {
+                xmlNewProp(node, BAD_CAST "type", BAD_CAST "bool");
+
+                snprintf(xmlbuf, 999, "%ld", ((t_boolean_object *)obj)->value);
+                xmlNodeSetContent(node, BAD_CAST xmlbuf);
+
+            } else if (OBJECT_IS_STRING(obj)) {
+                xmlNewProp(node, BAD_CAST "type", BAD_CAST "string");
+
+                basebuf = base64_encode((const unsigned char *)((t_string_object *)obj)->value, strlen(((t_string_object *)obj)->value), &basebuflen);
+                printf("basebuf: '%s'\n", basebuf);
+                xmlNodeSetContent(node, BAD_CAST basebuf);
+                free(basebuf);
+                xmlNewProp(node, BAD_CAST "encoding", BAD_CAST "base64");
+
+            } else if (OBJECT_IS_USER(obj)) {
+                xmlNewProp(node, BAD_CAST "type", BAD_CAST "object");
+                xmlNodeSetContent(node, BAD_CAST "object");
+
+            } else {
+                xmlNewProp(node, BAD_CAST "type", BAD_CAST "object");
+                xmlNodeSetContent(node, BAD_CAST "unknown");
+            }
+
+            xmlNewProp(node, BAD_CAST "name", BAD_CAST key);
+            xmlNewProp(node, BAD_CAST "fullname", BAD_CAST key);
+            xmlNewProp(node, BAD_CAST "classname", BAD_CAST obj->name);
+        }
+
+        ht_iter_next(&iter);
+    }
+
+
+//
+//        t_hash_object *local_identifiers;           // Local identifiers
+//        t_hash_object *file_identifiers;            // Identifiers inside the current file (other classes, methods, imports etc)
+//        t_hash_object *global_identifiers;          // Global identifiers
+//        t_hash_object *builtin_identifiers;         // Builtin identifiers
 
     return root_node;
 }
@@ -189,10 +279,21 @@ DBGP_CMD_DEF(detach) {
     di->state = DBGP_STATE_STOPPED;
     di->attached = 0;
 
-    xmlNodePtr root_node = dbgp_xml_create_response("detach", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
     xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
 
+    return root_node;
+}
+
+
+/**
+ *
+ */
+DBGP_CMD_DEF(stop) {
     di->state = DBGP_STATE_STOPPED;
+
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
+    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
 
     return root_node;
 }
@@ -203,11 +304,7 @@ DBGP_CMD_DEF(detach) {
  */
 DBGP_CMD_DEF(run) {
     di->state = DBGP_STATE_RUNNING;
-
-    xmlNodePtr root_node = dbgp_xml_create_response("run", argc, argv);
-    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
-
-    return root_node;
+    return NULL;
 }
 
 
@@ -251,7 +348,7 @@ DBGP_CMD_DEF(breakpoint_get) {
     t_breakpoint *bp = ht_find(di->breakpoints, breakpoint_id);
     xmlNodePtr bp_node = create_breakpoint_xml(bp);
 
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_get", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
     xmlAddChild(root_node, bp_node);
 
     return root_node;
@@ -287,7 +384,11 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // State
     i = dbgp_args_find("-s", argc, argv);
-    bp->state = (i == -1) ? 1 : atoi(argv[i+1]);
+    if (i == -1 || strcmp(argv[i+1], "enabled") == 0) {
+        bp->state = 1;
+    } else {
+        bp->state = 0l;
+    }
 
     // Filename
     i = dbgp_args_find("-f", argc, argv);
@@ -329,7 +430,7 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     ht_add(di->breakpoints, bp->id, bp);
 
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_set", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
     snprintf(xmlbuf, 999, "%d", bp->state);
     xmlNewProp(root_node, BAD_CAST "state", BAD_CAST xmlbuf);
     xmlNewProp(root_node, BAD_CAST "id", BAD_CAST bp->id);
@@ -342,7 +443,7 @@ DBGP_CMD_DEF(breakpoint_set) {
  *
  */
 DBGP_CMD_DEF(breakpoint_list) {
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_list", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     t_hash_iter iter;
     ht_iter_init(&iter, di->breakpoints);
@@ -370,7 +471,7 @@ DBGP_CMD_DEF(breakpoint_remove) {
 
     ht_remove(di->breakpoints, breakpoint_id);
 
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_remove", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     return root_node;
 }
@@ -402,7 +503,7 @@ DBGP_CMD_DEF(breakpoint_update) {
     bp->hit_condition = (i == -1) ? NULL : smm_strdup(argv[i+1]);
 
 
-    xmlNodePtr root_node = dbgp_xml_create_response("breakpoint_remove", argc, argv);
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     return root_node;
 }

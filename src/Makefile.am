@@ -118,7 +118,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/output.c \
                        components/general/mutex.c \
                        components/general/printf/arg_printf.c \
-                       components/general/ini.c
+                       components/general/ini.c \
+                       components/general/base64.c
 
 
 ########################################################################

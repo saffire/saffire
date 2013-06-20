@@ -27,21 +27,40 @@
 #ifndef __DEBUGGER_DBGP_H__
 #define __DEBUGGER_DBGP_H__
 
+    #include "vm/frame.h"
+
     typedef struct _debuginfo {
         int sock_fd;            // Network socket for read/write
 
         int attached;           // Debugger is attached
         int state;              // Current state of the debugger
+        char *reason;           // Reason for which we are in the current state
         int step_into;          // boolean: step into the next statement
+        int step_over;
+        int step_out;
+
+        union {
+            struct location {
+                char *file;
+                int line;
+            } loc;
+            t_vm_frame *frame;
+        } step_data;
 
         int breakpoint_id;      // Counter for unique breakpoint ID's
         t_hash_table *breakpoints;     // Breakpoints table
+
+
+        char *cur_cmd;          // Current running command
+        char *cur_txid;         // Current transaction id
+
+        t_vm_frame *frame;      // Current attached frame
     } t_debuginfo;
 
 
     typedef struct _breakpoint {
         char *id;               // Breakpoint ID
-        int type;               // BP type: DBGP_BREAKPOINT_TYPE_*
+        char *type;             // BP type: DBGP_BREAKPOINT_TYPE_*
         char *filename;         // Filename (file://)
         int lineno;             // BP line number
         int state;              // BP enabled or not
@@ -54,23 +73,29 @@
         char *expression;       // Expression for conditional and watch BPs
     } t_breakpoint;
 
-    #define DBGP_BREAKPOINT_TYPE_LINE           1
-    #define DBGP_BREAKPOINT_TYPE_CALL           2
-    #define DBGP_BREAKPOINT_TYPE_RETURN         3
-    #define DBGP_BREAKPOINT_TYPE_EXCEPTION      4
-    #define DBGP_BREAKPOINT_TYPE_CONDITIONAL    5
-    #define DBGP_BREAKPOINT_TYPE_WATCH          6
+    #define DBGP_REASON_OK                      "ok"
+    #define DBGP_REASON_ERROR                   "error"
+    #define DBGP_REASON_ABORTED                 "aborted"
+    #define DBGP_REASON_EXCEPTION               "exception"
+
+    #define DBGP_BREAKPOINT_TYPE_LINE           "line"
+    #define DBGP_BREAKPOINT_TYPE_CALL           "call"
+    #define DBGP_BREAKPOINT_TYPE_RETURN         "return"
+    #define DBGP_BREAKPOINT_TYPE_EXCEPTION      "exception"
+    #define DBGP_BREAKPOINT_TYPE_CONDITIONAL    "conditional"
+    #define DBGP_BREAKPOINT_TYPE_WATCH          "watch"
+
+    #define DBGP_STATE_STARTING                 0
+    #define DBGP_STATE_STOPPING                 1
+    #define DBGP_STATE_STOPPED                  2
+    #define DBGP_STATE_RUNNING                  3
+    #define DBGP_STATE_BREAK                    4
 
 
-    #define DBGP_STATE_STARTING     0
-    #define DBGP_STATE_STOPPING     1
-    #define DBGP_STATE_STOPPED      2
-    #define DBGP_STATE_RUNNING      3
-    #define DBGP_STATE_BREAK        4
-
+    void dbgp_debug(t_debuginfo *di, t_vm_frame *frame);
     void dbgp_parse_incoming_commands(t_debuginfo *di);
-    t_debuginfo *dbgp_init(void);
-    void dbgp_fini(t_debuginfo *di);
+    t_debuginfo *dbgp_init(t_vm_frame *frame);
+    void dbgp_fini(t_debuginfo *di, t_vm_frame *frame);
 
 #endif
 

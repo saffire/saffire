@@ -205,6 +205,12 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
     frame->alloc_len = 0;
     frame->code_len = 0;
     frame->code = NULL;
+    frame->lino_len = 0;
+    frame->lino = NULL;
+
+    t_dll *tc = dll_init();
+    int old_lineno = 0;
+    int old_opcode_off = 0;
 
     t_dll_element *e = DLL_HEAD(source_frame);
     while (e) {
@@ -224,6 +230,34 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
             // Save opcode offset. Normally opcodes are one byte, but we reserve future use for 2 or more.
             int opcode_off = frame->code_len;
             _add_codebyte(frame, line->opcode);
+
+            if (line->lineno != 0 && line->lineno != old_lineno) {
+                int delta_lineno = line->lineno - old_lineno;
+                int delta_codeoff = opcode_off - old_opcode_off;
+                old_opcode_off = opcode_off;
+                old_lineno = line->lineno;
+
+                do {
+                    if (delta_codeoff > 127) {
+                        dll_append(tc, (void *)(128 | 127));
+                        delta_codeoff -= 127;
+                    } else {
+                        dll_append(tc, (void *)delta_codeoff);
+                        delta_codeoff = 0;
+                    }
+                } while (delta_codeoff != 0);
+
+                do {
+                    if (delta_lineno > 127) {
+                        dll_append(tc, (void *)(128 | 127));
+                        delta_lineno -= 127;
+                    } else {
+                        dll_append(tc, (void *)delta_lineno);
+                        delta_lineno = 0;
+                    }
+                } while (delta_lineno != 0);
+            }
+
 
             for (int i=0; i!=line->opr_count; i++) {
                 switch (line->opr[i]->type) {
@@ -269,6 +303,22 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
 
     // Calculate maximum stack frame
     frame->stack_size = _calculate_maximum_stack_size(frame);
+
+
+    // Set our linenumbers
+    frame->lino_len = tc->size;
+    frame->lino = (char *)smm_malloc(frame->lino_len);
+
+    int j = 0;
+    if (tc->size > 0) {
+        e = DLL_HEAD(tc)->next;     // Skip first element.
+        dll_append(tc, (void *)0);  // Add trailing marker
+        while (e) {
+            int i = (int)e->data;
+            frame->lino[j++] = (unsigned char)(i & 0xFF);
+            e = DLL_NEXT(e);
+        }
+    }
 
     return frame;
 }
@@ -397,7 +447,7 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     }
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
-    bc->filename = filename ? strdup(filename) : NULL;
+    bc->source_filename = filename ? strdup(filename) : NULL;
     ht_destroy(assembled_frames);
     return bc;
 }
@@ -482,7 +532,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                 if (i < line->opr_count-1) {
                     fprintf(f, ", ");
                 }
-                oprcnt++;
+                oprcnt+=2;
             }
         }
         fprintf(f, "\n");

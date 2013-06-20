@@ -89,7 +89,7 @@
         unsigned int lino_length;               // Length of linenumbers offset block
         unsigned char *lino;                    // Linenumber offsets
 
-        char *filename;                         // Filename
+        char *source_filename;                  // Filename of the source file
     };
 
 

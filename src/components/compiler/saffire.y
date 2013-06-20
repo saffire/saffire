@@ -618,8 +618,8 @@ method_argument:
 ;
 
 class_definition:
-        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@1.first_line, saffireParser->parserinfo->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
-    |   class_header '{'                            '}' { $$ = ast_node_class(@1.first_line, saffireParser->parserinfo->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
+        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@4.first_line, saffireParser->parserinfo->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
+    |   class_header '{'                            '}' { $$ = ast_node_class(@3.first_line, saffireParser->parserinfo->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
 ;
 
 class_header:

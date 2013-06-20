@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "debugger/dbgp/args.h"
+#include "debugger/dbgp/xml.h"
 
 /**
  *
@@ -80,15 +81,15 @@ void dbgp_xml_send(int sockfd, xmlNodePtr root_node) {
 /**
  *
  */
-xmlNodePtr dbgp_xml_create_response(char *name, int argc, char **argv) {
-    // Find transaction ID
-    int i = dbgp_args_find("-i", argc, argv);
-    char *transaction_id_str = (i != -1) ? argv[i+1] : "0";
+xmlNodePtr dbgp_xml_create_response(t_debuginfo *di) {
+//    // Find transaction ID
+//    int i = dbgp_args_find("-i", argc, argv);
+//    char *transaction_id_str = (i != -1) ? argv[i+1] : "0";
 
     xmlNodePtr root_node = xmlNewNode(NULL, BAD_CAST "response");
     xmlNewProp(root_node, BAD_CAST "xmlns", BAD_CAST "urn:debugger_protocol_v1");
-    xmlNewProp(root_node, BAD_CAST "command", BAD_CAST name);
-    xmlNewProp(root_node, BAD_CAST "transaction_id", BAD_CAST transaction_id_str);
+    xmlNewProp(root_node, BAD_CAST "command", BAD_CAST di->cur_cmd);
+    xmlNewProp(root_node, BAD_CAST "transaction_id", BAD_CAST di->cur_txid);
 
     return root_node;
 }

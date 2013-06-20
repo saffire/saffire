@@ -404,7 +404,7 @@ done:
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 4, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL);
+    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add(obj->attributes, name, attrib_obj);

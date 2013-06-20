@@ -71,6 +71,9 @@
         int alloc_len;                      // Length currently allocated inside *bytecode
         int code_len;                       // Length of the bytecode
         char *code;                         // Actual bytecode
+
+        int lino_len;                       // Line numbers length
+        char *lino;                         // compacted line numbers
     } t_asm_frame;
 
     typedef struct _asm_constant {

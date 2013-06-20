@@ -35,13 +35,13 @@
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
         char *name;
         t_bytecode *bytecode;                       // Global bytecode array
-        unsigned int ip;                            // Instruction pointer
+        int ip;                                     // Instruction pointer
 
         int lineno_lowerbound;                      // Lower bytecode offset for this line
         int lineno_upperbound;                      // Upper bytecode offset for this line
         int lineno_current_line;                    // Current line pointer
         int lineno_current_lino_offset;             // Current offset in the bytecode lineno table
-        char *source_filename;                      // Full path to source filename for this frame
+//        char *source_filename;                      // Full path to source filename for this frame
 
         t_object **stack;                           // Local variable stack
         unsigned int sp;                            // Stack pointer
@@ -66,7 +66,7 @@
     };
 
 
-    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode, char *source_filename);
+    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode);
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);

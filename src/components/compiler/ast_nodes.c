@@ -279,7 +279,6 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
     p->opr.oper = opr;
     p->opr.nops = nops;
     p->opr.ops = NULL;
-    p->lineno = lineno;
 
     if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
         fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */

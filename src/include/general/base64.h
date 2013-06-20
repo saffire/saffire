@@ -24,10 +24,10 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#ifndef __BASE64_H__
+#define __BASE64_H__
 
-    int interactive(void);
-
+    char *base64_encode(const unsigned char *data, size_t input_length, size_t *output_length);
+    unsigned char *base64_decode(const char *data, size_t input_length, size_t *output_length);
 
 #endif

@@ -234,12 +234,10 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 
-void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode, char *source_file) {
+void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
     frame->bytecode = bytecode;
     frame->ip = 0;
     frame->sp = bytecode->stack_size;
-
-    frame->source_filename = (source_file) ? smm_strdup(source_file) : NULL;
 
     // Setup variable stack
     frame->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
@@ -291,14 +289,14 @@ void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode, char *source_fi
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode, char *source_filename) {
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
+    printf("**** NEW FRAME!!! **** (%s)\n\n\n\n", bytecode ? bytecode->source_filename : "<none>");
+
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
 
-    cfr->source_filename = source_filename ? smm_strdup(source_filename) : NULL;
-
-    cfr->lineno_lowerbound = -1;
-    cfr->lineno_upperbound = -1;
+    cfr->lineno_lowerbound = 0;
+    cfr->lineno_upperbound = 0;
     cfr->lineno_current_line = 0;
     cfr->lineno_current_lino_offset = 0;
 
@@ -306,32 +304,34 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode, char *s
     cfr->parent = parent_frame;
 
     if (bytecode) {
-        vm_attach_bytecode(cfr, bytecode, source_filename);
-    } else {
-        cfr->bytecode = NULL;
-        cfr->ip = 0;
-        cfr->sp = 0;
-
-        cfr->stack = NULL;
-
-        // Set the variable hashes
-        if (cfr->parent == NULL) {
-            // Initial frame, so create a new global identifier hash
-            cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-            cfr->local_identifiers = cfr->global_identifiers;
-        } else {
-            // otherwise link globals from the parent
-            cfr->global_identifiers = cfr->parent->global_identifiers;
-            // And create new local identifier hash
-            cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-
-            // By default, don't create file identifiers
-            cfr->file_identifiers = NULL;
-        }
-
-        cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
-        cfr->constants_objects = NULL;
+        vm_attach_bytecode(cfr, bytecode);
+        return cfr;
     }
+
+
+    cfr->bytecode = NULL;
+    cfr->ip = 0;
+    cfr->sp = 0;
+
+    cfr->stack = NULL;
+
+    // Set the variable hashes
+    if (cfr->parent == NULL) {
+        // Initial frame, so create a new global identifier hash
+        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+        cfr->local_identifiers = cfr->global_identifiers;
+    } else {
+        // otherwise link globals from the parent
+        cfr->global_identifiers = cfr->parent->global_identifiers;
+        // And create new local identifier hash
+        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+
+        // By default, don't create file identifiers
+        cfr->file_identifiers = NULL;
+    }
+
+    cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
+    cfr->constants_objects = NULL;
 
     return cfr;
 }
@@ -342,10 +342,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode, char *s
 void vm_frame_destroy(t_vm_frame *frame) {
     // @TODO: Remove identifiers in the local_identifiers hash object
     object_free((t_object *)frame->local_identifiers);
-
-    if (frame->source_filename) {
-        smm_free(frame->source_filename);
-    }
 
     // Destroy global identifiers when this frame is the initial one
     if (! frame->parent) {

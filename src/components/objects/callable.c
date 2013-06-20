@@ -182,6 +182,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     callable_obj->binding = (t_object *)e->data;
     e = DLL_NEXT(e);
+
     callable_obj->arguments = (t_hash_object *)e->data;
     e = DLL_NEXT(e);
 }

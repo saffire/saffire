@@ -35,6 +35,7 @@
 #include "debugger/dbgp/commands.h"
 #include "general/output.h"
 #include "debug.h"
+#include "general/smm.h"
 
 extern struct dbgp_command dbgp_commands[];
 extern char *dbgp_status_names[5];
@@ -77,15 +78,27 @@ static void dbgp_read_commandline(int sockfd, int *argc, char ***argv) {
  * Read commandline and execute the found commands
  */
 static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[]) {
+    if (argc == 0) return;
+
     for (int i=0; i!=argc; i++) {
-        printf ("  Arg %d : '%s'\n", i, argv[i]);
+        printf ("'%s' ", argv[i]);
     }
+    printf("\n");
 
     struct dbgp_command *p = dbgp_commands;
     while (p->command) {
         if (! strcmp(argv[0], p->command)) {
+            di->cur_cmd = p->command;
+
+            // Save some info like current command and transaction id
+            if (di->cur_txid) free(di->cur_txid);
+            int i = dbgp_args_find("-i", argc, argv);
+            di->cur_txid = strdup(argv[i+1]);
+
             // Do command
             xmlNodePtr root_node = p->func(di, argc, argv);
+
+            // Send back XML (if any)
             if (root_node) {
                 dbgp_xml_send(di->sock_fd, root_node);
             }
@@ -95,7 +108,7 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
         p++;
     }
     if (p->command == NULL) {
-        printf("Command '%s' not found.\n", p->command);
+//        printf("Command '%s' not found.\n", p->command);
     }
 }
 
@@ -103,7 +116,7 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
 /**
  *
  */
-t_debuginfo *dbgp_init(void) {
+t_debuginfo *dbgp_init(t_vm_frame *frame) {
     DEBUG_PRINT(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
 
     t_debuginfo *di = (t_debuginfo *)malloc(sizeof(t_debuginfo));
@@ -112,9 +125,15 @@ t_debuginfo *dbgp_init(void) {
     di->sock_fd = 0;
     di->attached = 1;
     di->step_into = 0;
+    di->step_over = 0;
+    di->step_out = 0;
     di->state = DBGP_STATE_STARTING;
     di->breakpoint_id = 1000;
-        di->breakpoints = ht_create();
+    di->breakpoints = ht_create();
+    di->cur_cmd = NULL;
+    di->cur_txid = NULL;
+
+    di->frame = frame;
 
 
     // Create a connection to the IDE.
@@ -137,6 +156,8 @@ t_debuginfo *dbgp_init(void) {
     // Do data transfers and such
     dbgp_parse_incoming_commands(di);
 
+    printf("\n\n\n**** END OF INIT ****\n\n\n");
+
     return di;
 }
 
@@ -144,7 +165,20 @@ t_debuginfo *dbgp_init(void) {
 /**
  *
  */
-void dbgp_fini(t_debuginfo *di) {
+void dbgp_fini(t_debuginfo *di, t_vm_frame *frame) {
+    di->frame = frame;
+
+    di->state = DBGP_STATE_STOPPING;
+    di->reason = DBGP_REASON_OK;
+
+    // Set out response XML, and do final cleanup
+    xmlNodePtr root_node = dbgp_xml_create_response(di);
+    xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+    xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+    dbgp_xml_send(di->sock_fd, root_node);
+    dbgp_parse_incoming_commands(di);
+
+    // Destroy the rest
     ht_destroy(di->breakpoints);
     dbgp_xml_fini();
     dbgp_sock_fini(di->sock_fd);
@@ -159,16 +193,122 @@ void dbgp_parse_incoming_commands(t_debuginfo *di) {
     char **argv;
     int argc;
 
-    printf("\n\n\nPARSING!\n\n\n\n\n\n");
+    printf("dbgp_parse_incoming_commands() init\n");
 
-    // Repeat fetching commands until our certain status
+    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->bytecode) ? di->frame->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
 
-    while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED) {
-        printf("current DI-State: %s (%d)\n", dbgp_status_names[di->state], di->state);
+    // Repeat fetching commands until certain states
+    while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED && di->state != DBGP_STATE_STOPPING) {
+        printf("\n *** current DI-State: %s (%d)\n", dbgp_status_names[di->state], di->state);
         dbgp_read_commandline(di->sock_fd, &argc, &argv);
         dbgp_parse_incoming_command(di, argc, argv);
         dbgp_args_free(argv);
     }
 
-    printf("\n\n\nDONE PARSING!\n\n\n\n\n\n");
+    printf("dbgp_parse_incoming_commands() fini\n");
+}
+
+
+void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
+    // Set the current frame in our DI object. This allows our commands to deal with frame related data
+    di->frame = frame;
+
+    printf("dbgp_debug\n");
+    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->bytecode) ? di->frame->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
+
+//    printf("Debug breakpoints\n");
+//    printf("-----------------\n");
+
+    // Check for step into
+    if (di->step_into) {
+        di->step_into = 0;  // Clear stepping into
+
+        // Debugger is doing a break
+        di->state = DBGP_STATE_BREAK;
+
+        // Assume everything is ok
+        di->reason = DBGP_REASON_OK;
+
+        // Set out response XML
+        xmlNodePtr root_node = dbgp_xml_create_response(di);
+        xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+        xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+        dbgp_xml_send(di->sock_fd, root_node);
+
+        // Parse commands from IDE
+        dbgp_parse_incoming_commands(di);
+        return;
+    }
+
+    printf("Frame sourcefile: '%s'\n", frame->bytecode->source_filename);
+    printf("LOC.FILE: '%s'\n", di->step_data.loc.file);
+
+    // Check for step_over and make sure line number has changed and we're in the current frame
+    if (di->step_over &&
+        di->step_data.loc.line != frame->lineno_current_line &&
+        frame->bytecode->source_filename != NULL &&
+        strcmp(di->step_data.loc.file, frame->bytecode->source_filename) == 0
+       ) {
+        di->step_over = 0;  // Clear stepping over
+
+        // filename is a copy. Free it
+        smm_free(di->step_data.loc.file);
+
+        // Debugger is doing a break
+        di->state = DBGP_STATE_BREAK;
+
+        // Assume everything is ok
+        di->reason = DBGP_REASON_OK;
+
+        // Set out response XML
+        xmlNodePtr root_node = dbgp_xml_create_response(di);
+        xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+        xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+        dbgp_xml_send(di->sock_fd, root_node);
+
+        // Parse commands from IDE
+        dbgp_parse_incoming_commands(di);
+        return;
+    }
+
+//    // Check for step_out
+//    if (di->step_out) {
+//        di->step_out = 0;
+//    }
+
+
+
+
+    // Check for breakpoints
+    t_hash_iter iter;
+    for (ht_iter_init(&iter, di->breakpoints); ht_iter_valid(&iter); ht_iter_next(&iter)) {
+        // Fetch breakpoint
+        char *id = ht_iter_key(&iter);
+        t_breakpoint *bp = ht_find(di->breakpoints, id);
+
+        printf("%s %d %s(%d)\n", bp->id, bp->state, bp->filename, bp->lineno);
+
+        // Skip if not enabled
+        if (bp->state == 0) continue;
+
+        if (strcmp(bp->type, DBGP_BREAKPOINT_TYPE_LINE) == 0) {
+            // Check line number first, easier match
+            if (bp->lineno == frame->lineno_current_line &&
+                strcmp(bp->filename+7, frame->bytecode->source_filename) == 0 &&
+                strncmp(bp->filename, "file://", 7) == 0) {
+
+                // Matched line breakpoint!
+
+                di->state = DBGP_STATE_BREAK;
+                di->reason = DBGP_REASON_OK;
+
+                xmlNodePtr root_node = dbgp_xml_create_response(di);
+                xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+                xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+                dbgp_xml_send(di->sock_fd, root_node);
+
+                dbgp_parse_incoming_commands(di);
+            }
+        }
+    }
 }

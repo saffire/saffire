@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <limits.h>
 #include "general/output.h"
 #include "compiler/bytecode.h"
 #include "general/smm.h"
@@ -37,6 +38,7 @@
 #include "general/hashtable.h"
 #include "compiler/output/asm.h"
 #include "compiler/ast_to_asm.h"
+#include "general/path_handling.h"
 
 
 /**
@@ -351,8 +353,10 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     smm_free(bzip_buf);
 
 
-    // Set filename
-    bc->filename = smm_strdup(filename);
+    // Set source filename @TODO: Maybe needs realpath first!
+    char *source_path = replace_extension(filename, ".sfc", ".sf");
+    bc->source_filename = realpath(source_path, NULL);
+    smm_free(source_path);
 
     // Return bytecode
     return bc;
@@ -456,8 +460,8 @@ void bytecode_free(t_bytecode *bc) {
     }
     smm_free(bc->identifiers);
 
-    if (bc->filename) {
-        smm_free(bc->filename);
+    if (bc->source_filename) {
+        smm_free(bc->source_filename);
     }
 
     smm_free(bc);
@@ -620,6 +624,11 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     bc->code = smm_malloc(bc->code_len);
     memcpy(bc->code, frame->code, bc->code_len);
 
+    bc->lino_offset = startline;
+    bc->lino_length = frame->lino_len;
+    bc->lino = smm_malloc(bc->lino_length);
+    memcpy(bc->lino, frame->lino, bc->lino_length);
+
     // Add constants (order matter!)
     e = DLL_HEAD(frame->constants);
     while (e) {
@@ -646,55 +655,6 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
         e = DLL_NEXT(e);
     }
 
-
-    // Create line numbers
-    int ip = 0, old_ip = 0;
-    t_dll *lc = dll_init();
-    dll_append(lc, ip);
-
-    while (ip < bc->code_len) {
-        unsigned char opcode = frame->bytecode->code[frame->ip];
-        ip++;
-
-        // If high bit is set, get operand
-        ((opcode & 0x80) == 0x80) ? ip += 2 : 0;
-        ((opcode & 0xC0) == 0xC0) ? ip += 2 : 0;
-        ((opcode & 0xE0) == 0xE0) ? ip += 2 : 0;
-
-        // Store diff with old_ip
-        int delta = ip - old_ip;
-
-        dll_append(lc, ip);
-    }
-
-    // Convert our linenumber DLL into a normal array
-    bc->lineno_offset = startline;
-    bc->lino_length = lc->count;
-    bc->lino = (char *)malloc(bc->lino_length);
-    e = DLL_HEAD(lc);
-    for (int i=0; i!=lc->count; i++) {
-        bc->lineno[i] = (char *)e->data;
-        e = DLL_NEXT(e);
-    }
-    dll_free(lc);
-
-//    // Add (fixed) lineno's for now...
-//    bc->lino_offset = startline; // 0xAA
-//    bc->lino_length = 13;
-//    bc->lino = malloc(13);
-//    bc->lino[0] = 0;
-//    bc->lino[1] = 1;
-//    bc->lino[2] = 10;
-//    bc->lino[3] = 1;
-//    bc->lino[4] = 5;
-//    bc->lino[5] = 1;
-//    bc->lino[6] = 20;
-//    bc->lino[7] = 6;
-//    bc->lino[8] = 151;
-//    bc->lino[9] = 127;
-//    bc->lino[10] = 1;
-//    bc->lino[11] = 1;
-//    bc->lino[12] = 1;
     return bc;
 }
 

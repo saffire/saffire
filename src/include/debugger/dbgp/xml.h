@@ -30,11 +30,13 @@
     #include <libxml/parser.h>
     #include <libxml/tree.h>
 
+    #include "debugger/dbgp/dbgp.h"
+
     void dbgp_xml_init(void);
     void dbgp_xml_fini(void);
 
     void dbgp_xml_send(int sockfd, xmlNodePtr root_node);
-    xmlNodePtr dbgp_xml_create_response(char *name, int argc, char **argv);
+    xmlNodePtr dbgp_xml_create_response(t_debuginfo *di);
     xmlNodePtr dbgp_xml_create_init_node(void);
 
 #endif
