@@ -108,7 +108,12 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
         p++;
     }
     if (p->command == NULL) {
-//        printf("Command '%s' not found.\n", p->command);
+        xmlNodePtr root_node = dbgp_xml_create_response(di);
+        xmlNodePtr node = xmlNewChild(root_node, NULL, BAD_CAST "error", NULL);
+        xmlNewProp(node, BAD_CAST "code", BAD_CAST "4");
+        xmlNodePtr node2 = xmlNewChild(node, NULL, BAD_CAST "error", NULL);
+        xmlNodeSetContent(node2, BAD_CAST "Unimplemented command");
+        dbgp_xml_send(di->sock_fd, root_node);
     }
 }
 
@@ -128,6 +133,7 @@ t_debuginfo *dbgp_init(t_vm_frame *frame) {
     di->step_over = 0;
     di->step_out = 0;
     di->state = DBGP_STATE_STARTING;
+    di->reason = DBGP_REASON_OK;
     di->breakpoint_id = 1000;
     di->breakpoints = ht_create();
     di->cur_cmd = NULL;
@@ -199,7 +205,7 @@ void dbgp_parse_incoming_commands(t_debuginfo *di) {
 
     // Repeat fetching commands until certain states
     while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED && di->state != DBGP_STATE_STOPPING) {
-        printf("\n *** current DI-State: %s (%d)\n", dbgp_status_names[di->state], di->state);
+//        printf("\n *** current DI-State: %s (%d)\n", dbgp_status_names[di->state], di->state);
         dbgp_read_commandline(di->sock_fd, &argc, &argv);
         dbgp_parse_incoming_command(di, argc, argv);
         dbgp_args_free(argv);
@@ -219,63 +225,120 @@ void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
 //    printf("Debug breakpoints\n");
 //    printf("-----------------\n");
 
+
+    /*
+        STEP INTO the next statement
+            * break if we are on a next line
+            * break if we are on a new frame
+            * break when we just started
+    */
+
     // Check for step into
     if (di->step_into) {
-        di->step_into = 0;  // Clear stepping into
+        int breaking = 0;
 
-        // Debugger is doing a break
-        di->state = DBGP_STATE_BREAK;
+        // Break when we just started
+        if (frame->bytecode == NULL) breaking = 1;
+        // Break when no frame is known
+        else if (di->step_data.frame == NULL) breaking = 1;
+        // Break when we are in the same frame, but different line number
+        else if (di->step_data.frame == frame && di->step_data.lineno != frame->lineno_current_line) breaking = 1;
+        // Break when we are inside a child frame
+        else if (di->step_data.frame != frame) breaking = 1;
+//        else if (di->step_data.frame == frame->parent) breaking = 1;
+//        else if (di->step_data.frame->parent == frame) breaking = 1;
 
-        // Assume everything is ok
-        di->reason = DBGP_REASON_OK;
+        if (breaking) {
+            di->step_into = 0;  // Clear stepping into
 
-        // Set out response XML
-        xmlNodePtr root_node = dbgp_xml_create_response(di);
-        xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
-        xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
-        dbgp_xml_send(di->sock_fd, root_node);
+            // Debugger is doing a break
+            di->state = DBGP_STATE_BREAK;
 
-        // Parse commands from IDE
-        dbgp_parse_incoming_commands(di);
-        return;
+            // Assume everything is ok
+            di->reason = DBGP_REASON_OK;
+
+            // Set out response XML
+            xmlNodePtr root_node = dbgp_xml_create_response(di);
+            xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+            xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+            dbgp_xml_send(di->sock_fd, root_node);
+
+            // Parse commands from IDE
+            dbgp_parse_incoming_commands(di);
+            return;
+        }
     }
 
     printf("Frame sourcefile: '%s'\n", frame->bytecode->source_filename);
-    printf("LOC.FILE: '%s'\n", di->step_data.loc.file);
+    printf("LOC.FILE: '%s'\n", di->step_data.file);
+
+
+    /*
+        STEP OVER the next statement
+            * break if we are on a next line in same frame
+    */
 
     // Check for step_over and make sure line number has changed and we're in the current frame
-    if (di->step_over &&
-        di->step_data.loc.line != frame->lineno_current_line &&
-        frame->bytecode->source_filename != NULL &&
-        strcmp(di->step_data.loc.file, frame->bytecode->source_filename) == 0
-       ) {
-        di->step_over = 0;  // Clear stepping over
+    if (di->step_over) {
+        int breaking = 0;
 
-        // filename is a copy. Free it
-        smm_free(di->step_data.loc.file);
+        // Break when we are not on the same line number, but in the same frame
+        if (di->step_data.frame == frame && di->step_data.lineno != frame->lineno_current_line) {
+            breaking = 1;
+        }
 
-        // Debugger is doing a break
-        di->state = DBGP_STATE_BREAK;
+        if (breaking) {
+            di->step_over = 0;  // Clear stepping over
 
-        // Assume everything is ok
-        di->reason = DBGP_REASON_OK;
+            // Debugger is doing a break
+            di->state = DBGP_STATE_BREAK;
 
-        // Set out response XML
-        xmlNodePtr root_node = dbgp_xml_create_response(di);
-        xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
-        xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
-        dbgp_xml_send(di->sock_fd, root_node);
+            // Assume everything is ok
+            di->reason = DBGP_REASON_OK;
 
-        // Parse commands from IDE
-        dbgp_parse_incoming_commands(di);
-        return;
+            // Set out response XML
+            xmlNodePtr root_node = dbgp_xml_create_response(di);
+            xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+            xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+            dbgp_xml_send(di->sock_fd, root_node);
+
+            // Parse commands from IDE
+            dbgp_parse_incoming_commands(di);
+            return;
+        }
     }
 
-//    // Check for step_out
-//    if (di->step_out) {
-//        di->step_out = 0;
-//    }
 
+    /*
+        STEP OUT the next statement
+            * break if we hit the parent frame
+    */
+    if (di->step_out) {
+        int breaking = 0;
+
+        // Break until we hit the parent frame
+        if (frame == di->step_data.frame) breaking = 1;
+
+        if (breaking) {
+            di->step_out = 0;  // Clear stepping out
+
+            // Debugger is doing a break
+            di->state = DBGP_STATE_BREAK;
+
+            // Assume everything is ok
+            di->reason = DBGP_REASON_OK;
+
+            // Set out response XML
+            xmlNodePtr root_node = dbgp_xml_create_response(di);
+            xmlNewProp(root_node, BAD_CAST "status", BAD_CAST dbgp_status_names[di->state]);
+            xmlNewProp(root_node, BAD_CAST "reason", BAD_CAST di->reason);
+            dbgp_xml_send(di->sock_fd, root_node);
+
+            // Parse commands from IDE
+            dbgp_parse_incoming_commands(di);
+            return;
+        }
+    }
 
 
 

@@ -42,20 +42,40 @@
         &do_command_##name
 
 
-    DBGP_CMD_DEF(context_names);
-    DBGP_CMD_DEF(context_get);
-    DBGP_CMD_DEF(stack_get);
-    DBGP_CMD_DEF(breakpoint_get);
-    DBGP_CMD_DEF(breakpoint_set);
-    DBGP_CMD_DEF(breakpoint_list);
-    DBGP_CMD_DEF(breakpoint_remove);
-    DBGP_CMD_DEF(breakpoint_update);
+    DBGP_CMD_DEF(status);
+
+    DBGP_CMD_DEF(feature_get);
+    DBGP_CMD_DEF(feature_set);
+
+    DBGP_CMD_DEF(run);
     DBGP_CMD_DEF(step_into);
     DBGP_CMD_DEF(step_over);
     DBGP_CMD_DEF(step_out);
-    DBGP_CMD_DEF(detach);
     DBGP_CMD_DEF(stop);
-    DBGP_CMD_DEF(run);
+    DBGP_CMD_DEF(detach);
+
+    DBGP_CMD_DEF(breakpoint_get);
+    DBGP_CMD_DEF(breakpoint_set);
+    DBGP_CMD_DEF(breakpoint_update);
+    DBGP_CMD_DEF(breakpoint_remove);
+    DBGP_CMD_DEF(breakpoint_list);
+
+    DBGP_CMD_DEF(stack_depth);
+    DBGP_CMD_DEF(stack_get);
+
+    DBGP_CMD_DEF(context_names);
+    DBGP_CMD_DEF(context_get);
+
+    DBGP_CMD_DEF(typemap_get);
+    DBGP_CMD_DEF(property_get);
+    DBGP_CMD_DEF(property_set);
+    DBGP_CMD_DEF(property_value);
+
+    DBGP_CMD_DEF(source);
+
+    DBGP_CMD_DEF(set_stdout);
+    DBGP_CMD_DEF(set_stderr);
+
 
 #endif // __DEBUGGER_DBGP_COMMANDS_H__
 

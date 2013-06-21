@@ -234,7 +234,11 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 
-void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
+void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytecode) {
+    // Make sure we free the context name if any was present
+    if (frame->context) smm_free(frame->context);
+    frame->context = smm_strdup(context_name);
+
     frame->bytecode = bytecode;
     frame->ip = 0;
     frame->sp = bytecode->stack_size;
@@ -269,6 +273,8 @@ void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
+                // We create a reference to the source filename of the original bytecode name.
+                bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
                 obj = object_new(Object_Callable, 4, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
                 break;
             case BYTECODE_CONST_STRING :
@@ -289,31 +295,32 @@ void vm_attach_bytecode(t_vm_frame *frame, t_bytecode *bytecode) {
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode) {
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode) {
     printf("**** NEW FRAME!!! **** (%s)\n\n\n\n", bytecode ? bytecode->source_filename : "<none>");
 
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
 
-    cfr->lineno_lowerbound = 0;
-    cfr->lineno_upperbound = 0;
-    cfr->lineno_current_line = 0;
-    cfr->lineno_current_lino_offset = 0;
-
+//    cfr->lineno_lowerbound = 0;
+//    cfr->lineno_upperbound = 0;
+//    cfr->lineno_current_line = 0;
+//    cfr->lineno_current_lino_offset = 0;
 
     cfr->parent = parent_frame;
 
     if (bytecode) {
-        vm_attach_bytecode(cfr, bytecode);
+        vm_attach_bytecode(cfr, context_name, bytecode);
         return cfr;
     }
 
+    if (context_name) {
+        cfr->context = smm_strdup(context_name);
+    }
 
+    cfr->stack = NULL;
     cfr->bytecode = NULL;
     cfr->ip = 0;
     cfr->sp = 0;
-
-    cfr->stack = NULL;
 
     // Set the variable hashes
     if (cfr->parent == NULL) {

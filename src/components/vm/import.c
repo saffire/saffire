@@ -58,7 +58,7 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     bc->source_filename = smm_strdup(source_file);
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, bc);
+    t_vm_frame *module_frame = vm_frame_new(frame, "{import}", bc);
     vm_execute(module_frame);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");

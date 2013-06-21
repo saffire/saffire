@@ -33,7 +33,7 @@
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
-        char *name;
+        char *context;                              // Name, {main} or FQ method name
         t_bytecode *bytecode;                       // Global bytecode array
         int ip;                                     // Instruction pointer
 
@@ -66,7 +66,8 @@
     };
 
 
-    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode);
+    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode);
+    void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytecode);
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);

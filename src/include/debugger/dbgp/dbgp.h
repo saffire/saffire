@@ -39,11 +39,9 @@
         int step_over;
         int step_out;
 
-        union {
-            struct location {
-                char *file;
-                int line;
-            } loc;
+        struct _step_data {
+            char *file;
+            int lineno;
             t_vm_frame *frame;
         } step_data;
 

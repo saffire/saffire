@@ -206,8 +206,7 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     module_init();
 
     // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL);
-    //initial_frame->sp = sp;
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
 
     thread_set_current_frame(initial_frame);
 
@@ -1421,9 +1420,12 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Internal function call
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
+        char context[250];
+        snprintf(context, 250, "%s.%s([%ld args])", self->name, callable_obj->name, arg_list->size);
+
         // Create a new execution frame
         t_vm_frame *cur_frame = thread_get_current_frame();
-        t_vm_frame *new_frame = vm_frame_new(cur_frame, callable_obj->code.bytecode);
+        t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
