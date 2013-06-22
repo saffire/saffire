@@ -19,7 +19,7 @@ else
 endif
 
 # Add top include dir
-AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) $(augeas_CFLAGS)
+AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) ${libxml2_CFLAGS}
 
 # Complain about everything, except unused functions
 AM_CFLAGS += -Wall -Wno-unused-function
@@ -78,12 +78,12 @@ CLEANFILES = components/compiler/parser.tab.c \
 noinst_LIBRARIES += libcompiler.a
 libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/lex.yy.c \
-                        components/compiler/ast.c \
-                        components/compiler/dot.c \
+                        components/compiler/parser_helpers.c \
+                        components/compiler/ast_nodes.c \
                         components/compiler/bytecode.c \
-                        components/compiler/compiler.c \
-                        components/compiler/ast_walker.c \
-                        components/compiler/assembler.c
+                        components/compiler/ast_to_asm.c \
+                        components/compiler/output/dot.c \
+                        components/compiler/output/asm.c
 
 
 ########################################################################
@@ -117,7 +117,9 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/config.c \
                        components/general/output.c \
                        components/general/mutex.c \
-                       components/general/printf/arg_printf.c
+                       components/general/printf/arg_printf.c \
+                       components/general/ini.c \
+                       components/general/base64.c
 
 
 ########################################################################
@@ -128,6 +130,17 @@ noinst_LIBRARIES += libmodules.a
 libmodules_a_SOURCES = components/modules/module_api.c \
                        components/modules/io.c \
                        components/modules/saffire.c
+
+########################################################################
+# components/debugger
+########################################################################
+
+noinst_LIBRARIES += libdebugger.a
+libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c \
+                        components/debugger/dbgp/xml.c \
+                        components/debugger/dbgp/sock.c \
+                        components/debugger/dbgp/args.c \
+                        components/debugger/dbgp/commands.c
 
 
 ########################################################################
@@ -164,7 +177,8 @@ libobjects_a_SOURCES = components/objects/object.c \
 ########################################################################
 
 noinst_LIBRARIES += librepl.a
-librepl_a_SOURCES = components/repl/repl.c
+librepl_a_SOURCES = components/repl/repl.c \
+                    components/repl/prompt.c
 
 
 ########################################################################
@@ -212,12 +226,13 @@ SAFFIRE_LIBS = \
                  libvm.a \
                  libgc.a \
                  libgeneral.a \
-                 libmodules.a
+                 libmodules.a \
+                 libdebugger.a
 
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread
+saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
@@ -240,10 +255,12 @@ libtests_a_SOURCES = ../unittests/core/main.c
 TESTS = utmain
 check_PROGRAMS = utmain
 
-utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) $(augeas_LIBS) -lpthread -lcunit
+utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread -lcunit
 
 utmain_SOURCES = \
                     ../unittests/core/main.c \
                     ../unittests/core/hashtable/hashtable.c \
                     ../unittests/core/dll/dll.c \
-                    ../unittests/core/bz2/bz2.c
+                    ../unittests/core/bz2/bz2.c \
+                    ../unittests/core/ini/ini.c
+

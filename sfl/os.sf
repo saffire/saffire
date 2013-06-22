@@ -11,6 +11,8 @@ class os {
     const GLOB_ONLYDIR  = 32;   // Return only directory entries which match the pattern
     const GLOB_ERR      = 64;   // Stop on read errors (like unreadable directories), by default errors are ignored.
 
+    public property platform;       // Actual running platform
+
     /**
      * Returns trailing name component of path
      */

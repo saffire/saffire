@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <limits.h>
 #include "general/output.h"
 #include "compiler/bytecode.h"
 #include "general/smm.h"
@@ -35,9 +36,9 @@
 #include "general/bzip2.h"
 #include "general/config.h"
 #include "general/hashtable.h"
-#include "compiler/assembler.h"
-#include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
+#include "compiler/ast_to_asm.h"
+#include "general/path_handling.h"
 
 
 /**
@@ -61,7 +62,7 @@ static void _free_constant(t_bytecode_constant *c) {
              bytecode_free(c->data.code);
              break;
          default :
-             error_and_die(1, "Unknown constant type %d\n", c->type);
+             fatal_error(1, "Unknown constant type %d\n", c->type);
              break;
      }
 }
@@ -194,7 +195,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
                 _new_constant_code(bytecode, child_bytecode);
                 break;
             default :
-                error_and_die(1, "Unknown constant type %d\n", type);
+                fatal_error(1, "Unknown constant type %d\n", type);
                 break;
         }
     }
@@ -210,6 +211,15 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
         s[j] = '\0';
         _new_name(bytecode, s);
         smm_free(s);
+    }
+
+    // Read lineno's
+    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_offset);
+    _read_buffer(bincode, &pos, sizeof(int), &bytecode->lino_length);
+    bytecode->lino = NULL;
+    if (bytecode->lino_length > 0) {
+        bytecode->lino = smm_malloc(bytecode->lino_length);
+        _read_buffer(bincode, &pos, bytecode->lino_length, bytecode->lino);
     }
 
     return bytecode;
@@ -248,7 +258,7 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
-                error_and_die(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
+                fatal_error(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
                 break;
         }
     }
@@ -259,6 +269,11 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
         _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->identifiers[i]->len);
         _write_buffer(bincode, bincode_off, bytecode->identifiers[i]->len, bytecode->identifiers[i]->s);
     }
+
+    // Write linenumber offsets
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_offset);
+    _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->lino_length);
+    _write_buffer(bincode, bincode_off, bytecode->lino_length, bytecode->lino);
 
     return 1;
 }
@@ -304,7 +319,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
         // Verify signature
         if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
-            error_and_die(1, "The signature for this bytecode is INVALID!");
+            fatal_error(1, "The signature for this bytecode is INVALID!");
         }
     }
 
@@ -314,12 +329,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     unsigned int bzip_buf_len = header.bytecode_uncompressed_len;
     char *bzip_buf = smm_malloc(bzip_buf_len);
     if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-        error_and_die(1, "Error while decompressing data");
+        fatal_error(1, "Error while decompressing data");
     }
 
     // Sanity check. These should match
     if (bzip_buf_len != header.bytecode_uncompressed_len) {
-        error_and_die(1, "Header information does not match with the size of the uncompressed data block");
+        fatal_error(1, "Header information does not match with the size of the uncompressed data block");
     }
 
     // Free unpacked binary code. We don't need it anymore
@@ -332,14 +347,16 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     // Convert binary to bytecode
     t_bytecode *bc = bytecode_bin2bc(bincode);
     if (! bc) {
-        error_and_die(1, "Could not convert bytecode data");
+        fatal_error(1, "Could not convert bytecode data");
     }
 
     smm_free(bzip_buf);
 
 
-    // Set filename
-    bc->filename = smm_strdup(filename);
+    // Set source filename @TODO: Maybe needs realpath first!
+    char *source_path = replace_extension(filename, ".sfc", ".sf");
+    bc->source_filename = realpath(source_path, NULL);
+    smm_free(source_path);
 
     // Return bytecode
     return bc;
@@ -355,7 +372,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
 
     // Convert bytecode to bincode
     if (! bytecode_bc2bin(bc, &bincode_len, &bincode)) {
-        error_and_die(1, "Could not convert bytecode data");
+        fatal_error(1, "Could not convert bytecode data");
         return 0;
     }
 
@@ -385,7 +402,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
     unsigned int bzip_buf_len = 0;
     char *bzip_buf = NULL;
     if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
-        error_and_die(1, "Error while compressing data");
+        fatal_error(1, "Error while compressing data");
     }
 
     // Forget about the original bincode and replace it with out bzip2 data.
@@ -443,8 +460,8 @@ void bytecode_free(t_bytecode *bc) {
     }
     smm_free(bc->identifiers);
 
-    if (bc->filename) {
-        smm_free(bc->filename);
+    if (bc->source_filename) {
+        smm_free(bc->source_filename);
     }
 
     smm_free(bc);
@@ -562,7 +579,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
         _gpg_key = gpg_key;
     }
     if (_gpg_key == NULL) {
-        error("Cannot find GPG key. Please set the correct GPG key inside your INI file");
+        fatal_error(1, "Cannot find GPG key. Please set the correct GPG key inside your INI file");
         return 1;
     }
     gpg_sign(_gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);
@@ -590,7 +607,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 /**
  *
  */
-t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
+t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int startline) {
     t_dll_element *e;
 
     // Seek frame
@@ -607,13 +624,18 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name) {
     bc->code = smm_malloc(bc->code_len);
     memcpy(bc->code, frame->code, bc->code_len);
 
+    bc->lino_offset = startline;
+    bc->lino_length = frame->lino_len;
+    bc->lino = smm_malloc(bc->lino_length);
+    memcpy(bc->lino, frame->lino, bc->lino_length);
+
     // Add constants (order matter!)
     e = DLL_HEAD(frame->constants);
     while (e) {
         t_asm_constant *c = (t_asm_constant *)e->data;
         switch (c->type) {
             case const_code :
-                _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s));
+                _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s, 1));
                 break;
             case const_string :
                 _new_constant_string(bc, c->data.s);
@@ -648,13 +670,15 @@ t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *byte
     t_ast_element *ast = ast_generate_from_file(source_file);
     if (! ast) return NULL;
 
-    t_hash_table *asm_code = ast_walker(ast);
+    t_hash_table *asm_code = ast_to_asm(ast, 1);
     if (! asm_code) {
         ast_free_node(ast);
         return NULL;
     }
 
-    t_bytecode *bc = assembler(asm_code);
+    //t_bytecode *bc = ast2bc(ast);
+
+    t_bytecode *bc = assembler(asm_code, source_file);
     if (! bc) {
         ast_free_node(ast);
         assembler_free(asm_code);

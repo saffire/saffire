@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -39,15 +39,16 @@
 static const char *default_ini[] = {
     "[global]",
     "# Global log information",
-    "log.level = debug     # debug, notice, warning, error",
     "log.path = /var/log/saffire/saffire.log",
+    "# Values for log.level: debug, notice, warning, error",
+    "log.level = debug",
     "",
     "",
     "[gpg]",
     "# Path to the GPG application",
     "path = /usr/bin/gpg",
     "# Your GPG key to sign any modules or bytecode",
-    "key = 0xFFFFFFFF",
+    "key = ",
     "",
     "",
     "[compile]",
@@ -60,7 +61,8 @@ static const char *default_ini[] = {
     "",
     "# Log information",
     "log.path = /var/log/saffire/fastcgi.log",
-    "log.level = notice       # debug, notice, warning, error",
+    "# Values for log.level: debug, notice, warning, error",
+    "log.level = notice",
     "",
     "# When true, the FastCGI server will deamonize into the background",
     "daemonize = true",
@@ -88,14 +90,68 @@ static const char *default_ini[] = {
     "#status.url = /status",
     "#ping.url = /ping",
     "#ping.response = \"pong\"",
-    ""
+    "",
+    "[repl]",
+    "# Default REPL command prompt. Supports the following placeholders: ",
+    "#   %%   Literal %",
+    "#   %a   ANSI Escape code",
+    "#   %d   Date (dd/mm/yyyy)",
+    "#   %D   Date (mm/dd/yyyy)",
+    "#   %l   Line number",
+    "#   %n   Newline",
+    "#   %x   Context",
+    "#   %t   time (h:i:s)",
+    "#   %T   time (H:i:s)",
+    "ps1 = (%a[33m;%l%a[0m;) [%a[34m;%x%a[0m;] >",
+    "",
+    "# Second command prompt which is used when entering more lines",
+    "ps2 = ... >",
+    "",
+    "# Readline editor mode: emacs or vi",
+    "editor = emacs",
+    "",
+    "# History file to save repl history",
+    "history.file = ~/.saffire.history",
+    "",
+    "# Maximum number of items in the history file",
+    "history.size = 800",
+    "",
+    "# Display the saffire logo upon start of the repl",
+    "logo = false"
 };
 
 // Default INI file @TODO: platform specific!
-char global_ini_file[] = "/etc/saffire/saffire.ini";
-char user_ini_file[] = "~/saffire.ini";
+char global_ini_path[]  = "/etc/saffire/saffire.ini";
+char user_ini_path[]    = "~/saffire.ini";
 
-char *ini_file = global_ini_file;
+#define USE_INI_GLOBAL      1       // Use the global ini
+#define USE_INI_LOCAL       2       // Use the local user ini
+#define USE_INI_CUSTOM      3       // Use a custom ini
+
+int which_ini = USE_INI_LOCAL;
+char *custom_ini_path;     // Specifies custom ini path
+
+
+static void read_config(void) {
+    char *ini_path;
+
+    switch (which_ini) {
+        case USE_INI_LOCAL :
+        default :
+            ini_path = user_ini_path;
+            break;
+        case USE_INI_GLOBAL :
+            ini_path = global_ini_path;
+            break;
+        case USE_INI_CUSTOM :
+            ini_path = custom_ini_path;
+            break;
+    }
+
+    if (! config_init(ini_path)) {
+        output("Error: cannot read the configuration file '%s'\n", ini_path);
+    }
+}
 
 
 /**
@@ -126,12 +182,16 @@ static int do_generate(void) {
  * Action: ./saffire config get <setting>
  */
 static int do_get(void) {
+    read_config();
+
     char *key = saffire_getopt_string(0);
 
     char *val = config_get_string(key, NULL);
     if (val) {
         output("%s : %s\n", key, val);
         return 0;
+    } else {
+        output("Cannot find key %s\n", key);
     }
     return 1;
 }
@@ -143,6 +203,8 @@ static int do_get(void) {
  * Action: ./saffire config set <setting> <value>
  */
 static int do_set(void) {
+    read_config();
+
     char *setting = saffire_getopt_string(0);
     char *value = saffire_getopt_string(1);
 
@@ -151,27 +213,47 @@ static int do_set(void) {
 
 
 /**
+ * Unsets a value from the configuration file
+ *
+ * Action: ./saffire config unset <setting>
+ */
+static int do_unset(void) {
+    read_config();
+
+    char *setting = saffire_getopt_string(0);
+
+    return config_set_string(setting, NULL);
+}
+
+/**
  * Returns a list of settings that matches the search argument
  * Action: ./saffire config list <search>
  */
 static int do_list(void) {
-    char **matches;
+    read_config();
+
     char *pattern = saffire_getopt_string(0);
+    if (! pattern) pattern = "";
 
-    int count = config_get_matches(pattern, &matches);
-    if (count <= 0) return 1;
-
-    // Note: the count is always too large. The keys that do not match are NULLed out.
-    for (int i=0; i!=count; i++) {
-        if (matches[i] == NULL) continue;
-
-        char *val = config_get_string(matches[i], NULL);
-        output("%s : %s\n", matches[i], val);
-
-        free(matches[i]);
+    // Find matches
+    t_hash_table *matches = config_get_matches(pattern, 1);
+    if (! matches || matches->element_count == 0) {
+        ht_destroy(matches);
+        return 1;
     }
-    free(matches);
 
+    // At least one match found, iterate them
+    t_hash_iter iter;
+    ht_iter_init(&iter, matches);
+    while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key(&iter);
+        char *val = ht_iter_value(&iter);
+        output("%s : %s\n", key, val);
+
+        ht_iter_next(&iter);
+    }
+
+    ht_destroy(matches);
     return 0;
 }
 
@@ -183,36 +265,47 @@ static int do_list(void) {
 
 
 static void opt_file(void *data) {
-    ini_file = (char *)data;
+    which_ini = USE_INI_CUSTOM;
+    custom_ini_path = (char *)data;
+}
+
+static void opt_global(void *data) {
+    which_ini = USE_INI_GLOBAL;
 }
 
 /* Usage string */
 static const char help[]   = "Configure Saffire settings.\n"
                              "\n"
                              "Global settings:\n"
-                             "    -f, --file <FILE>    File to read/write.\n"
+                             "    -f, --file <filename>   File to read/write.\n"
+                             "    --global                Write to global configuration file.\n"
                              "\n"
                              "Actions:\n"
                              "   generate                 Generates configuration settings\n"
                              "   get <setting>            Returns value (if set)\n"
                              "   set <setting> <value>    Set value in your configuration\n"
-                             "   list                     Returns all settings\n"
+                             "   unset <setting>          Unsets value in your configuration\n"
+                             "   list [pattern]           Returns all settings, or that matches [pattern]\n"
                              "\n"
-                             "Use * as a wildcard in a setting\n";
+                             "Configuration paths:\n"
+                             "  By default, saffire will use ~/.saffire.ini, when the --global has been \n"
+                             "  added as an option, it will try to read/write to /etc/saffire/saffire.ini\n"
+                             "  if the -f or --file has been entered, it will use the given path \n";
 
 
 static struct saffire_option global_options[] = {
     { "file", "f", required_argument, opt_file },
-    { "dot", "d", required_argument, opt_file },
+    { "global", "", no_argument, opt_global },
     { 0, 0, 0, 0 }
 };
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "generate", "", do_generate, global_options },        // Generate new ini file
-    { "get", "s", do_get, global_options },                 // Get a section
-    { "set", "ss", do_set, global_options },                // Sets a section value
-    { "list", "s", do_list, global_options },               // List section value
+    { "generate", "", do_generate, NULL },        // Generate new ini file
+    { "get", "s", do_get, global_options },       // Get a section
+    { "set", "ss", do_set, global_options },      // Sets a section value
+    { "unset", "s", do_unset, global_options },   // Unsets a section value
+    { "list", "|s", do_list, global_options },    // List section value (or everything)
     { 0, 0, 0, 0 }
 };
 
