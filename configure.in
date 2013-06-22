@@ -94,8 +94,8 @@ dnl AC_SUBST([ICU_LIBS])
 # Checks for libraries.
 
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES(augeas, augeas >= 0.5.0)
 PKG_CHECK_MODULES(edit, libedit)
+PKG_CHECK_MODULES([libxml2], [libxml-2.0])
 
 AC_CHECK_LIB([m], [main], [], [ AC_MSG_ERROR([*** Math library is required, install match development files (libm)])])
 AC_CHECK_LIB([bz2], [BZ2_bzDecompressInit], [], [AC_MSG_ERROR([*** BZip2 is required, install bzip2 development files (libbz2)])])

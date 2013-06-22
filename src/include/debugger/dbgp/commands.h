@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -24,14 +24,58 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __AST_WALKER_H__
-#define __AST_WALKER_H__
+#ifndef __DEBUGGER_DBGP_COMMANDS_H__
+#define __DEBUGGER_DBGP_COMMANDS_H__
 
-    #include "compiler/ast.h"
-    #include "compiler/assembler.h"
-    #include "general/smm.h"
-    #include "general/dll.h"
+    #include "debugger/dbgp/xml.h"
+    #include "debugger/dbgp/dbgp.h"
 
-    t_hash_table *ast_walker(t_ast_element *ast);
+    struct dbgp_command {
+        char *command;
+        xmlNodePtr (*func)(t_debuginfo *di, int argc, char *argv[]);
+    };
 
-#endif
+    #define DBGP_CMD_DEF(name) \
+        xmlNodePtr do_command_##name(t_debuginfo *di, int argc, char *argv[])
+
+    #define DBGP_CMD_REF(name) \
+        &do_command_##name
+
+
+    DBGP_CMD_DEF(status);
+
+    DBGP_CMD_DEF(feature_get);
+    DBGP_CMD_DEF(feature_set);
+
+    DBGP_CMD_DEF(run);
+    DBGP_CMD_DEF(step_into);
+    DBGP_CMD_DEF(step_over);
+    DBGP_CMD_DEF(step_out);
+    DBGP_CMD_DEF(stop);
+    DBGP_CMD_DEF(detach);
+
+    DBGP_CMD_DEF(breakpoint_get);
+    DBGP_CMD_DEF(breakpoint_set);
+    DBGP_CMD_DEF(breakpoint_update);
+    DBGP_CMD_DEF(breakpoint_remove);
+    DBGP_CMD_DEF(breakpoint_list);
+
+    DBGP_CMD_DEF(stack_depth);
+    DBGP_CMD_DEF(stack_get);
+
+    DBGP_CMD_DEF(context_names);
+    DBGP_CMD_DEF(context_get);
+
+    DBGP_CMD_DEF(typemap_get);
+    DBGP_CMD_DEF(property_get);
+    DBGP_CMD_DEF(property_set);
+    DBGP_CMD_DEF(property_value);
+
+    DBGP_CMD_DEF(source);
+
+    DBGP_CMD_DEF(set_stdout);
+    DBGP_CMD_DEF(set_stderr);
+
+
+#endif // __DEBUGGER_DBGP_COMMANDS_H__
+

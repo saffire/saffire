@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -55,6 +55,7 @@
     void dll_push(t_dll *dll, void *data);
     void *dll_pop(t_dll *dll);
     void *dll_top(t_dll *dll);
+    t_dll_element *dll_seek_offset(t_dll *dll, int offset);
 
 #endif
 

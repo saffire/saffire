@@ -11,7 +11,7 @@ apt-get update
 apt-get install -y git-core make automake gcc pkg-config bison flex php5-cli
 
 # Install mandatory libraries
-apt-get install -y libpcre3-dev libfcgi-dev libaugeas-dev libedit-dev libbz2-dev libcunit1-dev
+apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev
 
 # Symlink SFL library
 mkdir -p /usr/share/saffire/modules

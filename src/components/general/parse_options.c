@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -83,7 +83,7 @@ static void process_argument(int idx, int argc, char *argv[], struct saffire_opt
 
     // Need additional argument, but found none
     if (! has_next_arg && opt->has_arg == required_argument) {
-        error_and_die(1, "Option '%s' requires an argument\n", argv[idx]);
+        fatal_error(1, "Option '%s' requires an argument\n", argv[idx]);
     }
 
     if (has_next_arg && opt->has_arg == required_argument) {
@@ -139,7 +139,7 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
 
         // Unknown option found
         if (! found) {
-            error_and_die(1, "saffire: invalid option '%s'\n"
+            fatal_error(1, "saffire: invalid option '%s'\n"
                              "Try 'saffire help config' for more information\n", argv[idx]);
         }
     }
@@ -153,7 +153,7 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
  *  "b"  needs boolean (true, false, yes, no, 0, 1)
  *  "|"  all items behind are optional
  */
-void saffire_parse_signature(int argc, char **argv, char *signature) {
+int saffire_parse_signature(int argc, char **argv, char *signature, char **error) {
     int argp, idx;
     int optional = 0;
 
@@ -174,14 +174,16 @@ void saffire_parse_signature(int argc, char **argv, char *signature) {
 
 
     if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        error_and_die(1, "Not enough arguments found. use saffire help <command> for more information\n");
+        *error = "Not enough arguments found";
+        return 0;
     }
 
     // Process each character in the signature
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
-        if (argp > argc && ! optional) {
-            error_and_die(1, "Not enough arguments found. use saffire help <command> for more information\n");
+        if (argp >= argc && ! optional) {
+            *error = "Not enough arguments found";
+            return 0;
         }
 
         switch (signature[idx]) {
@@ -197,30 +199,37 @@ void saffire_parse_signature(int argc, char **argv, char *signature) {
             case 'b' :
                 // Try and convert to boolean
                 if (to_bool(argv[argp]) == -1) {
-                  error_and_die(1, "Found '%s', but expected a boolean value\n", argv[argp]);
+                    asprintf(error, "Found '%s', but expected a boolean value", argv[argp]);
+                    return 0;
                 }
 
                 break;
             case 'l' :
                 // Convert to long. string("0") should be ok too!
                 if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
-                  error_and_die(1, "Found '%s', but expected a numerical value\n", argv[argp]);
+                    asprintf(error, "Found '%s', but expected a numerical value", argv[argp]);
+                    return 0;
                 }
 
                 break;
-          default :
-                error_and_die(1, "Incorrect signature command '%c' found.\n", signature[idx]);
+            default :
+                asprintf(error, "Incorrect signature command '%c' found", signature[idx]);
+                return 0;
         }
     }
 
     // Not enough arguments!
     if (argc > argp) {
-        error_and_die(1, "Too many arguments found. use saffire help <command> for more information\n");
+        *error = "Too many arguments found";
+        return 0;
     }
 
     // All parameters are shifted to the front, and checked for type. From now on, we can safely use them
     saffire_params = argv;
     saffire_params_count = argc;
+
+    *error = NULL;
+    return 1;
 }
 
 
@@ -240,7 +249,7 @@ char saffire_getopt_bool(int idx) {
     if (idx > saffire_params_count) return 0;
     int ret = to_bool(saffire_params[idx]);
     if (ret == -1) {
-        error_and_die(1, "Incorrect boolean value");
+        fatal_error(1, "Incorrect boolean value");
     }
 
     return ret;

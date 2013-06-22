@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __AST_H__
-#define __AST_H__
+#ifndef __AST_NODES_H__
+#define __AST_NODES_H__
 
     #define ID_LOAD     0
     #define ID_STORE    1
@@ -141,31 +141,29 @@
         };
     } t_ast_element;
 
-
-    t_ast_element *ast_generate_from_file(const char *);
-    t_ast_element *ast_generate_tree(FILE *fp);
-
-    t_ast_element *ast_string(int lineno, char *value);
-    t_ast_element *ast_string_dup(int lineno, t_ast_element *src);
-    t_ast_element *ast_numerical(int lineno, int value);
-    t_ast_element *ast_identifier(int lineno, char *var_name);
-    t_ast_element *ast_property(int lineno, t_ast_element *class, t_ast_element *property);
-    t_ast_element *ast_opr(int lineno, int opr, int nops, ...);
-    t_ast_element *ast_group(int len, ...);
-    t_ast_element *ast_add(t_ast_element *src, t_ast_element *new_element);
-    t_ast_element *ast_string_concat(t_ast_element *src, char *s);
-    t_ast_element *ast_concat(t_ast_element *src, char *s);
-    t_ast_element *ast_class(int lineno, t_class *class, t_ast_element *body);
-    t_ast_element *ast_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
-    t_ast_element *ast_nop(void);
-    t_ast_element *ast_null(void);
-    t_ast_element *ast_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right);
-    t_ast_element *ast_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
+    t_ast_element *ast_node_string(int lineno, char *value);
+    t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src);
+    t_ast_element *ast_node_numerical(int lineno, int value);
+    t_ast_element *ast_node_identifier(int lineno, char *var_name);
+    t_ast_element *ast_node_property(int lineno, t_ast_element *class, t_ast_element *property);
+    t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...);
+    t_ast_element *ast_node_group(int len, ...);
+    t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_node_string_concat(t_ast_element *src, char *s);
+    t_ast_element *ast_node_concat(t_ast_element *src, char *s);
+    t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);
+    t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
+    t_ast_element *ast_node_nop(void);
+    t_ast_element *ast_node_null(void);
+    t_ast_element *ast_node_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_node_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_node_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
 
 
+    t_ast_element *ast_generate_from_file(const char *filename);
+    t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode);
     void ast_free_node(t_ast_element *p);
 
 #endif

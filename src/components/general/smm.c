@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -42,7 +42,7 @@ void *smm_malloc(size_t size) {
     smm_malloc_calls++;
     void *ptr = malloc(size);
     if (ptr == NULL) {
-        error_and_die(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
+        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
     }
     return ptr;
 }

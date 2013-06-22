@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -54,7 +54,7 @@ void stack_push(t_stack *stack, void *data) {
  */
 void *stack_pop(t_stack *stack) {
     if (stack->dll->size <= 0) {
-        error_and_die(1, "cannot pop from an empty stack!\n");
+        fatal_error(1, "cannot pop from an empty stack!\n");
     }
     t_dll_element *e = DLL_TAIL(stack->dll);
 

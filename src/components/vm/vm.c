@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -41,6 +41,7 @@
 #include "general/output.h"
 #include "vm/import.h"
 #include "gc/gc.h"
+#include "debugger/dbgp/dbgp.h"
 
 t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
 
@@ -186,11 +187,12 @@ int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib)
 }
 
 int debug = 0;
+t_debuginfo *debug_info;
 
 /**
  *
  */
-void vm_init(int runmode) {
+t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
@@ -202,15 +204,74 @@ void vm_init(int runmode) {
     builtin_identifiers = ht_create();
     object_init();
     module_init();
+
+    // Create initial frame
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
+
+    thread_set_current_frame(initial_frame);
+
+    // Initialize debugging if needed
+    if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        debug_info = dbgp_init(initial_frame);
+    }
+
+
+    vm_runmode &= ~VM_RUNMODE_DEBUG;
+
+    // Implicit load the saffire module
+    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
+    vm_frame_set_identifier(initial_frame, "saffire", obj);
+
+    vm_runmode = runmode;
+
+    return initial_frame;
 }
 
-void vm_fini(void) {
+void vm_fini(t_vm_frame *frame) {
+    // Initialize debugging if needed
+    if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        dbgp_fini(debug_info, frame);
+    }
+
+    vm_frame_destroy(frame);
+
     module_fini();
     object_fini();
     ht_destroy(builtin_identifiers);
     gc_fini();
 }
 
+
+
+int getlineno(t_vm_frame *frame) {
+    if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
+        return frame->lineno_current_line;
+    }
+
+    int delta_lino = 0;
+    int delta_line = 0;
+
+    // @TODO: Check if lino_offset doesn't go out of bounds
+    if (frame->lineno_current_lino_offset >= frame->bytecode->lino_length) {
+        return frame->lineno_current_line;
+    }
+
+    int i;
+    do {
+        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        delta_line += i;
+    } while (i > 127);
+    do {
+        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        delta_lino += i;
+    } while (i > 127);
+
+    frame->lineno_lowerbound = frame->lineno_upperbound;
+    frame->lineno_upperbound += delta_lino;
+    frame->lineno_current_line += delta_line;
+
+    return frame->lineno_current_line;
+}
 
 
 t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
@@ -238,7 +299,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
                 ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
                 ANSI_RESET "\n",
                 tb_history,
-                tb_frame->bytecode->filename ? tb_frame->bytecode->filename : "<none>",
+                tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
                 123,
                 "class",
                 "method"
@@ -258,15 +319,27 @@ t_object *_vm_execute(t_vm_frame *frame) {
 
     for (;;) {
 
+
         // Room for some other stuff
 dispatch:
         // Increase number of executions done
         frame->executions++;
 
-#ifdef __DEBUG
+
+        int ln = getlineno(frame);
         unsigned long cip = frame->ip;
-        vm_frame_stack_debug(frame);
+#ifdef __DEBUG
+        //vm_frame_stack_debug(frame);
 #endif
+
+
+
+        // Only do this when we are debugging and the debugger is attached
+        if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG && debug_info->attached) {
+            dbgp_debug(debug_info, frame);
+        }
+
+
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
@@ -280,52 +353,56 @@ dispatch:
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X, 0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->bytecode->filename
+                        frame->bytecode->source_filename,
+                        ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->bytecode->filename
+                        frame->bytecode->source_filename,
+                        ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s (0x%02X) "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->bytecode->filename
+                        frame->bytecode->source_filename,
+                        ln
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%s "
-                        ANSI_BRIGHTYELLOW "[%s] "
+                        ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->bytecode->filename
+                        frame->bytecode->source_filename,
+                        ln
                     );
         }
 #endif
 
-#ifdef __DEBUG
-        if (debug) getchar();
-#endif
+
+
+
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
-            error_and_die(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
+            fatal_error(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
         }
 
 
@@ -541,7 +618,7 @@ dispatch:
                 object_dec_ref(left_obj);
 
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
+                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
@@ -562,7 +639,7 @@ dispatch:
                 object_dec_ref(right_obj);
 
                 if (left_obj->type != right_obj->type) {
-                    error_and_die(1, "Types are not equal. Coersing needed, but not yet implemented\n");
+                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
@@ -984,8 +1061,6 @@ dispatch:
                 break;
 
             case VM_SETUP_EXCEPT :
-                debug = 1;
-
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
                 vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
 
@@ -1191,43 +1266,39 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 /**
  *
  */
-int vm_execute(t_bytecode *bc) {
-    // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, bc);
-    thread_set_current_frame(initial_frame);
-
-    // Implicit load saffire
-    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
-    vm_frame_set_identifier(initial_frame, "saffire", obj);
+int vm_execute(t_vm_frame *frame) {
+    // Setup bytecode into the frame (or not?)
 
     // Execute the frame
-    t_object *result = _vm_execute(initial_frame);
+    t_object *result = _vm_execute(frame);
 
+    // @TODO: remove me
+    result = NULL;
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 
-    // Check if there was an uncaught exception (when result == NULL)
-    if (result == NULL) {
-        if (thread_exception_thrown()) {
-            // handle exception
-            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_new(Object_Numerical, 1, 1);
-        } else {
-            // result was NULL, but no exception found, just threat like regular 0
-            result = object_new(Object_Numerical, 1, 0);
-        }
-    }
+//    // Check if there was an uncaught exception (when result == NULL)
+//    if (result == NULL) {
+//        if (thread_exception_thrown()) {
+//            // handle exception
+//            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
+//            result = object_new(Object_Numerical, 1, 1);
+//        } else {
+//            // result was NULL, but no exception found, just threat like regular 0
+//            result = object_new(Object_Numerical, 1, 0);
+//        }
+//    }
+//
+//    // Convert returned object to numerical, so we can use it as an error code
+//    if (!OBJECT_IS_NUMERICAL(result)) {
+//        // Cast to numericak
+//        t_object *result_numerical = object_find_attribute(result, "__numerical");
+//        result = vm_object_call(result, result_numerical, 0);
+//    }
+//    int ret_val = ((t_numerical_object *) result)->value;
 
-
-    // Convert returned object to numerical, so we can use it as an error code
-    if (!OBJECT_IS_NUMERICAL(result)) {
-        // Cast to numericak
-        t_object *result_numerical = object_find_attribute(result, "__numerical");
-        result = vm_object_call(result, result_numerical, 0);
-    }
-    int ret_val = ((t_numerical_object *) result)->value;
-
-    vm_frame_destroy(initial_frame);
+//    vm_frame_destroy(frame);
+    int ret_val = 1;
     return ret_val;
 }
 
@@ -1345,8 +1416,12 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Internal function call
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
+        char context[250];
+        snprintf(context, 250, "%s.%s([%ld args])", self->name, callable_obj->name, arg_list->size);
+
         // Create a new execution frame
-        t_vm_frame *new_frame = vm_frame_new(thread_get_current_frame(), callable_obj->code.bytecode);
+        t_vm_frame *cur_frame = thread_get_current_frame();
+        t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
 
         if (OBJECT_IS_USER(self_obj)) {
             new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
@@ -1423,3 +1498,6 @@ t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     return ret;
 }
+
+
+
