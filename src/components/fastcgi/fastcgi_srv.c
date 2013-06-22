@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -43,7 +43,8 @@
 #include "general/smm.h"
 #include "general/path_handling.h"
 #include "vm/vm.h"
-#include "compiler/ast_walker.h"
+#include "compiler/ast_to_asm.h"
+#include "compiler/output/asm.h"
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
@@ -74,10 +75,10 @@ extern int (*output_char_helper)(char c);
 extern int (*output_string_helper)(char *s);
 
 
-static int _fcgi_output_char_helper (char c) {
+static int _fcgi_output_char_helper(char c) {
     return FCGX_PutChar(c, fcgi_out);
 }
-static int _fcgi_output_string_helper (char *s) {
+static int _fcgi_output_string_helper(char *s) {
     return FCGX_PutS(s, fcgi_out);
 }
 
@@ -113,7 +114,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    vm_init(VM_RUNMODE_FASTCGI);
+    t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_FASTCGI);
 
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
@@ -157,13 +158,13 @@ static int fcgi_loop(void) {
                 smm_free(bytecode_file);
                 continue;
             }
-            t_hash_table *asm_code = ast_walker(ast);
+            t_hash_table *asm_code = ast_to_asm(ast, 1);
             if (! asm_code) {
-                error("Cannot create assembler</h1>");
+                fatal_error(1, "Cannot create assembler</h1>");
                 smm_free(bytecode_file);
                 continue;
             }
-            bc = assembler(asm_code);
+            bc = assembler(asm_code, source_file);
             bytecode_save(bytecode_file, source_file, bc);
         } else {
             bc = bytecode_load(bytecode_file, 0);
@@ -171,21 +172,22 @@ static int fcgi_loop(void) {
 
         // Something went wrong with the bytecode loading or generating
         if (!bc) {
-            error("Error while loading bytecode</h1>");
+            fatal_error(1, "Error while loading bytecode</h1>");
             smm_free(bytecode_file);
             continue;
         }
 
         smm_free(bytecode_file);
 
-        vm_execute(bc);
+        vm_attach_bytecode(initial_frame, "{main}", bc);
+        vm_execute(initial_frame);
 
         bytecode_free(bc);
     }
 
 
     // Finish virtual machine
-    vm_fini();
+    vm_fini(initial_frame);
 
     exit(0);
 }
@@ -331,6 +333,9 @@ void daemonize(void) {
  *
  */
 int fastcgi_run(void) {
+    // @TODO: remove configuration reading like this
+    config_init("/etc/saffire/saffire.ini");
+
     // Make sure we don't run as a SUID root user
     if (check_suidroot() == -1) return 1;
 

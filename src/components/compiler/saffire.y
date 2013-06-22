@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -32,32 +32,16 @@
     #include <stdio.h>
     #include "general/output.h"
     #include "general/smm.h"
-    #include "compiler/lex.yy.h"
-    #include "compiler/compiler.h"
-    #include "compiler/ast.h"
+    #include "general/hashtable.h"
+    #include "compiler/parser_helpers.h"
+    #include "compiler/ast_nodes.h"
     #include "objects/objects.h"
     #include "debug.h"
+    #include "compiler/saffire_parser.h"
+    #include "compiler/parser.tab.h"
+    #include "compiler/lex.yy.h"
 
-    extern int yylineno;
-    int yylex(void);
-
-    // Our own error manager
-    void yyerror(unsigned long *ast, const char *err) {
-        error_and_die(1, "line %lu: %s\n", (unsigned long)yylineno, err);
-        exit(1);
-    }
-
-    // Use our own saffire memory manager
-    void *yyalloc (size_t bytes) {
-        return smm_malloc(bytes);
-    }
-    void *yyrealloc (void *ptr, size_t bytes) {
-        return smm_realloc(ptr, bytes);
-    }
-    void yyfree (void *ptr) {
-        return smm_free(ptr);
-    }
-
+    // Push and pop for parser states
     void saffire_push_state(int state);
     void saffire_pop_state();
 
@@ -65,10 +49,29 @@
         #define YYDEBUG 1
     #endif
 
-    #define YYPRINT(file, type, value)
+    #ifdef __PARSEDEBUG
+        int yydebug = 1;
+    #endif
+
+    // Defined so we can access yytoknum, but we don't need to print anything
+    #define YYPRINT(yyoutput, char, yyvaluep)
+
+    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
+
+    int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
+
+    void yy_exec(SaffireParser *sp);
 
 %}
 
+%define api.pure
+
+%lex-param      { yyscan_t scanner }
+%parse-param    { yyscan_t scanner }
+%parse-param    { SaffireParser *saffireParser }
+%error-verbose
+
+%locations
 
 %union {
     char                 *sVal;     // Holds any string
@@ -78,28 +81,31 @@
 }
 
 %token END 0 "end of file"
-%token <lVal> T_LNUM
-%token <sVal> T_STRING T_IDENTIFIER T_REGEX
+%token <lVal> T_LNUM "numerical value"
+%token <sVal> T_STRING "string" T_IDENTIFIER "identifier" T_REGEX "regular expression"
 
 %type <lVal> modifier modifier_list assignment_operator comparison_operator
 
 /* These must be sorted and used properly */
-%token T_WHILE T_IF T_USE T_AS T_DO T_SWITCH T_FOR T_FOREACH T_CASE
+%token T_WHILE "while" T_IF "if" T_USE "use" T_AS "as" T_DO "do"
+%token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
 %nonassoc T_ELSE
 %token T_OP_INC T_OP_DEC T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
-%token T_CATCH T_BREAK T_GOTO T_BREAKELSE T_CONTINUE T_THROW T_RETURN T_FINALLY T_TRY T_DEFAULT T_METHOD
-%token T_SELF T_PARENT T_NS_SEP T_TO
+%token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
+%token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
+%token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
+%token T_SELF "self" T_PARENT "parent" T_NS_SEP T_TO
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
-%token T_AND T_OR T_SHIFT_LEFT T_SHIFT_RIGHT T_COALESCE
+%token T_AND "and" T_OR "or" T_SHIFT_LEFT "shift left" T_SHIFT_RIGHT "shift right" T_COALESCE "coalesce (??)"
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INHERITS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
-%token T_IMPORT T_FROM T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
+%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
 
 /* reserved for later use */
 %token T_YIELD
@@ -134,11 +140,6 @@
 /* Define our start rule */
 %start saffire
 
-/* Parser uses ast_root as a parameter */
-%parse-param { unsigned long *ast_root }
-
-
-
 %% /* rules */
 
 
@@ -150,50 +151,55 @@
 
 saffire:
         /* We must convert our ast_root address to an unsigned long */
-        program { *ast_root = (unsigned long)$1; }
+        program {
+            saffireParser->ast = $1;
+            saffireParser->eof = 1;
+            yy_exec(saffireParser);
+        }
 ;
 
 program:
         /* A program consists of use-statements and a list of top-statements */
-        use_statement_list top_statement_list { $$ = ast_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
+        use_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
 ;
 
 use_statement_list:
         non_empty_use_statement_list { $$ = $1; }
-    |   /* empty */                  { $$ = ast_group(0); }
+    |   /* empty */                  { $$ = ast_node_group(0); }
 ;
 
 /* A use-statement list with at least one use statement */
 non_empty_use_statement_list:
-        use_statement { $$ = ast_group(1, $1); }
-    |   non_empty_use_statement_list use_statement { $$ = ast_add($$, $2); }
+        use_statement { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
+    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
 ;
 
 use_statement:
         /* use <foo> as <bar>; */
-        T_USE qualified_name T_AS T_IDENTIFIER                        ';' { $$ = ast_opr(@1.first_line, T_USE, 2, $2, ast_string(@4.first_line, $4));  }
+        T_USE qualified_name T_AS T_IDENTIFIER                        ';' { $$ = ast_node_opr(@1.first_line, T_USE, 2, $2, ast_node_string(@4.first_line, $4));  }
         /* use <foo>; */
-    |   T_USE qualified_name                                          ';' { $$ = ast_opr(@1.first_line, T_USE, 1, $2); }
+    |   T_USE qualified_name                                          ';' { $$ = ast_node_opr(@1.first_line, T_USE, 1, $2); }
         /* import <foo> from <bar> */
-    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_opr(@1.first_line, T_IMPORT, 3, ast_string(@2.first_line, $2), ast_string(@2.first_line, $2), ast_string_dup(@4.first_line, $4)); }
+    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string_dup(@4.first_line, $4)); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_opr(@1.first_line, T_IMPORT, 3, ast_string(@2.first_line, $2), ast_string(@4.first_line, $4), ast_string_dup(@6.first_line, $6)); }
+    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
         /* import <foo> as <bar> */
-    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER                       ';' { $$ = ast_opr(@1.first_line, T_IMPORT, 3, ast_string(@2.first_line, $2), ast_string(@4.first_line, $4), ast_string(@2.first_line, $2)); }
+    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, $2)); }
         /* import <foo> */
-    |   T_IMPORT T_IDENTIFIER                                         ';' { $$ = ast_opr(@1.first_line, T_IMPORT, 3, ast_string(@2.first_line, $2), ast_string(@2.first_line, $2), ast_string(@2.first_line, $2)); }
+    |   T_IMPORT T_IDENTIFIER                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2)); }
+    |   error ';' { yyerrok; }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
 top_statement_list:
         non_empty_top_statement_list { $$ = $1; }
-    |   /* empty */                  { $$ = ast_group(0); }
+    |   /* empty */                  { $$ = ast_node_group(0); }
 ;
 
 /* A top-statement list with at least one top statement */
 non_empty_top_statement_list:
-        top_statement                              { $$ = ast_group(1, $1); }
-    |   non_empty_top_statement_list top_statement { $$ = ast_add($$, $2); }
+        top_statement                              { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
+    |   non_empty_top_statement_list top_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
 ;
 
 /* Top statements can be classes, interfaces, constants, statements */
@@ -212,8 +218,8 @@ top_statement:
  */
 
 statement_list:
-        statement                { $$ = ast_group(1, $1); }
-    |   statement_list statement { $$ = ast_add($$, $2); }
+        statement                { $$ = ast_node_group(1, $1); }
+    |   statement_list statement { $$ = ast_node_add($$, $2); }
 ;
 
 statement:
@@ -229,92 +235,98 @@ statement:
 
 /* A compound statement is a (set of) statement captured by curly brackets */
 compound_statement:
-        '{'                '}'  { $$ = ast_nop(); }
+        '{'                '}'  { $$ = ast_node_nop(); }
     |   '{' statement_list '}'  { $$ = $2; }
 ;
 
 /* if if/else statements */
 if_statement:
-        T_IF '(' conditional_expression ')' statement                  { $$ = ast_opr(@1.first_line, T_IF, 2, $3, $5); }
-    |   T_IF '(' conditional_expression ')' statement T_ELSE statement { $$ = ast_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
+        T_IF '(' conditional_expression ')' statement                  { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
+    |   T_IF '(' conditional_expression ')' statement T_ELSE statement { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
 ;
 
 /* Switch statement */
 switch_statement:
-        T_SWITCH '(' conditional_expression ')' { sfc_loop_enter(); sfc_switch_begin(); } '{' case_statements '}' { sfc_loop_leave(); sfc_switch_end();  $$ = ast_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
+        T_SWITCH '(' conditional_expression ')' { parser_loop_enter(saffireParser, @1.first_line); parser_switch_begin(saffireParser, @1.first_line); } '{' case_statements '}' { parser_loop_leave(saffireParser, @1.first_line); parser_switch_end(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
 ;
 
 case_statements:
-        case_statement                 { $$ = ast_group(1, $1); }
-    |   case_statements case_statement { $$ = ast_add($$, $2); }
+        case_statement                 { $$ = ast_node_group(1, $1); }
+    |   case_statements case_statement { $$ = ast_node_add($$, $2); }
 ;
 
 case_statement:
-        T_CASE conditional_expression ':'   { sfc_switch_case(); }    statement_list { $$ = ast_opr(@1.first_line, T_CASE, 2, $2, $5); }
-    |   T_CASE conditional_expression ':'   { sfc_switch_case(); }    { $$ = ast_opr(@1.first_line, T_CASE, 2, $2, ast_nop()); }
-    |   T_DEFAULT ':'           { sfc_switch_default(); } statement_list { $$ = ast_opr(@1.first_line, T_DEFAULT, 1, $4); }
-    |   T_DEFAULT ':'           { sfc_switch_default(); } { $$ = ast_opr(@1.first_line, T_DEFAULT, 1, ast_nop()); }
+        T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
+    |   T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
+    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
+    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
 ;
 
 
 /* while, while else, do/while, for and foreach */
 iteration_statement:
-        while_statement T_ELSE statement { $$ = ast_add($1, $3); }
+        while_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   while_statement                  { $$ = $1; }
-    |   T_DO { sfc_loop_enter(); } statement T_WHILE '(' conditional_expression ')' ';' { sfc_loop_leave();  $$ = ast_opr(@1.first_line, T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement            ')' { sfc_loop_enter(); } statement { $$ = ast_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_nop()); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' { sfc_loop_enter(); } statement { $$ = ast_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS ds_element                       ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
-    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
+    |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' conditional_expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
+    |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
+    |   T_FOR '(' expression_statement expression_statement expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOREACH '(' expression T_AS ds_element                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
+    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
 ;
 
 /* while is separate otherwise we cannot find it's else */
 while_statement:
-        T_WHILE '(' conditional_expression ')' { sfc_loop_enter(); } statement { sfc_loop_leave();  $$ = ast_opr(@1.first_line, T_WHILE, 2, $3, $6); }
+        T_WHILE '(' conditional_expression ')' {
+            parser_loop_enter(saffireParser, @1.first_line);
+        } statement {
+            parser_loop_leave(saffireParser, @1.first_line);
+            $$ = ast_node_opr(@1.first_line, T_WHILE, 2, $3, $6);
+        }
 ;
 
 /* An expression is anything that evaluates something */
 expression_statement:
-        ';'             { $$ = ast_nop(); }
+        ';'             { $$ = ast_node_nop(); }
     |   expression ';'  { $$ = $1; }
+    |   error ';'       { yyerrok; }
 ;
 
 
 /* Jumps to another part of the code */
 jump_statement:
-        T_BREAK ';'                 { saffire_validate_break();  $$ = ast_opr(@1.first_line, T_BREAK, 0); }
-    |   T_BREAKELSE ';'             { saffire_validate_breakelse();  $$ = ast_opr(@1.first_line, T_BREAKELSE, 0); }
-    |   T_CONTINUE ';'              { saffire_validate_continue();  $$ = ast_opr(@1.first_line, T_CONTINUE, 0); }
-    |   T_RETURN ';'                { saffire_validate_return();  $$ = ast_opr(@1.first_line, T_RETURN, 1, ast_identifier(yylineno, "null")); }
-    |   T_RETURN expression ';'     { saffire_validate_return();  $$ = ast_opr(@1.first_line, T_RETURN, 1, $2); }
-    |   T_THROW expression ';'      { $$ = ast_opr(@1.first_line, T_THROW, 1, $2); }
-    |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_opr(@1.first_line, T_GOTO, 1, ast_string(@2.first_line, $2)); smm_free($2); }
-    |   T_GOTO T_LNUM ';'           { $$ = ast_opr(@1.first_line, T_GOTO, 1, ast_numerical(@2.first_line, $2)); }                 // @TODO: Should support goto 3; ?
+        T_BREAK ';'                 { parser_validate_break(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAK, 0); }
+    |   T_BREAKELSE ';'             { parser_validate_breakelse(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_BREAKELSE, 0); }
+    |   T_CONTINUE ';'              { parser_validate_continue(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_CONTINUE, 0); }
+    |   T_RETURN ';'                { parser_validate_return(saffireParser, @1.first_line);    $$ = ast_node_opr(@1.first_line, T_RETURN, 1, ast_node_identifier(@1.first_line, "null")); }
+    |   T_RETURN expression ';'     { parser_validate_return(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_RETURN, 1, $2); }
+    |   T_THROW expression ';'      { $$ = ast_node_opr(@1.first_line, T_THROW, 1, $2); }
+    |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_string(@2.first_line, $2)); smm_free($2); }
+    |   T_GOTO T_LNUM ';'           { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_numerical(@2.first_line, $2)); }                 // @TODO: Should support goto 3; ?
 ;
 
 /* try/catch try/catch/finally blocks */
 guarding_statement:
-        T_TRY compound_statement catch_list                               { $$ = ast_opr(@1.first_line, T_TRY, 3, $2, $3, ast_nop()); }
-    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { $$ = ast_opr(@1.first_line, T_TRY, 3, $2, $3, $5); }
+        T_TRY compound_statement catch_list                               { $$ = ast_node_opr(@1.first_line, T_TRY, 3, $2, $3, ast_node_nop()); }
+    |   T_TRY compound_statement catch_list T_FINALLY compound_statement  { $$ = ast_node_opr(@1.first_line, T_TRY, 3, $2, $3, $5); }
 ;
 
 /* There can be multiple catches on a try{} block */
 catch_list:
-        catch            { $$ = ast_group(1, $1); }
-    |   catch_list catch { $$ = ast_add($$, $2); }
+        catch            { $$ = ast_node_group(1, $1); }
+    |   catch_list catch { $$ = ast_node_add($$, $2); }
 ;
 
 catch:
-        catch_header compound_statement { $$ = ast_group(2, $1, $2); }
+        catch_header compound_statement { $$ = ast_node_group(2, $1, $2); }
 ;
 
 catch_header:
-        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { $$ = ast_opr(@1.first_line, T_CATCH, 2, ast_identifier(@3.first_line, $3), ast_identifier(@4.first_line, $4)); smm_free($3); smm_free($4); }
+        T_CATCH '(' T_IDENTIFIER T_IDENTIFIER ')' { $$ = ast_node_opr(@1.first_line, T_CATCH, 2, ast_node_identifier(@3.first_line, $3), ast_node_identifier(@4.first_line, $4)); smm_free($3); smm_free($4); }
 ;
 
 label_statement:
-        T_IDENTIFIER ':'    { saffire_check_label($1);  $$ = ast_opr(@1.first_line, T_LABEL, 1, ast_string(@1.first_line, $1)); smm_free($1); }
-    |   T_LNUM ':'          { $$ = ast_opr(@1.first_line, T_LABEL, 1, ast_numerical(@1.first_line, $1)); }  /* @TODO: should we support goto 4; ? */
+        T_IDENTIFIER ':'    { parser_check_label(saffireParser, @1.first_line, $1);  $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_string(@1.first_line, $1)); smm_free($1); }
+    |   T_LNUM ':'          { $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_numerical(@1.first_line, $1)); }  /* @TODO: should we support goto 4; ? */
 ;
 
 
@@ -330,53 +342,53 @@ label_statement:
 
 expression:
         assignment_expression { $$ = $1; }
-    |   expression ',' assignment_expression { $$ = ast_add($$, $3); }
-    |   expression ',' ',' assignment_expression { $$ = ast_add($$, ast_nop()); $$ = ast_add($$, $4); }
+    |   expression ',' assignment_expression { $$ = ast_node_add($$, $3); }
+    |   expression ',' ',' assignment_expression { $$ = ast_node_add($$, ast_node_nop()); $$ = ast_node_add($$, $4); }
 ;
 
 assignment_expression:
-        conditional_expression { $$ = $1; }
-    |   unary_expression assignment_operator assignment_expression { $$ = ast_assignment(@1.first_line, $2, $1, $3); }
-;
-
-conditional_expression:
-        conditional_or_expression { $$ = $1; }
-    |   conditional_or_expression '?' expression ':' conditional_expression { $$ = ast_opr(@1.first_line, '?', 3, $1, $3, $5); }
-;
-
-conditional_or_expression:
-        conditional_and_expression { $$ = $1; }
-    |   conditional_or_expression T_OR conditional_and_expression { $$ = ast_boolop(@1.first_line, 1, $1, $3);}
-;
-
-conditional_and_expression:
-        inclusive_or_expression { $$ = $1; }
-    |   conditional_and_expression T_AND inclusive_or_expression { $$ = ast_boolop(@1.first_line, 0, $1, $3); }
-;
-
-inclusive_or_expression:
-        exclusive_or_expression { $$ = $1; }
-    |   inclusive_or_expression '|' exclusive_or_expression { $$ = ast_opr(@1.first_line, '|', 2, $1, $3);}
-;
-
-exclusive_or_expression:
-        and_expression { $$ = $1; }
-    |   exclusive_or_expression '^' and_expression { $$ = ast_opr(@1.first_line, '^', 2, $1, $3); }
-;
-
-and_expression:
-        equality_expression { $$ = $1; }
-    |   and_expression '&' equality_expression { $$ = ast_opr(@1.first_line, '&', 2, $1, $3); }
-;
-
-equality_expression:
-        regex_expression { $$ = $1; }
-    |   equality_expression comparison_operator regex_expression { $$ = ast_comparison(@2.first_line, $2, $1, $3); }
+        coalesce_expression { $$ = $1; }
+    |   unary_expression assignment_operator assignment_expression { $$ = ast_node_assignment(@1.first_line, $2, $1, $3); }
 ;
 
 coalesce_expression:
         conditional_expression { $$ = $1; }
-    |   T_IDENTIFIER T_COALESCE expression { $$ = ast_opr(T_COALESCE, 2, ast_identifier($1), $3); smm_free($1); }
+    |   conditional_expression T_COALESCE expression { $$ = ast_node_opr(@1.first_line, T_COALESCE, 2, $1, $3); }
+;
+
+conditional_expression:
+        conditional_or_expression { $$ = $1; }
+    |   conditional_or_expression '?' expression ':' conditional_expression { $$ = ast_node_opr(@1.first_line, '?', 3, $1, $3, $5); }
+;
+
+conditional_or_expression:
+        conditional_and_expression { $$ = $1; }
+    |   conditional_or_expression T_OR conditional_and_expression { $$ = ast_node_boolop(@1.first_line, 1, $1, $3);}
+;
+
+conditional_and_expression:
+        inclusive_or_expression { $$ = $1; }
+    |   conditional_and_expression T_AND inclusive_or_expression { $$ = ast_node_boolop(@1.first_line, 0, $1, $3); }
+;
+
+inclusive_or_expression:
+        exclusive_or_expression { $$ = $1; }
+    |   inclusive_or_expression '|' exclusive_or_expression { $$ = ast_node_opr(@1.first_line, '|', 2, $1, $3);}
+;
+
+exclusive_or_expression:
+        and_expression { $$ = $1; }
+    |   exclusive_or_expression '^' and_expression { $$ = ast_node_opr(@1.first_line, '^', 2, $1, $3); }
+;
+
+and_expression:
+        equality_expression { $$ = $1; }
+    |   and_expression '&' equality_expression { $$ = ast_node_opr(@1.first_line, '&', 2, $1, $3); }
+;
+
+equality_expression:
+        regex_expression { $$ = $1; }
+    |   equality_expression comparison_operator regex_expression { $$ = ast_node_comparison(@2.first_line, $2, $1, $3); }
 ;
 
 
@@ -392,42 +404,42 @@ comparison_operator:
 
 regex_expression:
         shift_expression { $$ = $1; }
-    |   regex_expression T_RE T_REGEX { $$ = ast_opr(@1.first_line, T_RE, 2, $1, ast_string(@3.first_line, $3)); smm_free($3); }
+    |   regex_expression T_RE T_REGEX { $$ = ast_node_opr(@1.first_line, T_RE, 2, $1, ast_node_string(@3.first_line, $3)); smm_free($3); }
 ;
 
 shift_expression:
         additive_expression { $$ = $1; }
-    |   shift_expression T_SHIFT_LEFT additive_expression { $$ = ast_operator(@2.first_line, T_SHIFT_LEFT, $1, $3); }
-    |   shift_expression T_SHIFT_RIGHT additive_expression { $$ = ast_operator(@2.first_line, T_SHIFT_RIGHT, $1, $3); }
+    |   shift_expression T_SHIFT_LEFT additive_expression { $$ = ast_node_operator(@2.first_line, T_SHIFT_LEFT, $1, $3); }
+    |   shift_expression T_SHIFT_RIGHT additive_expression { $$ = ast_node_operator(@2.first_line, T_SHIFT_RIGHT, $1, $3); }
 ;
 
 additive_expression:
         multiplicative_expression { $$ = $1; }
-    |   additive_expression '+' multiplicative_expression { $$ = ast_operator(@2.first_line, '+', $1, $3); }
-    |   additive_expression '-' multiplicative_expression { $$ = ast_operator(@2.first_line, '-', $1, $3); }
+    |   additive_expression '+' multiplicative_expression { $$ = ast_node_operator(@2.first_line, '+', $1, $3); }
+    |   additive_expression '-' multiplicative_expression { $$ = ast_node_operator(@2.first_line, '-', $1, $3); }
 ;
 
 multiplicative_expression:
         unary_expression { $$ = $1; }
-    |   multiplicative_expression '*' unary_expression { $$ = ast_operator(@2.first_line, '*', $1, $3); }
-    |   multiplicative_expression '/' unary_expression { $$ = ast_operator(@2.first_line, '/', $1, $3); }
-    |   multiplicative_expression '%' unary_expression { $$ = ast_operator(@2.first_line, '%', $1, $3); }
+    |   multiplicative_expression '*' unary_expression { $$ = ast_node_operator(@2.first_line, '*', $1, $3); }
+    |   multiplicative_expression '/' unary_expression { $$ = ast_node_operator(@2.first_line, '/', $1, $3); }
+    |   multiplicative_expression '%' unary_expression { $$ = ast_node_operator(@2.first_line, '%', $1, $3); }
 ;
 
 unary_expression:
         logical_unary_expression                    { $$ = $1; }
-    |   T_OP_INC unary_expression                   { $$ = ast_operator(@1.first_line, '+', $2, ast_numerical(yylineno, 1)); }
-    |   T_OP_DEC unary_expression                   { $$ = ast_operator(@1.first_line, '-', $2, ast_numerical(yylineno, 1)); }
+    |   T_OP_INC unary_expression                   { $$ = ast_node_operator(@1.first_line, '+', $2, ast_node_numerical(@1.first_line, 1)); }
+    |   T_OP_DEC unary_expression                   { $$ = ast_node_operator(@1.first_line, '-', $2, ast_node_numerical(@1.first_line, 1)); }
 ;
 
 logical_unary_expression:
         primary_expression                      { $$ = $1; }
-    |   logical_unary_operator unary_expression { $$ = ast_opr(@1.first_line, T_LOGICAL, 2, $1, $2); }
+    |   logical_unary_operator unary_expression { $$ = ast_node_opr(@1.first_line, T_LOGICAL, 2, $1, $2); }
 ;
 
 logical_unary_operator:
-        '~' { $$ = ast_string(yylineno, "~"); }
-    |   '!' { $$ = ast_string(yylineno, "!"); }
+        '~' { $$ = ast_node_string(@1.first_line, "~"); }
+    |   '!' { $$ = ast_node_string(@1.first_line, "!"); }
 ;
 
 /* Things that can be used as assignment '=', '+=' etc.. */
@@ -453,15 +465,15 @@ assignment_operator:
 
 /* Any number, any string, any regex */
 real_scalar_value:
-        T_LNUM        { $$ = ast_numerical(@1.first_line, $1); }
-    |   T_STRING      { $$ = ast_string(@1.first_line, $1); smm_free($1); }
-    |   T_REGEX       { $$ = ast_string(@1.first_line, $1); smm_free($1); }
+        T_LNUM        { $$ = ast_node_numerical(@1.first_line, $1); }
+    |   T_STRING      { $$ = ast_node_string(@1.first_line, $1); smm_free($1); }
+    |   T_REGEX       { $$ = ast_node_string(@1.first_line, $1); smm_free($1); }
 ;
 
 /* Any number, any string, any regex or null|true|false */
 scalar_value:
         real_scalar_value   { $$ = $1; }
-    |   T_IDENTIFIER        { sfc_check_permitted_identifiers($1);  $$ = ast_identifier(@1.first_line, $1); smm_free($1); }
+    |   T_IDENTIFIER        { parser_check_permitted_identifiers(saffireParser, @1.first_line, $1);  $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
 ;
 
 /* This is primary expression */
@@ -472,13 +484,13 @@ primary_expression:
 
 pe_no_parenthesis:
         primary_expression_first_part        { $$ = $1; }
-    |   primary_expression '.' T_IDENTIFIER  { $$ = ast_property(@1.first_line, $1, ast_string(@3.first_line, $3)); }
-    |   primary_expression callable          { $$ = ast_opr(@1.first_line, T_CALL, 2, $1, ast_add($2, ast_null())); } /* Add termination varargs list */
-    |   primary_expression var_callable      { $$ = ast_opr(@1.first_line, T_CALL, 2, $1, $2); }
-    |   primary_expression subscription      { $$ = ast_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
-    |   primary_expression data_structure    { $$ = ast_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
-    |   primary_expression T_OP_INC          { $$ = ast_operator(@2.first_line, '+', $1, ast_numerical(yylineno, 1)); }
-    |   primary_expression T_OP_DEC          { $$ = ast_operator(@2.first_line, '-', $1, ast_numerical(yylineno, 1)); }
+    |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); }
+    |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null())); } /* Add termination varargs list */
+    |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
+    |   primary_expression subscription      { $$ = ast_node_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
+    |   primary_expression data_structure    { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
+    |   primary_expression T_OP_INC          { $$ = ast_node_operator(@2.first_line, '+', $1, ast_node_numerical(@1.first_line, 1)); }
+    |   primary_expression T_OP_DEC          { $$ = ast_node_operator(@2.first_line, '-', $1, ast_node_numerical(@1.first_line, 1)); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
@@ -491,35 +503,35 @@ primary_expression_first_part:
 /* A name that is namespaced (or not). */
 qualified_name:
         qualified_name_first_part               { $$ = $1; }
-    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_concat($1, "::"); $$ = ast_concat($$, $3); }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_concat($1, "::"); $$ = ast_node_concat($$, $3); }
 ;
 
 qualified_name_first_part:
-        T_IDENTIFIER            { $$ = ast_identifier(@1.first_line, $1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_string(yylineno, "::"); $$ = ast_concat($$, $2); }
+        T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); }
 ;
 
 
 /* Self and parent are processed differently, since they are separate tokens */
 special_name:
-        T_SELF    { $$ = ast_identifier(yylineno, "self"); }
-    |   T_PARENT  { $$ = ast_identifier(yylineno, "parent"); }
+        T_SELF    { $$ = ast_node_identifier(@1.first_line, "self"); }
+    |   T_PARENT  { $$ = ast_node_identifier(@1.first_line, "parent"); }
 ;
 
 var_callable:
-        '(' calling_method_argument_list ',' T_ELLIPSIS expression ')' { $$ = ast_add($2, $5); }
-    |   '(' T_ELLIPSIS expression                                  ')' { $$ = ast_group(1, $3); }
+        '(' calling_method_argument_list ',' T_ELLIPSIS expression ')' { $$ = ast_node_add($2, $5); }
+    |   '(' T_ELLIPSIS expression                                  ')' { $$ = ast_node_group(1, $3); }
 ;
 
 callable:
         '(' calling_method_argument_list ')' { $$ = $2; }
-    |   '(' /* empty */                  ')' { $$ = ast_group(0); }
+    |   '(' /* empty */                  ')' { $$ = ast_node_group(0); }
 ;
 
 /* argument list inside a method call*/
 calling_method_argument_list:
-        assignment_expression                                     { $$ = ast_group(1, $1); }
-    |   calling_method_argument_list ',' assignment_expression    { $$ = ast_add($$, $3); }
+        assignment_expression                                     { $$ = ast_node_group(1, $1); }
+    |   calling_method_argument_list ',' assignment_expression    { $$ = ast_node_add($$, $3); }
 ;
 
 data_structure:
@@ -527,10 +539,10 @@ data_structure:
 ;
 
 subscription:
-        '[' pe_no_parenthesis T_TO                   ']' { $$ = ast_group(2, $2, ast_null()); }
-    |   '[' pe_no_parenthesis T_TO pe_no_parenthesis ']' { $$ = ast_group(2, $2, $4); }
-    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_group(2, ast_null(), $3); }
-    |   '[' /* empty */                              ']' { $$ = ast_group(2, ast_null(), ast_null()); }
+        '[' pe_no_parenthesis T_TO                   ']' { $$ = ast_node_group(2, $2, ast_node_null()); }
+    |   '[' pe_no_parenthesis T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, $2, $4); }
+    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, ast_node_null(), $3); }
+    |   '[' /* empty */                              ']' { $$ = ast_node_group(2, ast_node_null(), ast_node_null()); }
 ;
 
 /**
@@ -542,8 +554,8 @@ subscription:
 
 /* Statements inside a class: constant and methods */
 class_inner_statement_list:
-        class_inner_statement                               { $$ = ast_group(1, $1); }
-    |   class_inner_statement_list class_inner_statement    { $$ = ast_add($$, $2); }
+        class_inner_statement                               { $$ = ast_node_group(1, $1); }
+    |   class_inner_statement_list class_inner_statement    { $$ = ast_node_add($$, $2); }
 ;
 
 class_inner_statement:
@@ -554,8 +566,8 @@ class_inner_statement:
 
 /* Statements inside an interface: constant and methods */
 interface_inner_statement_list:
-        interface_inner_statement                                    { $$ = ast_group(1, $1); }
-    |   interface_inner_statement_list interface_inner_statement     { $$ = ast_add($$, $2); }
+        interface_inner_statement                                    { $$ = ast_node_group(1, $1); }
+    |   interface_inner_statement_list interface_inner_statement     { $$ = ast_node_add($$, $2); }
 ;
 
 interface_inner_statement:
@@ -564,67 +576,89 @@ interface_inner_statement:
 ;
 
 interface_method_declaration:
-        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_init_method($2); sfc_fini_method();  $$ = ast_attribute(@1.first_line, $2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags(0), $4); smm_free($2); }
+        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_init_method(saffireParser, @1.first_line, $2); parser_fini_method(saffireParser, @1.first_line);  $$ = ast_node_attribute(@1.first_line, $2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, 0), $4); smm_free($2); }
 ;
 
 class_method_definition:
-        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' { sfc_init_method($3); sfc_validate_method_modifiers($1); } compound_statement { sfc_fini_method(); sfc_validate_abstract_method_body($1, $8);  $$ = ast_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, $8, sfc_mod_to_methodflags($1), $5); smm_free($3); }
-    |   modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { sfc_validate_method_modifiers($1); sfc_init_method($3); sfc_fini_method();  $$ = ast_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, ast_nop(), sfc_mod_to_methodflags($1), $5); smm_free($3); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' {
+            parser_init_method(saffireParser, @1.first_line, $3);
+            parser_validate_method_modifiers(saffireParser, @1.first_line, $1);
+        } compound_statement {
+            parser_fini_method(saffireParser, @1.first_line);
+            parser_validate_abstract_method_body(saffireParser, @1.first_line, $1, $8);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $8, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $5);
+            smm_free($3);
+        }
+    |   modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   {
+            parser_validate_method_modifiers(saffireParser, @1.first_line, $1);
+            parser_init_method(saffireParser, @1.first_line, $3);
+            parser_fini_method(saffireParser, @1.first_line);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $5);
+            smm_free($3);
+        }
 ;
 
 method_argument_list:
         non_empty_method_argument_list                             { $$ = $1; }
-    |   /* empty */                                                { $$ = ast_nop(); }
-    |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_add($$, ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_string(yylineno, "..."), ast_string(@4.first_line, $4), ast_null())); smm_free($4); }
-    |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_opr(@1.first_line, T_ARGUMENT_LIST, 0); ast_add($$, ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_string(yylineno, "..."), ast_string(@2.first_line, $2), ast_null())); smm_free($2); }
+    |   /* empty */                                                { $$ = ast_node_nop(); }
+    |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@4.first_line, $4), ast_node_null())); smm_free($4); }
+    |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_node_opr(@1.first_line, T_ARGUMENT_LIST, 0); ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@2.first_line, $2), ast_node_null())); smm_free($2); }
 ;
 
 non_empty_method_argument_list:
-        method_argument                                       { $$ = ast_opr(@1.first_line, T_ARGUMENT_LIST, 1, $1); }
-    |   non_empty_method_argument_list ',' method_argument    { $$ = ast_add($$, $3); }
+        method_argument                                       { $$ = ast_node_opr(@1.first_line, T_ARGUMENT_LIST, 1, $1); }
+    |   non_empty_method_argument_list ',' method_argument    { $$ = ast_node_add($$, $3); }
 ;
 
 method_argument:
-        T_IDENTIFIER                                           { $$ = ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_null(),     ast_string(@1.first_line, $1), ast_null()); smm_free($1); }
-    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { $$ = ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_null(),     ast_string(@1.first_line, $1), $3        ); smm_free($1); }
-    |   T_IDENTIFIER T_IDENTIFIER                              { $$ = ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_string(@1.first_line, $1), ast_string(@2.first_line, $2), ast_null()); smm_free($1); smm_free($2); }
-    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { $$ = ast_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_string(@1.first_line, $1), ast_string(@2.first_line, $2), $4        ); smm_free($1); smm_free($2); }
+        T_IDENTIFIER                                           { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(),     ast_node_string(@1.first_line, $1), ast_node_null()); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(),     ast_node_string(@1.first_line, $1), $3        ); smm_free($1); }
+    |   T_IDENTIFIER T_IDENTIFIER                              { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, $1), ast_node_string(@2.first_line, $2), ast_node_null()); smm_free($1); smm_free($2); }
+    |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, $1), ast_node_string(@2.first_line, $2), $4        ); smm_free($1); smm_free($2); }
 ;
 
 class_definition:
-        class_header '{' class_inner_statement_list '}' { $$ = ast_class(@1.first_line, global_table->active_class, $3); sfc_fini_class(); }
-    |   class_header '{'                            '}' { $$ = ast_class(@1.first_line, global_table->active_class, ast_nop()); sfc_fini_class(); }
+        class_header '{' class_inner_statement_list '}' { $$ = ast_node_class(@4.first_line, saffireParser->parserinfo->active_class, $3); parser_fini_class(saffireParser, @1.first_line); }
+    |   class_header '{'                            '}' { $$ = ast_node_class(@3.first_line, saffireParser->parserinfo->active_class, ast_node_nop()); parser_fini_class(saffireParser, @1.first_line); }
 ;
 
 class_header:
-        modifier_list T_CLASS T_IDENTIFIER class_extends class_implements { sfc_validate_class_modifiers($1); sfc_init_class(sfc_mod_to_methodflags($1), $3, $4, $5); smm_free($3); }
-    |                 T_CLASS T_IDENTIFIER class_extends class_implements { sfc_init_class( 0, $2, $3, $4); smm_free($2); }
+        modifier_list T_CLASS T_IDENTIFIER class_extends class_implements { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); parser_init_class(saffireParser, @1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, $5); smm_free($3); }
+    |                 T_CLASS T_IDENTIFIER class_extends class_implements { parser_init_class(saffireParser, @1.first_line, 0, $2, $3, $4); smm_free($2); }
 ;
 
 interface_definition:
-        modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(@1.first_line, sfc_mod_to_methodflags($1), $3, $4, $6); smm_free($3); }
-    |   modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { sfc_validate_class_modifiers($1); $$ = ast_interface(@1.first_line, sfc_mod_to_methodflags($1), $3, $4, ast_nop()); smm_free($3); }
-    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { $$ = ast_interface(@1.first_line, 0, $2, $3, $5); smm_free($2); }
-    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { $$ = ast_interface(@1.first_line, 0, $2, $3, ast_nop()); smm_free($2); };
+        modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, $6); smm_free($3); }
+    |   modifier_list T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { parser_validate_class_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_interface(@1.first_line, parser_mod_to_methodflags(saffireParser, @1.first_line, $1), $3, $4, ast_node_nop()); smm_free($3); }
+    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{' interface_inner_statement_list '}' { $$ = ast_node_interface(@1.first_line, 0, $2, $3, $5); smm_free($2); }
+    |                 T_INTERFACE T_IDENTIFIER interface_inherits '{'                                '}' { $$ = ast_node_interface(@1.first_line, 0, $2, $3, ast_node_nop()); smm_free($2); };
 ;
 
 class_property_definition:
-        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   { sfc_validate_property_modifiers($1); $$ = ast_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, $5, 0, ast_nop()); smm_free($3); }
-    |   modifier_list T_PROPERTY T_IDENTIFIER ';'                           { sfc_validate_property_modifiers($1); $$ = ast_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RW, ast_null(), 0, ast_nop()); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER T_ASSIGNMENT expression ';'   {
+            parser_validate_property_modifiers(saffireParser, @1.first_line, $1);
+            $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, $5, 0, ast_node_nop());
+            smm_free($3);
+        }
+    |   modifier_list T_PROPERTY T_IDENTIFIER ';' {
+        parser_validate_property_modifiers(saffireParser, @1.first_line, $1);
+        $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, ast_node_null(), 0, ast_node_nop());
+        smm_free($3);
+    }
 ;
 
 class_constant_definition:
-        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { sfc_validate_property_modifiers($1); $$ = ast_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, sfc_mod_to_visibility($1), ATTRIB_ACCESS_RO, $5, 0, ast_nop()); smm_free($3); }
+        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
 ;
 
 
 interface_property_declaration:
-        modifier_list T_PROPERTY T_IDENTIFIER ';' { sfc_validate_property_modifiers($1); $$ = ast_opr(@1.first_line, T_PROPERTY, 2, sfc_mod_to_visibility($1), ast_identifier(@3.first_line, $3)); smm_free($3); }
+        modifier_list T_PROPERTY T_IDENTIFIER ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_opr(@1.first_line, T_PROPERTY, 2, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ast_node_identifier(@3.first_line, $3)); smm_free($3); }
 ;
 
 modifier_list:
         modifier               { $$ = $1; }
-    |   modifier_list modifier { sfc_validate_flags($$, $2); $$ |= $2; }
+    |   modifier_list modifier { parser_validate_flags(saffireParser, @1.first_line, $$, $2); $$ |= $2; }
 ;
 
 /* Property and method modifiers. */
@@ -639,27 +673,27 @@ modifier:
 
 /* extends only one class */
 class_extends:
-        T_EXTENDS T_IDENTIFIER { $$ = ast_string(@2.first_line, $2); smm_free($2); }
-    |   /* empty */            { $$ = ast_null(); }
+        T_EXTENDS T_IDENTIFIER { $$ = ast_node_string(@2.first_line, $2); smm_free($2); }
+    |   /* empty */            { $$ = ast_node_null(); }
 ;
 
 /* inherits a list of interfaces, or no inherits at all */
 interface_inherits:
         T_INHERITS class_list   { $$ = $2; }
-    |   /* empty */             { $$ = ast_group(0); }
+    |   /* empty */             { $$ = ast_node_group(0); }
 ;
 
 /* implements a list of classes, or no implement at all */
 class_implements:
         T_IMPLEMENTS class_list { $$ = $2; }
-    |   /* empty */             { $$ = ast_group(0); }
+    |   /* empty */             { $$ = ast_node_group(0); }
 ;
 
 
 /* Comma separated list of classes (for extends and implements) */
 class_list:
-        T_IDENTIFIER                { $$ = ast_group(1, ast_string(@1.first_line, $1)); smm_free($1); }
-    |   class_list ',' T_IDENTIFIER { $$ = ast_add($$, ast_string(@3.first_line, $3)); smm_free($3); }
+        T_IDENTIFIER                { $$ = ast_node_group(1, ast_node_string(@1.first_line, $1)); smm_free($1); }
+    |   class_list ',' T_IDENTIFIER { $$ = ast_node_add($$, ast_node_string(@3.first_line, $3)); smm_free($3); }
 ;
 
 
@@ -671,24 +705,80 @@ class_list:
  */
 
 ds_elements:
-        ds_element                 { $$ = ast_group(1, $1); }
-    |   ds_elements ',' ds_element { $$ = ast_add($$, $3); }
+        ds_element                 { $$ = ast_node_group(1, $1); }
+    |   ds_elements ',' ds_element { $$ = ast_node_add($$, $3); }
 ;
 
 ds_element:
-        assignment_expression                { $$ = ast_group(1, $1); }
-    |   ds_element ':' assignment_expression { $$ = ast_add($$, $3); }
+        assignment_expression                { $$ = ast_node_group(1, $1); }
+    |   ds_element ':' assignment_expression { $$ = ast_node_add($$, $3); }
 ;
 
 %%
 
-   /* Returns the actual name of a token, must be implemented here, because we have no access
-      to the yytoknum and yytname otherwise in other source files. */
-   char *get_token_string(int token) {
-        for (int i=0; i!=YYNTOKENS; i++) {
-            if (token == yytoknum[i]) {
-                return (char *)yytname[i];
-            }
-        }
-        return "<unknown>";
+// Use our own saffire memory manager
+void *yyalloc (size_t bytes, yyscan_t scanner) {
+    return smm_malloc(bytes);
+}
+void *yyrealloc (void *ptr, size_t bytes, yyscan_t scanner) {
+    return smm_realloc(ptr, bytes);
+}
+void yyfree (void *ptr, yyscan_t scanner) {
+    return smm_free(ptr);
+}
+
+
+extern int flush_buffer(yyscan_t scanner);
+
+/**
+ * Displays error based on location, scanner and interpreter structure. Will continue or fail depending on interpreter mode
+ */
+int yyerror(YYLTYPE *yylloc, yyscan_t scanner, SaffireParser *sp, const char *message) {
+    char buf[2048];
+
+    snprintf(buf, 2047, "%s, found in %s on line %d\n", message, sp->filename, yylloc->first_line);
+    warning(buf);
+
+    // Flush current buffer, and return when we are in interactive/REPL mode.
+    if (sp->mode == SAFFIRE_EXECMODE_REPL) {
+        flush_buffer(scanner);
+        return 0;
     }
+
+    // Otherwise, exit.
+    exit(1);
+}
+
+
+/**
+ * Returns the actual name of a token, must be implemented here, because we have no access
+ * to the yytoknum and yytname otherwise in other source files.
+ */
+char *get_token_string(int token) {
+    for (int i=0; i!=YYNTOKENS; i++) {
+        if (token == yytoknum[i]) {
+            return (char *)yytname[i];
+        }
+    }
+    return "<unknown>";
+}
+
+
+/**
+ * Hook that will be called on each finalized (top/use) statement. Useful to handle
+ * interactive sessions like the repl.
+ */
+void yy_exec(SaffireParser *sp) {
+    // Check if we need to handle the instructions (hook for mostly the repl)
+    if (! sp->yyexec) {
+        return;
+    }
+
+    // No AST to run
+    if (! sp->ast) {
+        return;
+    }
+
+    sp->yyexec(sp);
+    sp->ast = NULL;
+}

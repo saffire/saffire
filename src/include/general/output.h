@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -34,8 +34,9 @@
     void output(const char *format, ...);
     void output_printf(const char *format, t_dll *args);
 
-    void error(const char *format, ...);
-    void error_and_die(int exitcode, const char *format, ...);
-    void line_error_and_die(int exitcode, int lineno, const char *format, ...);
+//    void error(const char *format, ...);
+    void warning(const char *format, ...);
+    void fatal_error(int exitcode, const char *format, ...);
+//    void line_error_and_die(int exitcode, char *filename, int lineno, const char *format, ...);
 
 #endif

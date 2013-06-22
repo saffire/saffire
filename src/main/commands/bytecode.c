@@ -9,7 +9,7 @@
  * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
- * Neither the name of the <organization> nor the
+ * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -44,9 +44,9 @@
 #include "debug.h"
 #include "general/config.h"
 #include "dot/dot.h"
-#include "compiler/ast.h"
-#include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/ast_nodes.h"
+#include "compiler/ast_to_asm.h"
+#include "compiler/output/asm.h"
 
 extern char *vm_code_names[];
 extern int vm_codes_index[];
@@ -82,7 +82,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the AST to assembler lines
-    asm_code = ast_walker(ast);
+    asm_code = ast_to_asm(ast, 1);
     if (! asm_code) {
         ret = 1;
         goto cleanup;
@@ -95,7 +95,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
     }
 
     // Convert the assembler lines to bytecode
-    t_bytecode *bc = assembler(asm_code);
+    t_bytecode *bc = assembler(asm_code, source_file);
     if (! bc) {
         ret = 1;
         goto cleanup;
@@ -141,7 +141,7 @@ static int _compile_directory(const char *path, int sign, char *gpg_key) {
             // Add current path to name
             path_length = snprintf(new_path, PATH_MAX, "%s/%s", path, dp->d_name);
             if (path_length >= PATH_MAX) {
-                error("Path too long");
+                warning("Path too long");
                 return 1;
             }
 
@@ -154,7 +154,6 @@ static int _compile_directory(const char *path, int sign, char *gpg_key) {
 
                 ret += _compile_file(new_path, sign, gpg_key);
             }
-
         }
     } while (dp);
 
@@ -170,21 +169,21 @@ static int _sign_bytecode(const char *path, char *gpg_key) {
     int ret;
 
     if (!bytecode_is_valid_file(path)) {
-        error("Sign error: This is not a valid saffire bytecode file.\n");
+        warning("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
     if (bytecode_is_signed(path)) {
-        error("Sign error: This bytecode file is already signed.\n");
+        warning("Sign error: This bytecode file is already signed.\n");
         return 1;
     }
 
     // add signature
     ret = bytecode_add_signature(path, gpg_key);
     if (ret == 0) {
-        error("Added signature to bytecode file %s\n", path);
+        warning("Added signature to bytecode file %s\n", path);
     } else {
-        error("Sign error: Error while adding signature from bytecode file %s\n", path);
+        warning("Sign error: Error while adding signature from bytecode file %s\n", path);
     }
     return ret;
 }
@@ -196,21 +195,21 @@ static int _unsign_bytecode(const char *path) {
     int ret;
 
     if (!bytecode_is_valid_file(path)) {
-        error("Sign error: This is not a valid saffire bytecode file.\n");
+        warning("Sign error: This is not a valid saffire bytecode file.\n");
         return 1;
     }
 
     if (!bytecode_is_signed(path)) {
-        error("Sign error: This bytecode file is not signed.\n");
+        warning("Sign error: This bytecode file is not signed.\n");
         return 1;
     }
 
     // Remove signature
     ret = bytecode_remove_signature(path);
     if (ret == 0) {
-        error("Removed signature from bytecode file %s\n", path);
+        warning("Removed signature from bytecode file %s\n", path);
     } else {
-        error("Sign error: Error while removing signature from bytecode file %s\n", path);
+        warning("Sign error: Error while removing signature from bytecode file %s\n", path);
     }
     return ret;
 }
@@ -223,7 +222,7 @@ static int do_sign(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        error("Cannot sign: File not found\n");
+        warning("Cannot sign: File not found\n");
         return 1;
     }
 
@@ -244,7 +243,7 @@ static int do_unsign(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        error("Cannot sign: File not found\n");
+        warning("Cannot sign: File not found\n");
         return 1;
     }
 
@@ -264,13 +263,13 @@ static int do_info(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        error("File not found\n");
+        warning("File not found\n");
         return 1;
     }
 
     // sign file
     if (S_ISREG(st.st_mode)) {
-        error("Displaying information for bytecode files is not supported yet.");
+        warning("Displaying information for bytecode files is not supported yet.");
     }
 
     return 0;
@@ -285,7 +284,7 @@ static int do_compile(void) {
 
     struct stat st;
     if (stat(source_path, &st) != 0) {
-        error("Cannot compile: file not found\n");
+        warning("Cannot compile: file not found\n");
         return 1;
     }
 
@@ -346,14 +345,14 @@ static void opt_key(void *data) {
 
 static void opt_sign(void *data) {
     if (flag_sign > 0) {
-        error_and_die(1, "Cannot have both the --no-sign and --sign options");
+        fatal_error(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 1;
 }
 
 static void opt_no_sign(void *data) {
     if (flag_sign > 0) {
-        error_and_die(1, "Cannot have both the --no-sign and --sign options");
+        fatal_error(1, "Cannot have both the --no-sign and --sign options");
     }
     flag_sign = 2;
 }

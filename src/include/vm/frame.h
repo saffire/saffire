@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -33,9 +33,15 @@
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
-        char *name;
+        char *context;                              // Name, {main} or FQ method name
         t_bytecode *bytecode;                       // Global bytecode array
-        unsigned int ip;                            // Instruction pointer
+        int ip;                                     // Instruction pointer
+
+        int lineno_lowerbound;                      // Lower bytecode offset for this line
+        int lineno_upperbound;                      // Upper bytecode offset for this line
+        int lineno_current_line;                    // Current line pointer
+        int lineno_current_lino_offset;             // Current offset in the bytecode lineno table
+//        char *source_filename;                      // Full path to source filename for this frame
 
         t_object **stack;                           // Local variable stack
         unsigned int sp;                            // Stack pointer
@@ -50,7 +56,6 @@
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
 
-        char *filename;                             // Filename  @TODO: Not used. Using filename inside the bytecode
         char *class;                                // Class (or NULL in global?)
         char *method;                               // Method (or NULL in global?)
         int param_count;                            // Number of arguments
@@ -61,7 +66,8 @@
     };
 
 
-    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, t_bytecode *bytecode);
+    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode);
+    void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytecode);
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);

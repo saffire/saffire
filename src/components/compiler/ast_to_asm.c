@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -26,13 +26,12 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/ast_to_asm.h"
+#include "compiler/output/asm.h"
 #include "compiler/bytecode.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "compiler/parser.tab.h"
 #include "general/output.h"
-#include "compiler/assembler.h"
 #include "general/smm.h"
 #include "general/stack.h"
 #include "general/dll.h"
@@ -45,7 +44,7 @@
 
 extern char *get_token_string(int token);
 
-#define WALK_LEAF(leaf) __ast_walker(leaf, output, frame, state)
+#define WALK_LEAF(leaf) __ast_walker(leaf, output, frame, state, append_return_statement)
 
 // state enums
 enum context { st_ctx_load, st_ctx_store };
@@ -102,20 +101,20 @@ static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *st
             dll_append(frame, asm_create_codeline(lineno, VM_STORE_ID, 1, opr));
             break;
         default :
-            error_and_die(1, "Unknown load/store state for %d!", opr->type);
+            fatal_error(1, "Unknown load/store state for %d!", opr->type);
     }
 }
 
 
-static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state);
-static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *name);
+static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state, int append_return_statement);
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name, int append_return_statement);
 
 
 
 /**
  * Walk the leaf into the frame. Can create new frames if needed (method bodies etc)
  */
-static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state) {
+static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame, t_state *state, int append_return_statement) {
     char label1[MAX_LABEL_LEN], label2[MAX_LABEL_LEN], label3[MAX_LABEL_LEN];
     char label4[MAX_LABEL_LEN], label5[MAX_LABEL_LEN], label6[MAX_LABEL_LEN];
     t_asm_opr *opr1, *opr2, *opr3;
@@ -225,7 +224,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_GE : tmp = COMPARISON_GE; break;
                 case T_LE : tmp = COMPARISON_LE; break;
                 default :
-                    error_and_die(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
+                    fatal_error(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
@@ -405,7 +404,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
                 // Walk the body inside a new frame!
-                _ast_walker(leaf->attribute.value, output, label1);
+                _ast_to_frame(leaf->attribute.value, output, label1, append_return_statement);
             }
 
             if (leaf->attribute.attrib_type == ATTRIB_TYPE_CONSTANT) {
@@ -533,7 +532,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     while (i >= 0 && state->blocks[i].type != BLOCK_TYPE_LOOP) i--;
 
                     if (i < 0) {
-                        error_and_die(1, "No loop block found to continue too.");
+                        fatal_error(1, "No loop block found to continue too.");
                     }
 
                     // If we need to break out several loops (ie: break 2) we need to traverse back multiple
@@ -801,7 +800,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Check for duplicate label inside current block
                     sprintf(label1, "userlabel_%s", node->string.value);
                     if (ht_exists(state->blocks[state->block_cnt].labels, label1)) {
-                        error_and_die(1, "Duplicate label '%s' found\n", node->string.value);
+                        fatal_error(1, "Duplicate label '%s' found\n", node->string.value);
                     }
                     ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
@@ -845,7 +844,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         node2 = node->group.items[i];       // Catch group
                         t_ast_element *node3 = node2->group.items[0];
                         if (node3->opr.oper != T_CATCH) {
-                            error_and_die(1, "Expected a T_CATCH operator node\n");
+                            fatal_error(1, "Expected a T_CATCH operator node\n");
                         }
                         t_ast_element *exception = node3->opr.ops[0];
                         t_ast_element *identifier = node3->opr.ops[1];
@@ -901,50 +900,43 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     sprintf(label1, "coalesce_%03d_default", clc);
                     sprintf(label2, "coalesce_%03d_end", clc);
 
-                    //Load null
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+                    // Walk default operand expression
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
 
-                    //Load identifier
-                    node = leaf->opr.ops[0];
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
+                    // Duplicate identifier
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
 
-                    //Compare
-                    opr3 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_NE);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr3));
-
-                    //Go to default if value == null
+                    // Go to default if value == null
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr3));
 
-                    //Clean up comparison?
+                    // Clean up comparison?
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
-                    //Load identifier
-                    node = leaf->opr.ops[0];
-                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr2));
-
-                    //Did what we have to do
+                    // Jump to end
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
 
-                    //Values was null
+                    // Value was null
                     dll_append(frame, asm_create_labelline(label1));
-                    //Clean up comparison?
+
+                    // Clean up comparison?
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
-                    //Walk the expression in the second operand, and store the result
+                    // Clean up dupped identifier value
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    // Walk the expression in the second operand, and store the result
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[1]);
 
+                    // Jump to end
                     opr3 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr3));
 
-                    //The end!
+                    // End
                     dll_append(frame, asm_create_labelline(label2));
-
 
                     break;
                 case '?' :
@@ -990,11 +982,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
 
                 default :
-                    error_and_die(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
+                    fatal_error(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
             }
             break;
         default :
-            error_and_die(1, "Unknown AST type : %d\n", leaf->type);
+            fatal_error(1, "Unknown AST type : %d\n", leaf->type);
     }
 }
 
@@ -1025,7 +1017,7 @@ t_state *_ast_state_init() {
  * Finalizes a state structure
  */
 void _ast_state_fini(t_state *state) {
-    // @TODO: Troubles when trying to free the stack (dll_free in endless loop). Needs fixing!
+    // @TODO: Troubles when trying to free the stack (dll_free in endless loop). Needs fixing! It's probably already fixed!
 /*
     stack_free(state->context);
     stack_free(state->side);
@@ -1044,7 +1036,7 @@ void _ast_state_fini(t_state *state) {
 /**
  * Initialize a new frame and walk the leaf into this frame
  */
-static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *name) {
+static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char *name, int append_return_statement) {
     // Initialize state structure
     t_state *state = _ast_state_init();
 
@@ -1053,18 +1045,20 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
     ht_add(output, name, frame);
 
     // Walk the leaf and store in the frame
-    __ast_walker(leaf, output, frame, state);
+    __ast_walker(leaf, output, frame, state, append_return_statement);
 
-    // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
-    t_asm_opr *opr1;
-    if (strcmp(name, "main") == 0) {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
-        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
-    } else {
-        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
-        dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
+    if (append_return_statement) {
+        // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
+        t_asm_opr *opr1;
+        if (strcmp(name, "main") == 0) {
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+            dll_append(frame, asm_create_codeline(0, VM_LOAD_CONST, 1, opr1));
+        } else {
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
+            dll_append(frame, asm_create_codeline(0, VM_LOAD_ID, 1, opr1));
+        }
+        dll_append(frame, asm_create_codeline(0, VM_RETURN, 0));
     }
-    dll_append(frame, asm_create_codeline(leaf->lineno, VM_RETURN, 0));
 
     // Clean up state structure
     _ast_state_fini(state);
@@ -1074,10 +1068,11 @@ static void _ast_walker(t_ast_element *leaf, t_hash_table *output, const char *n
 /**
  * Walk a complete AST (all frames, starting with the main frame and root of the AST)
  */
-t_hash_table *ast_walker(t_ast_element *ast) {
+t_hash_table *ast_to_asm(t_ast_element *ast, int append_return_statement) {
     t_hash_table *output = ht_create();
 
-    _ast_walker(ast, output, "main");
+    _ast_to_frame(ast, output, "main", append_return_statement);
 
     return output;
 }
+

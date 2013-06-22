@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __ASSEMBLER_H__
-#define __ASSEMBLER_H__
+#ifndef __OUTPUT_ASM_H__
+#define __OUTPUT_ASM_H__
 
     #include "compiler/bytecode.h"
     #include "general/smm.h"
@@ -71,6 +71,9 @@
         int alloc_len;                      // Length currently allocated inside *bytecode
         int code_len;                       // Length of the bytecode
         char *code;                         // Actual bytecode
+
+        int lino_len;                       // Line numbers length
+        char *lino;                         // compacted line numbers
     } t_asm_frame;
 
     typedef struct _asm_constant {
@@ -87,8 +90,9 @@
     t_asm_line *asm_create_frameline(char *name);
     t_asm_line *asm_create_labelline(char *label);
 
-    t_bytecode *assembler(t_hash_table *asm_code);
-    void assembler_output(t_hash_table *asm_code, char *output_path);
+    t_bytecode *assembler(t_hash_table *asm_code, const char *filename);
     void assembler_free(t_hash_table *asm_code);
+    void assembler_output(t_hash_table *asm_code, char *output_path);
+    void assembler_output_stream(t_hash_table *asm_code, FILE *f);
 
 #endif

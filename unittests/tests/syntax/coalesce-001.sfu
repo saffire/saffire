@@ -6,13 +6,14 @@ author: Kevin Daudt <ikke@ikke.info>
 import io;
 a = null;
 b = a ?? "default";
-io.print(a);
+io.print(b);
 ====
 default
 @@@@
 // Non-null test
+import io;
 a = "value";
 b = a ?? "default";
-io.print(a);
+io.print(b);
 ====
 value

@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -58,7 +58,7 @@ struct command commands[] = {
                                         { "exec",     &info_exec },
                                         { "bytecode", &info_bytecode },
                                         { NULL, NULL }
-                                    };
+                                };
 
 // Original argc and argv. Since we are moving around the argument pointers.
 int original_argc;
@@ -99,7 +99,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
     // Iterate structure and find correct action depending on the argument signature
     struct command_action *action = cmd->info->actions;
     while (action->name) {
-        
+
         // Match action or an empty action
         if (! strcmp(action->name, "") || ! strcmp(action->name, dst_action)) {
 
@@ -115,7 +115,10 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             }
 
             // Parse the rest of the arguments, confirming the action's signature
-            saffire_parse_signature(argc, argv, action->arglist);
+            char *error;
+            if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
+                fatal_error(1, "%s. Use 'saffire help %s' for more information\n", error, action->name);
+            }
 
             // Execute action
             return action->func();
@@ -154,7 +157,6 @@ int main(int argc, char *argv[]) {
     // Save originals. Commands like 'help' will need them..
     original_argc = argc;
     original_argv = argv;
-
 
     // Find command, and set the argc & argv to point to the item AFTER the command
     if (argc == 1) {
