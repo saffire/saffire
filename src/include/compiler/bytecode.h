@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -28,7 +28,7 @@
 #define __BYTECODE_H__
 
     #include <stdint.h>
-    #include "compiler/ast.h"
+    #include "compiler/ast_nodes.h"
     #include "general/dll.h"
     #include "objects/object.h"
 
@@ -60,7 +60,7 @@
         union {
             char *s;                    // String
             long l;                     // Long
-            t_bytecode *code;     // Code block
+            t_bytecode *code;           // Code block
             void *ptr;                  // Generic pointer
             t_object *obj;              // Object
         } data;
@@ -85,7 +85,11 @@
         unsigned int identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
 
-        char *filename;                         // Filename
+        unsigned int lino_offset;               // Initial linenumber offset
+        unsigned int lino_length;               // Length of linenumbers offset block
+        unsigned char *lino;                    // Linenumber offsets
+
+        char *source_filename;                  // Filename of the source file
     };
 
 
@@ -93,7 +97,7 @@
     void bytecode_free(t_bytecode *bc);
     char *bytecode_generate_destfile(const char *src);
 
-    t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name);
+    t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int startline);
 
     int bytecode_save(const char *dest_filename, const char *source_filename, t_bytecode *bc);
     t_bytecode *bytecode_load(const char *filename, int verify_signature);

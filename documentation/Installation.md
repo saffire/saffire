@@ -43,14 +43,13 @@ Plus, you will need to following libraries and header files:
 - libedit
 - libfcgi
 - libbz2
-- libaugeas
 - libpcre3
 - libcunit11
 
 To install these packages on Ubuntu or Debian, please use the following commands:
 
     sudo apt-get install automake make flex bison gcc pkg-config
-    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libaugeas-dev libpcre3-dev
+    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libpcre3-dev
 
 On RedHat/CentOS systems, the library development packages are probably ends with -devel.
 

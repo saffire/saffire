@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -30,7 +30,7 @@
 #include <string.h>
 #include "general/output.h"
 #include "commands/command.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/parse_options.h"
 #include "general/path_handling.h"
 #include "general/smm.h"

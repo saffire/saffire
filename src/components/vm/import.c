@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -29,14 +29,17 @@
 #include "vm/vm.h"
 #include "vm/frame.h"
 #include "objects/objects.h"
-#include "compiler/ast.h"
-#include "compiler/ast_walker.h"
-#include "compiler/assembler.h"
+#include "compiler/ast_nodes.h"
+#include "compiler/ast_to_asm.h"
+#include "compiler/output/asm.h"
 #include "general/path_handling.h"
 #include "general/output.h"
 #include "debug.h"
 
 
+/*
+ * @TODO: Modules are search in this order on these paths. They are currently hardcoded
+ */
 const char *module_search_path[] = {
     ".",
     "/usr/share/saffire/modules",
@@ -48,25 +51,21 @@ const char *module_search_path[] = {
 static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, char *class) {
     DEBUG_PRINT(" * _import_class_from_file(%s, %s)\n", source_file, class);
 
-    // Don't care about cached bytecode for now! Compile source to BC
+    // @TODO: Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
-    t_hash_table *asm_code = ast_walker(ast);
-    t_bytecode *bc = assembler(asm_code);
-    bc->filename = smm_strdup(source_file);
+    t_hash_table *asm_code = ast_to_asm(ast, 1);
+    t_bytecode *bc = assembler(asm_code, source_file);
+    bc->source_filename = smm_strdup(source_file);
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, bc);
-    _vm_execute(module_frame);
+    t_vm_frame *module_frame = vm_frame_new(frame, "{import}", bc);
+    vm_execute(module_frame);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
 
     t_object *obj = vm_frame_find_identifier(module_frame, class);
     DEBUG_PRINT("FOUND: %08X\n", (unsigned int)obj);
     return obj;
-
-//    // Let's see if the object is now present...
-//
-//    return NULL;
 }
 
 /**

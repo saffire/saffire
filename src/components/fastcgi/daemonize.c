@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -61,7 +61,7 @@ int drop_privileges(char *user, char *group) {
     if (pwd == NULL) {
         pwd = getpwuid(atoi(user));
         if (pwd == NULL || atoi(user) == 0) {
-            error("Cannot find user '%s'\n", user);
+            fatal_error(1, "Cannot find user '%s'\n", user);
             return -1;
         }
     }
@@ -72,20 +72,20 @@ int drop_privileges(char *user, char *group) {
     if (grp == NULL) {
         grp = getgrgid(atoi(group));
         if (grp == NULL || atoi(group) == 0) {
-            error("Cannot find group '%s'\n", group);
+            fatal_error(1, "Cannot find group '%s'\n", group);
             return -1;
         }
     }
 
     // Drop to group privs
     if (setgid(grp->gr_gid) != 0) {
-        error("setgid() failed: %s\n", strerror(errno));
+        fatal_error(1, "setgid() failed: %s\n", strerror(errno));
         return -1;
     }
 
     // Drop to user privs
     if (setuid(pwd->pw_uid) != 0) {
-        error("setuid() failed: %s\n", strerror(errno));
+        fatal_error(1, "setuid() failed: %s\n", strerror(errno));
         return -1;
     }
 
@@ -111,14 +111,14 @@ int setup_socket(char *socket_name) {
 
         char *colon = strchr(socket_name, ':');
         if (colon == NULL) {
-            error("bind address should be in <host|ip>:<port> format\n");
+            fatal_error(1, "bind address should be in <host|ip>:<port> format\n");
             return -1;
         }
 
         char *addr = strndup(socket_name, colon-socket_name);
         int port = strtol(colon+1, NULL, 10);
         if (port < 1 || port > 65535) {
-            error("Incorrect value for port specified\n");
+            fatal_error(1, "Incorrect value for port specified\n");
             return -1;
         }
 
@@ -126,7 +126,7 @@ int setup_socket(char *socket_name) {
         sockdata.data.in.sin_addr.s_addr = inet_addr(addr);
 
         if (sockdata.data.in.sin_addr.s_addr == -1) {
-            error("Incorrect value for addr specified\n");
+            fatal_error(1, "Incorrect value for addr specified\n");
             return -1;
         }
         sockdata.len = sizeof(sockdata.data.in);
@@ -135,7 +135,7 @@ int setup_socket(char *socket_name) {
 
     // Create socket
     if ((sock_fd = socket(sockdata.data.in.sin_family, SOCK_STREAM, 0)) < 0) {
-        error("Cannot create socket\n");
+        fatal_error(1, "Cannot create socket\n");
         return -1;
     }
 
@@ -144,14 +144,14 @@ int setup_socket(char *socket_name) {
     int val = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != 0) {
         close(sock_fd);
-        error("Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
+        fatal_error(1, "Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
         return -1;
     }
 
     // Bind
     if (bind(sock_fd, (struct sockaddr *) &sockdata.data, sockdata.len) != 0) {
         close(sock_fd);
-        error("Cannot bind() socket: %s\n", strerror(errno));
+        fatal_error(1, "Cannot bind() socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -160,7 +160,7 @@ int setup_socket(char *socket_name) {
     if (backlog <= 0) backlog = 1024;
     if (listen (sock_fd, backlog) == -1) {
         close(sock_fd);
-        error("Cannot listen() on socket: %s\n", strerror(errno));
+        fatal_error(1, "Cannot listen() on socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -172,34 +172,37 @@ int setup_socket(char *socket_name) {
 
         char *endptr;
 
-        struct passwd *pwd;
-        int uid = strtol(socket_user, &endptr, 10);
-        if (*endptr != '\0') {
-            pwd = getpwnam(socket_user);
-            if (pwd == NULL) {
-                error("Cannot find user: %s: %s", socket_user, strerror(errno));
-                return -1;
+        if (getuid() == 0) {
+            struct passwd *pwd;
+            int uid = strtol(socket_user, &endptr, 10);
+            if (*endptr != '\0') {
+                pwd = getpwnam(socket_user);
+                if (pwd == NULL) {
+                    fatal_error(1 ,"Cannot find user: %s: %s", socket_user, strerror(errno));
+                    return -1;
+                }
+                uid = pwd->pw_uid;
             }
-            uid = pwd->pw_uid;
-        }
 
-        struct group *grp;
-        int gid = strtol(socket_group, &endptr, 10);
-        if (*endptr != '\0') {
-            grp = getgrnam(socket_group);
-            if (grp == NULL) {
+            struct group *grp;
+            int gid = strtol(socket_group, &endptr, 10);
+            if (*endptr != '\0') {
+                grp = getgrnam(socket_group);
+                if (grp == NULL) {
+                    close(sock_fd);
+                    fatal_error(1, "Cannot find group: %s: %s", socket_group, strerror(errno));
+                    return -1;
+                }
+                gid = grp->gr_gid;
+            }
+
+            // Change owner of socket
+            if (chown(socket_name, uid, gid) == -1) {
                 close(sock_fd);
-                error("Cannot find group: %s: %s", socket_group, strerror(errno));
+                fatal_error(1, "Cannot chown(): %s\n", strerror(errno));
                 return -1;
             }
-            gid = grp->gr_gid;
-        }
 
-        // Change owner of socket
-        if (chown(socket_name, uid, gid) == -1) {
-            close(sock_fd);
-            error("Cannot chown(): %s\n", strerror(errno));
-            return -1;
         }
 
         // Change mode of socket
@@ -207,7 +210,7 @@ int setup_socket(char *socket_name) {
         if (modei == 0) modei = 0600;  // RW for user if not correct settings
         if (chmod(socket_name, modei) == -1) {
             close(sock_fd);
-            error("Cannot chmod(): %s\n", strerror(errno));
+            fatal_error(1, "Cannot chmod(): %s\n", strerror(errno));
             return -1;
         }
     }
@@ -223,7 +226,7 @@ int fork_child(void) {
     pid_t child_pid = fork();
 
     if (child_pid == -1) {
-        error("Cannot fork(): %s", strerror(errno));
+        fatal_error(1, "Cannot fork(): %s", strerror(errno));
         return -1;
     }
 
@@ -237,7 +240,7 @@ int fork_child(void) {
 int check_suidroot(void) {
     // Make sure we don't run as SUID root, but running as root is allowed (since we can drop our privs then)
     if (getuid() != 0 && (geteuid() == 0 || getegid() == 0)) {
-        error("Please do not run this app with SUID root.\n");
+        fatal_error(1, "Please do not run this app with SUID root.\n");
         return -1;
     }
 

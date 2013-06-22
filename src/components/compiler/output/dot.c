@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -28,11 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "general/output.h"
-#include "compiler/compiler.h"
 #include "compiler/parser.tab.h"
 #include "objects/attrib.h"
 #include "objects/callable.h"
-#include "compiler/ast.h"
+#include "compiler/ast_nodes.h"
 #include "general/smm.h"
 #include "general/path_handling.h"
 
@@ -234,7 +233,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
 void dot_generate(t_ast_element *ast, const char *outputfile) {
     FILE *fp = fopen(outputfile, "w");
     if (!fp) {
-        error("Cannot open %s for writing\n", outputfile);
+        fatal_error(1, "Cannot open %s for writing\n", outputfile);
         return;
     }
 

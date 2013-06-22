@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "compiler/assembler.h"
+#include "compiler/output/asm.h"
 #include "general/output.h"
 #include "general/smm.h"
 #include "general/dll.h"
@@ -38,7 +38,6 @@
 /**
  * Converts assembler codes into bytecode
  */
-//t_hash_table *frames;               // All frames in this bytecode. "main" is always defined
 
 struct _backpatch {
     long opcode_offset;             // Points to the opcode that we are actually patching
@@ -69,7 +68,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
         if (! ht_exists(frame->label_offsets, bp->label)) {
             char *label = bp->label;
             label += strlen("userlabel_");
-            error_and_die(1, "Cannot find label '%s'\n", label);
+            fatal_error(1, "Cannot find label '%s'\n", label);
         }
         // Fetch the offset of the label so we can patch it
         unsigned int label_offset = (int)ht_find(frame->label_offsets, bp->label);
@@ -206,6 +205,12 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
     frame->alloc_len = 0;
     frame->code_len = 0;
     frame->code = NULL;
+    frame->lino_len = 0;
+    frame->lino = NULL;
+
+    t_dll *tc = dll_init();
+    int old_lineno = 0;
+    int old_opcode_off = 0;
 
     t_dll_element *e = DLL_HEAD(source_frame);
     while (e) {
@@ -214,7 +219,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
             if (ht_exists(frame->label_offsets, line->s)) {
-                error_and_die(1, "Label '%s' is already defined", line->s);
+                fatal_error(1, "Label '%s' is already defined", line->s);
             }
             ht_add(frame->label_offsets, line->s, (void *)frame->code_len);
         }
@@ -225,6 +230,34 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
             // Save opcode offset. Normally opcodes are one byte, but we reserve future use for 2 or more.
             int opcode_off = frame->code_len;
             _add_codebyte(frame, line->opcode);
+
+            if (line->lineno != 0 && line->lineno != old_lineno) {
+                int delta_lineno = line->lineno - old_lineno;
+                int delta_codeoff = opcode_off - old_opcode_off;
+                old_opcode_off = opcode_off;
+                old_lineno = line->lineno;
+
+                do {
+                    if (delta_codeoff > 127) {
+                        dll_append(tc, (void *)(128 | 127));
+                        delta_codeoff -= 127;
+                    } else {
+                        dll_append(tc, (void *)delta_codeoff);
+                        delta_codeoff = 0;
+                    }
+                } while (delta_codeoff != 0);
+
+                do {
+                    if (delta_lineno > 127) {
+                        dll_append(tc, (void *)(128 | 127));
+                        delta_lineno -= 127;
+                    } else {
+                        dll_append(tc, (void *)delta_lineno);
+                        delta_lineno = 0;
+                    }
+                } while (delta_lineno != 0);
+            }
+
 
             for (int i=0; i!=line->opr_count; i++) {
                 switch (line->opr[i]->type) {
@@ -270,6 +303,22 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
 
     // Calculate maximum stack frame
     frame->stack_size = _calculate_maximum_stack_size(frame);
+
+
+    // Set our linenumbers
+    frame->lino_len = tc->size;
+    frame->lino = (char *)smm_malloc(frame->lino_len);
+
+    int j = 0;
+    if (tc->size > 0) {
+        e = DLL_HEAD(tc)->next;     // Skip first element.
+        dll_append(tc, (void *)0);  // Add trailing marker
+        while (e) {
+            int i = (int)e->data;
+            frame->lino[j++] = (unsigned char)(i & 0xFF);
+            e = DLL_NEXT(e);
+        }
+    }
 
     return frame;
 }
@@ -380,7 +429,7 @@ t_asm_line *asm_create_labelline(char *label) {
 /**
  *
  */
-t_bytecode *assembler(t_hash_table *asm_code) {
+t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     t_hash_iter iter;
 
     // Init
@@ -397,7 +446,8 @@ t_bytecode *assembler(t_hash_table *asm_code) {
         ht_iter_next(&iter);
     }
 
-    t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main");
+    t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
+    bc->source_filename = filename ? strdup(filename) : NULL;
     ht_destroy(assembled_frames);
     return bc;
 }
@@ -409,6 +459,7 @@ static int last_lineno = 0;
  * Ouput a complete frame
  */
 static void _assembler_output_frame(t_dll *frame, FILE *f) {
+    int oprcnt = 0;
     t_dll_element *e = DLL_HEAD(frame);
     while (e) {
         t_asm_line *line = (t_asm_line *)e->data;
@@ -417,13 +468,16 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
             fprintf(f, "#%s:", line->s);
         }
         if (line->type == ASM_LINE_TYPE_CODE) {
-            if (last_lineno != line->lineno) {
+            if (last_lineno != line->lineno && line->lineno) {
                 if (line->lineno != 1) fprintf(f, "\n");
-                fprintf(f, "; Line %d : \n", line->lineno);
+                fprintf(f, "% 5d     ", line->lineno);
                 last_lineno = line->lineno;
+            } else {
+                fprintf(f, "          ");
             }
 
-            fprintf(f, "    %-20s", vm_code_names[vm_codes_offset[line->opcode]]);
+            fprintf(f, "%5d %-20s", oprcnt, vm_code_names[vm_codes_offset[line->opcode]]);
+            oprcnt++;
 
             // Output additional operands
             for (int i=0; i!=line->opr_count; i++) {
@@ -478,6 +532,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                 if (i < line->opr_count-1) {
                     fprintf(f, ", ");
                 }
+                oprcnt+=2;
             }
         }
         fprintf(f, "\n");
@@ -493,6 +548,12 @@ void assembler_output(t_hash_table *asm_code, char *output_path) {
     FILE *f = fopen(output_path, "w");
     if (! f) return;
 
+    assembler_output_stream(asm_code, f);
+
+    fclose(f);
+}
+
+void assembler_output_stream(t_hash_table *asm_code, FILE *f) {
     t_hash_iter iter;
 
     ht_iter_init(&iter, asm_code);
@@ -509,7 +570,4 @@ void assembler_output(t_hash_table *asm_code, char *output_path) {
 
         ht_iter_next(&iter);
     }
-
-
-    fclose(f);
 }

@@ -9,7 +9,7 @@
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-     * Neither the name of the <organization> nor the
+     * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
 
@@ -35,10 +35,10 @@
 /**
  * Generic output handlers that write to stdout
  */
-static int _stdio_output_char_helper (char c) {
+static int _stdio_output_char_helper(char c) {
     return fwrite(&c, 1, 1, stdout);
 }
-static int _stdio_output_string_helper (char *s) {
+static int _stdio_output_string_helper(char *s) {
     return fwrite(s, strlen(s), 1, stdout);
 }
 
@@ -78,47 +78,38 @@ void output(const char *format, ...) {
 
 
 /**
- * Ouputs error (to stderr)
+ * Output warning (to stderr)
  */
-void error(const char *format, ...) {
+void warning(const char *format, ...) {
     va_list args;
 
-    _output(stderr, "Error: ", NULL);
+    _output(stderr, "\033[43;30m", NULL);
+
+    _output(stderr, "Warning: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
 
-}
+    _output(stderr, "\033[0m", NULL);
 
-/**
- * Ouputs error (to stderr) and exists with code.
- */
-void error_and_die(int exitcode, const char *format, ...) {
-    va_list args;
-
-    _output(stderr, "Error: ", NULL);
-    va_start(args, format);
-    _output(stderr, format, args);
-    va_end(args);
-
-    exit(exitcode);
+    fflush(stdout);
 }
 
 
 /**
  * Ouputs error (to stderr) and exists with code.
  */
-void line_error_and_die(int exitcode, int lineno, const char *format, ...) {
+void fatal_error(int exitcode, const char *format, ...) {
     va_list args;
 
-    char buf[100];
-    snprintf(buf, 99, "Error in line %d: ", lineno);
-    _output(stderr, buf, NULL);
+    _output(stderr, "\033[41;33;1m", NULL);
 
+    _output(stderr, "Fatal error: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
-    _output(stderr, "\n", NULL);
+
+    _output(stderr, "\033[0m", NULL);
 
     exit(exitcode);
 }
@@ -129,3 +120,6 @@ void line_error_and_die(int exitcode, int lineno, const char *format, ...) {
 void output_printf(const char *format, t_dll *args) {
     arg_printf(format, args, output_char_helper);
 }
+
+
+
