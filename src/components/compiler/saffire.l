@@ -41,7 +41,6 @@
 
     // Forward defines
     size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno);
-    int yyerror(YYLTYPE *, SaffireParser *, const char *);
     static void yy_push_state(int, yyscan_t);
     static void yy_pop_state(yyscan_t);
 

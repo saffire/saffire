@@ -734,7 +734,10 @@ extern int flush_buffer(yyscan_t scanner);
  * Displays error based on location, scanner and interpreter structure. Will continue or fail depending on interpreter mode
  */
 int yyerror(YYLTYPE *yylloc, yyscan_t scanner, SaffireParser *sp, const char *message) {
-    printf("yyparse() error in '%s' at line %d: %s\n", sp->filename, yylloc->first_line, message);
+    char buf[2048];
+
+    snprintf(buf, 2047, "%s, found in %s on line %d\n", message, sp->filename, yylloc->first_line);
+    warning(buf);
 
     // Flush current buffer, and return when we are in interactive/REPL mode.
     if (sp->mode == SAFFIRE_EXECMODE_REPL) {

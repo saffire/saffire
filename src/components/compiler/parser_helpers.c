@@ -481,8 +481,15 @@ void parser_error(SaffireParser *sp, int lineno, const char *format, ...) {
     snprintf(errorbuf, 2047, format, args);
     va_end(args);
 
-    warning("in %s on line %d: %s", sp->filename, lineno, errorbuf);
+    warning("%s, found in %s on line %d", errorbuf, sp->filename, lineno);
+    //warning("Parser error: %s\n", errorbuf);
 
-    // @TODO: Check our parsermode, if it's REPL, we can continue, if it's file, we cannot.
-    // @TODO: maybe we should not do this here, but somewhere else..
+    // Flush current buffer, and return when we are in interactive/REPL mode.
+    if (sp->mode == SAFFIRE_EXECMODE_REPL) {
+        //flush_buffer(scanner);
+        return;
+    }
+
+    // Otherwise, exit.
+    exit(1);
 }
