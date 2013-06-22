@@ -333,6 +333,9 @@ void daemonize(void) {
  *
  */
 int fastcgi_run(void) {
+    // @TODO: remove configuration reading like this
+    config_init("/etc/saffire/saffire.ini");
+
     // Make sure we don't run as a SUID root user
     if (check_suidroot() == -1) return 1;
 

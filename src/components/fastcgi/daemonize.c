@@ -172,34 +172,37 @@ int setup_socket(char *socket_name) {
 
         char *endptr;
 
-        struct passwd *pwd;
-        int uid = strtol(socket_user, &endptr, 10);
-        if (*endptr != '\0') {
-            pwd = getpwnam(socket_user);
-            if (pwd == NULL) {
-                fatal_error(1 ,"Cannot find user: %s: %s", socket_user, strerror(errno));
-                return -1;
+        if (getuid() == 0) {
+            struct passwd *pwd;
+            int uid = strtol(socket_user, &endptr, 10);
+            if (*endptr != '\0') {
+                pwd = getpwnam(socket_user);
+                if (pwd == NULL) {
+                    fatal_error(1 ,"Cannot find user: %s: %s", socket_user, strerror(errno));
+                    return -1;
+                }
+                uid = pwd->pw_uid;
             }
-            uid = pwd->pw_uid;
-        }
 
-        struct group *grp;
-        int gid = strtol(socket_group, &endptr, 10);
-        if (*endptr != '\0') {
-            grp = getgrnam(socket_group);
-            if (grp == NULL) {
+            struct group *grp;
+            int gid = strtol(socket_group, &endptr, 10);
+            if (*endptr != '\0') {
+                grp = getgrnam(socket_group);
+                if (grp == NULL) {
+                    close(sock_fd);
+                    fatal_error(1, "Cannot find group: %s: %s", socket_group, strerror(errno));
+                    return -1;
+                }
+                gid = grp->gr_gid;
+            }
+
+            // Change owner of socket
+            if (chown(socket_name, uid, gid) == -1) {
                 close(sock_fd);
-                fatal_error(1, "Cannot find group: %s: %s", socket_group, strerror(errno));
+                fatal_error(1, "Cannot chown(): %s\n", strerror(errno));
                 return -1;
             }
-            gid = grp->gr_gid;
-        }
 
-        // Change owner of socket
-        if (chown(socket_name, uid, gid) == -1) {
-            close(sock_fd);
-            fatal_error(1, "Cannot chown(): %s\n", strerror(errno));
-            return -1;
         }
 
         // Change mode of socket

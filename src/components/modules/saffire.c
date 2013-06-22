@@ -45,18 +45,27 @@ SAFFIRE_MODULE_METHOD(saffire, gitrev) {
 }
 
 SAFFIRE_MODULE_METHOD(saffire, runmode) {
-    if (vm_runmode == VM_RUNMODE_FASTCGI) {
+    if ((vm_runmode & VM_RUNMODE_FASTCGI) == VM_RUNMODE_FASTCGI) {
         RETURN_STRING("fastcgi");
     }
-    if (vm_runmode == VM_RUNMODE_CLI) {
+    if ((vm_runmode & VM_RUNMODE_CLI) == VM_RUNMODE_CLI) {
         RETURN_STRING("cli");
     }
-    if (vm_runmode == VM_RUNMODE_REPL) {
+    if ((vm_runmode & VM_RUNMODE_REPL) == VM_RUNMODE_REPL) {
         RETURN_STRING("repl");
     }
 
     RETURN_STRING("unknown");
 }
+
+SAFFIRE_MODULE_METHOD(saffire, debug) {
+    if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+
 
 
 t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
@@ -67,6 +76,7 @@ static void _init(void) {
     object_add_internal_method((t_object *)&saffire_struct, "version",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
     object_add_internal_method((t_object *)&saffire_struct, "git_revision", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
     object_add_internal_method((t_object *)&saffire_struct, "run_mode",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_runmode);
+    object_add_internal_method((t_object *)&saffire_struct, "debug",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
 
     object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
     object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);

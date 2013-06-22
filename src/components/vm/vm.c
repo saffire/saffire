@@ -252,10 +252,6 @@ int getlineno(t_vm_frame *frame) {
     int delta_line = 0;
 
     // @TODO: Check if lino_offset doesn't go out of bounds
-
-    printf("LINO_MAX: %d\n", frame->bytecode->lino_length);
-    printf("LINO_OFF: %d\n", frame->lineno_current_lino_offset);
-
     if (frame->lineno_current_lino_offset >= frame->bytecode->lino_length) {
         return frame->lineno_current_line;
     }

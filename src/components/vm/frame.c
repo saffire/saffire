@@ -296,15 +296,8 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytec
 * Creates and initializes a new frame
 */
 t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode) {
-    printf("**** NEW FRAME!!! **** (%s)\n\n\n\n", bytecode ? bytecode->source_filename : "<none>");
-
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
-
-//    cfr->lineno_lowerbound = 0;
-//    cfr->lineno_upperbound = 0;
-//    cfr->lineno_current_line = 0;
-//    cfr->lineno_current_lino_offset = 0;
 
     cfr->parent = parent_frame;
 
