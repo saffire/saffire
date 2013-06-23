@@ -38,5 +38,5 @@ if (is_dir($argv[1])) {
 
 $suite = new \Saffire\UnitTester($it);
 $suite->addOutput(new \Saffire\Output\Console());
-$suite->run();
-exit;
+$exitcode = $suite->run();
+exit($exitcode);

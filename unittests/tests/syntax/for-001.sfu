@@ -53,7 +53,7 @@ for i;j;i++ {
 }
 
 ====
-Error in line 2: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error in line 2: syntax error, unexpected identifier, expecting '('
 @@@@
 !skip  We should be able to allow empty conditions, by adding a ; instead of {}
 for (i;j;i++);
