@@ -8,7 +8,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_PRIVATE, expecting T_IDENTIFIER
+syntax error, unexpected T_PRIVATE, expecting identifier
 @@@@
 class Foo {
     public method "foo"() {
@@ -16,7 +16,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
+syntax error, unexpected string, expecting identifier
 @@@@
 class Foo {
     public method 1() {
@@ -24,7 +24,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+syntax error, unexpected numerical value, expecting identifier
 @@@@
 !skip Not supporting bang methods at the moment
 class Foo {
@@ -54,7 +54,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+syntax error, unexpected numerical value, expecting identifier
 @@@@
 class Foo {
     public method 1?_bar() {
@@ -62,7 +62,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_LNUM, expecting T_IDENTIFIER
+syntax error, unexpected numerical value, expecting identifier
 @@@@
 class Foo {
     public method ?_bar() {
@@ -70,4 +70,4 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected '?', expecting T_IDENTIFIER
+syntax error, unexpected '?', expecting identifier

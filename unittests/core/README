@@ -1,0 +1,5 @@
+This are core tests that have been writting with cUnit. In order to run these tests, use the following:
+
+    # make check
+
+This will run the cUnit testsuite.

@@ -6,14 +6,20 @@ continue;
 ====
 Error in line 2: We can only continue inside a loop
 @@@@
+import io;
 a = 0;
+b = 0;
 do {
     a = a + 1;
     continue;
+    // Will be skipped
+    b = b + 1;
 } while (a < 10);
-
+io.print(a, " ", b);
 ====
+10 0
 @@@@
+import io;
 b = 0;
 do {
     a = 0;
@@ -24,8 +30,9 @@ do {
     b = b + 1;
     continue;
 } while (b < 10);
-
+io.print(a, " ", b);
 ====
+10 10
 @@@@
 foreach (a as b) {
     continue;

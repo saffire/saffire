@@ -6,7 +6,7 @@ switch ("foo") {
 
 }
 ====
-Error in line 4: syntax error, unexpected '}', expecting T_CASE or T_DEFAULT
+Error in line 4: syntax error, unexpected '}', expecting case or default
 @@@@
 switch (a=1) {
 }
@@ -19,7 +19,7 @@ case 5:
 case 3:
     break;
 ====
-Error in line 2: syntax error, unexpected T_CASE, expecting end of file
+Error in line 2: syntax error, unexpected case
 @@@@
 switch (1) {
     case 1 :
@@ -33,7 +33,7 @@ switch (1) {
         break;
 }
 ====
-Error in line 7: syntax error, unexpected T_CASE
+Error in line 7: syntax error, unexpected case
 @@@@
 !skip
 switch (1) {
@@ -80,7 +80,7 @@ switch (a) {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_BREAK, expecting T_CASE or T_DEFAULT
+Error in line 3: syntax error, unexpected break, expecting case or default
 @@@@
 !skip
 switch (a) {
@@ -114,7 +114,7 @@ switch (a) {
         break;
 }
 ====
-Error in line 3: syntax error, unexpected T_DEFAULT
+Error in line 3: syntax error, unexpected default
 @@@@
 !skip
 switch (a) {
