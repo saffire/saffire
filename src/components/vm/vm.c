@@ -746,8 +746,13 @@ dispatch:
             case VM_CALL :
                 {
                     // Fetch methods to call
-                    register t_callable_object *callable_obj = (t_callable_object *)vm_frame_stack_pop(frame);
-                    register t_object *self_obj = callable_obj->binding;
+                    register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    register t_object *self_obj = NULL;
+
+                    // If we're not a class we're calling, we must set the self_obj to the binding
+                    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+                        self_obj = ((t_callable_object *)obj)->binding;
+                    }
 
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
@@ -771,7 +776,7 @@ dispatch:
                         }
                     }
 
-                    t_object *ret_obj = vm_object_call_args(self_obj, (t_object *)callable_obj, arg_list);
+                    t_object *ret_obj = vm_object_call_args(self_obj, obj, arg_list);
                     dll_free(arg_list);
 
                     if (ret_obj == NULL) {
@@ -1417,7 +1422,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
         char context[250];
-        snprintf(context, 250, "%s.%s([%ld args])", self->name, callable_obj->name, arg_list->size);
+        snprintf(context, 249, "%s.%s([%ld args])", self ? self->name : "null", callable_obj->name, arg_list->size);
 
         // Create a new execution frame
         t_vm_frame *cur_frame = thread_get_current_frame();
