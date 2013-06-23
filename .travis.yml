@@ -7,8 +7,9 @@ before_install:
   - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev
   - sudo apt-get install -qq php5-cli
   - sudo apt-get install -qq libcunit1-dev
-  - mkdir -p /usr/share/saffire/modules
-  - ln -s sfl /usr/share/saffire/sfl
+before_script:
+  - sudo mkdir -p /usr/share/saffire/modules
+  - sudo ln -s sfl /usr/share/saffire/sfl
 env:
     SAFFIRE_TEST_BIN=src/saffire
 script: ./configure && make && make check && sh unittest.sh
