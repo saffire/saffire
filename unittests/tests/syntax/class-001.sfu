@@ -12,14 +12,14 @@ class goto {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_GOTO, expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected goto, expecting identifier
 @@@@
 // scalar class
 class "foo" {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_STRING, expecting T_IDENTIFIER
+Error in line 3: syntax error, unexpected string, expecting identifier
 @@@@
 // final abstract class
 final abstract class Foo {

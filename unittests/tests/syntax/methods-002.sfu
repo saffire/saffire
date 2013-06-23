@@ -49,7 +49,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_STRING, expecting ')'
+Error in line 3: syntax error, unexpected string, expecting ')'
 @@@@
 class Foo {
     public method Bar(1) {
@@ -57,7 +57,7 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected T_LNUM, expecting ')'
+Error in line 3: syntax error, unexpected numerical value, expecting ')'
 @@@@
 class Foo {
     public method Bar(arg = 1) {
@@ -102,4 +102,4 @@ class Foo {
 }
 
 ====
-Error in line 3: syntax error, unexpected ')', expecting T_IDENTIFIER or T_ELLIPSIS
+Error in line 3: syntax error, unexpected ')', expecting identifier or T_ELLIPSIS

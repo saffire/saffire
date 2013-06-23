@@ -1,7 +1,8 @@
-title: if/else control tests
+title: unary incremental and decremental operator tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+!skip
 import io;
 
 i=0;
@@ -10,6 +11,7 @@ io.print(i);
 ======
 1
 @@@@@@
+!skip
 import io;
 
 i=0;
@@ -19,6 +21,7 @@ io.print(i);
 ======
 113
 @@@@@@
+!skip
 import io;
 
 for (i=0; i!=10; i++) {

@@ -54,13 +54,13 @@ foo = list[1,2,3];
 foreach blaat {
 }
 ====
-Error in line 1: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
 foo = list[1,2,3];
 foreach blaat {
 }
 ====
-Error in line 1: syntax error, unexpected T_IDENTIFIER, expecting '('
+Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
 !skip
 foo = list[1,2,3];

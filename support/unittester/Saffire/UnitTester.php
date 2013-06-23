@@ -119,6 +119,8 @@ class UnitTester {
             $this->_output($error);
             $this->_output("\n");
         }
+
+        return $this->_results['failed'] > 0 ? 1 : 0;
     }
 
     protected function _perc($p, $t) {
@@ -291,6 +293,7 @@ class UnitTester {
             file_put_contents($tmpFile.".exp", $tmp[1]);
         }
 
+
         // Run saffire test
         $ret = self::FAIL;  // Assume the worst
         exec($this->_saffireBinary." ".$tmpFile.".sf > ".$tmpFile.".out 2>&1", $output, $result);
@@ -298,6 +301,12 @@ class UnitTester {
         // No output expected and result is not 0. So FAIL
         if (! $outputExpected && $result != 0) {
             $ret = self::FAIL;
+            $tmp = "";
+            $tmp .= "Error in ".$this->_current['filename']." (test $testno, line $lineno)\n";
+            $tmp .= "Expected exitcode 0, got exitcode $result";
+            $tmp .= "\n";
+            $this->_results['errors'][] = $tmp;
+
             goto cleanup;   // Yes, goto. Live with the pain
         }
 
@@ -331,6 +340,7 @@ cleanup:
         // Unlink all temp files
         @unlink($tmpFile);
         @unlink($tmpFile.".sf");
+        @unlink($tmpFile.".sfc");
         @unlink($tmpFile.".exp");
         @unlink($tmpFile.".out");
         @unlink($tmpFile.".diff");
@@ -398,10 +408,15 @@ function diff_it($in_name, $exp_name, &$output) {
         $v1 = sanitize_line($v1);
         $v2 = sanitize_line($v2);
 
-        if ($v1 != $v2) {
-            $output[] = "+++ ".$v1;
-            $output[] = "--- ".$v2;
+        // Complete match
+        if ($v1 == $v2) continue;
+
+        if (empty($v2) || stristr($v1, $v2) === false) {
+            $output[] = "+++ '".$v1."'";
+            $output[] = "--- '".$v2."'";
         }
+
+
     }
 
     return count($output) == 0;

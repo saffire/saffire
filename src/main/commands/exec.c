@@ -92,6 +92,9 @@ static int do_exec(void) {
     bytecode_free(bc);
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
 
+
+    // @TODO: THIS IS HARDCODED FOR NOW!
+    exitcode = 0;
     return exitcode;
 }
 

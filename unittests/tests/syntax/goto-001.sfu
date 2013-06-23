@@ -26,12 +26,12 @@ foo:
 foo:
     goto foo;
 ====
-Error: Duplicate label 'foo' found
+Duplicate label 'foo' found
 @@@@
 // No label specified
     goto foo;
 ====
-Error: Cannot find label 'foo'
+Cannot find label 'foo'
 @@@@
 !skip
 // incorrect label
@@ -42,7 +42,7 @@ Error: Unknown token: '"'
 // incorrect label
 /regex/:
 ====
-Error in line 3: syntax error, unexpected '/', expecting end of file
+Error in line 3: syntax error, unexpected '/'
 @@@@
 // Correct scope
 import io;
