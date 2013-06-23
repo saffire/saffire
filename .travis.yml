@@ -1,7 +1,7 @@
 language: c
 compiler: gcc
 before_script:
-    sh autogen.sh
+  - sh autogen.sh
   - sudo mkdir -p /usr/share/saffire/modules
   - sudo ln -s `pwd`/sfl /usr/share/saffire/modules/sfl
 before_install:
