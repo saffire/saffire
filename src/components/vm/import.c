@@ -96,6 +96,39 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
     DEBUG_PRINT(" * *** Importing file. Scanning searchpath:\n");
 
+    // Use the module to build part of the path. "Module" => "Module", "Module::Submodule" => "Module/Submodule".
+    char *module_path = smm_malloc(strlen(module) + 1);
+    char *separator_pos = strstr(module, "::");
+    if (separator_pos == NULL) {
+        // There's no namespace separator, so just use the whole string.
+        strcpy(module_path, module);
+    } else {
+        // We need extra vars to track where we're copying to.
+        char *module_path_loc = module_path;
+        char *module_loc = module;
+
+        // Loop over each separator, adding it to our path string.
+        do {
+            int len = separator_pos - module_loc;
+            DEBUG_PRINT("Copying %d bytes from %d to %d\n", len, module_loc, module_path_loc);
+            strncpy(module_path_loc, module_loc, len);
+
+            DEBUG_PRINT("Incrementing module_loc to %d\n", separator_pos + 2);
+            module_loc = separator_pos + 2;
+
+            DEBUG_PRINT("Incrementing %s to %d\n", module_path_loc, module_path_loc + len);
+            module_path_loc += len;
+            *module_path_loc = '/';
+            module_path_loc++;
+        } while ((separator_pos = strstr(module_loc, "::")) != NULL);
+
+        // Copy the last part of the module.
+        strncpy(module_path_loc, module_loc, strlen(module_loc));
+
+        DEBUG_PRINT("   * Pointers are at %d and %d\n", module_path, module_path_loc);
+    }
+    DEBUG_PRINT("   * Built module path: '%s'\n", module_path);
+
     // Scan . and /usr/saffire/modules only!
     char **current_search_path = (char **)&module_search_path;
     while (*current_search_path) {
@@ -103,7 +136,7 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
         char final_path[PATH_MAX];
         char *path = realpath(*current_search_path, NULL);
         if (path) {
-            snprintf(final_path, PATH_MAX, "%s/%s.sf", path, class);
+            snprintf(final_path, PATH_MAX, "%s/%s/%s.sf", path, module_path, class);
             DEBUG_PRINT("   * Looking for module at path '%s'\n", final_path);
 
             if (is_file(final_path)) {
@@ -112,11 +145,14 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
                 t_object *obj = _import_class_from_file(frame, final_path, class, &import_frame);
                 if (! obj) {
                     object_raise_exception(Object_ImportException, "Cannot find class '%s' in module '%s'", class, module);
+                    smm_free(module_path);
                     return NULL;
                 }
+
                 // Add frame to cache
                 DEBUG_PRINT("   * Adding to import cache at key '%s'\n", fqcn);
                 ht_add(import_cache, fqcn, import_frame);
+                smm_free(module_path);
                 return obj;
             } else {
                 DEBUG_PRINT("   * Nothing found here.. continuing..\n");
@@ -128,5 +164,6 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
     }
 
     object_raise_exception(Object_SystemException, "Cannot find module '%s'", module);
+    smm_free(module_path);
     return NULL;
 }
