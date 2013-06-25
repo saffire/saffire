@@ -136,7 +136,7 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
         char final_path[PATH_MAX];
         char *path = realpath(*current_search_path, NULL);
         if (path) {
-            snprintf(final_path, PATH_MAX, "%s/%s/%s.sf", path, module_path, class);
+            snprintf(final_path, PATH_MAX, "%s/%s.sf", path, module_path);
             DEBUG_PRINT("   * Looking for module at path '%s'\n", final_path);
 
             if (is_file(final_path)) {
