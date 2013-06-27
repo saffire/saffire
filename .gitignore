@@ -39,7 +39,7 @@ config.sub
 compile
 .saffire_history
 *.sfc
-*.sf
+/*.sf
 src/include/vm/vm_opcodes.c
 src/include/vm/vm_opcodes.h
 src/include/gitversion.h
