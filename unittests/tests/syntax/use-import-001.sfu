@@ -22,3 +22,13 @@ import io as foo;
 import io from io as bar;
 ====
 Error: line 1: syntax error, unexpected as, expecting :: or ';'
+@@@@
+import io as bar::io from io;
+====
+syntax error, unexpected ::, expecting from or ';'
+@@@@
+import saffire::config as config from saffire::config;
+====
+@@@@
+import saffire::config as config;
+====
