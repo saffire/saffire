@@ -21,4 +21,4 @@ import io as foo;
 @@@@
 import io from io as bar;
 ====
-Error: line 1: syntax error, unexpected as, expecting T_NS_SEP or ';'
+Error: line 1: syntax error, unexpected as, expecting :: or ';'
