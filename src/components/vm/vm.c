@@ -43,6 +43,8 @@
 #include "gc/gc.h"
 #include "debugger/dbgp/dbgp.h"
 
+t_hash_table *import_cache;                // Cache for all imported frames
+
 t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
 
 #define REASON_NONE         0       // No return status. Just end the execution
@@ -205,6 +207,8 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     object_init();
     module_init();
 
+    import_cache = ht_create();
+
     // Create initial frame
     t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
 
@@ -234,6 +238,8 @@ void vm_fini(t_vm_frame *frame) {
     }
 
     vm_frame_destroy(frame);
+
+    ht_destroy(import_cache);
 
     module_fini();
     object_fini();

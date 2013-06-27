@@ -1,0 +1,21 @@
+/**
+ * This is the OS class.
+ */
+class cpu {
+
+    // @get getcpu()
+    public property cpu;
+
+
+    protected method getcpu() {
+        ret = base();
+        ret.model = "Intel";
+        ret.id = 0x12345;
+        ret.arch = self.INTEL;
+        ret.bits = 64;
+        ret.virtualized = True;
+
+        return list[ret];
+    }
+
+}

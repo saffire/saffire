@@ -1,0 +1,28 @@
+interface stream {
+    public method __ctor();
+    public method __dtor();
+
+    closedir();
+    opendir();
+    readdir();
+    rewinddir();
+
+    mkdir();
+    rename();
+    rmdir();
+
+    close();
+    eof();
+    flush();
+    lock();
+    metadata();
+    open();
+    read();
+    seek();
+    stat();
+    tell();
+    truncate();
+    write();
+
+    unlink();
+}

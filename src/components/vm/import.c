@@ -48,7 +48,7 @@ const char *module_search_path[] = {
 };
 
 
-static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, char *class) {
+static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, char *class, t_vm_frame **module_frame) {
     DEBUG_PRINT(" * _import_class_from_file(%s, %s)\n", source_file, class);
 
     // @TODO: Don't care about cached bytecode for now! Compile source to BC
@@ -58,12 +58,12 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
     bc->source_filename = smm_strdup(source_file);
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, "{import}", bc);
-    vm_execute(module_frame);
+    *module_frame = vm_frame_new(frame, "{import}", bc);
+    vm_execute(*module_frame);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
 
-    t_object *obj = vm_frame_find_identifier(module_frame, class);
+    t_object *obj = vm_frame_find_identifier(*module_frame, class);
     DEBUG_PRINT("FOUND: %08X\n", (unsigned int)obj);
     return obj;
 }
@@ -72,23 +72,29 @@ static t_object *_import_class_from_file(t_vm_frame *frame, char *source_file, c
  *
  */
 t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
+    char fqcn[256];
+
     DEBUG_PRINT("\n\n\n");
     DEBUG_PRINT("*** looks like we need to import class '%s' from module '%s'\n", class, module);
 
-    // Allocate room to build our complete namespace string
-    char *fqcn = smm_malloc(strlen(module) + strlen(class) + strlen("::") + 1);
-    sprintf(fqcn, "%s::%s", module, class);
+    snprintf(fqcn, 255, "%s::%s", module, class);
     DEBUG_PRINT(" * Looks like we're looking for '%s'\n", fqcn);
     t_object *obj = vm_frame_find_identifier(frame, fqcn);
-    smm_free(fqcn);
 
     // Found our object, return
     if (obj != NULL) {
         return obj;
     }
 
-    // Looks like we haven't found it. Let's try and load it from disk.
-    DEBUG_PRINT(" * *** Nothing found in current frame. Scanning searchpath:\n");
+    DEBUG_PRINT(" * *** Looking for frame in cache: \n");
+    t_vm_frame *cached_frame = ht_find(import_cache, fqcn);
+    if (cached_frame) {
+        t_object *obj = vm_frame_find_identifier(cached_frame, class);
+        DEBUG_PRINT(" * *** *** CACHED FOUND: %08X\n", (unsigned int)obj);
+        return obj;
+    }
+
+    DEBUG_PRINT(" * *** Importing file. Scanning searchpath:\n");
 
     // Scan . and /usr/saffire/modules only!
     char **current_search_path = (char **)&module_search_path;
@@ -102,11 +108,15 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
             if (is_file(final_path)) {
                 DEBUG_PRINT("   * Found a matching file. Whoohoo!\n");
-                t_object *obj = _import_class_from_file(frame, final_path, class);
+                t_vm_frame *import_frame;
+                t_object *obj = _import_class_from_file(frame, final_path, class, &import_frame);
                 if (! obj) {
                     object_raise_exception(Object_ImportException, "Cannot find class '%s' in module '%s'", class, module);
                     return NULL;
                 }
+                // Add frame to cache
+                DEBUG_PRINT("   * Adding to import cache at key '%s'\n", fqcn);
+                ht_add(import_cache, fqcn, import_frame);
                 return obj;
             } else {
                 DEBUG_PRINT("   * Nothing found here.. continuing..\n");

@@ -33,6 +33,7 @@
     #include "compiler/saffire_parser.h"
 
     t_hash_table *builtin_identifiers;
+    t_hash_table *import_cache;
 
     #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
     #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
