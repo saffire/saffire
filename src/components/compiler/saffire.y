@@ -95,7 +95,7 @@
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
 %token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
-%token T_SELF "self" T_PARENT "parent" T_NS_SEP T_TO
+%token T_SELF "self" T_PARENT "parent" T_NS_SEP "::" T_TO
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
@@ -182,11 +182,11 @@ use_statement:
         /* import <foo> from <bar> */
     |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string_dup(@4.first_line, $4)); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
         /* import <foo> as <bar> */
-    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, $2)); }
         /* import <foo> */
-    |   T_IMPORT T_IDENTIFIER                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
     |   error ';' { yyerrok; }
 ;
 

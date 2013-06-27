@@ -1,0 +1,24 @@
+import io;
+
+/**
+ * saffire::config class
+ */
+class config {
+
+    // Returns the configuration value for the key that is being used by saffire
+    static public method get() {
+        return ::_sfl::saffire.version();
+    }
+
+    // @TODO: should we be able to set config values??
+    static public method set() {
+        return ::_sfl::saffire.version();
+    }
+
+    // Returns a list of configuration values for the matching keys (by glob pattern) that is currently being used
+    // by saffire
+    static public method find() {
+        return ::_sfl::saffire.version();
+    }
+
+}
