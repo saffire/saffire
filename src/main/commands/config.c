@@ -117,7 +117,21 @@ static const char *default_ini[] = {
     "history.size = 800",
     "",
     "# Display the saffire logo upon start of the repl",
-    "logo = false"
+    "logo = false",
+    "",
+    "[debug]",
+    "# Saffire only supports the dbgp protocol",
+    "protocol = dbgp",
+    "# Ip address to connect to, used unless remote.connect_back is enabled",
+    "remote.ip = 127.0.0.1",
+    "# Remote port to connect to",
+    "remote.port = 9000",
+    "# When true, the IP to connect back to is taken from the request (works only on fastcgi)",
+    "remote.connect_back = true",
+    "# Automatically start the debugger",
+    "remote.autostart = true",
+    "# The IDE key that is send to the IDE",
+    "remote.idekey = SAFFIRE"
 };
 
 // Default INI file @TODO: platform specific!
