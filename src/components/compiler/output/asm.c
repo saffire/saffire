@@ -510,8 +510,6 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                             case OPERATOR_SHL : fprintf(f, "SHL"); break;
                             case OPERATOR_SHR : fprintf(f, "SHR"); break;
                             case OPERATOR_COA : fprintf(f, "COA"); break;
-                            case OPERATOR_INC : fprintf(f, "INC"); break;
-                            case OPERATOR_DEC : fprintf(f, "DEC"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_COMPARE :
