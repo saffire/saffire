@@ -819,6 +819,11 @@ dispatch:
                     }
 
                     dst = vm_import(frame, module_name, class_name);
+                    if (!dst) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
                 }
