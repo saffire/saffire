@@ -3,6 +3,7 @@
 .project
 .cproject
 .settings
+.vagrant
 nbproject/*
 lex.yy.*
 parser.tab.*
