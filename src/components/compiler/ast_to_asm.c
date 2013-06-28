@@ -120,7 +120,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
     t_asm_opr *opr1, *opr2, *opr3;
     t_ast_element *node, *node2;
     t_ast_element *arglist;
-    int i, clc, arg_count;
+    int i, clc, arg_count, op;
 
     if (!leaf) return;
 
@@ -180,7 +180,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             stack_pop(state->side);
             stack_pop(state->type);
 
-            int op = 0;
+            op = 0;
             switch (leaf->operator.op) {
                 case '+' : op = OPERATOR_ADD; break;
                 case '-' : op = OPERATOR_SUB; break;
@@ -231,11 +231,34 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_COMPARE_OP, 1, opr1));
             break;
         case typeAstAssignment :
+            op = -1;
+            switch (leaf->assignment.op) {
+                case T_ADD_ASSIGNMENT : op = OPERATOR_ADD; break;
+                case T_SUB_ASSIGNMENT : op = OPERATOR_SUB; break;
+                case T_MUL_ASSIGNMENT : op = OPERATOR_MUL; break;
+                case T_DIV_ASSIGNMENT : op = OPERATOR_DIV; break;
+                case T_MOD_ASSIGNMENT : op = OPERATOR_MOD; break;
+                case T_AND_ASSIGNMENT : op = OPERATOR_AND; break;
+                case T_OR_ASSIGNMENT  : op = OPERATOR_OR;  break;
+                case T_XOR_ASSIGNMENT : op = OPERATOR_XOR; break;
+                case T_SL_ASSIGNMENT  : op = OPERATOR_SHL; break;
+                case T_SR_ASSIGNMENT  : op = OPERATOR_SHR; break;
+            }
+
+            // op != -1, means we need to call operator first!
+
             if (leaf->assignment.r->type == typeAstAssignment) {
                 multi_assignment++;
             }
 
-            // @TODO: We only handle =, not += -= etc
+
+            if (op != -1) {
+                stack_push(state->side, st_side_left);
+                stack_push(state->context, (void *)st_ctx_load);
+                WALK_LEAF(leaf->assignment.l);
+                stack_pop(state->context);
+                stack_pop(state->side);
+            }
 
             stack_push(state->call_state, (void *)st_call_stay);
             stack_push(state->side, (void *)st_side_right);
@@ -244,6 +267,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             stack_pop(state->context);
             stack_pop(state->side);
             stack_pop(state->call_state);
+
+            if (op != -1) {
+                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, op);
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_OPERATOR, 1, opr1));
+            }
 
             if (multi_assignment) {
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
