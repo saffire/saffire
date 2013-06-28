@@ -812,7 +812,18 @@ dispatch:
                     object_dec_ref(class_obj);
                     register char *class_name = OBJ2STR(class_obj);
 
+                    // Check for namespace separator, and use only the class name, not the modules.
+                    char *separator_pos = strrchr(class_name, ':');
+                    if (separator_pos != NULL) {
+                        class_name = separator_pos + 1;
+                    }
+
                     dst = vm_import(frame, module_name, class_name);
+                    if (!dst) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
                     object_inc_ref(dst);
                     vm_frame_stack_push(frame, dst);
                 }
