@@ -30,7 +30,7 @@
     #include <stdio.h>
 
     #ifdef __DEBUG
-        #define DEBUG_PRINT output
+        #define DEBUG_PRINT output_debug
     #else
         #define DEBUG_PRINT(format, args...) ((void)0)
     #endif

@@ -35,15 +35,15 @@
 /**
  * Generic output handlers that write to stdout
  */
-static int _stdio_output_char_helper(char c) {
-    return fwrite(&c, 1, 1, stdout);
+static int _stdio_output_char_helper(FILE *f, char c) {
+    return fwrite(&c, 1, 1, f);
 }
-static int _stdio_output_string_helper(char *s) {
-    return fwrite(s, strlen(s), 1, stdout);
+static int _stdio_output_string_helper(FILE *f, char *s) {
+    return fwrite(s, strlen(s), 1, f);
 }
 
-int (*output_char_helper)(char c) = _stdio_output_char_helper;
-int (*output_string_helper)(char *s) = _stdio_output_string_helper;
+int (*output_char_helper)(FILE *f, char c) = _stdio_output_char_helper;
+int (*output_string_helper)(FILE *f, char *s) = _stdio_output_string_helper;
 
 
 
@@ -59,7 +59,7 @@ static void _output(FILE *f, const char *format, va_list args) {
     } else {
         vasprintf(&buf, format, args);
     }
-    output_string_helper(buf);
+    output_string_helper(f, buf);
     free(buf);
 }
 
@@ -73,6 +73,17 @@ void output(const char *format, ...) {
 
     va_start(args, format);
     _output(stdout, format, args);
+    va_end(args);
+}
+
+/**
+ * Output warning (to stderr)
+ */
+void output_debug(const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    _output(stderr, format, args);
     va_end(args);
 }
 
@@ -118,7 +129,7 @@ void fatal_error(int exitcode, const char *format, ...) {
 /**
  */
 void output_printf(const char *format, t_dll *args) {
-    arg_printf(format, args, output_char_helper);
+    arg_printf(stdout, format, args, output_char_helper);
 }
 
 

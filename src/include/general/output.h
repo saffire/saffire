@@ -32,11 +32,11 @@
     #include "general/dll.h"
 
     void output(const char *format, ...);
+    void output_debug(const char *format, ...);
     void output_printf(const char *format, t_dll *args);
 
 //    void error(const char *format, ...);
     void warning(const char *format, ...);
     void fatal_error(int exitcode, const char *format, ...);
-//    void line_error_and_die(int exitcode, char *filename, int lineno, const char *format, ...);
 
 #endif
