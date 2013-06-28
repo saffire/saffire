@@ -184,7 +184,7 @@ use_statement:
         /* import <foo> as <bar> from <baz> */
     |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
         /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); }
         /* import <foo> */
     |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
     |   error ';' { yyerrok; }
