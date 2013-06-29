@@ -7,7 +7,7 @@ if [ ! -e $SAFFIRE_TEST_BIN ] ; then
 	exit 1;
 fi
 
-DEBUG=`$SAFFIRE_TEST_BIN --version --long | grep "debug"`
+DEBUG=`$SAFFIRE_TEST_BIN version --long | grep "debug"`
 if [ -n "$DEBUG" ] ; then
 	echo "Please build saffire without debug settings before running this test script";
 	exit 1;
