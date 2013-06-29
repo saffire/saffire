@@ -90,7 +90,7 @@
 %token T_WHILE "while" T_IF "if" T_USE "use" T_AS "as" T_DO "do"
 %token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
 %nonassoc T_ELSE
-%token T_OP_INC T_OP_DEC T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
+%token T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
@@ -428,8 +428,6 @@ multiplicative_expression:
 
 unary_expression:
         logical_unary_expression                    { $$ = $1; }
-    |   T_OP_INC unary_expression                   { $$ = ast_node_operator(@1.first_line, '+', $2, ast_node_numerical(@1.first_line, 1)); }
-    |   T_OP_DEC unary_expression                   { $$ = ast_node_operator(@1.first_line, '-', $2, ast_node_numerical(@1.first_line, 1)); }
 ;
 
 logical_unary_expression:
@@ -489,8 +487,6 @@ pe_no_parenthesis:
     |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
     |   primary_expression subscription      { $$ = ast_node_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
     |   primary_expression data_structure    { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
-    |   primary_expression T_OP_INC          { $$ = ast_node_operator(@2.first_line, '+', $1, ast_node_numerical(@1.first_line, 1)); }
-    |   primary_expression T_OP_DEC          { $$ = ast_node_operator(@2.first_line, '-', $1, ast_node_numerical(@1.first_line, 1)); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */

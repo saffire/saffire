@@ -638,27 +638,6 @@ dispatch:
                 goto dispatch;
                 break;
 
-            case VM_INPLACE_OPR :
-                left_obj = vm_frame_stack_pop(frame);
-                object_dec_ref(left_obj);
-                right_obj = vm_frame_stack_pop(frame);
-                object_dec_ref(right_obj);
-
-                if (left_obj->type != right_obj->type) {
-                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
-                }
-                dst = vm_object_operator(left_obj, oparg1, right_obj);
-                if (! dst) {
-                    reason = REASON_EXCEPTION;
-                    goto block_end;
-                    break;
-                }
-
-                object_inc_ref(dst);
-                vm_frame_stack_push(frame, dst);
-                goto dispatch;
-                break;
-
             // Unconditional relative jump forward
             case VM_JUMP_FORWARD :
                 frame->ip += oparg1;
