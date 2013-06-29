@@ -111,6 +111,9 @@ static const char help[]   = "Executes a Saffire script.\n"
                              "   --no-verify            Don't verify signature from bytecode file (if any)\n"
                              "   --no-write-bytecode    Don't write bytecode to disk\n"
                              "\n"
+                             "Actions:\n"
+                             "   <file.sf> [-- arguments]   Executes a script\n"
+                             "   <file.sfc> [-- arguments]  Executes bytecode file\n"
                              "This command executes a saffire script or bytecode file.\n";
 
 
