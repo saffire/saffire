@@ -90,7 +90,7 @@
 %token T_WHILE "while" T_IF "if" T_USE "use" T_AS "as" T_DO "do"
 %token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
 %nonassoc T_ELSE
-%token T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
+%token T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
@@ -127,7 +127,7 @@
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
 %type <nPtr> special_name scalar_value callable var_callable subscription primary_expression_first_part qualified_name_first_part
 
-%type <sVal> T_ASSIGNMENT T_PLUS_ASSIGNMENT T_MINUS_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
+%type <sVal> T_ASSIGNMENT T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
 
 
@@ -241,13 +241,13 @@ compound_statement:
 
 /* if if/else statements */
 if_statement:
-        T_IF '(' conditional_expression ')' statement                  { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
-    |   T_IF '(' conditional_expression ')' statement T_ELSE statement { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
+        T_IF '(' expression ')' statement                  { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
+    |   T_IF '(' expression ')' statement T_ELSE statement { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
 ;
 
 /* Switch statement */
 switch_statement:
-        T_SWITCH '(' conditional_expression ')' { parser_loop_enter(saffireParser, @1.first_line); parser_switch_begin(saffireParser, @1.first_line); } '{' case_statements '}' { parser_loop_leave(saffireParser, @1.first_line); parser_switch_end(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
+        T_SWITCH '(' expression ')' { parser_loop_enter(saffireParser, @1.first_line); parser_switch_begin(saffireParser, @1.first_line); } '{' case_statements '}' { parser_loop_leave(saffireParser, @1.first_line); parser_switch_end(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_SWITCH, 2, $3, $7); }
 ;
 
 case_statements:
@@ -256,8 +256,8 @@ case_statements:
 ;
 
 case_statement:
-        T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
-    |   T_CASE conditional_expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
+        T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
+    |   T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
     |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
     |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
 ;
@@ -267,16 +267,16 @@ case_statement:
 iteration_statement:
         while_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   while_statement                  { $$ = $1; }
-    |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' conditional_expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
+    |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
     |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
-    |   T_FOR '(' expression_statement expression_statement expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOR '(' expression_statement expression_statement assignment_expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
     |   T_FOREACH '(' expression T_AS ds_element                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
     |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
 ;
 
 /* while is separate otherwise we cannot find it's else */
 while_statement:
-        T_WHILE '(' conditional_expression ')' {
+        T_WHILE '(' expression ')' {
             parser_loop_enter(saffireParser, @1.first_line);
         } statement {
             parser_loop_leave(saffireParser, @1.first_line);
@@ -286,9 +286,10 @@ while_statement:
 
 /* An expression is anything that evaluates something */
 expression_statement:
-        ';'             { $$ = ast_node_nop(); }
-    |   expression ';'  { $$ = $1; }
-    |   error ';'       { yyerrok; }
+        ';'                         { $$ = ast_node_nop(); }
+    |   assignment_expression ';'   { $$ = $1; }
+    |   expression ';'              { $$ = $1; }
+    |   error ';'                   { yyerrok; }
 ;
 
 
@@ -340,18 +341,17 @@ label_statement:
  * Order of precedence is generated by changing expressions instead of using %left %right keywords.
  */
 
-expression:
-        assignment_expression { $$ = $1; }
-    |   expression ',' assignment_expression { $$ = ast_node_add($$, $3); }
-    |   expression ',' ',' assignment_expression { $$ = ast_node_add($$, ast_node_nop()); $$ = ast_node_add($$, $4); }
-;
-
 assignment_expression:
-        coalesce_expression { $$ = $1; }
+        expression { $$ = $1; }
     |   unary_expression assignment_operator assignment_expression { $$ = ast_node_assignment(@1.first_line, $2, $1, $3); }
 ;
 
-coalesce_expression:
+
+expression :
+        coalesce_expression { $$ = $1; }
+;
+
+coalesce_expression :
         conditional_expression { $$ = $1; }
     |   conditional_expression T_COALESCE expression { $$ = ast_node_opr(@1.first_line, T_COALESCE, 2, $1, $3); }
 ;
@@ -427,7 +427,7 @@ multiplicative_expression:
 ;
 
 unary_expression:
-        logical_unary_expression                    { $$ = $1; }
+        logical_unary_expression                { $$ = $1; }
 ;
 
 logical_unary_expression:
@@ -443,8 +443,8 @@ logical_unary_operator:
 /* Things that can be used as assignment '=', '+=' etc.. */
 assignment_operator:
         T_ASSIGNMENT       { $$ = T_ASSIGNMENT; }
-    |   T_PLUS_ASSIGNMENT  { $$ = T_PLUS_ASSIGNMENT; }
-    |   T_MINUS_ASSIGNMENT { $$ = T_MINUS_ASSIGNMENT; }
+    |   T_ADD_ASSIGNMENT   { $$ = T_ADD_ASSIGNMENT; }
+    |   T_SUB_ASSIGNMENT   { $$ = T_SUB_ASSIGNMENT; }
     |   T_MUL_ASSIGNMENT   { $$ = T_MUL_ASSIGNMENT; }
     |   T_DIV_ASSIGNMENT   { $$ = T_DIV_ASSIGNMENT; }
     |   T_MOD_ASSIGNMENT   { $$ = T_MOD_ASSIGNMENT; }
@@ -526,8 +526,8 @@ callable:
 
 /* argument list inside a method call*/
 calling_method_argument_list:
-        assignment_expression                                     { $$ = ast_node_group(1, $1); }
-    |   calling_method_argument_list ',' assignment_expression    { $$ = ast_node_add($$, $3); }
+        expression                                     { $$ = ast_node_group(1, $1); }
+    |   calling_method_argument_list ',' expression    { $$ = ast_node_add($$, $3); }
 ;
 
 data_structure:
