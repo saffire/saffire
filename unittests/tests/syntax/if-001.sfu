@@ -154,4 +154,4 @@ if (foo) {
 } elseif (foo) {
 } else (foo);
 ====
-Error: line 4: syntax error, unexpected '{', expecting ';' or ','
+Error: line 4: syntax error, unexpected '{', expecting ';'

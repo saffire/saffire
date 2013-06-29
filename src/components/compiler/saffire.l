@@ -183,8 +183,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 ">>"        { do_yylloc; saffire_push_state(st_regex); return T_SHIFT_RIGHT; }
 
 "="         { do_yylloc; saffire_push_state(st_regex); return T_ASSIGNMENT; }
-"+="        { do_yylloc; saffire_push_state(st_regex); return T_PLUS_ASSIGNMENT; }
-"-="        { do_yylloc; saffire_push_state(st_regex); return T_MINUS_ASSIGNMENT; }
+"+="        { do_yylloc; saffire_push_state(st_regex); return T_ADD_ASSIGNMENT; }
+"-="        { do_yylloc; saffire_push_state(st_regex); return T_SUB_ASSIGNMENT; }
 "*="        { do_yylloc; saffire_push_state(st_regex); return T_MUL_ASSIGNMENT; }
 "/="        { do_yylloc; saffire_push_state(st_regex); return T_DIV_ASSIGNMENT; }
 "%="        { do_yylloc; saffire_push_state(st_regex); return T_MOD_ASSIGNMENT; }
