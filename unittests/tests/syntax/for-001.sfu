@@ -41,7 +41,7 @@ for (i) {
 }
 
 ====
-Error in line 2: syntax error, unexpected ')', expecting ';' or ','
+Error in line 2: syntax error, unexpected ')', expecting ';'
 @@@@
 for (i;) {
 }
