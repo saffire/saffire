@@ -71,7 +71,7 @@ static unsigned char *_get_string(t_dll_element **e) {
 /**
  *
  */
-int arg_printf (const char *fmt, t_dll *args, fnptr output) {
+int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output) {
     unsigned flags, actual_wd, count, given_wd;
     unsigned char *where, buf[PR_BUFLEN];
     unsigned char state, radix;
@@ -88,7 +88,7 @@ int arg_printf (const char *fmt, t_dll *args, fnptr output) {
         case 0:
             if(*fmt != '%')	/* not %... */
             {
-                output(*fmt);	/* ...just echo it */
+                output(f, *fmt);	/* ...just echo it */
                 count++;
                 break;
             }
@@ -100,7 +100,7 @@ int arg_printf (const char *fmt, t_dll *args, fnptr output) {
         case 1:
             if(*fmt == '%')	/* %% */
             {
-                output(*fmt);
+                output(f, *fmt);
                 count++;
                 state = flags = given_wd = 0;
                 break;
@@ -247,7 +247,7 @@ EMIT:
                 if((flags & (PR_WS | PR_LZ)) ==
                     (PR_WS | PR_LZ))
                 {
-                    output('-');
+                    output(f, '-');
                     count++;
                 }
 /* pad on left with spaces or zeroes (for right justify) */
@@ -255,7 +255,7 @@ EMIT2:				if((flags & PR_LJ) == 0)
                 {
                     while(given_wd > actual_wd)
                     {
-                        output(flags & PR_LZ ? '0' : ' ');
+                        output(f, flags & PR_LZ ? '0' : ' ');
                         count++;
                         given_wd--;
                     }
@@ -263,13 +263,13 @@ EMIT2:				if((flags & PR_LJ) == 0)
 /* if we pad left with SPACES, do the sign now */
                 if((flags & (PR_WS | PR_LZ)) == PR_WS)
                 {
-                    output('-');
+                    output(f, '-');
                     count++;
                 }
 /* emit string/char/converted number */
                 while(*where != '\0')
                 {
-                    output(*where++);
+                    output(f, *where++);
                     count++;
                 }
 /* pad on right with spaces (for left justify) */
@@ -278,7 +278,7 @@ EMIT2:				if((flags & PR_LJ) == 0)
                 else given_wd -= actual_wd;
                 for(; given_wd; given_wd--)
                 {
-                    output(' ');
+                    output(f, ' ');
                     count++;
                 }
                 break;

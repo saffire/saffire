@@ -71,7 +71,7 @@ static int do_help(void) {
 
 
 /* Usage string */
-static const char help[]   = "Display help information\n"
+static const char help[]   = "Displays help information\n"
                              "\n";
 
 
@@ -83,7 +83,7 @@ static struct command_action command_actions[] = {
 
 /* Config info structure */
 struct command_info info_help = {
-    "help",
+    "Displays help on Saffire",
     command_actions,
     help
 };

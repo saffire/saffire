@@ -34,6 +34,8 @@
 #include "general/parse_options.h"
 #include "general/ini.h"
 
+#include "debug.h"
+
 t_ini *config_ini = NULL;
 char *config_path;
 
@@ -42,6 +44,7 @@ char *config_path;
  * Read INI file file
  */
 int config_init(char *path) {
+    DEBUG_PRINT("config_init(%s)\n", path);
     config_path = path;
     config_ini = ini_read(config_path);
     return (config_ini != NULL);
