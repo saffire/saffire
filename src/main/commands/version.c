@@ -55,6 +55,9 @@ static int do_version(void) {
 
 /* Usage string */
 static const char help[]   = "Displays version information about Saffire.\n"
+                             "\n"
+                             "Global settings:\n"
+                             "   --long                 Display long version and compile settings\n"
                              "\n";
 
 static void opt_long(void *data) {

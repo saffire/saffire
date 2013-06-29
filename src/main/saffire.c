@@ -70,17 +70,13 @@ char **original_argv;
  * Prints usage information
  */
 void print_usage(void) {
-    output("\n"
-           "Usage: saffire <command> [options] [script [args]]\n"
-           "Available options are:\n"
-           "  -v, --version         Show version information \n"
-           "  -h, --help            This usage information \n"
+    output("Usage: saffire <command> [options] [script -- [args]]\n"
            "\n"
            "Available commands:\n");
 
     struct command *p = commands;
     while (p->name) {
-        output("%-15s %s\n", p->name, p->info->description);
+        output("  %-15s %s\n", p->name, p->info->description);
         p++;
     }
     output("\n");
@@ -117,7 +113,10 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             // Parse the rest of the arguments, confirming the action's signature
             char *error;
             if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
-                fatal_error(1, "%s. Use 'saffire help %s' for more information\n", error, action->name);
+                output("%s\n", error);
+                output("%s", cmd->info->help);
+                output("\n");
+                return 1;
             }
 
             // Execute action
@@ -147,31 +146,60 @@ static const char *get_filename_extension(const char *filename) {
     return dot + 1;
 }
 
+static int has_filename_extension(const char *filename, const char *extension) {
+    return (strcmp(get_filename_extension(filename), extension) == 0);
+}
+
+
+// Find command, and set the argc & argv to point to the item AFTER the command
+static char *parse_command_line(int *argc, char **argv[]) {
+    // Turn "./saffire" into "./saffire help"
+    if (*argc == 1) {
+        *argc = 0;
+        return "help";
+    }
+
+    // Special cases for -h, --help, -?
+    if (strcmp((*argv)[1], "-h") == 0 ||
+        strcmp((*argv)[1], "--help") == 0 ||
+        strcmp((*argv)[1], "-?") == 0) {
+        // Since "" is not a command, it will fall through commands and display usage
+        return "";
+    }
+
+    // Special case for -v
+    if (strcmp((*argv)[1], "-v") == 0) {
+        return "version";
+    }
+
+    // We assume the first argument is a command
+    char *command = (*argv)[1];
+
+    // increase argv|argc, as we need to point to the first item AFTER the command
+    (*argv) += 2;
+    *argc -= 2;
+
+    // If "command" ends on ".sf" or ".sfc", we assume we need to execute it.
+    if (has_filename_extension(command, "sf") || has_filename_extension(command, "sfc")) {
+        // Reset argc|argv to point to the filename
+        (*argv) -= 1;
+        *argc += 1;
+        return "exec";
+    }
+
+    return command;
+}
+
 
 /**
  * Main Saffire entry point
  */
 int main(int argc, char *argv[]) {
-    char *command = "";
-
     // Save originals. Commands like 'help' will need them..
     original_argc = argc;
     original_argv = argv;
 
-    // Find command, and set the argc & argv to point to the item AFTER the command
-    if (argc == 1) {
-        // Turn "./saffire" into "./saffire help"
-        command = "help";
-        argc = 0;
-    } else if (argc >= 2) {
-        // If the action is 'dashed', remove the dashes. This will change
-        // "saffire --help", into "saffire help"
-        while (argv[1][0] == '-') argv[1]++;
-        command = argv[1];
-        argv += 2;
-        argc -= 2;
-    }
-
+    char *command = parse_command_line(&argc, &argv);
 
     // Iterate commands and see if we have a match and run it.
     struct command *p = commands;
@@ -189,6 +217,8 @@ int main(int argc, char *argv[]) {
     struct stat buf;
     int status = stat(command, &buf);
     if (status == 0) {
+        // If "command" ends on ".sf" or ".sfc" and it's a valid file, we assume
+        // we need to execute it.
         command = "exec";
 
         // Rescan commands for "Exec", and run
