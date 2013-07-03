@@ -30,6 +30,7 @@
 #include <string.h>
 #include "general/printf.h"
 #include "general/output.h"
+#include "general/smm.h"
 
 
 /**
@@ -55,12 +56,12 @@ static void _output(FILE *f, const char *format, va_list args) {
     char *buf;
 
     if (args == NULL) {
-        asprintf(&buf, format, NULL);
+        smm_asprintf(&buf, format, NULL);
     } else {
-        vasprintf(&buf, format, args);
+        smm_vasprintf(&buf, format, args);
     }
     output_string_helper(f, buf);
-    free(buf);
+    smm_free(buf);
 }
 
 

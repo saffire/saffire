@@ -112,10 +112,10 @@ t_hash_table *config_get_matches(const char *pattern, int wildcard) {
     if (! config_ini) return NULL;
 
     char *actual_pattern;
-    asprintf(&actual_pattern,(wildcard ? "*%s*" : "%s"), pattern);
+    smm_asprintf(&actual_pattern,(wildcard ? "*%s*" : "%s"), pattern);
 
     t_hash_table *matches = ini_match(config_ini, actual_pattern);
-    free(actual_pattern);
+    smm_free(actual_pattern);
 
     return matches;
 }

@@ -115,7 +115,7 @@ static char *construct_import_path(char *root_path, char *module_path) {
     char *class_path = build_class_path(module_path);
 
     char *final_path = NULL;
-    asprintf(&final_path, "%s%s.sf", root_path, class_path);
+    smm_asprintf(&final_path, "%s%s.sf", root_path, class_path);
     DEBUG_PRINT(" * *** Constructed path: '%s'\n", final_path);
     smm_free(class_path);
     return final_path;
@@ -152,7 +152,7 @@ static t_object *search_import_paths(t_vm_frame *frame, char *module_path, char 
         // Return object
         obj = search_import_path(frame, final_search_path, module_path, class, import_frame);
 
-        free(final_search_path);
+        smm_free(final_search_path);
 
         if (obj) break;
 
@@ -187,7 +187,12 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
 
     // Create complete module path, without the class so we can find the actual file
-    snprintf(module_path, 2048, "%s::%s", frame->context_path, module);
+    if (strstr(module, "::") == module) {
+        // This module is already absolute, don't add current frame context
+        snprintf(module_path, 2048, "%s", module);
+    } else {
+        snprintf(module_path, 2048, "%s::%s", frame->context_path, module);
+    }
 
     // CHeck if we already executed the frame before. If so, it's stored in cache
     t_vm_frame *cached_frame = ht_find(import_cache, module_path);

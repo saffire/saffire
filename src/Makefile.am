@@ -106,6 +106,7 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/hash/chained.c \
                        components/general/hash/hash_funcs.c \
                        components/general/smm.c \
+                       components/general/smm/asprintf.c \
                        components/general/md5.c \
                        components/general/dll.c \
                        components/general/stack.c \

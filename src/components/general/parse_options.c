@@ -29,6 +29,7 @@
 #include <string.h>
 #include "general/output.h"
 #include "general/parse_options.h"
+#include "general/smm.h"
 
 /* Parameters known to saffire commands. Similar to argc & argv */
 char **saffire_params;
@@ -199,7 +200,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'b' :
                 // Try and convert to boolean
                 if (to_bool(argv[argp]) == -1) {
-                    asprintf(error, "Found '%s', but expected a boolean value", argv[argp]);
+                    smm_asprintf(error, "Found '%s', but expected a boolean value", argv[argp]);
                     return 0;
                 }
 
@@ -207,13 +208,13 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'l' :
                 // Convert to long. string("0") should be ok too!
                 if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
-                    asprintf(error, "Found '%s', but expected a numerical value", argv[argp]);
+                    smm_asprintf(error, "Found '%s', but expected a numerical value", argv[argp]);
                     return 0;
                 }
 
                 break;
             default :
-                asprintf(error, "Incorrect signature command '%c' found", signature[idx]);
+                smm_asprintf(error, "Incorrect signature command '%c' found", signature[idx]);
                 return 0;
         }
     }

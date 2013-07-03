@@ -31,8 +31,7 @@
 #include "general/output.h"
 #include "general/parse_options.h"
 #include "commands/command.h"
-
-
+#include "general/smm.h"
 #include "general/hashtable.h"
 
 /*
@@ -116,6 +115,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
                 output("%s\n", error);
                 output("%s", cmd->info->help);
                 output("\n");
+                smm_free(error);
                 return 1;
             }
 
