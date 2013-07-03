@@ -13,17 +13,6 @@ class saffire {
         return ::_sfl::saffire::saffire.git_revision();
     }
 
-
-    /**
-     * Changes the current umask
-     */
-    static public method umask(Numerical mask) {
-        return ::_sfl::os::os.umask(mask);
-    }
-    static public method umask(String mask) {
-        return ::_sfl::os::os.umask(mask);
-    }
-
     static public method uncaughtExceptionHandler(exception e) {
         io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
     }

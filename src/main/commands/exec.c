@@ -83,7 +83,7 @@ static int do_exec(void) {
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
     t_vm_frame *initial_frame = vm_init(NULL, runmode);
-    vm_attach_bytecode(initial_frame, "{main}", bc);
+    vm_attach_bytecode(initial_frame, "", bc);
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);

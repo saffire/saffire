@@ -33,8 +33,10 @@
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
-        char *context;                              // Name, {main} or FQ method name
-        char *context_path;                         // Path,
+        char *context;                              // Complete context path
+        char *context_path;                         // First part (the part before the last ::foo)
+        char *context_class;                        // Last part (the class)
+
         t_bytecode *bytecode;                       // Global bytecode array
         int ip;                                     // Instruction pointer
 
@@ -91,6 +93,8 @@
 
     void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx);
     char *vm_frame_get_name(t_vm_frame *frame, int idx);
+
+    char *vm_frame_get_context_path(char *path);
 
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_frame *frame);

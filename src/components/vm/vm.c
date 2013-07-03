@@ -28,6 +28,7 @@
 #include <limits.h>
 #include "compiler/bytecode.h"
 #include "vm/vm.h"
+#include "vm/context.h"
 #include "vm/vm_opcodes.h"
 #include "vm/block.h"
 #include "vm/frame.h"
@@ -210,7 +211,7 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     import_cache = ht_create();
 
     // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, NULL, NULL);
+    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, "", NULL);
 
     thread_set_current_frame(initial_frame);
 
@@ -310,7 +311,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
                 tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
                 123,
                 "class",
-                "method"
+                "method" 
                 );
         tb_frame = tb_frame->parent;
         tb_history++;
@@ -1290,6 +1291,7 @@ int vm_execute(t_vm_frame *frame) {
             // handle exception
 
             object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
+            exit(1);
             result = object_new(Object_Numerical, 1, 1);
         } else {
             // result was NULL, but no exception found, just threat like regular 0

@@ -57,7 +57,7 @@ const char *module_search_paths[] = {
  * @param module_frame
  * @return
  */
-static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file) {
+static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file, char *context_name, char *context_path) {
 
     // @TODO: Don't care about cached bytecode for now! Compile source to BC
     t_ast_element *ast = ast_generate_from_file(source_file);
@@ -68,7 +68,7 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file) {
     DEBUG_PRINT("\n\n\n\n * Start of running module bytecode.\n");
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, "{import}", bc);
+    t_vm_frame *module_frame = vm_frame_new(frame, context_path, bc);
     vm_execute(module_frame);
 
     DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
@@ -103,7 +103,7 @@ static char *build_class_path(char *module) {
  * @param sub_path
  * @return
  */
-static char *construct_import_path(char *root_path, char *module_path) {
+static char *construct_import_path(t_vm_frame *frame, char *root_path, char *module_path) {
     char *path = realpath(root_path, NULL);
     if (! path) return NULL;
 
@@ -115,7 +115,11 @@ static char *construct_import_path(char *root_path, char *module_path) {
     char *class_path = build_class_path(module_path);
 
     char *final_path = NULL;
-    smm_asprintf(&final_path, "%s%s.sf", root_path, class_path);
+    if (strstr(module_path, "::") == module_path) {
+        smm_asprintf(&final_path, "%s%s.sf", root_path, class_path);
+    } else {
+        smm_asprintf(&final_path, "%s%s%s.sf", root_path, frame->context, class_path);
+    }
     DEBUG_PRINT(" * *** Constructed path: '%s'\n", final_path);
     smm_free(class_path);
     return final_path;
@@ -125,7 +129,7 @@ static char *construct_import_path(char *root_path, char *module_path) {
 static t_object *search_import_path(t_vm_frame *frame, char *file_path, char *module_path, char *class, t_vm_frame **import_frame) {
     if (! is_file(file_path)) return NULL;
 
-    *import_frame = _execute_import_frame(frame, file_path);
+    *import_frame = _execute_import_frame(frame, file_path, class, module_path);
     return vm_frame_find_identifier(*import_frame, class);
 }
 
@@ -145,7 +149,7 @@ static t_object *search_import_paths(t_vm_frame *frame, char *module_path, char 
     char **search_root_path = (char **)&module_search_paths;
     while (*search_root_path) {
         // Create our actual search path
-        char *final_search_path = construct_import_path(*search_root_path, module_path);
+        char *final_search_path = construct_import_path(frame, *search_root_path, module_path);
 
         DEBUG_PRINT(" * *** Searching path: %s \n", final_search_path);
 
@@ -176,7 +180,11 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
 
     // Create complete module path including the class
-    snprintf(module_path, 2048, "%s%s::%s", frame->context_path, module, class);
+    if (strstr(module, "::") == module) {
+        snprintf(module_path, 2048, "%s::%s", module, class);
+    } else {
+        snprintf(module_path, 2048, "%s::%s::%s", frame->context_path, module, class);
+    }
 
     // Check if the object we need to import, is already imported. No exceptions if that doesn't work
     DEBUG_PRINT(" * Looking for '%s' in the current frame\n", module_path);
