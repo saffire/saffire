@@ -90,7 +90,7 @@ static char *build_class_path(char *module) {
     // remaining chars in the string up one position
     while (c = strstr(class_path, "::"), c != NULL) {
         *c = '/';
-        memmove(c+1, c+2, strlen(c)+1);
+        memmove(c+1, c+2, strlen(c)-1);
     }
 
     return class_path;
