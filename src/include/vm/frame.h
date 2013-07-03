@@ -33,7 +33,10 @@
 
     struct _vm_frame {
         t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
-        char *context;                              // Name, {main} or FQ method name
+        char *context;                              // Complete context path
+        char *context_path;                         // First part (the part before the last ::foo)
+        char *context_class;                        // Last part (the class)
+
         t_bytecode *bytecode;                       // Global bytecode array
         int ip;                                     // Instruction pointer
 
@@ -41,7 +44,6 @@
         int lineno_upperbound;                      // Upper bytecode offset for this line
         int lineno_current_line;                    // Current line pointer
         int lineno_current_lino_offset;             // Current offset in the bytecode lineno table
-//        char *source_filename;                      // Full path to source filename for this frame
 
         t_object **stack;                           // Local variable stack
         unsigned int sp;                            // Stack pointer
@@ -87,8 +89,12 @@
     void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj);
     void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj);
 
+    void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj);
+
     void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx);
     char *vm_frame_get_name(t_vm_frame *frame, int idx);
+
+    char *vm_frame_get_context_path(char *path);
 
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_frame *frame);

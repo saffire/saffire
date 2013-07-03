@@ -456,11 +456,11 @@ void object_raise_exception(t_object *exception, char *format, ...) {
     char *buf;
 
     va_start(args, format);
-    vasprintf(&buf, format, args);
+    smm_vasprintf(&buf, format, args);
     va_end(args);
 
     thread_set_exception(exception, buf);
-    free(buf);
+    smm_free(buf);
 }
 
 

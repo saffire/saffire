@@ -1,5 +1,3 @@
-import io as sflio from ::_sfl::io;
-
 /**
  * This is the IO class.
  */
@@ -9,11 +7,11 @@ class io {
     public const STDERR = 2;
 
     static public method print(... args) {
-        return sflio.print(... args);
+        return ::_sfl::io::io.print(... args);
     }
 
     static public method printf(string format, ... args) {
-        return sflio.printf(format, ... args);
+        return ::_sfl::io::io.printf(format, ... args);
     }
 
 }

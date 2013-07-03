@@ -27,6 +27,7 @@
 #include <string.h>
 #include "vm/vm.h"
 #include "vm/frame.h"
+#include "vm/context.h"
 #include "compiler/bytecode.h"
 #include "vm/vm_opcodes.h"
 #include "general/smm.h"
@@ -183,6 +184,13 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     }
 }
 
+void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+    t_object *old_obj = ht_replace(frame->builtin_identifiers->ht, id, obj);
+    if (old_obj) {
+        object_dec_ref((t_object *)old_obj);
+    }
+}
+
 
 /**
  * Return object from either the local or the global identifier table
@@ -234,10 +242,8 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 
-void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytecode) {
-    // Make sure we free the context name if any was present
-    if (frame->context) smm_free(frame->context);
-    frame->context = smm_strdup(context_name);
+void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) {
+    vm_context_set_context(frame, context);
 
     frame->bytecode = bytecode;
     frame->ip = 0;
@@ -295,20 +301,18 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytec
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode) {
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *bytecode) {
     t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
     bzero(cfr, sizeof(t_vm_frame));
 
     cfr->parent = parent_frame;
 
     if (bytecode) {
-        vm_attach_bytecode(cfr, context_name, bytecode);
+        vm_attach_bytecode(cfr, context, bytecode);
         return cfr;
     }
 
-    if (context_name) {
-        cfr->context = smm_strdup(context_name);
-    }
+    vm_context_set_context(cfr, context);
 
     cfr->stack = NULL;
     cfr->bytecode = NULL;

@@ -24,18 +24,46 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __SMM_H__
-#define __SMM_H__
 
-    #include <stdlib.h>
-    #include <stdarg.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include "general/smm.h"
 
-    void *smm_malloc(size_t size);
-    void *smm_realloc(void *ptr, size_t size);
-    void smm_free(void *ptr);
-    char *smm_strdup(const char *s);
+/**
+ * Our own implementation. This ensures that *ret will always be NULL on an error.
+ */
+int smm_vasprintf(char **ret, const char *format, va_list args) {
+    va_list copy;
+    va_copy(copy, args);
 
-    int smm_asprintf(char **ret, const char *format, ...);
-    int smm_vasprintf(char **ret, const char *format, va_list args);
+    *ret = NULL;
 
-#endif
+    int len = vsnprintf(NULL, 0, format, args);
+
+    if (len >= 0) {
+        char *buffer = smm_malloc(len+1);
+        if (! buffer) return -1;
+
+        len = vsnprintf(buffer, len+1, format, copy);
+
+        if (len < 0) {
+            smm_free(buffer);
+            return len;
+        }
+        *ret = buffer;
+    }
+    va_end(copy);
+
+    return len;
+}
+
+
+int smm_asprintf(char **ret, const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    int len = smm_vasprintf(ret, format, args);
+    va_end(args);
+
+    return(len);
+}
