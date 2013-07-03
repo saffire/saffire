@@ -311,7 +311,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
                 tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
                 123,
                 "class",
-                "method" 
+                "method"
                 );
         tb_frame = tb_frame->parent;
         tb_history++;
@@ -1279,9 +1279,6 @@ int vm_execute(t_vm_frame *frame) {
 
     // Execute the frame
     t_object *result = _vm_execute(frame);
-
-    // @TODO: remove me
-    result = NULL;
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 
