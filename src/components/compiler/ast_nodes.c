@@ -36,6 +36,7 @@
 #include "general/smm.h"
 #include "compiler/ast_nodes.h"
 #include "compiler/lex.yy.h"
+#include "vm/context.h"
 
 
 /**
@@ -136,6 +137,16 @@ t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
     p->lineno = lineno;
     p->type = typeAstString;
     p->string.value = smm_strdup(src->string.value);
+
+    return p;
+}
+
+t_ast_element *ast_node_string_context_class(int lineno, t_ast_element *src) {
+    t_ast_element *p = ast_node_alloc_element();
+
+    p->lineno = lineno;
+    p->type = typeAstString;
+    p->string.value = vm_context_get_class(src->identifier.name);
 
     return p;
 }

@@ -37,6 +37,7 @@
     #include "compiler/ast_nodes.h"
     #include "objects/objects.h"
     #include "debug.h"
+    #include "vm/context.h"
     #include "compiler/saffire_parser.h"
     #include "compiler/parser.tab.h"
     #include "compiler/lex.yy.h"
@@ -180,13 +181,13 @@ use_statement:
         /* use <foo>; */
     |   T_USE qualified_name                                          ';' { $$ = ast_node_opr(@1.first_line, T_USE, 1, $2); }
         /* import <foo> from <bar> */
-    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string_dup(@4.first_line, $4)); }
+    |   T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string_dup(@4.first_line, $4)); }
         /* import <foo> as <bar> from <baz> */
     |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
         /* import <foo> as <bar> */
     |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); }
         /* import <foo> */
-    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
     |   error ';' { yyerrok; }
 ;
 
@@ -504,7 +505,7 @@ qualified_name:
 
 qualified_name_first_part:
         T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); $$ = ast_node_identifier(@1.first_line, $$->string.value); }
 ;
 
 

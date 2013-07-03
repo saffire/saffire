@@ -106,6 +106,7 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/hash/chained.c \
                        components/general/hash/hash_funcs.c \
                        components/general/smm.c \
+                       components/general/smm/asprintf.c \
                        components/general/md5.c \
                        components/general/dll.c \
                        components/general/stack.c \
@@ -198,6 +199,7 @@ noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
                   components/vm/frame.c \
+                  components/vm/context.c \
                   components/vm/thread.c \
                   components/vm/import.c \
                   include/vm/vm_opcodes.c
