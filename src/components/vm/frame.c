@@ -183,6 +183,13 @@ void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     }
 }
 
+void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+    t_object *old_obj = ht_replace(frame->builtin_identifiers->ht, id, obj);
+    if (old_obj) {
+        object_dec_ref((t_object *)old_obj);
+    }
+}
+
 
 /**
  * Return object from either the local or the global identifier table
@@ -238,6 +245,8 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytec
     // Make sure we free the context name if any was present
     if (frame->context) smm_free(frame->context);
     frame->context = smm_strdup(context_name);
+
+    frame->context_path = "";
 
     frame->bytecode = bytecode;
     frame->ip = 0;
@@ -309,6 +318,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecod
     if (context_name) {
         cfr->context = smm_strdup(context_name);
     }
+    cfr->context_path = "";
 
     cfr->stack = NULL;
     cfr->bytecode = NULL;

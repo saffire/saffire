@@ -220,13 +220,15 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     }
 
 
+    // Implicit load the Saffire module
     vm_runmode &= ~VM_RUNMODE_DEBUG;
-
-    // Implicit load the saffire module
     t_object *obj = vm_import(initial_frame, "saffire", "saffire");
-    vm_frame_set_identifier(initial_frame, "saffire", obj);
-
+    if (!obj) {
+        fatal_error(1, "Cannot find the mandatory saffire module.");
+    }
+    vm_frame_set_builtin_identifier(initial_frame, "saffire", obj);
     vm_runmode = runmode;
+
 
     return initial_frame;
 }
@@ -483,7 +485,7 @@ dispatch:
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_set_exception(Object_AttributeException, "Attribute not found");
+                        thread_set_exception_printf(Object_AttributeException, "Attribute '%s' in class '%s' not found", OBJ2STR(name), bound_obj->name);
                         goto block_end;
                         break;
                     }
@@ -607,7 +609,11 @@ dispatch:
                 dst = vm_frame_get_identifier(frame, name);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    thread_set_exception(Object_AttributeException, "Attribute not found");
+                    if (dst == NULL) {
+                        thread_set_exception_printf(Object_AttributeException, "Class '%s' not found", name, dst);
+                    } else {
+                        thread_set_exception_printf(Object_AttributeException, "Attribute '%s' in class '%s' not found", name, dst->name);
+                    }
                     goto block_end;
                     break;
                 }
@@ -1278,17 +1284,18 @@ int vm_execute(t_vm_frame *frame) {
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 
-//    // Check if there was an uncaught exception (when result == NULL)
-//    if (result == NULL) {
-//        if (thread_exception_thrown()) {
-//            // handle exception
-//            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-//            result = object_new(Object_Numerical, 1, 1);
-//        } else {
-//            // result was NULL, but no exception found, just threat like regular 0
-//            result = object_new(Object_Numerical, 1, 0);
-//        }
-//    }
+    // Check if there was an uncaught exception (when result == NULL)
+    if (result == NULL) {
+        if (thread_exception_thrown()) {
+            // handle exception
+
+            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
+            result = object_new(Object_Numerical, 1, 1);
+        } else {
+            // result was NULL, but no exception found, just threat like regular 0
+            result = object_new(Object_Numerical, 1, 0);
+        }
+    }
 //
 //    // Convert returned object to numerical, so we can use it as an error code
 //    if (!OBJECT_IS_NUMERICAL(result)) {
@@ -1345,7 +1352,6 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
  *
  */
 void vm_populate_builtins(const char *name, void *data) {
-    DEBUG_PRINT("Added object to builtins: %s\n", name);
     ht_add(builtin_identifiers, name, data);
 }
 
