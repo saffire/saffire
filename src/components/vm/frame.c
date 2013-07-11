@@ -201,11 +201,33 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
     return obj;
 }
 
+
+void print_debug_table(t_hash_table *ht, char *prefix) {
+    t_hash_iter iter;
+
+    if (! ht) return;
+
+    ht_iter_init(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key(&iter);
+        t_object *val = ht_iter_value(&iter);
+        DEBUG_PRINT("%s KEY: '%-20s' => %s\n", prefix, key, val ? object_debug(val) : "(null)");
+
+        ht_iter_next(&iter);
+    }
+    DEBUG_PRINT("%s\n\n", prefix);
+}
+
+
 /**
  * Same as get, but does not halt on error (but returns NULL)
  */
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
+
+    DEBUG_PRINT("Locals [FRAME: %s (%08X)]\n", frame->context, frame);
+    print_debug_table(frame->local_identifiers->ht, "Locals");
+
 
     // Check locals first
     obj = ht_find(frame->local_identifiers->ht, id);
@@ -226,8 +248,15 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     if (obj != NULL) return obj;
 
     // @TODO: We should throw an exception instead of just returning
+
+    DEBUG_PRINT("VM_FRAME_FIND_IDENTIFIER(%08X): '%s' NOT FOUND!\n", frame, id);
+
+//    DEBUG_PRINT("Builtins\n");
+//    print_debug_table(frame->builtin_identifiers->ht);
+
     return NULL;
 }
+
 
 
 /**

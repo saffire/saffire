@@ -1437,6 +1437,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         ht_replace(new_frame->local_identifiers->ht, "self", self_obj);
         ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
 
+        print_debug_table(new_frame->local_identifiers->ht);
+
         // Parse calling arguments to see if they match our signatures
         if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
             // Exception thrown in the argument parsing
