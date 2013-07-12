@@ -45,10 +45,7 @@
 static t_ast_element *ast_node_alloc_element(void) {
     t_ast_element *p;
 
-    if ((p = smm_malloc(sizeof(t_ast_element))) == NULL) {
-        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-    }
-
+    p = smm_malloc(sizeof(t_ast_element));
     bzero(p, sizeof(t_ast_element));
 
     return p;
@@ -308,12 +305,9 @@ t_ast_element *ast_node_group(int len, ...) {
     p->group.len = len;
     p->group.items = NULL;
 
-    if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
-        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-    }
-
     // Add additional nodes (they can be added later with ast_add())
     if (len) {
+        p->group.items = smm_malloc (len * sizeof(t_ast_element));
         va_start(ap, len);
         for (int i=0; i < len; i++) {
             p->group.items[i] = va_arg(ap, t_ast_element *);
@@ -333,12 +327,9 @@ t_ast_element *ast_node_tuple(int len, ...) {
     p->group.len = len;
     p->group.items = NULL;
 
-    if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
-        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-    }
-
     // Add additional nodes (they can be added later with ast_add())
     if (len) {
+        p->group.items = smm_malloc (len * sizeof(t_ast_element));
         va_start(ap, len);
         for (int i=0; i < len; i++) {
             p->group.items[i] = va_arg(ap, t_ast_element *);
@@ -366,12 +357,9 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
     p->opr.nops = nops;
     p->opr.ops = NULL;
 
-    if (nops && (p->opr.ops = smm_malloc (nops * sizeof(t_ast_element))) == NULL) {
-        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-    }
-
     // Add additional nodes (they can be added later with ast_add())
     if (nops) {
+        p->opr.ops = smm_malloc (nops * sizeof(t_ast_element));
         va_start(ap, nops);
         for (int i=0; i < nops; i++) {
             p->opr.ops[i] = va_arg(ap, t_ast_element *);
