@@ -473,6 +473,39 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             }
             break;
 
+        case typeAstTuple :
+            {
+                enum context ctx = (enum context)stack_peek(state->context);
+
+                switch (ctx) {
+                    case st_ctx_load :
+                        for (int i=0; i!=leaf->group.len; i++) {
+                            node = leaf->group.items[i];
+                            WALK_LEAF(node);
+                        }
+
+                        // Name of the id to store the constant into
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->group.len);
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_PACK_TUPLE, 1, opr1));
+
+                        break;
+                    case st_ctx_store :
+                        // Name of the id to store the constant into
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->group.len);
+                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_UNPACK_TUPLE, 1, opr1));
+
+                        for (int i=leaf->group.len-1; i >= 0; i--) {
+                            node = leaf->group.items[i];
+                            WALK_LEAF(node);
+                        }
+                        break;
+                    default :
+                        fatal_error(1, "Unknown load/store state for %d!", leaf->type);
+                }
+            }
+            break;
+
+
 
         case typeAstOpr :
             switch (leaf->opr.oper) {

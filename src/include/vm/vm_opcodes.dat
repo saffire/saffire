@@ -51,6 +51,8 @@ JUMP_IF_FIRST_TRUE   0xA1
 
 OPERATOR             0xA8
 
+PACK_TUPLE           0xAB
+UNPACK_TUPLE         0xAC
 BUILD_TUPLE          0xAE
 BUILD_DATASTRUCT     0xAF
 

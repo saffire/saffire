@@ -335,9 +335,9 @@ dispatch:
         frame->executions++;
 
 
+#ifdef __DEBUG
         int ln = getlineno(frame);
         unsigned long cip = frame->ip;
-#ifdef __DEBUG
         //vm_frame_stack_debug(frame);
 #endif
 
@@ -1099,6 +1099,56 @@ dispatch:
                     break;
                 }
 
+            case VM_PACK_TUPLE :
+                {
+                    // Create an empty tuple
+                    t_tuple_object *obj = (t_tuple_object *)object_new(Object_Tuple, 0);
+
+                    // Add elements from the stack into the tuple, sort in reverse order!
+                    for (int i=0; i!=oparg1; i++) {
+                        t_object *val = vm_frame_stack_pop(frame);
+                        object_dec_ref(val);
+                        ht_num_add(obj->ht, oparg1 - i - 1, val);
+                    }
+
+                    // Push tuple on the stack
+                    vm_frame_stack_push(frame, (t_object *)obj);
+                }
+
+                goto dispatch;
+                break;
+
+            case VM_UNPACK_TUPLE :
+                {
+                    // Check if we are are unpacking a tuple
+                    t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
+                    if (! OBJECT_IS_TUPLE(obj)) {
+                        thread_set_exception(Object_TypeException, "Argument is not a tuple");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Push the tuple vars. Make sure we start from the correct position
+                    int offset = oparg1 < obj->ht->element_count ? oparg1 : obj->ht->element_count;
+                    for (int i=0; i < offset; i++) {
+                        t_object *val = ht_num_find(obj->ht, i);
+                        vm_frame_stack_push(frame, val);
+                    }
+
+                    // If we haven't got enough elements in our tuple, pad the result with NULLs first
+                    t_object *val = Object_Null;
+                    while (oparg1-- > obj->ht->element_count) {
+                        vm_frame_stack_push(frame, val);
+                        object_inc_ref(val);
+                    }
+
+
+                }
+
+                goto dispatch;
+                break;
+
+
         } // switch(opcode) {
 
 
@@ -1436,6 +1486,10 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Add references to parent and self
         ht_replace(new_frame->local_identifiers->ht, "self", self_obj);
         ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
+
+#ifdef __DEBUG
+        print_debug_table(new_frame->local_identifiers->ht, "");
+#endif
 
         // Parse calling arguments to see if they match our signatures
         if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {

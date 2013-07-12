@@ -124,6 +124,7 @@
     #define OBJECT_IS_CALLABLE(obj)     (obj->type == objectTypeCallable)
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
     #define OBJECT_IS_EXCEPTION(obj)    (obj->type == objectTypeException)
+    #define OBJECT_IS_TUPLE(obj)        (obj->type == objectTypeTuple)
 
 
     // Convert object to value
