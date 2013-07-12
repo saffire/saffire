@@ -49,8 +49,7 @@ static t_ast_element *ast_node_alloc_element(void) {
         fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
     }
 
-    // Default, no linenumber info is present
-    p->lineno = 0;
+    bzero(p, sizeof(t_ast_element));
 
     return p;
 }
@@ -215,36 +214,42 @@ t_ast_element *ast_node_null(void) {
  * Add a node to an existing operator node. This allows to add children later inside a tree (like lists)
  */
 t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element) {
-    if (src->type == typeAstGroup) {
-        // Resize memory
-        src->group.items = smm_realloc(src->group.items, (src->group.len+1) * sizeof(t_ast_element));
-        if (src->group.items == NULL) {
-            fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-        }
-
-        // Add new operator
-        src->group.items[src->group.len] = new_element;
-        src->group.len++;
-
-        return src;
+    if (src->grouping == 0) {
+        fatal_error(1, "Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
     }
 
-    if (src->type == typeAstOpr) {
-        // Resize memory
-        src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
-        if (src->opr.ops == NULL) {
-            fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
-        }
+    switch (src->type) {
+        // Tuples and groups are processed the same way
+        case typeAstGroup :
+        case typeAstTuple :
+            // Resize memory
+            src->group.items = smm_realloc(src->group.items, (src->group.len + 1) * sizeof(t_ast_element));
+            if (src->group.items == NULL) {
+                fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            }
 
-        // Add new operator
-        src->opr.ops[src->opr.nops] = new_element;
-        src->opr.nops++;
+            // Add new operator
+            src->group.items[src->group.len] = new_element;
+            src->group.len++;
+            break;
+        case typeAstOpr :
+            // Resize memory
+            src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops+1) * sizeof(t_ast_element));
+            if (src->opr.ops == NULL) {
+                fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            }
 
-        return src;
+            // Add new operator
+            src->opr.ops[src->opr.nops] = new_element;
+            src->opr.nops++;
+            break;
+
+        default :
+            fatal_error(1, "unhandled group type");   /* LCOV_EXCL_LINE */
+            break;
     }
 
-    fatal_error(1, "Cannot add to non-grouping element");   /* LCOV_EXCL_LINE */
-    return NULL;
+    return src;
 }
 
 
@@ -256,6 +261,32 @@ t_ast_element *ast_node_group(int len, ...) {
     va_list ap;
 
     p->type = typeAstGroup;
+    p->grouping = 1;
+    p->group.len = len;
+    p->group.items = NULL;
+
+    if (len && (p->group.items = smm_malloc (len * sizeof(t_ast_element))) == NULL) {
+        fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
+    }
+
+    // Add additional nodes (they can be added later with ast_add())
+    if (len) {
+        va_start(ap, len);
+        for (int i=0; i < len; i++) {
+            p->group.items[i] = va_arg(ap, t_ast_element *);
+        }
+        va_end(ap);
+    }
+
+    return p;
+}
+
+t_ast_element *ast_node_tuple(int len, ...) {
+    t_ast_element *p = ast_node_alloc_element();
+    va_list ap;
+
+    p->type = typeAstTuple;
+    p->grouping = 1;
     p->group.len = len;
     p->group.items = NULL;
 
@@ -287,6 +318,7 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
 
     p->lineno = lineno;
     p->type = typeAstOpr;
+    p->grouping = 1;
     p->opr.oper = opr;
     p->opr.nops = nops;
     p->opr.ops = NULL;
@@ -443,6 +475,7 @@ void ast_free_node(t_ast_element *p) {
                 smm_free(p->opr.ops);
             }
             break;
+        case typeAstTuple :
         case typeAstGroup :
             if (p->group.len) {
                 for (int i=0; i < p->group.len; i++) {

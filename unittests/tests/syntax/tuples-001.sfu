@@ -1,0 +1,42 @@
+title: tuples
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+(a,b) = (1,2)
+io.print(a, b);
+====
+12
+@@@@
+(a, b, c) = (1,2)
+io.print(a, b, c);
+====
+12null
+@@@@
+(a) = (1)
+io.print(a);
+====
+1
+@@@@
+(a,b) = (1,2,3,4)
+io.print(a,b);
+====
+12
+@@@@
+a = 1
+b = 2
+(a,b) = (b,a)
+io.print(a,b);
+====
+21
+@@@@
+a = (2 * (3 + 4))
+io.print(a);
+====
+14
+@@@@
+a = (2) + (3)
+io.print(a);
+====
+5
+
