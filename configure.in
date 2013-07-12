@@ -141,6 +141,7 @@ AC_CHECK_FUNCS([floor memset strdup strtol])
 AC_CONFIG_FILES([
                     Makefile
                     src/Makefile
+                    unittests/core/Makefile
                 ])
 
 AC_OUTPUT
