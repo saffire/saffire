@@ -98,6 +98,7 @@
 
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_frame *frame);
+    void print_debug_table(t_hash_table *ht, char *prefix);
 #endif
 
 #endif

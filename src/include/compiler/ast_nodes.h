@@ -39,6 +39,7 @@
                    typeAstOpr, typeAstNop, typeAstGroup,
                    typeAstClass, typeAstInterface, typeAstAttribute, typeAstProperty,
                    typeAstAssignment, typeAstComparison, typeAstBool, typeAstOperator,
+                   typeAstTuple,
                  } nodeEnum;
 
     typedef struct {
@@ -120,10 +121,16 @@
         struct _ast_element **items;
     } groupNode;
 
+    typedef struct {
+        int len;
+        struct _ast_element **items;
+    } tupleNode;
+
     typedef struct _ast_element {
         nodeEnum type;                  // Type of the node
         int flags;                      // Current flag (used for interpreting)
         unsigned long lineno;           // Current line number for this AST element
+        int grouping;                   // This node supports grouping
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
@@ -131,7 +138,7 @@
             propertyNode property;      // property
             attributeNode attribute;    // attribute
             oprNode opr;                // operators
-            groupNode group;            // grouping of multiple items (statements etc)
+            groupNode group;            // grouping of multiple items (statements etc), or tuples
             classNode class;            // class
             interfaceNode interface;    // interface
             assignmentNode assignment;  // assignment
@@ -149,7 +156,9 @@
     t_ast_element *ast_node_property(int lineno, t_ast_element *class, t_ast_element *property);
     t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...);
     t_ast_element *ast_node_group(int len, ...);
+    t_ast_element *ast_node_tuple(int len, ...);
     t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group);
     t_ast_element *ast_node_string_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);
