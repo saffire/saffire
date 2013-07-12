@@ -43,7 +43,7 @@ This should output "hello world" on your screen.
 
 Using Saffire as a FastCGI module
 ---------------------------------
-Saffire can be run as a FastCGI process. More information about setting this up will be added later.
+Saffire can be run as a FastCGI process. Click [here](FastCGI.md) for more information.
 
 
 
