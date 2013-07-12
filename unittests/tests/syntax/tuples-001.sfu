@@ -3,40 +3,57 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 import io;
-(a,b) = (1,2)
+(a,b) = (1,2);
 io.print(a, b);
 ====
 12
 @@@@
-(a, b, c) = (1,2)
-io.print(a, b, c);
+import io;
+(a, b, c, d) = (1,2);
+io.print(a, b, c, d);
 ====
-12null
+12nullnull
 @@@@
-(a) = (1)
+import io;
+(a) = (1);
 io.print(a);
 ====
 1
 @@@@
-(a,b) = (1,2,3,4)
+import io;
+(a,b) = (1,2,3,4);
 io.print(a,b);
 ====
 12
 @@@@
-a = 1
-b = 2
-(a,b) = (b,a)
+import io;
+a = 1;
+b = 2;
+(a,b) = (b,a);
 io.print(a,b);
 ====
 21
 @@@@
-a = (2 * (3 + 4))
+import io;
+a = (2 * (3 + 4));
 io.print(a);
 ====
 14
 @@@@
-a = (2) + (3)
+import io;
+a = (2) + (3);
 io.print(a);
 ====
 5
-
+@@@@
+import io;
+(a, b, c, d) = (1,);
+io.print(a,b,c,d);
+====
+1nullnullnull
+@@@@
+import io;
+(a, b, c, d) = (1);
+io.print(a,b,c,d);
+====
+Argument is not a tuple

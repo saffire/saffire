@@ -158,6 +158,7 @@
     t_ast_element *ast_node_group(int len, ...);
     t_ast_element *ast_node_tuple(int len, ...);
     t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element);
+    t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group);
     t_ast_element *ast_node_string_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);

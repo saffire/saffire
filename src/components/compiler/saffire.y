@@ -127,7 +127,7 @@
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
 %type <nPtr> special_name scalar_value callable var_callable subscription primary_expression_first_part qualified_name_first_part
-%type <nPtr> tuple_list
+%type <nPtr> tuple_list non_empty_tuple_list
 
 %type <sVal> T_ASSIGNMENT T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -478,12 +478,18 @@ scalar_value:
 
 /* This is primary expression */
 primary_expression:
-        pe_no_parenthesis           { $$ = $1; }
-   |    '(' tuple_list ')'     { $$ = $2; }
+        pe_no_parenthesis                         { $$ = $1; }
+   |    '(' expression ')'                        { $$ = $2; }
+   |    '(' primary_expression ',' tuple_list ')' { $$ = ast_node_tuple(1, $2); ast_node_add_multi($$, $4); }
 ;
 
 tuple_list:
-        expression                { $$ = ast_node_tuple(1, $1); }
+        non_empty_tuple_list      { $$ = $1; }
+    |   /* empty */               { $$ = ast_node_group(0); }
+;
+
+non_empty_tuple_list:
+        expression                { $$ = ast_node_group(1, $1); }
     |   tuple_list',' expression  { $$ = ast_node_add($$, $3); }
 ;
 

@@ -202,6 +202,7 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 }
 
 
+#ifdef __DEBUG
 void print_debug_table(t_hash_table *ht, char *prefix) {
     t_hash_iter iter;
 
@@ -217,6 +218,7 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     }
     DEBUG_PRINT("%s\n\n", prefix);
 }
+#endif
 
 
 /**
@@ -225,8 +227,10 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
 
+#ifdef __DEBUG
     DEBUG_PRINT("Locals [FRAME: %s (%08X)]\n", frame->context, frame);
     print_debug_table(frame->local_identifiers->ht, "Locals");
+#endif
 
 
     // Check locals first

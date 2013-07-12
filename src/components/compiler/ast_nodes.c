@@ -210,6 +210,49 @@ t_ast_element *ast_node_null(void) {
 }
 
 
+
+t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group) {
+    if (group->grouping == 0) {
+        fatal_error(1, "Cannot add a non-grouping element to group");
+    }
+
+    switch (group->type) {
+        // Tuples and groups are processed the same way
+        case typeAstGroup :
+        case typeAstTuple :
+            // Resize memory
+            src->group.items = smm_realloc(src->group.items, (src->group.len + group->group.len) * sizeof(t_ast_element));
+            if (src->group.items == NULL) {
+                fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            }
+
+            // Add new operator
+            for (int i=0; i!=group->group.len; i++) {
+                src->group.items[src->group.len] = group->group.items[i];
+                src->group.len++;
+            }
+            break;
+        case typeAstOpr :
+            // Resize memory
+            src->opr.ops = smm_realloc(src->opr.ops, (src->opr.nops + group->opr.nops) * sizeof(t_ast_element));
+            if (src->opr.ops == NULL) {
+                fatal_error(1, "Out of memory");   /* LCOV_EXCL_LINE */
+            }
+
+            // Add new operator
+            for (int i=0; i!=group->opr.nops; i++) {
+                src->opr.ops[src->opr.nops] = group->opr.ops[i];
+                src->opr.nops++;
+            }
+            break;
+
+        default :
+            fatal_error(1, "unhandled group type");   /* LCOV_EXCL_LINE */
+            break;
+    }
+
+    return src;
+}
 /**
  * Add a node to an existing operator node. This allows to add children later inside a tree (like lists)
  */
