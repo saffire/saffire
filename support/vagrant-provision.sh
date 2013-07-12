@@ -15,7 +15,7 @@ apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev
 
 # Symlink SFL library
 mkdir -p /usr/share/saffire/modules
-ln -s /vagrant/sfl /usr/share/saffire/sfl
+ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
 
 # Create new MOTD
 cat << 'EOF' > /etc/motd.tail
