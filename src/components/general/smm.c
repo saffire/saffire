@@ -49,11 +49,11 @@ void *smm_malloc(size_t size) {
 
 void *smm_realloc(void *ptr, size_t size) {
     smm_realloc_calls++;
-    void *ptr = realloc(ptr, size);
-    if (ptr == NULL) {
+    void *newptr = realloc(ptr, size);
+    if (newptr == NULL) {
         fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);
     }
-    return ptr;
+    return newptr;
 }
 
 void smm_free(void *ptr) {
