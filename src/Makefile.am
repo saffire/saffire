@@ -217,6 +217,7 @@ libgc_a_SOURCES = components/gc/gc.c
 # main/saffire
 ########################################################################
 
+# There are double archives here, this is because of resolving of objects.
 SAFFIRE_LIBS = \
                  libobjects.a \
                  libgeneral.a \
@@ -227,7 +228,6 @@ SAFFIRE_LIBS = \
                  librepl.a \
                  libvm.a \
                  libgc.a \
-                 libgeneral.a \
                  libmodules.a \
                  libdebugger.a
 
@@ -240,29 +240,3 @@ saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \
                   main/commands/exec.c main/commands/repl.c main/commands/help.c \
                   main/commands/version.c main/commands/bytecode.c
-
-
-
-########################################################################
-# ../unittests/core
-########################################################################
-
-noinst_LIBRARIES += libtests.a
-libtests_a_SOURCES = ../unittests/core/main.c
-
-########################################################################
-# unittests
-########################################################################
-
-TESTS = utmain
-check_PROGRAMS = utmain
-
-utmain_LDADD = $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread -lcunit
-
-utmain_SOURCES = \
-                    ../unittests/core/main.c \
-                    ../unittests/core/hashtable/hashtable.c \
-                    ../unittests/core/dll/dll.c \
-                    ../unittests/core/bz2/bz2.c \
-                    ../unittests/core/ini/ini.c
-
