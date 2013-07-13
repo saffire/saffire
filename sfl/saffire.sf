@@ -5,26 +5,44 @@ import io;
  */
 class saffire {
 
+    /**
+     * Returns the saffire version
+     */
     static public method version() {
         return ::_sfl::saffire::saffire.version();
     }
 
+    /**
+     * Returnst the git SHA commit that is used for compiling this version
+     */
     static public method git_revision() {
         return ::_sfl::saffire::saffire.git_revision();
     }
 
+    /**
+     * Called when an exception has been thrown, but not handled
+     */
     static public method uncaughtExceptionHandler(exception e) {
         io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
     }
 
+    /**
+     * Returns the current server API, could be "fastcgi", "cli", "repl" or "unknown"
+     */
+    static public method sapi() {
+        return ::_sfl::saffire::saffire.sapi();
+    }
+
+    /**
+     * Returns true when the debugger is activated
+     */
+    static public method debug() {
+        return ::_sfl::saffire::saffire.debug();
+    }
+
+
 // // Returns list of all loaded modules
 // public method modules() {}
-
-// // Returns list of all builtin variables
-// public method builtins() {}
-
-// // Returns list of all local variables
-// public method locals() {}
 
 }
 
