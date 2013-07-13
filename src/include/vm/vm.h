@@ -35,9 +35,9 @@
     t_hash_table *builtin_identifiers;
     t_hash_table *import_cache;
 
-    #define VM_RUNMODE_FASTCGI      0       // Virtual machine run as FastCGI
-    #define VM_RUNMODE_CLI          1       // Virtual machine run as CLI
-    #define VM_RUNMODE_REPL         2       // Virtual machine run as REPL
+    #define VM_RUNMODE_FASTCGI      1       // Virtual machine run as FastCGI
+    #define VM_RUNMODE_CLI          2       // Virtual machine run as CLI
+    #define VM_RUNMODE_REPL         4       // Virtual machine run as REPL
     #define VM_RUNMODE_DEBUG      128       // Debugging should be activated
 
     // Actual runmode of the VM (fastcgi, cli, rep

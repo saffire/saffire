@@ -44,7 +44,7 @@ SAFFIRE_MODULE_METHOD(saffire, gitrev) {
     RETURN_STRING(git_revision);
 }
 
-SAFFIRE_MODULE_METHOD(saffire, runmode) {
+SAFFIRE_MODULE_METHOD(saffire, sapi) {
     if ((vm_runmode & VM_RUNMODE_FASTCGI) == VM_RUNMODE_FASTCGI) {
         RETURN_STRING("fastcgi");
     }
@@ -67,7 +67,6 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 }
 
 
-
 t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
 
 static void _init(void) {
@@ -75,7 +74,7 @@ static void _init(void) {
 
     object_add_internal_method((t_object *)&saffire_struct, "version",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
     object_add_internal_method((t_object *)&saffire_struct, "git_revision", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
-    object_add_internal_method((t_object *)&saffire_struct, "run_mode",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_runmode);
+    object_add_internal_method((t_object *)&saffire_struct, "sapi",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
     object_add_internal_method((t_object *)&saffire_struct, "debug",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
 
     object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
