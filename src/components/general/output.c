@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include "general/printf.h"
 #include "general/output.h"
 #include "general/smm.h"
@@ -95,16 +96,26 @@ void output_debug(const char *format, ...) {
 void warning(const char *format, ...) {
     va_list args;
 
-//    _output(stderr, "\033[43;30m", NULL);
-
     _output(stderr, "Warning: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
 
-//    _output(stderr, "\033[0m", NULL);
+    fflush(stderr);
+}
 
-    fflush(stdout);
+/**
+ * Output error (to stderr)
+ */
+void error(const char *format, ...) {
+    va_list args;
+
+    _output(stderr, "Error: ", NULL);
+    va_start(args, format);
+    _output(stderr, format, args);
+    va_end(args);
+
+    fflush(stderr);
 }
 
 
@@ -114,14 +125,12 @@ void warning(const char *format, ...) {
 void fatal_error(int exitcode, const char *format, ...) {
     va_list args;
 
-//    _output(stderr, "\033[41;33;1m", NULL);
-
     _output(stderr, "Fatal error: ", NULL);
     va_start(args, format);
     _output(stderr, format, args);
     va_end(args);
 
-//    _output(stderr, "\033[0m", NULL);
+    fflush(stderr);
 
     exit(exitcode);
 }
@@ -134,4 +143,23 @@ void output_printf(const char *format, t_dll *args) {
 }
 
 
+/**
+ *
+ */
+static int detect_terminal() {
+    return isatty(fileno(stdout));
+}
+
+int is_tty = -1;
+
+void output_ansi(char sequence[]) {
+    if (is_tty == -1) {
+        is_tty = detect_terminal();
+    }
+
+    if (! is_tty) return;
+
+    output("\033[%s", sequence);
+    fflush(stdout);
+}
 

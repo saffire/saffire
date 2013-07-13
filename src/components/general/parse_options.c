@@ -158,6 +158,8 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     int argp, idx;
     int optional = 0;
 
+    *error = NULL;
+
     // Shift all remaining non-parsed arguments to the front of the arglist
     int open_slot = 0;
     while (argv[open_slot]) open_slot++;
@@ -175,7 +177,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
 
 
     if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        *error = "Not enough arguments found";
+        *error = smm_strdup("Not enough arguments found");
         return 0;
     }
 
@@ -183,7 +185,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
         if (argp >= argc && ! optional) {
-            *error = "Not enough arguments found";
+            *error = smm_strdup("Not enough arguments found");
             return 0;
         }
 
@@ -221,7 +223,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
 
     // Not enough arguments!
     if (argc > argp) {
-        *error = "Too many arguments found";
+        *error = smm_strdup("Too many arguments found");
         return 0;
     }
 

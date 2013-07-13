@@ -68,6 +68,9 @@ static int do_exec(void) {
 
     if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
         bc = bytecode_generate_diskfile(source_file, write_bytecode ? bytecode_file : NULL, NULL);
+        if (! bc) {
+            return 1;
+        }
     } else {
         bc = bytecode_load(bytecode_file, flag_no_verify);
     }
@@ -75,7 +78,7 @@ static int do_exec(void) {
 
     // Something went wrong with the bytecode loading or generating
     if (!bc) {
-        warning("Error while loading bytecode\n");
+        error("Cannot load bytecode\n");
         return 1;
     }
 

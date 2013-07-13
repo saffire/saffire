@@ -31,11 +31,19 @@
     #include <stdarg.h>
     #include "general/dll.h"
 
+    #define ANSI_BRIGHTRED    "\33[31;1m"
+    #define ANSI_BRIGHTGREEN  "\33[32;1m"
+    #define ANSI_BRIGHTYELLOW "\33[33;1m"
+    #define ANSI_BRIGHTBLUE   "\33[34;1m"
+    #define ANSI_RESET        "\33[0m"
+
+
     void output(const char *format, ...);
     void output_debug(const char *format, ...);
     void output_printf(const char *format, t_dll *args);
+    void output_ansi(char sequence[]);
 
-//    void error(const char *format, ...);
+    void error(const char *format, ...);
     void warning(const char *format, ...);
     void fatal_error(int exitcode, const char *format, ...);
 
