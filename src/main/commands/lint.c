@@ -28,6 +28,7 @@
 #include <glob.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "general/output.h"
 #include "commands/command.h"
 #include "compiler/ast_nodes.h"
@@ -39,16 +40,25 @@ void process_file(const char *filename);
 void process_directory(const char *directory);
 int check_file(const char *filename);
 
+int recursive = 0;      // Do we need to scan recursively in directories
+int dircheck = 0;       // Is our target a directory or file
+
+
+
 /**
  * Start the lint process
  */
 static int do_lint(void) {
     char *target = saffire_getopt_string(0);
 
-    if(is_file(target)) {
+    // Redirect stderr to stdout. This allows us to display syntax errors as we are interested in them
+    fclose(stderr);
+    stderr = stdout;
+
+    if (is_file(target)) {
         process_file(target);
     } else if (is_directory(target)) {
-        output("Checking directory: %s.\n", target);
+        dircheck = 1;
         process_directory(target);
     } else {
         output("Received neither a file nor a directory.\n");
@@ -63,7 +73,11 @@ static int do_lint(void) {
  */
 void process_file(const char *filename) {
     if ( ! is_saffire_file(filename)) {
-        output("%s is not a saffire file.\n", filename);
+        if (! dircheck) {   // we are lint-checking a single file, display error on this file
+            output_ansi(ANSI_BRIGHTRED);
+            output("%s is not a saffire file.\n", filename);
+            output_ansi(ANSI_RESET);
+        }
     } else {
         check_file(filename);
     }
@@ -74,17 +88,16 @@ void process_file(const char *filename) {
  */
 void process_directory(const char *directory) {
     glob_t buffer;
-    char *extension = "/*";
-    char *pattern = smm_malloc(sizeof(directory) + sizeof(extension) + 1);
-    strcpy(pattern, directory);
-    strcat(pattern, extension);
+    char *pattern;
+
+    smm_asprintf(&pattern, "%s/*", directory);
     glob(pattern, 0, NULL, &buffer);
     smm_free(pattern);
 
     for (int i = 0; i < buffer.gl_pathc; i++) {
         if (is_file(buffer.gl_pathv[i])) {
             process_file(buffer.gl_pathv[i]);
-        } else if (is_directory(buffer.gl_pathv[i])) {
+        } else if (recursive && is_directory(buffer.gl_pathv[i])) {
             process_directory(buffer.gl_pathv[i]);
         }
     }
@@ -94,13 +107,17 @@ void process_directory(const char *directory) {
  * perform the actual syntax check
  */
 int check_file(const char *filename) {
-    output("checking %s.\n", filename);
-    t_ast_element *ast = ast_generate_from_file((char*)filename);
+    output_ansi(ANSI_BRIGHTRED);
+    t_ast_element *ast = ast_generate_from_file(filename);
+    output_ansi(ANSI_RESET);
 
     if (ast == NULL) {
-        output(" - %s contains syntax errors.\n", filename);
         return 0;
     }
+
+    output_ansi(ANSI_BRIGHTGREEN);
+    output("No syntax errors in %s\n", filename);
+    output_ansi(ANSI_RESET);
     return 1;
 }
 
@@ -108,14 +125,26 @@ int check_file(const char *filename) {
  * Argument Parsing and action definitions
  ***/
 
+static void opt_recursive(void *data) {
+    recursive = 1;
+}
+
 
 /* Usage string */
 static const char help[]   = "Lint check a Saffire source file or directory\n"
+                             "\n"
+                             "Global settings:\n"
+                             "   --recursive            Lint check recursively\n"
                              "\n";
+
+
+static struct saffire_option lint_options[] = {
+    { "recursive", "r", no_argument, opt_recursive},
+};
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_lint, NULL },
+    { "", "s", do_lint, lint_options },
     { 0, 0, 0, 0 }
 };
 

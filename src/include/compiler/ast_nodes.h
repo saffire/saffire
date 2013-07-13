@@ -173,7 +173,7 @@
 
 
     t_ast_element *ast_generate_from_file(const char *filename);
-    t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode);
+    t_ast_element *ast_generate_tree(FILE *fp, char *filename);
     void ast_free_node(t_ast_element *p);
 
 #endif

@@ -50,7 +50,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output(ANSI_BRIGHTRED "%s" ANSI_RESET, ((t_string_object *)obj)->value);
+        output("%s", ((t_string_object *)obj)->value);
 
         e = DLL_NEXT(e);
     }
@@ -78,11 +78,11 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     dll_remove(SAFFIRE_METHOD_ARGS, e);
 
 #ifdef __DEBUG
-    output(ANSI_BRIGHTRED);
+    output_ansi(ANSI_BRIGHTRED);
 #endif
     output_printf(format, SAFFIRE_METHOD_ARGS);
 #ifdef __DEBUG
-    output(ANSI_RESET);
+    output_ansi(ANSI_RESET);
 #endif
 
     RETURN_SELF;
@@ -99,7 +99,7 @@ SAFFIRE_MODULE_METHOD(io, sprintf) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, print) {
-    output(ANSI_BRIGHTRED "console.print: %ld arguments" ANSI_RESET "\n", SAFFIRE_METHOD_ARGS->size);
+    output("console.print: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 
@@ -107,7 +107,7 @@ SAFFIRE_MODULE_METHOD(console, print) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, printf) {
-    output(ANSI_BRIGHTRED "console.printf: %ld arguments" ANSI_RESET "\n", SAFFIRE_METHOD_ARGS->size);
+    output("console.printf: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 

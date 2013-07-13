@@ -285,6 +285,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 do_yylloc_nl;
                                 /* Real newlines inside strings are not allowed */
                                 parser_error((SaffireParser *)yyextra, yylloc->first_line, "newline found in string\n");
+                                yyterminate();
                             }
 <st_string_sgl,
  st_string_dbl>\\\\         { strbuf = add_strbuf_char(strbuf, '\\'); }
