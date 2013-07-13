@@ -110,12 +110,12 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             }
 
             // Parse the rest of the arguments, confirming the action's signature
-            char *error;
+            char *error = NULL;
             if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
                 output("%s\n", error);
                 output("%s", cmd->info->help);
                 output("\n");
-                smm_free(error);
+                if (error) smm_free(error);
                 return 1;
             }
 

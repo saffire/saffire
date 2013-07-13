@@ -189,7 +189,6 @@ use_statement:
     |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); }
         /* import <foo> */
     |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
-    |   error ';' { yyerrok; }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -291,7 +290,6 @@ expression_statement:
         ';'                         { $$ = ast_node_nop(); }
     |   assignment_expression ';'   { $$ = $1; }
     |   expression ';'              { $$ = $1; }
-    |   error ';'                   { yyerrok; }
 ;
 
 
@@ -746,16 +744,9 @@ int yyerror(YYLTYPE *yylloc, yyscan_t scanner, SaffireParser *sp, const char *me
     char buf[2048];
 
     snprintf(buf, 2047, "%s, found in %s on line %d\n", message, sp->filename, yylloc->first_line);
-    warning(buf);
+    error(buf);
 
-    // Flush current buffer, and return when we are in interactive/REPL mode.
-    if (sp->mode == SAFFIRE_EXECMODE_REPL) {
-        flush_buffer(scanner);
-        return 0;
-    }
-
-    // Otherwise, exit.
-    exit(1);
+    return 0;
 }
 
 

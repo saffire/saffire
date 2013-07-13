@@ -35,20 +35,5 @@
         #define DEBUG_PRINT(format, args...) ((void)0)
     #endif
 
-
-    #ifdef __DEBUG
-        #define ANSI_BRIGHTRED    "\33[31;1m"
-        #define ANSI_BRIGHTGREEN  "\33[32;1m"
-        #define ANSI_BRIGHTYELLOW "\33[33;1m"
-        #define ANSI_BRIGHTBLUE   "\33[34;1m"
-        #define ANSI_RESET        "\33[0m"
-    #else
-        #define ANSI_BRIGHTRED
-        #define ANSI_BRIGHTGREEN
-        #define ANSI_BRIGHTYELLOW
-        #define ANSI_BRIGHTBLUE
-        #define ANSI_RESET
-    #endif
-
 #endif
 

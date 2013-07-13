@@ -164,7 +164,6 @@ int repl(void) {
     yyscan_t scanner;
 
     // Initialize saffire structure
-    sp->mode = SAFFIRE_EXECMODE_REPL;        // @todo we should get vm_runmode in sync with this
     sp->file = NULL;
     sp->filename = "<console>";
     sp->eof = 0;
@@ -209,7 +208,7 @@ int repl(void) {
 
         // Do something with our data
 
-        if (sp->mode == SAFFIRE_EXECMODE_REPL && repl_as.echo != NULL)  {
+        if (repl_as.echo != NULL)  {
             printf("repl output: '%s'\n", repl_as.echo);
             free(repl_as.echo);
             repl_as.echo = NULL;

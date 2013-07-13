@@ -31,13 +31,7 @@
     #include "compiler/ast_nodes.h"
     #include "vm/frame.h"
 
-// @TODO: Add VM running mode into this structure
-
-
-    // @TODO: Should these be here?
-    #define SAFFIRE_EXECMODE_REPL       1
-    #define SAFFIRE_EXECMODE_FILE       2
-
+    // @TODO: Add VM running mode into this structure
 
 
     struct _pi_switch {

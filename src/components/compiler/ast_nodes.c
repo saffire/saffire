@@ -524,7 +524,7 @@ int yyparse (yyscan_t scanner, SaffireParser *saffireParser);
 /**
  * Compiles a file into an AST (through bison). Returns the AST root node.
  */
-t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode) {
+t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     /*
      * Init parser structures
      */
@@ -532,7 +532,6 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename, int mode) {
     yyscan_t scanner;
 
     // Initialize saffire structure
-    sp.mode = mode;
     sp.file = fp;
     sp.filename = filename;
     sp.eof = 0;
@@ -581,7 +580,7 @@ t_ast_element *ast_generate_from_file(const char *source_file) {
     }
 
     // Generate source file into an AST tree
-    t_ast_element *ast = ast_generate_tree(fp, fp_name, SAFFIRE_EXECMODE_FILE);
+    t_ast_element *ast = ast_generate_tree(fp, fp_name);
 
     // Close file
     fclose(fp);
