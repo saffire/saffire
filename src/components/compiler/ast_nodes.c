@@ -546,7 +546,10 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     yylex_init_extra(&sp, &scanner);
 
     //int status = yyparse(scanner, &sp);
-    yyparse(scanner, &sp);
+    int status = yyparse(scanner, &sp);
+    if (status == 1) {
+        sp.ast = NULL;
+    }
     t_ast_element *ast = sp.ast;
 
     // Since we've done the complete file, we don't need anything

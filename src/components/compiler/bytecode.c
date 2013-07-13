@@ -676,8 +676,6 @@ t_bytecode *bytecode_generate_diskfile(const char *source_file, const char *byte
         return NULL;
     }
 
-    //t_bytecode *bc = ast2bc(ast);
-
     t_bytecode *bc = assembler(asm_code, source_file);
     if (! bc) {
         ast_free_node(ast);
