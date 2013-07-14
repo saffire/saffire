@@ -26,49 +26,64 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include "general/output.h"
-#include "general/hashtable.h"
+#include "modules/module_api.h"
+#include "objects/object.h"
+#include "objects/objects.h"
+#include "general/dll.h"
+#include "version.h"
+#include "vm/vm.h"
 #include "general/smm.h"
 
+#define NO_FCGI_DEFINES
+#include "fcgi_stdio.h"
 
-// @TODO: Fix this into a better/faster memory manager (slab allocator)
+FCGX_ParamArray fcgi_env;
 
-long smm_malloc_calls = 0;
-long smm_realloc_calls = 0;
-long smm_strdup_calls = 0;
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(fastcgi, environment) {
+    t_hash_table *ht = ht_create();
 
-void *smm_malloc(size_t size) {
-    smm_malloc_calls++;
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
+    if (fcgi_env != NULL) {
+        char **p, *c;
+        for (p = fcgi_env; *p != NULL; ++p) {
+            c = strchr(*p, '=') + 1;
+            char *k = smm_zalloc((c-*p));
+            strncpy(k, *p, (c-*p)-1);
+            ht_add(ht, k, c);
+            smm_free(k);
+        }
     }
-    return ptr;
+
+    RETURN_HASH(ht);
 }
 
-void *smm_zalloc(size_t size) {
-    void *p = smm_malloc(size);
-    bzero(p, size);
-    return p;
+
+
+t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+
+static void _init(void) {
+    fastcgi_struct.attributes = ht_create();
+
+    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
 }
 
-void *smm_realloc(void *ptr, size_t size) {
-    smm_realloc_calls++;
-    void *newptr = realloc(ptr, size);
-    if (newptr == NULL) {
-        fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);
-    }
-    return newptr;
+static void _fini(void) {
+    // Destroy methods and properties
+    ht_destroy(fastcgi_struct.attributes);
 }
 
-void smm_free(void *ptr) {
-    return free(ptr);
-}
+static t_object *_objects[] = {
+    &fastcgi_struct,
+    NULL
+};
 
-char *smm_strdup(const char *s) {
-    smm_strdup_calls++;
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
-}
+t_module module_sapi_fastcgi = {
+    "::_sfl::sapi::fastcgi",
+    "FastCGI sapi module",
+    _objects,
+    _init,
+    _fini
+};

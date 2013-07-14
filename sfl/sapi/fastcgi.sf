@@ -1,0 +1,7 @@
+class fastcgi {
+
+    static public method environment() {
+        return  ::_sfl::sapi::fastcgi::fastcgi.environment();
+    }
+
+}

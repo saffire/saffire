@@ -28,11 +28,13 @@
 #include "general/output.h"
 #include "modules/module_api.h"
 #include "general/dll.h"
-#include "modules/io.h"
-#include "modules/saffire.h"
 #include "debug.h"
 #include "general/hashtable.h"
 #include "vm/vm.h"
+#include "modules/io.h"
+#include "modules/saffire.h"
+#include "modules/sapi/fastcgi.h"
+
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
@@ -91,6 +93,7 @@ int unregister_module(t_module *mod) {
  */
 void module_init(void) {
     modules = dll_init();
+    register_module(&module_sapi_fastcgi);
     register_module(&module_saffire);
     register_module(&module_io);
 }
@@ -101,5 +104,6 @@ void module_init(void) {
 void module_fini(void) {
     unregister_module(&module_saffire);
     unregister_module(&module_io);
+    unregister_module(&module_sapi_fastcgi);
     dll_free(modules);
 }
