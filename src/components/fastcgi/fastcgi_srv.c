@@ -71,15 +71,13 @@ FCGX_ParamArray fcgi_env;
 
 
 
-extern int (*output_char_helper)(char c);
-extern int (*output_string_helper)(char *s);
-
-
-static int _fcgi_output_char_helper(char c) {
-    return FCGX_PutChar(c, fcgi_out);
+static int _fcgi_output_char_helper(FILE *f, char c) {
+    if (f == stdout) return FCGX_PutChar(c, fcgi_out);
+    return FCGX_PutChar(c, fcgi_err);
 }
-static int _fcgi_output_string_helper(char *s) {
-    return FCGX_PutS(s, fcgi_out);
+static int _fcgi_output_string_helper(FILE *f, char *s) {
+    if (f == stdout) return FCGX_PutS(s, fcgi_out);
+    return FCGX_PutS(s, fcgi_err);
 }
 
 
@@ -99,6 +97,7 @@ char *fcgi_getenv(const char *key) {
     return NULL;
 }
 
+extern int is_tty;
 
 /**
  * Make sure this loop does not return
@@ -116,12 +115,11 @@ static int fcgi_loop(void) {
     // Initialize virtualmachine
     t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_FASTCGI);
 
+    output_set_helpers(_fcgi_output_char_helper, _fcgi_output_string_helper);
+    is_tty = 0;
+
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
-        // reroute all output to FCGI
-        output_char_helper = _fcgi_output_char_helper;
-        output_string_helper = _fcgi_output_string_helper;
-
         // Update scoreboard info
         scoreboard_lock();
         scoreboard->reqs++;

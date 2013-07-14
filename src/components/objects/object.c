@@ -312,33 +312,33 @@ void object_fini() {
 /**
  *
  */
-int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
-    const char *ptr = speclist;
+int object_parse_arguments(t_dll *dll, const char *spec, ...) {
+    const char *ptr = spec;
     int optional_argument = 0;
     va_list storage_list;
     t_objectype_enum type;
     int result = 0;
 
-    va_start(storage_list, speclist);
+    va_start(storage_list, spec);
 
     // Point to first element
     t_dll_element *e = DLL_HEAD(dll);
 
-    // First, check if the number of elements equals (or is more) than the number of mandatory objects in the speclist
+    // First, check if the number of elements equals (or is more) than the number of mandatory objects in the spec
     int cnt = 0;
     while (*ptr) {
         if (*ptr == '|') break;
         cnt++;
         ptr++;
     }
-    if (cnt < dll->size) {
+    if (dll->size < cnt) {
         object_raise_exception(Object_ArgumentException, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
         result = 0;
         goto done;
     }
 
-    // We know have have enough elements. Iterate the speclist
-    ptr = speclist;
+    // We know have have enough elements. Iterate the spec
+    ptr = spec;
     while (*ptr) {
         char c = *ptr; // Save current spec character
         ptr++;
@@ -374,8 +374,14 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
 
         // Fetch the next object from the list. We must assume the user has added enough room
         t_object **storage_obj = va_arg(storage_list, t_object **);
-        t_object *argument_obj = e->data;
-        if (type != objectTypeAny && type != argument_obj->type) {
+        if (optional_argument == 0 && (!e || !e->data)) {
+            object_raise_exception(Object_ArgumentException, "Error while fetching mandatory argument.");
+            result = 0;
+            goto done;
+        }
+
+        t_object *argument_obj = e ? e->data : NULL;
+        if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
             object_raise_exception(Object_ArgumentException, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
@@ -385,7 +391,7 @@ int object_parse_arguments(t_dll *dll, const char *speclist, ...) {
         *storage_obj = argument_obj;
 
         // Goto next element
-        e = e->next;
+        e = e ? DLL_NEXT(e) : NULL;
     }
 
     // Everything is ok
