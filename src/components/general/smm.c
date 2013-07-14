@@ -47,6 +47,12 @@ void *smm_malloc(size_t size) {
     return ptr;
 }
 
+void *smm_zalloc(size_t size) {
+    void *p = smm_malloc(size);
+    bzero(p, size);
+    return p;
+}
+
 void *smm_realloc(void *ptr, size_t size) {
     smm_realloc_calls++;
     void *newptr = realloc(ptr, size);

@@ -24,86 +24,80 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdio.h>
 #include <string.h>
 #include "general/output.h"
 #include "modules/module_api.h"
+#include "objects/object.h"
+#include "objects/objects.h"
 #include "general/dll.h"
-#include "debug.h"
-#include "general/hashtable.h"
+#include "version.h"
 #include "vm/vm.h"
-#include "modules/io.h"
-#include "modules/saffire.h"
-#include "modules/sapi/fastcgi.h"
+#include "general/smm.h"
 
+#define NO_FCGI_DEFINES
+#include "fcgi_stdio.h"
 
-#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
-
+FCGX_ParamArray fcgi_env;
 
 /**
- * Register an module
+ *
  */
-int register_module(t_module *mod) {
-    DEBUG_PRINT("   Registering module: %s\n", mod->name);
+SAFFIRE_MODULE_METHOD(fastcgi, environment) {
+    t_hash_table *ht = ht_create();
 
-//    t_dll_element *e = DLL_HEAD(modules);
-//    while (e) {
-//        t_module *src_mod = (t_module *)e->data;
-//        if (strcmp(src_mod->name, mod->name) == 0) {
-//            // Already registered
-//            return 0;
-//        }
-//        e = DLL_NEXT(e);
-//    }
-
-    // Initialize module
-    mod->init();
-
-//    t_ns_context *ctx = si_create_context(mod->name);
-//    dll_append(modules, mod);
-
-    int idx = 0;
-    t_object *obj = (t_object *)mod->objects[idx];
-    while (obj != NULL) {
-        char key[100]; // @TODO: fixme
-        sprintf(key, "%s::%s", mod->name, obj->name);
-
-        vm_populate_builtins(key, obj);
-
-        idx++;
-        obj = (t_object *)mod->objects[idx];
+    if (fcgi_env != NULL) {
+        char **p, *c;
+        for (p = fcgi_env; *p != NULL; ++p) {
+            c = strchr(*p, '=') + 1;
+            char *k = smm_zalloc((c-*p));
+            strncpy(k, *p, (c-*p)-1);
+            ht_add(ht, k,  object_new(Object_String, 1, c));
+            smm_free(k);
+        }
     }
-    return 1;
+
+    printf("\n\n\n\n=============== ENV ============\n");
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        char *val = ht_iter_value(&iter);
+        char *key = ht_iter_key(&iter);
+
+        printf("Key: '%-20s' => '%s'\n", key, val);
+
+        ht_iter_next(&iter);
+    }
+    printf("================================\n\n\n");
+
+
+    RETURN_HASH(ht);
 }
 
-/**
- * Unregister
- */
-int unregister_module(t_module *mod) {
-    // Fini module
-    mod->fini();
 
-    // @TODO: Remove from builtins or so
 
-    // Nothing found
-    return 0;
+t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+
+static void _init(void) {
+    fastcgi_struct.attributes = ht_create();
+
+    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
 }
 
-/**
- *
- */
-void module_init(void) {
-    modules = dll_init();
-    register_module(&module_sapi_fastcgi);
-    register_module(&module_saffire);
-    register_module(&module_io);
+static void _fini(void) {
+    // Destroy methods and properties
+    ht_destroy(fastcgi_struct.attributes);
 }
 
-/**
- *
- */
-void module_fini(void) {
-    unregister_module(&module_saffire);
-    unregister_module(&module_io);
-    unregister_module(&module_sapi_fastcgi);
-    dll_free(modules);
-}
+static t_object *_objects[] = {
+    &fastcgi_struct,
+    NULL
+};
+
+t_module module_sapi_fastcgi = {
+    "::_sfl::sapi::fastcgi",
+    "FastCGI sapi module",
+    _objects,
+    _init,
+    _fini
+};

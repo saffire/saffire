@@ -49,7 +49,6 @@ int (*output_string_helper)(FILE *f, char *s) = _stdio_output_string_helper;
 
 
 
-
 /**
  * Outputs to a specified file
  */
@@ -163,3 +162,12 @@ void output_ansi(char sequence[]) {
     fflush(stdout);
 }
 
+
+/**
+ * @param char_helper
+ * @param string_helper
+ */
+void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, char *s)) {
+    output_char_helper = char_helper;
+    output_string_helper = string_helper;
+}

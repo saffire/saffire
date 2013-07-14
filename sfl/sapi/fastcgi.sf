@@ -1,0 +1,16 @@
+import ::io;
+
+class fastcgi {
+
+    static public method environment() {
+        return  ::_sfl::sapi::fastcgi::fastcgi.environment();
+    }
+
+    static public method getRole() {
+        return self.environment().get("FCGI_ROLE");
+    }
+
+    static public method isResponder() {
+        return self.environment().get("FCGI_ROLE") == "RESPONDER";
+    }
+}
