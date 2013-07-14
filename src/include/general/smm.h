@@ -31,6 +31,7 @@
     #include <stdarg.h>
 
     void *smm_malloc(size_t size);
+    void *smm_zalloc(size_t size);
     void *smm_realloc(void *ptr, size_t size);
     void smm_free(void *ptr);
     char *smm_strdup(const char *s);

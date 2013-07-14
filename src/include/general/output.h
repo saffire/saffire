@@ -37,6 +37,7 @@
     #define ANSI_BRIGHTBLUE   "\33[34;1m"
     #define ANSI_RESET        "\33[0m"
 
+    void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, char *s));
 
     void output(const char *format, ...);
     void output_debug(const char *format, ...);

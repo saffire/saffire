@@ -75,20 +75,21 @@ SAFFIRE_METHOD(hash, length) {
   */
 SAFFIRE_METHOD(hash, get) {
     t_string_object *key;
+    t_object *default_value = NULL;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &key, &default_value)) {
         return NULL;
     }
 
     t_object *obj = ht_find(self->ht, key->value);
-    if (obj == NULL) RETURN_NULL;
+    if (obj == NULL) return default_value ? default_value : Object_Null;
     RETURN_OBJECT(obj);
 }
 
 /**
   * Saffire method: Returns true if requested key exists and false if not
   */
-SAFFIRE_METHOD(hash, exists) {
+SAFFIRE_METHOD(hash, has) {
     t_string_object *key;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
@@ -199,7 +200,8 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
     object_add_internal_method((t_object *)&Object_Hash_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "exists",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_exists);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "has",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
+   
 
 //    // hash + tuple[k,v]
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_add);

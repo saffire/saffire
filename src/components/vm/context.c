@@ -42,14 +42,13 @@ char *vm_context_get_path(char *context) {
 
 
 char *vm_context_get_class(char *context) {
-    char *s = smm_strdup(context);
 
-    char *c = strrchr(s, ':');
-    if (c == NULL) return s;
-    if ((s - c) == 0) return s;
+    char *c = strrchr(context, ':');
+    if (c == NULL) return smm_strdup(context);
+    if ((context - c) == 0) return smm_strdup(context);
 
     c++;
-    return c;
+    return smm_strdup(c);
 }
 
 

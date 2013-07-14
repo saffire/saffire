@@ -5,16 +5,18 @@ import io;
 hashTable = hash();
 hashTable.add("a", "foo");
 hashTable.add("b", "bar");
-io.print(hashTable.exists("a"), "\n");
-io.print(hashTable.exists("b"), "\n");
-io.print(hashTable.exists("c"), "\n");
+io.print(hashTable.has("a"), "\n");
+io.print(hashTable.has("b"), "\n");
+io.print(hashTable.has("c"), "\n");
 io.print(hashTable.length(), "\n");
 hashTable.add("c", "baz");
 io.print(hashTable.length(), "\n");
-io.print(hashTable.exists("c"), "\n");
+io.print(hashTable.has("c"), "\n");
 io.print(hashTable.get("a"), "\n");
 io.print(hashTable.get("b"), "\n");
 io.print(hashTable.get("c"), "\n");
+io.print(hashTable.get("a", "default"), "\n");
+io.print(hashTable.get("d", "default"), "\n");
 ====
 true
 true
@@ -25,3 +27,5 @@ true
 foo
 bar
 baz
+foo
+default

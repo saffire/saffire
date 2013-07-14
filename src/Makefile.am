@@ -130,7 +130,8 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
 noinst_LIBRARIES += libmodules.a
 libmodules_a_SOURCES = components/modules/module_api.c \
                        components/modules/io.c \
-                       components/modules/saffire.c
+                       components/modules/saffire.c \
+                       components/modules/sapi/fastcgi.c
 
 ########################################################################
 # components/debugger
