@@ -611,7 +611,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     t_dll_element *e;
 
     // Seek frame
-    t_asm_frame *frame = ht_find(frames, name);
+    t_asm_frame *frame = ht_find_str(frames, name);
     if (! frame) return NULL;
 
     // Create bytecode structure

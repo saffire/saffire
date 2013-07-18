@@ -271,8 +271,9 @@ iteration_statement:
     |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
     |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
     |   T_FOR '(' expression_statement expression_statement assignment_expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS ds_element                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 2, $3, $5); }
-    |   T_FOREACH '(' expression T_AS ds_element ',' T_IDENTIFIER      ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $5, $7); }
+    |   T_FOREACH '(' expression T_AS T_IDENTIFIER                                   ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $8, ast_node_identifier(@5.first_line, $5)); smm_free($5); }
+    |   T_FOREACH '(' expression T_AS T_IDENTIFIER ',' T_IDENTIFIER                  ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 4, $3, $10, ast_node_identifier(@5.first_line, $5), ast_node_identifier(@7.first_line, $7)); smm_free($5); smm_free($7); }
+    |   T_FOREACH '(' expression T_AS T_IDENTIFIER ',' T_IDENTIFIER ',' T_IDENTIFIER ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 5, $3, $12, ast_node_identifier(@5.first_line, $5), ast_node_identifier(@7.first_line, $7), ast_node_identifier(@9.first_line, $9)); smm_free($5); smm_free($7); smm_free($9); }
 ;
 
 /* while is separate otherwise we cannot find it's else */

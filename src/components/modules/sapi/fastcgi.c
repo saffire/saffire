@@ -52,24 +52,10 @@ SAFFIRE_MODULE_METHOD(fastcgi, environment) {
             c = strchr(*p, '=') + 1;
             char *k = smm_zalloc((c-*p));
             strncpy(k, *p, (c-*p)-1);
-            ht_add(ht, k,  object_new(Object_String, 1, c));
+            ht_add_obj(ht, object_new(Object_String, 1, k),  (void *)object_new(Object_String, 1, c));
             smm_free(k);
         }
     }
-
-    printf("\n\n\n\n=============== ENV ============\n");
-    t_hash_iter iter;
-    ht_iter_init(&iter, ht);
-    while (ht_iter_valid(&iter)) {
-        char *val = ht_iter_value(&iter);
-        char *key = ht_iter_key(&iter);
-
-        printf("Key: '%-20s' => '%s'\n", key, val);
-
-        ht_iter_next(&iter);
-    }
-    printf("================================\n\n\n");
-
 
     RETURN_HASH(ht);
 }

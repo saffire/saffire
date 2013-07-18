@@ -260,7 +260,7 @@ static int do_list(void) {
     t_hash_iter iter;
     ht_iter_init(&iter, matches);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
         char *val = ht_iter_value(&iter);
         output("%s : %s\n", key, val);
 

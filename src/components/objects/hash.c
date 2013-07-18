@@ -74,46 +74,73 @@ SAFFIRE_METHOD(hash, length) {
   * Saffire method: Returns object stored at "key" inside the hash (or NULL when not found)
   */
 SAFFIRE_METHOD(hash, get) {
-    t_string_object *key;
+    t_object *key;
     t_object *default_value = NULL;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &key, &default_value)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o|o", &key, &default_value)) {
         return NULL;
     }
 
-    t_object *obj = ht_find(self->ht, key->value);
+    t_object *obj = ht_find_obj(self->ht, key);
     if (obj == NULL) return default_value ? default_value : Object_Null;
     RETURN_OBJECT(obj);
 }
 
 /**
+ *
+ */
+SAFFIRE_METHOD(hash, keys) {
+    t_hash_table *ht = ht_create();
+
+    printf("Adding keys:\n");
+    t_hash_iter iter;
+    ht_iter_init(&iter, self->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = (t_object *)ht_iter_key_obj(&iter);
+        if (OBJECT_IS_STRING(key)) {
+            printf("KEy: '%s' (%p)\n", OBJ2STR(key), key);
+        } else {
+            printf("KEy: (%p)\n", key);
+        }
+
+        ht_add_num(ht, ht->element_count, (t_object *)key);
+
+        ht_iter_next(&iter);
+    }
+
+    RETURN_LIST(ht);
+}
+
+
+/**
   * Saffire method: Returns true if requested key exists and false if not
   */
 SAFFIRE_METHOD(hash, has) {
-    t_string_object *key;
+    t_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key)) {
         return NULL;
     }
 
-	if (ht_exists(self->ht, key->value)) {
-		RETURN_TRUE;
-	}
+    // We need to check if the address of the key(object) exists, as we only deal with object keys and values
+    if (ht_exists_obj(self->ht, key)) {
+        RETURN_TRUE;
+    }
 
-	RETURN_FALSE;
+    RETURN_FALSE;
 }
 
 /**
  * Saffire method:
  */
 SAFFIRE_METHOD(hash, add) {
-    t_string_object *key, *val;
+    t_object *key, *val;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &key, &val)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &key, &val)) {
         return NULL;
     }
 
-    ht_add(self->ht, key->value, val);
+    ht_add_obj(self->ht, key, val);
     RETURN_SELF;
 }
 
@@ -121,13 +148,13 @@ SAFFIRE_METHOD(hash, add) {
  * Saffire method:
  */
 SAFFIRE_METHOD(hash, remove) {
-    t_string_object *key;
+    t_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key)) {
         return NULL;
     }
 
-    ht_remove(self->ht, key->value);
+    ht_remove_obj(self->ht, key);
     RETURN_SELF;
 }
 
@@ -161,7 +188,10 @@ SAFFIRE_METHOD(hash, conv_numerical) {
  *
  */
 SAFFIRE_METHOD(hash, conv_string) {
-    RETURN_STRING("hash");
+    char s[100];
+
+    snprintf(s, 99, "hash[%d]", self->ht->element_count);
+    RETURN_STRING(s);
 }
 
 
@@ -201,7 +231,9 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
     object_add_internal_method((t_object *)&Object_Hash_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
     object_add_internal_method((t_object *)&Object_Hash_struct, "has",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
-   
+
+    object_add_internal_method((t_object *)&Object_Hash_struct, "keys",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_keys);
+
 
 //    // hash + tuple[k,v]
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_add);

@@ -9,14 +9,14 @@ void test_hashtable_replace_does_not_affect_original_after_shallow_copy() {
 
     t_hash_table *copy = ht_copy(original, 1);
 
-    char *copy_before = (char *) ht_find(copy, "key");
+    char *copy_before = (char *) ht_find_str(copy, "key");
     CU_ASSERT(strcmp(copy_before, "original_value") == 0);
 
     ht_replace(copy, "key", "replaced_value");
-    char *original_after = (char *) ht_find(original, "key");
+    char *original_after = (char *) ht_find_str(original, "key");
     CU_ASSERT(strcmp(original_after, "original_value") == 0);
 
-    char *copy_after = (char *) ht_find(copy, "key");
+    char *copy_after = (char *) ht_find_str(copy, "key");
     CU_ASSERT(strcmp(copy_after, "replaced_value") == 0);
 }
 

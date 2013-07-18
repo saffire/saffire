@@ -100,7 +100,7 @@ static void ini_parse(t_ini *ini) {
                 t_ini_element *ie = (t_ini_element *)smm_malloc(sizeof(t_ini_element));
                 ie->offset = lineno;
                 ie->value = smm_strdup(match2);
-                ht_add(ini->keys, fullkey, ie);
+                ht_add_str(ini->keys, fullkey, ie);
 
                 pcre_free_substring(match1);
                 pcre_free_substring(match2);
@@ -117,10 +117,10 @@ static void ini_parse(t_ini *ini) {
             }
         }
         if (! empty) {
-            if (ht_exists(ini->_private.section_endings, section)) {
-                ht_replace(ini->_private.section_endings, section, (void *)lineno);
+            if (ht_exists_str(ini->_private.section_endings, section)) {
+                ht_replace_str(ini->_private.section_endings, section, (void *)lineno);
             } else {
-                ht_add(ini->_private.section_endings, section, (void *)lineno);
+                ht_add_str(ini->_private.section_endings, section, (void *)lineno);
             }
         }
 
@@ -200,11 +200,11 @@ t_hash_table *ini_match(t_ini *ini, const char *pattern) {
     t_hash_iter iter;
     ht_iter_init(&iter, ini->keys);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
 
         if (fnmatch(pattern, key, FNM_CASEFOLD) == 0) {
             t_ini_element *ie = ht_iter_value(&iter);
-            ht_add(matches, key, ie->value);
+            ht_add_str(matches, key, ie->value);
         }
 
         ht_iter_next(&iter);
@@ -218,8 +218,8 @@ t_hash_table *ini_match(t_ini *ini, const char *pattern) {
  *
  */
 char *ini_find(t_ini *ini, const char *key) {
-    if (ht_exists(ini->keys, key)) {
-        t_ini_element *ie = ht_find(ini->keys, key);
+    if (ht_exists_str(ini->keys, (char *)key)) {
+        t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
         return ie->value;
     }
 
@@ -279,8 +279,8 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
     strcat(line, val);
     smm_free(tmp);
 
-    if (ht_exists(ini->keys, key)) {
-       t_ini_element *ie = ht_find(ini->keys, key);
+    if (ht_exists_str(ini->keys, (char *)key)) {
+       t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
        if (ie->value) smm_free(ie->value);
        ie->value = smm_strdup(val);
 
@@ -290,9 +290,9 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
     } else {
         char *section = ini_get_section(key);
 
-        if (ht_exists(ini->_private.section_endings, section)) {
+        if (ht_exists_str(ini->_private.section_endings, section)) {
             // Section already exists. Find the offset of the last line in that section
-            offset = (int)ht_find(ini->_private.section_endings, section);
+            offset = (int)ht_find_str(ini->_private.section_endings, section);
         } else {
             // Append the new section at the end of the file
             dll_append(ini->_private.ini_lines, smm_strdup(""));
@@ -324,13 +324,13 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
  * Returns 0 on failure, 1 on success
  */
 int ini_remove(t_ini *ini, const char *key) {
-    if (! ht_exists(ini->keys, key)) return 0;
+    if (! ht_exists_str(ini->keys, (char *)key)) return 0;
 
-    t_ini_element *ie = ht_find(ini->keys, key);
+    t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
     t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
     dll_remove(ini->_private.ini_lines, e);
 
-    ht_remove(ini->keys, key);
+    ht_remove_str(ini->keys, (char *)key);
 
     // Reparse
     ini_parse(ini);

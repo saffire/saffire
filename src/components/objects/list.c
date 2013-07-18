@@ -80,7 +80,7 @@ SAFFIRE_METHOD(list, get) {
         return NULL;
     }
 
-    t_object *obj = ht_num_find(self->ht, key->value);
+    t_object *obj = ht_find_num(self->ht, key->value);
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -95,7 +95,7 @@ SAFFIRE_METHOD(list, add) {
         return NULL;
     }
 
-    ht_num_add(self->ht, self->ht->element_count, val);
+    ht_add_num(self->ht, self->ht->element_count, val);
     RETURN_SELF;
 }
 
@@ -129,7 +129,10 @@ SAFFIRE_METHOD(list, conv_numerical) {
  *
  */
 SAFFIRE_METHOD(list, conv_string) {
-    RETURN_STRING("list");
+    char s[100];
+
+    snprintf(s, 99, "list[%d]", self->ht->element_count);
+    RETURN_STRING(s);
 }
 
 

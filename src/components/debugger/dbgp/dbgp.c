@@ -346,8 +346,8 @@ void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
     t_hash_iter iter;
     for (ht_iter_init(&iter, di->breakpoints); ht_iter_valid(&iter); ht_iter_next(&iter)) {
         // Fetch breakpoint
-        char *id = ht_iter_key(&iter);
-        t_breakpoint *bp = ht_find(di->breakpoints, id);
+        char *id = ht_iter_key_str(&iter);
+        t_breakpoint *bp = ht_find_str(di->breakpoints, id);
 
         printf("%s %d %s(%d)\n", bp->id, bp->state, bp->filename, bp->lineno);
 

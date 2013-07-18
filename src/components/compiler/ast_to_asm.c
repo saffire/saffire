@@ -860,16 +860,66 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     node = leaf->opr.ops[0];
                     // Check for duplicate label inside current block
                     sprintf(label1, "userlabel_%s", node->string.value);
-                    if (ht_exists(state->blocks[state->block_cnt].labels, label1)) {
+                    if (ht_exists_str(state->blocks[state->block_cnt].labels, label1)) {
                         fatal_error(1, "Duplicate label '%s' found\n", node->string.value);
                     }
-                    ht_add(state->blocks[state->block_cnt].labels, label1, (void *)1);
+                    ht_add_str(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
                     dll_append(frame, asm_create_labelline(label1));
                     break;
 
                 case T_FOREACH :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+
+                    sprintf(label1, "foreach_%03d_loop", clc);
+                    sprintf(label2, "foreach_%03d_end", clc);
+
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
+
+                    dll_append(frame, asm_create_labelline(label1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->opr.nops-2);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_ITERATE, 1, opr1));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    // Store key
+                    if (leaf->opr.nops >= 3) {
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(leaf->opr.ops[2]);
+                    }
+
+                    // Store value
+                    if (leaf->opr.nops >= 4) {
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(leaf->opr.ops[3]);
+                    }
+
+                    // Store meta
+                    if (leaf->opr.nops >= 5) {
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(leaf->opr.ops[4]);
+                    }
+
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    dll_append(frame, asm_create_labelline(label2));
+
+                    // Pop true/false from ITERATE
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+
+                    // Pop original iterator object
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
                     break;
+
                 case T_TRY :
                     state->loop_cnt++;
                     clc = state->loop_cnt;
@@ -1103,7 +1153,7 @@ static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char 
 
     // Create frame and add it to our main output
     t_dll *frame = dll_init();
-    ht_add(output, name, frame);
+    ht_add_str(output, (char *)name, frame);
 
     // Walk the leaf and store in the frame
     __ast_walker(leaf, output, frame, state, append_return_statement);

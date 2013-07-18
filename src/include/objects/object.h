@@ -39,8 +39,8 @@
 
     void vm_populate_builtins(const char *name, void *data);
 
-    // Forward define
-    typedef struct _object t_object;
+//    // Forward define
+//    typedef struct _object t_object;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {

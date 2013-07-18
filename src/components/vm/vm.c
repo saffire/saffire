@@ -84,7 +84,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
     while (ht_iter_valid(&iter)) {
         cur_arg++;
 
-        char *name = ht_iter_key(&iter);
+        char *name = ht_iter_key_str(&iter);
         t_method_arg *arg = ht_iter_value(&iter);
 
         int is_vararg =0 ;
@@ -115,7 +115,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
                 // Add first argument
                 if (obj) {
-                    ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
+                    ht_add_num(vararg_obj->ht, vararg_obj->ht->element_count, obj);
                 }
 
                 // Make sure we add our List[] to the local_identifiers below
@@ -130,7 +130,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add(frame->local_identifiers->ht, name, obj);
+        ht_add_str(frame->local_identifiers->ht, name, obj);
 
         need_count--;
         given_count--;
@@ -150,7 +150,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
         while (e) {
-            ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
+            ht_add_num(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
             e = DLL_NEXT(e);
         }
     }
@@ -931,7 +931,7 @@ dispatch:
                             register t_object *name_obj = vm_frame_stack_pop(frame);
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
 
-                            ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
+                            ht_add_str(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
 
                         // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
@@ -1042,7 +1042,7 @@ dispatch:
                         }
 
                         // Add method attribute to class
-                        ht_add(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
+                        ht_add_str(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
 
                         DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
@@ -1108,7 +1108,7 @@ dispatch:
                     for (int i=0; i!=oparg1; i++) {
                         t_object *val = vm_frame_stack_pop(frame);
                         object_dec_ref(val);
-                        ht_num_add(obj->ht, oparg1 - i - 1, val);
+                        ht_add_num(obj->ht, oparg1 - i - 1, val);
                     }
 
                     // Push tuple on the stack
@@ -1131,7 +1131,7 @@ dispatch:
                     // Push the tuple vars. Make sure we start from the correct position
                     int offset = oparg1 < obj->ht->element_count ? oparg1 : obj->ht->element_count;
                     for (int i=0; i < offset; i++) {
-                        t_object *val = ht_num_find(obj->ht, i);
+                        t_object *val = ht_find_num(obj->ht, i);
                         vm_frame_stack_push(frame, val);
                     }
 
@@ -1148,6 +1148,38 @@ dispatch:
                 goto dispatch;
                 break;
 
+            case VM_ITERATE :
+                {
+                    obj1 = vm_frame_stack_pop(frame);
+
+                    // check if we have the iterator interface implemented
+
+                    // If we need 3 values, create and push metadata
+                    if (oparg1 == 3) {
+                        vm_frame_stack_push(frame, Object_Null);
+                    }
+                    // Always push value
+                    obj2 = object_find_attribute(result, "__value");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(obj3);
+                    object_inc_ref(obj3);
+
+                    if (oparg1 >= 2) {
+                        // Push value of key
+                        obj2 = object_find_attribute(result, "__key");
+                        obj3 = vm_object_call(obj1, obj2, 0);
+                        vm_frame_stack_push(obj3);
+                        object_inc_ref(obj3);
+                    }
+
+                    // Push value of hasNext
+                    obj2 = object_find_attribute(result, "__hasNext");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(obj3);
+                    object_inc_ref(obj3);
+                }
+                goto dispatch;
+                break;
 
         } // switch(opcode) {
 
@@ -1401,7 +1433,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
  *
  */
 void vm_populate_builtins(const char *name, void *data) {
-    ht_add(builtin_identifiers, name, data);
+    ht_add_str(builtin_identifiers, (char *)name, data);
 }
 
 
@@ -1484,8 +1516,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Add references to parent and self
-        ht_replace(new_frame->local_identifiers->ht, "self", self_obj);
-        ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
+        ht_replace_str(new_frame->local_identifiers->ht, "self", self_obj);
+        ht_replace_str(new_frame->local_identifiers->ht, "parent", self_obj->parent);
 
 #ifdef __DEBUG
         print_debug_table(new_frame->local_identifiers->ht, "");

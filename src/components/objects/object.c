@@ -81,7 +81,7 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
         // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
 
         // Find the attribute in the current object
-        attr = ht_find(cur_obj->attributes, attr_name);
+        attr = ht_find_str(cur_obj->attributes, attr_name);
         if (attr != NULL) break;
 
         // Not found and there is no parent, we're done!
@@ -413,7 +413,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
     t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
-    ht_add(obj->attributes, name, attrib_obj);
+    ht_add_str(obj->attributes, name, attrib_obj);
 }
 
 
@@ -423,7 +423,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
-    ht_replace(obj->attributes, name, attrib);
+    ht_replace_str(obj->attributes, name, attrib);
 }
 
 
@@ -433,10 +433,10 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
-    if (ht_exists(obj->attributes, name)) {
+    if (ht_exists_str(obj->attributes, name)) {
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
-    ht_add(obj->attributes, name, attrib);
+    ht_add_str(obj->attributes, name, attrib);
 }
 
 
@@ -513,7 +513,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
     t_hash_iter iter;
     ht_iter_init(&iter, interface->attributes);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
         DEBUG_PRINT(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
 

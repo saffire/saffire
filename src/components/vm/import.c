@@ -203,7 +203,7 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
     }
 
     // CHeck if we already executed the frame before. If so, it's stored in cache
-    t_vm_frame *cached_frame = ht_find(import_cache, module_path);
+    t_vm_frame *cached_frame = ht_find_str(import_cache, module_path);
     DEBUG_PRINT(" * *** Looking for a frame in cache with key '%s': %s\n", module_path, (cached_frame ? "Found" : "Nothing found"));
     if (cached_frame) {
         // Fetch the object from the frame
@@ -216,7 +216,7 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
         if (import_frame && obj) {
             // Add frame to cache
             DEBUG_PRINT(" * *** Adding to import cache at key '%s'\n", module_path);
-            ht_add(import_cache, module_path, import_frame);
+            ht_add_str(import_cache, module_path, import_frame);
         }
 
         // No module found
