@@ -227,6 +227,6 @@ void object_base_fini() {
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, NULL, NULL)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, NULL, NULL, NULL)
 };
 

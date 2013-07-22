@@ -570,3 +570,28 @@ int object_check_interface_implementations(t_object *obj) {
     // Everything fully implemented
     return 1;
 }
+
+
+/**
+ * Iterates all interfaces found in this object, and see if the object actually implements it fully
+ */
+int object_has_interface(t_object *obj, const char *interface_name) {
+    DEBUG_PRINT("object_has_interface(%s)\n", interface_name);
+
+    t_dll_element *elem = obj->interfaces ? DLL_HEAD(obj->interfaces) : NULL;
+    while (elem) {
+        t_object *interface = (t_object *)elem->data;
+
+        if (strcasecmp(interface->name, interface_name) == 0) {
+            return 1;
+        }
+        elem = DLL_NEXT(elem);
+    }
+
+
+    // @TODO: FIXME: We're always returning 1
+    return 1;
+
+    // No, cannot find it
+    return 0;
+}

@@ -92,19 +92,11 @@ SAFFIRE_METHOD(hash, get) {
 SAFFIRE_METHOD(hash, keys) {
     t_hash_table *ht = ht_create();
 
-    printf("Adding keys:\n");
     t_hash_iter iter;
     ht_iter_init(&iter, self->ht);
     while (ht_iter_valid(&iter)) {
         t_object *key = (t_object *)ht_iter_key_obj(&iter);
-        if (OBJECT_IS_STRING(key)) {
-            printf("KEy: '%s' (%p)\n", OBJ2STR(key), key);
-        } else {
-            printf("KEy: (%p)\n", key);
-        }
-
         ht_add_num(ht, ht->element_count, (t_object *)key);
-
         ht_iter_next(&iter);
     }
 

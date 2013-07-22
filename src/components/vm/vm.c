@@ -772,7 +772,7 @@ dispatch:
                     dll_free(arg_list);
 
                     if (ret_obj == NULL) {
-                        // NULL returned means exception occured.
+                        // NULL returned means exception occurred.
                         reason = REASON_EXCEPTION;
                         goto block_end;
                         break;
@@ -1148,35 +1148,116 @@ dispatch:
                 goto dispatch;
                 break;
 
-            case VM_ITERATE :
+            case VM_ITER_RESET :
                 {
                     obj1 = vm_frame_stack_pop(frame);
 
                     // check if we have the iterator interface implemented
+                    if (! object_has_interface(obj1, "iterator")) {
+                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'iterator' interface");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Fetch the actual iterator and push it to the stack
+                    obj2 = object_find_attribute(obj1, "__iterator");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
+
+                    // Call rewind
+                    obj2 = object_find_attribute(obj3, "__rewind");
+                    vm_object_call(obj3, obj2, 0);
+
+                }
+                goto dispatch;
+                break;
+
+            case VM_ITER_FETCH :
+                {
+                    obj1 = vm_frame_stack_pop(frame);
 
                     // If we need 3 values, create and push metadata
                     if (oparg1 == 3) {
                         vm_frame_stack_push(frame, Object_Null);
                     }
                     // Always push value
-                    obj2 = object_find_attribute(result, "__value");
+                    obj2 = object_find_attribute(obj1, "__value");
                     obj3 = vm_object_call(obj1, obj2, 0);
-                    vm_frame_stack_push(obj3);
+                    vm_frame_stack_push(frame, obj3);
                     object_inc_ref(obj3);
 
                     if (oparg1 >= 2) {
                         // Push value of key
-                        obj2 = object_find_attribute(result, "__key");
+                        obj2 = object_find_attribute(obj1, "__key");
                         obj3 = vm_object_call(obj1, obj2, 0);
-                        vm_frame_stack_push(obj3);
+                        vm_frame_stack_push(frame, obj3);
                         object_inc_ref(obj3);
                     }
 
                     // Push value of hasNext
-                    obj2 = object_find_attribute(result, "__hasNext");
+                    obj2 = object_find_attribute(obj1, "__hasNext");
                     obj3 = vm_object_call(obj1, obj2, 0);
-                    vm_frame_stack_push(obj3);
+                    vm_frame_stack_push(frame, obj3);
                     object_inc_ref(obj3);
+
+                    if (IS_BOOLEAN_TRUE(obj3)) {
+                        obj2 = object_find_attribute(obj1, "__next");
+                        obj3 = vm_object_call(obj1, obj2, 0);
+                    }
+                }
+                goto dispatch;
+                break;
+            case VM_BUILD_DATASTRUCT :
+                {
+                    // Fetch methods to call
+                    register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+
+                    // We can only call a class, as we are instantiating a data structure
+                    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+                        // We can only instantiate here through a class!
+                        thread_set_exception(Object_CallException, "Datastructure must be a class, not an instance");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Check if object has interface datastructure
+                    if (! object_has_interface(obj, "datastructure")) {
+                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'iterator' interface");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+//                    t_object *ret_obj = vm_object_call(NULL, obj, 0);
+//                    if (ret_obj == NULL) {
+//                        // NULL returned means exception occurred.
+//                        reason = REASON_EXCEPTION;
+//                        goto block_end;
+//                        break;
+//                    }
+
+                    // Create argument list
+                    t_hash_table *ht = ht_create();
+                    for (int i=0; i!=oparg1; i++) {
+                        ht_add_num(ht, ht->element_count, (void *)vm_frame_stack_pop(frame));
+                    }
+
+                    t_object *ht_obj = (t_object *)object_new(Object_Hash, 1, ht);
+
+                    // Call populate method
+                    obj2 = object_find_attribute(obj, "populate");
+                    t_object *ret_obj = vm_object_call(obj, obj2, 1, ht_obj);
+                    if (ret_obj == NULL) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                        break;
+                    }
+
+
+
+                    object_inc_ref(ret_obj);
+                    vm_frame_stack_push(frame, ret_obj);
+
                 }
                 goto dispatch;
                 break;

@@ -34,11 +34,14 @@ io.print(a, " ", b);
 ====
 10 10
 @@@@
-foreach (a as b) {
+import io;
+foreach (list[1,2,3] as b) {
+    io.print(b);
     continue;
+    io.print("!");
 }
 ====
-Error: Trying to fetch from outside constant range
+123
 @@@@
 foreach (a as b) {
     foreach (a as b) {

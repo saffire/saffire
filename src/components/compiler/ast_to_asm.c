@@ -588,7 +588,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_BREAK_LOOP, 0));
                     break;
                 case T_CONTINUE :
-                    // We need to find the label1 for the first encountered start state!
+                    // We need to find the label for the first encountered start state!
                     i = state->block_cnt - 1;
                     while (i >= 0 && state->blocks[i].type != BLOCK_TYPE_LOOP) i--;
 
@@ -608,6 +608,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_DO :
                     state->loop_cnt++;
                     clc = state->loop_cnt;
+
                     sprintf(state->blocks[state->block_cnt].label, "dowhile_%03d_cmp", clc);
                     state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
                     if (state->blocks[state->block_cnt].labels) {
@@ -829,21 +830,19 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     break;
 
                 case T_DATASTRUCT :
-                    stack_push(state->context, st_ctx_load);
-                    WALK_LEAF(leaf->opr.ops[0]);
-
                     // Iterate elements
                     node = leaf->opr.ops[1];
-                    for (int i=0; i!=node->group.len; i++) {
-                        node2 = node->group.items[i];
+                    for (int i=node->group.len-1; i>=0; i--) {
                         // Iterate attributes
-                        for (int j=0; j!=node2->group.len; j++) {
+                        node2 = node->group.items[i];
+                        for (int j=node2->group.len-1; j>=0; j--) {
                             stack_push(state->context, st_ctx_load);
                             WALK_LEAF(node2->group.items[j]);
                         }
-                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node2->group.len);
-                        dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_TUPLE, 1, opr1));
                     }
+
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, node->group.len);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_DATASTRUCT, 1, opr1));
@@ -872,17 +871,31 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     state->loop_cnt++;
                     clc = state->loop_cnt;
 
+                    sprintf(state->blocks[state->block_cnt].label, "foreach_%03d_loop", clc);
+                    state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    if (state->blocks[state->block_cnt].labels) {
+                        ht_destroy(state->blocks[state->block_cnt].labels);
+                        state->blocks[state->block_cnt].labels = ht_create();
+                    }
+                    state->block_cnt++;
+
+
                     sprintf(label1, "foreach_%03d_loop", clc);
                     sprintf(label2, "foreach_%03d_end", clc);
 
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);
 
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_ITER_RESET, 0));
+
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_SETUP_LOOP, 1, opr1));
+
                     dll_append(frame, asm_create_labelline(label1));
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->opr.nops-2);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_ITERATE, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_ITER_FETCH, 1, opr1));
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_IF_FALSE, 1, opr1));
@@ -891,21 +904,26 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     // Store key
                     if (leaf->opr.nops >= 3) {
-                        stack_push(state->context, st_ctx_load);
+                        stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[2]);
                     }
 
                     // Store value
                     if (leaf->opr.nops >= 4) {
-                        stack_push(state->context, st_ctx_load);
+                        stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[3]);
                     }
 
                     // Store meta
                     if (leaf->opr.nops >= 5) {
-                        stack_push(state->context, st_ctx_load);
+                        stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[4]);
                     }
+
+
+                    // Do iteration block
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[1]);
 
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
@@ -916,8 +934,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Pop true/false from ITERATE
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
+// break;
+
                     // Pop original iterator object
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
+
+                    state->block_cnt--;
                     break;
 
                 case T_TRY :

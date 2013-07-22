@@ -159,7 +159,7 @@ fwrite($fp, "\n\n");
 foreach ($exceptions as $exception) {
     list($exception, $parent) = $exception;
 
-    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".lcfirst($exception)."\", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct), \"\", 0};\n");
+    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".lcfirst($exception)."\", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct, NULL), \"\", 0};\n");
 }
 
 fclose($fp);

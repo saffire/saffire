@@ -70,6 +70,33 @@ SAFFIRE_METHOD(list, length) {
     RETURN_NUMERICAL(self->ht->element_count);
 }
 
+SAFFIRE_METHOD(list, __iterator) {
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(list, __key) {
+    RETURN_NUMERICAL(self->iter.idx);
+}
+SAFFIRE_METHOD(list, __value) {
+    t_object *obj = ht_find_num(self->ht, self->iter.idx);
+    if (obj == NULL) RETURN_NULL;
+    RETURN_OBJECT(obj);
+}
+SAFFIRE_METHOD(list, __next) {
+    self->iter.idx++;
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(list, __rewind) {
+    self->iter.idx = 0;
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(list, __hasNext) {
+    if (self->iter.idx < self->ht->element_count) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
+}
+
+
 /**
   * Saffire method: Returns object stored at "key" inside the list (or NULL when not found)
   */
@@ -81,6 +108,44 @@ SAFFIRE_METHOD(list, get) {
     }
 
     t_object *obj = ht_find_num(self->ht, key->value);
+    if (obj == NULL) RETURN_NULL;
+    RETURN_OBJECT(obj);
+}
+
+volatile int rdtscll() {
+    int a,d;
+    __asm__ __volatile__
+        (".byte 0x0f, 0x31 #rdtsc\n" // edx:eax
+         :"=a"(a), "=d"(d));
+    return a;
+}
+/**
+  * Shuffle all elements in the linked list
+  *
+  * This uses Fisher-Yates. For new allocated shuffles (for instance: shuffle!(), use inside-out)
+  */
+SAFFIRE_METHOD(list, shuffle) {
+    srand(rdtscll());
+
+    // The hashtable has a linked list, we shuffle this one as it is used during iteration
+    for (int i = self->ht->element_count-1; i >= 1; i--) {
+        /* because we are exchanging values, the keys can stay the same. We basically fetch the
+         * objects and swap them. */
+
+        int j = (rand () % i);
+        t_object *obj1 = ht_find_num(self->ht, i);
+        t_object *obj2 = ht_find_num(self->ht, j);
+        ht_replace_num(self->ht, i, obj2);
+        ht_replace_num(self->ht, j, obj1);
+    }
+    RETURN_SELF;
+}
+
+/**
+  * Pick random element
+  */
+SAFFIRE_METHOD(list, random) {
+    t_object *obj = ht_find_num(self->ht, (rand () % self->ht->element_count));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -99,6 +164,35 @@ SAFFIRE_METHOD(list, add) {
     RETURN_SELF;
 }
 
+
+
+/**
+ * Saffire method:
+ */
+SAFFIRE_METHOD(list, populate) {
+    t_hash_object *ht_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
+        return NULL;
+    }
+    if (! OBJECT_IS_HASH(ht_obj)) {
+        object_raise_exception(Object_ArgumentException, "populate() expects a list object");
+        return NULL;
+    }
+
+    if (! self->ht) {
+        self->ht = ht_create();
+    }
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht_obj->ht);
+    while (ht_iter_valid(&iter)) {
+        ht_add_num(self->ht, self->ht->element_count, ht_iter_value(&iter));
+        ht_iter_next(&iter);
+    }
+
+    RETURN_SELF;
+}
 
 /**
  *
@@ -167,9 +261,22 @@ void object_list_init(void) {
     object_add_internal_method((t_object *)&Object_List_struct, "__numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_List_struct, "__string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
 
+    // Datastructure interface
+    object_add_internal_method((t_object *)&Object_List_struct, "populate",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_populate);
+
+    // Iterator interface
+    object_add_internal_method((t_object *)&Object_List_struct, "__iterator",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___iterator);
+    object_add_internal_method((t_object *)&Object_List_struct, "__key",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___key);
+    object_add_internal_method((t_object *)&Object_List_struct, "__value",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___value);
+    object_add_internal_method((t_object *)&Object_List_struct, "__rewind",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___rewind);
+    object_add_internal_method((t_object *)&Object_List_struct, "__next",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___next);
+    object_add_internal_method((t_object *)&Object_List_struct, "__hasNext",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___hasNext);
+
     object_add_internal_method((t_object *)&Object_List_struct, "length",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
     object_add_internal_method((t_object *)&Object_List_struct, "add",            CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
     object_add_internal_method((t_object *)&Object_List_struct, "get",            CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
+    object_add_internal_method((t_object *)&Object_List_struct, "shuffle",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_shuffle);
+    object_add_internal_method((t_object *)&Object_List_struct, "random",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_random);
 
 //    // list + element
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_add);
@@ -205,7 +312,6 @@ static t_object *obj_new(t_object *self) {
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_list_object *list_obj = (t_list_object *)obj;
-    // @TODO: We should duplicate the list, and add it!
 
     list_obj->ht = arg_list->size == 0 ? ht_create() : DLL_HEAD(arg_list)->data;
 }
@@ -250,6 +356,9 @@ t_object_funcs list_funcs = {
 // Intial object
 t_list_object Object_List_struct = {
     OBJECT_HEAD_INIT("list", objectTypeList, OBJECT_TYPE_CLASS, &list_funcs),
-    NULL
+    NULL,
+    {
+        0,
+    }
 };
 
