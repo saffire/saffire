@@ -43,7 +43,7 @@ int dbgp_sock_init(void) {
     server_addr.sin_port = htons(9000);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    int ret = connect(sockfd, &server_addr, sizeof(server_addr));
+    int ret = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (ret == -1) return -1;
 
     return sockfd;

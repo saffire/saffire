@@ -202,7 +202,7 @@ t_hash_table *ini_match(t_ini *ini, const char *pattern) {
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
 
-        if (fnmatch(pattern, key, FNM_CASEFOLD) == 0) {
+        if (fnmatch(pattern, key, 0) == 0) {
             t_ini_element *ie = ht_iter_value(&iter);
             ht_add_str(matches, key, ie->value);
         }

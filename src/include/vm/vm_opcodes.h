@@ -24,22 +24,9 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECTS_H__
-#define __OBJECTS_H__
+#ifndef __VM_OPCODES_H__
+#define __VM_OPCODES_H__
 
-    #include "userland.h"
-    #include "attrib.h"
-    #include "base.h"
-    #include "string.h"
-    #include "boolean.h"
-    #include "hash.h"
-    #include "list.h"
-    #include "callable.h"
-    #include "null.h"
-    #include "numerical.h"
-    #include "regex.h"
-    #include "tuple.h"
-    #include "interfaces.h"
-    #include "exception.h"
+    #include "vm/_generated_vm_opcodes.h"
 
 #endif

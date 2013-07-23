@@ -35,7 +35,7 @@
  */
 
 static hash_t ht_hash(t_hash_table *ht, t_hash_key *key) {
-    hash_t hash_value;
+    hash_t hash_value = 0;
     if (! ht) return 0;      // Not a hash table
 
     switch (key->type) {

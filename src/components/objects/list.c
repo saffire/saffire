@@ -285,6 +285,9 @@ void object_list_init(void) {
 //    // list >> N  pops elements from the list
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_sr);
 
+
+    object_add_interface((t_object *)&Object_List_struct, Object_Iterator);
+
     vm_populate_builtins("list", (t_object *)&Object_List_struct);
 }
 

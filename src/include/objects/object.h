@@ -220,6 +220,7 @@
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);
 
+    void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
     void object_remove_all_internal_attributes(t_object *obj);
