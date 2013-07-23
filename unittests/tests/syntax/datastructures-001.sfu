@@ -1,12 +1,15 @@
 title: data structure tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-!skip
 // Normal lists
 a = list[1, 2, 3, 4];
+io.print(a,"\n");
 a = list[1, 2, 3,  ];
+io.print(a,"\n");
 a = list[ , 2, 3, 4];
+io.print(a,"\n");
 a = list[];
+io.print(a,"\n");
 ====
 @@@@
 !skip
@@ -22,19 +25,26 @@ a = hash[];
 a = datastruct["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 @@@@
-!skip
 // Cannot use numerics
 a = 1["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 @@@@
-!skip
 // Cannot use variables
 a = foo["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
 ====
 
 @@@@
-!skip
 // Return item of the data structure
+import io;
+foo = hash["a" : "b", 1 : 2];
 a = foo["a"];
+io.print(a,"\n");
 a = foo[1];
+io.print(a,"\n");
+a = 1;
+b = foo[a];
+io.print(b,"\n");
 ====
+b
+2
+2

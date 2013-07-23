@@ -2,7 +2,6 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
 import io;
 foo = list[1,2,3];
 foreach (foo as k)  {
@@ -35,21 +34,18 @@ a
 b
 c
 @@@@
-!skip
 foo = list[1,2,3];
 foreach (blaat as k:v, i, j)  {
 }
 ====
-Error: line 1: syntax error, unexpected ',', expecting ')'
+syntax error, unexpected ':', expecting ')'
 @@@@
-!skip
 foo = 1;
 foreach (blaat as k:v, i)  {
 }
 ====
 a
 @@@@
-!skip
 foo = list[1,2,3];
 foreach blaat {
 }
@@ -62,14 +58,15 @@ foreach blaat {
 ====
 Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
-!skip
+import io;
 foo = list[1,2,3];
 foreach ("foo" as a) {
+  io.print("foo\n");
 }
+io.print("done\n");
 ====
-a
+done
 @@@@
-!skip
 import io;
 foreach (list[] as a) {
     /* no iteration, because of empty list */
@@ -79,7 +76,6 @@ io.print("done\n");
 ====
 done
 @@@@
-!skip
 import io;
 foreach (list[1,2,3] as a) io.print(a,"\n");
 io.print("done\n");
@@ -89,7 +85,9 @@ io.print("done\n");
 3
 done
 @@@@
-!skip
+import io;
 foreach (list[] as a);
+io.print("done\n");
 ====
-a
+done
+

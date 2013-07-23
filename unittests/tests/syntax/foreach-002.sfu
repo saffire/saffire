@@ -2,16 +2,15 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
 import io;
 foo = list[1,"A",3];
-foreach (foo as k:v)  {
+foreach (foo as k,v)  {
     io.print(k,v,"\n");
 }
 ====
-01
-1A
-23
+1
+A
+3
 @@@@
 !skip
 import io;
