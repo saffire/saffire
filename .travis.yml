@@ -10,6 +10,9 @@ before_install:
   - sudo apt-get install -qq php5-cli php-pear
   - sudo apt-get install -qq libcunit1-dev
   - printf "\n" | sudo pecl install yaml
+  - ls -la /etc/php
+  - ls -la /etc
+  - ls -la /etc/php5
   - sudo echo "extension = yaml.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 
 env:
