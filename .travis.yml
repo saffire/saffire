@@ -8,10 +8,11 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev
   - sudo apt-get install -qq php5-cli php-pear
-  - ls -la /etc/php5
   - sudo apt-get install -qq libcunit1-dev
   - sudo pecl -q install -f yaml
-  - sudo echo "extension = yaml.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
+  - ls -la /etc/php5
+  - ls -la /etc/php5/conf.d
+  - sudo echo "extension = yaml.so" > /etc/php5/conf.d/yaml.ini
 
 env:
     SAFFIRE_TEST_BIN=src/saffire
