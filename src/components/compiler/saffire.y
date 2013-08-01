@@ -105,8 +105,8 @@
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
-%token T_MODIFIERS T_CONSTANTS T_DATA_ELEMENTS T_DATA_STRUCTURE T_DATA_ELEMENT T_METHOD_ARGUMENT
-%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS T_SUBSCRIPT T_DATASTRUCT
+%token T_MODIFIERS T_CONSTANTS T_METHOD_ARGUMENT
+%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure"
 
 /* reserved for later use */
 %token T_YIELD
@@ -126,9 +126,8 @@
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
-%type <nPtr> special_name scalar_value callable var_callable subscription primary_expression_first_part qualified_name_first_part
-%type <nPtr> tuple_list non_empty_tuple_list hash_ds_element list_ds_element list_ds_elements hash_ds_elements
-%type <nPtr> list_data_structure hash_data_structure multi_ds_element
+%type <nPtr> special_name scalar_value callable var_callable primary_expression_first_part qualified_name_first_part
+%type <nPtr> tuple_list non_empty_tuple_list
 
 %type <sVal> T_ASSIGNMENT T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -345,7 +344,7 @@ label_statement:
 
 assignment_expression:
         expression { $$ = $1; }
-    |   unary_expression assignment_operator assignment_expression { $$ = ast_node_assignment(@1.first_line, $2, $1, $3); }
+    |   unary_expression assignment_operator assignment_expression { parser_write_check(saffireParser, @1.first_line, $1); $$ = ast_node_assignment(@1.first_line, $2, $1, $3); }
 ;
 
 
@@ -498,10 +497,7 @@ pe_no_parenthesis:
     |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); }
     |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null())); } /* Add termination varargs list */
     |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
-    |   primary_expression subscription      { $$ = ast_node_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
     |   primary_expression data_structure    { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
-    |   list_data_structure                  { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, ast_node_identifier(@1.first_line, "list"), $1); }
-    |   hash_data_structure                  { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, ast_node_identifier(@1.first_line, "hash"), $1); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
@@ -546,24 +542,11 @@ calling_method_argument_list:
 ;
 
 data_structure:
-        '[' ds_elements ']' { $$ = $2; }
-;
-
-list_data_structure:
-        '[' list_ds_elements ']' { $$ = $2; }
-;
-
-hash_data_structure:
-        '[' hash_ds_elements ']' { $$ = $2; }
-;
-
-
-
-subscription:
-        '[' pe_no_parenthesis T_TO                   ']' { $$ = ast_node_group(2, $2, ast_node_null()); }
+        '[' ']'                                          { $$ = ast_node_group(0); }
+    |   '[' ds_elements ']'                              { $$ = ast_node_group(1, $2); }
+    |   '[' pe_no_parenthesis T_TO                   ']' { $$ = ast_node_group(2, $2, ast_node_nop()); }
     |   '[' pe_no_parenthesis T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, $2, $4); }
-    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, ast_node_null(), $3); }
-    |   '[' /* empty */                              ']' { $$ = ast_node_group(2, ast_node_null(), ast_node_null()); }
+    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, ast_node_nop(), $3); }
 ;
 
 /**
@@ -731,32 +714,8 @@ ds_elements:
 ;
 
 ds_element:
-        list_ds_element     { $$ = $1; }
-    |   hash_ds_element     { $$ = $1; }
-    |   multi_ds_element    { $$ = $1; }
-;
-
-list_ds_elements:
-        list_ds_element                       { $$ = ast_node_group(1, $1); }
-    |   list_ds_elements ',' list_ds_element  { $$ = ast_node_add($$, $3);  }
-;
-
-hash_ds_elements:
-        hash_ds_element                      { $$ = ast_node_group(1, $1); }
-    |   hash_ds_elements ',' hash_ds_element { $$ = ast_node_add($$, $3);  }
-;
-
-list_ds_element:
-        assignment_expression                { $$ = ast_node_group(1, $1); }
-;
-
-hash_ds_element:
-        assignment_expression ':' assignment_expression { $$ = ast_node_group(1, $1); $$ = ast_node_add($$, $3); }
-;
-
-multi_ds_element:
-        assignment_expression                      { $$ = ast_node_group(1, $1); }
-    |   hash_ds_element ':' assignment_expression  { $$ = ast_node_add($$, $3);  }
+        assignment_expression                 { $$ = ast_node_group(1, $1); }
+    |   ds_element ':' assignment_expression  { $$ = ast_node_add($$, $3);  }
 ;
 
 

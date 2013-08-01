@@ -417,6 +417,22 @@ void parser_validate_breakelse(SaffireParser *sp, int lineno) {
     }
 }
 
+void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
+    // Everything not being a opr, is ok
+    if (e->type != typeAstOpr) {
+        return;
+    }
+
+    if (e->opr.oper == T_DATASTRUCT && e->opr.nops <= 1) {
+        // foo[] and foo[1] are ok
+        return;
+    }
+
+
+    // Everything else, not so much
+    parser_error(sp, lineno, "Variable is not writable");
+}
+
 
 
 /**
@@ -481,5 +497,5 @@ void parser_error(SaffireParser *sp, int lineno, const char *format, ...) {
     snprintf(errorbuf, 2047, format, args);
     va_end(args);
 
-    error("%s, found in %s on line %d", errorbuf, sp->filename, lineno);
+    fatal_error(1, "%s, found in %s on line %d\n", errorbuf, sp->filename, lineno);
 }

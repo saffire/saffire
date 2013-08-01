@@ -287,6 +287,7 @@ void object_list_init(void) {
 
 
     object_add_interface((t_object *)&Object_List_struct, Object_Iterator);
+    object_add_interface((t_object *)&Object_List_struct, Object_Datastructure);
 
     vm_populate_builtins("list", (t_object *)&Object_List_struct);
 }

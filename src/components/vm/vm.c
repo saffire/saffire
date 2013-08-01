@@ -1208,7 +1208,10 @@ dispatch:
                 }
                 goto dispatch;
                 break;
-            case VM_BUILD_DATASTRUCT :
+              case VM_STORE_DATASTRUCT :
+                goto dispatch;
+                break;
+              case VM_LOAD_DATASTRUCT :
                 {
                     // Fetch methods to call
                     register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
@@ -1223,7 +1226,7 @@ dispatch:
 
                     // Check if object has interface datastructure
                     if (! object_has_interface(obj, "datastructure")) {
-                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'iterator' interface");
+                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'datastructure' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
