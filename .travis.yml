@@ -10,7 +10,7 @@ before_install:
   - sudo apt-get install -qq php5-cli php-pear
   - sudo apt-get install -qq libcunit1-dev
   - printf "\n" | sudo pecl install yaml
-  - sudo echo "extension=yaml.so" > /etc/php5/conf.d/yaml.ini
+  - echo "extension = yaml.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 env:
     SAFFIRE_TEST_BIN=src/saffire
