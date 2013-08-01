@@ -69,8 +69,8 @@ _generated_*
 
 
 # Main binaries
-src/utmain
 src/saffire
+unittests/core/utmain
 
 
 # Misc files
