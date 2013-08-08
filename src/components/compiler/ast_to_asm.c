@@ -951,6 +951,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
                     state->block_cnt++;
 
+                    int kvm_count = 3;
+                    if (leaf->opr.ops[2]->type == typeAstNull) kvm_count--;
+                    if (leaf->opr.ops[3]->type == typeAstNull) kvm_count--;
+                    if (leaf->opr.ops[4]->type == typeAstNull) kvm_count--;
 
                     sprintf(label1, "foreach_%03d_loop", clc);
                     sprintf(label2, "foreach_%03d_end", clc);
@@ -967,7 +971,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label1));
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
 
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->opr.nops-2);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, kvm_count);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_ITER_FETCH, 1, opr1));
 
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
@@ -976,21 +980,21 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
 
                     // Store key
-                    if (leaf->opr.nops >= 3) {
+                    if (leaf->opr.ops[2]->type != typeAstNull) {
                         stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[2]);
                         stack_pop(state->context);
                     }
 
                     // Store value
-                    if (leaf->opr.nops >= 4) {
+                    if (leaf->opr.ops[3]->type != typeAstNull) {
                         stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[3]);
                         stack_pop(state->context);
                     }
 
                     // Store meta
-                    if (leaf->opr.nops >= 5) {
+                    if (leaf->opr.ops[4]->type != typeAstNull) {
                         stack_push(state->context, (void *)st_ctx_store);
                         WALK_LEAF(leaf->opr.ops[4]);
                         stack_pop(state->context);

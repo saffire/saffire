@@ -114,7 +114,7 @@
 %type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> statement_list compound_statement statement expression_statement jump_statement
-%type <nPtr> label_statement iteration_statement class_list while_statement
+%type <nPtr> label_statement iteration_statement foreach_iteration_statement class_list while_iteration_statement
 %type <nPtr> guarding_statement expression catch_list catch ds_element ds_elements
 %type <nPtr> class_implements interface_inherits method_argument_list class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
@@ -266,24 +266,24 @@ case_statement:
 
 /* while, while else, do/while, for and foreach */
 iteration_statement:
-        while_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
-    |   while_statement                  { $$ = $1; }
+        while_iteration_statement                  { $$ = $1; }
+    |   while_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
+    |   foreach_iteration_statement                  { $$ = $1; }
+    |   foreach_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
+    |   T_FOR '(' expression_statement expression_statement                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
     |   T_FOR '(' expression_statement expression_statement assignment_expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
-    |   T_FOREACH '(' expression T_AS T_IDENTIFIER                                   ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 3, $3, $8, ast_node_identifier(@5.first_line, $5)); smm_free($5); }
-    |   T_FOREACH '(' expression T_AS T_IDENTIFIER ',' T_IDENTIFIER                  ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 4, $3, $10, ast_node_identifier(@5.first_line, $5), ast_node_identifier(@7.first_line, $7)); smm_free($5); smm_free($7); }
+;
+
+
+foreach_iteration_statement:
+        T_FOREACH '(' expression T_AS T_IDENTIFIER                                   ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 5, $3,  $8, ast_node_null(0),                       ast_node_identifier(@5.first_line, $5), ast_node_null(0)                      ); smm_free($5); }
+    |   T_FOREACH '(' expression T_AS T_IDENTIFIER ',' T_IDENTIFIER                  ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 5, $3, $10, ast_node_identifier(@5.first_line, $5), ast_node_identifier(@7.first_line, $7), ast_node_null(0)                      ); smm_free($5); smm_free($7); }
     |   T_FOREACH '(' expression T_AS T_IDENTIFIER ',' T_IDENTIFIER ',' T_IDENTIFIER ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_FOREACH, 5, $3, $12, ast_node_identifier(@5.first_line, $5), ast_node_identifier(@7.first_line, $7), ast_node_identifier(@9.first_line, $9)); smm_free($5); smm_free($7); smm_free($9); }
 ;
 
-/* while is separate otherwise we cannot find it's else */
-while_statement:
-        T_WHILE '(' expression ')' {
-            parser_loop_enter(saffireParser, @1.first_line);
-        } statement {
-            parser_loop_leave(saffireParser, @1.first_line);
-            $$ = ast_node_opr(@1.first_line, T_WHILE, 2, $3, $6);
-        }
+while_iteration_statement:
+        T_WHILE '(' expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { parser_loop_leave(saffireParser, @1.first_line); $$ = ast_node_opr(@1.first_line, T_WHILE, 2, $3, $6); }
 ;
 
 /* An expression is anything that evaluates something */
