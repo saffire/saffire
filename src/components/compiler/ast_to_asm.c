@@ -837,70 +837,67 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     break;
 
-//                case T_SUBSCRIPT :
-//                    node = leaf->opr.ops[1];
-//                    stack_push(state->context, st_ctx_load);
-//                    WALK_LEAF(node->group.items[0]);
-//                    stack_pop(state->context);
-//                    stack_push(state->context, st_ctx_load);
-//                    WALK_LEAF(node->group.items[1]);
-//                    stack_pop(state->context);
-//
-//                    // load "splice" attrib
-//                    stack_push(state->context, st_ctx_load);
-//                    WALK_LEAF(leaf->opr.ops[0]);       // Load object to subscribe
-//                    stack_pop(state->context);
-//
-//                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "splice", 0);
-//                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ATTRIB, 1, opr1));
-//
-//                    // Call splice
-//                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 2);
-//                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_CALL, 1, opr1));
-//                    break;
-
                 case T_DATASTRUCT :
+                    node = leaf->opr.ops[1];
+
+                    int element_count = 0;
+                    int idx = 0;
+
+                    if (node->group.len == 0) {
+                        // we have a [] subscription
+                        element_count = 0;
+
+                    } else if (node->group.len == 1) {
+                        // We have a [n,] subscription
+
+                        // Iterate elements
+                        node2 = node->group.items[0];
+                        element_count = node2->group.len;
+
+                        for (int i=element_count-1; i>=0; i--) {
+                            // Iterate attributes
+                            node3 = node2->group.items[i];
+                            for (int j=node3->group.len-1; j>=0; j--) {
+                                idx++;
+                                stack_push(state->context, st_ctx_load);
+                                WALK_LEAF(node3->group.items[j]);
+                                stack_pop(state->context);
+                            }
+                        }
+                    }
+
+                    // Load the actual datastructure class
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
+                    stack_pop(state->context);
+
+                    // If opr
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, idx);
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_DATASTRUCT, 1, opr1));
+                    break;
+
+
+                case T_SUBSCRIPT :
                     {
                         enum context ctx = (enum context)stack_peek(state->context);
                         int element_count = 0;
                         node = leaf->opr.ops[1];
 
-                        if (node->group.len == 0) {
+                        if (node->type == typeAstNull) {
                             // we have a [] subscription
                             element_count = 0;
 
-                        } else if (node->group.len == 1) {
-                            // We have a [n,] subscription
-
-                            // Iterate elements
-                            node2 = node->group.items[0];
-                            element_count = node2->group.len;
-
-                            for (int i=element_count-1; i>=0; i--) {
-                                // Iterate attributes
-                                node3 = node2->group.items[i];
-                                for (int j=node3->group.len-1; j>=0; j--) {
-                                    stack_push(state->context, st_ctx_load);
-                                    WALK_LEAF(node3->group.items[j]);
-                                    stack_pop(state->context);
-                                }
-                            }
-
-                        } else if (node->group.len == 2) {
-                            node2 = node->group.items[0];   // From
-                            node3 = node->group.items[1];   // To
-
-                            // We have a [ N .. M ] subscription
-                            if (ctx == st_ctx_store) {
-                                // We cannot STORE inside a subscription!
-                                fatal_error(1, "Cannot store inside a subscription range!\n");
-                            }
-                            warning("We don't deal with subscription ranges yet\n");
+                            /* @TODO:  It's possible to do something like this:   a = foo[];
+                             *         This should result in an error. Preferably on compile-time */
 
                         } else {
-                            fatal_error(1, "Too many items in our datastructure group. Compiler error.\n");
-                        }
+                            // We have a [n] subscription
+                            element_count = 1;
 
+                            stack_push(state->context, st_ctx_load);
+                            WALK_LEAF(node);
+                            stack_pop(state->context);
+                        }
 
                         // Load the actual datastructure class
                         stack_push(state->context, st_ctx_load);
@@ -910,15 +907,15 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                         // If opr
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, element_count);
-
                         switch (ctx) {
                             case st_ctx_load :
-                                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_DATASTRUCT, 1, opr1));
+                                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_SUBSCRIPT, 1, opr1));
                                 break;
                             case st_ctx_store :
-                                dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_DATASTRUCT, 1, opr1));
+                                dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_SUBSCRIPT, 1, opr1));
                                 break;
                         }
+
 
                     }
                     break;

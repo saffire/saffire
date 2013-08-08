@@ -361,7 +361,7 @@ dispatch:
 #ifdef __DEBUG
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X, 0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X, 0x%02X)     "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -372,7 +372,7 @@ dispatch:
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X)           "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -383,7 +383,7 @@ dispatch:
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X)                 "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -394,7 +394,7 @@ dispatch:
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s "
+                        ANSI_BRIGHTGREEN "%-20s                        "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -749,7 +749,7 @@ dispatch:
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
 
-                    // Fetch varargs object (or NULL when no varargs are needed)
+                    // Fetch varargs object (or null_object when no varargs are needed)
                     t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
 
                     // Add items
@@ -757,7 +757,7 @@ dispatch:
                         dll_prepend(arg_list, vm_frame_stack_pop(frame));
                     }
 
-                    if (varargs != NULL) {
+                    if (! OBJECT_IS_NULL(varargs)) {
                         // iterate hash (this is the correct order), and prepend values to the arg_list DLL
                         t_hash_iter iter;
                         ht_iter_init(&iter, varargs->ht);
@@ -1141,8 +1141,6 @@ dispatch:
                         vm_frame_stack_push(frame, val);
                         object_inc_ref(val);
                     }
-
-
                 }
 
                 goto dispatch;
@@ -1208,10 +1206,7 @@ dispatch:
                 }
                 goto dispatch;
                 break;
-              case VM_STORE_DATASTRUCT :
-                goto dispatch;
-                break;
-              case VM_LOAD_DATASTRUCT :
+            case VM_BUILD_DATASTRUCT   :
                 {
                     // Fetch methods to call
                     register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
@@ -1226,44 +1221,53 @@ dispatch:
 
                     // Check if object has interface datastructure
                     if (! object_has_interface(obj, "datastructure")) {
-                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'datastructure' interface");
+                        thread_set_exception(Object_InterfaceException, "Class must inherit the 'datastructure' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-//                    t_object *ret_obj = vm_object_call(NULL, obj, 0);
-//                    if (ret_obj == NULL) {
-//                        // NULL returned means exception occurred.
-//                        reason = REASON_EXCEPTION;
-//                        goto block_end;
-//                        break;
-//                    }
-
-                    // Create argument list
-                    t_hash_table *ht = ht_create();
+                    // Create argument list.
+                    t_dll *dll = dll_init();
                     for (int i=0; i!=oparg1; i++) {
-                        ht_add_num(ht, ht->element_count, (void *)vm_frame_stack_pop(frame));
+                        dll_append(dll, (void *)vm_frame_stack_pop(frame));
                     }
 
-                    t_object *ht_obj = (t_object *)object_new(Object_Hash, 1, ht);
-
-                    // Call populate method
-                    obj2 = object_find_attribute(obj, "populate");
-                    t_object *ret_obj = vm_object_call(obj, obj2, 1, ht_obj);
-                    if (ret_obj == NULL) {
-                        reason = REASON_EXCEPTION;
-                        goto block_end;
-                        break;
-                    }
-
-
-
+                    // Create new object, because we know it's a data-structure, just add them to the list
+                    t_object *ret_obj = (t_object *)object_new(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
                     object_inc_ref(ret_obj);
                     vm_frame_stack_push(frame, ret_obj);
 
                 }
                 goto dispatch;
                 break;
+            case VM_LOAD_SUBSCRIPT :
+                {
+                    // @TODO: oparg1 is not used
+                    obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    obj2 = vm_frame_stack_pop(frame);       // key
+
+                    obj3 = object_find_attribute(obj1, "__get");
+                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
+                }
+                goto dispatch;
+                break;
+
+            case VM_STORE_SUBSCRIPT :
+                {
+                    obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    obj2 = vm_frame_stack_pop(frame);       // key
+
+                    //
+                    obj3 = object_find_attribute(obj1, "__set");
+                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
+                }
+                goto dispatch;
+                break;
+
 
         } // switch(opcode) {
 

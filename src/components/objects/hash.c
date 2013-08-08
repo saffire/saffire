@@ -70,6 +70,63 @@ SAFFIRE_METHOD(hash, length) {
     RETURN_NUMERICAL(self->ht->element_count);
 }
 
+
+SAFFIRE_METHOD(hash, __iterator) {
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(hash, __key) {
+    RETURN_OBJECT(ht_iter_key_obj(&self->iter));
+}
+SAFFIRE_METHOD(hash, __value) {
+    RETURN_OBJECT(ht_iter_value(&self->iter));
+}
+SAFFIRE_METHOD(hash, __next) {
+    ht_iter_next(&self->iter);
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(hash, __rewind) {
+    ht_iter_init(&self->iter, self->ht);
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(hash, __hasNext) {
+    if (self->iter.bucket->next_element != NULL) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
+}
+
+
+
+SAFFIRE_METHOD(hash, populate) {
+    t_hash_object *ht_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
+        return NULL;
+    }
+    if (! OBJECT_IS_HASH(ht_obj)) {
+        object_raise_exception(Object_ArgumentException, "populate() expects a list object");
+        return NULL;
+    }
+
+    if (! self->ht) {
+        self->ht = ht_create();
+    }
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht_obj->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_value(&iter);
+        ht_iter_next(&iter);
+        t_object *val = ht_iter_value(&iter);
+        ht_iter_next(&iter);
+
+        ht_add_obj(self->ht, key, val);
+    }
+
+    RETURN_SELF;
+}
+
+
 /**
   * Saffire method: Returns object stored at "key" inside the hash (or NULL when not found)
   */
@@ -218,6 +275,24 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "__numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_Hash_struct, "__string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
 
+    // Datastructure interface
+    object_add_internal_method((t_object *)&Object_Hash_struct, "populate",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_populate);
+
+    // Iterator interface
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__iterator",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___iterator);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__key",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___key);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__value",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___value);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__rewind",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___rewind);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__next",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___next);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__hasNext",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___hasNext);
+
+
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__has",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
+
     object_add_internal_method((t_object *)&Object_Hash_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
     object_add_internal_method((t_object *)&Object_Hash_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
@@ -234,6 +309,10 @@ void object_hash_init(void) {
 //    // hash >> N  pops elements from the list
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sr);
 
+
+    object_add_interface((t_object *)&Object_Hash_struct, Object_Iterator);
+    object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
+    object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }
@@ -260,11 +339,38 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
+/**
+ * Datastructures populate can be done in 2 ways:   1 argument: HASHTABLE.   2nd argument: DLL (first arg is ignored)
+ */
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
-    // @TODO: We should duplicate the hash, and add it!
 
-    hash_obj->ht = arg_list->size == 0 ? ht_create() : DLL_HEAD(arg_list)->data;
+    // No arguments
+    if (arg_list->size == 0) {
+        hash_obj->ht = ht_create();
+        return;
+    }
+
+    if (arg_list->size == 1) {
+        // Simple hash table. Direct copy
+        hash_obj->ht = DLL_HEAD(arg_list)->data;
+        return;
+    }
+
+    // 2 (or higher). Use the DLL in arg2
+    hash_obj->ht = ht_create();
+    t_dll_element *e = DLL_HEAD(arg_list);
+    e = DLL_NEXT(e);
+    t_dll *dll = (t_dll *)e->data;
+    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
+    while (e) {
+        t_object *k = (t_object *)e->data;
+        e = DLL_NEXT(e);
+        if (! e) break;
+        t_object *v = (t_object *)e->data;
+        ht_add_obj(hash_obj->ht, k, v);
+        e = DLL_NEXT(e);
+    }
 }
 
 static void obj_free(t_object *obj) {
@@ -307,6 +413,7 @@ t_object_funcs hash_funcs = {
 // Intial object
 t_hash_object Object_Hash_struct = {
     OBJECT_HEAD_INIT("hash", objectTypeHash, OBJECT_TYPE_CLASS, &hash_funcs),
-    NULL
+    NULL,
+    /* t_hash_iter */
 };
 

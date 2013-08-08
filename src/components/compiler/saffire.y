@@ -96,7 +96,7 @@
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
 %token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
-%token T_SELF "self" T_PARENT "parent" T_NS_SEP "::" T_TO
+%token T_SELF "self" T_PARENT "parent" T_NS_SEP "::"
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
 %left '+' '-'
 %left '*' '/'
@@ -106,7 +106,7 @@
 %token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
 %token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
 %token T_MODIFIERS T_CONSTANTS T_METHOD_ARGUMENT
-%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure"
+%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure" T_SUBSCRIPT "subscription"
 
 /* reserved for later use */
 %token T_YIELD
@@ -119,7 +119,7 @@
 %type <nPtr> class_implements interface_inherits method_argument_list class_extends
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement class_constant_definition
-%type <nPtr> unary_expression primary_expression pe_no_parenthesis data_structure
+%type <nPtr> unary_expression primary_expression pe_no_parenthesis
 %type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
 %type <nPtr> catch_header conditional_expression coalesce_expression assignment_expression real_scalar_value
 %type <nPtr> method_argument interface_inner_statement interface_method_declaration interface_property_declaration
@@ -127,7 +127,7 @@
 %type <nPtr> logical_unary_expression equality_expression and_expression inclusive_or_expression
 %type <nPtr> conditional_or_expression exclusive_or_expression conditional_and_expression case_statements case_statement
 %type <nPtr> special_name scalar_value callable var_callable primary_expression_first_part qualified_name_first_part
-%type <nPtr> tuple_list non_empty_tuple_list
+%type <nPtr> tuple_list non_empty_tuple_list datastructure subscription
 
 %type <sVal> T_ASSIGNMENT T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
 %type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
@@ -497,7 +497,8 @@ pe_no_parenthesis:
     |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); }
     |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null(@1.first_line))); } /* Add termination varargs list */
     |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
-    |   primary_expression data_structure    { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
+    |   primary_expression subscription      { $$ = ast_node_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
+    |   primary_expression datastructure     { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
 ;
 
 /* First part is different (can be namespaced / ++foo / --foo etc */
@@ -541,12 +542,14 @@ calling_method_argument_list:
     |   calling_method_argument_list ',' expression    { $$ = ast_node_add($$, $3); }
 ;
 
-data_structure:
-        '[' ']'                                          { $$ = ast_node_group(0); }
-    |   '[' ds_elements ']'                              { $$ = ast_node_group(1, $2); }
-    |   '[' pe_no_parenthesis T_TO                   ']' { $$ = ast_node_group(2, $2, ast_node_nop()); }
-    |   '[' pe_no_parenthesis T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, $2, $4); }
-    |   '['                   T_TO pe_no_parenthesis ']' { $$ = ast_node_group(2, ast_node_nop(), $3); }
+datastructure:
+        '[' '[' ds_elements ']' ']'                          { $$ = ast_node_group(1, $3); }
+    |   '[' '[' /* empty */ ']' ']'                          { $$ = ast_node_group(0); }
+;
+
+subscription:
+        '[' ']'                                          { $$ = ast_node_null(@1.first_line); }
+    |   '[' pe_no_parenthesis ']'                        { $$ = $2; }
 ;
 
 /**

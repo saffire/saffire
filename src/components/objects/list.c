@@ -317,7 +317,29 @@ static t_object *obj_new(t_object *self) {
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_list_object *list_obj = (t_list_object *)obj;
 
-    list_obj->ht = arg_list->size == 0 ? ht_create() : DLL_HEAD(arg_list)->data;
+    // No arguments
+    if (arg_list->size == 0) {
+        list_obj->ht = ht_create();
+        return;
+    }
+
+    if (arg_list->size == 1) {
+        // Simple hash table. Direct copy
+        list_obj->ht = DLL_HEAD(arg_list)->data;
+        return;
+    }
+
+    // 2 (or higher). Use the DLL in arg2
+    list_obj->ht = ht_create();
+    t_dll_element *e = DLL_HEAD(arg_list);
+    e = DLL_NEXT(e);
+    t_dll *dll = (t_dll *)e->data;
+    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
+    while (e) {
+        t_object *val = (t_object *)e->data;
+        ht_add_num(list_obj->ht, list_obj->ht->element_count, val);
+        e = DLL_NEXT(e);
+    }
 }
 
 static void obj_free(t_object *obj) {
