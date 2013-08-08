@@ -109,11 +109,11 @@ error_in:
 
 int pcloseRWE(int pid, int *rwepipe)
 {
-	int rc, status;
+	int status;
 	close(rwepipe[0]);
 	close(rwepipe[1]);
 	close(rwepipe[2]);
 
-	rc = waitpid(pid, &status, 0);
+	waitpid(pid, &status, 0);
 	return status;
 }

@@ -63,8 +63,6 @@ static void dbgp_read_commandline(int sockfd, int *argc, char ***argv) {
         strcat(buffer, buf);
         buffer[buffer_len] = '\0';
 
-        char ch;
-        ch = buffer[buffer_len-1];
         if (buffer[buffer_len-1] == '\0') {
             break;
         }
