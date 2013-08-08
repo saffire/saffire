@@ -495,7 +495,7 @@ non_empty_tuple_list:
 pe_no_parenthesis:
         primary_expression_first_part        { $$ = $1; }
     |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); }
-    |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null())); } /* Add termination varargs list */
+    |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null(@1.first_line))); } /* Add termination varargs list */
     |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
     |   primary_expression data_structure    { $$ = ast_node_opr(@1.first_line, T_DATASTRUCT, 2, $1, $2); }
 ;
@@ -605,8 +605,8 @@ class_method_definition:
 method_argument_list:
         non_empty_method_argument_list                             { $$ = $1; }
     |   /* empty */                                                { $$ = ast_node_nop(); }
-    |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@4.first_line, $4), ast_node_null())); smm_free($4); }
-    |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_node_opr(@1.first_line, T_ARGUMENT_LIST, 0); ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@2.first_line, $2), ast_node_null())); smm_free($2); }
+    |   non_empty_method_argument_list ',' T_ELLIPSIS T_IDENTIFIER { $$ = $1; ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@4.first_line, $4), ast_node_null(@4.first_line))); smm_free($4); }
+    |   /* empty */                        T_ELLIPSIS T_IDENTIFIER { $$ = ast_node_opr(@1.first_line, T_ARGUMENT_LIST, 0); ast_node_add($$, ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, "..."), ast_node_string(@2.first_line, $2), ast_node_null(@2.first_line))); smm_free($2); }
 ;
 
 non_empty_method_argument_list:
@@ -615,9 +615,9 @@ non_empty_method_argument_list:
 ;
 
 method_argument:
-        T_IDENTIFIER                                           { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(),     ast_node_string(@1.first_line, $1), ast_node_null()); smm_free($1); }
-    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(),     ast_node_string(@1.first_line, $1), $3        ); smm_free($1); }
-    |   T_IDENTIFIER T_IDENTIFIER                              { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, $1), ast_node_string(@2.first_line, $2), ast_node_null()); smm_free($1); smm_free($2); }
+        T_IDENTIFIER                                           { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(@1.first_line),     ast_node_string(@1.first_line, $1), ast_node_null(@1.first_line)); smm_free($1); }
+    |   T_IDENTIFIER T_ASSIGNMENT scalar_value                 { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_null(@1.first_line),     ast_node_string(@1.first_line, $1), $3        ); smm_free($1); }
+    |   T_IDENTIFIER T_IDENTIFIER                              { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, $1), ast_node_string(@2.first_line, $2), ast_node_null(@2.first_line)); smm_free($1); smm_free($2); }
     |   T_IDENTIFIER T_IDENTIFIER T_ASSIGNMENT scalar_value    { $$ = ast_node_opr(@1.first_line, T_METHOD_ARGUMENT, 3, ast_node_string(@1.first_line, $1), ast_node_string(@2.first_line, $2), $4        ); smm_free($1); smm_free($2); }
 ;
 
@@ -646,7 +646,7 @@ class_property_definition:
         }
     |   modifier_list T_PROPERTY T_IDENTIFIER ';' {
         parser_validate_property_modifiers(saffireParser, @1.first_line, $1);
-        $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, ast_node_null(), 0, ast_node_nop());
+        $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RW, ast_node_null(@1.first_line), 0, ast_node_nop());
         smm_free($3);
     }
 ;
@@ -678,7 +678,7 @@ modifier:
 /* extends only one class */
 class_extends:
         T_EXTENDS T_IDENTIFIER { $$ = ast_node_string(@2.first_line, $2); smm_free($2); }
-    |   /* empty */            { $$ = ast_node_null(); }
+    |   /* empty */            { $$ = ast_node_null(0); }
 ;
 
 /* inherits a list of interfaces, or no inherits at all */
@@ -717,7 +717,6 @@ ds_element:
         assignment_expression                 { $$ = ast_node_group(1, $1); }
     |   ds_element ':' assignment_expression  { $$ = ast_node_add($$, $3);  }
 ;
-
 
 
 %%
