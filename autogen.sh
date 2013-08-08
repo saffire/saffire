@@ -1,6 +1,3 @@
 #!/bin/sh
-
-aclocal
-autoheader
-automake --add-missing --copy
-autoconf
+echo "This is just autoreconf..."
+autoreconf -i
