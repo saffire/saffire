@@ -3,7 +3,7 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 import io;
-foo = list[1,2,3];
+foo = list[[1,2,3]];
 foreach (foo as k)  {
     io.print(k,"\n");
 }
@@ -34,7 +34,7 @@ a
 b
 c
 @@@@
-foo = list[1,2,3];
+foo = list[[1,2,3]];
 foreach (blaat as k:v, i, j)  {
 }
 ====
@@ -46,13 +46,13 @@ foreach (blaat as k:v, i)  {
 ====
 a
 @@@@
-foo = list[1,2,3];
+foo = list[[1,2,3]];
 foreach blaat {
 }
 ====
 Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
-foo = list[1,2,3];
+foo = list[[1,2,3]];
 foreach blaat {
 }
 ====
@@ -67,7 +67,7 @@ io.print("done\n");
 Object must inherit the 'iterator' interface
 @@@@
 import io;
-foreach (list[] as a) {
+foreach (list[[]] as a) {
     /* no iteration, because of empty list */
     io.print("iteration\n");
 }
@@ -76,7 +76,7 @@ io.print("done\n");
 done
 @@@@
 import io;
-foreach (list[1,2,3] as a) io.print(a,"\n");
+foreach (list[[1,2,3]] as a) io.print(a,"\n");
 io.print("done\n");
 ====
 1
@@ -85,7 +85,7 @@ io.print("done\n");
 done
 @@@@
 import io;
-foreach (list[] as a);
+foreach (list[[]] as a);
 io.print("done\n");
 ====
 done

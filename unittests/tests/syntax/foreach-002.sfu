@@ -3,7 +3,7 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 import io;
-foo = list[1,"A",3];
+foo = list[[1,"A",3]];
 foreach (foo as k,v)  {
     io.print(k,v,"\n");
 }
@@ -14,7 +14,7 @@ A
 @@@@
 !skip
 import io;
-foo = hash["a":1,"b":2,"c":3];
+foo = hash[["a":1,"b":2,"c":3]];
 foreach (blaat as k:v:x)  {
     io.print(k,"=>",v,x,"\n");
 }
@@ -25,7 +25,7 @@ c=>3Null
 @@@@
 !skip
 import io;
-foo = hash["a":1,"b":2,"c":3];
+foo = hash[["a":1,"b":2,"c":3]];
 foreach (blaat as k:v, meta)  {
     if (meta.first) io.print("first\n");
     if (meta.last) io.print("last\n");

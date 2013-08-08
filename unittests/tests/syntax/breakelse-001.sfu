@@ -32,7 +32,7 @@ io.print(a);
 5
 @@@@
 import io;
-foreach (list[1,2] as b) {
+foreach (list[[1,2]] as b) {
     io.print("breakelse\n");
     breakelse;
     io.print("error\n");
@@ -44,7 +44,7 @@ breakelse
 else
 @@@@
 import io;
-foreach (list[1,2] as b) {
+foreach (list[[1,2]] as b) {
     io.print("break\n");
     break;
     io.print("error\n");
@@ -55,7 +55,7 @@ foreach (list[1,2] as b) {
 break
 @@@@
 import io;
-foreach (list[] as b) {
+foreach (list[[]] as b) {
     io.print("breakelse\n");
     breakelse;
     io.print("error\n");

@@ -30,15 +30,15 @@ io.print("done");
 done
 @@@@
 import io;
-foreach (list[1,2,3] as b) {
+foreach (list[[1,2,3]] as b) {
     io.print(b);
     break;
 }
 ====
 1
 @@@@
-foreach (list[1,2,3] as a) {
-    foreach (list[1,2,3] as b) {
+foreach (list[[1,2,3]] as a) {
+    foreach (list[[1,2,3]] as b) {
         break;
     }
     break;

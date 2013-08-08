@@ -35,7 +35,7 @@ io.print(a, " ", b);
 10 10
 @@@@
 import io;
-foreach (list[1,2,3] as b) {
+foreach (list[[1,2,3]] as b) {
     io.print(b);
     continue;
     io.print("!");
