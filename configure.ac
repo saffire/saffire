@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.65])
 AC_INIT([saffire], [0.1], [build@saffire-lang.org])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([subdir-objects foreign])
 AC_CONFIG_HEADERS([src/config.h])
 
 # Clear CFLAGS (they are set to "-O2 -g" by default)
