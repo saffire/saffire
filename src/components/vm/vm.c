@@ -1421,6 +1421,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             DEBUG_PRINT("CASE 5\n");
             DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip_else);
             frame->ip = block->handlers.loop.ip_else;
+            *reason = REASON_NONE;
             break;
         }
 
