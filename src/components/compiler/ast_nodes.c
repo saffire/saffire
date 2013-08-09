@@ -199,10 +199,11 @@ t_ast_element *ast_node_nop(void) {
 /**
  * Creates a identifier node with "null" node.
  */
-t_ast_element *ast_node_null(void) {
+t_ast_element *ast_node_null(int lineno) {
     t_ast_element *p = ast_node_alloc_element();
 
     p->type = typeAstNull;
+    p->lineno = lineno;
     return p;
 }
 

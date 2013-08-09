@@ -18,6 +18,7 @@ BREAK_LOOP           0x74
 BREAKELSE_LOOP       0x75
 
 END_FINALLY          0x7A
+ITER_RESET           0x7B
 
 USE                  0x7E
 IMPORT               0x7F
@@ -49,12 +50,17 @@ SETUP_FINALLY        0x96
 JUMP_IF_FIRST_FALSE  0xA0
 JUMP_IF_FIRST_TRUE   0xA1
 
-OPERATOR             0xA8
+BUILD_DATASTRUCT     0xA6
+LOAD_SUBSCRIPT       0xA7
+STORE_SUBSCRIPT      0xA8
+
+OPERATOR             0xAA
 
 PACK_TUPLE           0xAB
 UNPACK_TUPLE         0xAC
-BUILD_TUPLE          0xAE
-BUILD_DATASTRUCT     0xAF
+BUILD_TUPLE          0xAD
+
+ITER_FETCH           0xB1
 
 STORE_ATTRIB         0xBD
 LOAD_ATTRIB          0xBE

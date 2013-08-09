@@ -86,4 +86,6 @@
     char parser_mod_to_visibility(SaffireParser *sp, int lineno, long modifiers);
     char parser_mod_to_methodflags(SaffireParser *sp, int lineno, long modifiers);
 
+    void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e);
+
 #endif

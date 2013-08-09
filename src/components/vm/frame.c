@@ -157,9 +157,9 @@ t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
  */
 void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     if (obj == NULL) {
-        ht_remove(frame->global_identifiers->ht, id);
+        ht_remove_str(frame->global_identifiers->ht, id);
     } else {
-        ht_add(frame->global_identifiers->ht, id, obj);
+        ht_add_str(frame->global_identifiers->ht, id, obj);
     }
 }
 
@@ -168,7 +168,7 @@ void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) 
  * Return object from the global identifier table
  */
 t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
-    t_object *obj = ht_num_find(frame->global_identifiers->ht, idx);
+    t_object *obj = ht_find_num(frame->global_identifiers->ht, idx);
     if (obj == NULL) RETURN_NULL;
     return obj;
 }
@@ -178,14 +178,14 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace(frame->local_identifiers->ht, id, obj);
+    t_object *old_obj = ht_replace_str(frame->local_identifiers->ht, id, obj);
     if (old_obj) {
         object_dec_ref((t_object *)old_obj);
     }
 }
 
 void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace(frame->builtin_identifiers->ht, id, obj);
+    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->ht, id, obj);
     if (old_obj) {
         object_dec_ref((t_object *)old_obj);
     }
@@ -210,7 +210,7 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
         DEBUG_PRINT("%s KEY: '%-20s' => %s\n", prefix, key, val ? object_debug(val) : "(null)");
 
@@ -234,21 +234,21 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
 
 
     // Check locals first
-    obj = ht_find(frame->local_identifiers->ht, id);
+    obj = ht_find_str(frame->local_identifiers->ht, id);
     if (obj != NULL) return obj;
 
     // If file identifiers are present, check them
     if (frame->file_identifiers) {
-        obj = ht_find(frame->file_identifiers->ht, id);
+        obj = ht_find_str(frame->file_identifiers->ht, id);
         if (obj != NULL) return obj;
     }
 
     // Check globals
-    obj = ht_find(frame->global_identifiers->ht, id);
+    obj = ht_find_str(frame->global_identifiers->ht, id);
     if (obj != NULL) return obj;
 
     // Last, check builtins
-    obj = ht_find(frame->builtin_identifiers->ht, id);
+    obj = ht_find_str(frame->builtin_identifiers->ht, id);
     if (obj != NULL) return obj;
 
     // @TODO: We should throw an exception instead of just returning

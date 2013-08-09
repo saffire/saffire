@@ -65,13 +65,13 @@ static void _backpatch_labels(t_asm_frame *frame) {
         struct _backpatch *bp = (struct _backpatch *)e->data;
 
         // Check if labelname exists, if not, we have referenced to a label but never declared it.
-        if (! ht_exists(frame->label_offsets, bp->label)) {
+        if (! ht_exists_str(frame->label_offsets, bp->label)) {
             char *label = bp->label;
             label += strlen("userlabel_");
             fatal_error(1, "Cannot find label '%s'\n", label);
         }
         // Fetch the offset of the label so we can patch it
-        unsigned int label_offset = (int)ht_find(frame->label_offsets, bp->label);
+        unsigned int label_offset = (int)ht_find_str(frame->label_offsets, bp->label);
 
         // We need to add an offset to our patching. This is because relative items are calculated from the LAST
         // operand read. The current operand does not have to be the last one for this opcode.
@@ -218,10 +218,10 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
-            if (ht_exists(frame->label_offsets, line->s)) {
+            if (ht_exists_str(frame->label_offsets, line->s)) {
                 fatal_error(1, "Label '%s' is already defined", line->s);
             }
-            ht_add(frame->label_offsets, line->s, (void *)frame->code_len);
+            ht_add_str(frame->label_offsets, line->s, (void *)frame->code_len);
         }
 
         if (line->type == ASM_LINE_TYPE_CODE) {
@@ -438,10 +438,10 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     ht_iter_init(&iter, asm_code);
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
 
         t_asm_frame *assembled_frame = assemble_frame(frame);
-        ht_add(assembled_frames, key, assembled_frame);
+        ht_add_str(assembled_frames, key, assembled_frame);
 
         ht_iter_next(&iter);
     }
@@ -559,7 +559,7 @@ void assembler_output_stream(t_hash_table *asm_code, FILE *f) {
     ht_iter_init(&iter, asm_code);
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
 
         // The "main frame does not need any declaration. Other frames do:
         if (strcmp(key, "main") != 0) {

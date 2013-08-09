@@ -39,8 +39,8 @@
 
     void vm_populate_builtins(const char *name, void *data);
 
-    // Forward define
-    typedef struct _object t_object;
+//    // Forward define
+//    typedef struct _object t_object;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
@@ -125,6 +125,8 @@
     #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
     #define OBJECT_IS_EXCEPTION(obj)    (obj->type == objectTypeException)
     #define OBJECT_IS_TUPLE(obj)        (obj->type == objectTypeTuple)
+    #define OBJECT_IS_LIST(obj)         (obj->type == objectTypeList)
+    #define OBJECT_IS_HASH(obj)         (obj->type == objectTypeHash)
 
 
     // Convert object to value
@@ -170,19 +172,19 @@
 
     extern t_object Object_Base_struct;
 
-    #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base) \
+    #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base, interfaces) \
                 0,              /* initial refcount */     \
                 type,           /* scalar type */          \
                 name,           /* name */                 \
                 flags,          /* flags */                \
                 base,           /* parent */               \
-                NULL,           /* implements */           \
+                interfaces,     /* implements */           \
                 NULL,           /* attribute */            \
                 funcs           /* functions */
 
     // Object header initialization without any functions or base
     #define OBJECT_HEAD_INIT(name, type, flags, funcs) \
-            OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, &Object_Base_struct)
+            OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, &Object_Base_struct, NULL)
 
     /*
      * Header macros
@@ -218,12 +220,14 @@
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);
 
+    void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
     void object_remove_all_internal_attributes(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
     int object_check_interface_implementations(t_object *obj);
+    int object_has_interface(t_object *obj, const char *interface);
 
     void object_raise_exception(t_object *exception, char *format, ...);
 

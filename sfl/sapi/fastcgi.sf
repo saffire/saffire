@@ -7,10 +7,10 @@ class fastcgi {
     }
 
     static public method getRole() {
-        return self.environment().get("FCGI_ROLE");
+        return self.environment().get("FCGI_ROLE", "unknown");
     }
 
     static public method isResponder() {
-        return self.environment().get("FCGI_ROLE") == "RESPONDER";
+        return self.environment().get("FCGI_ROLE", "unknown") == "RESPONDER";
     }
 }

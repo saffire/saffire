@@ -1,0 +1,93 @@
+title: foreach/else and break/breakelse control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+**********
+import io;
+
+io.print("-1-----\n");
+foreach (list[[1,2,3]] as b) {
+    io.print("B: ",b,"\n");
+}
+======
+-1-----
+B: 1
+B: 2
+B: 3
+@@@@@@
+import io;
+io.print("-2-----\n");
+foreach (list[[1,2,3]] as b,c) {
+    io.print("B: ",b,"  C: ",c,"\n");
+}
+======
+-2-----
+B: 0  C: 1
+B: 1  C: 2
+B: 2  C: 3
+@@@@@@
+import io;
+io.print("-3-----\n");
+foreach (list[[1,2,3]] as b,c,d) {
+    io.print("B: ",b,"  C: ",c,"  D: n/a\n");
+}
+======
+-3-----
+B: 0  C: 1  D: n/a
+B: 1  C: 2  D: n/a
+B: 2  C: 3  D: n/a
+@@@@@@
+import io;
+io.print("-4-----\n");
+foreach (list[[1,2,3]] as b) {
+  io.print("B: ",b,"\n");
+} else {
+  io.print("else\n");
+}
+======
+-4-----
+B: 1
+B: 2
+B: 3
+@@@@@@
+import io;
+io.print("-5-----\n");
+foreach (list[[1,2,3]] as b) {
+  io.print("B: ",b,"\n");
+  breakelse;
+} else {
+  io.print("else\n");
+}
+======
+-5-----
+B: 1
+else
+@@@@@@
+import io;
+io.print("-6-----\n");
+foreach (list[[1,2,3]] as b) {
+  io.print("B: ",b,"\n");
+  break;
+} else {
+  io.print("else\n");
+}
+======
+-6-----
+B: 1
+@@@@@@
+import io;
+io.print("-7-----\n");
+foreach (list[[]] as b) {
+  io.print("B: ",b,"\n");
+} else {
+  io.print("else\n");
+}
+======
+-7-----
+else
+@@@@@@
+import io;
+io.print("-8-----\n");
+foreach (list[[]] as b) {
+  io.print("B: ",b,"\n");
+}
+======
+-8-----

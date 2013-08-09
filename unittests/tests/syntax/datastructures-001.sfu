@@ -1,40 +1,59 @@
 title: data structure tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-!skip
-// Normal lists
-a = list[1, 2, 3, 4];
-a = list[1, 2, 3,  ];
-a = list[ , 2, 3, 4];
-a = list[];
-====
-@@@@
-!skip
-// Normal hashes
-a = hash["a":1, "b":2, "c":3, "d":4];
-a = hash["a":1, "b":2, "c":3,      ];
-a = hash[     , "b":2, "c":3, "d":4];
-a = hash[];
-====
-@@@@
-!skip
-// Can have multiple values per element
-a = datastruct["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
-====
-@@@@
-!skip
-// Cannot use numerics
-a = 1["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
-====
-@@@@
-!skip
-// Cannot use variables
-a = foo["a":1:"foo":3:"bar", "b":2, "c":3, "d":4];
-====
+import io;
+a = list[[1, 2, 3, 4]];
+io.print(a,"\n");
 
-@@@@
-!skip
-// Return item of the data structure
-a = foo["a"];
-a = foo[1];
+a = list[[1, 2, 3]];
+io.print(a,"\n");
+
+a = list[[2, 3, 4]];
+io.print(a,"\n");
+
+a = list[[]];
+io.print(a,"\n");
 ====
+list[4]
+list[3]
+list[3]
+list[0]
+@@@@
+// Normal hashes
+import io;
+
+a = hash[["a":1, "b":2, "c":3, "d":4]];
+io.print(a,"\n");
+
+a = hash[["a":1, "b":2, "c":3]];
+io.print(a,"\n");
+
+a = hash[["b":2, "c":3, "d":4]];
+io.print(a,"\n");
+
+a = hash[[]];
+io.print(a,"\n");
+====
+hash[4]
+hash[3]
+hash[3]
+hash[0]
+@@@@
+// Return item of the data structure
+import io;
+foo = hash[["a" : "b", 1 : 2, 3 : "a"]];
+a = foo["a"];
+io.print(a,"\n");
+a = foo[1];
+io.print(a,"\n");
+a = 1;
+b = foo[a];
+io.print(b,"\n");
+a = 3;
+b = foo[foo[a]];
+io.print(b,"\n");
+====
+b
+2
+2
+b

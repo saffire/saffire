@@ -38,7 +38,7 @@
     t_exception_object Object_Exception_struct;
     #define Object_Exception ((t_object *)&Object_Exception_struct)
 
-    #include "objects/_exceptions.h"
+    #include "objects/_generated_exceptions.h"
 
     void object_exception_init(void);
     void object_exception_fini(void);
