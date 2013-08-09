@@ -429,7 +429,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     hash_string_text(value, strhash);
 
     // Check for and return cached object
-    t_object *cache_obj = ht_find(string_cache, strhash);
+    t_object *cache_obj = ht_find_str(string_cache, strhash);
     if (cache_obj) {
         obj = cache_obj;
     }
@@ -445,7 +445,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     recalc_hash(str_obj);
 
     // Add to string cache
-    ht_add(string_cache, strhash, str_obj);
+    ht_add_str(string_cache, strhash, str_obj);
 }
 
 static void obj_free(t_object *obj) {

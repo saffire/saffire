@@ -24,22 +24,12 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECTS_H__
-#define __OBJECTS_H__
+#ifndef __OBJECT_INTERFACES_H__
+#define __OBJECT_INTERFACES_H__
 
-    #include "userland.h"
-    #include "attrib.h"
-    #include "base.h"
-    #include "string.h"
-    #include "boolean.h"
-    #include "hash.h"
-    #include "list.h"
-    #include "callable.h"
-    #include "null.h"
-    #include "numerical.h"
-    #include "regex.h"
-    #include "tuple.h"
-    #include "interfaces.h"
-    #include "exception.h"
+    #include "objects/_generated_interfaces.h"
+
+    void object_interfaces_init(void);
+    void object_interfaces_fini(void);
 
 #endif

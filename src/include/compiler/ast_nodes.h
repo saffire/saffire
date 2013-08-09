@@ -164,7 +164,7 @@
     t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);
     t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_node_nop(void);
-    t_ast_element *ast_node_null(void);
+    t_ast_element *ast_node_null(int lineno);
     t_ast_element *ast_node_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);

@@ -284,7 +284,6 @@ static int bytecode_bc2bin(t_bytecode *bytecode, int *bincode_off, char **bincod
  */
 t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     t_bytecode_binary_header header;
-    int unused; // @TODO: Make sure we actually use these values
 
     if (! bytecode_is_valid_file(filename)) {
         return NULL;
@@ -292,12 +291,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
     // Read header
     FILE *f = fopen(filename, "rb");
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
 
     // Allocate room and read binary code
     char *bincode = (char *)smm_malloc(header.bytecode_len);
     fseek(f, header.bytecode_offset, SEEK_SET);
-    unused = fread(bincode, header.bytecode_len, 1, f);
+    fread(bincode, header.bytecode_len, 1, f);
 
 
     // There is a signature present. Give warning when the user does not want to check it
@@ -315,7 +314,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
         // Read signature
         char *signature = (char *)smm_malloc(header.signature_len);
         fseek(f, header.signature_offset, SEEK_SET);
-        unused = fread(signature, header.signature_len, 1, f);
+        fread(signature, header.signature_len, 1, f);
 
         // Verify signature
         if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
@@ -474,12 +473,11 @@ void bytecode_free(t_bytecode *bc) {
  */
 int bytecode_get_timestamp(const char *path) {
     t_bytecode_binary_header header;
-    int unused;
 
     // Read header
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
     fclose(f);
 
     return header.timestamp;
@@ -490,12 +488,11 @@ int bytecode_get_timestamp(const char *path) {
  */
 int bytecode_is_valid_file(const char *path) {
     t_bytecode_binary_header header;
-    int unused;
 
     // Read header
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
     fclose(f);
 
     return (header.magic == MAGIC_HEADER);
@@ -507,11 +504,10 @@ int bytecode_is_valid_file(const char *path) {
  */
 int bytecode_is_signed(const char *path) {
     t_bytecode_binary_header header;
-    int unused;
 
     // Read header
     FILE *f = fopen(path, "rb");
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
     fclose(f);
 
     return ((header.flags & BYTECODE_FLAG_SIGNED) == BYTECODE_FLAG_SIGNED &&
@@ -524,14 +520,13 @@ int bytecode_is_signed(const char *path) {
  */
 int bytecode_remove_signature(const char *path) {
     t_bytecode_binary_header header;
-    int unused;
 
     // Sanity check
     if (! bytecode_is_signed(path)) return 1;
 
     // Read header
     FILE *f = fopen(path, "r+b");
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
 
     int sigpos = header.signature_offset;
     header.signature_offset = 0;
@@ -540,10 +535,10 @@ int bytecode_remove_signature(const char *path) {
 
     // Write new header
     fseek(f, 0, SEEK_SET);
-    unused = fwrite(&header, sizeof(header), 1, f);
+    fwrite(&header, sizeof(header), 1, f);
 
     // Strip away the signature (@TODO: assume signature is at end of file)
-    unused = ftruncate(fileno(f), sigpos);
+    ftruncate(fileno(f), sigpos);
     fclose(f);
 
     return 0;
@@ -555,19 +550,18 @@ int bytecode_remove_signature(const char *path) {
  */
 int bytecode_add_signature(const char *path, char *gpg_key) {
     t_bytecode_binary_header header;
-    int unused;
 
     // Sanity check
     if (bytecode_is_signed(path)) return 1;
 
     // Read header
     FILE *f = fopen(path, "r+b");
-    unused = fread(&header, sizeof(header), 1, f);
+    fread(&header, sizeof(header), 1, f);
 
     // Allocate room and read bincode from file
     char *bincode = smm_malloc(header.bytecode_len);
     fseek(f, header.bytecode_offset, SEEK_SET);
-    unused = fread(bincode, header.bytecode_len, 1, f);
+    fread(bincode, header.bytecode_len, 1, f);
 
     // Create signature from bincode
     char *gpg_signature = NULL;
@@ -592,11 +586,11 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
 
     // Write new header
     fseek(f, 0, SEEK_SET);
-    unused = fwrite(&header, sizeof(header), 1, f);
+    fwrite(&header, sizeof(header), 1, f);
 
     // Write signature to the end of the file (signature offset)
     fseek(f, header.signature_offset, SEEK_SET);
-    unused = fwrite(gpg_signature, gpg_signature_len, 1, f);
+    fwrite(gpg_signature, gpg_signature_len, 1, f);
 
     fclose(f);
 
@@ -611,7 +605,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     t_dll_element *e;
 
     // Seek frame
-    t_asm_frame *frame = ht_find(frames, name);
+    t_asm_frame *frame = ht_find_str(frames, name);
     if (! frame) return NULL;
 
     // Create bytecode structure

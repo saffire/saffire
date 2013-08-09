@@ -81,7 +81,7 @@ SAFFIRE_METHOD(tuple, get) {
         return NULL;
     }
 
-    t_object *obj = ht_num_find(self->ht, OBJ2NUM(index));
+    t_object *obj = ht_find_num(self->ht, OBJ2NUM(index));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -95,7 +95,7 @@ SAFFIRE_METHOD(tuple, add) {
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
         return NULL;
     }
-    ht_num_add(self->ht, self->ht->element_count, val);
+    ht_add_num(self->ht, self->ht->element_count, val);
     RETURN_SELF;
 }
 
@@ -221,7 +221,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         t_object *arg_obj = (t_object *)e->data;
 
         DEBUG_PRINT("Adding object: %s\n", object_debug(arg_obj));
-        ht_num_add(tuple_obj->ht, cnt++, arg_obj);
+        ht_add_num(tuple_obj->ht, cnt++, arg_obj);
 
         e = DLL_NEXT(e);
     }

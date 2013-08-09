@@ -29,14 +29,16 @@ io.print("done");
 ====
 done
 @@@@
-!skip
-foreach (a as b) {
+import io;
+foreach (list[[1,2,3]] as b) {
+    io.print(b);
     break;
 }
 ====
+1
 @@@@
-foreach (a as b) {
-    foreach (a as b) {
+foreach (list[[1,2,3]] as a) {
+    foreach (list[[1,2,3]] as b) {
         break;
     }
     break;

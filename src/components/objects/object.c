@@ -56,6 +56,10 @@ const char *objectOprMethods[10] = { "__opr_add", "__opr_sub", "__opr_mul", "__o
 
 
 
+// Include generated interfaces
+#include "_generated_interfaces.inc"
+
+
 int object_is_immutable(t_object *obj) {
     return ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE);
 }
@@ -81,7 +85,7 @@ t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
         // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
 
         // Find the attribute in the current object
-        attr = ht_find(cur_obj->attributes, attr_name);
+        attr = ht_find_str(cur_obj->attributes, attr_name);
         if (attr != NULL) break;
 
         // Not found and there is no parent, we're done!
@@ -286,6 +290,9 @@ void object_init() {
     object_userland_init();
     object_list_init();
     object_exception_init();
+
+    object_iterator_init();
+    object_datastructure_init();
 }
 
 
@@ -293,19 +300,23 @@ void object_init() {
  * Finalize all the (scalar) objects
  */
 void object_fini() {
-    object_base_fini();
-    object_boolean_fini();
-    object_null_fini();
-    object_numerical_fini();
-    object_string_fini();
-    object_regex_fini();
-    object_callable_fini();
-    object_attrib_fini();
-    object_hash_fini();
-    object_tuple_fini();
-    object_userland_fini();
-    object_list_fini();
+    object_datastructure_fini();
+    object_iterator_fini();
+
     object_exception_fini();
+    object_list_fini();
+    object_userland_fini();
+    object_tuple_fini();
+    object_hash_fini();
+    object_attrib_fini();
+    object_callable_fini();
+    object_regex_fini();
+    object_string_fini();
+    object_numerical_fini();
+    object_null_fini();
+    object_boolean_fini();
+    object_base_fini();
+
 }
 
 
@@ -405,6 +416,27 @@ done:
 
 
 /**
+ * Adds interface to object (class)
+ */
+void object_add_interface(t_object *class, t_object *interface) {
+    if (! OBJECT_TYPE_IS_CLASS(class)) {
+        fatal_error(1, "Interface can only be added to a class\n");
+        return;
+    }
+
+    if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
+        fatal_error(1, "%s is not an interface\n", interface->name);
+        return;
+    }
+
+    if (! class->interfaces) {
+        class->interfaces = dll_init();
+    }
+
+    dll_append(class->interfaces, interface);
+}
+
+/**
  * Create method- attribute that points to an INTERNAL (C) function
  */
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
@@ -413,7 +445,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
     t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
-    ht_add(obj->attributes, name, attrib_obj);
+    ht_add_str(obj->attributes, name, attrib_obj);
 }
 
 
@@ -423,7 +455,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
-    ht_replace(obj->attributes, name, attrib);
+    ht_replace_str(obj->attributes, name, attrib);
 }
 
 
@@ -433,10 +465,10 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
 
-    if (ht_exists(obj->attributes, name)) {
+    if (ht_exists_str(obj->attributes, name)) {
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
-    ht_add(obj->attributes, name, attrib);
+    ht_add_str(obj->attributes, name, attrib);
 }
 
 
@@ -513,7 +545,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
     t_hash_iter iter;
     ht_iter_init(&iter, interface->attributes);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
         DEBUG_PRINT(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
 
@@ -569,4 +601,25 @@ int object_check_interface_implementations(t_object *obj) {
 
     // Everything fully implemented
     return 1;
+}
+
+
+/**
+ * Iterates all interfaces found in this object, and see if the object actually implements it fully
+ */
+int object_has_interface(t_object *obj, const char *interface_name) {
+    DEBUG_PRINT("object_has_interface(%s)\n", interface_name);
+
+    t_dll_element *elem = obj->interfaces != NULL ? DLL_HEAD(obj->interfaces) : NULL;
+    while (elem) {
+        t_object *interface = (t_object *)elem->data;
+
+        if (strcasecmp(interface->name, interface_name) == 0) {
+            return 1;
+        }
+        elem = DLL_NEXT(elem);
+    }
+
+    // No, cannot find it
+    return 0;
 }

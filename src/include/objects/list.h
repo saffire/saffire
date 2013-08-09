@@ -36,6 +36,9 @@
         SAFFIRE_OBJECT_HEADER
 
         t_hash_table *ht;
+        struct {
+            long idx;
+        } iter;
     } t_list_object;
 
     t_list_object Object_List_struct;

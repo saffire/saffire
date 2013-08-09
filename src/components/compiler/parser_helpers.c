@@ -158,23 +158,23 @@ void parser_validate_constant(SaffireParser *sp, int lineno, char *name) {
     if (sp->parserinfo->active_class) {
         // inside the current class
 
-        if (ht_exists(sp->parserinfo->active_class->constants, name)) {
+        if (ht_exists_str(sp->parserinfo->active_class->constants, name)) {
             parser_error(sp, lineno, "Constant '%s' has already be defined in class '%s'", name, sp->parserinfo->active_class->name);
             return;
         }
 
         // Save structure to the global class hash and set as the active class
-        ht_add(sp->parserinfo->active_class->constants, name, name);
+        ht_add_str(sp->parserinfo->active_class->constants, name, name);
 
     } else {
         // Global scope
-        if (ht_exists(sp->parserinfo->constants, name)) {
+        if (ht_exists_str(sp->parserinfo->constants, name)) {
             parser_error(sp, lineno, "Constant '%s' has already be defined in the global scope", name);
             return;
         }
 
         // Save structure to the global class hash and set as the active class
-        ht_add(sp->parserinfo->constants, name, name);
+        ht_add_str(sp->parserinfo->constants, name, name);
     }
 
 }
@@ -204,7 +204,7 @@ void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name,
     }
 
     // Check if the class exists in the class table
-    if (ht_exists(sp->parserinfo->classes, name)) {
+    if (ht_exists_str(sp->parserinfo->classes, name)) {
         parser_error(sp, lineno, "This class is already defined");
         return;
     }
@@ -232,7 +232,7 @@ void parser_init_class(SaffireParser *sp, int lineno, int modifiers, char *name,
     new_class->line_end = 0;
 
     // Save structure to the global class hash and set as the active class
-    ht_add(sp->parserinfo->classes, name, new_class);
+    ht_add_str(sp->parserinfo->classes, name, new_class);
     sp->parserinfo->active_class = new_class;
 
     // We are currently inside a class.
@@ -417,6 +417,22 @@ void parser_validate_breakelse(SaffireParser *sp, int lineno) {
     }
 }
 
+void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
+    // Everything not being a opr, is ok
+    if (e->type != typeAstOpr) {
+        return;
+    }
+
+    if (e->opr.oper == T_DATASTRUCT && e->opr.nops <= 1) {
+        // foo[] and foo[1] are ok
+        return;
+    }
+
+
+    // Everything else, not so much
+    parser_error(sp, lineno, "Variable is not writable");
+}
+
 
 
 /**
@@ -481,5 +497,5 @@ void parser_error(SaffireParser *sp, int lineno, const char *format, ...) {
     snprintf(errorbuf, 2047, format, args);
     va_end(args);
 
-    error("%s, found in %s on line %d", errorbuf, sp->filename, lineno);
+    fatal_error(1, "%s, found in %s on line %d\n", errorbuf, sp->filename, lineno);
 }

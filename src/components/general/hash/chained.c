@@ -34,6 +34,25 @@
  * These hash tables are not reentrant, nor threadsafe!
  */
 
+static hash_t ht_hash(t_hash_table *ht, t_hash_key *key) {
+    hash_t hash_value = 0;
+    if (! ht) return 0;      // Not a hash table
+
+    switch (key->type) {
+        case HASH_KEY_STR :
+            hash_value = ht->hashfuncs->hash(ht, (const char *)key->val.s);
+            break;
+        case HASH_KEY_NUM :
+            hash_value = key->val.n;
+            break;
+        case HASH_KEY_PTR :
+            hash_value = (unsigned long)key->val.p;
+            break;
+    }
+
+    return hash_value;
+}
+
 /**
  * Resize the hashtable, and rehash all values
  */
@@ -74,19 +93,33 @@ static void resize(t_hash_table *ht, int new_bucket_count) {
 /**
  * Return bucket for specified key
  */
-static t_hash_table_bucket *find_bucket(t_hash_table *ht, const char *key) {
-    hash_t hash_value = ht->hashfuncs->hash(ht, key);
-    hash_t hash_value_capped = hash_value % ht->bucket_count;
-
+static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
     // Locate the hash value in the bucket list.
+    hash_t hash_value = ht_hash(ht, key);
+    hash_t hash_value_capped = hash_value % ht->bucket_count;
     if (ht->bucket_list[hash_value_capped] == NULL) {
         // Not found
         return NULL;
     }
 
     // Found bucket. Try and find the key. Traverse linked list if needed.
+    int found = 0;
     t_hash_table_bucket *htb = ht->bucket_list[hash_value_capped];
-    while (htb && strcmp(key, htb->key)) htb = htb->next_in_list;
+    while (htb) {
+        switch (key->type) {
+            case HASH_KEY_STR :
+                if (strcmp(htb->key->val.s, key->val.s) == 0) found = 1;
+                break;
+            case HASH_KEY_NUM :
+                if (htb->key->val.n == key->val.n) found = 1;
+                break;
+            case HASH_KEY_PTR :
+                if (htb->key->val.p == key->val.p) found = 1;
+                break;
+        }
+        if (found) break;
+        htb = htb->next_in_list;
+    }
 
     return htb;
 }
@@ -95,7 +128,7 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, const char *key) {
 /**
  * Find key in hash table
  */
-static void *find(t_hash_table *ht, const char *key) {
+static void *find(t_hash_table *ht, t_hash_key *key) {
     if (! ht) return NULL;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -108,7 +141,7 @@ static void *find(t_hash_table *ht, const char *key) {
 /**
  * Check if a key exists in a hashtable
  */
-static int exists(t_hash_table *ht, const char *key) {
+static int exists(t_hash_table *ht, t_hash_key *key) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -121,16 +154,16 @@ static int exists(t_hash_table *ht, const char *key) {
 /**
  * Add key/value pair to the hash
  */
-static int add(t_hash_table *ht, const char *key, void *value) {
+static int add(t_hash_table *ht, t_hash_key *key, void *value) {
     if (! ht) return 0;      // Not a hash table
 
-    hash_t hash_value = ht->hashfuncs->hash(ht, key);
+    hash_t hash_value = ht_hash(ht, key);
     hash_t hash_value_capped = hash_value % ht->bucket_count;
 
     // Create bucket for new variable
     t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(sizeof(t_hash_table_bucket));
     htb->hash = hash_value;         // Store original hash value (for quick rehashing)
-    htb->key = smm_strdup(key);
+    htb->key = key;
     htb->value = value;
     htb->next_in_list = NULL;
 
@@ -176,7 +209,7 @@ static int add(t_hash_table *ht, const char *key, void *value) {
 /**
  * Add key/value pair to the hash
  */
-static void *replace(t_hash_table *ht, const char *key, void *value) {
+static void *replace(t_hash_table *ht, t_hash_key *key, void *value) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -194,14 +227,14 @@ static void *replace(t_hash_table *ht, const char *key, void *value) {
 /**
  * Remove key from hash table
  */
-static void *remove(t_hash_table *ht, const char *key) {
+static void *remove(t_hash_table *ht, t_hash_key *key) {
     void *val;
 
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *prev, *next;
 
-    hash_t hash_value = ht->hashfuncs->hash(ht, key);
+    hash_t hash_value = ht_hash(ht, key);
     hash_t hash_value_capped = hash_value % ht->bucket_count;
 
     // Nothing to remove if nothing was found
@@ -209,7 +242,22 @@ static void *remove(t_hash_table *ht, const char *key) {
 
     // Traverse list to find actual element
     t_hash_table_bucket *htb = ht->bucket_list[hash_value_capped];
-    while (htb && strcmp(key, htb->key)) htb = htb->next_in_list;
+    while (htb) {
+        int found = 0;
+        switch (htb->key->type) {
+            case HASH_KEY_STR :
+                found = strcmp(htb->key->val.s, key->val.s) == 0;
+                break;
+            case HASH_KEY_NUM :
+                found = htb->key->val.n == key->val.n;
+                break;
+            case HASH_KEY_PTR :
+                found = htb->key->val.p == key->val.p;
+                break;
+        }
+        if (found) break;
+        htb = htb->next_in_list;
+    }
 
     // Key is still not found
     if (!htb) return 0;
@@ -296,7 +344,6 @@ void deep_copy(t_hash_table *ht) {
     }
 
     ht->tail = new_current;
-
 }
 
 

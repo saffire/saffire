@@ -17,6 +17,7 @@ systemException
         callableException
         visibilityException
     importException
+    interfaceException
 
 arithmeticException
     divideByZeroException

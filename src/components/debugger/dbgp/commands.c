@@ -386,7 +386,7 @@ DBGP_CMD_DEF(context_get) {
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_object *obj = ht_iter_value(&iter);
 
         if (OBJECT_TYPE_IS_INSTANCE(obj)) {
@@ -508,7 +508,7 @@ DBGP_CMD_DEF(breakpoint_get) {
     int i = dbgp_args_find("-d", argc, argv);
     char *breakpoint_id = argv[i+1];
 
-    t_breakpoint *bp = ht_find(di->breakpoints, breakpoint_id);
+    t_breakpoint *bp = ht_find_str(di->breakpoints, breakpoint_id);
     xmlNodePtr bp_node = create_breakpoint_xml(bp);
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);
@@ -591,7 +591,7 @@ DBGP_CMD_DEF(breakpoint_set) {
     snprintf(buf, 9, "%d", di->breakpoint_id);
     bp->id = smm_strdup(buf);
 
-    ht_add(di->breakpoints, bp->id, bp);
+    ht_add_str(di->breakpoints, bp->id, bp);
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);
     snprintf(xmlbuf, 999, "%d", bp->state);
@@ -611,9 +611,9 @@ DBGP_CMD_DEF(breakpoint_list) {
     t_hash_iter iter;
     ht_iter_init(&iter, di->breakpoints);
     while (ht_iter_valid(&iter)) {
-        char *id = ht_iter_key(&iter);
+        char *id = ht_iter_key_str(&iter);
 
-        t_breakpoint *bp = ht_find(di->breakpoints, id);
+        t_breakpoint *bp = ht_find_str(di->breakpoints, id);
         xmlNodePtr bp_node = create_breakpoint_xml(bp);
 
         xmlAddChild(root_node, bp_node);
@@ -632,7 +632,7 @@ DBGP_CMD_DEF(breakpoint_remove) {
     int i = dbgp_args_find("-d", argc, argv);
     char *breakpoint_id = argv[i+1];
 
-    ht_remove(di->breakpoints, breakpoint_id);
+    ht_remove_str(di->breakpoints, breakpoint_id);
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);
 
@@ -647,7 +647,7 @@ DBGP_CMD_DEF(breakpoint_update) {
     int i = dbgp_args_find("-d", argc, argv);
     char *breakpoint_id = argv[i+1];
 
-    t_breakpoint *bp = ht_find(di->breakpoints, breakpoint_id);
+    t_breakpoint *bp = ht_find_str(di->breakpoints, breakpoint_id);
 
     // State
     i = dbgp_args_find("-s", argc, argv);

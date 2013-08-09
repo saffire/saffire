@@ -25,9 +25,6 @@ AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) ${libxml2_CFLAGS}
 AM_CFLAGS += -Wall -Wno-unused-function
 
 
-# Add GNUSOURCE define to ignore warning for aprintf
-AM_CFLAGS += -D_GNU_SOURCE
-
 noinst_LIBRARIES =
 
 
@@ -48,7 +45,7 @@ include/gitversion.h:
 ########################################################################
 
 # Some additional rules for flex/bison file handling
-BUILT_SOURCES=components/compiler/lex.yy.c include/gitversion.h include/vm/vm_opcodes.c
+BUILT_SOURCES=components/compiler/lex.yy.c include/gitversion.h
 AM_LFLAGS = --outfile=components/compiler/$(LEX_OUTPUT_ROOT).c --header-file=include/compiler/$(LEX_OUTPUT_ROOT).h
 AM_YFLAGS += -d
 
@@ -72,8 +69,7 @@ CLEANFILES = components/compiler/parser.tab.c \
              include/compiler/parser.tab.h \
              components/compiler/lex.yy.c \
              include/compiler/lex.yy.h \
-             include/gitversion.h \
-             include/vm/vm_opcodes.h
+             include/gitversion.h
 
 noinst_LIBRARIES += libcompiler.a
 libcompiler_a_SOURCES = components/compiler/parser.tab.c \
@@ -148,14 +144,28 @@ libdebugger_a_SOURCES = components/debugger/dbgp/dbgp.c \
 ########################################################################
 # components/objects
 ########################################################################
-BUILT_SOURCES += include/objects/_exceptions.inc
+BUILT_SOURCES += components/objects/_generated_exceptions.inc \
+                 components/objects/_generated_interfaces.inc \
+                 include/objects/_generated_exceptions.h \
+                 include/objects/_generated_interfaces.h
 
-# Create _exceptions.inc and _exceptions.h
-include/objects/_exceptions.inc:
-	php include/objects/create_exceptions.php $(basename $@).dat $(basename $@).h $@
 
-CLEANFILES += include/objects/_exceptions.inc \
-              include/objects/_exceptions.h
+include/objects/_generated_interfaces.h: components/objects/_generated_interfaces.inc
+
+include/objects/_generated_exceptions.h: components/objects/_generated_exceptions.inc
+
+# Create _exceptions.inc
+components/objects/_generated_exceptions.inc:
+	php ../support/generators/generate_exceptions.php $(@D)/exceptions.dat $@ include/objects/_generated_exceptions.h
+
+components/objects/_generated_interfaces.inc:
+	php ../support/generators/generate_interfaces.php $(@D)/interfaces.dat $@ include/objects/_generated_interfaces.h
+
+
+CLEANFILES += components/objects/_generated_exceptions.inc \
+              components/objects/_generated_interfaces.inc \
+              include/objects/_generated_exceptions.h \
+              include/objects/_generated_interfaces.h
 
 noinst_LIBRARIES += libobjects.a
 libobjects_a_SOURCES = components/objects/object.c \
@@ -187,14 +197,15 @@ librepl_a_SOURCES = components/repl/repl.c \
 # components/vm
 ########################################################################
 
-BUILT_SOURCES += include/vm/vm_opcodes.c
+BUILT_SOURCES += components/vm/_generated_vm_opcodes.c \
+                 include/vm/_generated_vm_opcodes.h
 
-# Create vm_opcodes.c and vm_opcodes.h
-include/vm/vm_opcodes.c:
-	php include/vm/create_vmopcodes.php $(basename $@).dat $(basename $@).h $@
+# Create vm opcodes
+components/vm/_generated_vm_opcodes.c:
+	php ../support/generators/generate_vm_opcodes.php $(@D)/vm_opcodes.dat $(@D)/_generated_vm_opcodes.c include/vm/_generated_vm_opcodes.h
 
-CLEANFILES += include/vm/vm_opcodes.c \
-              include/vm/vm_opcodes.h
+CLEANFILES += components/vm/_generated_vm_opcodes.c \
+              include/vm/_generated_vm_opcodes.h
 
 noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
@@ -203,7 +214,7 @@ libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/context.c \
                   components/vm/thread.c \
                   components/vm/import.c \
-                  include/vm/vm_opcodes.c
+                  components/vm/_generated_vm_opcodes.c
 
 
 ########################################################################

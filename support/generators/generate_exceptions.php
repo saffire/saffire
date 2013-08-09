@@ -1,7 +1,9 @@
 <?php
 
 /*
- * This script creates a _exceptions.c and .h file from our exceptions.dat template.
+ * This script creates a _exceptions.inc and .h file from our exceptions.dat template.
+ *
+ * usage: generate_exceptions.php <file.inc> <file.h>
  */
 
 $exception_stack = array();
@@ -42,7 +44,7 @@ foreach (file($argv[1]) as $line) {
  * Write H file
  */
 
-$fp = fopen($argv[2], "w");
+$fp = fopen($argv[3], "w");
 
 $header = <<< EOH
 /*
@@ -104,7 +106,7 @@ fclose($fp);
 
 
 // Write C file
-$fp = fopen($argv[3], "w");
+$fp = fopen($argv[2], "w");
 
 $header = <<< EOH
 /*
@@ -159,7 +161,7 @@ fwrite($fp, "\n\n");
 foreach ($exceptions as $exception) {
     list($exception, $parent) = $exception;
 
-    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".lcfirst($exception)."\", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct), \"\", 0};\n");
+    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".lcfirst($exception)."\", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct, NULL), \"\", 0};\n");
 }
 
 fclose($fp);

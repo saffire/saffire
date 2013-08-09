@@ -95,6 +95,7 @@ char *sanitize(char *s) {
     strncpy(sanitized_string, s, 99);
     for (int i=0; i!=strlen(sanitized_string); i++) {
         if (sanitized_string[i] < 32) sanitized_string[i] = '_';
+        if (sanitized_string[i] == '"') sanitized_string[i] = ' ';
     }
     return sanitized_string;
 }
@@ -167,7 +168,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             break;
 
         case typeAstOpr :
-            fprintf(fp, "label=\"{%d (#%ld)|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, p->lineno, get_token_string(p->opr.oper), p->opr.oper, p->opr.nops);
+            fprintf(fp, "label=\"{%d (#%ld)|Type=Opr|Operator=%s (%d)| NrOps=%d} \"]\n", cur_node_nr, p->lineno, sanitize(get_token_string(p->opr.oper)), p->opr.oper, p->opr.nops);
 
             // Plot all the operands
             for (int i=0; i!=p->opr.nops; i++) {

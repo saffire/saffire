@@ -3,8 +3,6 @@ AM_CFLAGS = -Wall -Wno-unused-function
 
 LIB_DIR = ../../src
 
-# Add GNUSOURCE define to ignore warning for aprintf
-AM_CFLAGS += -D_GNU_SOURCE
 AM_CFLAGS += -I../../src/include
 
 # There are double archives here, this is because of resolving of objects.

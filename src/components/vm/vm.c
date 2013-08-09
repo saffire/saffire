@@ -84,7 +84,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
     while (ht_iter_valid(&iter)) {
         cur_arg++;
 
-        char *name = ht_iter_key(&iter);
+        char *name = ht_iter_key_str(&iter);
         t_method_arg *arg = ht_iter_value(&iter);
 
         int is_vararg =0 ;
@@ -115,7 +115,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
                 // Add first argument
                 if (obj) {
-                    ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, obj);
+                    ht_add_num(vararg_obj->ht, vararg_obj->ht->element_count, obj);
                 }
 
                 // Make sure we add our List[] to the local_identifiers below
@@ -130,7 +130,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add(frame->local_identifiers->ht, name, obj);
+        ht_add_str(frame->local_identifiers->ht, name, obj);
 
         need_count--;
         given_count--;
@@ -150,7 +150,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
         while (e) {
-            ht_num_add(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
+            ht_add_num(vararg_obj->ht, vararg_obj->ht->element_count, e->data);
             e = DLL_NEXT(e);
         }
     }
@@ -361,7 +361,7 @@ dispatch:
 #ifdef __DEBUG
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X, 0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X, 0x%02X)     "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -372,7 +372,7 @@ dispatch:
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X, 0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X)           "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -383,7 +383,7 @@ dispatch:
                     );
         } else if ((opcode & 0x80) == 0x80) {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s (0x%02X) "
+                        ANSI_BRIGHTGREEN "%-20s (0x%02X)                 "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -394,7 +394,7 @@ dispatch:
                     );
         } else {
             DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
-                        ANSI_BRIGHTGREEN "%s "
+                        ANSI_BRIGHTGREEN "%-20s                        "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
@@ -749,7 +749,7 @@ dispatch:
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
 
-                    // Fetch varargs object (or NULL when no varargs are needed)
+                    // Fetch varargs object (or null_object when no varargs are needed)
                     t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
 
                     // Add items
@@ -757,7 +757,7 @@ dispatch:
                         dll_prepend(arg_list, vm_frame_stack_pop(frame));
                     }
 
-                    if (varargs != NULL) {
+                    if (! OBJECT_IS_NULL(varargs)) {
                         // iterate hash (this is the correct order), and prepend values to the arg_list DLL
                         t_hash_iter iter;
                         ht_iter_init(&iter, varargs->ht);
@@ -772,7 +772,7 @@ dispatch:
                     dll_free(arg_list);
 
                     if (ret_obj == NULL) {
-                        // NULL returned means exception occured.
+                        // NULL returned means exception occurred.
                         reason = REASON_EXCEPTION;
                         goto block_end;
                         break;
@@ -931,7 +931,7 @@ dispatch:
                             register t_object *name_obj = vm_frame_stack_pop(frame);
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
 
-                            ht_add(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
+                            ht_add_str(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
 
                         // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
@@ -1042,7 +1042,7 @@ dispatch:
                         }
 
                         // Add method attribute to class
-                        ht_add(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
+                        ht_add_str(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
 
                         DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
@@ -1108,7 +1108,7 @@ dispatch:
                     for (int i=0; i!=oparg1; i++) {
                         t_object *val = vm_frame_stack_pop(frame);
                         object_dec_ref(val);
-                        ht_num_add(obj->ht, oparg1 - i - 1, val);
+                        ht_add_num(obj->ht, oparg1 - i - 1, val);
                     }
 
                     // Push tuple on the stack
@@ -1131,7 +1131,7 @@ dispatch:
                     // Push the tuple vars. Make sure we start from the correct position
                     int offset = oparg1 < obj->ht->element_count ? oparg1 : obj->ht->element_count;
                     for (int i=0; i < offset; i++) {
-                        t_object *val = ht_num_find(obj->ht, i);
+                        t_object *val = ht_find_num(obj->ht, i);
                         vm_frame_stack_push(frame, val);
                     }
 
@@ -1141,10 +1141,130 @@ dispatch:
                         vm_frame_stack_push(frame, val);
                         object_inc_ref(val);
                     }
-
-
                 }
 
+                goto dispatch;
+                break;
+
+            case VM_ITER_RESET :
+                {
+                    obj1 = vm_frame_stack_pop(frame);
+
+                    // check if we have the iterator interface implemented
+                    if (! object_has_interface(obj1, "iterator")) {
+                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'iterator' interface");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Fetch the actual iterator and push it to the stack
+                    obj2 = object_find_attribute(obj1, "__iterator");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
+
+                    // Call rewind
+                    obj2 = object_find_attribute(obj3, "__rewind");
+                    vm_object_call(obj3, obj2, 0);
+
+                }
+                goto dispatch;
+                break;
+
+            case VM_ITER_FETCH :
+                {
+                    obj1 = vm_frame_stack_pop(frame);
+
+                    // If we need 3 values, create and push metadata
+                    if (oparg1 == 3) {
+                        vm_frame_stack_push(frame, Object_Null);
+                    }
+                    // Always push value
+                    obj2 = object_find_attribute(obj1, "__value");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
+
+                    if (oparg1 >= 2) {
+                        // Push value of key
+                        obj2 = object_find_attribute(obj1, "__key");
+                        obj3 = vm_object_call(obj1, obj2, 0);
+                        vm_frame_stack_push(frame, obj3);
+                        object_inc_ref(obj3);
+                    }
+
+                    // Push value of hasNext
+                    obj2 = object_find_attribute(obj1, "__hasNext");
+                    obj3 = vm_object_call(obj1, obj2, 0);
+                    vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
+
+                    if (IS_BOOLEAN_TRUE(obj3)) {
+                        obj2 = object_find_attribute(obj1, "__next");
+                        obj3 = vm_object_call(obj1, obj2, 0);
+                    }
+                }
+                goto dispatch;
+                break;
+            case VM_BUILD_DATASTRUCT   :
+                {
+                    // Fetch methods to call
+                    register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+
+                    // We can only call a class, as we are instantiating a data structure
+                    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+                        // We can only instantiate here through a class!
+                        thread_set_exception(Object_CallException, "Datastructure must be a class, not an instance");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Check if object has interface datastructure
+                    if (! object_has_interface(obj, "datastructure")) {
+                        thread_set_exception(Object_InterfaceException, "Class must inherit the 'datastructure' interface");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    // Create argument list.
+                    t_dll *dll = dll_init();
+                    for (int i=0; i!=oparg1; i++) {
+                        dll_append(dll, (void *)vm_frame_stack_pop(frame));
+                    }
+
+                    // Create new object, because we know it's a data-structure, just add them to the list
+                    t_object *ret_obj = (t_object *)object_new(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
+                    object_inc_ref(ret_obj);
+                    vm_frame_stack_push(frame, ret_obj);
+
+                }
+                goto dispatch;
+                break;
+            case VM_LOAD_SUBSCRIPT :
+                {
+                    // @TODO: oparg1 is not used
+                    obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    obj2 = vm_frame_stack_pop(frame);       // key
+
+                    obj3 = object_find_attribute(obj1, "__get");
+                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
+                }
+                goto dispatch;
+                break;
+
+            case VM_STORE_SUBSCRIPT :
+                {
+                    obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    obj2 = vm_frame_stack_pop(frame);       // key
+
+                    //
+                    obj3 = object_find_attribute(obj1, "__set");
+                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
+                }
                 goto dispatch;
                 break;
 
@@ -1301,6 +1421,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             DEBUG_PRINT("CASE 5\n");
             DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip_else);
             frame->ip = block->handlers.loop.ip_else;
+            *reason = REASON_NONE;
             break;
         }
 
@@ -1401,7 +1522,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
  *
  */
 void vm_populate_builtins(const char *name, void *data) {
-    ht_add(builtin_identifiers, name, data);
+    ht_add_str(builtin_identifiers, (char *)name, data);
 }
 
 
@@ -1484,8 +1605,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Add references to parent and self
-        ht_replace(new_frame->local_identifiers->ht, "self", self_obj);
-        ht_replace(new_frame->local_identifiers->ht, "parent", self_obj->parent);
+        ht_replace_str(new_frame->local_identifiers->ht, "self", self_obj);
+        ht_replace_str(new_frame->local_identifiers->ht, "parent", self_obj->parent);
 
 #ifdef __DEBUG
         print_debug_table(new_frame->local_identifiers->ht, "");
