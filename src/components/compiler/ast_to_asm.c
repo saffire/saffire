@@ -965,9 +965,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     sprintf(label4, "foreach_%03d_pre_end", clc);
                     sprintf(label5, "foreach_%03d_end", clc);
 
+                    stack_push(state->call_state, (void *)st_call_stay);
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);
                     stack_pop(state->context);
+                    stack_pop(state->call_state);
 
                     dll_append(frame, asm_create_codeline(0, VM_ITER_RESET, 0));
 
