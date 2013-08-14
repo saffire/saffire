@@ -194,6 +194,49 @@ SAFFIRE_METHOD(list, populate) {
     RETURN_SELF;
 }
 
+
+/**
+ * Saffire method: Returns value
+ */
+SAFFIRE_METHOD(list, sequence) {
+    t_object *from;
+    t_object *to;
+    t_object *skip;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo|o",  &from, &to, &skip)) {
+        return NULL;
+    }
+
+    // Default skip value
+    if (skip == NULL) {
+        skip = object_new(Object_Numerical, 1, 1);
+    }
+
+    if (! OBJECT_IS_NUMERICAL(from) || ! OBJECT_IS_NUMERICAL(to) || ! OBJECT_IS_NUMERICAL(to)) {
+        object_raise_exception(Object_ArgumentException, 1, "sequence() only works with numerical values");
+        return NULL;
+    }
+
+    if (((t_numerical_object *)from)->value > ((t_numerical_object *)to)->value) {
+        object_raise_exception(Object_ArgumentException, 1, "'from' value must be lower than the 'to' value");
+        return NULL;
+    }
+
+    if (((t_numerical_object *)skip)->value <= 0) {
+        object_raise_exception(Object_ArgumentException, 1, "'skip' must be 1 or higher");
+        return NULL;
+    }
+
+    t_list_object *list_obj = (t_list_object *)object_new(Object_List, 0);
+    for (int i=((t_numerical_object *)from)->value; i<=((t_numerical_object *)to)->value; i+=((t_numerical_object *)skip)->value) {
+        ht_add_num(list_obj->ht, list_obj->ht->element_count, object_new(Object_Numerical, 1, i));
+    }
+
+    RETURN_OBJECT(list_obj);
+}
+
+
+
 /**
  *
  */
@@ -277,6 +320,8 @@ void object_list_init(void) {
     object_add_internal_method((t_object *)&Object_List_struct, "get",            CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
     object_add_internal_method((t_object *)&Object_List_struct, "shuffle",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_shuffle);
     object_add_internal_method((t_object *)&Object_List_struct, "random",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_random);
+
+    object_add_internal_method((t_object *)&Object_List_struct, "sequence",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_sequence);
 
 //    // list + element
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_add);
