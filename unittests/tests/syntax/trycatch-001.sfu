@@ -15,6 +15,7 @@ caught
 finally
 @@@@
 import io;
+class foo {  }
 try {
     foo.bar();
 } catch (attributeException e) {

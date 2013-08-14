@@ -343,7 +343,7 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
         ptr++;
     }
     if (dll->size < cnt) {
-        object_raise_exception(Object_ArgumentException, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
+        object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
         result = 0;
         goto done;
     }
@@ -377,7 +377,7 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
                 continue;
                 break;
             default :
-                object_raise_exception(Object_SystemException, "Error while parsing argument list: cannot parse argument: '%c'", c);
+                object_raise_exception(Object_SystemException, 1, "Error while parsing argument list: cannot parse argument: '%c'", c);
                 result = 0;
                 goto done;
                 break;
@@ -386,14 +386,14 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
         // Fetch the next object from the list. We must assume the user has added enough room
         t_object **storage_obj = va_arg(storage_list, t_object **);
         if (optional_argument == 0 && (!e || !e->data)) {
-            object_raise_exception(Object_ArgumentException, "Error while fetching mandatory argument.");
+            object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
             result = 0;
             goto done;
         }
 
         t_object *argument_obj = e ? e->data : NULL;
         if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
-            object_raise_exception(Object_ArgumentException, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+            object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
             goto done;
         }
@@ -487,9 +487,9 @@ void object_remove_all_internal_attributes(t_object *obj) {
 
 
 /**
- *
+ * @TODO: t_object instead of t_exception_object. We run into some forward typedef issues when we use t_exception_object
  */
-void object_raise_exception(t_object *exception, char *format, ...) {
+void object_raise_exception(t_object *exception, int code, char *format, ...) {
     va_list args;
     char *buf;
 
@@ -497,7 +497,7 @@ void object_raise_exception(t_object *exception, char *format, ...) {
     smm_vasprintf(&buf, format, args);
     va_end(args);
 
-    thread_set_exception(exception, buf);
+    thread_create_exception((t_exception_object *)exception, code, buf);
     smm_free(buf);
 }
 
@@ -551,7 +551,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
 
         t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj, key);
         if (! found_obj) {
-            thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
+            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
             return 0;
         }
 
@@ -561,7 +561,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         if (found_obj->attrib_type != attribute->attrib_type ||
             found_obj->visibility != attribute->visibility ||
             found_obj->access != attribute->access) {
-            thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
+            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
             return 0;
         }
 
@@ -569,7 +569,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         if (OBJECT_IS_CALLABLE(found_obj->attribute)) {
             DEBUG_PRINT("     - Checking parameter signatures\n");
             if (!_object_check_matching_arguments((t_callable_object *)attribute->attribute, (t_callable_object *)found_obj->attribute)) {
-                thread_set_exception_printf(Object_TypeException, "Class '%s' does not fully implement interface '%s', mismatching argument list for attribute '%s'", obj->name, interface->name, key);
+                thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching argument list for attribute '%s'", obj->name, interface->name, key);
                 return 0;
             }
         }

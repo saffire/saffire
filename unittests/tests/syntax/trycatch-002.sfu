@@ -1,0 +1,39 @@
+title: Throw tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+try {
+    i = 1;
+    throw exception("this is foobarred", 123);
+    io.print("Didn't throw anything :( \n");
+} catch(exception e) {
+    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+}
+======
+exception: this is foobarred(123)
+@@@@@@
+import io;
+class myexception { }
+
+try {
+    i = 1;
+    throw myexception("myexception", 100);
+} catch (exception e) {
+    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+}
+======
+extendException: Object must extend the 'exception' class(1)
+@@@@@@
+import io;
+class myexception extends exception { }
+
+try {
+    i = 1;
+    throw myexception("foobar", 100);
+} catch (exception e) {
+    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+}
+======
+myexception: foobar(100)
+

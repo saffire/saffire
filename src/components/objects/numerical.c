@@ -147,7 +147,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
     }
 
     if (other->value == 0) {
-        object_raise_exception(Object_DivideByZeroException, "Cannot divide by zero");
+        object_raise_exception(Object_DivideByZeroException, 1, "Cannot divide by zero");
         return NULL;
     }
 

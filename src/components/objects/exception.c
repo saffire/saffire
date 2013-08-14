@@ -24,6 +24,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <string.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -33,6 +34,20 @@
  *   Object methods
  * ======================================================================
  */
+
+SAFFIRE_METHOD(exception, ctor) {
+    t_string_object *msg_obj;
+    t_numerical_object *code_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj)) {
+        return NULL;
+    }
+
+    self->message = smm_strdup(msg_obj->value);
+    self->code = code_obj->value;
+
+    RETURN_SELF;
+}
 
 SAFFIRE_METHOD(exception, conv_boolean) {
     RETURN_SELF;
@@ -58,7 +73,7 @@ SAFFIRE_METHOD(exception, setmessage) {
     t_string_object *message;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &message)) {
-        object_raise_exception(Object_ArgumentException, "error while parsing argument list");
+        object_raise_exception(Object_ArgumentException, 1, "error while parsing argument list");
         return NULL;
     }
 
@@ -125,6 +140,8 @@ void object_exception_add_generated_exceptions(void);
 void object_exception_init(void) {
     Object_Exception_struct.attributes = ht_create();
 
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__ctor",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_ctor);
+
     object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
     object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
     object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
@@ -151,6 +168,55 @@ void object_exception_fini(void) {
     ht_destroy(Object_Exception_struct.attributes);
 }
 
+/**
+ * obj_new is called dynamically. The "self" class points to the actual object
+ * we want to "new". This is always based on exception, so we are ok by actually
+ * copying self and using the size of the base exception object (so code and
+ * message gets copied too)
+ *
+ * @param self
+ * @return
+ */
+static t_object *obj_new(t_object *self) {
+    t_exception_object *obj = smm_malloc(sizeof(t_exception_object));
+    memcpy(obj, self, sizeof(t_exception_object));
+
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    return (t_object *)obj;
+}
+
+static void obj_populate(t_object *obj, t_dll *arg_list) {
+    t_exception_object *exception_obj = (t_exception_object *)obj;
+
+
+    t_dll_element *e = DLL_HEAD(arg_list);
+    // Optional (string) message
+    if (e != NULL) {
+        exception_obj->code = (int)e->data;
+        e = DLL_NEXT(e);
+    }
+
+    // Optional (numerical) code
+    if (e != NULL) {
+        exception_obj->message = smm_strdup((char *)e->data);
+    }
+}
+
+static void obj_free(t_object *obj) {
+    // TODO: We have static and dynamic allocation of message. Make this more generic.
+//   t_string_object *str_obj = (t_string_object *)obj;
+//
+//   if (str_obj->value) {
+//       smm_free(str_obj->value);
+//   }
+}
+
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
+}
 
 #ifdef __DEBUG
 char global_buf[1024];
@@ -162,10 +228,10 @@ static char *obj_debug(t_object *obj) {
 #endif
 
 t_object_funcs exception_funcs = {
-        NULL,               // Allocate a new exception object
-        NULL,               // Populate a exception object
-        NULL,               // Free a exception object
-        NULL,               // Destroy a exception object
+        obj_new,            // Allocate a new exception object
+        obj_populate,       // Populate a exception object
+        obj_free,           // Free a exception object
+        obj_destroy,        // Destroy a exception object
         NULL,               // Clone
 #ifdef __DEBUG
         obj_debug
@@ -173,7 +239,7 @@ t_object_funcs exception_funcs = {
 };
 
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &exception_funcs), "", 0};
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
 
 // Include generated exceptions
 #include "_generated_exceptions.inc"

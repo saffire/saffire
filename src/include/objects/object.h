@@ -229,6 +229,6 @@
     int object_check_interface_implementations(t_object *obj);
     int object_has_interface(t_object *obj, const char *interface);
 
-    void object_raise_exception(t_object *exception, char *format, ...);
+    void object_raise_exception(t_object *exception, int code, char *format, ...);
 
 #endif
