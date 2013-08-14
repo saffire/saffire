@@ -98,7 +98,7 @@ SAFFIRE_METHOD(regex, match) {
                 rc = 0;
                 break;
             default :
-                object_raise_exception(Object_SystemException, "Error while matching: error code %d\n", rc);
+                object_raise_exception(Object_SystemException, 1, "Error while matching: error code %d\n", rc);
                 return NULL;
         }
     }
@@ -208,7 +208,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     re_obj->regex = pcre_compile(re_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
     if (! re_obj->regex) {
         // @TODO: How do we detect an exception that has been thrown here!??
-        object_raise_exception(Object_ArgumentException, "Error while compiling regular expression at offset %d: %s", erroffset, error);
+        object_raise_exception(Object_ArgumentException, 1, "Error while compiling regular expression at offset %d: %s", erroffset, error);
         // @TODO: We must return NULL
         //return NULL;
     }

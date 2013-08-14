@@ -217,7 +217,7 @@ SAFFIRE_METHOD(string, splice) {
 
     // Sanity check
     if (max < min) {
-        object_raise_exception(Object_SystemException, "max < min!");
+        object_raise_exception(Object_SystemException, 1, "max < min!");
         return NULL;
     }
 

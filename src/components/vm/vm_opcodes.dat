@@ -12,6 +12,8 @@ ROT_FOUR             0x05
 
 NOP                  0x09
 
+THROW                0x10
+
 POP_BLOCK            0x72
 RETURN               0x73
 BREAK_LOOP           0x74

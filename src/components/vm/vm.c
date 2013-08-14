@@ -102,7 +102,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
         if (obj == NULL && ! is_vararg) {
-            object_raise_exception(Object_ArgumentException, "Not enough arguments passed, and no default values found");
+            object_raise_exception(Object_ArgumentException, 1, "Not enough arguments passed, and no default values found");
             return 0;
         }
 
@@ -124,7 +124,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
                 // classname does not match the typehint
 
                 // @TODO: we need to check if object as a parent or interface that matches!
-                object_raise_exception(Object_ArgumentException, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+                object_raise_exception(Object_ArgumentException, 1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
                 return 0;
             }
         }
@@ -144,7 +144,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
     // If there are more arguments passed, check if we can feed them to the vararg, if present
     if (given_count > 0) {
         if (vararg_obj == NULL) {
-            object_raise_exception(Object_ArgumentException, "No variable argument found, and too many arguments passed");
+            object_raise_exception(Object_ArgumentException, 1, "No variable argument found, and too many arguments passed");
             return 0;
         }
 
@@ -486,7 +486,7 @@ dispatch:
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_set_exception_printf(Object_AttributeException, "Attribute '%s' in class '%s' not found", OBJ2STR(name), bound_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", OBJ2STR(name), bound_obj->name);
                         goto block_end;
                         break;
                     }
@@ -497,7 +497,7 @@ dispatch:
                     // DEBUG_PRINT("     ATTR: %s\n", object_debug(attrib_obj));
 
                     if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
-                        thread_set_exception_printf(Object_VisibilityException, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -539,13 +539,13 @@ dispatch:
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
-                        thread_set_exception_printf(Object_VisibilityException, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
 
                     }
                     if (attrib_obj && ! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
-                        thread_set_exception_printf(Object_VisibilityException, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -611,9 +611,9 @@ dispatch:
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
                     if (dst == NULL) {
-                        thread_set_exception_printf(Object_AttributeException, "Class '%s' not found", name, dst);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", name, dst);
                     } else {
-                        thread_set_exception_printf(Object_AttributeException, "Attribute '%s' in class '%s' not found", name, dst->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", name, dst->name);
                     }
                     goto block_end;
                     break;
@@ -875,7 +875,7 @@ dispatch:
                     t_object *cast_method = object_find_attribute(right_obj, left_obj->name);
                     if (! cast_method) {
                         reason = REASON_EXCEPTION;
-                        thread_set_exception_printf(Object_TypeException, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
                         goto block_end;
                     }
                     right_obj = vm_object_call(right_obj, cast_method, 0);
@@ -998,12 +998,12 @@ dispatch:
                         t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), OBJ2STR(interface_name_obj));
                         if (! interface_obj) {
                             reason = REASON_EXCEPTION;
-                            thread_set_exception_printf(Object_TypeException, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
                             goto block_end;
                         }
                         if (! OBJECT_TYPE_IS_INTERFACE(interface_obj)) {
                             reason = REASON_EXCEPTION;
-                            thread_set_exception_printf(Object_TypeException, "Object '%s' is not an interface", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Object '%s' is not an interface", OBJ2STR(interface_name_obj));
                             goto block_end;
                         }
 
@@ -1093,11 +1093,31 @@ dispatch:
 
                 } else {
                     // This should not happen (oreally?)
-                    thread_set_exception(Object_SystemException, "Unknown value on the stack during finally cleanup (probably a saffire-bug)");
+                    thread_create_exception((t_exception_object *)Object_SystemException, 1, "Unknown value on the stack during finally cleanup (probably a saffire-bug)");
                     reason = REASON_EXCEPTION;
                     goto block_end;
                     break;
                 }
+
+            case VM_THROW :
+                {
+                    // Fetch exception object
+                    register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+
+
+                    // Check if object extends exception
+                    if (! object_instance_of(obj, "exception")) {
+                        thread_create_exception((t_exception_object *)Object_ExtendException, 1, "Object must extend the 'exception' class");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    thread_set_exception(obj);
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+
+                }
+                break;
 
             case VM_PACK_TUPLE :
                 {
@@ -1123,7 +1143,7 @@ dispatch:
                     // Check if we are are unpacking a tuple
                     t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
                     if (! OBJECT_IS_TUPLE(obj)) {
-                        thread_set_exception(Object_TypeException, "Argument is not a tuple");
+                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "Argument is not a tuple");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1152,7 +1172,7 @@ dispatch:
 
                     // check if we have the iterator interface implemented
                     if (! object_has_interface(obj1, "iterator")) {
-                        thread_set_exception(Object_InterfaceException, "Object must inherit the 'iterator' interface");
+                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Object must inherit the 'iterator' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1214,14 +1234,14 @@ dispatch:
                     // We can only call a class, as we are instantiating a data structure
                     if (! OBJECT_TYPE_IS_CLASS(obj)) {
                         // We can only instantiate here through a class!
-                        thread_set_exception(Object_CallException, "Datastructure must be a class, not an instance");
+                        thread_create_exception((t_exception_object *)Object_CallException, 1, "Datastructure must be a class, not an instance");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
                     // Check if object has interface datastructure
                     if (! object_has_interface(obj, "datastructure")) {
-                        thread_set_exception(Object_InterfaceException, "Class must inherit the 'datastructure' interface");
+                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'datastructure' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1490,7 +1510,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
 
     // Check visibility
     if (! vm_check_visibility(class_obj, class_obj, attrib_obj)) {
-        object_raise_exception(Object_VisibilityException, "visibility error!");
+        object_raise_exception(Object_VisibilityException, 1, "visibility error!");
         return NULL;
     }
 
@@ -1569,7 +1589,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 
     // Check if the object is actually a callable
     if (! OBJECT_IS_CALLABLE(callable_obj)) {
-        thread_set_exception(Object_CallableException, "Object is not from callable instance");
+        thread_create_exception((t_exception_object *)Object_CallableException, 1, "Object is not from callable instance");
         return NULL;
     }
 
@@ -1578,13 +1598,13 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
         // Check if we are bounded to a class or instantiation
         if (!self_obj) {
-            thread_set_exception_printf(Object_CallableException, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
+            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
             return NULL;
         }
 
         // Make sure we are not calling a non-static method from a static context
         if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
-            thread_set_exception_printf(Object_CallableException, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
         }
     }
 
@@ -1643,7 +1663,7 @@ t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
 
     t_object *found_obj = (t_object *)object_find_attribute(obj1, opr_method);
     if (! found_obj) {
-        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
         return NULL;
     }
 
@@ -1661,7 +1681,7 @@ t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     t_object *found_obj = (t_object *)object_find_attribute(obj1, cmp_method);
     if (! found_obj) {
-        thread_set_exception_printf(Object_CallException, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
         return NULL;
     }
 

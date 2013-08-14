@@ -35,30 +35,45 @@ t_thread *current_thread;
 
 
 /**
- *
+ * Returns the running frame inside the current thread
  */
 t_vm_frame *thread_get_current_frame() {
     return current_thread->frame;
 }
 
 /**
- *
+ * Sets the frame inside the current thread
  */
 void thread_set_current_frame(t_vm_frame *frame) {
     current_thread->frame = frame;
 }
 
+/**
+ * returns 1 when an exception has been thrown in this thread. 0 otherwise
+ */
 int thread_exception_thrown(void) {
     return (current_thread->exception != NULL);
 }
 
-void thread_set_exception(t_object *exception, const char *message) {
-    // @TODO: We must isolate this exception, since we are literally changing the exception message.
-    current_thread->exception = (t_exception_object *)exception;
-    ((t_exception_object *)exception)->message = smm_strdup(message);
+/**
+ * Creates a new exception based on the base class, on the code and message given
+ */
+void thread_create_exception(t_exception_object *exception, int code, const char *message) {
+    current_thread->exception = (t_exception_object *)object_new((t_object *)exception, 2, code, message);
 }
 
-void thread_set_exception_printf(t_object *exception, const char *format, ...) {
+/**
+ * Sets the current exception
+ */
+void thread_set_exception(t_exception_object *exception) {
+    current_thread->exception = exception;
+}
+
+
+/**
+ * vararg version of thread_create_exception
+ */
+void thread_create_exception_printf(t_exception_object *exception, int code, const char *format, ...) {
     va_list args;
     char *buf;
 
@@ -66,11 +81,14 @@ void thread_set_exception_printf(t_object *exception, const char *format, ...) {
     smm_vasprintf(&buf, format, args);
     va_end(args);
 
-    thread_set_exception(exception, buf);
+    thread_create_exception(exception, code, buf);
     smm_free(buf);
 }
 
 
-t_object *thread_get_exception(void) {
-    return (t_object *)current_thread->exception;
+/**
+ * Returns exception object for the current thread, or NULL when no exception has been raised
+ */
+t_exception_object *thread_get_exception(void) {
+    return (t_exception_object *)current_thread->exception;
 }
