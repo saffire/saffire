@@ -221,14 +221,14 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
         // No module found
         if (! import_frame) {
-            object_raise_exception(Object_SystemException, "Cannot find module '%s'", module);
+            object_raise_exception(Object_SystemException, 1, "Cannot find module '%s'", module);
             return NULL;
         }
     }
 
     // Actual object not found
     if (! obj) {
-        object_raise_exception(Object_ImportException, "Cannot find class '%s' in module '%s'", class, module);
+        object_raise_exception(Object_ImportException, 1, "Cannot find class '%s' in module '%s'", class, module);
     }
 
 

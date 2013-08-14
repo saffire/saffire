@@ -104,7 +104,7 @@ SAFFIRE_METHOD(hash, populate) {
         return NULL;
     }
     if (! OBJECT_IS_HASH(ht_obj)) {
-        object_raise_exception(Object_ArgumentException, "populate() expects a list object");
+        object_raise_exception(Object_ArgumentException, 1, "populate() expects a list object");
         return NULL;
     }
 
