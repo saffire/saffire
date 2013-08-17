@@ -57,7 +57,7 @@
     // Defined so we can access yytoknum, but we don't need to print anything
     #define YYPRINT(yyoutput, char, yyvaluep)
 
-    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
+//    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
 
     int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
 

@@ -157,6 +157,7 @@ static int fcgi_loop(void) {
                 continue;
             }
             t_hash_table *asm_code = ast_to_asm(ast, 1);
+            ast_free_node(ast);
             if (! asm_code) {
                 fatal_error(1, "Cannot create assembler</h1>");
                 smm_free(bytecode_file);

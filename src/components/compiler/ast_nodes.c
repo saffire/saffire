@@ -557,8 +557,7 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     free_parserinfo(sp.parserinfo);
     sp.parserinfo = NULL;
 
-    // @TODO: Cleanup sp structure?
-
+    yylex_destroy(scanner);
 
     return ast;
 }

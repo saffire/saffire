@@ -100,8 +100,8 @@ void repl_exec(SaffireParser *sp) {
 
         t_hash_table *asm_code = ast_to_asm(sp->ast, 0);
         assembler_output_stream(asm_code, stdout);
-        t_bytecode *bc = assembler(asm_code, NULL);
-        bc = 0;
+        //t_bytecode *bc = assembler(asm_code, NULL);
+        //bc = 0;
         //vm_execute(sp->initial_frame, bc);
 
         printf("---------------------------------------------------------------\n");

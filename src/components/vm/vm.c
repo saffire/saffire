@@ -1112,7 +1112,7 @@ dispatch:
                         goto block_end;
                     }
 
-                    thread_set_exception(obj);
+                    thread_set_exception((t_exception_object *)obj);
                     reason = REASON_EXCEPTION;
                     goto block_end;
 
@@ -1398,7 +1398,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             }
 
             // We throw the current exception onto the stack. The catch-blocks will expect this.
-            vm_frame_stack_push(frame, thread_get_exception());
+            vm_frame_stack_push(frame, (t_object *)thread_get_exception());
 
             // Continue with handling the exception in the current vm frame.
             *reason = REASON_NONE;
@@ -1641,8 +1641,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Execute frame, return the last object
         dst = _vm_execute(new_frame);
 
-        // @TODO: Destroy frame
-        //vm_frame_destroy(new_frame);
+        // Destroy frame
+        vm_frame_destroy(new_frame);
     }
 
     if (dst == NULL) {

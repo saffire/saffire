@@ -59,8 +59,7 @@ static int do_exec(void) {
     }
 
     char full_source_path[PATH_MAX+1];
-    char *ptr;
-    ptr = realpath(source_file, full_source_path);
+    realpath(source_file, full_source_path); // @TODO: Check result char *ptr?
 
     // Check if bytecode exists, or has a correct timestamp
     char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
