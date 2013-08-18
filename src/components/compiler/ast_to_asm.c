@@ -126,7 +126,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
     switch (leaf->type) {
         case typeAstProperty :
-            stack_push(state->context, st_ctx_load);
+            stack_push(state->context, (void *)st_ctx_load);
             WALK_LEAF(leaf->property.class);
             stack_pop(state->context);
 
@@ -201,14 +201,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
         case typeAstComparison :
             stack_push(state->call_state, (void *)st_call_stay);
 
-            stack_push(state->context, st_ctx_load);
+            stack_push(state->context, (void *)st_ctx_load);
             stack_push(state->side, (void *)st_side_right);
             WALK_LEAF(leaf->comparison.r);
             stack_pop(state->side);
             stack_pop(state->context);
 
-            stack_push(state->context, st_ctx_load);
-            stack_push(state->side, st_side_left);
+            stack_push(state->context, (void *)st_ctx_load);
+            stack_push(state->side, (void *)st_side_left);
             WALK_LEAF(leaf->comparison.l);
             stack_pop(state->side);
             stack_pop(state->context);
@@ -1293,13 +1293,11 @@ t_state *_ast_state_init() {
  * Finalizes a state structure
  */
 void _ast_state_fini(t_state *state) {
-    // @TODO: Troubles when trying to free the stack (dll_free in endless loop). Needs fixing! It's probably already fixed!
-/*
     stack_free(state->context);
     stack_free(state->side);
     stack_free(state->call_state);
     stack_free(state->type);
-*/
+
     for (int i=0; i!=BLOCK_MAX_DEPTH; i++) {
         if (state->blocks[i].labels) {
             ht_destroy(state->blocks[i].labels);

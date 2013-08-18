@@ -33,29 +33,13 @@
 extern t_hashfuncs chained_hf;
 
 
-#define NEW_KEY_STR(hk, key)  \
-                t_hash_key *hk = (t_hash_key *)malloc(sizeof(t_hash_key)); \
-                hk->type = HASH_KEY_STR; \
-                hk->val.s = smm_strdup(key);
-
-#define NEW_KEY_NUM(hk, key)  \
-                t_hash_key *hk = (t_hash_key *)malloc(sizeof(t_hash_key)); \
-                hk->type = HASH_KEY_NUM; \
-                hk->val.n = key;
-
-#define NEW_KEY_PTR(hk, key)  \
-                t_hash_key *hk = (t_hash_key *)malloc(sizeof(t_hash_key)); \
-                hk->type = HASH_KEY_PTR; \
-                hk->val.p = (void *)key;
-
-
-
 #define HT_INITIAL_BUCKET_COUNT    16           // Initial hash size
 #define HT_LOAD_FACTOR           1.25           // Above this load, we will increase the hash size (it's above 1.00
 // because we use chaining instead of linear probing or other means)
 #define HT_RESIZE_FACTOR         1.75           // Factor to resize to (current size * ht_resize_factor)
 
 #define DEFAULT_HASHFUNCS        &chained_hf     // Default hashtable functionality
+
 
 /**
  * Creates new hash table
@@ -155,16 +139,22 @@ void *ht_find(t_hash_table *ht, t_hash_key *key) {
     return ht->hashfuncs->find(ht, key);
 }
 void *ht_find_str(t_hash_table *ht, char *key) {
-    NEW_KEY_STR(hkey, key);
-    return ht_find(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_STR, (void *)key);
+    void *ret = ht_find(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 void *ht_find_num(t_hash_table *ht, unsigned long key) {
-    NEW_KEY_NUM(hkey, key);
-    return ht_find(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
+    void *ret = ht_find(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 void *ht_find_obj(t_hash_table *ht, t_object *key) {
-    NEW_KEY_PTR(hkey, key);
-    return ht_find(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, (void *)key);
+    void *ret = ht_find(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 
 /**
@@ -174,16 +164,22 @@ int ht_exists(t_hash_table *ht, t_hash_key *key) {
     return ht->hashfuncs->exists(ht, key);
 }
 int ht_exists_str(t_hash_table *ht, char *key) {
-    NEW_KEY_STR(hkey, key);
-    return ht_exists(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_STR, (void *)key);
+    int ret = ht_exists(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 int ht_exists_num(t_hash_table *ht, unsigned long key) {
-    NEW_KEY_NUM(hkey, key);
-    return ht_exists(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
+    int ret = ht_exists(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 int ht_exists_obj(t_hash_table *ht, t_object *key) {
-    NEW_KEY_PTR(hkey, key);
-    return ht_exists(ht, hkey);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, (void *)key);
+    int ret = ht_exists(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 
 /**
@@ -200,16 +196,13 @@ int ht_add(t_hash_table *ht, t_hash_key *key, void *value) {
     return ht->hashfuncs->add(ht, key, value);
 }
 int ht_add_str(t_hash_table *ht, char *key, void *value) {
-    NEW_KEY_STR(hkey, key);
-    return ht_add(ht, hkey, value);
+    return ht_add(ht, ht_key_create(HASH_KEY_STR, (void *)key), value);
 }
 int ht_add_num(t_hash_table *ht, unsigned long key, void *value) {
-    NEW_KEY_NUM(hkey, key);
-    return ht_add(ht, hkey, value);
+    return ht_add(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
 }
 int ht_add_obj(t_hash_table *ht, t_object *key, void *value) {
-    NEW_KEY_PTR(hkey, key);
-    return ht_add(ht, hkey, value);
+    return ht_add(ht, ht_key_create(HASH_KEY_PTR, (void *)key), value);
 }
 
 /**
@@ -222,16 +215,13 @@ void *ht_replace(t_hash_table *ht, t_hash_key *key, void *value) {
     return ht->hashfuncs->replace(ht, key, value);
 }
 void *ht_replace_str(t_hash_table *ht, char *key, void *value) {
-    NEW_KEY_STR(hkey, key);
-    return ht_replace(ht, hkey, value);
+    return ht_replace(ht, ht_key_create(HASH_KEY_STR, (void *)key), value);
 }
 void *ht_replace_num(t_hash_table *ht, unsigned long key, void *value) {
-    NEW_KEY_NUM(hkey, key);
-    return ht_replace(ht, hkey, value);
+    return ht_replace(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
 }
 void *ht_replace_obj(t_hash_table *ht, t_object *key, void *value) {
-    NEW_KEY_PTR(hkey, key);
-    return ht_replace(ht, hkey, value);
+    return ht_replace(ht, ht_key_create(HASH_KEY_PTR, (void *)key), value);
 }
 
 /**
@@ -244,16 +234,13 @@ void *ht_remove(t_hash_table *ht, t_hash_key *key) {
     return ht->hashfuncs->remove(ht, key);
 }
 void *ht_remove_str(t_hash_table *ht, char *key) {
-    NEW_KEY_STR(hkey, key);
-    return ht_remove(ht, hkey);
+    return ht_remove(ht, ht_key_create(HASH_KEY_STR, (void *)key));
 }
 void *ht_remove_num(t_hash_table *ht, unsigned long key) {
-    NEW_KEY_NUM(hkey, key);
-    return ht_remove(ht, hkey);
+    return ht_remove(ht, ht_key_create(HASH_KEY_NUM, (void *)key));
 }
 void *ht_remove_obj(t_hash_table *ht, t_object *key) {
-    NEW_KEY_PTR(hkey, key);
-    return ht_remove(ht, hkey);
+    return ht_remove(ht, ht_key_create(HASH_KEY_PTR, (void *)key));
 }
 
 /*
@@ -327,12 +314,55 @@ t_object *ht_iter_key_obj(t_hash_iter *iter) {
     return iter->bucket->key->val.p;
 }
 
-
-
 /**
  * Fetch value from current element
  */
 void *ht_iter_value(t_hash_iter *iter) {
     if (iter->bucket == NULL) return NULL;
     return iter->bucket->value;
+}
+
+
+/**
+ *
+ */
+t_hash_key *ht_key_create(int type, void *val) {
+    t_hash_key *hk = (t_hash_key *)malloc(sizeof(t_hash_key));
+    switch (type) {
+        case HASH_KEY_STR :
+            hk->type = HASH_KEY_STR;
+            hk->val.s = smm_strdup((char *)val);
+            break;
+        case HASH_KEY_NUM :
+            hk->type = HASH_KEY_NUM;
+            hk->val.n = (int)val;
+            break;
+        default:
+        case HASH_KEY_PTR :
+            hk->type = HASH_KEY_PTR;
+            hk->val.p = val;
+            break;
+    }
+    return hk;
+}
+
+/**
+ * Create copy of a key
+ */
+t_hash_key *ht_key_copy(t_hash_key *org) {
+    t_hash_key *cpy = (t_hash_key *)malloc(sizeof(t_hash_key));
+    memcpy(cpy, org, sizeof(t_hash_key));
+    return cpy;
+}
+
+/**
+ * Free hash key
+ */
+void ht_key_free(t_hash_key *hk) {
+    if (!hk) return;
+
+    if (hk->type == HASH_KEY_STR) {
+        smm_free(hk->val.s);
+    }
+    smm_free(hk);
 }

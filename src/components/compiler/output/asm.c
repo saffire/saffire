@@ -188,6 +188,135 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
     return frame->identifiers->size - 1;
 }
 
+
+/**
+ * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
+ */
+static void assemble_frame_free(t_asm_frame *asm_frame) {
+    t_dll_element *e;
+
+    e = DLL_HEAD(asm_frame->constants);
+    while (e) {
+        t_asm_constant *c = (t_asm_constant *)e->data;
+        switch (c->type) {
+            case const_long :
+                break;
+            case const_code :
+            case const_string :
+                printf("Freeing '%s'\n", c->data.s);
+                smm_free(c->data.s);
+                break;
+        }
+
+        e = DLL_NEXT(e);
+    }
+    dll_free(asm_frame->constants);
+
+//    dll_free(asm_frame->identifiers);
+//
+//    e = DLL_HEAD(frame->label_offsets);
+//    while (e) {
+//
+//        e = DLL_NEXT(e);
+//    }
+//    dll_free(frame->label_offsets);
+//    dll_free(frame->backpatch_offsets);
+//    smm_free(frame);
+//
+//    t_dll_element *e = DLL_HEAD(source_frame);
+//    while (e) {
+//        line = (t_asm_line *)e->data;
+//
+//        if (line->type == ASM_LINE_TYPE_LABEL) {
+//            // Found a label. Store it so we can backpatch it later
+//            if (ht_exists_str(frame->label_offsets, line->s)) {
+//                fatal_error(1, "Label '%s' is already defined", line->s);
+//            }
+//            ht_add_str(frame->label_offsets, line->s, (void *)frame->code_len);
+//        }
+//
+//        if (line->type == ASM_LINE_TYPE_CODE) {
+//            // Regular opcode found
+//
+//            // Save opcode offset. Normally opcodes are one byte, but we reserve future use for 2 or more.
+//            int opcode_off = frame->code_len;
+//            _add_codebyte(frame, line->opcode);
+//
+//            if (line->lineno != 0 && line->lineno != old_lineno) {
+//                int delta_lineno = line->lineno - old_lineno;
+//                int delta_codeoff = opcode_off - old_opcode_off;
+//                old_opcode_off = opcode_off;
+//                old_lineno = line->lineno;
+//
+//                do {
+//                    if (delta_codeoff > 127) {
+//                        dll_append(tc, (void *)(128 | 127));
+//                        delta_codeoff -= 127;
+//                    } else {
+//                        dll_append(tc, (void *)delta_codeoff);
+//                        delta_codeoff = 0;
+//                    }
+//                } while (delta_codeoff != 0);
+//
+//                do {
+//                    if (delta_lineno > 127) {
+//                        dll_append(tc, (void *)(128 | 127));
+//                        delta_lineno -= 127;
+//                    } else {
+//                        dll_append(tc, (void *)delta_lineno);
+//                        delta_lineno = 0;
+//                    }
+//                } while (delta_lineno != 0);
+//            }
+//
+//
+//            for (int i=0; i!=line->opr_count; i++) {
+//                switch (line->opr[i]->type) {
+//                    case ASM_LINE_TYPE_OP_LABEL :
+//                        bp = smm_malloc(sizeof(struct _backpatch));
+//                        bp->opcode_offset = opcode_off;
+//                        bp->operand_offset = frame->code_len;
+//                        bp->label = smm_strdup(line->opr[i]->data.s);
+//                        dll_append(frame->backpatch_offsets, bp);
+//
+//                        opr = 0xFFFF; // Add dummy bytes keep the offsets happy
+//                        break;
+//                    case ASM_LINE_TYPE_OP_STRING :
+//                        opr = _convert_constant_string(frame, line->opr[i]->data.s);
+//                        break;
+//                    case ASM_LINE_TYPE_OP_CODE :
+//                        opr = _convert_constant_code(frame, line->opr[i]->data.s);
+//                        break;
+//                    case ASM_LINE_TYPE_OP_NUM :
+//                        opr = _convert_constant_numerical(frame, line->opr[i]->data.l);
+//                        break;
+//                    case ASM_LINE_TYPE_OP_REALNUM :
+//                    case ASM_LINE_TYPE_OP_COMPARE :
+//                    case ASM_LINE_TYPE_OP_OPERATOR :
+//                        opr = line->opr[i]->data.l;
+//                        break;
+//
+//                    case ASM_LINE_TYPE_OP_ID :
+//                        opr = _convert_identifier(frame, line->opr[i]->data.s);
+//                        break;
+//                }
+//
+//                _add_codebyte(frame, (unsigned char)(opr & 0x00FF));           // Add lo 8 bits
+//                _add_codebyte(frame, (unsigned char)((opr & 0xFF00) >> 8));     // Add hi 8 bits
+//            }
+//        }
+//
+//        e = DLL_NEXT(e);
+//    }
+
+    // Free offset2linenumbers
+    smm_free(asm_frame->lino);
+
+    // Free actual asm_frame
+    smm_free(asm_frame);
+}
+
+
 /**
  * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
  */
@@ -348,6 +477,7 @@ static void _asm_free_line(t_asm_line *line) {
             for (int i=0; i!=line->opr_count; i++) {
                  _asm_free_opr(line->opr[i]);
             }
+            smm_free(line->opr);
             break;
     }
     smm_free(line);
@@ -432,9 +562,10 @@ t_asm_line *asm_create_labelline(char *label) {
 t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     t_hash_iter iter;
 
-    // Init
+    // hashtable with our frames
     t_hash_table *assembled_frames = ht_create();
 
+    // Create asm frames from asm_code
     ht_iter_init(&iter, asm_code);
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
@@ -448,7 +579,18 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
     bc->source_filename = filename ? strdup(filename) : NULL;
+
+
+    // Cleanup our frames
+    ht_iter_init(&iter, assembled_frames);
+    while (ht_iter_valid(&iter)) {
+        t_asm_frame *assembled_frame = ht_iter_value(&iter);
+        assemble_frame_free(assembled_frame);
+        ht_iter_next(&iter);
+    }
     ht_destroy(assembled_frames);
+
+
     return bc;
 }
 

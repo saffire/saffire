@@ -89,14 +89,13 @@ static int do_exec(void) {
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
+
+    vm_detach_bytecode(initial_frame);
+    bytecode_free(bc);
     vm_fini(initial_frame);
 
-    bytecode_free(bc);
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
 
-
-    // @TODO: THIS IS HARDCODED FOR NOW!
-    exitcode = 0;
     return exitcode;
 }
 

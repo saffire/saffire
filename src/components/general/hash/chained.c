@@ -288,7 +288,7 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
 
 
     // Free key and bucket
-    smm_free(htb->key);
+    ht_key_free(htb->key);
     smm_free(htb);
 
     // Decrease element count

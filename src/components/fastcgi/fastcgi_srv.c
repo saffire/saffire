@@ -180,7 +180,7 @@ static int fcgi_loop(void) {
 
         vm_attach_bytecode(initial_frame, "", bc);
         vm_execute(initial_frame);
-
+        vm_detach_bytecode(initial_frame);
         bytecode_free(bc);
     }
 

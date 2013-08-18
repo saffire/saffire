@@ -65,6 +65,7 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file, c
     ast_free_node(ast);
     t_bytecode *bc = assembler(asm_code, source_file);
     bc->source_filename = smm_strdup(source_file);
+    assembler_free(asm_code);
 
     DEBUG_PRINT("\n\n\n\n * Start of running module bytecode.\n");
 
@@ -123,6 +124,7 @@ static char *construct_import_path(t_vm_frame *frame, char *root_path, char *mod
     }
     DEBUG_PRINT(" * *** Constructed path: '%s'\n", final_path);
     smm_free(class_path);
+    smm_free(path); // free realpath()
     return final_path;
 }
 
@@ -131,6 +133,7 @@ static t_object *search_import_path(t_vm_frame *frame, char *file_path, char *mo
     if (! is_file(file_path)) return NULL;
 
     *import_frame = _execute_import_frame(frame, file_path, class, module_path);
+    printf("IMPORT FRAME: %08X\n", *import_frame);
     return vm_frame_find_identifier(*import_frame, class);
 }
 
@@ -235,4 +238,21 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
     // Return object (or NULL, in which case, an exception has been thrown)
     return obj;
+}
+
+
+void vm_free_import_cache(void) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, import_cache);
+    while (ht_iter_valid(&iter)) {
+        t_vm_frame *frame = ht_iter_value(&iter);
+        printf("DESTROY FRAME: %08X\n", frame);
+        if (frame->bytecode) {
+            bytecode_free(frame->bytecode);
+        }
+        vm_frame_destroy(frame);
+        ht_iter_next(&iter);
+    }
+
+    ht_destroy(import_cache);
 }

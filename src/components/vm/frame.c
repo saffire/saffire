@@ -274,6 +274,22 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 }
 
 
+void vm_detach_bytecode(t_vm_frame *frame) {
+    smm_free(frame->stack);
+    if (frame->parent == NULL) {
+        // Free global_identifiers object_hash object
+    }
+
+    // Free builtin_identifiers object_hash
+
+
+    for (int i=0; i!=frame->bytecode->constants_len; i++) {
+        // @TODO: free frame->constants_objects[i];
+    }
+
+    free(frame->constants_objects);
+}
+
 
 void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) {
     vm_context_set_context(frame, context);
@@ -377,19 +393,19 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-    // @TODO: Remove identifiers in the local_identifiers hash object
-    object_free((t_object *)frame->local_identifiers);
-
-    // Destroy global identifiers when this frame is the initial one
-    if (! frame->parent) {
-        // @TODO: We should free global id's, but this results in errors
-        //object_free((t_object *)frame->global_identifiers);
-    }
-
-    // @TODO: remove constants objects.
-
-    // @TODO: Should we unwind the stack first
-    smm_free(frame->stack);
+//    // @TODO: Remove identifiers in the local_identifiers hash object
+//    object_free((t_object *)frame->local_identifiers);
+//
+//    // Destroy global identifiers when this frame is the initial one
+//    if (! frame->parent) {
+//        // @TODO: We should free global id's, but this results in errors
+//        //object_free((t_object *)frame->global_identifiers);
+//    }
+//
+//    // @TODO: remove constants objects.
+//
+//    // @TODO: Should we unwind the stack first
+//    smm_free(frame->stack);
     smm_free(frame);
 }
 

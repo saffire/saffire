@@ -75,7 +75,7 @@ static void _new_constant_string(t_bytecode *bc, char *s) {
     t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
     c->type = BYTECODE_CONST_STRING;
     c->len = strlen(s);
-    c->data.s = s;  // @TODO: strdupped?
+    c->data.s = smm_strdup(s);
 
     _add_constant(bc, c);
 }

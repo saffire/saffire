@@ -140,6 +140,10 @@
     t_object *ht_iter_key_obj(t_hash_iter *iter);
     void *ht_iter_value(t_hash_iter *iter);
 
+    t_hash_key *ht_key_create(int type, void *val);
+    t_hash_key *ht_key_copy(t_hash_key *org);
+    void ht_key_free(t_hash_key *hk);
+
 
 #endif
 

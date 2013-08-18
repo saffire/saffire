@@ -242,7 +242,7 @@ void vm_fini(t_vm_frame *frame) {
 
     vm_frame_destroy(frame);
 
-    ht_destroy(import_cache);
+    vm_free_import_cache();
 
     module_fini();
     object_fini();
@@ -1466,6 +1466,8 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
  *
  */
 int vm_execute(t_vm_frame *frame) {
+    int ret_val = 0;
+
     // Setup bytecode into the frame (or not?)
 
     // Execute the frame
@@ -1473,30 +1475,34 @@ int vm_execute(t_vm_frame *frame) {
 
     DEBUG_PRINT("============================ VM execution done ============================\n");
 
-    // Check if there was an uncaught exception (when result == NULL)
+    // Check if there was an uncaught exception (happened when result == NULL)
     if (result == NULL) {
         if (thread_exception_thrown()) {
-            // handle exception
-
+            // handle exceptions
             object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            exit(1);
             result = object_new(Object_Numerical, 1, 1);
         } else {
             // result was NULL, but no exception found, just threat like regular 0
             result = object_new(Object_Numerical, 1, 0);
         }
     }
-//
-//    // Convert returned object to numerical, so we can use it as an error code
-//    if (!OBJECT_IS_NUMERICAL(result)) {
-//        // Cast to numericak
-//        t_object *result_numerical = object_find_attribute(result, "__numerical");
-//        result = vm_object_call(result, result_numerical, 0);
-//    }
-//    int ret_val = ((t_numerical_object *) result)->value;
+
+    if (OBJECT_IS_NUMERICAL(result)) {
+        // Correct numerical returned, use as return code
+        ret_val = ((t_numerical_object *) result)->value;
+    } else {
+        // Convert returned object to numerical, so we can use it as an error code
+        t_object *result_numerical = object_find_attribute(result, "__numerical");
+        if (result_numerical) {
+            result = vm_object_call(result, result_numerical, 0);
+            ret_val = ((t_numerical_object *) result)->value;
+        } else {
+            // Not a numerical result returned, and we cannot cast it to numerical neither :/
+            ret_val = 1;
+        }
+    }
 
 //    vm_frame_destroy(frame);
-    int ret_val = 1;
     return ret_val;
 }
 
