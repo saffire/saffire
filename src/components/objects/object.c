@@ -141,7 +141,7 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
-    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -152,14 +152,15 @@ void object_dec_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count--;
-    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
     if(obj->ref_count != 0) return;
 
     // Don't free static objects
     if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
+    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
 
-    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     object_free(obj);
@@ -372,7 +373,7 @@ void object_fini() {
     t_dll_element *e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
+        printf("%-20s %d\n", obj->name, obj->ref_count);
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
@@ -545,6 +546,12 @@ void object_remove_all_internal_attributes(t_object *obj) {
         object_dec_ref((t_object *)attr);
 
         ht_iter_next(&iter);
+    }
+
+
+    // remove all interface
+    if (obj->interfaces) {
+        dll_free(obj->interfaces);
     }
 }
 

@@ -245,6 +245,8 @@ void vm_fini(t_vm_frame *frame) {
 
     vm_free_import_cache();
 
+    smm_free(current_thread);
+
     module_fini();
     object_fini();
     ht_destroy(builtin_identifiers);

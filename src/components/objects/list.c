@@ -398,6 +398,8 @@ static void obj_free(t_object *obj) {
 }
 
 static void obj_destroy(t_object *obj) {
+    printf("Freeing object: %08X\n", obj);
+    printf("The current status of this object: %s: %d\n", obj->name, obj->flags);
     smm_free(obj);
 }
 
