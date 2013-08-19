@@ -257,6 +257,7 @@ t_object_funcs tuple_funcs = {
         obj_free,             // Free a tuple object
         obj_destroy,
         NULL,                 // Clone a tuple object
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

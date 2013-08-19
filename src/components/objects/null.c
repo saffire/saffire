@@ -74,6 +74,9 @@ SAFFIRE_COMPARISON_METHOD(null, ne) {
 void object_null_init(void) {
     Object_Null_struct.attributes = ht_create();
 
+//    // These are instances, not classes, so they should have a refcount of 1 to start with
+//    Object_Null_struct.ref_count = 1;
+
     object_add_internal_method((t_object *)&Object_Null_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
     object_add_internal_method((t_object *)&Object_Null_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
     object_add_internal_method((t_object *)&Object_Null_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
@@ -106,6 +109,7 @@ t_object_funcs null_funcs = {
         NULL,               // Free
         NULL,               // Destroy
         NULL,               // Clone
+        NULL,                 // Cach
 #ifdef __DEBUG
         obj_debug
 #endif

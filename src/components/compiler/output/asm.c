@@ -203,7 +203,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
                 break;
             case const_code :
             case const_string :
-                printf("Freeing '%s'\n", c->data.s);
+                printf("ASM Freeing '%s'\n", c->data.s);
                 smm_free(c->data.s);
                 break;
         }

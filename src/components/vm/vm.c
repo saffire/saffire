@@ -227,6 +227,7 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     if (!obj) {
         fatal_error(1, "Cannot find the mandatory saffire module.");
     }
+    object_inc_ref(obj);
     vm_frame_set_builtin_identifier(initial_frame, "saffire", obj);
     vm_runmode = runmode;
 
@@ -475,6 +476,7 @@ dispatch:
                 {
                     register t_object *name = vm_frame_get_constant(frame, oparg1);
                     register t_object *search_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(search_obj);
                     register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
                     // Hardcoded to bind the attribute to the search object!!
@@ -525,7 +527,6 @@ dispatch:
 
                     object_inc_ref((t_object *)value);
                     vm_frame_stack_push(frame, (t_object *)value);
-
                 }
                 goto dispatch;
                 break;
@@ -535,6 +536,7 @@ dispatch:
                 {
                     register t_object *name = vm_frame_get_constant(frame, oparg1);
                     register t_object *search_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(search_obj);
                     register t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
                     register t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
@@ -551,6 +553,7 @@ dispatch:
                     }
 
                     register t_object *value = vm_frame_stack_pop(frame);
+                    object_dec_ref(value);
                     object_add_property(search_obj, OBJ2STR(name), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
 
                 }
@@ -560,8 +563,8 @@ dispatch:
             // Load a global identifier
             case VM_LOAD_GLOBAL :
                 dst = vm_frame_get_global_identifier(frame, oparg1);
-                object_inc_ref(dst);
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -569,6 +572,7 @@ dispatch:
             case VM_STORE_GLOBAL :
                 // Refcount stays equal. So no inc/dec ref needed
                 dst = vm_frame_stack_pop(frame);
+                object_dec_ref(dst);
                 name = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_global_identifier(frame, name, dst);
                 goto dispatch;
@@ -586,8 +590,9 @@ dispatch:
             // Load and push constant onto stack
             case VM_LOAD_CONST :
                 dst = vm_frame_get_constant(frame, oparg1);
-                object_inc_ref(dst);
+                printf("LOADING CONSTANT: %s (%d)\n", object_debug(dst), dst->ref_count);
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -595,6 +600,7 @@ dispatch:
             case VM_STORE_ID :
                 // Refcount stays equal. So no inc/dec ref needed
                 dst = vm_frame_stack_pop(frame);
+                object_dec_ref(dst);
                 register char *name = vm_frame_get_name(frame, oparg1);
                 DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
                 vm_frame_set_identifier(frame, name, dst);
@@ -739,6 +745,7 @@ dispatch:
                 {
                     // Fetch methods to call
                     register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    object_dec_ref(obj);
                     register t_object *self_obj = NULL;
 
                     // If we're not a class we're calling, we must set the self_obj to the binding
@@ -751,9 +758,12 @@ dispatch:
 
                     // Fetch varargs object (or null_object when no varargs are needed)
                     t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
+                    object_dec_ref((t_object *)varargs);
 
                     // Add items
                     for (int i=0; i!=oparg1; i++) {
+                        // We pop arguments, but we add it to a dll, don't decrease refcount, but we must do so
+                        // when we finish with our dll
                         dll_prepend(arg_list, vm_frame_stack_pop(frame));
                     }
 
@@ -769,6 +779,7 @@ dispatch:
                     }
 
                     t_object *ret_obj = vm_object_call_args(self_obj, obj, arg_list);
+                    // @TODO: decref our arguments here
                     dll_free(arg_list);
 
                     if (ret_obj == NULL) {
@@ -848,7 +859,9 @@ dispatch:
 
             case VM_COMPARE_OP :
                 left_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(left_obj);
                 right_obj = vm_frame_stack_pop(frame);
+                object_dec_ref(right_obj);
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
@@ -928,8 +941,11 @@ dispatch:
                         for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
                             arg->value = vm_frame_stack_pop(frame);
+                            object_dec_ref(arg->value);
                             register t_object *name_obj = vm_frame_stack_pop(frame);
+                            object_dec_ref(name_obj);
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
+                            object_dec_ref((t_object *)arg->typehint);
 
                             ht_add_str(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
@@ -986,12 +1002,14 @@ dispatch:
                     // Pop the number of interfaces
                     interface_or_class->interfaces = dll_init();
                     t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
+                    object_dec_ref(interface_cnt_obj);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
                     DEBUG_PRINT("Number of interfaces we need to implement: %ld\n", interface_cnt);
 
                     // Fetch all interface objects
                     for (int i=0; i!=interface_cnt; i++) {
                         register t_object *interface_name_obj = vm_frame_stack_pop(frame);
+                        object_dec_ref(interface_name_obj);
                         DEBUG_PRINT("Implementing interface: %s\n", object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
@@ -1032,7 +1050,9 @@ dispatch:
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
                         register t_object *name = vm_frame_stack_pop(frame);
+                        object_dec_ref(name);
                         register t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
+                        object_dec_ref((t_object *)attrib_obj);
 
                         if (ATTRIB_IS_METHOD(attrib_obj)) {
                             // If we are a method, we will set the name.
@@ -1044,7 +1064,7 @@ dispatch:
                         // Add method attribute to class
                         ht_add_str(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
 
-                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
+                        //DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
 
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)interface_or_class)) {
@@ -1052,6 +1072,8 @@ dispatch:
                         goto block_end;
                     }
 
+                    // @TODO: increase to 2.. that is not ok.. :/
+                    object_inc_ref((t_object *)interface_or_class);
                     object_inc_ref((t_object *)interface_or_class);
                     vm_frame_stack_push(frame, (t_object *)interface_or_class);
                 }
@@ -1077,11 +1099,13 @@ dispatch:
 
             case VM_END_FINALLY :
                 ret = vm_frame_stack_pop(frame);
+                object_dec_ref(ret);
                 if (OBJECT_IS_NUMERICAL(ret)) {
                     reason = OBJ2NUM(ret);
 
                     if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
                         ret = vm_frame_stack_pop(frame);
+                        object_dec_ref(ret);
                     }
                     goto block_end;
                     break;
@@ -1103,6 +1127,7 @@ dispatch:
                 {
                     // Fetch exception object
                     register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    object_dec_ref(obj);
 
 
                     // Check if object extends exception
@@ -1142,6 +1167,7 @@ dispatch:
                 {
                     // Check if we are are unpacking a tuple
                     t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
+                    object_dec_ref((t_object *)obj);
                     if (! OBJECT_IS_TUPLE(obj)) {
                         thread_create_exception((t_exception_object *)Object_TypeException, 1, "Argument is not a tuple");
                         reason = REASON_EXCEPTION;
@@ -1169,6 +1195,7 @@ dispatch:
             case VM_ITER_RESET :
                 {
                     obj1 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj1);
 
                     // check if we have the iterator interface implemented
                     if (! object_has_interface(obj1, "iterator")) {
@@ -1194,6 +1221,7 @@ dispatch:
             case VM_ITER_FETCH :
                 {
                     obj1 = vm_frame_stack_pop(frame);
+                    object_dec_ref(obj1);
 
                     // If we need 3 values, create and push metadata
                     if (oparg1 == 3) {
@@ -1230,6 +1258,7 @@ dispatch:
                 {
                     // Fetch methods to call
                     register t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    object_dec_ref(obj);
 
                     // We can only call a class, as we are instantiating a data structure
                     if (! OBJECT_TYPE_IS_CLASS(obj)) {
@@ -1249,7 +1278,9 @@ dispatch:
                     // Create argument list.
                     t_dll *dll = dll_init();
                     for (int i=0; i!=oparg1; i++) {
-                        dll_append(dll, (void *)vm_frame_stack_pop(frame));
+                        t_object *tmp = vm_frame_stack_pop(frame);
+                        object_dec_ref(tmp);
+                        dll_append(dll, (void *)tmp);
                     }
 
                     // Create new object, because we know it's a data-structure, just add them to the list
@@ -1264,7 +1295,9 @@ dispatch:
                 {
                     // @TODO: oparg1 is not used
                     obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    object_dec_ref(obj1);
                     obj2 = vm_frame_stack_pop(frame);       // key
+                    object_dec_ref(obj2);
 
                     obj3 = object_find_attribute(obj1, "__get");
                     t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
@@ -1277,7 +1310,9 @@ dispatch:
             case VM_STORE_SUBSCRIPT :
                 {
                     obj1 = vm_frame_stack_pop(frame);       // datastructure
+                    object_dec_ref(obj1);
                     obj2 = vm_frame_stack_pop(frame);       // key
+                    object_dec_ref(obj2);
 
                     //
                     obj3 = object_find_attribute(obj1, "__set");

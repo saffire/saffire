@@ -49,6 +49,7 @@
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
         t_object *(*clone)(t_object *);             // Clone this object to a new object
+        t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
 #ifdef __DEBUG
         char *(*debug)(t_object *);                 // Return debug string (value and info)
 #endif

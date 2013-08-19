@@ -403,6 +403,7 @@ t_object_funcs hash_funcs = {
         obj_free,             // Free a hash object
         obj_destroy,          // Destroy a hash object
         NULL,                 // Clone
+        NULL,                 // Cach
 #ifdef __DEBUG
         obj_debug
 #endif

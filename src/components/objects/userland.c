@@ -85,6 +85,7 @@ t_object_funcs userland_funcs = {
         NULL,                 // Free a string object
         obj_destroy,          // Destroy a string object
         NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

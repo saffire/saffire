@@ -39,6 +39,8 @@
 #include "general/smm.h"
 #include "vm/thread.h"
 
+t_dll *all_objects;
+
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
 // Object type string constants
@@ -139,7 +141,7 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
-//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -150,22 +152,22 @@ void object_dec_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count--;
-//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
-    if(obj->ref_count == 0) {
-        // Free object
-        if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
-//            DEBUG_PRINT(" *** WOULD BE FREED, BUT WE DONT YET\n");
-            // @TODO: Free objects!
-            //object_free(obj);
-        }
-    }
+    if(obj->ref_count != 0) return;
 
+    // Don't free static objects
+    if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
+
+    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+
+    // Free object
+    object_free(obj);
 }
 
 #ifdef __DEBUG
 char *object_debug(t_object *obj) {
-    if (! obj) return "(no debug info)";
+    if (! obj) return "(null)";
 
     if (obj && obj->funcs && obj->funcs->debug) {
         return obj->funcs->debug(obj);
@@ -180,7 +182,7 @@ char *object_debug(t_object *obj) {
 void object_free(t_object *obj) {
     if (! obj) return;
 
-    // Check if we really need to free
+    // ref_count > 0, object is still in use somewhere else. Don't free it yet
     if (obj->ref_count > 0) return;
 
 #ifdef __DEBUG
@@ -189,14 +191,40 @@ void object_free(t_object *obj) {
     }
 #endif
 
-    // Need to free, check if free functions exists
+    // Free values from the object
     if (obj->funcs && obj->funcs->free) {
         obj->funcs->free(obj);
     }
 
-    if (! gc_queue_add(obj) && obj->funcs && obj->funcs->destroy) {
+    // Remove this object from the all_objects list
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *tmp = (t_object *)e->data;
+
+        if (tmp == obj) {
+            dll_remove(all_objects, e);
+            break;
+        }
+        e = DLL_NEXT(e);
+    }
+
+
+    // Free the object
+    if (obj->funcs && obj->funcs->destroy) {
         obj->funcs->destroy(obj);
     }
+
+    obj = NULL;
+
+
+
+    // @TODO: here we should actually add the object to the GC destruction queue.
+    // If we need the object later, we can still catch it from this queue, otherwise it will
+    // be destroyed somewhere in the future.
+
+//    if (! gc_queue_add(obj) && obj->funcs && obj->funcs->destroy) {
+//        obj->funcs->destroy(obj);
+//    }
 }
 
 
@@ -216,19 +244,25 @@ t_object *object_clone(t_object *obj) {
 
 
 /**
- *
+ * Actually returns a new object. Note that it must NOT populate anything through the
+ * arguments. This should be done in the populate() callback. The arguments presented
+ * here can be used to decide if we have a cached version of the object laying around.
  */
-static t_object *_object_new(t_object *obj) {
+static t_object *_object_new(t_object *obj, t_dll *arguments) {
     t_object *res;
 
     // Return NULL when we cannot 'new' this object
-    if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
-
-    // Create or recycle an object from this type
-    res = gc_queue_recycle(obj->type);
-    if (! res) {
-        res = obj->funcs->new(obj);
+    if (! obj->funcs->new) {
+        RETURN_NULL;
     }
+
+    res = obj->funcs->new(obj);
+
+    // We add 'res' to our list of generated objects.
+    dll_append(all_objects, res);
+
+    // Assume we have a reference count of 1
+    object_inc_ref(res);
     return res;
 }
 
@@ -238,9 +272,24 @@ static t_object *_object_new(t_object *obj) {
  * argument DLL list.
  */
 t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
-    t_object *res = _object_new(obj);
+    t_object *res = NULL;
 
-    // Populate internal values
+    // Nothing found to new, just return NULL object
+    if (! obj || ! obj->funcs) {
+        RETURN_NULL;
+    }
+
+    // If we have a caching function, seek inside that cache first
+    if (obj->funcs->cache) {
+        res = obj->funcs->cache(obj, arguments);
+        object_inc_ref(res);
+        if (res) return res;
+    }
+
+    // generate new object
+    res = _object_new(obj, arguments);
+
+    // Populate values
     if (res->funcs->populate) {
         res->funcs->populate(res, arguments);
     }
@@ -277,6 +326,8 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
  * Initialize all the (scalar) objects
  */
 void object_init() {
+    all_objects = dll_init();
+
     object_base_init();
     object_boolean_init();
     object_null_init();
@@ -317,6 +368,14 @@ void object_fini() {
     object_boolean_fini();
     object_base_fini();
 
+    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *obj = (t_object *)e->data;
+        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
+        e = DLL_NEXT(e);
+    }
+    dll_free(all_objects);
 }
 
 
@@ -481,6 +540,10 @@ void object_remove_all_internal_attributes(t_object *obj) {
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
         // @TODO: We must remove and free attrib-objects here..
+        t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+        object_dec_ref(attr->attribute);
+        object_dec_ref((t_object *)attr);
+
         ht_iter_next(&iter);
     }
 }
@@ -585,8 +648,6 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
  * Iterates all interfaces found in this object, and see if the object actually implements it fully
  */
 int object_check_interface_implementations(t_object *obj) {
-    DEBUG_PRINT("object_check_interface_implementations(%d)\n", obj->interfaces ? obj->interfaces->size : 0);
-
     t_dll_element *elem = DLL_HEAD(obj->interfaces);
     while (elem) {
         t_object *interface = (t_object *)elem->data;

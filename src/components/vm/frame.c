@@ -204,19 +204,19 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 
 #ifdef __DEBUG
 void print_debug_table(t_hash_table *ht, char *prefix) {
-    t_hash_iter iter;
-
-    if (! ht) return;
-
-    ht_iter_init(&iter, ht);
-    while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key_str(&iter);
-        t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT("%s KEY: '%-20s' => %s\n", prefix, key, val ? object_debug(val) : "(null)");
-
-        ht_iter_next(&iter);
-    }
-    DEBUG_PRINT("%s\n\n", prefix);
+//    t_hash_iter iter;
+//
+//    if (! ht) return;
+//
+//    ht_iter_init(&iter, ht);
+//    while (ht_iter_valid(&iter)) {
+//        char *key = ht_iter_key_str(&iter);
+//        t_object *val = ht_iter_value(&iter);
+//        DEBUG_PRINT("%s KEY: '%-20s' => %s\n", prefix, key, val ? object_debug(val) : "(null)");
+//
+//        ht_iter_next(&iter);
+//    }
+//    DEBUG_PRINT("%s\n\n", prefix);
 }
 #endif
 
@@ -291,6 +291,9 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 }
 
 
+extern t_dll *all_objects;
+
+
 void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) {
     vm_context_set_context(frame, context);
 
@@ -324,27 +327,44 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
     frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
         t_object *obj = Object_Null;
+        object_inc_ref(obj);
 
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
+                object_dec_ref(obj);    // Decrease NULL object usage
+
                 // We create a reference to the source filename of the original bytecode name.
                 bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
                 obj = object_new(Object_Callable, 4, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
                 break;
             case BYTECODE_CONST_STRING :
+                object_dec_ref(obj);    // Decrease NULL object usage
+
                 obj = object_new(Object_String, 1, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
+                object_dec_ref(obj);    // Decrease NULL object usage
+
                 obj = object_new(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
             default :
                 fatal_error(1, "Cannot convert constant type into object!");
                 break;
         }
-        object_inc_ref(obj);
         frame->constants_objects[i] = obj;
     }
+
+
+    printf("\n\n---- AttachBytecode ----\n");
+    t_dll_element *e = DLL_HEAD(all_objects);
+        while (e) {
+        t_object *obj = (t_object *)e->data;
+        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
+        e = DLL_NEXT(e);
+    }
+
+    printf("----------------------------\n");
 }
 
 /**

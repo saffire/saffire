@@ -406,11 +406,24 @@ void object_string_fini(void) {
 
 
 
+static t_object *obj_cache(t_object *self, t_dll *arg_list) {
+    // Get the widestring from the argument list
+    t_dll_element *e = DLL_HEAD(arg_list);
+    char *value = (char *)e->data;
+
+    // Create a hash from the string
+    char strhash[33];
+    hash_string_text(value, strhash);
+
+    return ht_find_str(string_cache, strhash);
+}
+
 static t_object *obj_new(t_object *self) {
+    // Create new object from string object template
     t_string_object *obj = smm_malloc(sizeof(t_string_object));
     memcpy(obj, Object_String, sizeof(t_string_object));
 
-    // These are instances
+    // Object is an instance, not a class
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
 
@@ -427,14 +440,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     // Create a hash from the string
     char strhash[33];
     hash_string_text(value, strhash);
-
-    // Check for and return cached object
-    t_object *cache_obj = ht_find_str(string_cache, strhash);
-    if (cache_obj) {
-        obj = cache_obj;
-    }
-
-    // No cache, populate the new object
 
     // Set internal data
     str_obj->value = smm_strdup(value);
@@ -478,8 +483,9 @@ t_object_funcs string_funcs = {
         obj_free,             // Free a string object
         obj_destroy,          // Destroy a string object
         NULL,                 // Clone
+        obj_cache,            // Object cache
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
 #endif
 };
 

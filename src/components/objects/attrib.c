@@ -116,8 +116,9 @@ t_object_funcs attrib_funcs = {
         NULL,                 // Free a attrib object
         obj_destroy,          // Destroy a attrib object
         NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
 #endif
 };
 

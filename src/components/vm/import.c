@@ -67,13 +67,13 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file, c
     bc->source_filename = smm_strdup(source_file);
     assembler_free(asm_code);
 
-    DEBUG_PRINT("\n\n\n\n * Start of running module bytecode.\n");
+    DEBUG_PRINT("\n\n\n\n * Start of running import module bytecode (%s).\n", source_file);
 
     // Create a new frame and run it!
     t_vm_frame *module_frame = vm_frame_new(frame, context_path, bc);
     vm_execute(module_frame);
 
-    DEBUG_PRINT("\n\n\n\n * End of running module bytecode.\n");
+    DEBUG_PRINT("\n\n\n\n * End of running import module bytecode (%s).\n", source_file);
 
     return module_frame;
 }
@@ -133,7 +133,7 @@ static t_object *search_import_path(t_vm_frame *frame, char *file_path, char *mo
     if (! is_file(file_path)) return NULL;
 
     *import_frame = _execute_import_frame(frame, file_path, class, module_path);
-    printf("IMPORT FRAME: %08X\n", *import_frame);
+    printf("IMPORT FRAME: %08lX\n", (unsigned long)*import_frame);
     return vm_frame_find_identifier(*import_frame, class);
 }
 
@@ -179,9 +179,7 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
     char module_path[2048];
     t_object *obj = NULL;
 
-
     DEBUG_PRINT("Importing class '%s' from module '%s'\n", class, module);
-
 
     // Create complete module path including the class
     if (strstr(module, "::") == module) {
@@ -246,7 +244,7 @@ void vm_free_import_cache(void) {
     ht_iter_init(&iter, import_cache);
     while (ht_iter_valid(&iter)) {
         t_vm_frame *frame = ht_iter_value(&iter);
-        printf("DESTROY FRAME: %08X\n", frame);
+        printf("DESTROY FRAME: %08lX\n", (unsigned long)frame);
         if (frame->bytecode) {
             bytecode_free(frame->bytecode);
         }

@@ -208,7 +208,8 @@ t_object_funcs callable_funcs = {
         obj_populate,         // Populates a callable object
         NULL,                 // Free a callable object
         obj_destroy,          // Destroy a callable object
-        NULL,               // Clone
+        NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

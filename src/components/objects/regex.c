@@ -243,6 +243,7 @@ t_object_funcs regex_funcs = {
         obj_free,             // Free a regex object
         obj_destroy,          // Clone a regex object
         NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

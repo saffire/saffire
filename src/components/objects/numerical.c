@@ -376,6 +376,19 @@ static t_object *obj_clone(t_object *obj) {
 }
 
 
+static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
+    t_dll_element *e = DLL_HEAD(arg_list);
+    long value = (long)e->data;
+
+    // Return cached object if it's already present.
+    if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
+        return (t_object *)numerical_cache[value + NUMERICAL_CACHE_OFF];
+    }
+
+    return NULL;
+}
+
+
 /**
  * Creates a new numerical object by "cloning" the original one
  */
@@ -396,14 +409,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
     long value = (long)e->data;
 
-    // @TODO: We cannot use the numerical cache now :/
-//    // Return cached object if it's already present.
-//    if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
-//        return (t_object *)numerical_cache[value + NUMERICAL_CACHE_OFF];
-//    }
-
     num_obj->value = value;
-    num_obj->ref_count++;
 }
 
 static void obj_destroy(t_object *obj) {
@@ -426,6 +432,7 @@ t_object_funcs numerical_funcs = {
         NULL,               // Free a numerical object
         obj_destroy,        // Destroy a numerical object
         NULL,               // Clone
+        obj_cache,          // cache
 #ifdef __DEBUG
         obj_debug
 #endif

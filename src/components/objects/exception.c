@@ -233,6 +233,7 @@ t_object_funcs exception_funcs = {
         obj_free,           // Free a exception object
         obj_destroy,        // Destroy a exception object
         NULL,               // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

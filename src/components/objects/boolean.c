@@ -288,10 +288,12 @@ void object_boolean_init(void) {
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_le",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_le);
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_ge",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_ge);
 
-
-
     Object_Boolean_False_struct.attributes = Object_Boolean_struct.attributes;
     Object_Boolean_True_struct.attributes = Object_Boolean_struct.attributes;
+
+//    // These are instances, not classes, so they should have a refcount of 1 to start with
+//    Object_Boolean_False_struct.ref_count = 1;
+//    Object_Boolean_True_struct.ref_count = 1;
 
     vm_populate_builtins("false", Object_False);
     vm_populate_builtins("true", Object_True);
@@ -319,8 +321,9 @@ t_object_funcs bool_funcs = {
         NULL,               // Free a bool object
         NULL,               // Destroy a bool object
         NULL,               // Clone
+        NULL,
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
 #endif
 };
 

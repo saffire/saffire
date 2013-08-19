@@ -296,6 +296,7 @@ SAFFIRE_METHOD(list, conv_string) {
  */
 void object_list_init(void) {
     Object_List_struct.attributes = ht_create();
+
     object_add_internal_method((t_object *)&Object_List_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_ctor);
     object_add_internal_method((t_object *)&Object_List_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_dtor);
 
@@ -417,6 +418,7 @@ t_object_funcs list_funcs = {
         obj_free,             // Free a list object
         obj_destroy,          // Destroy a list object
         NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif
