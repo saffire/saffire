@@ -1325,7 +1325,7 @@ static void _ast_to_frame(t_ast_element *leaf, t_hash_table *output, const char 
         // Add precaution return statement. Will be "self", but main-frame will return numerical(0) (the OS exit code)
         t_asm_opr *opr1;
         if (strcmp(name, "main") == 0) {
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, 0);
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, 0);
             dll_append(frame, asm_create_codeline(0, VM_LOAD_CONST, 1, opr1));
         } else {
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "self", 0);
