@@ -70,6 +70,7 @@
 
     t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context_name, t_bytecode *bytecode);
     void vm_attach_bytecode(t_vm_frame *frame, char *context_name, t_bytecode *bytecode);
+    void vm_detach_bytecode(t_vm_frame *frame);
     void vm_frame_destroy(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);

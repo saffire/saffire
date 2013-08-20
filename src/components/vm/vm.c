@@ -46,7 +46,8 @@
 
 t_hash_table *import_cache;                // Cache for all imported frames
 
-t_hash_table *builtin_identifiers;         // Builtin identifiers like first-class objects, the _sfl etc
+t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
+t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
 
 #define REASON_NONE         0       // No return status. Just end the execution
 #define REASON_RETURN       1       // Return statement given
@@ -204,9 +205,15 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     current_thread = thread;
 
     gc_init();
-    builtin_identifiers = ht_create();
+
+    // Initialize hash where everybody can add their builtins to. Since object_hash does not exist yet,
+    // we must use a generic hash for this. We will "convert" this to a hashobject later
+    builtin_identifiers_ht = ht_create();
     object_init();
     module_init();
+
+    // Convert our builtin identifiers to an actual hash object
+    builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers_ht);
 
     import_cache = ht_create();
 
@@ -247,9 +254,11 @@ void vm_fini(t_vm_frame *frame) {
 
     smm_free(current_thread);
 
+    // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
+    object_dec_ref((t_object *)builtin_identifiers);
+
     module_fini();
     object_fini();
-    ht_destroy(builtin_identifiers);
     gc_fini();
 }
 
@@ -1345,6 +1354,7 @@ block_end:
     // Restore current frame
     thread_set_current_frame(old_current_frame);
 
+    printf("RETURNING FROM _VM_EXEC(): %s(%d)\n", object_debug(ret), ret->ref_count);
     return ret;
 }
 
@@ -1584,8 +1594,8 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
 /**
  *
  */
-void vm_populate_builtins(const char *name, void *data) {
-    ht_add_str(builtin_identifiers, (char *)name, data);
+void vm_populate_builtins(const char *name, t_object *obj) {
+    ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }
 
 
@@ -1671,12 +1681,14 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         ht_replace_str(new_frame->local_identifiers->ht, "self", self_obj);
         ht_replace_str(new_frame->local_identifiers->ht, "parent", self_obj->parent);
 
-#ifdef __DEBUG
-        print_debug_table(new_frame->local_identifiers->ht, "");
-#endif
+//#ifdef __DEBUG
+//        print_debug_table(new_frame->local_identifiers->ht, "");
+//#endif
 
         // Parse calling arguments to see if they match our signatures
         if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
+            vm_frame_destroy(new_frame);
+            
             // Exception thrown in the argument parsing
             return NULL;
         }

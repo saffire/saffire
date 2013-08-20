@@ -511,12 +511,12 @@ primary_expression_first_part:
 /* A name that is namespaced (or not). */
 qualified_name:
         qualified_name_first_part               { $$ = $1; }
-    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_concat($1, "::"); $$ = ast_node_concat($$, $3); }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_concat($1, "::"); $$ = ast_node_concat($$, $3); smm_free($3); }
 ;
 
 qualified_name_first_part:
-        T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); $$ = ast_node_identifier(@1.first_line, $$->string.value); }
+        T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); $$ = ast_node_identifier(@1.first_line, $$->string.value); smm_free($2); }
 ;
 
 

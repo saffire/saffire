@@ -245,10 +245,13 @@ void vm_free_import_cache(void) {
     while (ht_iter_valid(&iter)) {
         t_vm_frame *frame = ht_iter_value(&iter);
         printf("DESTROY FRAME: %08lX\n", (unsigned long)frame);
-        if (frame->bytecode) {
-            bytecode_free(frame->bytecode);
-        }
+
+        t_bytecode *bc = frame->bytecode;
+
         vm_frame_destroy(frame);
+
+        if (bc) bytecode_free(bc);
+        
         ht_iter_next(&iter);
     }
 

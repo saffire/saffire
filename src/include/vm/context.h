@@ -32,5 +32,6 @@
     char *vm_context_get_path(char *context);
     char *vm_context_get_class(char *context);
     void vm_context_set_context(t_vm_frame *frame, char *context);
+    void vm_context_free_context(t_vm_frame *frame);
 
 #endif

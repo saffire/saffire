@@ -32,7 +32,8 @@
     #include "vm/frame.h"
     #include "compiler/saffire_parser.h"
 
-    t_hash_table *builtin_identifiers;
+    t_hash_table *builtin_identifiers_ht;
+    t_hash_object *builtin_identifiers;
     t_hash_table *import_cache;
 
     #define VM_RUNMODE_FASTCGI      1       // Virtual machine run as FastCGI
@@ -46,7 +47,7 @@
     t_vm_frame *vm_init(SaffireParser *sp, int runmode);
     void vm_fini(t_vm_frame *frame);
     int vm_execute(t_vm_frame *frame);
-    void vm_populate_builtins(const char *name, void *data);
+    void vm_populate_builtins(const char *name, t_object *obj);
     t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
     t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
     t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);

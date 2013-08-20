@@ -156,6 +156,7 @@ void object_exception_init(void) {
     object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
 
     vm_populate_builtins("exception", Object_Exception);
+
     object_exception_add_generated_exceptions();
 }
 

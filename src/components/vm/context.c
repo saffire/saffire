@@ -28,12 +28,22 @@
 #include "vm/frame.h"
 #include "general/smm.h"
 
+
+/**
+ * Returns the context path from a specified context
+ */
 char *vm_context_get_path(char *context) {
     char *s = smm_strdup(context);
 
     char *c = strrchr(s, ':');
-    if (c == NULL) return smm_strdup("");
-    if ((s - c) == 0) return smm_strdup("");
+    if (c == NULL) {
+        smm_free(s);
+        return smm_strdup("");
+    }
+    if ((s - c) == 0) {
+        smm_free(s);
+        return smm_strdup("");
+    }
 
     c--;
     if (*c == ':') *c = '\0';
@@ -41,8 +51,10 @@ char *vm_context_get_path(char *context) {
 }
 
 
+/**
+ * Returns the context path from a specified context.
+ */
 char *vm_context_get_class(char *context) {
-
     char *c = strrchr(context, ':');
     if (c == NULL) return smm_strdup(context);
     if ((context - c) == 0) return smm_strdup(context);
@@ -52,13 +64,33 @@ char *vm_context_get_class(char *context) {
 }
 
 
+/**
+ * Sets the context for this frame and plits the nessesary class and path.
+ */
 void vm_context_set_context(t_vm_frame *frame, char *context) {
-    if (frame->context) smm_free(frame->context);
     frame->context = smm_strdup(context);
-
-    if (frame->context_path) smm_free(frame->context_path);
     frame->context_path = vm_context_get_path(context);
-
-    if (frame->context_class) smm_free(frame->context_class);
     frame->context_class = vm_context_get_class(context);
+
+    printf("CONTEXT: '%s'\n", frame->context);
+    printf("CONTEXT PATH: '%s'\n", frame->context_path);
+    printf("CONTEXT CLASS: '%s'\n", frame->context_class);
+}
+
+/**
+ * Frees the context for this frame
+ */
+void vm_context_free_context(t_vm_frame *frame) {
+//    if (frame->context) {
+        smm_free(frame->context);
+        frame->context = NULL;
+//    }
+//    if (frame->context_path) {
+        smm_free(frame->context_path);
+        frame->context_path = NULL;
+//    }
+//    if (frame->context_class) {
+        smm_free(frame->context_class);
+        frame->context_class = NULL;
+//    }
 }

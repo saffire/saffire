@@ -184,6 +184,8 @@ int ht_exists_obj(t_hash_table *ht, t_object *key) {
 }
 
 /**
+ * Adds ht[key] = value;
+ * Note that key is not duplicated.
  *
  * @param ht
  * @param key
@@ -203,6 +205,8 @@ int ht_add_num(t_hash_table *ht, unsigned long key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
 }
 int ht_add_obj(t_hash_table *ht, t_object *key, void *value) {
+    object_inc_ref(key);
+    object_inc_ref((t_object *)value);
     return ht_add(ht, ht_key_create(HASH_KEY_PTR, (void *)key), value);
 }
 

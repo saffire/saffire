@@ -37,7 +37,7 @@
     typedef struct _vm_frame t_vm_frame;
 
 
-    void vm_populate_builtins(const char *name, void *data);
+    void vm_populate_builtins(const char *name, t_object *obj);
 
 //    // Forward define
 //    typedef struct _object t_object;

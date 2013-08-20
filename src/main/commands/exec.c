@@ -85,14 +85,14 @@ static int do_exec(void) {
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
     t_vm_frame *initial_frame = vm_init(NULL, runmode);
-    vm_attach_bytecode(initial_frame, "", bc);
+    vm_attach_bytecode(initial_frame, "(main)", bc);
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
 
     vm_detach_bytecode(initial_frame);
-    bytecode_free(bc);
     vm_fini(initial_frame);
+    bytecode_free(bc);
 
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
 

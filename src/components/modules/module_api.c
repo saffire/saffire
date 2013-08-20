@@ -67,6 +67,8 @@ int register_module(t_module *mod) {
         char key[100]; // @TODO: fixme
         sprintf(key, "%s::%s", mod->name, obj->name);
 
+        object_inc_ref(obj);
+
         vm_populate_builtins(key, obj);
 
         idx++;
@@ -82,7 +84,13 @@ int unregister_module(t_module *mod) {
     // Fini module
     mod->fini();
 
-    // @TODO: Remove from builtins or so
+    int idx = 0;
+    t_object *obj = (t_object *)mod->objects[idx];
+    while (obj != NULL) {
+        object_dec_ref(obj);
+        idx++;
+        obj = (t_object *)mod->objects[idx];
+    }
 
     // Nothing found
     return 0;

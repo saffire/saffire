@@ -183,6 +183,7 @@ static t_bytecode *bytecode_bin2bc(char *bincode) {
                 _read_buffer(bincode, &pos, len, s);
                 s[len] = '\0';
                 _new_constant_string(bytecode, s);
+                smm_free(s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
                 _read_buffer(bincode, &pos, len, &l);
@@ -462,6 +463,8 @@ void bytecode_free(t_bytecode *bc) {
     if (bc->source_filename) {
         smm_free(bc->source_filename);
     }
+
+    smm_free(bc->lino);
 
     smm_free(bc);
 }

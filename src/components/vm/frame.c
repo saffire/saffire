@@ -153,11 +153,12 @@ t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
 
 
 /**
- * Store object into the global identifier table
+ * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
 void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     if (obj == NULL) {
-        ht_remove_str(frame->global_identifiers->ht, id);
+        obj = ht_remove_str(frame->global_identifiers->ht, id);
+        object_dec_ref(obj);
     } else {
         ht_add_str(frame->global_identifiers->ht, id, obj);
     }
@@ -179,16 +180,12 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     t_object *old_obj = ht_replace_str(frame->local_identifiers->ht, id, obj);
-    if (old_obj) {
-        object_dec_ref((t_object *)old_obj);
-    }
+    object_dec_ref(old_obj);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     t_object *old_obj = ht_replace_str(frame->builtin_identifiers->ht, id, obj);
-    if (old_obj) {
-        object_dec_ref((t_object *)old_obj);
-    }
+    object_dec_ref(old_obj);
 }
 
 
@@ -255,7 +252,7 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
 
     DEBUG_PRINT("VM_FRAME_FIND_IDENTIFIER(%08X): '%s' NOT FOUND!\n", frame, id);
 
-//    DEBUG_PRINT("Builtins\n");
+//    DEBUG_PRINT("Builtimns\n");
 //    print_debug_table(frame->builtin_identifiers->ht);
 
     return NULL;
@@ -275,19 +272,19 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
 
 
 void vm_detach_bytecode(t_vm_frame *frame) {
+    if (frame->bytecode == NULL) return;
+
+    vm_context_free_context(frame);
+
     smm_free(frame->stack);
-    if (frame->parent == NULL) {
-        // Free global_identifiers object_hash object
-    }
 
-    // Free builtin_identifiers object_hash
-
-
+    // Free constants objects
     for (int i=0; i!=frame->bytecode->constants_len; i++) {
-        // @TODO: free frame->constants_objects[i];
+        object_dec_ref((t_object *)frame->constants_objects[i]);
     }
+    smm_free(frame->constants_objects);
 
-    free(frame->constants_objects);
+    frame->bytecode = NULL;
 }
 
 
@@ -304,24 +301,6 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
     // Setup variable stack
     frame->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
     bzero(frame->stack, bytecode->stack_size * sizeof(t_object *));
-
-    // Set the variable hashes
-    if (frame->parent == NULL) {
-        // Initial frame, so create a new global identifier hash
-        frame->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-        frame->local_identifiers = frame->global_identifiers;
-    } else {
-        // otherwise link globals from the parent
-        frame->global_identifiers = frame->parent->global_identifiers;
-        // And create new local identifier hash
-        frame->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-
-        // By default, don't create file identifiers
-        frame->file_identifiers = NULL;
-    }
-
-    // Create builtin-identifiers
-    frame->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
 
     // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
     frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
@@ -358,7 +337,7 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 
     printf("\n\n---- AttachBytecode ----\n");
     t_dll_element *e = DLL_HEAD(all_objects);
-        while (e) {
+    while (e) {
         t_object *obj = (t_object *)e->data;
         printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
         e = DLL_NEXT(e);
@@ -371,61 +350,85 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 * Creates and initializes a new frame
 */
 t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *bytecode) {
-    t_vm_frame *cfr = smm_malloc(sizeof(t_vm_frame));
-    bzero(cfr, sizeof(t_vm_frame));
+    t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
+    bzero(frame, sizeof(t_vm_frame));
 
-    cfr->parent = parent_frame;
+    frame->parent = parent_frame;
 
-    if (bytecode) {
-        vm_attach_bytecode(cfr, context, bytecode);
-        return cfr;
-    }
+    printf("Increasing builtin_identifiers refcount\n");
+    frame->builtin_identifiers = builtin_identifiers;
+    object_inc_ref((t_object *)builtin_identifiers);
 
-    vm_context_set_context(cfr, context);
+    vm_context_set_context(frame, context);
 
-    cfr->stack = NULL;
-    cfr->bytecode = NULL;
-    cfr->ip = 0;
-    cfr->sp = 0;
+    frame->bytecode = NULL;
+//    frame->stack = NULL;
+//    frame->ip = 0;
+//    frame->sp = 0;
+
+    // Create new local identifier hash
+    frame->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+
+    // By default, don't create file identifiers
+    frame->file_identifiers = NULL;
+    frame->constants_objects = NULL;
 
     // Set the variable hashes
-    if (cfr->parent == NULL) {
-        // Initial frame, so create a new global identifier hash
-        cfr->global_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
-        cfr->local_identifiers = cfr->global_identifiers;
+    if (frame->parent == NULL) {
+        // global identifiers are the same as the local identifiers for the initial frame
+        frame->global_identifiers = frame->local_identifiers;
     } else {
-        // otherwise link globals from the parent
-        cfr->global_identifiers = cfr->parent->global_identifiers;
-        // And create new local identifier hash
-        cfr->local_identifiers = (t_hash_object *)object_new(Object_Hash, 0);
+        // if not the initial frame, link globals from the parent frame
+        frame->global_identifiers = frame->parent->global_identifiers;
+    }
+    object_inc_ref((t_object *)frame->global_identifiers);
 
-        // By default, don't create file identifiers
-        cfr->file_identifiers = NULL;
+    if (bytecode) {
+        vm_attach_bytecode(frame, context, bytecode);
+        return frame;
     }
 
-    cfr->builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers);
-    cfr->constants_objects = NULL;
-
-    return cfr;
+    return frame;
 }
 
 /**
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-//    // @TODO: Remove identifiers in the local_identifiers hash object
-//    object_free((t_object *)frame->local_identifiers);
-//
-//    // Destroy global identifiers when this frame is the initial one
-//    if (! frame->parent) {
-//        // @TODO: We should free global id's, but this results in errors
-//        //object_free((t_object *)frame->global_identifiers);
+    printf("FRAME DESTROY: %s\n", frame->context);
+
+    if (frame->bytecode) {
+        vm_detach_bytecode(frame);
+    }
+
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, frame->global_identifiers->ht);
+//    while (ht_iter_valid(&iter)) {
+//        t_object *val = ht_iter_value(&iter);
+//        object_dec_ref(val);
+//        ht_iter_next(&iter);
 //    }
 //
-//    // @TODO: remove constants objects.
+//    if (frame->parent != NULL) {
+//        //
+//        ht_iter_init(&iter, frame->local_identifiers->ht);
+//        while (ht_iter_valid(&iter)) {
+//            t_object *val = ht_iter_value(&iter);
+//            object_dec_ref(val);
+//            ht_iter_next(&iter);
+//        }
 //
-//    // @TODO: Should we unwind the stack first
-//    smm_free(frame->stack);
+//        // global and local are linked, don't decref them twice
+//        object_dec_ref((t_object *)frame->global_identifiers);
+//    }
+
+    // Free identifiers
+    object_dec_ref((t_object *)frame->global_identifiers);
+    object_dec_ref((t_object *)frame->local_identifiers);
+    object_dec_ref((t_object *)frame->builtin_identifiers);
+
+    smm_free(frame->context);
+
     smm_free(frame);
 }
 

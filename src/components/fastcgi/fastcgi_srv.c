@@ -178,7 +178,7 @@ static int fcgi_loop(void) {
 
         smm_free(bytecode_file);
 
-        vm_attach_bytecode(initial_frame, "", bc);
+        vm_attach_bytecode(initial_frame, "(fastcgi)", bc);
         vm_execute(initial_frame);
         vm_detach_bytecode(initial_frame);
         bytecode_free(bc);

@@ -141,7 +141,7 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
-//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -152,7 +152,7 @@ void object_dec_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count--;
-//    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
     if(obj->ref_count != 0) return;
 
@@ -160,7 +160,7 @@ void object_dec_ref(t_object *obj) {
     if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
     if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
 
-//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     object_free(obj);
@@ -215,6 +215,7 @@ void object_free(t_object *obj) {
         obj->funcs->destroy(obj);
     }
 
+    // Object is destroyed. We cannot use object anymore.
     obj = NULL;
 
 
@@ -373,7 +374,7 @@ void object_fini() {
     t_dll_element *e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        printf("%-20s %d\n", obj->name, obj->ref_count);
+        printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
@@ -500,10 +501,14 @@ void object_add_interface(t_object *class, t_object *interface) {
  * Create method- attribute that points to an INTERNAL (C) function
  */
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
+    printf("Adding internal method '%s' to '%s'\n", name, obj->name);
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
     t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
+
+    printf("CALLABLE: %08X\n", (unsigned int)callable_obj);
+    printf("ATRTIB: %08X\n", (unsigned int)attrib_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
 }
@@ -515,6 +520,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
+    // @TODO: why replace? why not ht_add_str()??
     ht_replace_str(obj->attributes, name, attrib);
 }
 
@@ -540,8 +546,11 @@ void object_remove_all_internal_attributes(t_object *obj) {
 
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
-        // @TODO: We must remove and free attrib-objects here..
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+
+        printf("attr->object: %d\n", attr->attribute->ref_count);
+        printf("attr: %d\n", attr->ref_count);
+
         object_dec_ref(attr->attribute);
         object_dec_ref((t_object *)attr);
 
@@ -553,6 +562,7 @@ void object_remove_all_internal_attributes(t_object *obj) {
     if (obj->interfaces) {
         dll_free(obj->interfaces);
     }
+
 }
 
 

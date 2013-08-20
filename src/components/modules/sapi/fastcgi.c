@@ -72,6 +72,7 @@ static void _init(void) {
 
 static void _fini(void) {
     // Destroy methods and properties
+    object_remove_all_internal_attributes(&fastcgi_struct);
     ht_destroy(fastcgi_struct.attributes);
 }
 

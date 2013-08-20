@@ -362,7 +362,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
     t_dll *dll = (t_dll *)e->data;
-    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
+    e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
         t_object *k = (t_object *)e->data;
         e = DLL_NEXT(e);
@@ -376,6 +376,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 static void obj_free(t_object *obj) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     if (! hash_obj) return;
+
+    printf("HASH ADDR: %08lX (%d)\n", (unsigned long)hash_obj, obj->flags);
 
     if (hash_obj->ht) {
         ht_destroy(hash_obj->ht);

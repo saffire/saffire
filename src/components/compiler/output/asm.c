@@ -211,6 +211,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
         e = DLL_NEXT(e);
     }
     dll_free(asm_frame->constants);
+    smm_free(asm_frame->code);
 
 //    dll_free(asm_frame->identifiers);
 //
@@ -490,9 +491,11 @@ void assembler_free(t_hash_table *asm_code) {
     t_hash_iter iter;
     ht_iter_init(&iter, asm_code);
 
+    printf("Freeing assembler frame\n");
+
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
-
+        printf(" - Frame\n");
         t_dll_element *e = DLL_HEAD(frame);
         while (e) {
             _asm_free_line((t_asm_line *)e->data);
