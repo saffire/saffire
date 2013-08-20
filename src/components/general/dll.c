@@ -122,12 +122,12 @@ t_dll_element *dll_append(t_dll *dll, void *data) {
  * element is already present in the DLL.
  */
 t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void *data) {
-    t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
-
     // No element given, just prepend
     if (before_element == NULL) {
         return dll_prepend(dll, data);
     }
+
+    t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
     e->data = data;
     e->prev = before_element->prev;
@@ -153,12 +153,12 @@ t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void
  * element is already present in the DLL.
  */
 t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *after_element, void *data) {
-    t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
-
     // No element given, just append
     if (after_element == NULL) {
         return dll_append(dll, data);
     }
+
+    t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
     e->data = data;
     e->prev = after_element;
@@ -188,19 +188,21 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
     if (dll->size == 0) {
         dll->head = NULL;
         dll->tail = NULL;
+
     } else if (element == dll->head) {
         dll->head = dll->head->next;
         dll->head->prev = NULL;
-        return 1;
+
     } else if (element == dll->tail) {
         dll->tail = dll->tail->prev;
         dll->tail->next = NULL;
-        return 1;
+
     } else {
         element->prev->next = element->next;
         element->next->prev = element->prev;
     }
 
+    smm_free(element);
     return 1;
 }
 
@@ -208,7 +210,7 @@ int dll_remove(t_dll *dll, t_dll_element *element) {
  * Pushes data at the tail of the DLL
  */
 void dll_push(t_dll *dll, void *data) {
-    dll_insert_after(dll, DLL_TAIL(dll), data);
+    dll_insert_after(dll, NULL, data);
 }
 
 /**
@@ -234,7 +236,7 @@ void *dll_top(t_dll *dll) {
 }
 
 /**
- * Searches for specfici offset
+ * Searches for specific offset
  */
 t_dll_element *dll_seek_offset(t_dll *dll, int offset) {
     if (offset < 0 || offset >= dll->size) return NULL;

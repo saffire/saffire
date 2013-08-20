@@ -26,9 +26,9 @@ t_ini *ini;
 /**
  *
  */
-int create_ini(void) {
+static int create_ini(void) {
     int fd = mkstemp(tmpfilename);
-    if (fd == -1) exit(1);
+    if (fd == -1) return 0;
 
     int i = 0;
     while (ini_contents[i]) {
@@ -39,15 +39,18 @@ int create_ini(void) {
 
 
     ini = ini_read(tmpfilename);
-    return 0;
+    return 1;
 }
 
 
 /**
  *
  */
-int unlink_ini(void) {
+static int unlink_ini(void) {
     unlink(tmpfilename);
+
+    // Since this is changed by mkstemp, we must make sure it will end on
+    strcpy(tmpfilename, "/tmp/cunit_ini_XXXXXX");
 
     ini_free(ini);
     return 0;
@@ -58,12 +61,16 @@ int unlink_ini(void) {
  *
  */
 void test_ini_simple_reading() {
+    if (!create_ini()) CU_FAIL_FATAL("cannot create ini");
+
     CU_ASSERT_STRING_EQUAL(ini_find(ini, "global.b"), "test");
     CU_ASSERT_STRING_EQUAL(ini_find(ini, "foo.bar"), "1");
     CU_ASSERT_STRING_EQUAL(ini_find(ini, "something.a.boo"), "/usr/bin/gpg");
 
     CU_ASSERT_PTR_NULL(ini_find(ini, "not.existing"));
     CU_ASSERT_PTR_NULL(ini_find(ini, "global.bar"));
+
+    unlink_ini();
 }
 
 
@@ -71,6 +78,8 @@ void test_ini_simple_reading() {
  *
  */
 void test_ini_simple_matching() {
+    if (!create_ini()) CU_FAIL_FATAL("cannot create ini");
+
     t_hash_table *matches;
 
     matches = ini_match(ini, "foo.*");
@@ -88,6 +97,8 @@ void test_ini_simple_matching() {
     matches = ini_match(ini, "*nothingfound*");
     CU_ASSERT_EQUAL(matches->element_count, 0);
     ht_destroy(matches);
+
+    unlink_ini();
 }
 
 
@@ -95,6 +106,8 @@ void test_ini_simple_matching() {
  *
  */
 void test_ini_simple_add_remove() {
+    if (!create_ini()) CU_FAIL_FATAL("cannot create ini");
+
     t_hash_table *matches;
 
     CU_ASSERT_STRING_EQUAL(ini_find(ini, "foo.bar"), "1");
@@ -123,15 +136,19 @@ void test_ini_simple_add_remove() {
     matches = ini_match(ini, "*.test");
     CU_ASSERT_EQUAL(matches->element_count, 1);
     ht_destroy(matches);
+
+    unlink_ini();
 }
 
 
 void test_ini_save() {
+    if (!create_ini()) CU_FAIL_FATAL("cannot create ini");
+    unlink_ini();
 }
 
 
 void test_ini_init() {
-    CU_pSuite suite = CU_add_suite("ini", create_ini, unlink_ini);
+    CU_pSuite suite = CU_add_suite("ini", NULL, NULL);
     CU_add_test(suite, "ini_read", test_ini_simple_reading);
     CU_add_test(suite, "ini_match", test_ini_simple_matching);
     CU_add_test(suite, "ini_add_remove", test_ini_simple_add_remove);

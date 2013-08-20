@@ -34,6 +34,22 @@
 #include "general/dll.h"
 
 
+static void ini_destroy_keys(t_ini *ini) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, ini->keys);
+    while (ht_iter_valid(&iter)) {
+        //char *key = ht_iter_key_str(&iter);
+        //printf("Freeing up key %s\n", key);
+        t_ini_element *ie = ht_iter_value(&iter);
+        smm_free(ie->value);
+        smm_free(ie);
+
+        ht_iter_next(&iter);
+    }
+    ht_destroy(ini->keys);
+}
+
+
 /**
  * Parses a ini-file into keys and section_endings.
  */
@@ -62,7 +78,7 @@ static void ini_parse(t_ini *ini) {
 
     // Destroy our keys, we allocate later on
     if (ini->keys) {
-        ht_destroy(ini->keys);
+        ini_destroy_keys(ini);
         ini->keys = ht_create();
     }
 
@@ -104,6 +120,8 @@ static void ini_parse(t_ini *ini) {
 
                 pcre_free_substring(match1);
                 pcre_free_substring(match2);
+
+                smm_free(fullkey);
             }
         }
 
@@ -131,6 +149,9 @@ static void ini_parse(t_ini *ini) {
 
     // @TODO: Free PCRE?
     smm_free(section);
+
+    pcre_free(section_re);
+    pcre_free(key_re);
 }
 
 
@@ -149,16 +170,22 @@ t_ini *ini_read(const char *filename) {
     if (! f) return NULL;
 
     char line[2048];
+    bzero(line, 2048);
     while (fgets(line, 2048, f) != NULL) {
+        if (strlen(line) == 0) continue;
+
+        int off = strlen(line)-1;
+
         // Trim CR+LFs
-        while (line[strlen(line)-1] == '\r' ||
-               line[strlen(line)-1] == '\n') {
-            line[strlen(line)-1] = '\0';
+        while (line[off] == '\r' || line[off] == '\n') {
+            line[off] = '\0';
         }
         dll_append(ini->_private.ini_lines, smm_strdup(line));
     }
+    fclose(f);
 
     ini_parse(ini);
+
     return ini;
 }
 
@@ -183,8 +210,9 @@ void ini_free(t_ini *ini) {
         ht_destroy(ini->_private.section_endings);
 
     // Free up actual keys
-    if (ini->keys)
-        ht_destroy(ini->keys);
+    if (ini->keys) {
+        ini_destroy_keys(ini);
+    }
 
     // And finally, free the ini itself
     smm_free(ini);
@@ -328,7 +356,12 @@ int ini_remove(t_ini *ini, const char *key) {
 
     t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
     t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
+    smm_free(e->data);
     dll_remove(ini->_private.ini_lines, e);
+
+    // free ini key
+    smm_free(ie->value);
+    smm_free(ie);
 
     ht_remove_str(ini->keys, (char *)key);
 

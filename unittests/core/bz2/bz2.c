@@ -26,6 +26,9 @@ void test_comp_decomp(void) {
 
     CU_ASSERT_EQUAL(ret, 1);
     CU_ASSERT_EQUAL(buf2_len, strlen(str));
+
+    smm_free(buf);
+    smm_free(buf2);
 }
 
 void test_bz2_init() {

@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "general/hashtable.h"
 #include "general/smm.h"
+#include "objects/object.h"
 
 extern t_hashfuncs chained_hf;
 
@@ -112,7 +113,7 @@ void ht_destroy(t_hash_table *ht) {
             next_bucket = bucket->next_element;
 
             // Now, we can safely remove bucket
-            smm_free(bucket->key); // strdupped
+            ht_key_free(bucket->key);
             smm_free(bucket);
 
             // goto next bucket
@@ -212,16 +213,30 @@ void *ht_replace(t_hash_table *ht, t_hash_key *key, void *value) {
     if (ht->copy_on_write) {
         ht->hashfuncs->deep_copy(ht);
     }
+
+    /* Check if the key exists, if so, remove and add new value. We do this because even though the
+     * key by itself is equal, it could be on a different address. It would mean that if we do
+     * key comparision the wrong way (by address, instead of their actual value), things can go wrong. */
+    if (ht->hashfuncs->exists(ht, key)) {
+        ht->hashfuncs->remove(ht, key);
+        ht->hashfuncs->add(ht, key, value);
+        return NULL;
+    }
+
     return ht->hashfuncs->replace(ht, key, value);
 }
 void *ht_replace_str(t_hash_table *ht, char *key, void *value) {
-    return ht_replace(ht, ht_key_create(HASH_KEY_STR, (void *)key), value);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_STR, key);
+    return ht_replace(ht, hkey, value);
 }
 void *ht_replace_num(t_hash_table *ht, unsigned long key, void *value) {
-    return ht_replace(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
+    return ht_replace(ht, hkey, value);
+
 }
 void *ht_replace_obj(t_hash_table *ht, t_object *key, void *value) {
-    return ht_replace(ht, ht_key_create(HASH_KEY_PTR, (void *)key), value);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
+    return ht_replace(ht, hkey, value);
 }
 
 /**
@@ -234,13 +249,24 @@ void *ht_remove(t_hash_table *ht, t_hash_key *key) {
     return ht->hashfuncs->remove(ht, key);
 }
 void *ht_remove_str(t_hash_table *ht, char *key) {
-    return ht_remove(ht, ht_key_create(HASH_KEY_STR, (void *)key));
+    t_hash_key *hkey = ht_key_create(HASH_KEY_STR, key);
+    void *ret = ht_remove(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 void *ht_remove_num(t_hash_table *ht, unsigned long key) {
-    return ht_remove(ht, ht_key_create(HASH_KEY_NUM, (void *)key));
+    t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
+    void *ret = ht_remove(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 void *ht_remove_obj(t_hash_table *ht, t_object *key) {
-    return ht_remove(ht, ht_key_create(HASH_KEY_PTR, (void *)key));
+    object_dec_ref((t_object *)key);
+
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
+    void *ret = ht_remove(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
 }
 
 /*
@@ -352,6 +378,10 @@ t_hash_key *ht_key_create(int type, void *val) {
 t_hash_key *ht_key_copy(t_hash_key *org) {
     t_hash_key *cpy = (t_hash_key *)malloc(sizeof(t_hash_key));
     memcpy(cpy, org, sizeof(t_hash_key));
+
+    if (cpy->type == HASH_KEY_STR) {
+        cpy->val.s = smm_strdup(org->val.s);
+    }
     return cpy;
 }
 

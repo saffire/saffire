@@ -302,7 +302,7 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
 t_hash_table_bucket *_copy_bucket(t_hash_table_bucket *bucket) {
     t_hash_table_bucket *copy = smm_malloc(sizeof(t_hash_table_bucket));
 
-    copy->key = bucket->key;
+    copy->key = ht_key_copy(bucket->key);
     copy->value = bucket->value;
     copy->hash = bucket->hash;
 
@@ -332,6 +332,7 @@ void deep_copy(t_hash_table *ht) {
     t_hash_table_bucket *new_current = ht->head;
     _place_bucket(ht, new_current);
     t_hash_table_bucket *new_bucket;
+    old_current = old_current->next_element;
 
     while(old_current) {
         new_bucket = _copy_bucket(old_current);
