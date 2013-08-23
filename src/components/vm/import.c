@@ -122,7 +122,6 @@ static char *construct_import_path(t_vm_frame *frame, char *root_path, char *mod
     } else {
         smm_asprintf(&final_path, "%s%s%s.sf", root_path, frame->context, class_path);
     }
-    DEBUG_PRINT(" * *** Constructed path: '%s'\n", final_path);
     smm_free(class_path);
     smm_free(path); // free realpath()
     return final_path;
@@ -251,7 +250,7 @@ void vm_free_import_cache(void) {
         vm_frame_destroy(frame);
 
         if (bc) bytecode_free(bc);
-        
+
         ht_iter_next(&iter);
     }
 

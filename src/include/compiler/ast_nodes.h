@@ -160,7 +160,7 @@
     t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group);
     t_ast_element *ast_node_string_concat(t_ast_element *src, char *s);
-    t_ast_element *ast_node_concat(t_ast_element *src, char *s);
+    t_ast_element *ast_node_identifier_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);
     t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_node_nop(void);

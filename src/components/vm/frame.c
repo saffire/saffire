@@ -156,20 +156,31 @@ t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
 void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+    t_object *key = object_new(Object_String, 1, id);
+
     if (obj == NULL) {
-        obj = ht_remove_str(frame->global_identifiers->ht, id);
-        object_dec_ref(obj);
-    } else {
-        ht_add_str(frame->global_identifiers->ht, id, obj);
+        t_object *old = ht_remove_obj(frame->global_identifiers->ht, key);
+        object_dec_ref(key);
+
+        if (old) object_dec_ref(old);
+        return;
     }
+
+    ht_add_obj(frame->global_identifiers->ht, key, obj);
+    object_dec_ref(key);
+    object_inc_ref(obj);
 }
 
 
 /**
- * Return object from the global identifier table
- */
-t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
-    t_object *obj = ht_find_num(frame->global_identifiers->ht, idx);
+* Return object from the global identifier table
+*/
+t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
+    t_object *key = object_new(Object_String, 1, id);
+
+    t_object *obj = (t_object *)ht_find_obj(frame->global_identifiers->ht, key);
+
+    object_dec_ref(key);
     if (obj == NULL) RETURN_NULL;
     return obj;
 }
@@ -179,12 +190,14 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_str(frame->local_identifiers->ht, id, obj);
+    t_object *key = object_new(Object_String, 1, id);
+    t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, key, obj);
+    object_dec_ref(key);
     object_dec_ref(old_obj);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->ht, id, obj);
+    t_object *old_obj = ht_replace_obj(frame->builtin_identifiers->ht, object_new(Object_String, 1, id), obj);
     object_dec_ref(old_obj);
 }
 
@@ -201,19 +214,19 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 
 #ifdef __DEBUG
 void print_debug_table(t_hash_table *ht, char *prefix) {
-//    t_hash_iter iter;
-//
-//    if (! ht) return;
-//
-//    ht_iter_init(&iter, ht);
-//    while (ht_iter_valid(&iter)) {
-//        char *key = ht_iter_key_str(&iter);
-//        t_object *val = ht_iter_value(&iter);
-//        DEBUG_PRINT("%s KEY: '%-20s' => %s\n", prefix, key, val ? object_debug(val) : "(null)");
-//
-//        ht_iter_next(&iter);
-//    }
-//    DEBUG_PRINT("%s\n\n", prefix);
+    t_hash_iter iter;
+
+    if (! ht) return;
+
+    ht_iter_init(&iter, ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_key_obj(&iter);
+        t_object *val = ht_iter_value(&iter);
+        DEBUG_PRINT("%-10s KEY: [%08X] '%s' => [%08X] %s\n", prefix, key, key ? object_debug(key) : "0x0", val, val ? object_debug(val) : "0x0");
+
+        ht_iter_next(&iter);
+    }
+    //DEBUG_PRINT("%s\n", prefix);
 }
 #endif
 
@@ -225,28 +238,45 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
     t_object *obj;
 
 #ifdef __DEBUG
-    DEBUG_PRINT("Locals [FRAME: %s (%08X)]\n", frame->context, frame);
-    print_debug_table(frame->local_identifiers->ht, "Locals");
+    DEBUG_PRINT("----- [FRAME: %s (%08X)] ----\n", frame->context, frame);
+    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
+    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif
 
+    t_object *key = object_new(Object_String, 1, id);
+    printf("KEY: %08X\n", key);
 
     // Check locals first
-    obj = ht_find_str(frame->local_identifiers->ht, id);
-    if (obj != NULL) return obj;
+    obj = ht_find_obj(frame->local_identifiers->ht, key);
+    if (obj != NULL) {
+        object_dec_ref(key);
+        return obj;
+    }
 
     // If file identifiers are present, check them
     if (frame->file_identifiers) {
-        obj = ht_find_str(frame->file_identifiers->ht, id);
-        if (obj != NULL) return obj;
+        obj = ht_find_obj(frame->file_identifiers->ht, key);
+        if (obj != NULL) {
+            object_dec_ref(key);
+            return obj;
+        }
     }
 
     // Check globals
-    obj = ht_find_str(frame->global_identifiers->ht, id);
-    if (obj != NULL) return obj;
+    obj = ht_find_obj(frame->global_identifiers->ht, key);
+    if (obj != NULL) {
+        object_dec_ref(key);
+        return obj;
+    }
 
     // Last, check builtins
-    obj = ht_find_str(frame->builtin_identifiers->ht, id);
-    if (obj != NULL) return obj;
+    obj = ht_find_obj(frame->builtin_identifiers->ht, key);
+    if (obj != NULL) {
+        object_dec_ref(key);
+        return obj;
+    }
 
     // @TODO: We should throw an exception instead of just returning
 
@@ -255,6 +285,7 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
 //    DEBUG_PRINT("Builtimns\n");
 //    print_debug_table(frame->builtin_identifiers->ht);
 
+    object_dec_ref(key);
     return NULL;
 }
 
@@ -292,6 +323,9 @@ extern t_dll *all_objects;
 
 
 void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) {
+    if (frame->context) {
+        vm_context_free_context(frame);
+    }
     vm_context_set_context(frame, context);
 
     frame->bytecode = bytecode;
@@ -335,21 +369,22 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
     }
 
 
-    printf("\n\n---- AttachBytecode ----\n");
-    t_dll_element *e = DLL_HEAD(all_objects);
-    while (e) {
-        t_object *obj = (t_object *)e->data;
-        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
-        e = DLL_NEXT(e);
-    }
 
-    printf("----------------------------\n");
+//    printf("\n\n---- AttachBytecode ----\n");
+//    t_dll_element *e = DLL_HEAD(all_objects);
+//    while (e) {
+//        t_object *obj = (t_object *)e->data;
+//        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
+//        e = DLL_NEXT(e);
+//    }
+//    printf("----------------------------\n");
 }
 
 /**
 * Creates and initializes a new frame
 */
 t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *bytecode) {
+    DEBUG_PRINT("============================ VM frame new ('%s' -> parent: '%s') ============================\n", context, parent_frame ? parent_frame->context : "none");
     t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
     bzero(frame, sizeof(t_vm_frame));
 
@@ -425,6 +460,8 @@ void vm_frame_destroy(t_vm_frame *frame) {
     // Free identifiers
     object_dec_ref((t_object *)frame->global_identifiers);
     object_dec_ref((t_object *)frame->local_identifiers);
+
+    printf("Decreasing builtin_identifiers refcount\n");
     object_dec_ref((t_object *)frame->builtin_identifiers);
 
     smm_free(frame->context);

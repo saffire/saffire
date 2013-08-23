@@ -375,7 +375,7 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
 /**
  * Concatenates an identifier node onto an existing identifier node
  */
-t_ast_element *ast_node_concat(t_ast_element *src, char *s) {
+t_ast_element *ast_node_identifier_concat(t_ast_element *src, char *s) {
     src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s) + 1);
     strcat(src->identifier.name, s);
     return src;

@@ -82,10 +82,10 @@
     t_object *vm_frame_stack_fetch_top(t_vm_frame *frame);
     t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx);
 
-    t_object *vm_frame_get_global_identifier(t_vm_frame *frame, int idx);
     t_object *vm_frame_get_constant(t_vm_frame *frame, int idx);
     t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id);
     t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id);
+    t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id);
 
     void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj);
     void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj);

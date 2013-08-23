@@ -399,14 +399,19 @@ void object_string_fini(void) {
     // Free attributes
     object_remove_all_internal_attributes((t_object *)&Object_String_struct);
     ht_destroy(Object_String_struct.attributes);
-
-    // Destroy string cache
-    ht_destroy(string_cache);
 }
 
 
 
 static t_object *obj_cache(t_object *self, t_dll *arg_list) {
+    // @TODO: this method is called when we are creating our first string-objects. This will populate the builtins, but
+    // it might be that the string-object isn't initialized yet and thus the string-cache isn't available. We could
+    // either:  make sure we initialize strings first, or have a "pre-init" that does these things, and do the actual builtin
+    // creation upon the normal init().
+    if (! string_cache) {
+        string_cache = ht_create();
+    }
+
     // Get the widestring from the argument list
     t_dll_element *e = DLL_HEAD(arg_list);
     char *value = (char *)e->data;
@@ -415,7 +420,9 @@ static t_object *obj_cache(t_object *self, t_dll *arg_list) {
     char strhash[33];
     hash_string_text(value, strhash);
 
-    return ht_find_str(string_cache, strhash);
+    t_object *ret = ht_find_str(string_cache, strhash);
+    printf("Looking in cache [%08X]:  %s => %s\n", string_cache, strhash, ret ? object_debug(ret) : "<not found>");
+    return ret;
 }
 
 static t_object *obj_new(t_object *self) {
@@ -449,6 +456,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     str_obj->byte_length = utf8_len(value);
     recalc_hash(str_obj);
 
+
+    printf("Adding to cache [%08X]:  %s => %s\n", string_cache, strhash, object_debug(str_obj));
     // Add to string cache
     ht_add_str(string_cache, strhash, str_obj);
 }

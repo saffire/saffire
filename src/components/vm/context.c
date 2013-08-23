@@ -71,10 +71,6 @@ void vm_context_set_context(t_vm_frame *frame, char *context) {
     frame->context = smm_strdup(context);
     frame->context_path = vm_context_get_path(context);
     frame->context_class = vm_context_get_class(context);
-
-    printf("CONTEXT: '%s'\n", frame->context);
-    printf("CONTEXT PATH: '%s'\n", frame->context_path);
-    printf("CONTEXT CLASS: '%s'\n", frame->context_class);
 }
 
 /**

@@ -230,7 +230,7 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     char *s = ((t_regex_object *)obj)->regex_string;
-    strncpy(global_buf, s, 1023);
+    strncpy(global_buf, s ? s : "<no regex>", 1023);
     global_buf[1023] = 0;
     return global_buf;
 }

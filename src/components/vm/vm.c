@@ -131,7 +131,8 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add_str(frame->local_identifiers->ht, name, obj);
+        ht_add_obj(frame->local_identifiers->ht, object_new(Object_String, 1, name), obj);
+        object_inc_ref(obj);
 
         need_count--;
         given_count--;
@@ -222,7 +223,7 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
 
     thread_set_current_frame(initial_frame);
 
-    // Initialize debugging if needed
+    // Initialize debugging if neededht
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
         debug_info = dbgp_init(initial_frame);
     }
@@ -504,11 +505,6 @@ dispatch:
                         break;
                     }
 
-                    // DEBUG_PRINT("     NAME: %s\n", OBJ2STR(name));
-                    // DEBUG_PRINT("     SEARCH: %s\n", object_debug(search_obj));
-                    // DEBUG_PRINT("     BOUND: %s\n", object_debug(bound_obj));
-                    // DEBUG_PRINT("     ATTR: %s\n", object_debug(attrib_obj));
-
                     if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
@@ -601,7 +597,7 @@ dispatch:
             // Load and push constant onto stack
             case VM_LOAD_CONST :
                 dst = vm_frame_get_constant(frame, oparg1);
-                printf("LOADING CONSTANT: %s (%d)\n", object_debug(dst), dst->ref_count);
+//                printf("LOADING CONSTANT: %s (%d)\n", object_debug(dst), dst->ref_count);
                 vm_frame_stack_push(frame, dst);
                 object_inc_ref(dst);
                 goto dispatch;
@@ -613,7 +609,7 @@ dispatch:
                 dst = vm_frame_stack_pop(frame);
                 object_dec_ref(dst);
                 register char *name = vm_frame_get_name(frame, oparg1);
-                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
+//                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
                 vm_frame_set_identifier(frame, name, dst);
 
                 goto dispatch;
@@ -1354,7 +1350,7 @@ block_end:
     // Restore current frame
     thread_set_current_frame(old_current_frame);
 
-    printf("RETURNING FROM _VM_EXEC(): %s(%d)\n", object_debug(ret), ret->ref_count);
+    //printf("RETURNING FROM _VM_EXEC(): %s {%d}\n", object_debug(ret), ret->ref_count);
     return ret;
 }
 
@@ -1520,7 +1516,7 @@ int vm_execute(t_vm_frame *frame) {
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT("============================ VM execution done ============================\n");
+    DEBUG_PRINT("============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
 
     // Check if there was an uncaught exception (happened when result == NULL)
     if (result == NULL) {
@@ -1595,7 +1591,8 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
  *
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
-    ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
+    obj->ref_count = 1;
+    ht_add_obj(builtin_identifiers_ht, object_new(Object_String, 1, name), (void *)obj);
 }
 
 
@@ -1678,8 +1675,13 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Add references to parent and self
-        ht_replace_str(new_frame->local_identifiers->ht, "self", self_obj);
-        ht_replace_str(new_frame->local_identifiers->ht, "parent", self_obj->parent);
+        t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_new(Object_String, 1, "self"), self_obj);
+        if (old_self_obj) object_dec_ref(old_self_obj);
+        object_inc_ref(self_obj);
+        t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_new(Object_String, 1, "parent"), self_obj->parent);
+        if (old_parent_obj) object_dec_ref(old_parent_obj);
+        object_inc_ref(self_obj->parent);
+
 
 //#ifdef __DEBUG
 //        print_debug_table(new_frame->local_identifiers->ht, "");

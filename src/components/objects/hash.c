@@ -120,6 +120,10 @@ SAFFIRE_METHOD(hash, populate) {
         t_object *val = ht_iter_value(&iter);
         ht_iter_next(&iter);
 
+    printf("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    printf("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+        object_inc_ref(key);
+        object_inc_ref(val);
         ht_add_obj(self->ht, key, val);
     }
 
@@ -189,6 +193,11 @@ SAFFIRE_METHOD(hash, add) {
         return NULL;
     }
 
+    printf("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    printf("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+
+    object_inc_ref(key);
+    object_inc_ref(val);
     ht_add_obj(self->ht, key, val);
     RETURN_SELF;
 }
@@ -203,7 +212,10 @@ SAFFIRE_METHOD(hash, remove) {
         return NULL;
     }
 
-    ht_remove_obj(self->ht, key);
+    t_object *obj = ht_remove_obj(self->ht, key);
+    object_dec_ref(key);
+    if (obj) object_dec_ref(obj);
+
     RETURN_SELF;
 }
 
@@ -364,11 +376,18 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_dll *dll = (t_dll *)e->data;
     e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *k = (t_object *)e->data;
+        t_object *key = (t_object *)e->data;
         e = DLL_NEXT(e);
         if (! e) break;
-        t_object *v = (t_object *)e->data;
-        ht_add_obj(hash_obj->ht, k, v);
+        t_object *val = (t_object *)e->data;
+
+    printf("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    printf("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+
+        object_inc_ref(key);
+        object_inc_ref(val);
+
+        ht_add_obj(hash_obj->ht, key, val);
         e = DLL_NEXT(e);
     }
 }
@@ -377,7 +396,21 @@ static void obj_free(t_object *obj) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     if (! hash_obj) return;
 
-    printf("HASH ADDR: %08lX (%d)\n", (unsigned long)hash_obj, obj->flags);
+    // Because this is a hash-object, we can only add objects to the hash itself,
+    // We must decrease their references as well
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, hash_obj->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_key_obj(&iter);
+        t_object *val = ht_iter_value(&iter);
+        printf("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
+        printf("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
+        object_dec_ref(key);
+        object_dec_ref(val);
+        ht_iter_next(&iter);
+    }
+
 
     if (hash_obj->ht) {
         ht_destroy(hash_obj->ht);

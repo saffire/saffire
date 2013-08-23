@@ -141,7 +141,7 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
-    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -152,7 +152,7 @@ void object_dec_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count--;
-    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
     if(obj->ref_count != 0) return;
 
@@ -160,7 +160,7 @@ void object_dec_ref(t_object *obj) {
     if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
     if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
 
-    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     object_free(obj);
@@ -264,7 +264,8 @@ static t_object *_object_new(t_object *obj, t_dll *arguments) {
     dll_append(all_objects, res);
 
     // Assume we have a reference count of 1
-    object_inc_ref(res);
+//    object_inc_ref(res);
+    res->ref_count = 1;
     return res;
 }
 
@@ -284,8 +285,10 @@ t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
     // If we have a caching function, seek inside that cache first
     if (obj->funcs->cache) {
         res = obj->funcs->cache(obj, arguments);
-        object_inc_ref(res);
-        if (res) return res;
+        if (res) {
+            object_inc_ref(res);
+            return res;
+        }
     }
 
     // generate new object
@@ -349,10 +352,35 @@ void object_init() {
 }
 
 
+extern t_hash_table *string_cache;
+
 /**
  * Finalize all the (scalar) objects
  */
 void object_fini() {
+    printf("Destroying string cache!\n");
+
+    // Destroy string cache
+    t_hash_iter iter;
+    ht_iter_init(&iter, string_cache);
+    while (ht_iter_valid(&iter)) {
+        t_object *val = ht_iter_value(&iter);
+        object_dec_ref(val);
+        ht_iter_next(&iter);
+    }
+    ht_destroy(string_cache);
+
+    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *obj = (t_object *)e->data;
+        //printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+        printf("%-20s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        e = DLL_NEXT(e);
+    }
+    dll_free(all_objects);
+
+
     object_datastructure_fini();
     object_iterator_fini();
 
@@ -369,15 +397,6 @@ void object_fini() {
     object_null_fini();
     object_boolean_fini();
     object_base_fini();
-
-    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
-    t_dll_element *e = DLL_HEAD(all_objects);
-    while (e) {
-        t_object *obj = (t_object *)e->data;
-        printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
-        e = DLL_NEXT(e);
-    }
-    dll_free(all_objects);
 }
 
 
@@ -501,14 +520,10 @@ void object_add_interface(t_object *class, t_object *interface) {
  * Create method- attribute that points to an INTERNAL (C) function
  */
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
-    printf("Adding internal method '%s' to '%s'\n", name, obj->name);
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
     t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
-
-    printf("CALLABLE: %08X\n", (unsigned int)callable_obj);
-    printf("ATRTIB: %08X\n", (unsigned int)attrib_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
 }
@@ -547,9 +562,6 @@ void object_remove_all_internal_attributes(t_object *obj) {
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
-
-        printf("attr->object: %d\n", attr->attribute->ref_count);
-        printf("attr: %d\n", attr->ref_count);
 
         object_dec_ref(attr->attribute);
         object_dec_ref((t_object *)attr);
