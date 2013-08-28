@@ -69,6 +69,7 @@
     #define OPERATOR_COA    10
 
 
+    // Comparisson defines
     #define COMPARISON_EQ     0     // Equals
     #define COMPARISON_NE     1     // Not equals
     #define COMPARISON_LT     2     // Less than
@@ -77,32 +78,20 @@
     #define COMPARISON_GE     5     // Greater or equal
     #define COMPARISON_IN     6     // In set
     #define COMPARISON_NI     7     // Not in set
-    #define COMPARISON_EX     8     // Compare exception
+    #define COMPARISON_EX     8     // Compare exception, not a "real" comparison, but performs an "instanceof" check
 
 
     // Object flags
     #define OBJECT_TYPE_CLASS         1            /* Object is a class */
     #define OBJECT_TYPE_INTERFACE     2            /* Object is an interface */
     #define OBJECT_TYPE_ABSTRACT      4            /* Object is an abstract class */
-    #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance (object) */
+    #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance */
     #define OBJECT_TYPE_MASK         15            /* Object type bitmask */
 
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
     #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
     #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
-
-
-
-    typedef struct _attribute {
-        // Meta data
-        struct {
-            char        visibility;
-            char        access;
-        } meta;
-
-        t_object *attribute;
-    } t_attribute;
 
 
     // Object type and flag checks
@@ -212,14 +201,18 @@
     t_object *object_find_actual_attribute(t_object *obj, char *attr_name);
     t_object *object_find_attribute(t_object *obj, char *attribute_name);
 
-    void object_free(t_object *obj);
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
     t_object *object_new(t_object *obj, int arg_count, ...);
     t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
+    t_object *object_alloca(t_object *obj, t_dll *arguments);
+    t_object *object_alloc(t_object *obj, int arg_count, ...);
     void object_inc_ref(t_object *obj);
     void object_dec_ref(t_object *obj);
+
+    t_object *object_allocate(t_object *obj, int arg_count, ...);
+    void object_release(t_object *obj);
 
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);

@@ -196,9 +196,20 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "callable object. F: %d", self->callable_flags);
+    sprintf(global_buf, "callable object. F: [%s%s%s%s%s%s]",
+        (self->callable_flags & CALLABLE_FLAG_STATIC) == CALLABLE_FLAG_STATIC ? "S" : "-",
+        (self->callable_flags & CALLABLE_FLAG_ABSTRACT) == CALLABLE_FLAG_ABSTRACT ? "A" : "-",
+        (self->callable_flags & CALLABLE_FLAG_FINAL) == CALLABLE_FLAG_FINAL ? "F" : "-",
+        (self->callable_flags & CALLABLE_FLAG_CONSTRUCTOR) == CALLABLE_FLAG_CONSTRUCTOR ? "C" : (self->callable_flags & CALLABLE_FLAG_DESTRUCTOR) == CALLABLE_FLAG_DESTRUCTOR ? "D" : "-",
+        (self->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD ? "M" : "-",
+        (self->callable_flags & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL ? "I" : (self->callable_flags & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL ? "E" : "-"
+    );
+
+
+
     return global_buf;
 }
+
 #endif
 
 

@@ -63,7 +63,7 @@
  * Instantiation
  */
 SAFFIRE_METHOD(base, new) {
-    t_object *obj = object_new_with_dll_args((t_object *)self, arguments);
+    t_object *obj = object_alloca((t_object *)self, arguments);
     RETURN_OBJECT(obj);
 }
 

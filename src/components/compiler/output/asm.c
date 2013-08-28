@@ -149,7 +149,6 @@ static int _convert_constant_code(t_asm_frame *frame, char *s) {
     t_asm_constant *c = smm_malloc(sizeof(t_asm_constant));
     c->type = const_code;
     c->data.s = smm_strdup(s);
-    printf("Adding constants: '%s'\n", s);
     dll_append(frame->constants, c);
 
     return frame->constants->size - 1;
@@ -185,7 +184,6 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
         e = DLL_NEXT(e);
     }
     // Add to DLL
-    printf("Adding identifier to frame %08X => '%s'\n", (unsigned int)frame, s);
     dll_append(frame->identifiers, s);
     return frame->identifiers->size - 1;
 }

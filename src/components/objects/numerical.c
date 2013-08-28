@@ -68,7 +68,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_object *obj = object_new(Object_Numerical, 1, abs(self->value));
+    t_object *obj = object_alloc(Object_Numerical, 1, abs(self->value));
     RETURN_OBJECT(obj);
 }
 
@@ -77,7 +77,7 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_object *obj = object_new(Object_Numerical, 1, 0 - self->value);
+    t_object *obj = object_alloc(Object_Numerical, 1, 0 - self->value);
     RETURN_OBJECT(obj);
 }
 
@@ -116,7 +116,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, self->value + other->value);
+    return object_alloc(Object_Numerical, 1, self->value + other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
@@ -126,7 +126,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, self->value - other->value);
+    return object_alloc(Object_Numerical, 1, self->value - other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
@@ -136,7 +136,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, self->value * other->value);
+    return object_alloc(Object_Numerical, 1, self->value * other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
@@ -151,7 +151,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, self->value / other->value);
+    return object_alloc(Object_Numerical, 1, self->value / other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
@@ -161,7 +161,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, self->value % other->value);
+    return object_alloc(Object_Numerical, 1, self->value % other->value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
@@ -171,7 +171,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, (self->value & other->value));
+    return object_alloc(Object_Numerical, 1, (self->value & other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
@@ -181,7 +181,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, (self->value | other->value));
+    return object_alloc(Object_Numerical, 1, (self->value | other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
@@ -191,7 +191,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, (self->value ^ other->value));
+    return object_alloc(Object_Numerical, 1, (self->value ^ other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
@@ -201,7 +201,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, (self->value << other->value));
+    return object_alloc(Object_Numerical, 1, (self->value << other->value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
@@ -211,7 +211,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
         return NULL;
     }
 
-    return object_new(Object_Numerical, 1, (self->value >> other->value));
+    return object_alloc(Object_Numerical, 1, (self->value >> other->value));
 }
 
 

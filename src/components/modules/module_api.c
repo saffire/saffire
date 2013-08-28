@@ -87,7 +87,7 @@ int unregister_module(t_module *mod) {
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        object_dec_ref(obj);
+        object_release(obj);
         idx++;
         obj = (t_object *)mod->objects[idx];
     }

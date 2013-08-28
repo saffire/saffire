@@ -20,6 +20,7 @@
  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -231,7 +232,7 @@ SAFFIRE_METHOD(string, splice) {
     memcpy(new_string, self->value + min_idx, new_size);
     new_string[new_size] = '\0';
 
-    t_object *obj = object_new(Object_String, 1, new_string);
+    t_object *obj = object_alloc(Object_String, 1, new_string);
     smm_free(new_string);
 
     RETURN_OBJECT(obj);
@@ -254,7 +255,7 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
     strcpy(str, self->value);
     strcat(str, other->value);
 
-    t_object *obj = object_new(Object_String, 1, str);
+    t_object *obj = object_alloc(Object_String, 1, str);
     smm_free(str);
 
     RETURN_OBJECT(obj);
@@ -420,9 +421,7 @@ static t_object *obj_cache(t_object *self, t_dll *arg_list) {
     char strhash[33];
     hash_string_text(value, strhash);
 
-    t_object *ret = ht_find_str(string_cache, strhash);
-    printf("Looking in cache [%08X]:  %s => %s\n", string_cache, strhash, ret ? object_debug(ret) : "<not found>");
-    return ret;
+    return ht_find_str(string_cache, strhash);
 }
 
 static t_object *obj_new(t_object *self) {
@@ -456,8 +455,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     str_obj->byte_length = utf8_len(value);
     recalc_hash(str_obj);
 
-
-    printf("Adding to cache [%08X]:  %s => %s\n", string_cache, strhash, object_debug(str_obj));
     // Add to string cache
     ht_add_str(string_cache, strhash, str_obj);
 }

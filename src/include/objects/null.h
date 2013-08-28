@@ -39,7 +39,7 @@
     #define Object_Null   ((t_object *)&Object_Null_struct)
 
     // Simple macro to return (the) NULL object from a function
-    #define RETURN_NULL   { return (t_object *)(&Object_Null_struct); }
+    #define RETURN_NULL   { object_inc_ref(Object_Null); return Object_Null; }
 
 
     void object_null_init(void);

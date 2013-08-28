@@ -131,56 +131,10 @@ int object_instance_of(t_object *obj, const char *instance) {
 }
 
 
-
-
-
-/**
- * Increase reference to object.
- */
-void object_inc_ref(t_object *obj) {
-    if (! obj) return;
-
-    obj->ref_count++;
-//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
-}
-
-
-/**
- * Decrease reference from object.
- */
-void object_dec_ref(t_object *obj) {
-    if (! obj) return;
-
-    obj->ref_count--;
-//    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
-
-    if(obj->ref_count != 0) return;
-
-    // Don't free static objects
-    if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
-    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
-
-//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
-
-    // Free object
-    object_free(obj);
-}
-
-#ifdef __DEBUG
-char *object_debug(t_object *obj) {
-    if (! obj) return "(null)";
-
-    if (obj && obj->funcs && obj->funcs->debug) {
-        return obj->funcs->debug(obj);
-    }
-    return obj->name;
-}
-#endif
-
 /**
  * Free an object (if needed)
  */
-void object_free(t_object *obj) {
+static void _object_free(t_object *obj) {
     if (! obj) return;
 
     // ref_count > 0, object is still in use somewhere else. Don't free it yet
@@ -231,6 +185,50 @@ void object_free(t_object *obj) {
 
 
 /**
+ * Increase reference to object.
+ */
+void object_inc_ref(t_object *obj) {
+    if (! obj) return;
+
+    obj->ref_count++;
+    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+}
+
+
+/**
+ * Decrease reference from object.
+ */
+void object_dec_ref(t_object *obj) {
+    if (! obj) return;
+
+    obj->ref_count--;
+    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+
+    if(obj->ref_count != 0) return;
+
+    // Don't free static objects
+    if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
+    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
+
+//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+
+    // Free object
+    _object_free(obj);
+}
+
+#ifdef __DEBUG
+char *object_debug(t_object *obj) {
+    if (! obj) return "(null)";
+
+    if (obj && obj->funcs && obj->funcs->debug) {
+        return obj->funcs->debug(obj);
+    }
+    return obj->name;
+}
+#endif
+
+
+/**
  * Clones an object and returns new object
  */
 t_object *object_clone(t_object *obj) {
@@ -258,14 +256,13 @@ static t_object *_object_new(t_object *obj, t_dll *arguments) {
         RETURN_NULL;
     }
 
+    // Create new object
     res = obj->funcs->new(obj);
+    res->ref_count = 1;
 
     // We add 'res' to our list of generated objects.
     dll_append(all_objects, res);
 
-    // Assume we have a reference count of 1
-//    object_inc_ref(res);
-    res->ref_count = 1;
     return res;
 }
 
@@ -274,7 +271,7 @@ static t_object *_object_new(t_object *obj, t_dll *arguments) {
  * Creates a new object with specific values, with a already created
  * argument DLL list.
  */
-t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
+t_object *object_alloca(t_object *obj, t_dll *arguments) {
     t_object *res = NULL;
 
     // Nothing found to new, just return NULL object
@@ -318,7 +315,7 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
     va_end(arg_list);
 
     // Create new object
-    t_object *new_obj = object_new_with_dll_args(obj, arguments);
+    t_object *new_obj = object_alloca(obj, arguments);
 
     // Free argument DLL
     dll_free(arguments);
@@ -365,7 +362,7 @@ void object_fini() {
     ht_iter_init(&iter, string_cache);
     while (ht_iter_valid(&iter)) {
         t_object *val = ht_iter_value(&iter);
-        object_dec_ref(val);
+        object_release(val);
         ht_iter_next(&iter);
     }
     ht_destroy(string_cache);
@@ -522,8 +519,8 @@ void object_add_interface(t_object *class, t_object *interface) {
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
+    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
 }
@@ -533,7 +530,9 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
  *
  */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+    t_attrib_object *attrib = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+
+    object_inc_ref(property);
 
     // @TODO: why replace? why not ht_add_str()??
     ht_replace_str(obj->attributes, name, attrib);
@@ -544,11 +543,15 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
  *
  */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    t_attrib_object *attrib = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    object_inc_ref(constant);
 
     if (ht_exists_str(obj->attributes, name)) {
+        object_release(constant);
+        object_release((t_object *)attrib);
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
+
     ht_add_str(obj->attributes, name, attrib);
 }
 
@@ -563,8 +566,8 @@ void object_remove_all_internal_attributes(t_object *obj) {
     while (ht_iter_valid(&iter)) {
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
 
-        object_dec_ref(attr->attribute);
-        object_dec_ref((t_object *)attr);
+        object_release(attr->attribute);
+        object_release((t_object *)attr);
 
         ht_iter_next(&iter);
     }
@@ -712,4 +715,41 @@ int object_has_interface(t_object *obj, const char *interface_name) {
 
     // No, cannot find it
     return 0;
+}
+
+
+
+/**
+ * Allocate / populate a new instance from the giben object
+ */
+t_object *object_alloc(t_object *obj, int arg_count, ...) {
+    va_list arg_list;
+
+    // Create argument DLL
+    t_dll *arguments = dll_init();
+    va_start(arg_list, arg_count);
+    for (int i=0; i!=arg_count; i++) {
+        dll_append(arguments, va_arg(arg_list, void *));
+    }
+    va_end(arg_list);
+
+    // Create new object
+    t_object *new_obj = object_alloca(obj, arguments);
+
+    // Free argument DLL
+    dll_free(arguments);
+
+    return new_obj;
+}
+
+
+/**
+ * Releases an object. This object cannot be used with this specific reference.
+ *
+ * Whenever the reference count has decreased to 0, it means that nothing holds a reference to this object.
+ * It will be added to the garbage collected to either be destroyed, OR when needed, it can be revived before
+ * collection whenever somebody needs this specific object again.
+ */
+void object_release(t_object *obj) {
+    object_dec_ref(obj);
 }

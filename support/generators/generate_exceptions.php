@@ -150,7 +150,6 @@ foreach ($exceptions as $exception) {
 
     fwrite($fp, "    //${exception}\n");
     fwrite($fp, "    Object_Exception_${exception}_struct.attributes = Object_Exception_struct.attributes;\n");
-    fwrite($fp, "    object_inc_ref(Object_${exception});\n");
     fwrite($fp, "    vm_populate_builtins(\"".lcfirst($exception)."\", Object_${exception});\n");
     fwrite($fp, "    \n");
 }

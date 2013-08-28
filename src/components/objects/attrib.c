@@ -97,7 +97,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
 static void obj_destroy(t_object *obj) {
     // "free" the attribute object. decrease refcount
-    object_dec_ref(((t_attrib_object *)obj)->attribute);
+    object_release(((t_attrib_object *)obj)->attribute);
     smm_free(obj);
 }
 

@@ -77,9 +77,9 @@ static void _init(void) {
     object_add_internal_method((t_object *)&saffire_struct, "sapi",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
     object_add_internal_method((t_object *)&saffire_struct, "debug",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
 
-    object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property((t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
+    object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
+    object_add_property((t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
 }
 
 static void _fini(void) {

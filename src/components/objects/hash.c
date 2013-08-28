@@ -143,7 +143,7 @@ SAFFIRE_METHOD(hash, get) {
     }
 
     t_object *obj = ht_find_obj(self->ht, key);
-    if (obj == NULL) return default_value ? default_value : Object_Null;
+    if (obj == NULL) return default_value ? default_value : object_alloc(Object_Null, 0);
     RETURN_OBJECT(obj);
 }
 
@@ -213,8 +213,8 @@ SAFFIRE_METHOD(hash, remove) {
     }
 
     t_object *obj = ht_remove_obj(self->ht, key);
-    object_dec_ref(key);
-    if (obj) object_dec_ref(obj);
+    object_release(key);
+    if (obj) object_release(obj);
 
     RETURN_SELF;
 }
@@ -406,8 +406,8 @@ static void obj_free(t_object *obj) {
         t_object *val = ht_iter_value(&iter);
         printf("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
         printf("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
-        object_dec_ref(key);
-        object_dec_ref(val);
+        object_release(key);
+        object_release(val);
         ht_iter_next(&iter);
     }
 

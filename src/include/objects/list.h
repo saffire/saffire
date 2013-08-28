@@ -30,7 +30,7 @@
     #include "objects/object.h"
     #include "general/hashtable.h"
 
-    #define RETURN_LIST(h)   RETURN_OBJECT(object_new(Object_List, 1, h));
+    #define RETURN_LIST(h)   RETURN_OBJECT(object_alloc(Object_List, 1, h));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

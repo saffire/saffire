@@ -209,7 +209,7 @@ SAFFIRE_METHOD(list, sequence) {
 
     // Default skip value
     if (skip == NULL) {
-        skip = object_new(Object_Numerical, 1, 1);
+        skip = object_alloc(Object_Numerical, 1, 1);
     }
 
     if (! OBJECT_IS_NUMERICAL(from) || ! OBJECT_IS_NUMERICAL(to) || ! OBJECT_IS_NUMERICAL(to)) {
@@ -227,9 +227,9 @@ SAFFIRE_METHOD(list, sequence) {
         return NULL;
     }
 
-    t_list_object *list_obj = (t_list_object *)object_new(Object_List, 0);
+    t_list_object *list_obj = (t_list_object *)object_alloc(Object_List, 0);
     for (int i=((t_numerical_object *)from)->value; i<=((t_numerical_object *)to)->value; i+=((t_numerical_object *)skip)->value) {
-        ht_add_num(list_obj->ht, list_obj->ht->element_count, object_new(Object_Numerical, 1, i));
+        ht_add_num(list_obj->ht, list_obj->ht->element_count, object_alloc(Object_Numerical, 1, i));
     }
 
     RETURN_OBJECT(list_obj);

@@ -67,13 +67,9 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file, c
     bc->source_filename = smm_strdup(source_file);
     assembler_free(asm_code);
 
-    DEBUG_PRINT("\n\n\n\n * Start of running import module bytecode (%s).\n", source_file);
-
     // Create a new frame and run it!
     t_vm_frame *module_frame = vm_frame_new(frame, context_path, bc);
     vm_execute(module_frame);
-
-    DEBUG_PRINT("\n\n\n\n * End of running import module bytecode (%s).\n", source_file);
 
     return module_frame;
 }
@@ -232,24 +228,27 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
         object_raise_exception(Object_ImportException, 1, "Cannot find class '%s' in module '%s'", class, module);
     }
 
-
     // Return object (or NULL, in which case, an exception has been thrown)
     return obj;
 }
 
 
 void vm_free_import_cache(void) {
+    printf("\n\n\n\n\nFreeing import cache\n");
+
     t_hash_iter iter;
     ht_iter_init(&iter, import_cache);
     while (ht_iter_valid(&iter)) {
         t_vm_frame *frame = ht_iter_value(&iter);
-        printf("DESTROY FRAME: %08lX\n", (unsigned long)frame);
+        printf("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context);
 
         t_bytecode *bc = frame->bytecode;
 
         vm_frame_destroy(frame);
 
         if (bc) bytecode_free(bc);
+
+        printf("\n");
 
         ht_iter_next(&iter);
     }

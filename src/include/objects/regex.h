@@ -33,7 +33,7 @@
 
     #define OVECCOUNT 30
 
-    #define RETURN_REGEX(s)   RETURN_OBJECT(object_new(Object_Regex, 1, s));
+    #define RETURN_REGEX(s)   RETURN_OBJECT(object_alloc(Object_Regex, 1, s));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

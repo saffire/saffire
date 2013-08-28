@@ -112,7 +112,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
             if (is_vararg) {
                 // the '...' typehint found.
-                vararg_obj = (t_list_object *)object_new(Object_List, 0);
+                vararg_obj = (t_list_object *)object_alloc(Object_List, 0);
 
                 // Add first argument
                 if (obj) {
@@ -131,7 +131,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add_obj(frame->local_identifiers->ht, object_new(Object_String, 1, name), obj);
+        ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, name), obj);
         object_inc_ref(obj);
 
         need_count--;
@@ -214,7 +214,7 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     module_init();
 
     // Convert our builtin identifiers to an actual hash object
-    builtin_identifiers = (t_hash_object *)object_new(Object_Hash, 1, builtin_identifiers_ht);
+    builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
 
     import_cache = ht_create();
 
@@ -256,7 +256,7 @@ void vm_fini(t_vm_frame *frame) {
     smm_free(current_thread);
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
-    object_dec_ref((t_object *)builtin_identifiers);
+    object_release((t_object *)builtin_identifiers);
 
     module_fini();
     object_fini();
@@ -304,7 +304,6 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
 t_object *_vm_execute(t_vm_frame *frame) {
     register t_object *obj1, *obj2, *obj3, *obj4;
     register t_object *left_obj, *right_obj;
-    register char *name;
     register unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     register t_object *dst;
@@ -567,32 +566,32 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Load a global identifier
-            case VM_LOAD_GLOBAL :
-                dst = vm_frame_get_global_identifier(frame, oparg1);
-                vm_frame_stack_push(frame, dst);
-                object_inc_ref(dst);
-                goto dispatch;
-                break;
-
-            // store SP+0 as a global identifier
-            case VM_STORE_GLOBAL :
-                // Refcount stays equal. So no inc/dec ref needed
-                dst = vm_frame_stack_pop(frame);
-                object_dec_ref(dst);
-                name = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_global_identifier(frame, name, dst);
-                goto dispatch;
-                break;
-
-            // Remove global identifier
-            case VM_DELETE_GLOBAL :
-                dst = vm_frame_get_global_identifier(frame, oparg1);
-                object_dec_ref(dst);
-                name = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_global_identifier(frame, name, NULL);
-                goto dispatch;
-                break;
+//            // Load a global identifier
+//            case VM_LOAD_GLOBAL :
+//                dst = vm_frame_get_global_identifier(frame, oparg1);
+//                vm_frame_stack_push(frame, dst);
+//                object_inc_ref(dst);
+//                goto dispatch;
+//                break;
+//
+//            // store SP+0 as a global identifier
+//            case VM_STORE_GLOBAL :
+//                // Refcount stays equal. So no inc/dec ref needed
+//                dst = vm_frame_stack_pop(frame);
+//                object_dec_ref(dst);
+//                name = vm_frame_get_name(frame, oparg1);
+//                vm_frame_set_global_identifier(frame, name, dst);
+//                goto dispatch;
+//                break;
+//
+//            // Remove global identifier
+//            case VM_DELETE_GLOBAL :
+//                dst = vm_frame_get_global_identifier(frame, oparg1);
+//                object_dec_ref(dst);
+//                name = vm_frame_get_name(frame, oparg1);
+//                vm_frame_set_global_identifier(frame, name, NULL);
+//                goto dispatch;
+//                break;
 
             // Load and push constant onto stack
             case VM_LOAD_CONST :
@@ -610,12 +609,11 @@ dispatch:
                 object_dec_ref(dst);
                 register char *name = vm_frame_get_name(frame, oparg1);
 //                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
+                object_inc_ref(dst);
                 vm_frame_set_identifier(frame, name, dst);
 
                 goto dispatch;
                 break;
-
-                // @TODO: If string(obj1) exists in local store it there, otherwise, store in global
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
@@ -851,7 +849,7 @@ dispatch:
                 break;
 
             case VM_CONTINUE_LOOP :
-                ret = object_new(Object_Numerical, 1, oparg1);
+                ret = object_alloc(Object_Numerical, 1, oparg1);
                 reason = REASON_CONTINUE;
                 goto block_end;
                 break;
@@ -877,9 +875,9 @@ dispatch:
                 // need to do it here.
                 if (oparg1 == COMPARISON_EX) {
                     if (object_instance_of(right_obj, left_obj->name)) {
-                        vm_frame_stack_push(frame, Object_True);
+                        vm_frame_stack_push(frame, object_alloc(Object_True, 0));
                     } else {
-                        vm_frame_stack_push(frame, Object_False);
+                        vm_frame_stack_push(frame, object_alloc(Object_False, 0));
                     }
                     goto dispatch;
                     break;
@@ -944,7 +942,7 @@ dispatch:
                         object_dec_ref(method_flags_obj);
 
                         // Generate hash object from arguments
-                        arg_list = object_new(Object_Hash, 0);
+                        arg_list = object_alloc(Object_Hash, 0);
                         for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
                             arg->value = vm_frame_stack_pop(frame);
@@ -954,6 +952,7 @@ dispatch:
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
                             object_dec_ref((t_object *)arg->typehint);
 
+                            // @TODO: Increase refcount!
                             ht_add_str(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
                         }
 
@@ -970,7 +969,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_new(Object_Attrib, 4, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
+                    dst = object_alloc(Object_Attrib, 4, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
 
                     // Push method object
                     object_inc_ref(dst);
@@ -1099,7 +1098,7 @@ dispatch:
 
             case VM_SETUP_EXCEPT :
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
-                vm_frame_stack_push(frame, object_new(Object_Numerical, 1, REASON_FINALLY));
+                vm_frame_stack_push(frame, object_alloc(Object_Numerical, 1, REASON_FINALLY));
 
                 goto dispatch;
                 break;
@@ -1154,12 +1153,13 @@ dispatch:
             case VM_PACK_TUPLE :
                 {
                     // Create an empty tuple
-                    t_tuple_object *obj = (t_tuple_object *)object_new(Object_Tuple, 0);
+                    t_tuple_object *obj = (t_tuple_object *)object_alloc(Object_Tuple, 0);
 
                     // Add elements from the stack into the tuple, sort in reverse order!
                     for (int i=0; i!=oparg1; i++) {
                         t_object *val = vm_frame_stack_pop(frame);
                         object_dec_ref(val);
+                        // @TODO: Increase refcount!
                         ht_add_num(obj->ht, oparg1 - i - 1, val);
                     }
 
@@ -1186,6 +1186,7 @@ dispatch:
                     for (int i=0; i < offset; i++) {
                         t_object *val = ht_find_num(obj->ht, i);
                         vm_frame_stack_push(frame, val);
+                        object_inc_ref(val);
                     }
 
                     // If we haven't got enough elements in our tuple, pad the result with NULLs first
@@ -1291,7 +1292,7 @@ dispatch:
                     }
 
                     // Create new object, because we know it's a data-structure, just add them to the list
-                    t_object *ret_obj = (t_object *)object_new(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
+                    t_object *ret_obj = (t_object *)object_alloc(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
                     object_inc_ref(ret_obj);
                     vm_frame_stack_push(frame, ret_obj);
 
@@ -1400,7 +1401,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
              * present */
 
             vm_frame_stack_push(frame, ret);
-            vm_frame_stack_push(frame, object_new(Object_Numerical, 1, *reason));
+            vm_frame_stack_push(frame, object_alloc(Object_Numerical, 1, *reason));
 
             /* Instead of actually returning, continue with executing the finally block. END_FINALLY will deal with
              * the delayed return. */
@@ -1523,10 +1524,10 @@ int vm_execute(t_vm_frame *frame) {
         if (thread_exception_thrown()) {
             // handle exceptions
             object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_new(Object_Numerical, 1, 1);
+            result = object_alloc(Object_Numerical, 1, 1);
         } else {
             // result was NULL, but no exception found, just threat like regular 0
-            result = object_new(Object_Numerical, 1, 0);
+            result = object_alloc(Object_Numerical, 1, 0);
         }
     }
 
@@ -1592,7 +1593,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
     obj->ref_count = 1;
-    ht_add_obj(builtin_identifiers_ht, object_new(Object_String, 1, name), (void *)obj);
+    ht_add_obj(builtin_identifiers_ht, object_alloc(Object_String, 1, name), (void *)obj);
 }
 
 
@@ -1675,11 +1676,11 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Add references to parent and self
-        t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_new(Object_String, 1, "self"), self_obj);
-        if (old_self_obj) object_dec_ref(old_self_obj);
+        t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
+        if (old_self_obj) object_release(old_self_obj);
         object_inc_ref(self_obj);
-        t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_new(Object_String, 1, "parent"), self_obj->parent);
-        if (old_parent_obj) object_dec_ref(old_parent_obj);
+        t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "parent"), self_obj->parent);
+        if (old_parent_obj) object_release(old_parent_obj);
         object_inc_ref(self_obj->parent);
 
 
