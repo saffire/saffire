@@ -39,6 +39,7 @@
 
 
     /* Callable flags, mostly method flags */
+    #define CALLABLE_FLAG_NONE                0      /* no flags */
     #define CALLABLE_FLAG_STATIC              1      /* Static callable */
     #define CALLABLE_FLAG_ABSTRACT            2      /* Abstract callable */
     #define CALLABLE_FLAG_FINAL               4      /* Final callable */
@@ -74,6 +75,8 @@
             t_bytecode *bytecode;                              // External bytecode
             t_object *(*native_func)(t_object *, t_dll *);     // internal function
         } code;
+
+        char *call_name;
 
         t_object *binding;                  // Bound to a class (or NULL)
         t_hash_object *arguments;           // Arguments (key => default value (or NULL))

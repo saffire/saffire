@@ -171,17 +171,17 @@ SAFFIRE_METHOD(tuple, conv_string) {
  */
 void object_tuple_init(void) {
     Object_Tuple_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__ctor",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__dtor",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__boolean",     CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__null",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }
@@ -244,7 +244,11 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        sprintf(global_buf, "Tuple");
+    } else {
+        sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
+    }
     return global_buf;
 }
 #endif

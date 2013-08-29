@@ -358,37 +358,34 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_String_struct, "__null",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_String_struct, "__string",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_String_struct, "__null",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_String_struct, "__string",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "length",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "upper",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
-    object_add_internal_method((t_object *)&Object_String_struct, "lower",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
-    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "length",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "upper",          CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method((t_object *)&Object_String_struct, "lower",          CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "splice",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_internal_method((t_object *)&Object_String_struct, "splice",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
+    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
-
-    // Create string cache
-    string_cache = ht_create();
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
 
     vm_populate_builtins("string", (t_object *)&Object_String_struct);
 }
@@ -405,14 +402,6 @@ void object_string_fini(void) {
 
 
 static t_object *obj_cache(t_object *self, t_dll *arg_list) {
-    // @TODO: this method is called when we are creating our first string-objects. This will populate the builtins, but
-    // it might be that the string-object isn't initialized yet and thus the string-cache isn't available. We could
-    // either:  make sure we initialize strings first, or have a "pre-init" that does these things, and do the actual builtin
-    // creation upon the normal init().
-    if (! string_cache) {
-        string_cache = ht_create();
-    }
-
     // Get the widestring from the argument list
     t_dll_element *e = DLL_HEAD(arg_list);
     char *value = (char *)e->data;
@@ -456,16 +445,24 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     recalc_hash(str_obj);
 
     // Add to string cache
+//    printf("Adding %s to string_cache\n", str_obj->value);
     ht_add_str(string_cache, strhash, str_obj);
 }
 
 static void obj_free(t_object *obj) {
    t_string_object *str_obj = (t_string_object *)obj;
+   if (! str_obj->value) return;
 
-   if (str_obj->value) {
-       smm_free(str_obj->value);
-   }
+    char strhash[33];
+    hash_string_text(str_obj->value, strhash);
+
+//    printf("Removing '%s' (%s) from string_cache\n", str_obj->value, strhash);
+//    ht_debug(string_cache);
+    ht_remove_str(string_cache, strhash);
+
+   smm_free(str_obj->value);
 }
+
 
 static void obj_destroy(t_object *obj) {
     smm_free(obj);
@@ -476,7 +473,11 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     char *s = ((t_string_object *)obj)->value;
-    snprintf(global_buf, 1023, "string(%s)", s);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        snprintf(global_buf, 1023, "String");
+    } else {
+        snprintf(global_buf, 1023, "string(\"%s\")", s);
+    }
     return global_buf;
 }
 #endif

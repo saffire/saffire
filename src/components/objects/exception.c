@@ -222,8 +222,12 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_exception_object *exception = (t_exception_object *)obj;
-    snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        snprintf(global_buf, 1023, "%s", obj->name);
+    } else {
+        t_exception_object *exception = (t_exception_object *)obj;
+        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message);
+    }
     return global_buf;
 }
 #endif
@@ -241,7 +245,7 @@ t_object_funcs exception_funcs = {
 };
 
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("Exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
 
 // Include generated exceptions
 #include "_generated_exceptions.inc"

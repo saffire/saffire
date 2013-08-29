@@ -216,7 +216,6 @@ t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
 
 #ifdef __DEBUG
 void print_debug_table(t_hash_table *ht, char *prefix) {
-    return;
     t_hash_iter iter;
 
     if (! ht) return;
@@ -225,11 +224,12 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT("%-10s KEY: [%08X] '%-40s'{%d} => [%08X] %s{%d}\n", prefix, key, object_debug(key), key->ref_count, val, object_debug(val), val->ref_count);
+        printf("%-10s KEY: [%08X] '%-40s'{%d} ", prefix, (unsigned int)key, object_debug(key), key->ref_count);
+        printf("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
 
         ht_iter_next(&iter);
     }
-    //DEBUG_PRINT("%s\n", prefix);
+
 }
 #endif
 
@@ -342,7 +342,7 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 
                 // We create a reference to the source filename of the original bytecode name.
                 bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
-                obj = object_alloc(Object_Callable, 4, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL);
+                obj = object_alloc(Object_Callable, 6, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL, NULL, "external");
                 break;
             case BYTECODE_CONST_STRING :
                 object_release(obj);    // Decrease NULL object usage
@@ -417,13 +417,13 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     }
 
 
-#ifdef __DEBUG
-    DEBUG_PRINT("----- [START FRAME: %s (%08X)] ----\n", frame->context, frame);
-    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
-    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
-#endif
+//#ifdef __DEBUG
+//    DEBUG_PRINT("----- [START FRAME: %s (%08X)] ----\n", frame->context, frame);
+//    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+//    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
+//    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+//    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+//#endif
 
 
     return frame;
@@ -436,7 +436,7 @@ void vm_frame_destroy(t_vm_frame *frame) {
     printf("FRAME DESTROY: %s\n", frame->context);
 
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context, frame);
+    printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
@@ -449,7 +449,6 @@ void vm_frame_destroy(t_vm_frame *frame) {
         vm_detach_bytecode(frame);
     }
 
-//    t_hash_iter iter;
 //    ht_iter_init(&iter, frame->global_identifiers->ht);
 //    while (ht_iter_valid(&iter)) {
 //        t_object *val = ht_iter_value(&iter);
@@ -457,18 +456,20 @@ void vm_frame_destroy(t_vm_frame *frame) {
 //        ht_iter_next(&iter);
 //    }
 //
-//    if (frame->parent != NULL) {
-//        //
-//        ht_iter_init(&iter, frame->local_identifiers->ht);
-//        while (ht_iter_valid(&iter)) {
-//            t_object *val = ht_iter_value(&iter);
-//            object_release(val);
-//            ht_iter_next(&iter);
-//        }
-//
-//        // global and local are linked, don't decref them twice
-//        object_release((t_object *)frame->global_identifiers);
-//    }
+    t_hash_iter iter;
+    ht_iter_init(&iter, frame->local_identifiers->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_key_obj(&iter);
+        t_object *val = ht_iter_value(&iter);
+        printf("Frame destroy: Releasing => %s\n", object_debug(val));
+
+        int ref_count = object_release(val);
+        if (ref_count == 0) {
+            object_release(key);
+            ht_remove_obj(frame->local_identifiers->ht, key);
+        }
+        ht_iter_next(&iter);
+    }
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);

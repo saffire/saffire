@@ -67,7 +67,7 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 }
 
 
-t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
 
 static void _init(void) {
     saffire_struct.attributes = ht_create();

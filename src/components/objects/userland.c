@@ -63,6 +63,25 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
+static void obj_free(t_object *obj) {
+    // Freeing up attributes
+    printf("Freeing user object: %s\n", obj->name);
+
+    t_hash_iter iter;
+
+    ht_iter_init(&iter, obj->attributes);
+    while (ht_iter_valid(&iter)) {
+        t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+
+        object_release(attr->attribute);
+        object_release((t_object *)attr);
+
+        ht_iter_next(&iter);
+    }
+
+    //smm_free(obj->name);
+}
+
 static void obj_destroy(t_object *obj) {
     smm_free(obj);
 }
@@ -80,10 +99,10 @@ static char *obj_debug(t_object *obj) {
 
 // object management functions
 t_object_funcs userland_funcs = {
-        obj_new,              // Allocate a new string object
-        NULL,                 // Populate a string object
-        NULL,                 // Free a string object
-        obj_destroy,          // Destroy a string object
+        obj_new,              // Allocate a new user object
+        NULL,                 // Populate a user object
+        obj_free,             // Free a user object
+        obj_destroy,          // Destroy a user object
         NULL,                 // Clone
         NULL,                 // Cache
 #ifdef __DEBUG

@@ -132,13 +132,13 @@ SAFFIRE_METHOD(callable, conv_null) {
  */
 void object_callable_init(void) {
     Object_Callable_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
     object_add_internal_method((t_object *)&Object_Callable_struct, "__bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
 }
 
@@ -185,6 +185,18 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     callable_obj->arguments = (t_hash_object *)e->data;
     e = DLL_NEXT(e);
+
+    // @TODO: Something else...
+    e = DLL_NEXT(e);
+
+
+    // @TODO: remove me, a callable has no name directly attached to it
+    if (e && e->data) {
+        callable_obj->call_name = smm_strdup(e->data);
+    } else {
+        callable_obj->call_name = smm_strdup("<no name>");
+    }
+    if (e) e = DLL_NEXT(e);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -196,8 +208,9 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "callable object. F: [%s%s%s%s%s%s]",
-        (self->callable_flags & CALLABLE_FLAG_STATIC) == CALLABLE_FLAG_STATIC ? "S" : "-",
+    sprintf(global_buf, "callable (%-15s) F:[%s%s%s%s%s%s]",
+        self->call_name,
+        (self->callable_flags & CALLABLE_FLAG_STATIC) == CALLABLE_FLAG_NONE ? "S" : "-",
         (self->callable_flags & CALLABLE_FLAG_ABSTRACT) == CALLABLE_FLAG_ABSTRACT ? "A" : "-",
         (self->callable_flags & CALLABLE_FLAG_FINAL) == CALLABLE_FLAG_FINAL ? "F" : "-",
         (self->callable_flags & CALLABLE_FLAG_CONSTRUCTOR) == CALLABLE_FLAG_CONSTRUCTOR ? "C" : (self->callable_flags & CALLABLE_FLAG_DESTRUCTOR) == CALLABLE_FLAG_DESTRUCTOR ? "D" : "-",

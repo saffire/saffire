@@ -195,22 +195,22 @@ SAFFIRE_METHOD(base, id) {
 void object_base_init() {
     Object_Base_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Base_struct, "__new",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__properties",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__methods",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__name",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__annotations",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__clone",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable?",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__destroy",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__refcount",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__id",           CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__new",          CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__ctor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__dtor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__properties",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__methods",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__name",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__annotations",  CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__clone",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable?",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__destroy",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__refcount",     CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__id",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
 }
 
 

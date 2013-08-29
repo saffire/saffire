@@ -424,8 +424,12 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_hash_table *ht = ((t_hash_object *)obj)->ht;
-    sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        sprintf(global_buf, "Hash");
+    } else {
+        t_hash_table *ht = ((t_hash_object *)obj)->ht;
+        sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
+    }
     return global_buf;
 }
 #endif

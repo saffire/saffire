@@ -609,7 +609,7 @@ dispatch:
                 object_dec_ref(dst);
                 register char *name = vm_frame_get_name(frame, oparg1);
 //                DEBUG_PRINT("Storing '%s' as '%s'\n", object_debug(dst), name);
-                object_inc_ref(dst);
+                //object_inc_ref(dst);
                 vm_frame_set_identifier(frame, name, dst);
 
                 goto dispatch;
@@ -982,31 +982,35 @@ dispatch:
             case VM_BUILD_INTERFACE :
             case VM_BUILD_CLASS :
                 {
-                    // Create a userland object, and fill it
-                    register t_userland_object *interface_or_class = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
-                    memcpy(interface_or_class, Object_Userland, sizeof(t_userland_object));
+                    t_userland_object *new_obj = (t_userland_object *)object_alloc(Object_Userland, 0);
+//                    // Create a userland object, and fill it
+//                    t_userland_object *new_obj = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
+//                    memcpy(new_obj, Object_Userland, sizeof(t_userland_object));
 
-                    interface_or_class->file_identifiers = frame->local_identifiers;
+                    new_obj->file_identifiers = frame->local_identifiers;
 
                     // pop class name
                     register t_object *name_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(name_obj);
-                    interface_or_class->name = smm_strdup(OBJ2STR(name_obj));
+
+                    //smm_asprintf(&new_obj->name, "User[%s]", OBJ2STR(name_obj));
+                    new_obj->name = smm_strdup(OBJ2STR(name_obj));
+                    printf("Created class: %s with refcount: %d\n", new_obj->name, new_obj->ref_count);
 
                     // pop flags
                     register t_object *flags = vm_frame_stack_pop(frame);
                     object_dec_ref(flags);
-                    interface_or_class->flags = OBJ2NUM(flags);
+                    new_obj->flags = OBJ2NUM(flags);
 
                     // depending on the opcode, we are building a class or an interface
                     if (opcode == VM_BUILD_CLASS) {
-                        interface_or_class->flags |= OBJECT_TYPE_CLASS;
+                        new_obj->flags |= OBJECT_TYPE_CLASS;
                     } else {
-                        interface_or_class->flags |= OBJECT_TYPE_INTERFACE;
+                        new_obj->flags |= OBJECT_TYPE_INTERFACE;
                     }
 
                     // Pop the number of interfaces
-                    interface_or_class->interfaces = dll_init();
+                    new_obj->interfaces = dll_init();
                     t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(interface_cnt_obj);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
@@ -1031,12 +1035,14 @@ dispatch:
                             goto block_end;
                         }
 
-                        dll_append(interface_or_class->interfaces, interface_obj);
+                        dll_append(new_obj->interfaces, interface_obj);
                     }
 
                     // pop parent code object (as string)
                     register t_object *parent_class_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(parent_class_obj);
+
+                    // @TODO: parent class popped from stack is String("NULL"), not object-null. Fix this!
 
                     // If no parent class has been given, use the Base class as parent
                     register t_object *parent_class;
@@ -1047,11 +1053,11 @@ dispatch:
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
                     }
                     object_inc_ref(parent_class);
-                    interface_or_class->parent = parent_class;
+                    new_obj->parent = parent_class;
 
 
                     // Fetch all attributes
-                    interface_or_class->attributes = ht_create();
+                    new_obj->attributes = ht_create();
 
                     // Iterate all attributes
                     for (int i=0; i!=oparg1; i++) {
@@ -1064,24 +1070,23 @@ dispatch:
                             // If we are a method, we will set the name.
                             t_callable_object *callable_obj = (t_callable_object *)attrib_obj->attribute;
                             callable_obj->name = OBJ2STR(name);
-                            callable_obj->binding = (t_object *)interface_or_class;
+                            callable_obj->binding = (t_object *)new_obj;
                         }
 
                         // Add method attribute to class
-                        ht_add_str(interface_or_class->attributes, OBJ2STR(name), attrib_obj);
+                        object_inc_ref((t_object *)attrib_obj);
+                        ht_add_str(new_obj->attributes, OBJ2STR(name), attrib_obj);
 
                         //DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), interface_or_class->name);
                     }
 
-                    if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)interface_or_class)) {
+                    if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    // @TODO: increase to 2.. that is not ok.. :/
-                    object_inc_ref((t_object *)interface_or_class);
-                    object_inc_ref((t_object *)interface_or_class);
-                    vm_frame_stack_push(frame, (t_object *)interface_or_class);
+                    vm_frame_stack_push(frame, (t_object *)new_obj);
+                    object_inc_ref((t_object *)new_obj);
                 }
 
                 goto dispatch;
@@ -1518,6 +1523,14 @@ int vm_execute(t_vm_frame *frame) {
     t_object *result = _vm_execute(frame);
 
     DEBUG_PRINT("============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
+#ifdef __DEBUG
+    printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
+    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
+    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+#endif
+
 
     // Check if there was an uncaught exception (happened when result == NULL)
     if (result == NULL) {
@@ -1691,7 +1704,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Parse calling arguments to see if they match our signatures
         if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
             vm_frame_destroy(new_frame);
-            
+
             // Exception thrown in the argument parsing
             return NULL;
         }

@@ -396,3 +396,17 @@ void ht_key_free(t_hash_key *hk) {
     }
     smm_free(hk);
 }
+
+
+void ht_debug(t_hash_table *ht) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht);
+
+    while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key_str(&iter);
+        t_object *obj = ht_iter_value(&iter);
+        printf("%-20s => %s\n", key, object_debug(obj));
+        ht_iter_next(&iter);
+    }
+
+}

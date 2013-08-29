@@ -120,8 +120,8 @@ SAFFIRE_MODULE_METHOD(console, sprintf) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeAny, OBJECT_TYPE_CLASS, NULL) };
-t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeAny, OBJECT_TYPE_CLASS, NULL) };
+t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
+t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
 
 
 static void _init(void) {

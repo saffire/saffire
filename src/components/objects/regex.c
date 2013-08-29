@@ -229,9 +229,11 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    char *s = ((t_regex_object *)obj)->regex_string;
-    strncpy(global_buf, s ? s : "<no regex>", 1023);
-    global_buf[1023] = 0;
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        strcpy(global_buf, "Regex");
+    } else {
+        sprintf(global_buf, "regex(%s)", ((t_regex_object *)obj)->regex_string);
+    }
     return global_buf;
 }
 #endif

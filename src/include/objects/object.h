@@ -209,10 +209,10 @@
     t_object *object_alloca(t_object *obj, t_dll *arguments);
     t_object *object_alloc(t_object *obj, int arg_count, ...);
     void object_inc_ref(t_object *obj);
-    void object_dec_ref(t_object *obj);
+    long object_dec_ref(t_object *obj);
 
     t_object *object_allocate(t_object *obj, int arg_count, ...);
-    void object_release(t_object *obj);
+    long object_release(t_object *obj);
 
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);

@@ -12,7 +12,7 @@
      * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
-
+object_
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -30,6 +30,7 @@
 #include <locale.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/dll.h"
@@ -198,32 +199,50 @@ void object_inc_ref(t_object *obj) {
 /**
  * Decrease reference from object.
  */
-void object_dec_ref(t_object *obj) {
-    if (! obj) return;
+long object_dec_ref(t_object *obj) {
+    if (! obj) return 0;
 
     obj->ref_count--;
     DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
-    if(obj->ref_count != 0) return;
+    if(obj->ref_count != 0) return obj->ref_count;
+
+    DEBUG_PRINT("flags: %d\n", obj->flags);
 
     // Don't free static objects
     if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
-    if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
+    //if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
 
-//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     _object_free(obj);
+    return 0;
 }
 
 #ifdef __DEBUG
+char global_debug_info[256];
 char *object_debug(t_object *obj) {
-    if (! obj) return "(null)";
+
+    if (! obj) return "(0x0)";
 
     if (obj && obj->funcs && obj->funcs->debug) {
-        return obj->funcs->debug(obj);
+        char *s = obj->funcs->debug(obj);
+        if (OBJECT_TYPE_IS_CLASS(obj)) {
+            s[0] = toupper(s[0]);   // @TODO: Watch out with UTF-8!
+        }
+        return s;
     }
-    return obj->name;
+
+    if (OBJECT_IS_USER(obj)) {
+        snprintf(global_debug_info, 255, "user[%s]", obj->name);
+        if (OBJECT_TYPE_IS_CLASS(obj)) {
+            global_debug_info[0] = toupper(global_debug_info[0]);   // @TODO: Watch out with UTF-8!
+        }
+        return global_debug_info;
+    }
+
+    return "(no debug info)";
 }
 #endif
 
@@ -324,20 +343,28 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
 }
 
 
+extern t_hash_table *string_cache;
+
+
 /**
  * Initialize all the (scalar) objects
  */
 void object_init() {
     all_objects = dll_init();
 
+    // Create string cache
+    string_cache = ht_create();
+
+
+    object_callable_init();
+    object_attrib_init();
     object_base_init();
+    object_string_init();
+
     object_boolean_init();
     object_null_init();
     object_numerical_init();
-    object_string_init();
     object_regex_init();
-    object_callable_init();
-    object_attrib_init();
     object_hash_init();
     object_tuple_init();
     object_userland_init();
@@ -349,14 +376,13 @@ void object_init() {
 }
 
 
-extern t_hash_table *string_cache;
-
 /**
  * Finalize all the (scalar) objects
  */
 void object_fini() {
-    printf("Destroying string cache!\n");
+    printf("object fini\n");
 
+    printf("Destroying string cache!\n");
     // Destroy string cache
     t_hash_iter iter;
     ht_iter_init(&iter, string_cache);
@@ -367,15 +393,6 @@ void object_fini() {
     }
     ht_destroy(string_cache);
 
-    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
-    t_dll_element *e = DLL_HEAD(all_objects);
-    while (e) {
-        t_object *obj = (t_object *)e->data;
-        //printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
-        printf("%-20s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
-        e = DLL_NEXT(e);
-    }
-    dll_free(all_objects);
 
 
     object_datastructure_fini();
@@ -389,11 +406,23 @@ void object_fini() {
     object_attrib_fini();
     object_callable_fini();
     object_regex_fini();
-    object_string_fini();
     object_numerical_fini();
     object_null_fini();
     object_boolean_fini();
-    object_base_fini();
+    object_string_fini();       // has to be second-last
+    object_base_fini();         // has to be last
+
+
+
+    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *obj = (t_object *)e->data;
+        //printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+        printf("%-20s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        e = DLL_NEXT(e);
+    }
+    dll_free(all_objects);
 }
 
 
@@ -519,7 +548,7 @@ void object_add_interface(t_object *class, t_object *interface) {
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
+    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 6, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL, name);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
@@ -750,6 +779,6 @@ t_object *object_alloc(t_object *obj, int arg_count, ...) {
  * It will be added to the garbage collected to either be destroyed, OR when needed, it can be revived before
  * collection whenever somebody needs this specific object again.
  */
-void object_release(t_object *obj) {
-    object_dec_ref(obj);
+long object_release(t_object *obj) {
+    return object_dec_ref(obj);
 }

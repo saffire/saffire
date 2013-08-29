@@ -62,7 +62,7 @@ SAFFIRE_MODULE_METHOD(fastcgi, environment) {
 
 
 
-t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
 
 static void _init(void) {
     fastcgi_struct.attributes = ht_create();
