@@ -249,15 +249,6 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
         return obj;
     }
 
-    // If file identifiers are present, check them
-    if (frame->file_identifiers) {
-        obj = ht_find_obj(frame->file_identifiers->ht, key);
-        if (obj != NULL) {
-            object_release(key);
-            return obj;
-        }
-    }
-
     // Check globals
     obj = ht_find_obj(frame->global_identifiers->ht, key);
     if (obj != NULL) {
@@ -398,7 +389,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
 
     // By default, don't create file identifiers
-    frame->file_identifiers = NULL;
     frame->constants_objects = NULL;
 
     // Set the variable hashes
@@ -420,7 +410,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
 //#ifdef __DEBUG
 //    DEBUG_PRINT("----- [START FRAME: %s (%08X)] ----\n", frame->context, frame);
 //    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-//    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
 //    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 //#endif
@@ -438,7 +427,6 @@ void vm_frame_destroy(t_vm_frame *frame) {
 #ifdef __DEBUG
     printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
     if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif

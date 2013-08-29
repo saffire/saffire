@@ -987,8 +987,6 @@ dispatch:
 //                    t_userland_object *new_obj = (t_userland_object *)smm_malloc(sizeof(t_userland_object));
 //                    memcpy(new_obj, Object_Userland, sizeof(t_userland_object));
 
-                    new_obj->file_identifiers = frame->local_identifiers;
-
                     // pop class name
                     register t_object *name_obj = vm_frame_stack_pop(frame);
                     object_dec_ref(name_obj);
@@ -1526,7 +1524,6 @@ int vm_execute(t_vm_frame *frame) {
 #ifdef __DEBUG
     printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->file_identifiers) print_debug_table(frame->file_identifiers->ht, "File");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
     if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif
@@ -1683,10 +1680,6 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Create a new execution frame
         t_vm_frame *cur_frame = thread_get_current_frame();
         t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
-
-        if (OBJECT_IS_USER(self_obj)) {
-            new_frame->file_identifiers = (t_hash_object *)((t_userland_object *)self_obj)->file_identifiers;
-        }
 
         // Add references to parent and self
         t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
