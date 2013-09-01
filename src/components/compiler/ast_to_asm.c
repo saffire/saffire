@@ -329,6 +329,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             // Iterate body
             WALK_LEAF(leaf->class.body);
 
+            // Push the name
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->class.name, 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
+
             // Push parent class
             stack_push(state->context, st_ctx_load);
             WALK_LEAF(leaf->class.extends);
@@ -348,10 +352,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->class.modifiers);
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
-            // Push the name
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->class.name, 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
-
             // Build class code
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, state->attributes);
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_CLASS, 1, opr1));
@@ -366,6 +366,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
         case typeAstInterface :
             // Iterate body
             WALK_LEAF(leaf->interface.body);
+
+            // Push the name
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->interface.name, 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Push parent class as NULL
             stack_push(state->context, st_ctx_load);
@@ -385,10 +389,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Push flags
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->interface.modifiers);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
-
-            // Push the name
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->interface.name, 0);
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Build class code

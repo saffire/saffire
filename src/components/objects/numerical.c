@@ -330,11 +330,14 @@ void object_numerical_init(void) {
         memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
         numerical_cache[i]->value = value;
 
-        numerical_cache[i]->flags |= (OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_STATIC);
+        // Immutable objects, and we don't allocate
+        numerical_cache[i]->flags |= (OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_ALLOCATED);
 
         // These are instances
         numerical_cache[i]->flags &= ~OBJECT_TYPE_MASK;
         numerical_cache[i]->flags |= OBJECT_TYPE_INSTANCE;
+
+        numerical_cache[i]->ref_count = 1;
     }
 
     vm_populate_builtins("numerical", (t_object *)&Object_Numerical_struct);
@@ -347,9 +350,7 @@ void object_numerical_init(void) {
 void object_numerical_fini(void) {
     // Free numerical cache
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++) {
-        // We actually should do a object_free(), but we don't because somehow valgrind does not like this (@TODO fix)
-        // Since numericals haven't got any additional info stored, we can just use smm_free (for now)
-        smm_free(numerical_cache[i]);
+        object_release((t_object *)numerical_cache[i]);
     }
     smm_free(numerical_cache);
 
@@ -395,6 +396,9 @@ static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
  static t_object *obj_new(t_object *self) {
     t_numerical_object *obj = smm_malloc(sizeof(t_numerical_object));
     memcpy(obj, Object_Numerical, sizeof(t_numerical_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;

@@ -89,7 +89,7 @@
     #define OBJECT_TYPE_MASK         15            /* Object type bitmask */
 
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
-    #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
+    #define OBJECT_FLAG_ALLOCATED     32           /* Object can be freed, as it is allocated through alloc() */
     #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
 
@@ -101,8 +101,8 @@
     #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
 
     #define OBJECT_TYPE_IS_IMMUTABLE(obj) ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
-    #define OBJECT_TYPE_IS_STATIC(obj) ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC)
     #define OBJECT_TYPE_IS_FINAL(obj) ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
+    #define OBJECT_IS_ALLOCATED(obj)  ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
 
 
     // Simple macro's for object type checks

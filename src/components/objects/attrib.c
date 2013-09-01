@@ -72,6 +72,9 @@ static t_object *obj_new(t_object *self) {
     t_attrib_object *obj = smm_malloc(sizeof(t_attrib_object));
     memcpy(obj, Object_Attrib, sizeof(t_attrib_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
@@ -95,9 +98,21 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     object_inc_ref(attrib_obj->attribute);
 }
 
-static void obj_destroy(t_object *obj) {
+static void obj_free(t_object *obj) {
+    t_attrib_object *attr_obj = (t_attrib_object *)obj;
+
+    printf("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
     // "free" the attribute object. decrease refcount
-    object_release(((t_attrib_object *)obj)->attribute);
+    object_release(attr_obj->attribute);
+
+    if (ATTRIB_IS_METHOD(attr_obj)) {
+        printf("Its binding: %s\n", object_debug(((t_callable_object *)attr_obj->attribute)->binding));
+        object_dec_ref(((t_callable_object *)attr_obj->attribute)->binding);
+    }
+
+}
+
+static void obj_destroy(t_object *obj) {
     smm_free(obj);
 }
 
@@ -106,9 +121,14 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *)obj;
+
     char attrbuf[1024];
     snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
-    snprintf(global_buf, 1024, "Object: %s (T/V/A)(%d/%lu/%lu) Value: %s", self->name, self->type, self->visibility, self->access, attrbuf);
+    snprintf(global_buf, 1024, "Attrib: %s [%s,%s,%s] Attached: %s", self->name,
+        self->type == 0 ? "method" : self->type == 1 ? "constant" : self->type == 2 ? "property" : "unknown",
+        self->visibility == 0 ? "publ" : self->visibility == 1 ? "prot" : self->visibility == 2 ? "priv" : "unknown",
+        self->access == 0 ? "rw" : "ro",
+        attrbuf);
     return global_buf;
 }
 #endif
@@ -117,9 +137,9 @@ static char *obj_debug(t_object *obj) {
 // Attrib object management functions
 t_object_funcs attrib_funcs = {
         obj_new,              // Allocate a new attrib object
-        obj_populate,         // Populate a attrib object
-        NULL,                 // Free a attrib object
-        obj_destroy,          // Destroy a attrib object
+        obj_populate,         // Populate an attrib object
+        obj_free,             // Free an attrib object
+        obj_destroy,          // Destroy an attrib object
         NULL,                 // Clone
         NULL,                 // Cache
 #ifdef __DEBUG

@@ -102,6 +102,6 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
 /**
  *
  */
-t_vm_frameblock *vm_fetch_block(t_vm_frame *frame) {
+t_vm_frameblock *vm_peek_block(t_vm_frame *frame) {
     return &frame->blocks[frame->block_cnt - 1];
 }

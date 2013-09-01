@@ -182,6 +182,9 @@ static t_object *obj_new(t_object *self) {
     t_exception_object *obj = smm_malloc(sizeof(t_exception_object));
     memcpy(obj, self, sizeof(t_exception_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;

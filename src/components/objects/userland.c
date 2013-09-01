@@ -56,6 +56,9 @@ static t_object *obj_new(t_object *self) {
     t_userland_object *obj = smm_malloc(sizeof(t_userland_object));
     memcpy(obj, self, sizeof(t_userland_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
@@ -71,12 +74,16 @@ static void obj_free(t_object *obj) {
 
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
+        char *key = ht_iter_key_str(&iter);
+        printf("Releasing attribute: %s\n", key);
+
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
-
-        object_release(attr->attribute);
-        object_release((t_object *)attr);
-
         ht_iter_next(&iter);
+
+        int ref_count = object_release((t_object *)attr);
+        if (ref_count == 0) {
+            ht_remove_str(obj->attributes, key);
+        }
     }
 
     //smm_free(obj->name);
@@ -90,8 +97,7 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    char *s = obj->name;
-    snprintf(global_buf, 1023, "User[%s]", s);
+    sprintf(global_buf, "user[%s]", obj->name);
     return global_buf;
 }
 #endif

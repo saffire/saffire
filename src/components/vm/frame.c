@@ -84,6 +84,8 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
     frame->stack[frame->sp] = NULL;
     frame->sp++;
 
+
+    object_dec_ref(ret);
     return ret;
 }
 
@@ -94,11 +96,13 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
 void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
     DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
 
+
     if (frame->sp < 0) {
         fatal_error(1, "Trying to push to a full stack");
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
+    object_inc_ref(obj);
 }
 
 void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
@@ -191,7 +195,6 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
     t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, id), obj);
-
     object_release(old_obj);
     object_inc_ref(obj);
 }
@@ -294,10 +297,13 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 
     smm_free(frame->stack);
 
+    printf("vm_detach_bytecode: freeing constants init\n");
     // Free constants objects
     for (int i=0; i!=frame->bytecode->constants_len; i++) {
+        printf("Freeing: %s\n", object_debug((t_object *)frame->constants_objects[i]));
         object_release((t_object *)frame->constants_objects[i]);
     }
+    printf("vm_detach_bytecode: freeing constants fini\n");
     smm_free(frame->constants_objects);
 
     frame->bytecode = NULL;
@@ -324,24 +330,23 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
     // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
     frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
-        t_object *obj = object_alloc(Object_Null, 0);
-
+        t_object *obj;
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-                object_release(obj);    // Decrease NULL object usage
+//                object_release(obj);    // Decrease NULL object usage
 
                 // We create a reference to the source filename of the original bytecode name.
                 bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
                 obj = object_alloc(Object_Callable, 6, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL, NULL, "external");
                 break;
             case BYTECODE_CONST_STRING :
-                object_release(obj);    // Decrease NULL object usage
+//                object_release(obj);    // Decrease NULL object usage
 
                 obj = object_alloc(Object_String, 1, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
-                object_release(obj);    // Decrease NULL object usage
+//                object_release(obj);    // Decrease NULL object usage
 
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
@@ -381,9 +386,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     vm_context_set_context(frame, context);
 
     frame->bytecode = NULL;
-//    frame->stack = NULL;
-//    frame->ip = 0;
-//    frame->sp = 0;
 
     // Create new local identifier hash
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
@@ -395,7 +397,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     if (frame->parent == NULL) {
         // global identifiers are the same as the local identifiers for the initial frame
         frame->global_identifiers = frame->local_identifiers;
-        ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, "superglobalvar"), object_alloc(Object_Null, 0));
+        //ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, "superglobalvar"), object_alloc(Object_Null, 0));
     } else {
         // if not the initial frame, link globals from the parent frame
         frame->global_identifiers = frame->parent->global_identifiers;
@@ -428,42 +430,37 @@ void vm_frame_destroy(t_vm_frame *frame) {
     printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+//    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif
 
 
-
+    printf("detach bytecode init\n");
     if (frame->bytecode) {
         vm_detach_bytecode(frame);
     }
+    printf("detach bytecode fini\n");
 
-//    ht_iter_init(&iter, frame->global_identifiers->ht);
-//    while (ht_iter_valid(&iter)) {
-//        t_object *val = ht_iter_value(&iter);
-//        object_release(val);
-//        ht_iter_next(&iter);
-//    }
-//
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-        printf("Frame destroy: Releasing => %s\n", object_debug(val));
 
-        int ref_count = object_release(val);
-        if (ref_count == 0) {
-            object_release(key);
-            ht_remove_obj(frame->local_identifiers->ht, key);
-        }
+        // Because we MIGHT change the hash-table, we need to fetch the next
+        // element PRIOR to changing the table. Otherwise we might end up in
+        // the crapper.
         ht_iter_next(&iter);
+        printf("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
+
+        object_release(val);
+        object_release(key);
+        ht_remove_obj(frame->local_identifiers->ht, key);
     }
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->local_identifiers);
-
-    printf("Decreasing builtin_identifiers refcount\n");
+//    printf("Decreasing builtin_identifiers refcount\n");
     object_release((t_object *)frame->builtin_identifiers);
 
     smm_free(frame->context);

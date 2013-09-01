@@ -186,6 +186,9 @@ static t_object *obj_new(t_object *self) {
     t_regex_object *obj = smm_malloc(sizeof(t_regex_object));
     memcpy(obj, Object_Regex, sizeof(t_regex_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;

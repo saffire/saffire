@@ -403,10 +403,19 @@ void ht_debug(t_hash_table *ht) {
     ht_iter_init(&iter, ht);
 
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key_str(&iter);
+        t_hash_key *key = ht_iter_key(&iter);
+        char *s;
+        if (key->type == HASH_KEY_STR) {
+            s = smm_strdup(key->val.s);
+        } else if (key->type == HASH_KEY_NUM) {
+            smm_asprintf(&s, "%d", key->val.n);
+        } else if (key->type == HASH_KEY_PTR) {
+            s = smm_strdup(object_debug(key->val.p));
+            smm_asprintf(&s, "%s{%d}", object_debug(key->val.p), ((t_object *)key->val.p)->ref_count);
+        }
         t_object *obj = ht_iter_value(&iter);
-        printf("%-20s => %s\n", key, object_debug(obj));
+        printf("%-40s => %s{%d}\n", s, object_debug(obj), obj->ref_count);
+        smm_free(s);
         ht_iter_next(&iter);
     }
-
 }

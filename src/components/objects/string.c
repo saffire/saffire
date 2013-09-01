@@ -418,6 +418,9 @@ static t_object *obj_new(t_object *self) {
     t_string_object *obj = smm_malloc(sizeof(t_string_object));
     memcpy(obj, Object_String, sizeof(t_string_object));
 
+    // Since we just allocated the object, it can always be destroyed
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // Object is an instance, not a class
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;

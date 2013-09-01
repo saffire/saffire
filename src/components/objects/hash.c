@@ -324,7 +324,6 @@ void object_hash_init(void) {
 
     object_add_interface((t_object *)&Object_Hash_struct, Object_Iterator);
     object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
-    object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
 }
@@ -343,6 +342,9 @@ static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_hash_object *obj = smm_malloc(sizeof(t_hash_object));
     memcpy(obj, Object_Hash, sizeof(t_hash_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -411,10 +413,7 @@ static void obj_free(t_object *obj) {
         ht_iter_next(&iter);
     }
 
-
-    if (hash_obj->ht) {
-        ht_destroy(hash_obj->ht);
-    }
+    ht_destroy(hash_obj->ht);
 }
 
 static void obj_destroy(t_object *obj) {

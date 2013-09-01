@@ -12,7 +12,7 @@
      * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
-object_
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -141,11 +141,11 @@ static void _object_free(t_object *obj) {
     // ref_count > 0, object is still in use somewhere else. Don't free it yet
     if (obj->ref_count > 0) return;
 
-#ifdef __DEBUG
-    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-        DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
-    }
-#endif
+//#ifdef __DEBUG
+//    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+//        //DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
+//    }
+//#endif
 
     // Free values from the object
     if (obj->funcs && obj->funcs->free) {
@@ -192,6 +192,7 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
+    if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
     DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
@@ -203,17 +204,17 @@ long object_dec_ref(t_object *obj) {
     if (! obj) return 0;
 
     obj->ref_count--;
-    DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+
+    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+        DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    }
 
     if(obj->ref_count != 0) return obj->ref_count;
 
-    DEBUG_PRINT("flags: %d\n", obj->flags);
-
     // Don't free static objects
-    if ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC) return;
-    //if ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS) return;
+    if (! OBJECT_IS_ALLOCATED(obj)) return 0;
 
-    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     _object_free(obj);
@@ -315,6 +316,9 @@ t_object *object_alloca(t_object *obj, t_dll *arguments) {
         res->funcs->populate(res, arguments);
     }
 
+    res->ref_count = 0;
+    object_inc_ref(res);
+
     return res;
 }
 
@@ -388,8 +392,15 @@ void object_fini() {
     ht_iter_init(&iter, string_cache);
     while (ht_iter_valid(&iter)) {
         t_object *val = ht_iter_value(&iter);
-        object_release(val);
+//        char *key = ht_iter_key_str(&iter);
+
+        // Release object from this cache
         ht_iter_next(&iter);
+        object_release(val);
+//        if (refcount == 0) {
+//            printf("Removing from string cache: '%s'\n", key);
+//            ht_remove_str(string_cache, key);
+//        }
     }
     ht_destroy(string_cache);
 
@@ -402,24 +413,25 @@ void object_fini() {
     object_list_fini();
     object_userland_fini();
     object_tuple_fini();
-    object_hash_fini();
-    object_attrib_fini();
-    object_callable_fini();
     object_regex_fini();
     object_numerical_fini();
     object_null_fini();
     object_boolean_fini();
+
     object_string_fini();       // has to be second-last
+    object_hash_fini();
     object_base_fini();         // has to be last
+    object_attrib_fini();
+    object_callable_fini();
 
 
-
+    // We really can't show anything here, since objects should have been gone now. Expect failures
     printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
     t_dll_element *e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        //printf("%-20s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
-        printf("%-20s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        //printf("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+        printf("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
@@ -552,6 +564,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
 }
 
 
@@ -559,12 +572,14 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
  *
  */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
 
     object_inc_ref(property);
 
     // @TODO: why replace? why not ht_add_str()??
-    ht_replace_str(obj->attributes, name, attrib);
+
+    ht_replace_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
 }
 
 
@@ -572,16 +587,17 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
  *
  */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+
     object_inc_ref(constant);
 
     if (ht_exists_str(obj->attributes, name)) {
-        object_release(constant);
-        object_release((t_object *)attrib);
+        object_release((t_object *)attrib_obj);
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
 
-    ht_add_str(obj->attributes, name, attrib);
+    ht_add_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
 }
 
 
@@ -594,13 +610,58 @@ void object_remove_all_internal_attributes(t_object *obj) {
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+        char *key = ht_iter_key_str(&iter);
 
-        object_release(attr->attribute);
+        /* This is tricky. Attributes can links to other objects (callables, but also properties and constants). These
+         * are created in object_add_internal_method, object_add_property, object_add_constant, or through the vm's
+         * BUILD_CLASS + BUILD_ATTRIB opcodes.
+         * However, allocating objects will automatically increase their refcount (normally, to 1, but if we allocate
+         * an object that already exists, we could get that object, with it's refcount increased).
+         * What happens, is that attributes will look something like this:
+         *
+         *      attrib-object (refcount = 1)
+         *        -> callable-object (refcount = 2)
+         *
+         * The reason refcount on callable is 2, is because the attrib-object will automatically increase the refcount
+         * as well. This makes sense, because the callable is "used" by the attrib, and we must make sure it can never
+         * be destroyed without destroying the attrib first.
+         *
+         * But attrib-objects are normally added to a (user-object) class as well inside their obj->attributes hashtable.
+         * This hash-table "uses" the attrib-object, which means we increase the attrib-refcount as well:
+         *
+         *     user-object (refcount = 1)
+         *        -> attrib-object (refcount = 2)
+         *             -> callable-object (refcount = 2)
+         *
+         * At this point, a userclass, has attrib with a refcount of AT LEAST 2, and internally callable (or property
+         * or constant) objects of again AT LEAST 2. Because this is the place we are destroying the attributes, we must
+         * make sure we release the attribute from the obj->attributes, and again release the attribute by itself. When
+         * an attrib-objects refcount gets to 0, it will also decrease the refcount of it's used object. This means we
+         * end up with a callable object with a refcount of 1: we decreased the attrib twice, but the callable only once.
+         *
+         * This is a tricky situation, and hopefully we can resolve this a better way than this, but for now all we do
+         * is iterate our attributes, decrease attributes ONCE, decrease the callable inside the attribute ONCE, and then
+         * decrease the attribute again. If everything goes according to plan, it will decrease it to 0, and
+         * automatically decrease the callable as well, resulting in both objects being destroyed. If the attribute (or
+         * callable) is shared and their refcount was higher than 2 to begin with, things will still work out correctly, as
+         * they will be freed somewhere else.
+         */
+
+        // Release attribute from the hash
         object_release((t_object *)attr);
 
+        // Release callable,property or constant from the attribute
+        object_release(((t_attrib_object *)attr)->attribute);
+
+        // Release attribute again, so it can be destroyed, and implicitly destroy the callable as well
+        object_release((t_object *)attr);
+
+        // This attribute hash does not know anything anymore about this attrib
         ht_iter_next(&iter);
+        ht_remove_str(obj->attributes, key);
     }
 
+//    ht_destroy(obj->attributes);
 
     // remove all interface
     if (obj->interfaces) {

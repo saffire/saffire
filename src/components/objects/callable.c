@@ -157,6 +157,9 @@ static t_object *obj_new(t_object *self) {
     t_callable_object *obj = smm_malloc(sizeof(t_callable_object));
     memcpy(obj, Object_Callable, sizeof(t_callable_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
@@ -181,6 +184,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     }
 
     callable_obj->binding = (t_object *)e->data;
+//    object_inc_ref(callable_obj->binding);
     e = DLL_NEXT(e);
 
     callable_obj->arguments = (t_hash_object *)e->data;
@@ -201,6 +205,11 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
 static void obj_destroy(t_object *obj) {
     smm_free(obj);
+}
+
+static void obj_free(t_object *obj) {
+    t_callable_object *callable_obj = (t_callable_object *)obj;
+    object_release(callable_obj->binding);
 }
 
 
@@ -230,7 +239,7 @@ static char *obj_debug(t_object *obj) {
 t_object_funcs callable_funcs = {
         obj_new,              // Allocate a new callable object
         obj_populate,         // Populates a callable object
-        NULL,                 // Free a callable object
+        obj_free,             // Free a callable object
         obj_destroy,          // Destroy a callable object
         NULL,                 // Clone
         NULL,                 // Cache

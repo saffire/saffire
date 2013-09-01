@@ -68,7 +68,6 @@ int register_module(t_module *mod) {
         char *key;
         smm_asprintf(&key, "%s::%s", mod->name, obj->name);
         vm_populate_builtins(key, obj);
-        object_inc_ref(obj);
         smm_free(key);
 
         idx++;

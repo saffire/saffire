@@ -202,6 +202,9 @@ static t_object *obj_new(t_object *self) {
     t_tuple_object *obj = smm_malloc(sizeof(t_tuple_object));
     memcpy(obj, Object_Tuple, sizeof(t_tuple_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;

@@ -353,6 +353,9 @@ static t_object *obj_new(t_object *self) {
     t_list_object *obj = smm_malloc(sizeof(t_list_object));
     memcpy(obj, Object_List, sizeof(t_list_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
@@ -398,8 +401,6 @@ static void obj_free(t_object *obj) {
 }
 
 static void obj_destroy(t_object *obj) {
-    printf("Freeing object: %08lX\n", (unsigned long)obj);
-    printf("The current status of this object: %s: %d\n", obj->name, obj->flags);
     smm_free(obj);
 }
 
