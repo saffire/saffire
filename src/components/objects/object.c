@@ -205,16 +205,16 @@ long object_dec_ref(t_object *obj) {
 
     obj->ref_count--;
 
-    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+//    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
         DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
-    }
+//    }
 
-    if(obj->ref_count != 0) return obj->ref_count;
+    if (obj->ref_count != 0) return obj->ref_count;
 
     // Don't free static objects
     if (! OBJECT_IS_ALLOCATED(obj)) return 0;
 
-//    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     _object_free(obj);
@@ -225,12 +225,12 @@ long object_dec_ref(t_object *obj) {
 char global_debug_info[256];
 char *object_debug(t_object *obj) {
 
-    if (! obj) return "(0x0)";
+    if (! obj) return "(null)<0x0>";
 
     if (obj && obj->funcs && obj->funcs->debug) {
         char *s = obj->funcs->debug(obj);
         if (OBJECT_TYPE_IS_CLASS(obj)) {
-            s[0] = toupper(s[0]);   // @TODO: Watch out with UTF-8!
+            s[0] = toupper(s[0]);
         }
         return s;
     }
@@ -238,7 +238,7 @@ char *object_debug(t_object *obj) {
     if (OBJECT_IS_USER(obj)) {
         snprintf(global_debug_info, 255, "user[%s]", obj->name);
         if (OBJECT_TYPE_IS_CLASS(obj)) {
-            global_debug_info[0] = toupper(global_debug_info[0]);   // @TODO: Watch out with UTF-8!
+            global_debug_info[0] = toupper(global_debug_info[0]);
         }
         return global_debug_info;
     }
@@ -560,7 +560,7 @@ void object_add_interface(t_object *class, t_object *interface) {
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 6, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL, name);
+    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
@@ -601,16 +601,30 @@ void object_add_constant(t_object *obj, char *name, int visibility, t_object *co
 }
 
 
+
+
+
+static void _object_remove_all_internal_interfaces(t_object *obj) {
+    if (! obj->interfaces) return;
+
+    t_dll_element *e = DLL_HEAD(obj->interfaces);
+    while (e) {
+        object_release((t_object *)e->data);
+        e = DLL_NEXT(e);
+    }
+}
+
+
 /**
- * Clears up all attributes found in this object
+ * Clears up all attributes found in this object. Note: does NOT release the object's attributes hash-table!
  */
-void object_remove_all_internal_attributes(t_object *obj) {
+static void _object_remove_all_internal_attributes(t_object *obj) {
     t_hash_iter iter;
 
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
-        char *key = ht_iter_key_str(&iter);
+//        char *key = ht_iter_key_str(&iter);
 
         /* This is tricky. Attributes can links to other objects (callables, but also properties and constants). These
          * are created in object_add_internal_method, object_add_property, object_add_constant, or through the vm's
@@ -658,17 +672,30 @@ void object_remove_all_internal_attributes(t_object *obj) {
 
         // This attribute hash does not know anything anymore about this attrib
         ht_iter_next(&iter);
-        ht_remove_str(obj->attributes, key);
     }
 
 //    ht_destroy(obj->attributes);
 
-    // remove all interface
-    if (obj->interfaces) {
-        dll_free(obj->interfaces);
+}
+
+
+/**
+ * Frees internal object data
+ */
+void object_free_internal_object(t_object *obj) {
+    // Free attributes
+    if (obj->attributes) {
+        _object_remove_all_internal_attributes(obj);
+        ht_destroy(obj->attributes);
     }
 
+    // Remove interfaces
+    if (obj->interfaces) {
+        _object_remove_all_internal_interfaces(obj);
+        dll_free(obj->interfaces);
+    }
 }
+
 
 
 /**
@@ -688,8 +715,8 @@ void object_raise_exception(t_object *exception, int code, char *format, ...) {
 
 
 static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_object *obj2) {
-    t_hash_table *ht1 = ((t_hash_object *)obj1->arguments)->ht;
-    t_hash_table *ht2 = ((t_hash_object *)obj2->arguments)->ht;
+    t_hash_table *ht1 = obj1->arguments;
+    t_hash_table *ht2 = obj2->arguments;
 
     // Sanity check
     if (ht1->element_count != ht2->element_count) {
@@ -722,6 +749,7 @@ static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_
 }
 
 static int _object_check_interface_implementations(t_object *obj, t_object *interface) {
+    // ceci ne pas une interface
     if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
         return 0;
     }
@@ -743,9 +771,9 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         DEBUG_PRINT("     - Found object : %s\n", object_debug((t_object *)found_obj));
         DEBUG_PRINT("     - Matching     : %s\n", object_debug((t_object *)attribute));
 
-        if (found_obj->attrib_type != attribute->attrib_type ||
-            found_obj->visibility != attribute->visibility ||
-            found_obj->access != attribute->access) {
+        if (found_obj->attr_type != attribute->attr_type ||
+            found_obj->attr_visibility != attribute->attr_visibility ||
+            found_obj->attr_access != attribute->attr_access) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
             return 0;
         }

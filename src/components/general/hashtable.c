@@ -410,7 +410,7 @@ void ht_debug(t_hash_table *ht) {
         } else if (key->type == HASH_KEY_NUM) {
             smm_asprintf(&s, "%d", key->val.n);
         } else if (key->type == HASH_KEY_PTR) {
-            s = smm_strdup(object_debug(key->val.p));
+            //s = smm_strdup(object_debug(key->val.p));
             smm_asprintf(&s, "%s{%d}", object_debug(key->val.p), ((t_object *)key->val.p)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);

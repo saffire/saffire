@@ -171,7 +171,6 @@ void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) 
     }
 
     ht_add_obj(frame->global_identifiers->ht, key, obj);
-    object_release(key);
     object_inc_ref(obj);
 }
 
@@ -338,7 +337,7 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 
                 // We create a reference to the source filename of the original bytecode name.
                 bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
-                obj = object_alloc(Object_Callable, 6, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, NULL, NULL, NULL, "external");
+                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, /* arguments */ NULL);
                 break;
             case BYTECODE_CONST_STRING :
 //                object_release(obj);    // Decrease NULL object usage
@@ -373,11 +372,14 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 * Creates and initializes a new frame
 */
 t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *bytecode) {
-    DEBUG_PRINT("============================ VM frame new ('%s' -> parent: '%s') ============================\n", context, parent_frame ? parent_frame->context : "none");
+    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", context, parent_frame ? parent_frame->context : "none");
     t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
     bzero(frame, sizeof(t_vm_frame));
 
     frame->parent = parent_frame;
+
+
+    frame->created_objects = dll_init();
 
     printf("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
@@ -457,6 +459,14 @@ void vm_frame_destroy(t_vm_frame *frame) {
         ht_remove_obj(frame->local_identifiers->ht, key);
     }
 
+    // Free created objects
+    t_dll_element *e = DLL_HEAD(frame->created_objects);
+    while (e) {
+        object_release((t_object *)e->data);
+        e = DLL_NEXT(e);
+    }
+    dll_free(frame->created_objects);
+
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->local_identifiers);
@@ -466,6 +476,11 @@ void vm_frame_destroy(t_vm_frame *frame) {
     smm_free(frame->context);
 
     smm_free(frame);
+}
+
+
+void vm_frame_add_created_object(t_vm_frame *frame, t_object *obj) {
+    dll_append(frame->created_objects, obj);
 }
 
 

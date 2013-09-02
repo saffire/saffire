@@ -58,9 +58,9 @@ char parser_mod_to_visibility(SaffireParser *sp, int lineno, long modifiers) {
 char parser_mod_to_methodflags(SaffireParser *sp, int lineno, long modifiers) {
     char ret = 0;
 
-    if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= CALLABLE_FLAG_STATIC;
-    if ((modifiers & MODIFIER_ABSTRACT) == MODIFIER_ABSTRACT) ret |= CALLABLE_FLAG_ABSTRACT;
-    if ((modifiers & MODIFIER_FINAL) == MODIFIER_FINAL) ret |= CALLABLE_FLAG_FINAL;
+    if ((modifiers & MODIFIER_STATIC) == MODIFIER_STATIC) ret |= ATTRIB_METHOD_STATIC;
+    if ((modifiers & MODIFIER_ABSTRACT) == MODIFIER_ABSTRACT) ret |= ATTRIB_METHOD_ABSTRACT;
+    if ((modifiers & MODIFIER_FINAL) == MODIFIER_FINAL) ret |= ATTRIB_METHOD_FINAL;
 
     return ret;
 }

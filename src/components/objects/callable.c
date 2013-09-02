@@ -80,18 +80,18 @@ SAFFIRE_METHOD(callable, internal) {
     RETURN_FALSE;
 }
 
-/**
- * Rebinds the callable to another object
- */
-SAFFIRE_METHOD(callable, bind) {
-    // @TODO: use object_parse_parameters
-
-    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-    t_object *newbound_obj = (t_object *)e->data;
-    self->binding = newbound_obj;
-
-    RETURN_SELF;
-}
+///**
+// * Rebinds the callable to another object
+// */
+//SAFFIRE_METHOD(callable, bind) {
+//    // @TODO: use object_parse_parameters
+//
+//    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
+//    t_object *newbound_obj = (t_object *)e->data;
+//    self->binding = newbound_obj;
+//
+//    RETURN_SELF;
+//}
 
 
 /**
@@ -132,14 +132,14 @@ SAFFIRE_METHOD(callable, conv_null) {
  */
 void object_callable_init(void) {
     Object_Callable_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+//    object_add_internal_method((t_object *)&Object_Callable_struct, "__bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
 }
 
 /**
@@ -147,8 +147,7 @@ void object_callable_init(void) {
  */
 void object_callable_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Callable_struct);
-    ht_destroy(Object_Callable_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Callable_struct);
 }
 
 
@@ -171,36 +170,18 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->callable_flags = (int)e->data;
+    callable_obj->routing = (int)e->data;
     e = DLL_NEXT(e);
-
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         callable_obj->code.native_func = (void *)e->data;
-        e = DLL_NEXT(e);
     } else {
         callable_obj->code.bytecode = (t_bytecode *)e->data;
-        e = DLL_NEXT(e);
     }
-
-    callable_obj->binding = (t_object *)e->data;
-//    object_inc_ref(callable_obj->binding);
     e = DLL_NEXT(e);
 
-    callable_obj->arguments = (t_hash_object *)e->data;
+    callable_obj->arguments = (t_hash_table *)e->data;
     e = DLL_NEXT(e);
-
-    // @TODO: Something else...
-    e = DLL_NEXT(e);
-
-
-    // @TODO: remove me, a callable has no name directly attached to it
-    if (e && e->data) {
-        callable_obj->call_name = smm_strdup(e->data);
-    } else {
-        callable_obj->call_name = smm_strdup("<no name>");
-    }
-    if (e) e = DLL_NEXT(e);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -209,7 +190,29 @@ static void obj_destroy(t_object *obj) {
 
 static void obj_free(t_object *obj) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
-    object_release(callable_obj->binding);
+
+    if (callable_obj->binding) {
+        object_release(callable_obj->binding);
+    }
+
+    if (callable_obj->arguments) {
+        t_hash_iter iter;
+        ht_iter_init(&iter, callable_obj->arguments);
+        while (ht_iter_valid(&iter)) {
+            t_method_arg *arg = ht_iter_value(&iter);
+
+            char *key = ht_iter_key_str(&iter);
+            smm_free(key);
+
+            object_release((t_object *)arg->value);
+            object_release((t_object *)arg->typehint);
+            smm_free(arg);
+
+            ht_iter_next(&iter);
+        }
+
+        ht_destroy(callable_obj->arguments);
+    }
 }
 
 
@@ -217,17 +220,7 @@ static void obj_free(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "callable (%-15s) F:[%s%s%s%s%s%s]",
-        self->call_name,
-        (self->callable_flags & CALLABLE_FLAG_STATIC) == CALLABLE_FLAG_NONE ? "S" : "-",
-        (self->callable_flags & CALLABLE_FLAG_ABSTRACT) == CALLABLE_FLAG_ABSTRACT ? "A" : "-",
-        (self->callable_flags & CALLABLE_FLAG_FINAL) == CALLABLE_FLAG_FINAL ? "F" : "-",
-        (self->callable_flags & CALLABLE_FLAG_CONSTRUCTOR) == CALLABLE_FLAG_CONSTRUCTOR ? "C" : (self->callable_flags & CALLABLE_FLAG_DESTRUCTOR) == CALLABLE_FLAG_DESTRUCTOR ? "D" : "-",
-        (self->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD ? "M" : "-",
-        (self->callable_flags & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL ? "I" : (self->callable_flags & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL ? "E" : "-"
-    );
-
-
+    sprintf(global_buf, "%s callable", (self->routing & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL ? "internal" : (self->routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL ? "external" : "unknown");
 
     return global_buf;
 }

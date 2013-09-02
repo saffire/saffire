@@ -158,16 +158,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__boolean",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__null",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__numerical",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__string",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     vm_populate_builtins("regex", (t_object *)&Object_Regex_struct);
 }
@@ -177,8 +177,7 @@ void object_regex_init(void) {
  */
 void object_regex_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Regex_struct);
-    ht_destroy(Object_Regex_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Regex_struct);
 }
 
 

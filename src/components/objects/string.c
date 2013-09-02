@@ -358,34 +358,34 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
  */
 void object_string_init(void) {
     Object_String_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_String_struct, "__null",           CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_String_struct, "__string",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_String_struct, "__null",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_String_struct, "__string",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "length",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "upper",          CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
-    object_add_internal_method((t_object *)&Object_String_struct, "lower",          CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
-    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "length",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method((t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "splice",         CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_internal_method((t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
+    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
+//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
+    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
 
     vm_populate_builtins("string", (t_object *)&Object_String_struct);
 }
@@ -395,8 +395,7 @@ void object_string_init(void) {
  */
 void object_string_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_String_struct);
-    ht_destroy(Object_String_struct.attributes);
+    object_free_internal_object((t_object *)&Object_String_struct);
 }
 
 

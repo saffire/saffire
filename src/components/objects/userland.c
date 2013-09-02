@@ -30,6 +30,9 @@
 #include "objects/objects.h"
 #include "general/smm.h"
 
+#include "general/output.h"
+#include "debug.h"
+
 
 /* ======================================================================
  *   Global object management functions and data
@@ -48,7 +51,7 @@ void object_userland_init() {
  * Frees memory for a base object
  */
 void object_userland_fini() {
-    ht_destroy(Object_Userland_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Userland_struct);
 }
 
 
@@ -59,34 +62,102 @@ static t_object *obj_new(t_object *self) {
     // Dynamically allocated
     obj->flags |= OBJECT_FLAG_ALLOCATED;
 
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
     return (t_object *)obj;
 }
 
-static void obj_free(t_object *obj) {
-    // Freeing up attributes
-    printf("Freeing user object: %s\n", obj->name);
+static void obj_populate(t_object *self, t_dll *arg_list) {
+    t_userland_object *obj = (t_userland_object *)self;
 
+    t_dll_element *e = DLL_HEAD(arg_list);
+
+    char *name = (char *)e->data;
+    e = DLL_NEXT(e);
+    obj->name = smm_strdup(name);
+
+    // @TODO: mask flags that we are actually allowed to set
+    int flags = (int)e->data;
+    e = DLL_NEXT(e);
+    obj->flags |= flags;
+
+    t_dll *interfaces = (t_dll *)e->data;
+    e = DLL_NEXT(e);
+    obj->interfaces = interfaces;
+
+    t_dll_element *interface = DLL_HEAD(obj->interfaces);
+    while (interface) {
+        object_inc_ref((t_object *)interface->data);
+        interface = DLL_NEXT(interface);
+    }
+
+    t_object *parent_class = (t_object *)e->data;
+    e = DLL_NEXT(e);
+    obj->parent = parent_class;
+    object_inc_ref(parent_class);
+
+    t_hash_table *attributes = (t_hash_table *)e->data;
+    e = DLL_NEXT(e);
+    obj->attributes = attributes;
+
+    // Iterate attributes and set the name of the attribute, plus its binding to the userclass for this attribute
     t_hash_iter iter;
-
     ht_iter_init(&iter, obj->attributes);
+    while (ht_iter_valid(&iter)) {
+        char *name = ht_iter_key_str(&iter);
+        t_attrib_object *attrib = ht_iter_value(&iter);
+
+        object_inc_ref((t_object *)attrib);
+
+//        // Set name and binding of callables
+//        if (ATTRIB_IS_METHOD(attrib)) {
+//            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
+//
+//            callable_obj->name = smm_strdup(name);
+//            callable_obj->binding = (t_object *)obj;
+//        }
+
+        attrib->bound_obj = (t_object *)obj;
+        attrib->bound_name = smm_strdup(name);
+
+        DEBUG_PRINT("> Added '%s' as '%s.%s'\n", object_debug((t_object *)attrib), attrib->bound_obj->name, attrib->bound_name);
+        ht_iter_next(&iter);
+    }
+}
+
+static void obj_free(t_object *obj) {
+    t_userland_object *user_obj = (t_userland_object *)obj;
+
+    printf("Freeing user object: %s\n", user_obj->name);
+
+    // Free attributes
+    t_hash_iter iter;
+    ht_iter_init(&iter, user_obj->attributes);
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         printf("Releasing attribute: %s\n", key);
 
-        t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+        smm_free(key);
+
+        t_object *attr_obj = (t_object *)ht_iter_value(&iter);
+        object_release(attr_obj);
+
         ht_iter_next(&iter);
 
-        int ref_count = object_release((t_object *)attr);
-        if (ref_count == 0) {
-            ht_remove_str(obj->attributes, key);
-        }
     }
+    ht_destroy(obj->attributes);
 
-    //smm_free(obj->name);
+    // Release all interface objects
+    t_dll_element *e = DLL_HEAD(obj->interfaces);
+    while (e) {
+        object_release((t_object *)e->data);
+        e = DLL_NEXT(e);
+    }
+    dll_free(obj->interfaces);
+
+    // Release parent class
+    object_release(obj->parent);
+
+    // Release name
+    smm_free(obj->name);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -106,7 +177,7 @@ static char *obj_debug(t_object *obj) {
 // object management functions
 t_object_funcs userland_funcs = {
         obj_new,              // Allocate a new user object
-        NULL,                 // Populate a user object
+        obj_populate,         // Populate a user object
         obj_free,             // Free a user object
         obj_destroy,          // Destroy a user object
         NULL,                 // Clone

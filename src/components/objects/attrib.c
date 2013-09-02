@@ -86,11 +86,14 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    attrib_obj->attrib_type = (long)e->data;
+    attrib_obj->attr_type = (long)e->data;
+
     e = DLL_NEXT(e);
-    attrib_obj->visibility = (long)e->data;
+    attrib_obj->attr_visibility = (long)e->data;
+
     e = DLL_NEXT(e);
-    attrib_obj->access = (long)e->data;
+    attrib_obj->attr_access = (long)e->data;
+
     e = DLL_NEXT(e);
     attrib_obj->attribute = (t_object *)e->data;
 
@@ -102,14 +105,13 @@ static void obj_free(t_object *obj) {
     t_attrib_object *attr_obj = (t_attrib_object *)obj;
 
     printf("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
+
     // "free" the attribute object. decrease refcount
     object_release(attr_obj->attribute);
 
-    if (ATTRIB_IS_METHOD(attr_obj)) {
-        printf("Its binding: %s\n", object_debug(((t_callable_object *)attr_obj->attribute)->binding));
-        object_dec_ref(((t_callable_object *)attr_obj->attribute)->binding);
+    if (attr_obj->bound_name) {
+        smm_free(attr_obj->bound_name);
     }
-
 }
 
 static void obj_destroy(t_object *obj) {
@@ -124,11 +126,19 @@ static char *obj_debug(t_object *obj) {
 
     char attrbuf[1024];
     snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
-    snprintf(global_buf, 1024, "Attrib: %s [%s,%s,%s] Attached: %s", self->name,
-        self->type == 0 ? "method" : self->type == 1 ? "constant" : self->type == 2 ? "property" : "unknown",
-        self->visibility == 0 ? "publ" : self->visibility == 1 ? "prot" : self->visibility == 2 ? "priv" : "unknown",
-        self->access == 0 ? "rw" : "ro",
+
+    snprintf(global_buf, 1024, "%s [%s%s%s] Attached: %s", self->name,
+        self->attr_type == 0 ? "M" : self->attr_type == 1 ? "C" : self->attr_type == 2 ? "P" : "?",
+        self->attr_visibility == 0 ? "P" : self->attr_visibility == 1 ? "R" : self->attr_visibility == 2 ? "V" : "?",
+        self->attr_access == 0 ? "W" : "R",
         attrbuf);
+
+//        (self->callable_flags & ATTRIB_METHOD_STATIC) == ATTRIB_METHOD_NONE ? "S" : "-",
+//        (self->callable_flags & ATTRIB_METHOD_ABSTRACT) == ATTRIB_METHOD_ABSTRACT ? "A" : "-",
+//        (self->callable_flags & ATTRIB_METHOD_FINAL) == ATTRIB_METHOD_FINAL ? "F" : "-",
+//        (self->callable_flags & ATTRIB_METHOD_CONSTRUCTOR) == ATTRIB_METHOD_CONSTRUCTOR ? "C" : (self->callable_flags & ATTRIB_METHOD_DESTRUCTOR) == ATTRIB_METHOD_DESTRUCTOR ? "D" : "-",
+//        (self->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD ? "M" : "-",
+
     return global_buf;
 }
 #endif
@@ -153,6 +163,8 @@ t_attrib_object Object_Attrib_struct = {
     0,
     0,
     0,
-
+    0,
+    NULL,
+    NULL,
     NULL
 };

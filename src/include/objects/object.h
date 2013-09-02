@@ -217,7 +217,7 @@
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
-    void object_remove_all_internal_attributes(t_object *obj);
+    void object_free_internal_object(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
     int object_check_interface_implementations(t_object *obj);

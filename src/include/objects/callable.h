@@ -37,53 +37,25 @@
         t_string_object *typehint;
     } t_method_arg;
 
-
-    /* Callable flags, mostly method flags */
-    #define CALLABLE_FLAG_NONE                0      /* no flags */
-    #define CALLABLE_FLAG_STATIC              1      /* Static callable */
-    #define CALLABLE_FLAG_ABSTRACT            2      /* Abstract callable */
-    #define CALLABLE_FLAG_FINAL               4      /* Final callable */
-    #define CALLABLE_FLAG_CONSTRUCTOR         8      /* Constructor */
-    #define CALLABLE_FLAG_DESTRUCTOR         16      /* Destructor */
-    #define CALLABLE_FLAG_MASK               31
-
-    /* Callable types. */
-    #define CALLABLE_TYPE_METHOD            256
-    #define CALLABLE_TYPE_MASK             1023 - CALLABLE_FLAG_MASK
-
     /* Callable code types */
-    #define CALLABLE_CODE_INTERNAL         16384        /* This is an internal function (native_func) */
-    #define CALLABLE_CODE_EXTERNAL         32768        /* This is an external function (bytecode) */
-    #define CALLABLE_CODE_MASK             65535 - CALLABLE_TYPE_MASK
+    #define CALLABLE_CODE_INTERNAL         1        /* This is an internal function (native_func) */
+    #define CALLABLE_CODE_EXTERNAL         2        /* This is an external function (bytecode) */
 
-    #define CALLABLE_IS_CODE_INTERNAL(callable) ((((t_callable_object *)callable)->callable_flags & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL)
-    #define CALLABLE_IS_CODE_EXTERNAL(callable) ((((t_callable_object *)callable)->callable_flags & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL)
-    #define CALLABLE_IS_STATIC(callable)        ((((t_callable_object *)callable)->callable_flags & CALLABLE_FLAG_STATIC) == CALLABLE_FLAG_STATIC)
-    #define CALLABLE_IS_ABSTRACT(callable)      ((((t_callable_object *)callable)->callable_flags & CALLABLE_FLAG_ABSTRACT) == CALLABLE_FLAG_ABSTRACT)
-    #define CALLABLE_IS_FINAL(callable)         ((((t_callable_object *)callable)->callable_flags & CALLABLE_FLAG_FINAL) == CALLABLE_FLAG_FINAL)
-    #define CALLABLE_IS_CONSTRUCTOR(callable)   ((((t_callable_object *)callable)->callable_flags & CALLABLE_FLAG_CONSTRUCTOR) == CALLABLE_FLAG_CONSTRUCTOR)
-    #define CALLABLE_IS_DESTRUCTOR(callable)    ((((t_callable_object *)callable)->callable_flags & CALLABLE_FLAG_DESTRUCTOR) == CALLABLE_FLAG_DESTRUCTOR)
-
-    #define CALLABLE_IS_TYPE_METHOD(callable)   ((((t_callable_object *)callable)->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD)
+    #define CALLABLE_IS_CODE_INTERNAL(callable) ((((t_callable_object *)callable)->routing & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL)
+    #define CALLABLE_IS_CODE_EXTERNAL(callable) ((((t_callable_object *)callable)->routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL)
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        int callable_flags;                   // Callable flags
+        int routing;     // CALLABLE_CODE_*
 
         union {
             t_bytecode *bytecode;                              // External bytecode
             t_object *(*native_func)(t_object *, t_dll *);     // internal function
         } code;
 
-        char *call_name;
-
-        t_object *binding;                  // Bound to a class (or NULL)
-        t_hash_object *arguments;           // Arguments (key => default value (or NULL))
-
-        // @TODO: Additional information for callable?
-//        int calls;                  // Number of calls made to this code
-//        int time_spent;             // Time spend in this code
+        t_object *binding;                  // Bound to this attrib.  // @TODO: could be NULL when it's not bound (like a closure???)
+        t_hash_table *arguments;            // Arguments (key => default value (or NULL))
     } t_callable_object;
 
     t_callable_object Object_Callable_struct;

@@ -242,10 +242,10 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
 void object_boolean_init(void) {
     Object_Boolean_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__boolean",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__null",      CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__numerical", CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__string",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__boolean",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__null",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__numerical", ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__string",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_conv_string);
 
     /*
         Boolean operator table:
@@ -261,16 +261,16 @@ void object_boolean_init(void) {
         shr:    F>F=F  F>T=T  T>F=T  T>T=T
     */
     // @TODO: ATTRIB_VISIBILITY_PROTECTED???
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_add",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_add);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sub",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sub);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_mul",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_mul);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_div",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_div);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_mod",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_mod);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_and",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_and);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_or",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_or);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_xor",   CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_xor);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sl",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sl);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sr",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sr);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_add);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sub",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sub);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_mul",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_mul);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_div",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_div);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_mod",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_mod);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_and",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_and);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_or",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_or);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_xor",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_xor);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sl",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sl);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sr",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sr);
 
 
     /*
@@ -282,12 +282,12 @@ void object_boolean_init(void) {
         le:     F<=T  F<=F T<=T
         ge:     F>=F  T>=F
     */
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_eq",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_ne",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_ne);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_lt",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_lt);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_gt",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_gt);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_le",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_le);
-    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_ge",    CALLABLE_FLAG_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_ge);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_eq",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_lt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_lt);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_gt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_gt);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_le",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_le);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__cmp_ge",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_cmp_ge);
 
     Object_Boolean_False_struct.attributes = Object_Boolean_struct.attributes;
     Object_Boolean_True_struct.attributes = Object_Boolean_struct.attributes;
@@ -305,8 +305,7 @@ void object_boolean_init(void) {
  */
 void object_boolean_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Boolean_struct);
-    ht_destroy(Object_Boolean_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Boolean_struct);
 }
 
 #ifdef __DEBUG

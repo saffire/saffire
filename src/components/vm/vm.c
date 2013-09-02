@@ -69,7 +69,7 @@ extern char *objectCmpMethods[];
  * Returns 1 in success, 0 on failure/exception is thrown
  */
 static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
-    t_hash_table *ht = ((t_hash_object *)callable->arguments)->ht;
+    t_hash_table *ht = callable->arguments;
     t_dll_element *e = DLL_HEAD(arg_list);
 
     int need_count = ht->element_count;
@@ -236,7 +236,8 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
         fatal_error(1, "Cannot find the mandatory saffire module.");
     }
     //object_inc_ref(obj);
-    vm_frame_set_builtin_identifier(initial_frame, "saffire", obj);
+    //vm_frame_set_builtin_identifier(initial_frame, "saffire", obj);
+    vm_frame_set_global_identifier(initial_frame, "saffire", obj);
     vm_runmode = runmode;
 
 
@@ -257,6 +258,7 @@ void vm_fini(t_vm_frame *frame) {
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
     printf("\n\n\nDecreasing builtins\n");
+    ht_debug(builtin_identifiers->ht);
     object_release((t_object *)builtin_identifiers);
 
     module_fini();
@@ -914,29 +916,27 @@ dispatch:
                     // pop value object
                     t_object *value_obj = vm_frame_stack_pop(frame);
 
-                    // Deal with attribute type specific values
-                    t_object *arg_list = NULL;
-
                     if (oparg1 == ATTRIB_TYPE_METHOD) {
                         // Pop method flags (not used yet)
                         vm_frame_stack_pop(frame);
 
                         // Generate hash object from arguments
-                        arg_list = object_alloc(Object_Hash, 0);
+                        t_hash_table *arg_list = ht_create();
                         for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
                             arg->value = vm_frame_stack_pop(frame);
                             t_object *name_obj = vm_frame_stack_pop(frame);
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
 
-                            // @TODO: Increase refcount!
-                            ht_add_str(((t_hash_object *)arg_list)->ht, OBJ2STR(name_obj), arg);
+                            object_inc_ref((t_object *)arg->value);
+                            object_inc_ref((t_object *)arg->typehint);
+                            ht_add_str(arg_list, OBJ2STR(name_obj), arg);
                         }
 
                         // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
                         // @TODO: this means we cannot re-use the same codeblock with different args (which makes sense). Make sure
                         // this works.
-                        ((t_callable_object *)value_obj)->arguments = (t_hash_object *)arg_list;
+                        ((t_callable_object *)value_obj)->arguments = arg_list;
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
@@ -950,6 +950,8 @@ dispatch:
 
                     // Push method object
                     vm_frame_stack_push(frame, dst);
+
+                    vm_frame_add_created_object(frame, (t_object *)dst);
                 }
                 goto dispatch;
                 break;
@@ -958,26 +960,21 @@ dispatch:
             case VM_BUILD_INTERFACE :
             case VM_BUILD_CLASS :
                 {
+                    // pop class flags (abstract,
+                    // @TODO: Do we need to mask certain flags, as they should not be set directly through opcodes?
+                    obj1 = vm_frame_stack_pop(frame);
+                    int flags = OBJ2NUM(obj1);
 
-                    // @TODO: The actual object should be completely created through object_alloc.
-                    // something like: object_alloc(Object_Userland, 5, name, flags, interfaces, parent, attributes);
-                    t_userland_object *new_obj = (t_userland_object *)object_alloc(Object_Userland, 0);
-
-                    // pop flags
-                    t_object *flags = vm_frame_stack_pop(frame);
-                    new_obj->flags = OBJ2NUM(flags);
-
-                    new_obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-                    // depending on the opcode, we are building a class or an interface
+                    // Depending on the opcode, we are building a class or an interface
                     if (opcode == VM_BUILD_CLASS) {
-                        new_obj->flags |= OBJECT_TYPE_CLASS;
+                        flags |= OBJECT_TYPE_CLASS;
                     } else {
-                        new_obj->flags |= OBJECT_TYPE_INTERFACE;
+                        flags |= OBJECT_TYPE_INTERFACE;
                     }
 
+
                     // Pop the number of interfaces
-                    new_obj->interfaces = dll_init();
+                    t_dll *interfaces = dll_init();
                     t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
                     DEBUG_PRINT("Number of interfaces we need to implement: %ld\n", interface_cnt);
@@ -990,76 +987,64 @@ dispatch:
                         // Check if the interface actually exists
                         t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), OBJ2STR(interface_name_obj));
                         if (! interface_obj) {
+                            dll_free(interfaces);
+
                             reason = REASON_EXCEPTION;
                             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
                             goto block_end;
                         }
                         if (! OBJECT_TYPE_IS_INTERFACE(interface_obj)) {
+                            dll_free(interfaces);
+
                             reason = REASON_EXCEPTION;
                             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Object '%s' is not an interface", OBJ2STR(interface_name_obj));
                             goto block_end;
                         }
 
-                        object_inc_ref(interface_obj);
-                        dll_append(new_obj->interfaces, interface_obj);
+                        dll_append(interfaces, interface_obj);
                     }
 
+
                     // pop parent code object (as string)
-                    t_object *parent_class_obj = vm_frame_stack_pop(frame);
-
                     // @TODO: parent class popped from stack is String("NULL"), not object-null. Fix this!
+                    t_object *parent_class = vm_frame_stack_pop(frame);
 
-                    // If no parent class has been given, use the Base class as parent
-                    t_object *parent_class;
-                    if (OBJECT_IS_NULL(parent_class_obj)) {
+                    if (OBJECT_IS_NULL(parent_class)) {
                         parent_class = Object_Base;
                     } else {
                         // Find the object of this string
-                        parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class_obj));
+                        parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class));
                     }
-                    object_inc_ref(parent_class);
-                    new_obj->parent = parent_class;
+
 
                     // pop class name
                     t_object *name_obj = vm_frame_stack_pop(frame);
-
-                    //smm_asprintf(&new_obj->name, "User[%s]", OBJ2STR(name_obj));
-                    new_obj->name = smm_strdup(OBJ2STR(name_obj));
-                    printf("Created class: %s with refcount: %d\n", new_obj->name, new_obj->ref_count);
+                    char *name = OBJ2STR(name_obj);
 
 
                     // Fetch all attributes
-                    new_obj->attributes = ht_create();
-
-                    // Iterate all attributes
+                    t_hash_table *attributes = ht_create();
                     for (int i=0; i!=oparg1; i++) {
                         t_object *name = vm_frame_stack_pop(frame);
                         t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
 
-                        if (ATTRIB_IS_METHOD(attrib_obj)) {
-                            // If we are a method, we will set the name.
-                            t_callable_object *callable_obj = (t_callable_object *)attrib_obj->attribute;
-                            callable_obj->name = OBJ2STR(name);
-                            callable_obj->binding = (t_object *)new_obj;
-//                            object_inc_ref(callable_obj->binding);
-                        }
-
                         // Add method attribute to class
-                        ht_add_str(new_obj->attributes, OBJ2STR(name), attrib_obj);
-                        object_inc_ref((t_object *)attrib_obj);
-
-                        DEBUG_PRINT("> Added attribute '%s' to class '%s'\n", object_debug((t_object *)attrib_obj), new_obj->name);
+                        ht_add_str(attributes, OBJ2STR(name), attrib_obj);
                     }
 
+                    // Actually create the object
+                    t_userland_object *new_obj = (t_userland_object *)object_alloc(Object_Userland, 6, name, flags, interfaces, parent_class, attributes);
+
+                    // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
+                    // All done
                     vm_frame_stack_push(frame, (t_object *)new_obj);
 
-                    // we also need to add the new class onto a frame->classes stack. This is because this way we can
-                    // actually destroy the objects, as we have a reference to them.
+                    vm_frame_add_created_object(frame, (t_object *)new_obj);
                 }
 
                 goto dispatch;
@@ -1498,7 +1483,7 @@ int vm_execute(t_vm_frame *frame) {
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT("============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
+    DEBUG_PRINT("\n\n\n\n============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
 #ifdef __DEBUG
     printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
@@ -1618,7 +1603,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     t_object *self_obj = self;
     t_object *dst;
 
-    // If the object is a class, we can call it, ie instantiating it
+    // If the object is a class, we can call it, ie instantiate it
     if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
         // Do actual instantiation (pass nothing)
         t_object *new_obj = object_find_attribute((t_object *)callable_obj, "__new");
@@ -1636,7 +1621,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 
 
     // Check if we can call the method
-    if (CALLABLE_IS_TYPE_METHOD(callable_obj)) {
+    if (ATTRIB_IS_METHOD(callable_obj->binding)) {
         // Check if we are bounded to a class or instantiation
         if (!self_obj) {
             thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
@@ -1644,7 +1629,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         }
 
         // Make sure we are not calling a non-static method from a static context
-        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! CALLABLE_IS_STATIC(callable_obj)) {
+        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! ATTRIB_METHOD_IS_STATIC(callable_obj->binding)) {
             thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
         }
     }

@@ -67,13 +67,12 @@ t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeUser, OBJECT_T
 static void _init(void) {
     fastcgi_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
+    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
 }
 
 static void _fini(void) {
     // Destroy methods and properties
-    object_remove_all_internal_attributes(&fastcgi_struct);
-    ht_destroy(fastcgi_struct.attributes);
+    object_free_internal_object(&fastcgi_struct);
 }
 
 static t_object *_objects[] = {

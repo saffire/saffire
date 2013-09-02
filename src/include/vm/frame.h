@@ -53,6 +53,7 @@
         t_hash_object *builtin_identifiers;         // Builtin identifiers
 
         t_object **constants_objects;               // Constants converted to objects
+        t_dll *created_objects;                     // Created objects by the bytecode
 
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
@@ -95,6 +96,8 @@
     char *vm_frame_get_name(t_vm_frame *frame, int idx);
 
     char *vm_frame_get_context_path(char *path);
+
+    void vm_frame_add_created_object(t_vm_frame *frame, t_object *obj);
 
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_frame *frame);

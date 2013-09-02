@@ -464,6 +464,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
 
             // Create constant
+            // @TODO: Why do we need attrib_type as an operand? Can't we just push it onto the stack???
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, leaf->attribute.attrib_type);
             opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, arg_count);
             dll_append(frame, asm_create_codeline(leaf->lineno, VM_BUILD_ATTRIB, 2, opr1, opr2));
