@@ -119,8 +119,13 @@
     #define OBJECT_IS_HASH(obj)         (obj->type == objectTypeHash)
 
 
-    // Convert object to value
-    #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+    // fetch a duplicated (string) value from a string object. Must be freed afterwards
+    #define DUP_OBJ2STR(_obj_) smm_strdup(OBJ2STR(_obj_))
+
+    // fetch (string) value from a string object
+    #define OBJ2STR(_obj_) (((t_string_object *)_obj_)->value)
+
+    // fetch (long) value from a numerical object
     #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
 
 

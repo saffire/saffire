@@ -135,8 +135,6 @@ static void obj_free(t_object *obj) {
         char *key = ht_iter_key_str(&iter);
         printf("Releasing attribute: %s\n", key);
 
-        smm_free(key);
-
         t_object *attr_obj = (t_object *)ht_iter_value(&iter);
         object_release(attr_obj);
 

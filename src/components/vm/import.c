@@ -64,7 +64,6 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *source_file, c
     t_hash_table *asm_code = ast_to_asm(ast, 1);
     ast_free_node(ast);
     t_bytecode *bc = assembler(asm_code, source_file);
-    bc->source_filename = smm_strdup(source_file);
     assembler_free(asm_code);
 
     // Create a new frame and run it!

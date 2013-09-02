@@ -201,8 +201,7 @@ static void obj_free(t_object *obj) {
         while (ht_iter_valid(&iter)) {
             t_method_arg *arg = ht_iter_value(&iter);
 
-            char *key = ht_iter_key_str(&iter);
-            smm_free(key);
+            // Keys are destroyed through ht_destroy
 
             object_release((t_object *)arg->value);
             object_release((t_object *)arg->typehint);

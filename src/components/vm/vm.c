@@ -1013,7 +1013,7 @@ dispatch:
                         parent_class = Object_Base;
                     } else {
                         // Find the object of this string
-                        parent_class = vm_frame_get_identifier(frame, OBJ2STR((t_string_object *)parent_class));
+                        parent_class = vm_frame_get_identifier(frame, OBJ2STR(parent_class));
                     }
 
 

@@ -207,6 +207,8 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
                 break;
         }
 
+        smm_free(e->data);
+
         e = DLL_NEXT(e);
     }
     dll_free(asm_frame->constants);
@@ -376,9 +378,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
  * Free an codeline operator
  */
 static void _asm_free_opr(t_asm_opr *opr) {
-    if (opr->type == ASM_LINE_TYPE_OP_LABEL ||
-        opr->type == ASM_LINE_TYPE_OP_STRING ||
-        opr->type == ASM_LINE_TYPE_OP_ID) {
+    if (opr->data.s) {
         smm_free(opr->data.s);
     }
     smm_free(opr);
@@ -432,11 +432,8 @@ void assembler_free(t_hash_table *asm_code) {
 t_asm_opr *asm_create_opr(int type, char *s, int l) {
     t_asm_opr *opr = smm_malloc(sizeof(t_asm_opr));
     opr->type = type;
-    if (s != NULL) {
-        opr->data.s = smm_strdup(s);
-    } else {
-        opr->data.l = l;
-    }
+    opr->data.s = s ? smm_strdup(s) : NULL;
+    opr->data.l = l;
     return opr;
 }
 
@@ -496,7 +493,7 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     }
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
-    bc->source_filename = filename ? strdup(filename) : NULL;
+    bc->source_filename = filename ? smm_strdup(filename) : NULL;
 
 
     // Cleanup our frames
