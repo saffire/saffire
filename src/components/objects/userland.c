@@ -34,6 +34,10 @@
 #include "debug.h"
 
 
+SAFFIRE_METHOD(userland, new) {
+    RETURN_SELF;
+}
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -44,6 +48,9 @@
  */
 void object_userland_init() {
     Object_Userland_struct.attributes = ht_create();
+
+    object_add_internal_method((t_object *)&Object_Userland_struct, "__new",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_userland_method_new);
+
 }
 
 
@@ -107,13 +114,13 @@ static void obj_populate(t_object *self, t_dll *arg_list) {
 
         object_inc_ref((t_object *)attrib);
 
-//        // Set name and binding of callables
-//        if (ATTRIB_IS_METHOD(attrib)) {
-//            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
-//
-//            callable_obj->name = smm_strdup(name);
-//            callable_obj->binding = (t_object *)obj;
-//        }
+        // Set name and binding of callables
+        if (ATTRIB_IS_METHOD(attrib)) {
+            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
+
+            callable_obj->name = smm_strdup(name);
+            callable_obj->binding = (t_object *)obj;
+        }
 
         attrib->bound_obj = (t_object *)obj;
         attrib->bound_name = smm_strdup(name);

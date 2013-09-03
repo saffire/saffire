@@ -1551,6 +1551,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
     t_dll *arg_list = dll_init();
     for (int i=0; i!=arg_count; i++) {
         t_object *obj = va_arg(args, t_object *);
+        object_inc_ref(obj);
         dll_append(arg_list, obj);
     }
     va_end(args);
@@ -1611,6 +1612,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 
         // We continue the function, but using the constructor as our callable
         callable_obj = (t_callable_object *)object_find_attribute(self_obj, "__ctor");
+        callable_obj->binding = self_obj;
     }
 
     // Check if the object is actually a callable

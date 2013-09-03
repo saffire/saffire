@@ -247,7 +247,7 @@ t_object_funcs exception_funcs = {
 };
 
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("Exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
 
 // Include generated exceptions
 #include "_generated_exceptions.inc"

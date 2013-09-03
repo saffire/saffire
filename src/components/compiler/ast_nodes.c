@@ -137,12 +137,12 @@ t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
     return p;
 }
 
-t_ast_element *ast_node_string_context_class(int lineno, t_ast_element *src) {
+t_ast_element *ast_node_string_context_class(int lineno, char *identifier) {
     t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstString;
-    p->string.value = vm_context_get_class(src->identifier.name);
+    p->string.value = vm_context_get_class(identifier);
 
     return p;
 }
