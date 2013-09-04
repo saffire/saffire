@@ -155,8 +155,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             break;
         case typeAstNull :
             // Store null
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "null", 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
             break;
         case typeAstIdentifier :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->identifier.name, 0);
