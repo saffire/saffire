@@ -230,4 +230,6 @@
 
     void object_raise_exception(t_object *exception, int code, char *format, ...);
 
+    void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name);
+
 #endif

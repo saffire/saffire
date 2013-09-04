@@ -34,10 +34,6 @@
 #include "debug.h"
 
 
-SAFFIRE_METHOD(userland, new) {
-    RETURN_SELF;
-}
-
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -47,10 +43,7 @@ SAFFIRE_METHOD(userland, new) {
  * Initializes base methods and properties
  */
 void object_userland_init() {
-    Object_Userland_struct.attributes = ht_create();
-
-    object_add_internal_method((t_object *)&Object_Userland_struct, "__new",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_userland_method_new);
-
+    //Object_Userland_struct.attributes = ht_create();
 }
 
 
@@ -69,65 +62,72 @@ static t_object *obj_new(t_object *self) {
     // Dynamically allocated
     obj->flags |= OBJECT_FLAG_ALLOCATED;
 
+    // These are instances
+    obj->flags &= ~OBJECT_TYPE_MASK;
+    obj->flags |= OBJECT_TYPE_INSTANCE;
+
+
+    // We should copy / clone the attributes?
+
     return (t_object *)obj;
 }
 
+
+
 static void obj_populate(t_object *self, t_dll *arg_list) {
-    t_userland_object *obj = (t_userland_object *)self;
-
-    t_dll_element *e = DLL_HEAD(arg_list);
-
-    char *name = (char *)e->data;
-    e = DLL_NEXT(e);
-    obj->name = smm_strdup(name);
-
-    // @TODO: mask flags that we are actually allowed to set
-    int flags = (int)e->data;
-    e = DLL_NEXT(e);
-    obj->flags |= flags;
-
-    t_dll *interfaces = (t_dll *)e->data;
-    e = DLL_NEXT(e);
-    obj->interfaces = interfaces;
-
-    t_dll_element *interface = DLL_HEAD(obj->interfaces);
-    while (interface) {
-        object_inc_ref((t_object *)interface->data);
-        interface = DLL_NEXT(interface);
-    }
-
-    t_object *parent_class = (t_object *)e->data;
-    e = DLL_NEXT(e);
-    obj->parent = parent_class;
-    object_inc_ref(parent_class);
-
-    t_hash_table *attributes = (t_hash_table *)e->data;
-    e = DLL_NEXT(e);
-    obj->attributes = attributes;
-
-    // Iterate attributes and set the name of the attribute, plus its binding to the userclass for this attribute
-    t_hash_iter iter;
-    ht_iter_init(&iter, obj->attributes);
-    while (ht_iter_valid(&iter)) {
-        char *name = ht_iter_key_str(&iter);
-        t_attrib_object *attrib = ht_iter_value(&iter);
-
-        object_inc_ref((t_object *)attrib);
-
-        // Set name and binding of callables
-        if (ATTRIB_IS_METHOD(attrib)) {
-            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
-
-            callable_obj->name = smm_strdup(name);
-            callable_obj->binding = (t_object *)obj;
-        }
-
-        attrib->bound_obj = (t_object *)obj;
-        attrib->bound_name = smm_strdup(name);
-
-        DEBUG_PRINT("> Added '%s' as '%s.%s'\n", object_debug((t_object *)attrib), attrib->bound_obj->name, attrib->bound_name);
-        ht_iter_next(&iter);
-    }
+//    t_userland_object *obj = (t_userland_object *)self;
+//
+//    t_dll_element *e = DLL_HEAD(arg_list);
+//
+//    char *name = (char *)e->data;
+//    e = DLL_NEXT(e);
+//    obj->name = smm_strdup(name);
+//
+//    // @TODO: mask flags that we are actually allowed to set
+//    int flags = (int)e->data;
+//    e = DLL_NEXT(e);
+//    obj->flags |= flags;
+//
+//    t_dll *interfaces = (t_dll *)e->data;
+//    e = DLL_NEXT(e);
+//    obj->interfaces = interfaces;
+//
+//    t_dll_element *interface = DLL_HEAD(obj->interfaces);
+//    while (interface) {
+//        object_inc_ref((t_object *)interface->data);
+//        interface = DLL_NEXT(interface);
+//    }
+//
+//    t_object *parent_class = (t_object *)e->data;
+//    e = DLL_NEXT(e);
+//    obj->parent = parent_class;
+//    object_inc_ref(parent_class);
+//
+//    t_hash_table *attributes = (t_hash_table *)e->data;
+//    e = DLL_NEXT(e);
+//    obj->attributes = attributes;
+//
+//    // Iterate attributes and set the name of the attribute, plus its binding to the userclass for this attribute
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, obj->attributes);
+//    while (ht_iter_valid(&iter)) {
+//        char *name = ht_iter_key_str(&iter);
+//        t_attrib_object *attrib = ht_iter_value(&iter);
+//
+//        object_inc_ref((t_object *)attrib);
+//
+//        // Set name and binding of callables
+//        if (ATTRIB_IS_METHOD(attrib)) {
+//            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
+//            object_bind_callable(callable_obj, obj, name);
+//        }
+//
+//        attrib->bound_obj = (t_object *)obj;
+//        attrib->bound_name = smm_strdup(name);
+//
+//        DEBUG_PRINT("> Added '%s' as '%s.%s'\n", object_debug((t_object *)attrib), attrib->bound_obj->name, attrib->bound_name);
+//        ht_iter_next(&iter);
+//    }
 }
 
 static void obj_free(t_object *obj) {

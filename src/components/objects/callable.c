@@ -88,7 +88,7 @@ SAFFIRE_METHOD(callable, internal) {
 //
 //    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
 //    t_object *newbound_obj = (t_object *)e->data;
-//    self->binding = newbound_obj;
+//    self->binding = newbound_obj;     // Use: object_bind_callable()
 //
 //    RETURN_SELF;
 //}

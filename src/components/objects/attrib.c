@@ -34,6 +34,17 @@
 #include "debug.h"
 
 
+/**
+ * Additional values:
+ *      attribute.total_access          // How many times did we access the ->attribute value in total?
+ *      attribute.access                // How many times did we access the ->attribute value (since last change?)
+ *      attribute.changed               // How many times did the ->attribute value for this attribute change?
+ *      attribute.type                  // method, property, constant
+ *      attribute.visibility            // Public, protected, private
+ *      attribute.access                // readonly, readwrite
+ *      attribute.attribute             // Actual attribute
+ */
+
 /* ======================================================================
  *   Supporting functions
  * ======================================================================
@@ -132,12 +143,6 @@ static char *obj_debug(t_object *obj) {
         self->attr_visibility == 0 ? "P" : self->attr_visibility == 1 ? "R" : self->attr_visibility == 2 ? "V" : "?",
         self->attr_access == 0 ? "W" : "R",
         attrbuf);
-
-//        (self->callable_flags & ATTRIB_METHOD_STATIC) == ATTRIB_METHOD_NONE ? "S" : "-",
-//        (self->callable_flags & ATTRIB_METHOD_ABSTRACT) == ATTRIB_METHOD_ABSTRACT ? "A" : "-",
-//        (self->callable_flags & ATTRIB_METHOD_FINAL) == ATTRIB_METHOD_FINAL ? "F" : "-",
-//        (self->callable_flags & ATTRIB_METHOD_CONSTRUCTOR) == ATTRIB_METHOD_CONSTRUCTOR ? "C" : (self->callable_flags & ATTRIB_METHOD_DESTRUCTOR) == ATTRIB_METHOD_DESTRUCTOR ? "D" : "-",
-//        (self->callable_flags & CALLABLE_TYPE_METHOD) == CALLABLE_TYPE_METHOD ? "M" : "-",
 
     return global_buf;
 }

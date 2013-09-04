@@ -162,6 +162,58 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 }
 
 
+t_userland_object *vm_create_userland_object(char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+    t_userland_object *user_obj = smm_malloc(sizeof(Object_Userland_struct));
+    memcpy(user_obj, &Object_Userland_struct, sizeof(Object_Userland_struct));
+
+    // Set name
+    user_obj->name = smm_strdup(name);
+
+    // Set flags
+    user_obj->flags |= flags;
+
+    // Set interfaces
+    user_obj->interfaces = interfaces;
+    t_dll_element *interface = DLL_HEAD(user_obj->interfaces);
+    while (interface) {
+        object_inc_ref((t_object *)interface->data);
+        interface = DLL_NEXT(interface);
+    }
+
+    // Set parent class
+    user_obj->parent = parent_class;
+    object_inc_ref(parent_class);
+
+    // Set attributes
+    user_obj->attributes = attributes;
+
+    // Iterate attributes and set the name of the attribute, plus its binding to the userclass for this attribute
+    t_hash_iter iter;
+    ht_iter_init(&iter, user_obj->attributes);
+    while (ht_iter_valid(&iter)) {
+        char *name = ht_iter_key_str(&iter);
+        t_attrib_object *attrib = ht_iter_value(&iter);
+
+        object_inc_ref((t_object *)attrib);
+
+        // Set name and binding of callables
+        if (ATTRIB_IS_METHOD(attrib)) {
+            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
+
+            object_bind_callable((t_object *)callable_obj, (t_object *)user_obj, name);
+        }
+
+        attrib->bound_obj = (t_object *)user_obj;
+        attrib->bound_name = smm_strdup(name);
+
+        DEBUG_PRINT("> Added '%s' as '%s.%s'\n", object_debug((t_object *)attrib), attrib->bound_obj->name, attrib->bound_name);
+        ht_iter_next(&iter);
+    }
+
+    return user_obj;
+}
+
+
 /**
  * Checks visibility, returns 0 when not allowed, 1 when allowed.
  *
@@ -529,8 +581,7 @@ dispatch:
 
                         printf("Flags new copy after load_attrib: %d\n", new_copy->flags);
 
-                        new_copy->binding = bound_obj ? bound_obj : search_obj;
-                        object_inc_ref(new_copy->binding);
+                        object_bind_callable((t_object *)new_copy, bound_obj ? (t_object *)bound_obj : (t_object *)search_obj, OBJ2STR(name));
 
                         value = (t_object *)new_copy;
                     } else {
@@ -1006,11 +1057,10 @@ dispatch:
 
 
                     // pop parent code object (as string)
-                    // @TODO: parent class popped from stack is String("NULL"), not object-null. Fix this!
                     t_object *parent_class = vm_frame_stack_pop(frame);
-
                     if (OBJECT_IS_NULL(parent_class)) {
                         parent_class = Object_Base;
+                        object_inc_ref(parent_class);
                     } else {
                         // Find the object of this string
                         parent_class = vm_frame_get_identifier(frame, OBJ2STR(parent_class));
@@ -1033,7 +1083,7 @@ dispatch:
                     }
 
                     // Actually create the object
-                    t_userland_object *new_obj = (t_userland_object *)object_alloc(Object_Userland, 6, name, flags, interfaces, parent_class, attributes);
+                    t_userland_object *new_obj = vm_create_userland_object(name, flags, interfaces, parent_class, attributes);
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
@@ -1541,7 +1591,7 @@ t_object *object_internal_call(const char *class, const char *method, int arg_co
     t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
     t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
     memcpy(new_copy, callable_obj, sizeof(t_callable_object));
-    new_copy->binding = class_obj;
+    object_bind_callable((t_object *)new_copy, (t_object *)class_obj, callable_obj->name);
 
     new_copy->ref_count = 1;
 
@@ -1603,6 +1653,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
     t_callable_object *callable_obj = (t_callable_object *)callable;
     t_object *self_obj = self;
     t_object *dst;
+    t_attrib_object *attrib_obj;
 
     // If the object is a class, we can call it, ie instantiate it
     if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
@@ -1611,8 +1662,12 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         self_obj = vm_object_call((t_object *)callable_obj, new_obj, 0);
 
         // We continue the function, but using the constructor as our callable
+        attrib_obj = (t_attrib_object *)object_find_actual_attribute(self_obj, "__ctor");
+        attrib_obj->bound_obj = self_obj;
+        attrib_obj->bound_name = smm_strdup("__ctor");
+
         callable_obj = (t_callable_object *)object_find_attribute(self_obj, "__ctor");
-        callable_obj->binding = self_obj;
+        object_bind_callable((t_object *)callable_obj, (t_object *)attrib_obj, "__ctor");
     }
 
     // Check if the object is actually a callable
@@ -1632,7 +1687,8 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 
         // Make sure we are not calling a non-static method from a static context
         if (OBJECT_TYPE_IS_CLASS(self_obj) && ! ATTRIB_METHOD_IS_STATIC(callable_obj->binding)) {
-            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from a class\n", callable_obj->name);
+            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", callable_obj->name, self_obj->name);
+            return NULL;
         }
     }
 
@@ -1641,8 +1697,16 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
         // Internal function call
         dst = callable_obj->code.native_func(self_obj, arg_list);
     } else {
-        char context[250];
-        snprintf(context, 249, "%s.%s([%ld args])", self ? self->name : "null", callable_obj->name, arg_list->size);
+        char context[1250];
+        char args[1000];
+        strcpy(args, "");
+        t_dll_element *e = DLL_HEAD(arg_list);
+        while (e) {
+            strcat(args, object_debug(e->data));
+            e = DLL_NEXT(e);
+            if (e) strcat(args, ", ");
+        }
+        snprintf(context, 1249, "%s.%s([%ld args: %s])", self ? self->name : "null", callable_obj->name, arg_list->size, args);
 
         // Create a new execution frame
         t_vm_frame *cur_frame = thread_get_current_frame();

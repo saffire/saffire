@@ -458,7 +458,7 @@ static void obj_free(t_object *obj) {
     char strhash[33];
     hash_string_text(str_obj->value, strhash);
 
-//    printf("Removing '%s' (%s) from string_cache\n", str_obj->value, strhash);
+    printf("Removing '%s' (%s) from string_cache\n", str_obj->value, strhash);
 //    ht_debug(string_cache);
     ht_remove_str(string_cache, strhash);
 

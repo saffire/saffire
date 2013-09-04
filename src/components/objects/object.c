@@ -230,7 +230,7 @@ char *object_debug(t_object *obj) {
     if (obj && obj->funcs && obj->funcs->debug) {
         char *s = obj->funcs->debug(obj);
         if (OBJECT_TYPE_IS_CLASS(obj)) {
-            s[0] = toupper(s[0]);
+            //s[0] = toupper(s[0]);
         }
         return s;
     }
@@ -561,8 +561,8 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
     //        with internal and external functions.
     t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
-    callable_obj->binding = obj;
-    callable_obj->name = smm_strdup(name);
+    object_bind_callable((t_object *)callable_obj, obj, name);
+
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
 
     ht_add_str(obj->attributes, name, attrib_obj);
@@ -873,3 +873,18 @@ t_object *object_alloc(t_object *obj, int arg_count, ...) {
 long object_release(t_object *obj) {
     return object_dec_ref(obj);
 }
+
+void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name) {
+    if (((t_callable_object *)callable_obj)->binding) {
+        object_release(((t_callable_object *)callable_obj)->binding);
+    }
+//    if (((t_callable_object *)callable_obj)->name) {
+//        smm_free(((t_callable_object *)callable_obj)->name);
+//    }
+
+    ((t_callable_object *)callable_obj)->binding = (t_object *)attrib_obj;
+//    ((t_callable_object *)callable_obj)->name = name ? smm_strdup(name) : smm_strdup("callable");
+
+    object_inc_ref(attrib_obj);
+}
+
