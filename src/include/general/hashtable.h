@@ -39,10 +39,10 @@
     typedef struct _hash_key {
         char type;                          // One of the HASH_KEY_* defines
         union {
-            char *s;
-            int n;
-            void *p;
-        } val;                              // Actual key
+            char *s;                        // String value
+            int n;                          // Numerical value
+            void *p;                        // Custom value (normally, t_object)
+        } val;
     } t_hash_key;
 
 
@@ -56,7 +56,7 @@
         struct _hash_table_bucket *prev_element; // Link to next element (any bucket)
         struct _hash_table_bucket *next_element; // Link to next element (any bucket)
 
-        struct _hash_table_bucket *next_in_list; // Link to next entry in this bucket
+        struct _hash_table_bucket *next_in_bucket; // Link to next entry in this bucket
     } t_hash_table_bucket;
 
 
