@@ -69,45 +69,6 @@ int object_is_immutable(t_object *obj) {
 
 
 /**
- * Finds the attribute inside the object, or any base objects if needed.
- */
-t_object *object_find_attribute(t_object *obj, char *attr_name) {
-    t_object *attr = object_find_actual_attribute(obj, attr_name);
-    return attr ? ((t_attrib_object *)attr)->attribute : NULL;
-}
-
-
-/**
- * Finds the attribute inside the object, or any base objects if needed.
- */
-t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
-    t_object *attr = NULL;
-    t_object *cur_obj = obj;
-
-    while (attr == NULL) {
-        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
-
-        // Find the attribute in the current object
-        attr = ht_find_str(cur_obj->attributes, attr_name);
-        if (attr != NULL) break;
-
-        // Not found and there is no parent, we're done!
-        if (cur_obj->parent == NULL) {
-            DEBUG_PRINT(">>> Cannot find attribute '%s' in object %s:\n", attr_name, obj->name);
-            return NULL;
-        }
-
-        // Try again in the parent object
-        cur_obj = cur_obj->parent;
-    }
-
-    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
-
-    return attr;
-}
-
-
-/**
  * Checks if an object is an instance of a class. Will check against parents too
  */
 int object_instance_of(t_object *obj, const char *instance) {
@@ -193,7 +154,7 @@ void object_inc_ref(t_object *obj) {
 
     obj->ref_count++;
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
-    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -206,7 +167,7 @@ long object_dec_ref(t_object *obj) {
     obj->ref_count--;
 
 //    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-        DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//        DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 //    }
 
     if (obj->ref_count != 0) return obj->ref_count;
@@ -348,15 +309,20 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
 
 
 extern t_hash_table *string_cache;
+t_dll *dupped_attributes;
 
 
 /**
  * Initialize all the (scalar) objects
  */
 void object_init() {
+    // All objects have a reference here (except dupped attributes, actually)
     all_objects = dll_init();
 
-    // Create string cache
+    // All duplicated attributes are references here, because they are short-lived, we can do some other stuff with them later.
+    dupped_attributes = dll_init();
+
+    // Create string cache.
     string_cache = ht_create();
 
 
@@ -384,25 +350,32 @@ void object_init() {
  * Finalize all the (scalar) objects
  */
 void object_fini() {
-    printf("object fini\n");
+    t_dll_element *e;
 
-    printf("Destroying string cache!\n");
+    DEBUG_PRINT("object fini\n");
+
+    DEBUG_PRINT("Destroying string cache!\n");
+
     // Destroy string cache
     t_hash_iter iter;
     ht_iter_init(&iter, string_cache);
     while (ht_iter_valid(&iter)) {
         t_object *val = ht_iter_value(&iter);
-//        char *key = ht_iter_key_str(&iter);
 
         // Release object from this cache
         ht_iter_next(&iter);
         object_release(val);
-//        if (refcount == 0) {
-//            printf("Removing from string cache: '%s'\n", key);
-//            ht_remove_str(string_cache, key);
-//        }
     }
     ht_destroy(string_cache);
+
+    // Remove all duplicated attributes
+    e = DLL_HEAD(dupped_attributes);
+    while (e) {
+        //t_object *dup = (t_object *)(e->data);
+        //object_release(dup);
+
+        e = DLL_NEXT(e);
+    }
 
 
 
@@ -426,12 +399,12 @@ void object_fini() {
 
 
     // We really can't show anything here, since objects should have been gone now. Expect failures
-    printf("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
-    t_dll_element *e = DLL_HEAD(all_objects);
+    DEBUG_PRINT("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
+    e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
         //printf("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
-        printf("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        DEBUG_PRINT("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
@@ -558,12 +531,13 @@ void object_add_interface(t_object *class, t_object *interface) {
  * Create method- attribute that points to an INTERNAL (C) function
  */
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
-    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
-    //        with internal and external functions.
+    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal with internal and external functions.
     t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
-    object_bind_callable((t_object *)callable_obj, obj, name);
 
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, method_flags);
+
+    // Actually "bind" the attribute to this (class) object
+    attrib_obj->bound_class = obj;
 
     ht_add_str(obj->attributes, name, attrib_obj);
     object_inc_ref((t_object *)attrib_obj);
@@ -574,7 +548,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
  *
  */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
 
     object_inc_ref(property);
 
@@ -589,7 +563,7 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
  *
  */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
 
     object_inc_ref(constant);
 
@@ -764,7 +738,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
         DEBUG_PRINT(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
 
-        t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj, key);
+        t_attrib_object *found_obj = (t_attrib_object *)object_attrib_find(obj, key);
         if (! found_obj) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
             return 0;
@@ -874,17 +848,17 @@ long object_release(t_object *obj) {
     return object_dec_ref(obj);
 }
 
-void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name) {
-    if (((t_callable_object *)callable_obj)->binding) {
-        object_release(((t_callable_object *)callable_obj)->binding);
-    }
-//    if (((t_callable_object *)callable_obj)->name) {
-//        smm_free(((t_callable_object *)callable_obj)->name);
+//void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name) {
+//    if (((t_callable_object *)callable_obj)->binding) {
+//        object_release(((t_callable_object *)callable_obj)->binding);
 //    }
-
-    ((t_callable_object *)callable_obj)->binding = (t_object *)attrib_obj;
-//    ((t_callable_object *)callable_obj)->name = name ? smm_strdup(name) : smm_strdup("callable");
-
-    object_inc_ref(attrib_obj);
-}
+////    if (((t_callable_object *)callable_obj)->name) {
+////        smm_free(((t_callable_object *)callable_obj)->name);
+////    }
+//
+//    ((t_callable_object *)callable_obj)->binding = (t_object *)attrib_obj;
+////    ((t_callable_object *)callable_obj)->name = name ? smm_strdup(name) : smm_strdup("callable");
+//
+//    object_inc_ref(attrib_obj);
+//}
 

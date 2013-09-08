@@ -206,14 +206,14 @@ void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj)
 }
 
 
-/**
- * Return object from either the local or the global identifier table
- */
-t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
-    DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
-    t_object *obj = vm_frame_find_identifier(frame, id);
-    return obj;
-}
+///**
+// * Return object from either the local or the global identifier table
+// */
+//t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
+//    DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
+//    t_object *obj = vm_frame_find_identifier(frame, id);
+//    return obj;
+//}
 
 
 #ifdef __DEBUG
@@ -226,8 +226,8 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-        printf("%-10s KEY: [%08X] '%-40s'{%d} ", prefix, (unsigned int)key, object_debug(key), key->ref_count);
-        printf("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
+        DEBUG_PRINT("%-10s KEY: [%08X] '%-40s'{%d} ", prefix, (unsigned int)key, object_debug(key), key->ref_count);
+        DEBUG_PRINT("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
 
         ht_iter_next(&iter);
     }
@@ -296,13 +296,13 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 
     smm_free(frame->stack);
 
-    printf("vm_detach_bytecode: freeing constants init\n");
+    DEBUG_PRINT("vm_detach_bytecode: freeing constants init\n");
     // Free constants objects
     for (int i=0; i!=frame->bytecode->constants_len; i++) {
-        printf("Freeing: %s\n", object_debug((t_object *)frame->constants_objects[i]));
+        DEBUG_PRINT("Freeing: %s\n", object_debug((t_object *)frame->constants_objects[i]));
         object_release((t_object *)frame->constants_objects[i]);
     }
-    printf("vm_detach_bytecode: freeing constants fini\n");
+    DEBUG_PRINT("vm_detach_bytecode: freeing constants fini\n");
     smm_free(frame->constants_objects);
 
     frame->bytecode = NULL;
@@ -329,7 +329,7 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
     // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
     frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
-        t_object *obj;
+        t_object *obj = NULL;
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
@@ -381,7 +381,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
 
     frame->created_objects = dll_init();
 
-    printf("Increasing builtin_identifiers refcount\n");
+    DEBUG_PRINT("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
@@ -426,21 +426,21 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-    printf("FRAME DESTROY: %s\n", frame->context);
+    DEBUG_PRINT("FRAME DESTROY: %s\n", frame->context);
 
 #ifdef __DEBUG
-    printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
+    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif
 
 
-    printf("detach bytecode init\n");
+    DEBUG_PRINT("detach bytecode init\n");
     if (frame->bytecode) {
         vm_detach_bytecode(frame);
     }
-    printf("detach bytecode fini\n");
+    DEBUG_PRINT("detach bytecode fini\n");
 
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
@@ -452,7 +452,8 @@ void vm_frame_destroy(t_vm_frame *frame) {
         // element PRIOR to changing the table. Otherwise we might end up in
         // the crapper.
         ht_iter_next(&iter);
-        printf("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
+
+        DEBUG_PRINT("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
 
         object_release(val);
         object_release(key);
@@ -491,11 +492,11 @@ void vm_frame_stack_debug(t_vm_frame *frame) {
         return;
     }
 
-    printf("\nFRAME STACK\n");
-    printf("=======================\n");
+    DEBUG_PRINT("\nFRAME STACK\n");
+    DEBUG_PRINT("=======================\n");
     for (int i=frame->sp; i<=frame->bytecode->stack_size-1; i++) {
-        printf("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
+        DEBUG_PRINT("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
-    printf("\n");
+    DEBUG_PRINT("\n");
 }
 #endif

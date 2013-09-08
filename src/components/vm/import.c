@@ -127,7 +127,7 @@ static t_object *search_import_path(t_vm_frame *frame, char *file_path, char *mo
     if (! is_file(file_path)) return NULL;
 
     *import_frame = _execute_import_frame(frame, file_path, class, module_path);
-    printf("IMPORT FRAME: %08lX\n", (unsigned long)*import_frame);
+    DEBUG_PRINT("IMPORT FRAME: %08lX\n", (unsigned long)*import_frame);
     return vm_frame_find_identifier(*import_frame, class);
 }
 
@@ -233,13 +233,13 @@ t_object *vm_import(t_vm_frame *frame, char *module, char *class) {
 
 
 void vm_free_import_cache(void) {
-    printf("\n\n\n\n\nFreeing import cache\n");
+    DEBUG_PRINT("\n\n\n\n\nFreeing import cache\n");
 
     t_hash_iter iter;
     ht_iter_init(&iter, import_cache);
     while (ht_iter_valid(&iter)) {
         t_vm_frame *frame = ht_iter_value(&iter);
-        printf("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context);
+        DEBUG_PRINT("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context);
 
         t_bytecode *bc = frame->bytecode;
 
@@ -247,7 +247,7 @@ void vm_free_import_cache(void) {
 
         if (bc) bytecode_free(bc);
 
-        printf("\n");
+        DEBUG_PRINT("\n");
 
         ht_iter_next(&iter);
     }

@@ -30,6 +30,7 @@
 #include "general/hashtable.h"
 #include "general/smm.h"
 #include "objects/object.h"
+#include "debug.h"
 
 extern t_hashfuncs chained_hf;
 
@@ -398,6 +399,8 @@ void ht_key_free(t_hash_key *hk) {
 }
 
 
+#ifdef __DEBUG
+
 void ht_debug(t_hash_table *ht) {
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
@@ -414,8 +417,10 @@ void ht_debug(t_hash_table *ht) {
             smm_asprintf(&s, "%s{%d}", object_debug(key->val.p), ((t_object *)key->val.p)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);
-        printf("%-40s => %s{%d}\n", s, object_debug(obj), obj->ref_count);
+        DEBUG_PRINT("%-40s => %s{%d}\n", s, object_debug(obj), obj->ref_count);
         smm_free(s);
         ht_iter_next(&iter);
     }
 }
+
+#endif

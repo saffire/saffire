@@ -62,6 +62,8 @@ t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
 extern char *objectOprMethods[];
 extern char *objectCmpMethods[];
 
+t_object *_vm_execute(t_vm_frame *frame);
+
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
  * callable. The arguments are placed onto the frame stack.
@@ -161,8 +163,10 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
     return 1;
 }
 
-
-t_userland_object *vm_create_userland_object(char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+/**
+ * Creates an object that
+ */
+static t_userland_object *_create_userland_object(char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     t_userland_object *user_obj = smm_malloc(sizeof(Object_Userland_struct));
     memcpy(user_obj, &Object_Userland_struct, sizeof(Object_Userland_struct));
 
@@ -187,26 +191,16 @@ t_userland_object *vm_create_userland_object(char *name, int flags, t_dll *inter
     // Set attributes
     user_obj->attributes = attributes;
 
-    // Iterate attributes and set the name of the attribute, plus its binding to the userclass for this attribute
+    // Iterate attributes and duplicate them into the new userobject
     t_hash_iter iter;
-    ht_iter_init(&iter, user_obj->attributes);
+    ht_iter_init(&iter, attributes);
     while (ht_iter_valid(&iter)) {
         char *name = ht_iter_key_str(&iter);
         t_attrib_object *attrib = ht_iter_value(&iter);
 
-        object_inc_ref((t_object *)attrib);
-
-        // Set name and binding of callables
-        if (ATTRIB_IS_METHOD(attrib)) {
-            t_callable_object *callable_obj = (t_callable_object *)attrib->attribute;
-
-            object_bind_callable((t_object *)callable_obj, (t_object *)user_obj, name);
-        }
-
-        attrib->bound_obj = (t_object *)user_obj;
+        attrib->bound_class = (t_object *)user_obj;
         attrib->bound_name = smm_strdup(name);
 
-        DEBUG_PRINT("> Added '%s' as '%s.%s'\n", object_debug((t_object *)attrib), attrib->bound_obj->name, attrib->bound_name);
         ht_iter_next(&iter);
     }
 
@@ -215,33 +209,149 @@ t_userland_object *vm_create_userland_object(char *name, int flags, t_dll *inter
 
 
 /**
+ * Call a callable with arguments
+ */
+static t_object *_object_call_callable_with_args(t_object *self_obj, t_callable_object *callable_obj, t_dll *arg_list) {
+    t_object *ret;
+
+    // Check if the object is actually a callable
+    if (! OBJECT_IS_CALLABLE(callable_obj)) {
+        thread_create_exception((t_exception_object *)Object_CallableException, 1, "Object is not from callable instance");
+        return NULL;
+    }
+
+
+    // @TODO: should internal code not have a frame as well?
+
+    // Call native code
+    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // Internal function call
+        return callable_obj->code.native_func(self_obj, arg_list);
+    }
+
+
+    // External code
+
+
+    // Create context name
+    char context[1250];
+    char args[1000];
+    strcpy(args, "");
+    t_dll_element *e = DLL_HEAD(arg_list);
+    while (e) {
+#ifdef __DEBUG
+        strcat(args, object_debug(e->data));
+#else
+        strcat(args, "an object");
+#endif
+        e = DLL_NEXT(e);
+        if (e) strcat(args, ", ");
+    }
+    snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
+
+    // Create a new execution frame
+    t_vm_frame *cur_frame = thread_get_current_frame();
+    t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
+
+    // Create self inside the new frame
+    t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
+    if (old_self_obj) object_release(old_self_obj);
+    object_inc_ref(self_obj);
+
+    // Replace parent (or remove parent reference if no parent is found)
+    t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "parent"), self_obj ? self_obj->parent : NULL);
+    if (old_parent_obj) object_release(old_parent_obj);
+    object_inc_ref(self_obj->parent);
+
+    // Parse calling arguments to see if they match our signatures
+    if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
+        vm_frame_destroy(new_frame);
+
+        // Exception thrown in the argument parsing
+        return NULL;
+    }
+
+    // Execute frame, return the last object
+    ret = _vm_execute(new_frame);
+
+    // Destroy frame
+    vm_frame_destroy(new_frame);
+
+    if (ret == NULL) {
+        // exception occurred
+    }
+
+    return ret;
+}
+
+/**
+ * Returns a few values:
+ *   - 1 called statically from an instance (could trigger error later on)
+ *   - 1 called statically from a class (ok)
+ *   - 0 called dynamically from an instance (not ok)
+ *   - 1 called statically from a class (not ok)
+ *
+ */
+static int _check_attribute_for_static_call(t_object *self, t_attrib_object *attrib_obj) {
+    if (! OBJECT_TYPE_IS_CLASS(self)) {
+        // instance, so always ok
+        return 1;
+    }
+
+    // class, only ok when method is static
+    return ATTRIB_METHOD_IS_STATIC(attrib_obj) ? 1 : 0;
+}
+
+
+/**
  * Checks visibility, returns 0 when not allowed, 1 when allowed.
+ *
+ * Binding = the object that actually defined the attribute.  (class foo { public property a = 1; })
+ * Instance = the instance from the bounded object. (c = foo();  io.print(c.a);
+ * Attribute = the attribute we are checking
+ *
+ * class foo {
+ *    public property a = 1;
+ * }
+ * bar = foo();
+ * io.print(bar.a);  // binding = foo,  instance = bar,  attribute = a
+ * io.print(foo.a);  // binding = foo,  instance = foo,  attribute = a
  *
  *   1) if attribute == public, we always allow
  *   2) if attribute == protected, we allow from same class or when the class extends this class
  *   3) if attribute == private, we only allow from the same class
  */
-int vm_check_visibility(t_object *binding, t_object *instance, t_object *attrib) {
-    // Not bound, so always ok
-    if (! binding) return 1;
+static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
+//    // Not bound, so always ok
+//    if (! attrib->bound_self) return 1;
 
     // Public attributes are always ok
     if (ATTRIB_IS_PUBLIC(attrib)) return 1;
 
     // Private visiblity is allowed when we are inside the SAME class.
-    if (ATTRIB_IS_PRIVATE(attrib) && binding == instance) return 1;
+    if (ATTRIB_IS_PRIVATE(attrib) && attrib->bound_class == self) return 1;
 
     if (ATTRIB_IS_PROTECTED(attrib)) {
         // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
-        while (binding) {
-            if (binding == instance) return 1;
-            binding = binding->parent;
+        t_object *parent_binding = self->parent;
+        while (parent_binding) {
+            if (parent_binding == attrib->bound_class) return 1;
+            parent_binding = parent_binding->parent;
         }
     }
 
-    // Not
+    // Attribute is not found (@TODO: is this even possible?)
     return 0;
 }
+
+
+/**
+ * Check an attribute and if ok, chck
+ */
+static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *attrib_obj, t_dll *arg_list) {
+    return _object_call_callable_with_args(self, (t_callable_object *)attrib_obj->attribute, arg_list);
+}
+
 
 int debug = 0;
 t_debuginfo *debug_info;
@@ -309,8 +419,10 @@ void vm_fini(t_vm_frame *frame) {
     smm_free(current_thread);
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
-    printf("\n\n\nDecreasing builtins\n");
+    DEBUG_PRINT("\n\n\nDecreasing builtins\n");
+#ifdef __DEBUG
     ht_debug(builtin_identifiers->ht);
+#endif
     object_release((t_object *)builtin_identifiers);
 
     module_fini();
@@ -359,17 +471,18 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
 t_object *_vm_execute(t_vm_frame *frame) {
     t_object *obj1, *obj2, *obj3, *obj4;
     t_object *left_obj, *right_obj;
+    t_attrib_object *attr_obj;
     unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     t_object *dst;
 
 
 #ifdef DEBUG
-    printf(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
+    DEBUG_PRINT(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
     t_vm_frame *tb_frame = frame;
     int tb_history = 0;
     while (tb_frame) {
-        printf(ANSI_BRIGHTBLUE "#%d "
+        DEBUG_PRINT(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
                 ANSI_BRIGHTGREEN "%s.%s "
                 ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
@@ -383,7 +496,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
         tb_frame = tb_frame->parent;
         tb_history++;
     }
-    printf(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
+    DEBUG_PRINT(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
 #endif
 
     // Set the correct current frame
@@ -541,54 +654,33 @@ dispatch:
             case VM_LOAD_ATTRIB :
                 {
                     t_object *name = vm_frame_get_constant(frame, oparg1);
-                    t_object *search_obj = vm_frame_stack_pop(frame);
-                    t_object *bound_obj = vm_frame_find_identifier(frame, "self");
+                    t_object *self_obj = vm_frame_stack_pop(frame);
+                    t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name));
 
-                    // Hardcoded to bind the attribute to the search object!!
-                    bound_obj = search_obj;
-
-                    // DEBUG_PRINT("Fetching %s from %s\n", OBJ2STR(name), search_obj->name);
-                    // DEBUG_PRINT("Binding to: %s\n", bound_obj ? object_debug(bound_obj) : "no binding!");
-
-                    t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", OBJ2STR(name), bound_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", OBJ2STR(name), self_obj->name);
                         goto block_end;
                         break;
                     }
 
-                    if (! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
+                    // Make sure we are not loading a non-static attribute from a static context
+                    if (! _check_attribute_for_static_call(self_obj, attrib_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", attrib_obj->bound_name, self_obj->name);
+                        return NULL;
+                    }
+
+                    // Check visibility of attribute
+                    if (! _check_attrib_visibility(self_obj, attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    t_object *value;
-                    if (ATTRIB_IS_METHOD(attrib_obj)) {
-                        t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
+                    attrib_obj = object_attrib_duplicate(attrib_obj, self_obj);
+                    DEBUG_PRINT("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->bound_name);
 
-                        /* Every callable method is bounded by its calling class (self). We save this info inside the callable
-                         * @TODO: it would make sense to add this self as a stack parameter, but we cannot (this info is not really
-                         * available in the AST.
-                         *
-                         * Therefore, we create new copies of callable-objects and just set a new binding-object. Since everything is
-                         * linked in the callable-class, overhead should be minimal, for now... */
-
-                        t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
-                        memcpy(new_copy, callable_obj, sizeof(t_callable_object));
-                        // Already got the OBJECT_FLAG_ALLOCATED
-
-                        printf("Flags new copy after load_attrib: %d\n", new_copy->flags);
-
-                        object_bind_callable((t_object *)new_copy, bound_obj ? (t_object *)bound_obj : (t_object *)search_obj, OBJ2STR(name));
-
-                        value = (t_object *)new_copy;
-                    } else {
-                        value = ((t_attrib_object *)attrib_obj)->attribute;
-                    }
-
-                    vm_frame_stack_push(frame, (t_object *)value);
+                    vm_frame_stack_push(frame, (t_object *)attrib_obj);
                 }
                 goto dispatch;
                 break;
@@ -596,18 +688,19 @@ dispatch:
             // Store an attribute into an object
             case VM_STORE_ATTRIB :
                 {
+                    // @TODO: Store_attrib is not yet really ok
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     t_object *search_obj = vm_frame_stack_pop(frame);
-                    t_object *bound_obj = vm_frame_find_identifier(frame, "self");
+                    //t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
-                    t_object *attrib_obj = object_find_actual_attribute(search_obj, OBJ2STR(name));
+                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, OBJ2STR(name));
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
 
                     }
-                    if (attrib_obj && ! vm_check_visibility(bound_obj, search_obj, attrib_obj)) {
+                    if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -663,7 +756,7 @@ dispatch:
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
                 name = vm_frame_get_name(frame, oparg1);
-                dst = vm_frame_get_identifier(frame, name);
+                dst = vm_frame_find_identifier(frame, name);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
                     if (dst == NULL) {
@@ -709,7 +802,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_object *bool_method = object_find_attribute(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -725,7 +818,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_object *bool_method = object_find_attribute(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -739,7 +832,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_object *bool_method = object_find_attribute(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -757,7 +850,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_object *bool_method = object_find_attribute(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -786,17 +879,32 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Calls a callable from SP-0 with OP+0 args starting from SP-1.
+            // Calls an callable attribute from SP-0 with OP+0 args starting from SP-1
             case VM_CALL :
                 {
                     // Fetch methods to call
-                    t_object *obj = (t_object *)vm_frame_stack_pop(frame);
-                    t_object *self_obj = NULL;
+                    obj1 = vm_frame_stack_pop(frame);
+                    t_object *self = ((t_attrib_object *)obj1)->bound_self;
 
-                    // If we're not a class we're calling, we must set the self_obj to the binding
-                    if (! OBJECT_TYPE_IS_CLASS(obj)) {
-                        self_obj = ((t_callable_object *)obj)->binding;
+                    if (
+                         ! (OBJECT_IS_ATTRIBUTE(obj1) && ATTRIB_IS_METHOD(obj1)) &&
+                         ! (OBJECT_TYPE_IS_CLASS(obj1))
+                       ) {
+                        reason = REASON_EXCEPTION;
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is class or callable", OBJ2STR(obj1));
+                        goto block_end;
+                        break;
                     }
+
+                    if (OBJECT_TYPE_IS_CLASS(obj1)) {
+                        // Do actual instantiation (pass nothing)
+                        t_attrib_object *new_method = object_attrib_find(obj1, "__new");
+                        self = vm_object_call(obj1, new_method, 0);
+
+                        // We continue the function, but using the constructor as our attribute
+                        obj1 = (t_object *)object_attrib_find(self, "__ctor");
+                    }
+
 
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
@@ -822,7 +930,8 @@ dispatch:
                         }
                     }
 
-                    t_object *ret_obj = vm_object_call_args(self_obj, obj, arg_list);
+                    t_object *ret_obj = _object_call_attrib_with_args(self, (t_attrib_object *)obj1, arg_list);
+
                     // @TODO: decref our arguments here
                     dll_free(arg_list);
 
@@ -931,7 +1040,7 @@ dispatch:
 
                     // Try an implicit cast if possible
                     DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
-                    t_object *cast_method = object_find_attribute(right_obj, left_obj->name);
+                    t_attrib_object *cast_method = object_attrib_find(right_obj, left_obj->name);
                     if (! cast_method) {
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
@@ -967,9 +1076,12 @@ dispatch:
                     // pop value object
                     t_object *value_obj = vm_frame_stack_pop(frame);
 
+                    int method_flags = 0;
+
                     if (oparg1 == ATTRIB_TYPE_METHOD) {
                         // Pop method flags (not used yet)
-                        vm_frame_stack_pop(frame);
+                        t_object *method_flag_obj = vm_frame_stack_pop(frame);
+                        method_flags = OBJ2NUM(method_flag_obj);
 
                         // Generate hash object from arguments
                         t_hash_table *arg_list = ht_create();
@@ -997,7 +1109,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_alloc(Object_Attrib, 4, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj);
+                    dst = object_alloc(Object_Attrib, 5, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
 
                     // Push method object
                     vm_frame_stack_push(frame, dst);
@@ -1063,7 +1175,7 @@ dispatch:
                         object_inc_ref(parent_class);
                     } else {
                         // Find the object of this string
-                        parent_class = vm_frame_get_identifier(frame, OBJ2STR(parent_class));
+                        parent_class = vm_frame_find_identifier(frame, OBJ2STR(parent_class));
                     }
 
 
@@ -1083,7 +1195,7 @@ dispatch:
                     }
 
                     // Actually create the object
-                    t_userland_object *new_obj = vm_create_userland_object(name, flags, interfaces, parent_class, attributes);
+                    t_userland_object *new_obj = _create_userland_object(name, flags, interfaces, parent_class, attributes);
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
@@ -1225,13 +1337,13 @@ dispatch:
                     }
 
                     // Fetch the actual iterator and push it to the stack
-                    obj2 = object_find_attribute(obj1, "__iterator");
-                    obj3 = vm_object_call(obj1, obj2, 0);
+                    attr_obj = object_attrib_find(obj1, "__iterator");
+                    obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     // Call rewind
-                    obj2 = object_find_attribute(obj3, "__rewind");
-                    vm_object_call(obj3, obj2, 0);
+                    attr_obj = object_attrib_find(obj3, "__rewind");
+                    vm_object_call(obj3, attr_obj, 0);
 
                 }
                 goto dispatch;
@@ -1247,25 +1359,25 @@ dispatch:
                         vm_frame_stack_push(frame, Object_Null);
                     }
                     // Always push value
-                    obj2 = object_find_attribute(obj1, "__value");
-                    obj3 = vm_object_call(obj1, obj2, 0);
+                    attr_obj = object_attrib_find(obj1, "__value");
+                    obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     if (oparg1 >= 2) {
                         // Push value of key
-                        obj2 = object_find_attribute(obj1, "__key");
-                        obj3 = vm_object_call(obj1, obj2, 0);
+                        attr_obj = object_attrib_find(obj1, "__key");
+                        obj3 = vm_object_call(obj1, attr_obj, 0);
                         vm_frame_stack_push(frame, obj3);
                     }
 
                     // Push value of hasNext
-                    obj2 = object_find_attribute(obj1, "__hasNext");
-                    obj3 = vm_object_call(obj1, obj2, 0);
+                    attr_obj = object_attrib_find(obj1, "__hasNext");
+                    obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     if (IS_BOOLEAN_TRUE(obj3)) {
-                        obj2 = object_find_attribute(obj1, "__next");
-                        obj3 = vm_object_call(obj1, obj2, 0);
+                        attr_obj = object_attrib_find(obj1, "__next");
+                        obj3 = vm_object_call(obj1, attr_obj, 0);
                     }
                 }
                 goto dispatch;
@@ -1315,8 +1427,8 @@ dispatch:
                     obj1 = vm_frame_stack_pop(frame);       // datastructure
                     obj2 = vm_frame_stack_pop(frame);       // key
 
-                    obj3 = object_find_attribute(obj1, "__get");
-                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    attr_obj = object_attrib_find(obj1, "__get");
+                    t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
                     vm_frame_stack_push(frame, ret_obj);
                 }
                 goto dispatch;
@@ -1329,8 +1441,8 @@ dispatch:
                     obj2 = vm_frame_stack_pop(frame);       // key
 
                     //
-                    obj3 = object_find_attribute(obj1, "__set");
-                    t_object *ret_obj = vm_object_call(obj1, obj3, 1, obj2);
+                    attr_obj = object_attrib_find(obj1, "__set");
+                    t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
                     vm_frame_stack_push(frame, ret_obj);
                 }
                 goto dispatch;
@@ -1476,7 +1588,6 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 
         // Unwind the variable stack. This will remove all variables used in the current (unwound) block.
         while (frame->sp < block->sp) {
-            //DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
             vm_frame_stack_pop(frame);
         }
 
@@ -1497,8 +1608,6 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
         // Case 6: Breakelse inside a loop-block
         if (*reason == REASON_BREAKELSE && block->type == BLOCK_TYPE_LOOP) {
             // Jump to our else-clause
-//            DEBUG_PRINT("CASE 6\n");
-//            DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip_else);
             frame->ip = block->handlers.loop.ip_else;
             *reason = REASON_NONE;
             break;
@@ -1507,8 +1616,6 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
         // Case 7: Break inside a loop-block
         if (*reason == REASON_BREAK && block->type == BLOCK_TYPE_LOOP) {
             // Simply jump to the end of the loop-block
-//            DEBUG_PRINT("CASE 6\n");
-//            DEBUG_PRINT("\nBreaking loop to %08X\n\n", block->handlers.loop.ip);
             frame->ip = block->handlers.loop.ip;
             *reason = REASON_NONE;
             break;
@@ -1535,7 +1642,7 @@ int vm_execute(t_vm_frame *frame) {
 
     DEBUG_PRINT("\n\n\n\n============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
 #ifdef __DEBUG
-    printf("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
+    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -1546,8 +1653,12 @@ int vm_execute(t_vm_frame *frame) {
     if (result == NULL) {
         if (thread_exception_thrown()) {
             // handle exceptions
-            object_internal_call("saffire", "uncaughtExceptionHandler", 1, thread_get_exception());
-            result = object_alloc(Object_Numerical, 1, 1);
+            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
+            t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
+            result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
+            if (result == NULL) {
+                result = object_alloc(Object_Numerical, 1, 0);
+            }
         } else {
             // result was NULL, but no exception found, just threat like regular 0
             result = object_alloc(Object_Numerical, 1, 0);
@@ -1559,7 +1670,7 @@ int vm_execute(t_vm_frame *frame) {
         ret_val = ((t_numerical_object *) result)->value;
     } else {
         // Convert returned object to numerical, so we can use it as an error code
-        t_object *result_numerical = object_find_attribute(result, "__numerical");
+        t_attrib_object *result_numerical = object_attrib_find(result, "__numerical");
         if (result_numerical) {
             result = vm_object_call(result, result_numerical, 0);
             ret_val = ((t_numerical_object *) result)->value;
@@ -1574,44 +1685,53 @@ int vm_execute(t_vm_frame *frame) {
 }
 
 
-t_object *object_internal_call(const char *class, const char *method, int arg_count, ...) {
-    // @TODO: This code is pretty much duplicated from LOAD_ATTR.
 
-    // Find attribute from class
-    t_object *class_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
-    t_object *attrib_obj = object_find_actual_attribute(class_obj, (char *)method);
 
-    // Check visibility
-    if (! vm_check_visibility(class_obj, class_obj, attrib_obj)) {
-        object_raise_exception(Object_VisibilityException, 1, "visibility error!");
-        return NULL;
-    }
-
-    // Duplicate and bind class to attribute
-    t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
-    t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
-    memcpy(new_copy, callable_obj, sizeof(t_callable_object));
-    object_bind_callable((t_object *)new_copy, (t_object *)class_obj, callable_obj->name);
-
-    new_copy->ref_count = 1;
-
-    //  Create arguments DLL
-    va_list args;
-    va_start(args, arg_count);
-    t_dll *arg_list = dll_init();
-    for (int i=0; i!=arg_count; i++) {
-        t_object *obj = va_arg(args, t_object *);
-        object_inc_ref(obj);
-        dll_append(arg_list, obj);
-    }
-    va_end(args);
-
-    // Call method
-    t_object *ret = vm_object_call_args(class_obj, (t_object *)new_copy, arg_list);
-
-    dll_free(arg_list);
-    return ret;
-}
+//static t_object *_internal_call(const char *class, const char *method, int arg_count, ...) {
+//    t_object *bound_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
+//    if (! bound_obj) {
+//        object_raise_exception(Object_CallException, 1, "Cannot find identifier '%s'", class);
+//        return NULL;
+//    }
+//
+//    t_object *attrib_obj = _fetch_attrib(bound_obj, method);
+//
+////
+////    // Find attribute from class
+////    t_object *class_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
+////    t_object *attrib_obj = object_find_actual_attribute(class_obj, (char *)method);
+////
+////    // Check visibility:  @TODO: why are "bound" and "instance" both class_obj???
+////    if (! _check_attrib_visibility(attrib_obj)) {
+////        object_raise_exception(Object_VisibilityException, 1, "visibility error!");
+////        return NULL;
+////    }
+////
+////    // Duplicate and bind class to attribute
+////    t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
+////    t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
+////    memcpy(new_copy, callable_obj, sizeof(t_callable_object));
+////    object_bind_callable((t_object *)new_copy, (t_object *)class_obj, callable_obj->name);
+////
+////    new_copy->ref_count = 1;
+//
+//    //  Create arguments DLL
+//    va_list args;
+//    va_start(args, arg_count);
+//    t_dll *arg_list = dll_init();
+//    for (int i=0; i!=arg_count; i++) {
+//        t_object *obj = va_arg(args, t_object *);
+//        object_inc_ref(obj);
+//        dll_append(arg_list, obj);
+//    }
+//    va_end(args);
+//
+//    // Call method
+//    t_object *ret = _object_call_attrib_with_args(attrib_obj, arg_list);
+//
+//    dll_free(arg_list);
+//    return ret;
+//}
 
 
 /**
@@ -1626,7 +1746,7 @@ void vm_populate_builtins(const char *name, t_object *obj) {
 /**
 * Calls a method from specified object. Returns NULL when method is not found.
 */
-t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...) {
+t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...) {
     // Create DLL with all arguments
     va_list args;
     va_start(args, arg_count);
@@ -1637,109 +1757,12 @@ t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ..
     }
     va_end(args);
 
-    t_object *ret_obj = vm_object_call_args(self, (t_object *)method_obj, arg_list);
+    t_object *ret_obj = _object_call_attrib_with_args(self, attrib_obj, arg_list);
 
     // Free dll
     dll_free(arg_list);
 
     return ret_obj;
-}
-
-
-/**
- *
- */
-t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list) {
-    t_callable_object *callable_obj = (t_callable_object *)callable;
-    t_object *self_obj = self;
-    t_object *dst;
-    t_attrib_object *attrib_obj;
-
-    // If the object is a class, we can call it, ie instantiate it
-    if (OBJECT_TYPE_IS_CLASS(callable_obj)) {
-        // Do actual instantiation (pass nothing)
-        t_object *new_obj = object_find_attribute((t_object *)callable_obj, "__new");
-        self_obj = vm_object_call((t_object *)callable_obj, new_obj, 0);
-
-        // We continue the function, but using the constructor as our callable
-        attrib_obj = (t_attrib_object *)object_find_actual_attribute(self_obj, "__ctor");
-        attrib_obj->bound_obj = self_obj;
-        attrib_obj->bound_name = smm_strdup("__ctor");
-
-        callable_obj = (t_callable_object *)object_find_attribute(self_obj, "__ctor");
-        object_bind_callable((t_object *)callable_obj, (t_object *)attrib_obj, "__ctor");
-    }
-
-    // Check if the object is actually a callable
-    if (! OBJECT_IS_CALLABLE(callable_obj)) {
-        thread_create_exception((t_exception_object *)Object_CallableException, 1, "Object is not from callable instance");
-        return NULL;
-    }
-
-
-    // Check if we can call the method
-    if (ATTRIB_IS_METHOD(callable_obj->binding)) {
-        // Check if we are bounded to a class or instantiation
-        if (!self_obj) {
-            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Callable '%s' is not bound to any class or instantiation\n", callable_obj->name);
-            return NULL;
-        }
-
-        // Make sure we are not calling a non-static method from a static context
-        if (OBJECT_TYPE_IS_CLASS(self_obj) && ! ATTRIB_METHOD_IS_STATIC(callable_obj->binding)) {
-            thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", callable_obj->name, self_obj->name);
-            return NULL;
-        }
-    }
-
-    // Check if it's a native function.
-    if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
-        // Internal function call
-        dst = callable_obj->code.native_func(self_obj, arg_list);
-    } else {
-        char context[1250];
-        char args[1000];
-        strcpy(args, "");
-        t_dll_element *e = DLL_HEAD(arg_list);
-        while (e) {
-            strcat(args, object_debug(e->data));
-            e = DLL_NEXT(e);
-            if (e) strcat(args, ", ");
-        }
-        snprintf(context, 1249, "%s.%s([%ld args: %s])", self ? self->name : "null", callable_obj->name, arg_list->size, args);
-
-        // Create a new execution frame
-        t_vm_frame *cur_frame = thread_get_current_frame();
-        t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
-
-        // Add references to parent and self
-        t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
-        if (old_self_obj) object_release(old_self_obj);
-        object_inc_ref(self_obj);
-        t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "parent"), self_obj->parent);
-        if (old_parent_obj) object_release(old_parent_obj);
-        object_inc_ref(self_obj->parent);
-
-        // Parse calling arguments to see if they match our signatures
-        if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
-            vm_frame_destroy(new_frame);
-
-            // Exception thrown in the argument parsing
-            return NULL;
-        }
-
-        // Execute frame, return the last object
-        dst = _vm_execute(new_frame);
-
-        // Destroy frame
-        vm_frame_destroy(new_frame);
-    }
-
-    if (dst == NULL) {
-        // exception occurred
-    }
-
-    return dst;
 }
 
 
@@ -1751,7 +1774,7 @@ t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_lis
 t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
     char *opr_method = objectOprMethods[opr];
 
-    t_object *found_obj = (t_object *)object_find_attribute(obj1, opr_method);
+    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method);
     if (! found_obj) {
         thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
         return NULL;
@@ -1769,7 +1792,7 @@ t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
 t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     char *cmp_method = objectCmpMethods[cmp];
 
-    t_object *found_obj = (t_object *)object_find_attribute(obj1, cmp_method);
+    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method);
     if (! found_obj) {
         thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
         return NULL;
@@ -1783,12 +1806,9 @@ t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     // Implicit conversion to boolean if needed
     if (! OBJECT_IS_BOOLEAN(ret)) {
-        t_object *bool_method = object_find_attribute(ret, "__boolean");
+        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean");
         ret = vm_object_call(ret, bool_method, 0);
     }
 
     return ret;
 }
-
-
-

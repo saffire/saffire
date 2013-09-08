@@ -452,17 +452,15 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 }
 
 static void obj_free(t_object *obj) {
-   t_string_object *str_obj = (t_string_object *)obj;
-   if (! str_obj->value) return;
+    t_string_object *str_obj = (t_string_object *)obj;
+    if (! str_obj->value) return;
 
     char strhash[33];
     hash_string_text(str_obj->value, strhash);
 
-    printf("Removing '%s' (%s) from string_cache\n", str_obj->value, strhash);
-//    ht_debug(string_cache);
     ht_remove_str(string_cache, strhash);
 
-   smm_free(str_obj->value);
+    smm_free(str_obj->value);
 }
 
 

@@ -516,7 +516,7 @@ qualified_name:
 
 qualified_name_first_part:
         T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "::"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
 ;
 
 

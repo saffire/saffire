@@ -81,15 +81,27 @@ SAFFIRE_METHOD(callable, internal) {
 }
 
 ///**
-// * Rebinds the callable to another object
-// */
+//* Rebinds the callable to an object
+//*/
 //SAFFIRE_METHOD(callable, bind) {
-//    // @TODO: use object_parse_parameters
+//    t_object *newbound_obj;
 //
-//    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-//    t_object *newbound_obj = (t_object *)e->data;
-//    self->binding = newbound_obj;     // Use: object_bind_callable()
+//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "u",  &newbound_obj)) {
+//        return NULL;
+//    }
 //
+//    object_release(self->attribute);
+//    self->attribute = newbound_obj;
+//    object_inc_ref(newbound_obj);
+//    RETURN_SELF;
+//}
+//
+///**
+//* Unbinds the callable from an object
+//*/
+//SAFFIRE_METHOD(callable, unbind) {
+//    object_release(self->attribute);
+//    self->attribute =  NULL;
 //    RETURN_SELF;
 //}
 
@@ -138,8 +150,9 @@ void object_callable_init(void) {
     object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
     object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
-//    object_add_internal_method((t_object *)&Object_Callable_struct, "__bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+//    object_add_internal_method((t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+//    object_add_internal_method((t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
 }
 
 /**
@@ -166,20 +179,28 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
+/**
+ * Note that when we create a callable, we do not connect this to any attribute. This is done when we build attributes.
+ * Thus, it IS possible that a callable is used with a NULL attribute.
+ */
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
 
+    // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
     callable_obj->routing = (int)e->data;
     e = DLL_NEXT(e);
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // internal code is just a pointer to the code
         callable_obj->code.native_func = (void *)e->data;
     } else {
+        // external code is a bytecode structure
         callable_obj->code.bytecode = (t_bytecode *)e->data;
     }
     e = DLL_NEXT(e);
 
+    // Add arguments for the callable
     callable_obj->arguments = (t_hash_table *)e->data;
     e = DLL_NEXT(e);
 }
@@ -219,7 +240,10 @@ static void obj_free(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "%s callable", (self->routing & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL ? "internal" : (self->routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL ? "external" : "unknown");
+    sprintf(global_buf, "%s callable(%d parameters)",
+        CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
+        self->arguments ? self->arguments->element_count : 0
+    );
 
     return global_buf;
 }

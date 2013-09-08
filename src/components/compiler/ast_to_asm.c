@@ -816,16 +816,15 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 case T_CALL :
                     stack_push(state->context, st_ctx_load);
-
                     stack_push(state->call_state, (void *)st_call_stay);
                     WALK_LEAF(leaf->opr.ops[1]);       // Do argument list (including last item being NullObject or ListObject varargs)
                     stack_pop(state->call_state);
-
                     stack_pop(state->context);
 
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);       // Load callable
                     stack_pop(state->context);
+
 
                     // Push number of arguments
                     int arg_count = leaf->opr.ops[1]->group.len;

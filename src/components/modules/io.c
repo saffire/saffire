@@ -46,7 +46,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            t_object *string_method = object_find_attribute(obj, "__string");
+            t_attrib_object *string_method = object_attrib_find(obj, "__string");
             obj = vm_object_call(obj, string_method, 0);
         }
 
@@ -67,7 +67,7 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     obj = (t_object *)e->data;
     if (! OBJECT_IS_STRING(obj)) {
-        t_object *string_method = object_find_attribute(obj, "__string");
+        t_attrib_object *string_method = object_attrib_find(obj, "__string");
         obj = vm_object_call(obj, string_method, 0);
     }
 

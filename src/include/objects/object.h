@@ -203,9 +203,6 @@
     void object_init(void);
     void object_fini(void);
 
-    t_object *object_find_actual_attribute(t_object *obj, char *attr_name);
-    t_object *object_find_attribute(t_object *obj, char *attribute_name);
-
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
     t_object *object_new(t_object *obj, int arg_count, ...);
@@ -230,6 +227,6 @@
 
     void object_raise_exception(t_object *exception, int code, char *format, ...);
 
-    void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name);
+    //void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name);
 
 #endif

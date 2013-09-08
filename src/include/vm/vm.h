@@ -31,6 +31,7 @@
     #include "objects/hash.h"
     #include "vm/frame.h"
     #include "compiler/saffire_parser.h"
+    #include "objects/attrib.h"
 
     t_hash_table *builtin_identifiers_ht;
     t_hash_object *builtin_identifiers;
@@ -48,11 +49,15 @@
     void vm_fini(t_vm_frame *frame);
     int vm_execute(t_vm_frame *frame);
     void vm_populate_builtins(const char *name, t_object *obj);
-    t_object *vm_object_call_args(t_object *self, t_object *callable, t_dll *arg_list);
-    t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+
+//    t_object *_object_call_attrib_with_args(t_object *self, t_object *callable, t_dll *arg_list);
+    //t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
+    t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
+
     t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);
     t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2);
-    t_object *object_internal_call(const char *class, const char *method, int arg_count, ...);
+
+//    t_object *object_internal_call(const char *class, const char *method, int arg_count, ...);
 
 #endif
 

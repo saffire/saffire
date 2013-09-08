@@ -121,6 +121,9 @@
     void *ht_remove_num(t_hash_table *ht, unsigned long key);
     void *ht_remove_obj(t_hash_table *ht, t_object *key);
 
+#ifdef __DEBUG
+    void ht_debug(t_hash_table *ht);
+#endif
 
 
     // Functionality for iterating a hash table (forward only)

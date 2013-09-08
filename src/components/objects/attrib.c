@@ -32,7 +32,10 @@
 #include "general/smm.h"
 #include "general/md5.h"
 #include "debug.h"
+#include "general/dll.h"
 
+
+extern t_dll *dupped_attributes;
 
 /**
  * Additional values:
@@ -44,6 +47,63 @@
  *      attribute.access                // readonly, readwrite
  *      attribute.attribute             // Actual attribute
  */
+
+/* ======================================================================
+ *   Global functions
+ * ======================================================================
+ */
+
+/**
+ * Duplicate the attribute object and link it to the bound-obj
+ */
+t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self) {
+    t_attrib_object *dup = smm_malloc(sizeof(Object_Attrib_struct));
+    memcpy(dup, attrib, sizeof(Object_Attrib_struct));
+
+    dup->ref_count = 0;     // no references yet
+
+    // Append to duplicated attributes
+    object_inc_ref((t_object *)dup);    // increase reference count, so it's protected in this dll
+    dll_append(dupped_attributes, dup);
+    if (dupped_attributes->size > 100) {
+        t_object *old_dup = (t_object *)(DLL_HEAD(dupped_attributes))->data;
+        object_release(old_dup);
+    }
+
+    object_inc_ref(self);
+    dup->bound_self = self;
+
+    return dup;
+}
+
+/**
+ * find attribute inside a object. return either NULL or the actual attribute
+ */
+t_attrib_object *object_attrib_find(t_object *self, char *name) {
+    t_attrib_object *attr = NULL;
+    t_object *cur_obj = self;
+
+    while (attr == NULL) {
+        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
+
+        // Find the attribute in the current object
+        attr = ht_find_str(cur_obj->attributes, name);
+        if (attr != NULL) break;
+
+        // Not found and there is no parent, we're done!
+        if (cur_obj->parent == NULL) {
+            DEBUG_PRINT(">>> Cannot find attribute '%s' in object %s:\n", name, self->name);
+            return NULL;
+        }
+
+        // Try again in the parent object
+        cur_obj = cur_obj->parent;
+    }
+
+    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
+
+    return attr;
+}
 
 /* ======================================================================
  *   Supporting functions
@@ -108,6 +168,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     e = DLL_NEXT(e);
     attrib_obj->attribute = (t_object *)e->data;
 
+    e = DLL_NEXT(e);
+    attrib_obj->attr_method_flags  = (long)e->data;
+
+
     // We "own" this attribute object. increase refcount
     object_inc_ref(attrib_obj->attribute);
 }
@@ -115,7 +179,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 static void obj_free(t_object *obj) {
     t_attrib_object *attr_obj = (t_attrib_object *)obj;
 
-    printf("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
+    DEBUG_PRINT("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
 
     // "free" the attribute object. decrease refcount
     object_release(attr_obj->attribute);
