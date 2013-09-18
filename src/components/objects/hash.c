@@ -404,8 +404,8 @@ static void obj_free(t_object *obj) {
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
-        DEBUG_PRINT("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
+//        DEBUG_PRINT("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
+//        DEBUG_PRINT("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
         object_release(key);
         object_release(val);
         ht_iter_next(&iter);

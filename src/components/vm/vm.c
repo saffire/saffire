@@ -33,6 +33,7 @@
 #include "vm/block.h"
 #include "vm/frame.h"
 #include "vm/thread.h"
+#include "vm/import.h"
 #include "general/dll.h"
 #include "general/smm.h"
 #include "objects/object.h"
@@ -44,7 +45,7 @@
 #include "gc/gc.h"
 #include "debugger/dbgp/dbgp.h"
 
-t_hash_table *import_cache;                // Cache for all imported frames
+t_hash_table *frame_import_cache;                // Cache for all imported frames
 
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
@@ -251,7 +252,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_callable_
 
     // Create a new execution frame
     t_vm_frame *cur_frame = thread_get_current_frame();
-    t_vm_frame *new_frame = vm_frame_new(cur_frame, context, callable_obj->code.bytecode);
+    t_vm_frame *new_frame = vm_frame_new(cur_frame, cur_frame->context->path, cur_frame->context->namespace, callable_obj->code.bytecode);
 
     // Create self inside the new frame
     t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
@@ -359,7 +360,7 @@ t_debuginfo *debug_info;
 /**
  *
  */
-t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
+void vm_init(SaffireParser *sp, int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
@@ -378,41 +379,30 @@ t_vm_frame *vm_init(SaffireParser *sp, int runmode) {
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
 
-    import_cache = ht_create();
-
-    // Create initial frame
-    t_vm_frame *initial_frame = vm_frame_new((t_vm_frame *) NULL, "", NULL);
-
-    thread_set_current_frame(initial_frame);
+    frame_import_cache = ht_create();
 
     // Initialize debugging if neededht
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
-        debug_info = dbgp_init(initial_frame);
+        debug_info = dbgp_init();
     }
 
-
-    // Implicit load the Saffire module
+    // Implicit load the saffire module, without any debugging
     vm_runmode &= ~VM_RUNMODE_DEBUG;
-    t_object *obj = vm_import(initial_frame, "saffire", "saffire");
-    if (!obj) {
+
+    t_object *saffire_module_obj = vm_import(NULL, "::saffire", "saffire");
+    if (!saffire_module_obj) {
         fatal_error(1, "Cannot find the mandatory saffire module.");
     }
-    //object_inc_ref(obj);
-    //vm_frame_set_builtin_identifier(initial_frame, "saffire", obj);
-    vm_frame_set_global_identifier(initial_frame, "saffire", obj);
+    vm_populate_builtins("saffire", saffire_module_obj);
+
     vm_runmode = runmode;
-
-
-    return initial_frame;
 }
 
-void vm_fini(t_vm_frame *frame) {
+void vm_fini(void) {
     // Initialize debugging if needed
     if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
-        dbgp_fini(debug_info, frame);
+        dbgp_fini(debug_info);
     }
-
-    vm_frame_destroy(frame);
 
     vm_free_import_cache();
 
@@ -475,7 +465,6 @@ t_object *_vm_execute(t_vm_frame *frame) {
     unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     t_object *dst;
-
 
 #ifdef DEBUG
     DEBUG_PRINT(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
@@ -667,7 +656,8 @@ dispatch:
                     // Make sure we are not loading a non-static attribute from a static context
                     if (! _check_attribute_for_static_call(self_obj, attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", attrib_obj->bound_name, self_obj->name);
-                        return NULL;
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
                     }
 
                     // Check visibility of attribute
@@ -759,11 +749,7 @@ dispatch:
                 dst = vm_frame_find_identifier(frame, name);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    if (dst == NULL) {
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", name, dst);
-                    } else {
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", name, dst->name);
-                    }
+                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", name, dst);
                     goto block_end;
                     break;
                 }
@@ -1114,7 +1100,7 @@ dispatch:
                     // Push method object
                     vm_frame_stack_push(frame, dst);
 
-                    vm_frame_add_created_object(frame, (t_object *)dst);
+                    vm_frame_register_userobject(frame, (t_object *)dst);
                 }
                 goto dispatch;
                 break;
@@ -1160,7 +1146,7 @@ dispatch:
                             dll_free(interfaces);
 
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Object '%s' is not an interface", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "'%s' is not an interface", OBJ2STR(interface_name_obj));
                             goto block_end;
                         }
 
@@ -1176,6 +1162,13 @@ dispatch:
                     } else {
                         // Find the object of this string
                         parent_class = vm_frame_find_identifier(frame, OBJ2STR(parent_class));
+                        if (parent_class == NULL) {
+                            reason = REASON_EXCEPTION;
+                            thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", name, parent_class);
+                            goto block_end;
+                            break;
+                        }
+
                     }
 
 
@@ -1206,7 +1199,7 @@ dispatch:
                     // All done
                     vm_frame_stack_push(frame, (t_object *)new_obj);
 
-                    vm_frame_add_created_object(frame, (t_object *)new_obj);
+                    vm_frame_register_userobject(frame, (t_object *)new_obj);
                 }
 
                 goto dispatch;
@@ -1448,7 +1441,6 @@ dispatch:
                 goto dispatch;
                 break;
 
-
         } // switch(opcode) {
 
 
@@ -1635,14 +1627,17 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 int vm_execute(t_vm_frame *frame) {
     int ret_val = 0;
 
+    // We assume this is the main frame.
+    thread_set_current_frame(frame);
+
     // Setup bytecode into the frame (or not?)
 
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT("\n\n\n\n============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context : "none");
+    DEBUG_PRINT("\n\n\n\n============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context->namespace : "none");
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
+    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context->namespace, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -1654,8 +1649,11 @@ int vm_execute(t_vm_frame *frame) {
         if (thread_exception_thrown()) {
             // handle exceptions
             t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
-            t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
-            result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
+            if (saffire_obj) {
+                t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
+                // We assume that finding our exception handler always work
+                result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
+            }
             if (result == NULL) {
                 result = object_alloc(Object_Numerical, 1, 0);
             }
@@ -1683,55 +1681,6 @@ int vm_execute(t_vm_frame *frame) {
 //    vm_frame_destroy(frame);
     return ret_val;
 }
-
-
-
-
-//static t_object *_internal_call(const char *class, const char *method, int arg_count, ...) {
-//    t_object *bound_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
-//    if (! bound_obj) {
-//        object_raise_exception(Object_CallException, 1, "Cannot find identifier '%s'", class);
-//        return NULL;
-//    }
-//
-//    t_object *attrib_obj = _fetch_attrib(bound_obj, method);
-//
-////
-////    // Find attribute from class
-////    t_object *class_obj = vm_frame_find_identifier(thread_get_current_frame(), (char *)class);
-////    t_object *attrib_obj = object_find_actual_attribute(class_obj, (char *)method);
-////
-////    // Check visibility:  @TODO: why are "bound" and "instance" both class_obj???
-////    if (! _check_attrib_visibility(attrib_obj)) {
-////        object_raise_exception(Object_VisibilityException, 1, "visibility error!");
-////        return NULL;
-////    }
-////
-////    // Duplicate and bind class to attribute
-////    t_callable_object *callable_obj = (t_callable_object *)((t_attrib_object *)attrib_obj)->attribute;
-////    t_callable_object *new_copy = (t_callable_object *)smm_malloc(sizeof(t_callable_object));
-////    memcpy(new_copy, callable_obj, sizeof(t_callable_object));
-////    object_bind_callable((t_object *)new_copy, (t_object *)class_obj, callable_obj->name);
-////
-////    new_copy->ref_count = 1;
-//
-//    //  Create arguments DLL
-//    va_list args;
-//    va_start(args, arg_count);
-//    t_dll *arg_list = dll_init();
-//    for (int i=0; i!=arg_count; i++) {
-//        t_object *obj = va_arg(args, t_object *);
-//        object_inc_ref(obj);
-//        dll_append(arg_list, obj);
-//    }
-//    va_end(args);
-//
-//    // Call method
-//    t_object *ret = _object_call_attrib_with_args(attrib_obj, arg_list);
-//
-//    dll_free(arg_list);
-//    return ret;
-//}
 
 
 /**

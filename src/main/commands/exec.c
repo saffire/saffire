@@ -84,14 +84,15 @@ static int do_exec(void) {
     // Create initial frame and attach our bytecode to it
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
-    t_vm_frame *initial_frame = vm_init(NULL, runmode);
-    vm_attach_bytecode(initial_frame, "(main)", bc);
+    vm_init(NULL, runmode);
+    t_vm_frame *initial_frame = vm_frame_new(NULL, bytecode_file, "", bc);
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
 
     vm_detach_bytecode(initial_frame);
-    vm_fini(initial_frame);
+    vm_frame_destroy(initial_frame);
+    vm_fini();
     bytecode_free(bc);
 
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);

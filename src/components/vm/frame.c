@@ -27,7 +27,9 @@
 #include <string.h>
 #include "vm/vm.h"
 #include "vm/frame.h"
+#include "vm/thread.h"
 #include "vm/context.h"
+#include "vm/import.h"
 #include "compiler/bytecode.h"
 #include "vm/vm_opcodes.h"
 #include "general/smm.h"
@@ -40,6 +42,24 @@
 #include "debug.h"
 #include "general/output.h"
 
+
+char *vm_frame_absolute_namespace(t_vm_frame *frame, char *namespace) {
+    char *abs_namespace = NULL;
+
+    // It's already absolute
+    if (strstr(namespace, "::") == namespace) {
+        return smm_strdup(namespace);
+    }
+
+    // no context for this frame, just make it absolute
+    if (! frame || ! frame->context || ! frame->context->namespace) {
+        smm_asprintf(&abs_namespace, "%s::%s", "", namespace);
+        return abs_namespace;
+    }
+
+    smm_asprintf(&abs_namespace, "%s::%s", frame->context->namespace, namespace);
+    return abs_namespace;
+}
 
 /**
  * Returns the next opcode
@@ -206,16 +226,6 @@ void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj)
 }
 
 
-///**
-// * Return object from either the local or the global identifier table
-// */
-//t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id) {
-//    DEBUG_PRINT("vm_frame_get_identifier(%s)\n", id);
-//    t_object *obj = vm_frame_find_identifier(frame, id);
-//    return obj;
-//}
-
-
 #ifdef __DEBUG
 void print_debug_table(t_hash_table *ht, char *prefix) {
     t_hash_iter iter;
@@ -236,23 +246,15 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 #endif
 
 
-/**
- * Same as get, but does not halt on error (but returns NULL)
- */
-t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
-    t_object *obj;
+t_object *vm_frame_resolve_identifier(t_vm_frame *frame, char *id) {
+    return vm_frame_local_identifier_exists(frame, id);
+}
 
+
+t_object *vm_frame_local_identifier_exists(t_vm_frame *frame, char *id) {
     t_object *key = object_alloc(Object_String, 1, id);
 
-    // Check locals first
-    obj = ht_find_obj(frame->local_identifiers->ht, key);
-    if (obj != NULL) {
-        object_release(key);
-        return obj;
-    }
-
-    // Check globals
-    obj = ht_find_obj(frame->global_identifiers->ht, key);
+    t_object *obj = ht_find_obj(frame->local_identifiers->ht, key);
     if (obj != NULL) {
         object_release(key);
         return obj;
@@ -265,17 +267,54 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
         return obj;
     }
 
-    // @TODO: We should throw an exception instead of just returning
-
-    DEBUG_PRINT("VM_FRAME_FIND_IDENTIFIER(%08X): '%s' NOT FOUND!\n", frame, id);
-
-//    DEBUG_PRINT("Builtimns\n");
-//    print_debug_table(frame->builtin_identifiers->ht);
-
     object_release(key);
     return NULL;
 }
 
+
+
+
+/**
+ * Resolves the frame for id's like: "::foo::bar", "::bar", "bar";
+ *
+ */
+t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
+    // if relative and no separators, it's inside the current frame
+    if (strstr(id, "::") == NULL) {
+        return current_frame;
+    }
+
+    // convert into absolute namespace
+    char *abs_ns = vm_frame_absolute_namespace(current_frame, id);
+
+    // split id from the context
+    char *p = vm_context_strip_path(abs_ns);
+    char *i = vm_context_strip_class(abs_ns);
+
+    t_vm_frame *frame = vm_import_find_file(p);
+
+    smm_free(abs_ns);
+    smm_free(p);
+    smm_free(i);
+
+    return frame;
+}
+
+
+/**
+ * Same as get, but does not halt on error (but returns NULL)
+ */
+t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
+    t_object *obj = vm_frame_local_identifier_exists(frame, id);
+    if (obj) return obj;
+
+    t_vm_frame *local_frame = vm_frame_resolve_frame(frame, id);
+    if (frame == NULL) {
+        // @TODO: Frame was not found.. throw error?
+        return NULL;
+    }
+    return vm_frame_local_identifier_exists(local_frame, id);
+}
 
 
 /**
@@ -312,11 +351,11 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 extern t_dll *all_objects;
 
 
-void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) {
+void vm_attach_bytecode(t_vm_frame *frame, char *namespace, char *filepath, t_bytecode *bytecode) {
     if (frame->context) {
         vm_context_free_context(frame);
     }
-    vm_context_set_context(frame, context);
+    vm_context_set_context(frame, namespace, filepath);
 
     frame->bytecode = bytecode;
     frame->ip = 0;
@@ -371,13 +410,12 @@ void vm_attach_bytecode(t_vm_frame *frame, char *context, t_bytecode *bytecode) 
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *bytecode) {
-    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", context, parent_frame ? parent_frame->context : "none");
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepath, t_bytecode *bytecode) {
+    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", namespace, parent_frame ? parent_frame->context->namespace : "none");
     t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
     bzero(frame, sizeof(t_vm_frame));
 
     frame->parent = parent_frame;
-
 
     frame->created_objects = dll_init();
 
@@ -385,7 +423,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
-    vm_context_set_context(frame, context);
+    vm_context_set_context(frame, namespace, filepath);
 
     frame->bytecode = NULL;
 
@@ -406,30 +444,21 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *context, t_bytecode *by
     }
     object_inc_ref((t_object *)frame->global_identifiers);
 
-    if (bytecode) {
-        vm_attach_bytecode(frame, context, bytecode);
-    }
 
-
-//#ifdef __DEBUG
-//    DEBUG_PRINT("----- [START FRAME: %s (%08X)] ----\n", frame->context, frame);
-//    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-//    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-//    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
-//#endif
-
+    vm_attach_bytecode(frame, filepath, namespace, bytecode);
 
     return frame;
 }
+
 
 /**
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-    DEBUG_PRINT("FRAME DESTROY: %s\n", frame->context);
+    DEBUG_PRINT("FRAME DESTROY: %s\n", frame->context ? frame->context->path : "no context");
 
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context, (unsigned int)frame);
+    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context ? frame->context->path : "no context", (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -471,7 +500,6 @@ void vm_frame_destroy(t_vm_frame *frame) {
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->local_identifiers);
-//    printf("Decreasing builtin_identifiers refcount\n");
     object_release((t_object *)frame->builtin_identifiers);
 
     smm_free(frame->context);
@@ -479,8 +507,30 @@ void vm_frame_destroy(t_vm_frame *frame) {
     smm_free(frame);
 }
 
-
-void vm_frame_add_created_object(t_vm_frame *frame, t_object *obj) {
+/**
+ * Register a user-created class. This way we always keep a reference onto the stack, until we actually remove it.
+ *
+ * WARNING:
+ * What happens now is that we globally register our objects. As long as the object is registered here, we have at least
+ * a refcount. So when we push/pop it from the stack, we cannot accidentally free it (because we pop it, and in the same
+ * pass, we push it again).
+ *
+ * We should change the system so we don't really need this way of working. An object can have multiple states:
+ *
+ *  - born      An object has been generated, but not yet pushed onto the stack. This is basically the same state as
+ *              "is use", but once an object gets born, it can never return to this state. Maybe possible for some
+ *              initialization etc.
+ *  - stacked   The object is not in use by the VM, but it has at least 1 reference on (a) stack.
+ *  - in use    The object is currently in use by the VM. It *MIGHT* not have any references onto the stack (refcount = 0).�
+ *
+ *  - died      The object has died. There is no more refcounts AND the object is not in use. It might be possible to reanimate
+ *              the object for other purposes. In that case, the state becomes stacked, or in-use again.
+ *  - buried    The object has died, and the garbage collector has freed its memory. When the object needs to be generated
+ *              again, it must be newly allocated. In this case, the object state because "born" again.
+ *
+ */
+void vm_frame_register_userobject(t_vm_frame *frame, t_object *obj) {
+    // @TODO: shouldn't we increase the refcount? We don't, as we ASSUME that refcount is already initialized with 1.
     dll_append(frame->created_objects, obj);
 }
 

@@ -25,6 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include <libgen.h>
+#include "general/output.h"
 #include "vm/frame.h"
 #include "general/smm.h"
 
@@ -32,18 +34,27 @@
 /**
  * Returns the context path from a specified context
  */
-char *vm_context_get_path(char *context) {
-    char *s = smm_strdup(context);
+char *vm_context_strip_path(char *full_namespace) {
+    char *s = smm_strdup(full_namespace);
+    return s;
 
+    // Edgecase for our main/global context
+    if (strcmp(full_namespace, "::") == 0) {
+        return s;
+    }
+
+    // Seek last ':'
     char *c = strrchr(s, ':');
     if (c == NULL) {
         smm_free(s);
-        return smm_strdup("");
+        // @TODO: none
+        fatal_error(1, "context does not have any ::");
+//        return smm_strdup("::");
     }
-    if ((s - c) == 0) {
-        smm_free(s);
-        return smm_strdup("");
-    }
+//    if ((s - c) == 0) {
+//        smm_free(s);
+//        return smm_strdup("");
+//    }
 
     c--;
     if (*c == ':') *c = '\0';
@@ -54,10 +65,10 @@ char *vm_context_get_path(char *context) {
 /**
  * Returns the context path from a specified context.
  */
-char *vm_context_get_class(char *context) {
-    char *c = strrchr(context, ':');
-    if (c == NULL) return smm_strdup(context);
-    if ((context - c) == 0) return smm_strdup(context);
+char *vm_context_strip_class(char *full_namespace) {
+    char *c = strrchr(full_namespace, ':');
+    if (c == NULL) return smm_strdup(full_namespace);
+    if ((full_namespace - c) == 0) return smm_strdup(full_namespace);
 
     c++;
     return smm_strdup(c);
@@ -67,26 +78,48 @@ char *vm_context_get_class(char *context) {
 /**
  * Sets the context for this frame and plits the nessesary class and path.
  */
-void vm_context_set_context(t_vm_frame *frame, char *context) {
-    frame->context = smm_strdup(context);
-    frame->context_path = vm_context_get_path(context);
-    frame->context_class = vm_context_get_class(context);
+void vm_context_set_context(t_vm_frame *frame, char *namespace, char *path) {
+    frame->context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
+    bzero(frame->context, sizeof(t_vm_context));
+
+    if (namespace) {
+        frame->context->namespace = vm_context_strip_path(namespace);
+        frame->context->class = vm_context_strip_class(namespace);
+    }
+
+    if (path) {
+        char *duppath = smm_strdup(path);
+        frame->context->path = smm_strdup(basename(duppath));
+        frame->context->filename = smm_strdup(basename(duppath));
+        smm_free(duppath);
+    }
 }
 
 /**
  * Frees the context for this frame
  */
 void vm_context_free_context(t_vm_frame *frame) {
-//    if (frame->context) {
-        smm_free(frame->context);
-        frame->context = NULL;
-//    }
-//    if (frame->context_path) {
-        smm_free(frame->context_path);
-        frame->context_path = NULL;
-//    }
-//    if (frame->context_class) {
-        smm_free(frame->context_class);
-        frame->context_class = NULL;
-//    }
+    smm_free(frame->context->namespace);
+    smm_free(frame->context->class);
+
+    smm_free(frame->context->filename);
+    smm_free(frame->context->path);
+
+    smm_free(frame->context);
+    frame->context = NULL;
+}
+
+
+char *vm_context_get_namespace(t_vm_context *context) {
+    return context->namespace;
+}
+char *vm_context_get_class(t_vm_context *context) {
+    return context->class;
+}
+
+char *vm_context_get_file_path(t_vm_context *context) {
+    return context->path;
+}
+char *vm_context_get_file_name(t_vm_context *context) {
+    return context->filename;
 }

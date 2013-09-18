@@ -175,7 +175,7 @@ long object_dec_ref(t_object *obj) {
     // Don't free static objects
     if (! OBJECT_IS_ALLOCATED(obj)) return 0;
 
-    DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+    //DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
 
     // Free object
     _object_free(obj);

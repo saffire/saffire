@@ -29,9 +29,24 @@
 
     #include "vm/frame.h"
 
-    char *vm_context_get_path(char *context);
-    char *vm_context_get_class(char *context);
-    void vm_context_set_context(t_vm_frame *frame, char *context);
+    typedef struct _vm_frame_context {
+        char *namespace;                            // Namespace
+        char *class;                                // Class name
+
+        char *path;                                 // Path with loaded bytecode
+        char *filename;                             // bytecode filename
+    } t_vm_context;
+
+    char *vm_context_strip_path(char *full_namespace);
+    char *vm_context_strip_class(char *full_namespace);
+
+    char *vm_context_get_namespace_path(t_vm_context *context);
+    char *vm_context_get_namespace_class(t_vm_context *context);
+
+    char *vm_context_get_file_path(t_vm_context *context);
+    char *vm_context_get_file_name(t_vm_context *context);
+
+    void vm_context_set_context(t_vm_frame *frame, char *namespace, char *path);
     void vm_context_free_context(t_vm_frame *frame);
 
 #endif

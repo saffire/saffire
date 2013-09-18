@@ -84,8 +84,7 @@ void output_debug(const char *format, ...) {
     va_list args;
 
     va_start(args, format);
-    // @TODO: must be stderr, not stdout : _output(stderr, format, args);
-    _output(stdout, format, args);
+    _output(stderr, format, args);
     va_end(args);
 }
 

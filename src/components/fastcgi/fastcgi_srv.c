@@ -113,7 +113,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    t_vm_frame *initial_frame = vm_init(NULL, VM_RUNMODE_FASTCGI);
+    vm_init(NULL, VM_RUNMODE_FASTCGI);
 
     output_set_helpers(_fcgi_output_char_helper, _fcgi_output_string_helper);
     is_tty = 0;
@@ -178,15 +178,15 @@ static int fcgi_loop(void) {
 
         smm_free(bytecode_file);
 
-        vm_attach_bytecode(initial_frame, "(fastcgi)", bc);
+        t_vm_frame *initial_frame = vm_frame_new(NULL, source_file, "", bc);
         vm_execute(initial_frame);
-        vm_detach_bytecode(initial_frame);
+        vm_frame_destroy(initial_frame);
         bytecode_free(bc);
     }
 
 
     // Finish virtual machine
-    vm_fini(initial_frame);
+    vm_fini();
 
     exit(0);
 }

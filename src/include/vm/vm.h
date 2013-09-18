@@ -35,7 +35,7 @@
 
     t_hash_table *builtin_identifiers_ht;
     t_hash_object *builtin_identifiers;
-    t_hash_table *import_cache;
+    t_hash_table *frame_import_cache;
 
     #define VM_RUNMODE_FASTCGI      1       // Virtual machine run as FastCGI
     #define VM_RUNMODE_CLI          2       // Virtual machine run as CLI
@@ -45,19 +45,15 @@
     // Actual runmode of the VM (fastcgi, cli, rep
     int vm_runmode;
 
-    t_vm_frame *vm_init(SaffireParser *sp, int runmode);
-    void vm_fini(t_vm_frame *frame);
+    void vm_init(SaffireParser *sp, int runmode);
+    void vm_fini(void);
     int vm_execute(t_vm_frame *frame);
     void vm_populate_builtins(const char *name, t_object *obj);
 
-//    t_object *_object_call_attrib_with_args(t_object *self, t_object *callable, t_dll *arg_list);
-    //t_object *vm_object_call(t_object *self, t_object *method_obj, int arg_count, ...);
     t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
 
     t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);
     t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2);
-
-//    t_object *object_internal_call(const char *class, const char *method, int arg_count, ...);
 
 #endif
 

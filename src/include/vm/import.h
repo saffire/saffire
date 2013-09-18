@@ -31,6 +31,7 @@
     #include "vm/frame.h"
 
     t_object *vm_import(t_vm_frame *frame, char *module, char *class);
+    t_vm_frame *vm_import_find_file(char *class_path);
     void vm_free_import_cache(void);
 
 #endif

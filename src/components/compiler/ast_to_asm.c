@@ -523,6 +523,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     WALK_LEAF(leaf->opr.ops[0]);        // Imports
                     WALK_LEAF(leaf->opr.ops[1]);        // Top statements
                     break;
+
                 case T_IMPORT :
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);

@@ -92,8 +92,8 @@
 
     void dbgp_debug(t_debuginfo *di, t_vm_frame *frame);
     void dbgp_parse_incoming_commands(t_debuginfo *di);
-    t_debuginfo *dbgp_init(t_vm_frame *frame);
-    void dbgp_fini(t_debuginfo *di, t_vm_frame *frame);
+    t_debuginfo *dbgp_init(void);
+    void dbgp_fini(t_debuginfo *di);
 
 #endif
 

@@ -179,7 +179,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 static void obj_free(t_object *obj) {
     t_attrib_object *attr_obj = (t_attrib_object *)obj;
 
-    DEBUG_PRINT("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
+    //DEBUG_PRINT("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
 
     // "free" the attribute object. decrease refcount
     object_release(attr_obj->attribute);
