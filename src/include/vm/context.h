@@ -30,23 +30,27 @@
     #include "vm/frame.h"
 
     typedef struct _vm_frame_context {
-        char *namespace;                            // Namespace
-        char *class;                                // Class name
+        struct {
+            char *path;      // absolute namespace (::foo in case of ::foo::bar)
+            char *name;      // Class name (bar in case of ::foo::bar)
+        } class;
 
-        char *path;                                 // Path with loaded bytecode
-        char *filename;                             // bytecode filename
+        struct {
+            char *path;      // Path with loaded bytecode
+            char *name;      // bytecode filename
+        } file;
     } t_vm_context;
 
     char *vm_context_strip_path(char *full_namespace);
     char *vm_context_strip_class(char *full_namespace);
 
-    char *vm_context_get_namespace_path(t_vm_context *context);
-    char *vm_context_get_namespace_class(t_vm_context *context);
+    char *vm_context_get_class_path(t_vm_context *context);
+    char *vm_context_get_class_class(t_vm_context *context);
 
     char *vm_context_get_file_path(t_vm_context *context);
     char *vm_context_get_file_name(t_vm_context *context);
 
-    void vm_context_set_context(t_vm_frame *frame, char *namespace, char *path);
+    void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path);
     void vm_context_free_context(t_vm_frame *frame);
 
 #endif

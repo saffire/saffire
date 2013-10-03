@@ -167,9 +167,12 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 /**
  * Creates an object that
  */
-static t_userland_object *_create_userland_object(char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     t_userland_object *user_obj = smm_malloc(sizeof(Object_Userland_struct));
     memcpy(user_obj, &Object_Userland_struct, sizeof(Object_Userland_struct));
+
+    // Set frame
+    user_obj->frame = frame;
 
     // Set name
     user_obj->name = smm_strdup(name);
@@ -212,7 +215,7 @@ static t_userland_object *_create_userland_object(char *name, int flags, t_dll *
 /**
  * Call a callable with arguments
  */
-static t_object *_object_call_callable_with_args(t_object *self_obj, t_callable_object *callable_obj, t_dll *arg_list) {
+static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame *scope_frame, t_callable_object *callable_obj, t_dll *arg_list) {
     t_object *ret;
 
     // Check if the object is actually a callable
@@ -233,7 +236,6 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_callable_
 
     // External code
 
-
     // Create context name
     char context[1250];
     char args[1000];
@@ -252,7 +254,9 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_callable_
 
     // Create a new execution frame
     t_vm_frame *cur_frame = thread_get_current_frame();
-    t_vm_frame *new_frame = vm_frame_new(cur_frame, cur_frame->context->path, cur_frame->context->namespace, callable_obj->code.bytecode);
+    t_vm_frame *new_frame = vm_frame_new_scoped(scope_frame, cur_frame, cur_frame->context, callable_obj->code.bytecode);
+
+    // Copy stuff from frame over to new_frame
 
     // Create self inside the new frame
     t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
@@ -350,7 +354,7 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
  * Check an attribute and if ok, chck
  */
 static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *attrib_obj, t_dll *arg_list) {
-    return _object_call_callable_with_args(self, (t_callable_object *)attrib_obj->attribute, arg_list);
+    return _object_call_callable_with_args(self, ((t_userland_object *)attrib_obj->bound_class)->frame, (t_callable_object *)attrib_obj->attribute, arg_list);
 }
 
 
@@ -409,10 +413,10 @@ void vm_fini(void) {
     smm_free(current_thread);
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
-    DEBUG_PRINT("\n\n\nDecreasing builtins\n");
-#ifdef __DEBUG
-    ht_debug(builtin_identifiers->ht);
-#endif
+//    DEBUG_PRINT("\n\n\nDecreasing builtins\n");
+//#ifdef __DEBUG
+//    ht_debug(builtin_identifiers->ht);
+//#endif
     object_release((t_object *)builtin_identifiers);
 
     module_fini();
@@ -465,6 +469,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
     unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     t_object *dst;
+
 
 #ifdef DEBUG
     DEBUG_PRINT(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
@@ -643,6 +648,8 @@ dispatch:
             case VM_LOAD_ATTRIB :
                 {
                     t_object *name = vm_frame_get_constant(frame, oparg1);
+                    DEBUG_PRINT("Loading attribute: '%s'\n", OBJ2STR(name));
+
                     t_object *self_obj = vm_frame_stack_pop(frame);
                     t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name));
 
@@ -890,6 +897,33 @@ dispatch:
                         // We continue the function, but using the constructor as our attribute
                         obj1 = (t_object *)object_attrib_find(self, "__ctor");
                     }
+
+/*
+WE NEED TO CALL AN OBJECT FROM THEIR OWN CONTEXT. FOR INSTANCE, WHEN WE CALL A METHOD THAT USES "IO", WE MUST
+MAKE SURE THAT THIS IO CLASS IS INSIDE THE CURRENT FRAME. PROBABLY THE BEST WAY TO DEAL WITH THIS IS TO STORE
+A REFERENCE TO THE FRAME INSIDE AN OBJECT (DO WE?), OR SOMEWAY TO FIGURE OUT NOT ONLY WHAT WE MEAN WITH "IO", BUT
+ALSO IN WHICH FRAME THIS IO CLASS RESIDES.
+
+So:
+    Frame 1:
+        import io;
+        io.print("foobar");
+    Frame 2:
+        import foobar;
+        class io {
+            public method print(s) {
+                foobar.print(s);
+            }
+        }
+        a = 1;
+
+        * uses io-object as located in the io class. We resolve io from the current frame (frame 1).
+        * when we call the print-method, we must make sure we call this from a new stack-frame. However, this stack-frame must
+        * contain the "foobar" reference, the actual io-class, and the variable "a". "a" in this case is a variable known in the
+        * current namespace only. We can reference it as "a", but we cannot reference this from another frame.
+
+*/
+
 
 
                     // Create argument list inside a DLL
@@ -1188,7 +1222,7 @@ dispatch:
                     }
 
                     // Actually create the object
-                    t_userland_object *new_obj = _create_userland_object(name, flags, interfaces, parent_class, attributes);
+                    t_userland_object *new_obj = _create_userland_object(frame, name, flags, interfaces, parent_class, attributes);
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
@@ -1622,6 +1656,23 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 }
 
 /**
+ * The same as a normal execute, but when an exception is thrown, this will be stored in the parent frame
+ * @param frame
+ * @return
+ */
+t_object *vm_execute_import(t_vm_frame *import_frame) {
+    // We assume this is the main frame.
+    thread_set_current_frame(import_frame);
+
+    // Execute the frame
+    t_object *result = _vm_execute(import_frame);
+    DEBUG_PRINT("\n============================ VM import execution done ============================\n");
+
+    // Don't handle exceptions
+
+    return result;
+}
+/**
  *
  */
 int vm_execute(t_vm_frame *frame) {
@@ -1630,14 +1681,12 @@ int vm_execute(t_vm_frame *frame) {
     // We assume this is the main frame.
     thread_set_current_frame(frame);
 
-    // Setup bytecode into the frame (or not?)
-
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT("\n\n\n\n============================ VM execution done (parent: '%s') ============================\n", frame->parent ? frame->parent->context->namespace : "none");
+    DEBUG_PRINT("\n\n\n\n============================ VM execution done ============================\n");
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context->namespace, (unsigned int)frame);
+    DEBUG_PRINT("----- [END FRAME: %s::%s (%08X)] ----\n", frame->context->class.path, frame->context->class.name, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -1647,6 +1696,11 @@ int vm_execute(t_vm_frame *frame) {
     // Check if there was an uncaught exception (happened when result == NULL)
     if (result == NULL) {
         if (thread_exception_thrown()) {
+
+#ifdef __DEBUG
+            // Display stacktrace from the exception
+#endif
+
             // handle exceptions
             t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
             if (saffire_obj) {

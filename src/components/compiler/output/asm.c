@@ -239,7 +239,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
 /**
  * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
  */
-static t_asm_frame *assemble_frame(t_dll *source_frame) {
+static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
     t_asm_line *line;
     struct _backpatch *bp;
     int opr = VM_STOP;
@@ -255,6 +255,11 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
     frame->code = NULL;
     frame->lino_len = 0;
     frame->lino = NULL;
+
+    if (! mainframe) {
+        _convert_identifier(frame, "self");
+        _convert_identifier(frame, "parent");
+    }
 
     t_dll *tc = dll_init();
     int old_lineno = 0;
@@ -486,7 +491,7 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
         t_dll *frame = ht_iter_value(&iter);
         char *key = ht_iter_key_str(&iter);
 
-        t_asm_frame *assembled_frame = assemble_frame(frame);
+        t_asm_frame *assembled_frame = assemble_frame(frame, strcmp(key, "main") == 0 ? 1 : 0);
         ht_add_str(assembled_frames, key, assembled_frame);
 
         ht_iter_next(&iter);

@@ -30,6 +30,7 @@
 #include "vm/vm.h"
 #include "vm/frame.h"
 #include "vm/thread.h"
+#include "vm/import.h"
 #include "objects/objects.h"
 #include "compiler/ast_nodes.h"
 #include "compiler/ast_to_asm.h"
@@ -70,8 +71,10 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *class_path, ch
     assembler_free(asm_code);
 
     // Create a new frame and run it!
-    t_vm_frame *module_frame = vm_frame_new(frame, file_path, class_path, bc);
-    vm_execute(module_frame);
+    t_vm_frame *module_frame = vm_frame_new(frame, class_path, file_path, bc);
+    t_object *result = vm_execute_import(module_frame);
+
+    if (result == NULL && thread_exception_thrown()) return NULL;
 
     return module_frame;
 }
@@ -108,7 +111,7 @@ static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *mo
     char *old_cwd = NULL;
     if (frame && frame->context) {
         getcwd(old_cwd, 0);
-        chdir(frame->context->path);
+        chdir(frame->context->file.path);
     }
     char *path = realpath(root_path, NULL);
     if (frame && frame->context) {
@@ -123,7 +126,7 @@ static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *mo
     }
 
     if (strcmp(path, ".") == 0) {
-        path = smm_strdup(frame->context->path);
+        path = smm_strdup(frame->context->file.path);
     }
 
     char *class_path = _build_class_path(module_path);
@@ -187,18 +190,20 @@ static t_vm_frame *_search_import_paths(t_vm_frame *frame, char *class_path) {
  * @param namespace
  * @return
  */
-t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *namespace) {
-    DEBUG_PRINT("Importing module '%s'\n", namespace);
+t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *class_path) {
+    DEBUG_PRINT("Importing module '%s'\n", class_path);
 
     // Check if we already executed the frame before. If so, it's stored in cache
-    t_vm_frame *cached_frame = ht_find_str(frame_import_cache, namespace);
-    DEBUG_PRINT(" * *** Looking for a frame in cache with key '%s': %s\n", namespace, (cached_frame ? "Found" : "Nothing found"));
+    t_vm_frame *cached_frame = ht_find_str(frame_import_cache, class_path);
+    DEBUG_PRINT(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, (cached_frame ? "Found" : "Nothing found"));
     if (cached_frame) {
         return cached_frame;
     }
 
-    t_vm_frame *imported_frame = _search_import_paths(frame, namespace);
-    ht_add_str(frame_import_cache, namespace, imported_frame);
+    t_vm_frame *imported_frame = _search_import_paths(frame, class_path);
+    if (imported_frame) {
+        ht_add_str(frame_import_cache, class_path, imported_frame);
+    }
     return imported_frame;
 }
 
@@ -211,21 +216,31 @@ t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *namespace) {
  * @param classname
  * @return
  */
-t_object *vm_import(t_vm_frame *frame, char *namespace, char *classname) {
+t_object *vm_import(t_vm_frame *frame, char *class_path, char *class_name) {
     // Find and import the file
-    DEBUG_PRINT("RNS: %s\n", namespace);
-    char *abs_ns = vm_frame_absolute_namespace(frame, namespace);
-    DEBUG_PRINT("ANS: %s\n", abs_ns);
-    t_vm_frame *imported_frame = vm_import_find_file(frame, abs_ns);
-    if (abs_ns) smm_free(abs_ns);
+    DEBUG_PRINT("RCP: %s\n", class_path);
+    char *abs_cp = vm_frame_absolute_namespace(frame, class_path);
+    DEBUG_PRINT("ACP: %s\n", abs_cp);
+    t_vm_frame *imported_frame = vm_import_find_file(frame, abs_cp);
     if (! imported_frame) {
-        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find module '%s'", namespace);
+        // If we couldn't import the frame, and no exception has been thrown in the meantime, we just throw our own exception
+        if (! thread_exception_thrown()) {
+            thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find module '%s'", abs_cp);
+        }
+        if (abs_cp) smm_free(abs_cp);
+        return NULL;
+    }
+    if (abs_cp) smm_free(abs_cp);
+
+    // Exception is thrown, don't continue
+    if (thread_exception_thrown()) {
         return NULL;
     }
 
-    t_object *obj = vm_frame_local_identifier_exists(imported_frame, classname);
+    // Find actual object inside the
+    t_object *obj = vm_frame_local_identifier_exists(imported_frame, class_name);
     if (! obj) {
-        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s'", classname);
+        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s'", class_name);
         return NULL;
     }
     return obj;
@@ -242,15 +257,20 @@ void vm_free_import_cache(void) {
     ht_iter_init(&iter, frame_import_cache);
     while (ht_iter_valid(&iter)) {
         t_vm_frame *frame = ht_iter_value(&iter);
-        DEBUG_PRINT("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context->path);
 
-        t_bytecode *bc = frame->bytecode;
+        // @TODO: This should not happen. Frames inside the import-cache should stay
+        // here until we actually remove it in the code below
+        if (frame) {
+            DEBUG_PRINT("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context->file.path);
 
-        vm_frame_destroy(frame);
+            t_bytecode *bc = frame->bytecode;
 
-        if (bc) bytecode_free(bc);
+            vm_frame_destroy(frame);
 
-        DEBUG_PRINT("\n");
+            if (bc) bytecode_free(bc);
+
+            DEBUG_PRINT("\n");
+        }
 
         ht_iter_next(&iter);
     }

@@ -43,22 +43,29 @@
 #include "general/output.h"
 
 
-char *vm_frame_absolute_namespace(t_vm_frame *frame, char *namespace) {
-    char *abs_namespace = NULL;
+/**
+ * Returns the absolute fqcp based
+ * @param frame
+ * @param classname
+ * @return
+ */
+char *vm_frame_absolute_namespace(t_vm_frame *frame, char *classname) {
+    char *abs_classname = NULL;
 
     // It's already absolute
-    if (strstr(namespace, "::") == namespace) {
-        return smm_strdup(namespace);
+    if (strstr(classname, "::") == classname) {
+        return smm_strdup(classname);
     }
 
     // no context for this frame, just make it absolute
-    if (! frame || ! frame->context || ! frame->context->namespace) {
-        smm_asprintf(&abs_namespace, "%s::%s", "", namespace);
-        return abs_namespace;
+    if (! frame || ! frame->context || ! frame->context->class.path) {
+        smm_asprintf(&abs_classname, "%s::%s", "", classname);
+        return abs_classname;
     }
 
-    smm_asprintf(&abs_namespace, "%s::%s", frame->context->namespace, namespace);
-    return abs_namespace;
+    printf("Current class path: %s\n", frame->context->class.path);
+    smm_asprintf(&abs_classname, "%s::%s", frame->context->class.path, classname);
+    return abs_classname;
 }
 
 /**
@@ -291,7 +298,8 @@ t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
     char *p = vm_context_strip_path(abs_ns);
     char *i = vm_context_strip_class(abs_ns);
 
-    t_vm_frame *frame = vm_import_find_file(p);
+    t_vm_frame *cur_frame = thread_get_current_frame();
+    t_vm_frame *frame = vm_import_find_file(cur_frame, p);
 
     smm_free(abs_ns);
     smm_free(p);
@@ -305,6 +313,7 @@ t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
  * Same as get, but does not halt on error (but returns NULL)
  */
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
+    ht_debug(frame->local_identifiers->ht);
     t_object *obj = vm_frame_local_identifier_exists(frame, id);
     if (obj) return obj;
 
@@ -324,6 +333,14 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
         fatal_error(1, "Trying to fetch from outside identifier range");
     }
+
+    DEBUG_PRINT("---------------------\n");
+    DEBUG_PRINT("frame identifiers:\n");
+    for (int i=0; i!=frame->bytecode->identifiers_len; i++) {
+        DEBUG_PRINT("ID %d: %s\n", i, frame->bytecode->identifiers[i]->s);
+    }
+    print_debug_table(frame->local_identifiers->ht, "Locals");
+
     return frame->bytecode->identifiers[idx]->s;
 }
 
@@ -351,11 +368,11 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 extern t_dll *all_objects;
 
 
-void vm_attach_bytecode(t_vm_frame *frame, char *namespace, char *filepath, t_bytecode *bytecode) {
+void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_bytecode *bytecode) {
     if (frame->context) {
         vm_context_free_context(frame);
     }
-    vm_context_set_context(frame, namespace, filepath);
+    vm_context_set_context(frame, class_path, file_path);
 
     frame->bytecode = bytecode;
     frame->ip = 0;
@@ -372,20 +389,14 @@ void vm_attach_bytecode(t_vm_frame *frame, char *namespace, char *filepath, t_by
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
-//                object_release(obj);    // Decrease NULL object usage
-
                 // We create a reference to the source filename of the original bytecode name.
                 bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
                 obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, /* arguments */ NULL);
                 break;
             case BYTECODE_CONST_STRING :
-//                object_release(obj);    // Decrease NULL object usage
-
                 obj = object_alloc(Object_String, 1, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
-//                object_release(obj);    // Decrease NULL object usage
-
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
             default :
@@ -407,11 +418,34 @@ void vm_attach_bytecode(t_vm_frame *frame, char *namespace, char *filepath, t_by
 //    printf("----------------------------\n");
 }
 
+t_vm_frame *vm_frame_new_scoped(t_vm_frame *scope_frame, t_vm_frame *parent_frame, t_vm_context *context, t_bytecode *bytecode) {
+    t_vm_frame *frame = vm_frame_new(parent_frame, context->class.path, context->file.path, bytecode);
+
+    // Populate local identifiers
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, scope_frame->local_identifiers->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_key_obj(&iter);
+        t_object *val = ht_iter_value(&iter);
+
+        ht_add_obj(frame->local_identifiers->ht, key, val);
+
+        object_inc_ref(key);
+        object_inc_ref(val);
+
+        ht_iter_next(&iter);
+    }
+
+    return frame;
+}
+
+
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepath, t_bytecode *bytecode) {
-    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", namespace, parent_frame ? parent_frame->context->namespace : "none");
+t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_path, t_bytecode *bytecode) {
+    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", class_path, parent_frame ? parent_frame->context->class.path : "none");
     t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
     bzero(frame, sizeof(t_vm_frame));
 
@@ -423,7 +457,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepa
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
-    vm_context_set_context(frame, namespace, filepath);
+    vm_context_set_context(frame, class_path, file_path);
 
     frame->bytecode = NULL;
 
@@ -445,7 +479,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepa
     object_inc_ref((t_object *)frame->global_identifiers);
 
 
-    vm_attach_bytecode(frame, filepath, namespace, bytecode);
+    vm_attach_bytecode(frame, class_path, file_path, bytecode);
 
     return frame;
 }
@@ -455,10 +489,9 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepa
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-    DEBUG_PRINT("FRAME DESTROY: %s\n", frame->context ? frame->context->path : "no context");
+    DEBUG_PRINT("FRAME DESTROY: %s::%s\n", frame->context ? frame->context->class.path : "<empty>", frame->context ? frame->context->class.name : "<empty>");
 
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s (%08X)] ----\n", frame->context ? frame->context->path : "no context", (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -482,7 +515,7 @@ void vm_frame_destroy(t_vm_frame *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
-        DEBUG_PRINT("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
+//        DEBUG_PRINT("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
 
         object_release(val);
         object_release(key);

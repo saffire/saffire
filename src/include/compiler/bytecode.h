@@ -109,4 +109,7 @@
     int bytecode_remove_signature(const char *path);
     int bytecode_add_signature(const char *path, char *gpg_key);
 
+    t_bytecode *bytecode_unmarshal(char *bincode);
+    int bytecode_marshal(t_bytecode *bytecode, int *bincode_off, char **bincode);
+
 #endif

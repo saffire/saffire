@@ -66,6 +66,10 @@ static void _output(FILE *f, const char *format, va_list args) {
 
 
 
+void output_flush(void) {
+    fflush(stdout);
+}
+
 /**
  * Outputs (to stdout)
  */

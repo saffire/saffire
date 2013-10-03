@@ -538,6 +538,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
 
     // Actually "bind" the attribute to this (class) object
     attrib_obj->bound_class = obj;
+    attrib_obj->bound_name = smm_strdup(name);
 
     ht_add_str(obj->attributes, name, attrib_obj);
     object_inc_ref((t_object *)attrib_obj);

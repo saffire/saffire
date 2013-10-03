@@ -55,6 +55,8 @@ SAFFIRE_MODULE_METHOD(io, print) {
         e = DLL_NEXT(e);
     }
 
+    output_flush();
+
     RETURN_SELF;
 }
 
@@ -78,7 +80,7 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     dll_remove(SAFFIRE_METHOD_ARGS, e);
 
 #ifdef __DEBUG
-    output_ansi(ANSI_BRIGHTRED);
+    output_ansi(ANSI_BRIGHTYELLOW);
 #endif
     output_printf(format, SAFFIRE_METHOD_ARGS);
 #ifdef __DEBUG

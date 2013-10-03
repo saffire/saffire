@@ -72,9 +72,10 @@
     char *vm_frame_absolute_namespace(t_vm_frame *frame, char *namespace);
 
 
-    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *namespace, char *filepath, t_bytecode *bytecode);
+    t_vm_frame *vm_frame_new_scoped(t_vm_frame *scope_frame, t_vm_frame *parent_frame, t_vm_context *context, t_bytecode *bytecode);
+    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_path, t_bytecode *bytecode);
     void vm_frame_destroy(t_vm_frame *frame);
-    void vm_attach_bytecode(t_vm_frame *frame, char *namespace, char *filepath, t_bytecode *bytecode);
+    void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_bytecode *bytecode);
     void vm_detach_bytecode(t_vm_frame *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);
