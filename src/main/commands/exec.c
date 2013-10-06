@@ -59,25 +59,24 @@ static int do_exec(void) {
     }
 
     char full_source_path[PATH_MAX+1];
-    char *ptr;
-    ptr = realpath(source_file, full_source_path);
+    realpath(source_file, full_source_path); // @TODO: Check result char *ptr?
 
     // Check if bytecode exists, or has a correct timestamp
-    char *bytecode_file = replace_extension(source_file, ".sf", ".sfc");
-    int bytecode_exists = (access(bytecode_file, F_OK) == 0);
+    char *bytecode_filepath = replace_extension(source_file, ".sf", ".sfc");
+    int bytecode_exists = (access(bytecode_filepath, F_OK) == 0);
 
-    if (! bytecode_exists || bytecode_get_timestamp(bytecode_file) != source_stat.st_mtime) {
-        bc = bytecode_generate_diskfile(source_file, write_bytecode ? bytecode_file : NULL, NULL);
+    if (! bytecode_exists || bytecode_get_timestamp(bytecode_filepath) != source_stat.st_mtime) {
+        bc = bytecode_generate_diskfile(source_file, write_bytecode ? bytecode_filepath : NULL, NULL);
         if (! bc) {
             return 1;
         }
     } else {
-        bc = bytecode_load(bytecode_file, flag_no_verify);
+        bc = bytecode_load(bytecode_filepath, flag_no_verify);
     }
-    smm_free(bytecode_file);
 
     // Something went wrong with the bytecode loading or generating
     if (!bc) {
+        smm_free(bytecode_filepath);
         error("Cannot load bytecode\n");
         return 1;
     }
@@ -85,19 +84,20 @@ static int do_exec(void) {
     // Create initial frame and attach our bytecode to it
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
-    t_vm_frame *initial_frame = vm_init(NULL, runmode);
-    vm_attach_bytecode(initial_frame, "", bc);
+    vm_init(NULL, runmode);
+    t_vm_frame *initial_frame = vm_frame_new(NULL, "::", bytecode_filepath, bc);
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
-    vm_fini(initial_frame);
 
+    vm_detach_bytecode(initial_frame);
+    vm_frame_destroy(initial_frame);
+    vm_fini();
+    smm_free(bytecode_filepath);
     bytecode_free(bc);
+
     DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
 
-
-    // @TODO: THIS IS HARDCODED FOR NOW!
-    exitcode = 0;
     return exitcode;
 }
 

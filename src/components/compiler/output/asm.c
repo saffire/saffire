@@ -112,8 +112,8 @@ void _add_codebyte(t_asm_frame *frame, unsigned char b) {
 
 
 /**
- * Find the constant in our constant table and return it's constant offset. When
- * not found, just add it's offset.
+ * Find the constant in our constant table and return its constant offset. When
+ * not found, add it and return its offset.
  */
 static int _convert_constant_string(t_asm_frame *frame, char *s) {
     int pos = 0;
@@ -188,10 +188,58 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
     return frame->identifiers->size - 1;
 }
 
+
 /**
  * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
  */
-static t_asm_frame *assemble_frame(t_dll *source_frame) {
+static void assemble_frame_free(t_asm_frame *asm_frame) {
+    t_dll_element *e;
+
+    e = DLL_HEAD(asm_frame->constants);
+    while (e) {
+        t_asm_constant *c = (t_asm_constant *)e->data;
+        switch (c->type) {
+            case const_long :
+                break;
+            case const_code :
+            case const_string :
+                smm_free(c->data.s);
+                break;
+        }
+
+        smm_free(e->data);
+
+        e = DLL_NEXT(e);
+    }
+    dll_free(asm_frame->constants);
+    smm_free(asm_frame->code);
+
+    dll_free(asm_frame->identifiers);
+    ht_destroy(asm_frame->label_offsets);
+
+
+    // Free backpatches
+    e = DLL_HEAD(asm_frame->backpatch_offsets);
+    while (e) {
+        struct _backpatch *bp = e->data;
+        smm_free(bp->label);
+        smm_free(bp);
+        e = DLL_NEXT(e);
+    }
+    dll_free(asm_frame->backpatch_offsets);
+
+    // Free offset2linenumbers
+    smm_free(asm_frame->lino);
+
+    // Free actual asm_frame
+    smm_free(asm_frame);
+}
+
+
+/**
+ * Creates a single assembler frame. Stops when end of lines, or when a new frame is encountered
+ */
+static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
     t_asm_line *line;
     struct _backpatch *bp;
     int opr = VM_STOP;
@@ -207,6 +255,11 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
     frame->code = NULL;
     frame->lino_len = 0;
     frame->lino = NULL;
+
+    if (! mainframe) {
+        _convert_identifier(frame, "self");
+        _convert_identifier(frame, "parent");
+    }
 
     t_dll *tc = dll_init();
     int old_lineno = 0;
@@ -320,6 +373,8 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
         }
     }
 
+    dll_free(tc);
+
     return frame;
 }
 
@@ -328,9 +383,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame) {
  * Free an codeline operator
  */
 static void _asm_free_opr(t_asm_opr *opr) {
-    if (opr->type == ASM_LINE_TYPE_OP_LABEL ||
-        opr->type == ASM_LINE_TYPE_OP_STRING ||
-        opr->type == ASM_LINE_TYPE_OP_ID) {
+    if (opr->data.s) {
         smm_free(opr->data.s);
     }
     smm_free(opr);
@@ -348,6 +401,7 @@ static void _asm_free_line(t_asm_line *line) {
             for (int i=0; i!=line->opr_count; i++) {
                  _asm_free_opr(line->opr[i]);
             }
+            smm_free(line->opr);
             break;
     }
     smm_free(line);
@@ -362,7 +416,6 @@ void assembler_free(t_hash_table *asm_code) {
 
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
-
         t_dll_element *e = DLL_HEAD(frame);
         while (e) {
             _asm_free_line((t_asm_line *)e->data);
@@ -384,11 +437,8 @@ void assembler_free(t_hash_table *asm_code) {
 t_asm_opr *asm_create_opr(int type, char *s, int l) {
     t_asm_opr *opr = smm_malloc(sizeof(t_asm_opr));
     opr->type = type;
-    if (s != NULL) {
-        opr->data.s = smm_strdup(s);
-    } else {
-        opr->data.l = l;
-    }
+    opr->data.s = s ? smm_strdup(s) : NULL;
+    opr->data.l = l;
     return opr;
 }
 
@@ -432,23 +482,35 @@ t_asm_line *asm_create_labelline(char *label) {
 t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     t_hash_iter iter;
 
-    // Init
+    // hashtable with our frames
     t_hash_table *assembled_frames = ht_create();
 
+    // Create asm frames from asm_code
     ht_iter_init(&iter, asm_code);
     while (ht_iter_valid(&iter)) {
         t_dll *frame = ht_iter_value(&iter);
         char *key = ht_iter_key_str(&iter);
 
-        t_asm_frame *assembled_frame = assemble_frame(frame);
+        t_asm_frame *assembled_frame = assemble_frame(frame, strcmp(key, "main") == 0 ? 1 : 0);
         ht_add_str(assembled_frames, key, assembled_frame);
 
         ht_iter_next(&iter);
     }
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
-    bc->source_filename = filename ? strdup(filename) : NULL;
+    bc->source_filename = filename ? smm_strdup(filename) : NULL;
+
+
+    // Cleanup our frames
+    ht_iter_init(&iter, assembled_frames);
+    while (ht_iter_valid(&iter)) {
+        t_asm_frame *assembled_frame = ht_iter_value(&iter);
+        assemble_frame_free(assembled_frame);
+        ht_iter_next(&iter);
+    }
     ht_destroy(assembled_frames);
+
+
     return bc;
 }
 

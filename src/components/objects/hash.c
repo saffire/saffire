@@ -120,6 +120,10 @@ SAFFIRE_METHOD(hash, populate) {
         t_object *val = ht_iter_value(&iter);
         ht_iter_next(&iter);
 
+    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+        object_inc_ref(key);
+        object_inc_ref(val);
         ht_add_obj(self->ht, key, val);
     }
 
@@ -139,7 +143,7 @@ SAFFIRE_METHOD(hash, get) {
     }
 
     t_object *obj = ht_find_obj(self->ht, key);
-    if (obj == NULL) return default_value ? default_value : Object_Null;
+    if (obj == NULL) return default_value ? default_value : object_alloc(Object_Null, 0);
     RETURN_OBJECT(obj);
 }
 
@@ -189,6 +193,11 @@ SAFFIRE_METHOD(hash, add) {
         return NULL;
     }
 
+    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+
+    object_inc_ref(key);
+    object_inc_ref(val);
     ht_add_obj(self->ht, key, val);
     RETURN_SELF;
 }
@@ -203,7 +212,10 @@ SAFFIRE_METHOD(hash, remove) {
         return NULL;
     }
 
-    ht_remove_obj(self->ht, key);
+    t_object *obj = ht_remove_obj(self->ht, key);
+    object_release(key);
+    if (obj) object_release(obj);
+
     RETURN_SELF;
 }
 
@@ -267,51 +279,50 @@ SAFFIRE_METHOD(hash, conv_string) {
  */
 void object_hash_init(void) {
     Object_Hash_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_ctor);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_dtor);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_ctor);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__numerical",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__string",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__boolean",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__null",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__numerical",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__string",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_conv_string);
 
     // Datastructure interface
-    object_add_internal_method((t_object *)&Object_Hash_struct, "populate",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_populate);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_populate);
 
     // Iterator interface
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__iterator",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___iterator);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__key",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___key);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__value",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___value);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__rewind",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___rewind);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__next",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___next);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__hasNext",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___hasNext);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___iterator);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___key);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___value);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___rewind);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___next);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method___hasNext);
 
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__has",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "length",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "add",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "get",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "has",          CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
 
-    object_add_internal_method((t_object *)&Object_Hash_struct, "keys",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_keys);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "keys",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_keys);
 
 
 //    // hash + tuple[k,v]
-//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_add);
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_add);
 //    // hash << N  shifts elements from the list
-//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sl",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sl);
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sl",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sl);
 //    // hash >> N  pops elements from the list
-//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sr);
+//    object_add_internal_method((t_object *)&Object_List_struct, "__opr_sr",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_opr_sr);
 
 
     object_add_interface((t_object *)&Object_Hash_struct, Object_Iterator);
-    object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
     object_add_interface((t_object *)&Object_Hash_struct, Object_Datastructure);
 
     vm_populate_builtins("hash", (t_object *)&Object_Hash_struct);
@@ -321,9 +332,7 @@ void object_hash_init(void) {
  * Frees memory for a hash object
  */
 void object_hash_fini(void) {
-    // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Hash_struct);
-    ht_destroy(Object_Hash_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Hash_struct);
 }
 
 
@@ -331,6 +340,9 @@ static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_hash_object *obj = smm_malloc(sizeof(t_hash_object));
     memcpy(obj, Object_Hash, sizeof(t_hash_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -362,13 +374,20 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
     t_dll *dll = (t_dll *)e->data;
-    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
+    e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *k = (t_object *)e->data;
+        t_object *key = (t_object *)e->data;
         e = DLL_NEXT(e);
         if (! e) break;
-        t_object *v = (t_object *)e->data;
-        ht_add_obj(hash_obj->ht, k, v);
+        t_object *val = (t_object *)e->data;
+
+    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+
+        object_inc_ref(key);
+        object_inc_ref(val);
+
+        ht_add_obj(hash_obj->ht, key, val);
         e = DLL_NEXT(e);
     }
 }
@@ -377,9 +396,22 @@ static void obj_free(t_object *obj) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
     if (! hash_obj) return;
 
-    if (hash_obj->ht) {
-        ht_destroy(hash_obj->ht);
+    // Because this is a hash-object, we can only add objects to the hash itself,
+    // We must decrease their references as well
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, hash_obj->ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *key = ht_iter_key_obj(&iter);
+        t_object *val = ht_iter_value(&iter);
+//        DEBUG_PRINT("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
+//        DEBUG_PRINT("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
+        object_release(key);
+        object_release(val);
+        ht_iter_next(&iter);
     }
+
+    ht_destroy(hash_obj->ht);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -389,8 +421,12 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_hash_table *ht = ((t_hash_object *)obj)->ht;
-    sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        sprintf(global_buf, "Hash");
+    } else {
+        t_hash_table *ht = ((t_hash_object *)obj)->ht;
+        sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
+    }
     return global_buf;
 }
 #endif
@@ -403,6 +439,7 @@ t_object_funcs hash_funcs = {
         obj_free,             // Free a hash object
         obj_destroy,          // Destroy a hash object
         NULL,                 // Clone
+        NULL,                 // Cach
 #ifdef __DEBUG
         obj_debug
 #endif

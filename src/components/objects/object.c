@@ -30,6 +30,7 @@
 #include <locale.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/dll.h"
@@ -38,6 +39,8 @@
 #include "general/output.h"
 #include "general/smm.h"
 #include "vm/thread.h"
+
+t_dll *all_objects;
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 
@@ -66,45 +69,6 @@ int object_is_immutable(t_object *obj) {
 
 
 /**
- * Finds the attribute inside the object, or any base objects if needed.
- */
-t_object *object_find_attribute(t_object *obj, char *attr_name) {
-    t_object *attr = object_find_actual_attribute(obj, attr_name);
-    return attr ? ((t_attrib_object *)attr)->attribute : NULL;
-}
-
-
-/**
- * Finds the attribute inside the object, or any base objects if needed.
- */
-t_object *object_find_actual_attribute(t_object *obj, char *attr_name) {
-    t_object *attr = NULL;
-    t_object *cur_obj = obj;
-
-    while (attr == NULL) {
-        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
-
-        // Find the attribute in the current object
-        attr = ht_find_str(cur_obj->attributes, attr_name);
-        if (attr != NULL) break;
-
-        // Not found and there is no parent, we're done!
-        if (cur_obj->parent == NULL) {
-            DEBUG_PRINT(">>> Cannot find attribute '%s' in object %s:\n", attr_name, obj->name);
-            return NULL;
-        }
-
-        // Try again in the parent object
-        cur_obj = cur_obj->parent;
-    }
-
-    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
-
-    return attr;
-}
-
-
-/**
  * Checks if an object is an instance of a class. Will check against parents too
  */
 int object_instance_of(t_object *obj, const char *instance) {
@@ -129,7 +93,57 @@ int object_instance_of(t_object *obj, const char *instance) {
 }
 
 
+/**
+ * Free an object (if needed)
+ */
+static void _object_free(t_object *obj) {
+    if (! obj) return;
 
+    // ref_count > 0, object is still in use somewhere else. Don't free it yet
+    if (obj->ref_count > 0) return;
+
+//#ifdef __DEBUG
+//    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+//        //DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
+//    }
+//#endif
+
+    // Free values from the object
+    if (obj->funcs && obj->funcs->free) {
+        obj->funcs->free(obj);
+    }
+
+    // Remove this object from the all_objects list
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *tmp = (t_object *)e->data;
+
+        if (tmp == obj) {
+            dll_remove(all_objects, e);
+            break;
+        }
+        e = DLL_NEXT(e);
+    }
+
+
+    // Free the object
+    if (obj->funcs && obj->funcs->destroy) {
+        obj->funcs->destroy(obj);
+    }
+
+    // Object is destroyed. We cannot use object anymore.
+    obj = NULL;
+
+
+
+    // @TODO: here we should actually add the object to the GC destruction queue.
+    // If we need the object later, we can still catch it from this queue, otherwise it will
+    // be destroyed somewhere in the future.
+
+//    if (! gc_queue_add(obj) && obj->funcs && obj->funcs->destroy) {
+//        obj->funcs->destroy(obj);
+//    }
+}
 
 
 /**
@@ -139,65 +153,60 @@ void object_inc_ref(t_object *obj) {
     if (! obj) return;
 
     obj->ref_count++;
-//    DEBUG_PRINT("Increasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
+//    DEBUG_PRINT("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
 /**
  * Decrease reference from object.
  */
-void object_dec_ref(t_object *obj) {
-    if (! obj) return;
+long object_dec_ref(t_object *obj) {
+    if (! obj) return 0;
 
     obj->ref_count--;
-//    DEBUG_PRINT("Decreasing reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 
-    if(obj->ref_count == 0) {
-        // Free object
-        if ((obj->flags & OBJECT_FLAG_STATIC) != OBJECT_FLAG_STATIC) {
-//            DEBUG_PRINT(" *** WOULD BE FREED, BUT WE DONT YET\n");
-            // @TODO: Free objects!
-            //object_free(obj);
-        }
-    }
+//    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+//        DEBUG_PRINT("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+//    }
 
+    if (obj->ref_count != 0) return obj->ref_count;
+
+    // Don't free static objects
+    if (! OBJECT_IS_ALLOCATED(obj)) return 0;
+
+    //DEBUG_PRINT("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+
+    // Free object
+    _object_free(obj);
+    return 0;
 }
 
 #ifdef __DEBUG
+char global_debug_info[256];
 char *object_debug(t_object *obj) {
-    if (! obj) return "(no debug info)";
+
+    if (! obj) return "(null)<0x0>";
 
     if (obj && obj->funcs && obj->funcs->debug) {
-        return obj->funcs->debug(obj);
+        char *s = obj->funcs->debug(obj);
+        if (OBJECT_TYPE_IS_CLASS(obj)) {
+            //s[0] = toupper(s[0]);
+        }
+        return s;
     }
-    return obj->name;
+
+    if (OBJECT_IS_USER(obj)) {
+        snprintf(global_debug_info, 255, "user[%s]", obj->name);
+        if (OBJECT_TYPE_IS_CLASS(obj)) {
+            global_debug_info[0] = toupper(global_debug_info[0]);
+        }
+        return global_debug_info;
+    }
+
+    return "(no debug info)";
 }
 #endif
-
-/**
- * Free an object (if needed)
- */
-void object_free(t_object *obj) {
-    if (! obj) return;
-
-    // Check if we really need to free
-    if (obj->ref_count > 0) return;
-
-#ifdef __DEBUG
-    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-        DEBUG_PRINT("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
-    }
-#endif
-
-    // Need to free, check if free functions exists
-    if (obj->funcs && obj->funcs->free) {
-        obj->funcs->free(obj);
-    }
-
-    if (! gc_queue_add(obj) && obj->funcs && obj->funcs->destroy) {
-        obj->funcs->destroy(obj);
-    }
-}
 
 
 /**
@@ -216,19 +225,25 @@ t_object *object_clone(t_object *obj) {
 
 
 /**
- *
+ * Actually returns a new object. Note that it must NOT populate anything through the
+ * arguments. This should be done in the populate() callback. The arguments presented
+ * here can be used to decide if we have a cached version of the object laying around.
  */
-static t_object *_object_new(t_object *obj) {
+static t_object *_object_new(t_object *obj, t_dll *arguments) {
     t_object *res;
 
     // Return NULL when we cannot 'new' this object
-    if (! obj || ! obj->funcs || ! obj->funcs->new) return NULL;
-
-    // Create or recycle an object from this type
-    res = gc_queue_recycle(obj->type);
-    if (! res) {
-        res = obj->funcs->new(obj);
+    if (! obj->funcs->new) {
+        RETURN_NULL;
     }
+
+    // Create new object
+    res = obj->funcs->new(obj);
+    res->ref_count = 1;
+
+    // We add 'res' to our list of generated objects.
+    dll_append(all_objects, res);
+
     return res;
 }
 
@@ -237,13 +252,33 @@ static t_object *_object_new(t_object *obj) {
  * Creates a new object with specific values, with a already created
  * argument DLL list.
  */
-t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments) {
-    t_object *res = _object_new(obj);
+t_object *object_alloca(t_object *obj, t_dll *arguments) {
+    t_object *res = NULL;
 
-    // Populate internal values
+    // Nothing found to new, just return NULL object
+    if (! obj || ! obj->funcs) {
+        RETURN_NULL;
+    }
+
+    // If we have a caching function, seek inside that cache first
+    if (obj->funcs->cache) {
+        res = obj->funcs->cache(obj, arguments);
+        if (res) {
+            object_inc_ref(res);
+            return res;
+        }
+    }
+
+    // generate new object
+    res = _object_new(obj, arguments);
+
+    // Populate values
     if (res->funcs->populate) {
         res->funcs->populate(res, arguments);
     }
+
+    res->ref_count = 0;
+    object_inc_ref(res);
 
     return res;
 }
@@ -264,7 +299,7 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
     va_end(arg_list);
 
     // Create new object
-    t_object *new_obj = object_new_with_dll_args(obj, arguments);
+    t_object *new_obj = object_alloca(obj, arguments);
 
     // Free argument DLL
     dll_free(arguments);
@@ -273,18 +308,33 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
 }
 
 
+extern t_hash_table *string_cache;
+t_dll *dupped_attributes;
+
+
 /**
  * Initialize all the (scalar) objects
  */
 void object_init() {
+    // All objects have a reference here (except dupped attributes, actually)
+    all_objects = dll_init();
+
+    // All duplicated attributes are references here, because they are short-lived, we can do some other stuff with them later.
+    dupped_attributes = dll_init();
+
+    // Create string cache.
+    string_cache = ht_create();
+
+
+    object_callable_init();
+    object_attrib_init();
     object_base_init();
+    object_string_init();
+
     object_boolean_init();
     object_null_init();
     object_numerical_init();
-    object_string_init();
     object_regex_init();
-    object_callable_init();
-    object_attrib_init();
     object_hash_init();
     object_tuple_init();
     object_userland_init();
@@ -300,6 +350,35 @@ void object_init() {
  * Finalize all the (scalar) objects
  */
 void object_fini() {
+    t_dll_element *e;
+
+    DEBUG_PRINT("object fini\n");
+
+    DEBUG_PRINT("Destroying string cache!\n");
+
+    // Destroy string cache
+    t_hash_iter iter;
+    ht_iter_init(&iter, string_cache);
+    while (ht_iter_valid(&iter)) {
+        t_object *val = ht_iter_value(&iter);
+
+        // Release object from this cache
+        ht_iter_next(&iter);
+        object_release(val);
+    }
+    ht_destroy(string_cache);
+
+    // Remove all duplicated attributes
+    e = DLL_HEAD(dupped_attributes);
+    while (e) {
+        //t_object *dup = (t_object *)(e->data);
+        //object_release(dup);
+
+        e = DLL_NEXT(e);
+    }
+
+
+
     object_datastructure_fini();
     object_iterator_fini();
 
@@ -307,16 +386,28 @@ void object_fini() {
     object_list_fini();
     object_userland_fini();
     object_tuple_fini();
-    object_hash_fini();
-    object_attrib_fini();
-    object_callable_fini();
     object_regex_fini();
-    object_string_fini();
     object_numerical_fini();
     object_null_fini();
     object_boolean_fini();
-    object_base_fini();
 
+    object_string_fini();       // has to be second-last
+    object_hash_fini();
+    object_base_fini();         // has to be last
+    object_attrib_fini();
+    object_callable_fini();
+
+
+    // We really can't show anything here, since objects should have been gone now. Expect failures
+    DEBUG_PRINT("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
+    e = DLL_HEAD(all_objects);
+    while (e) {
+        t_object *obj = (t_object *)e->data;
+        //printf("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+        DEBUG_PRINT("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        e = DLL_NEXT(e);
+    }
+    dll_free(all_objects);
 }
 
 
@@ -440,12 +531,17 @@ void object_add_interface(t_object *class, t_object *interface) {
  * Create method- attribute that points to an INTERNAL (C) function
  */
 void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
-    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal
-    //        with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_new(Object_Callable, 5, method_flags | CALLABLE_CODE_INTERNAL | CALLABLE_TYPE_METHOD, func, NULL, NULL, NULL);
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj);
+    // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal with internal and external functions.
+    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
+
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, method_flags);
+
+    // Actually "bind" the attribute to this (class) object
+    attrib_obj->bound_class = obj;
+    attrib_obj->bound_name = smm_strdup(name);
 
     ht_add_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
 }
 
 
@@ -453,9 +549,14 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
  *
  */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
 
-    ht_replace_str(obj->attributes, name, attrib);
+    object_inc_ref(property);
+
+    // @TODO: why replace? why not ht_add_str()??
+
+    ht_replace_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
 }
 
 
@@ -463,27 +564,115 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
  *
  */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib = (t_attrib_object *)object_new(Object_Attrib, 4, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 5, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
+
+    object_inc_ref(constant);
 
     if (ht_exists_str(obj->attributes, name)) {
+        object_release((t_object *)attrib_obj);
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
     }
-    ht_add_str(obj->attributes, name, attrib);
+
+    ht_add_str(obj->attributes, name, attrib_obj);
+    object_inc_ref((t_object *)attrib_obj);
+}
+
+
+
+
+
+static void _object_remove_all_internal_interfaces(t_object *obj) {
+    if (! obj->interfaces) return;
+
+    t_dll_element *e = DLL_HEAD(obj->interfaces);
+    while (e) {
+        object_release((t_object *)e->data);
+        e = DLL_NEXT(e);
+    }
 }
 
 
 /**
- * Clears up all attributes found in this object
+ * Clears up all attributes found in this object. Note: does NOT release the object's attributes hash-table!
  */
-void object_remove_all_internal_attributes(t_object *obj) {
+static void _object_remove_all_internal_attributes(t_object *obj) {
     t_hash_iter iter;
 
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
-        // @TODO: We must remove and free attrib-objects here..
+        t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
+//        char *key = ht_iter_key_str(&iter);
+
+        /* This is tricky. Attributes can links to other objects (callables, but also properties and constants). These
+         * are created in object_add_internal_method, object_add_property, object_add_constant, or through the vm's
+         * BUILD_CLASS + BUILD_ATTRIB opcodes.
+         * However, allocating objects will automatically increase their refcount (normally, to 1, but if we allocate
+         * an object that already exists, we could get that object, with it's refcount increased).
+         * What happens, is that attributes will look something like this:
+         *
+         *      attrib-object (refcount = 1)
+         *        -> callable-object (refcount = 2)
+         *
+         * The reason refcount on callable is 2, is because the attrib-object will automatically increase the refcount
+         * as well. This makes sense, because the callable is "used" by the attrib, and we must make sure it can never
+         * be destroyed without destroying the attrib first.
+         *
+         * But attrib-objects are normally added to a (user-object) class as well inside their obj->attributes hashtable.
+         * This hash-table "uses" the attrib-object, which means we increase the attrib-refcount as well:
+         *
+         *     user-object (refcount = 1)
+         *        -> attrib-object (refcount = 2)
+         *             -> callable-object (refcount = 2)
+         *
+         * At this point, a userclass, has attrib with a refcount of AT LEAST 2, and internally callable (or property
+         * or constant) objects of again AT LEAST 2. Because this is the place we are destroying the attributes, we must
+         * make sure we release the attribute from the obj->attributes, and again release the attribute by itself. When
+         * an attrib-objects refcount gets to 0, it will also decrease the refcount of it's used object. This means we
+         * end up with a callable object with a refcount of 1: we decreased the attrib twice, but the callable only once.
+         *
+         * This is a tricky situation, and hopefully we can resolve this a better way than this, but for now all we do
+         * is iterate our attributes, decrease attributes ONCE, decrease the callable inside the attribute ONCE, and then
+         * decrease the attribute again. If everything goes according to plan, it will decrease it to 0, and
+         * automatically decrease the callable as well, resulting in both objects being destroyed. If the attribute (or
+         * callable) is shared and their refcount was higher than 2 to begin with, things will still work out correctly, as
+         * they will be freed somewhere else.
+         */
+
+        // Release attribute from the hash
+        object_release((t_object *)attr);
+
+        // Release callable,property or constant from the attribute
+        object_release(((t_attrib_object *)attr)->attribute);
+
+        // Release attribute again, so it can be destroyed, and implicitly destroy the callable as well
+        object_release((t_object *)attr);
+
+        // This attribute hash does not know anything anymore about this attrib
         ht_iter_next(&iter);
     }
+
+//    ht_destroy(obj->attributes);
+
 }
+
+
+/**
+ * Frees internal object data
+ */
+void object_free_internal_object(t_object *obj) {
+    // Free attributes
+    if (obj->attributes) {
+        _object_remove_all_internal_attributes(obj);
+        ht_destroy(obj->attributes);
+    }
+
+    // Remove interfaces
+    if (obj->interfaces) {
+        _object_remove_all_internal_interfaces(obj);
+        dll_free(obj->interfaces);
+    }
+}
+
 
 
 /**
@@ -503,8 +692,8 @@ void object_raise_exception(t_object *exception, int code, char *format, ...) {
 
 
 static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_object *obj2) {
-    t_hash_table *ht1 = ((t_hash_object *)obj1->arguments)->ht;
-    t_hash_table *ht2 = ((t_hash_object *)obj2->arguments)->ht;
+    t_hash_table *ht1 = obj1->arguments;
+    t_hash_table *ht2 = obj2->arguments;
 
     // Sanity check
     if (ht1->element_count != ht2->element_count) {
@@ -537,6 +726,7 @@ static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_
 }
 
 static int _object_check_interface_implementations(t_object *obj, t_object *interface) {
+    // ceci ne pas une interface
     if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
         return 0;
     }
@@ -549,7 +739,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
         DEBUG_PRINT(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
 
-        t_attrib_object *found_obj = (t_attrib_object *)object_find_actual_attribute(obj, key);
+        t_attrib_object *found_obj = (t_attrib_object *)object_attrib_find(obj, key);
         if (! found_obj) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
             return 0;
@@ -558,9 +748,9 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         DEBUG_PRINT("     - Found object : %s\n", object_debug((t_object *)found_obj));
         DEBUG_PRINT("     - Matching     : %s\n", object_debug((t_object *)attribute));
 
-        if (found_obj->attrib_type != attribute->attrib_type ||
-            found_obj->visibility != attribute->visibility ||
-            found_obj->access != attribute->access) {
+        if (found_obj->attr_type != attribute->attr_type ||
+            found_obj->attr_visibility != attribute->attr_visibility ||
+            found_obj->attr_access != attribute->attr_access) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
             return 0;
         }
@@ -585,8 +775,6 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
  * Iterates all interfaces found in this object, and see if the object actually implements it fully
  */
 int object_check_interface_implementations(t_object *obj) {
-    DEBUG_PRINT("object_check_interface_implementations(%d)\n", obj->interfaces ? obj->interfaces->size : 0);
-
     t_dll_element *elem = DLL_HEAD(obj->interfaces);
     while (elem) {
         t_object *interface = (t_object *)elem->data;
@@ -623,3 +811,55 @@ int object_has_interface(t_object *obj, const char *interface_name) {
     // No, cannot find it
     return 0;
 }
+
+
+
+/**
+ * Allocate / populate a new instance from the giben object
+ */
+t_object *object_alloc(t_object *obj, int arg_count, ...) {
+    va_list arg_list;
+
+    // Create argument DLL
+    t_dll *arguments = dll_init();
+    va_start(arg_list, arg_count);
+    for (int i=0; i!=arg_count; i++) {
+        dll_append(arguments, va_arg(arg_list, void *));
+    }
+    va_end(arg_list);
+
+    // Create new object
+    t_object *new_obj = object_alloca(obj, arguments);
+
+    // Free argument DLL
+    dll_free(arguments);
+
+    return new_obj;
+}
+
+
+/**
+ * Releases an object. This object cannot be used with this specific reference.
+ *
+ * Whenever the reference count has decreased to 0, it means that nothing holds a reference to this object.
+ * It will be added to the garbage collected to either be destroyed, OR when needed, it can be revived before
+ * collection whenever somebody needs this specific object again.
+ */
+long object_release(t_object *obj) {
+    return object_dec_ref(obj);
+}
+
+//void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name) {
+//    if (((t_callable_object *)callable_obj)->binding) {
+//        object_release(((t_callable_object *)callable_obj)->binding);
+//    }
+////    if (((t_callable_object *)callable_obj)->name) {
+////        smm_free(((t_callable_object *)callable_obj)->name);
+////    }
+//
+//    ((t_callable_object *)callable_obj)->binding = (t_object *)attrib_obj;
+////    ((t_callable_object *)callable_obj)->name = name ? smm_strdup(name) : smm_strdup("callable");
+//
+//    object_inc_ref(attrib_obj);
+//}
+

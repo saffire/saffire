@@ -39,6 +39,7 @@
 
     void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, char *s));
 
+    void output_flush(void);
     void output(const char *format, ...);
     void output_debug(const char *format, ...);
     void output_printf(const char *format, t_dll *args);

@@ -56,7 +56,7 @@
     void vm_push_block_loop(struct _vm_frame *frame, int type, int sp, int ip, int ip_else);
     void vm_push_block_exception(struct _vm_frame *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally);
     t_vm_frameblock *vm_pop_block(struct _vm_frame *frame);
-    t_vm_frameblock *vm_fetch_block(struct _vm_frame *frame);
+    t_vm_frameblock *vm_peek_block(struct _vm_frame *frame);
 
 #endif
 

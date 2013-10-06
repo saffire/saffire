@@ -1,4 +1,4 @@
-import io;
+import ::io;
 
 /**
  * This is the saffire class.
@@ -24,6 +24,7 @@ class saffire {
      */
     static public method uncaughtExceptionHandler(exception e) {
         io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
+        return e.getCode();
     }
 
     /**

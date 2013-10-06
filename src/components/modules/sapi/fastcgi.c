@@ -52,7 +52,7 @@ SAFFIRE_MODULE_METHOD(fastcgi, environment) {
             c = strchr(*p, '=') + 1;
             char *k = smm_zalloc((c-*p));
             strncpy(k, *p, (c-*p)-1);
-            ht_add_obj(ht, object_new(Object_String, 1, k),  (void *)object_new(Object_String, 1, c));
+            ht_add_obj(ht, object_alloc(Object_String, 1, k),  (void *)object_alloc(Object_String, 1, c));
             smm_free(k);
         }
     }
@@ -62,17 +62,17 @@ SAFFIRE_MODULE_METHOD(fastcgi, environment) {
 
 
 
-t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
 
 static void _init(void) {
     fastcgi_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
+    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
 }
 
 static void _fini(void) {
     // Destroy methods and properties
-    ht_destroy(fastcgi_struct.attributes);
+    object_free_internal_object(&fastcgi_struct);
 }
 
 static t_object *_objects[] = {

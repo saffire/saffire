@@ -8,7 +8,7 @@ class Code extends AbstractConstant {
     protected $stack_size = 0;
     protected $code_size = 0;
     protected $constants = array();
-    protected $identifier = array();
+    protected $identifiers = array();
     protected $lineno_offset = 0;
     protected $lineno_length = 0;
     protected $lineno = array();
@@ -27,6 +27,16 @@ class Code extends AbstractConstant {
         $this->opcodes = substr($data, $ptr, $this->code_size);
         $ptr += $this->code_size;
 
+        $tmp = unpack("Vidcount", substr($data, $ptr));
+        $ptr += 4;
+        $idCount = $tmp['idcount'];
+        for ($i=0; $i!=$idCount; $i++) {
+            $tmp = unpack("Vlen", substr($data, $ptr));
+            $ptr += 4;
+            $this->identifiers[] = Factory::createId(substr($data, $ptr, $tmp['len']));
+            $ptr += $tmp['len'];
+        }
+
         $tmp = unpack ("Vconstcount", substr($data, $ptr));
         $ptr += 4;
         $constCount = $tmp['constcount'];
@@ -34,16 +44,6 @@ class Code extends AbstractConstant {
             $tmp = unpack("Ctype/Vlen", substr($data, $ptr));
             $ptr += 5;
             $this->constants[] = Factory::createConstant($tmp['type'], substr($data, $ptr, $tmp['len']));
-            $ptr += $tmp['len'];
-        }
-
-        $tmp = unpack("Vidcount", substr($data, $ptr));
-        $ptr += 4;
-        $idCount = $tmp['idcount'];
-        for ($i=0; $i!=$idCount; $i++) {
-            $tmp = unpack("Vlen", substr($data, $ptr));
-            $ptr += 4;
-            $ids[] = Factory::createId(substr($data, $ptr, $tmp['len']));
             $ptr += $tmp['len'];
         }
 
@@ -65,9 +65,9 @@ class Code extends AbstractConstant {
         return $this->constants;
     }
 
-    public function getIdentifier()
+    public function getIdentifiers()
     {
-        return $this->identifier;
+        return $this->identifiers;
     }
 
     public function getLineno()

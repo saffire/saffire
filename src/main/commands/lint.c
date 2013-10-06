@@ -114,6 +114,7 @@ int check_file(const char *filename) {
     if (ast == NULL) {
         return 0;
     }
+    ast_free_node(ast);
 
     output_ansi(ANSI_BRIGHTGREEN);
     output("No syntax errors in %s\n", filename);

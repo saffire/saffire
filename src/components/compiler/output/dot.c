@@ -48,9 +48,9 @@ static char *show_modifiers(int modifiers) {
     char *s = (char *)smm_malloc(sizeof(char) * 100); // 100 bytes should be enough for everyone
     bzero(s, 100);
 
-    if (modifiers & CALLABLE_FLAG_FINAL) s = strcat(s, "FINAL\\n");
-    if (modifiers & CALLABLE_FLAG_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
-    if (modifiers & CALLABLE_FLAG_STATIC) s = strcat(s, "STATIC\\n");
+    if (modifiers & ATTRIB_METHOD_FINAL) s = strcat(s, "FINAL\\n");
+    if (modifiers & ATTRIB_METHOD_ABSTRACT) s = strcat(s, "ABSTRACT\\n");
+    if (modifiers & ATTRIB_METHOD_STATIC) s = strcat(s, "STATIC\\n");
 
     return s;
 }

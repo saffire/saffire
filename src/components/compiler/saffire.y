@@ -57,7 +57,7 @@
     // Defined so we can access yytoknum, but we don't need to print anything
     #define YYPRINT(yyoutput, char, yyvaluep)
 
-    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
+//    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
 
     int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
 
@@ -88,7 +88,7 @@
 %type <lVal> modifier modifier_list assignment_operator comparison_operator
 
 /* These must be sorted and used properly */
-%token T_WHILE "while" T_IF "if" T_USE "use" T_AS "as" T_DO "do"
+%token T_WHILE "while" T_IF "if" T_AS "as" T_DO "do"
 %token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
 %nonassoc T_ELSE
 %token T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
@@ -177,18 +177,14 @@ non_empty_use_statement_list:
 ;
 
 use_statement:
-        /* use <foo> as <bar>; */
-        T_USE qualified_name T_AS T_IDENTIFIER                        ';' { $$ = ast_node_opr(@1.first_line, T_USE, 2, $2, ast_node_string(@4.first_line, $4));  }
-        /* use <foo>; */
-    |   T_USE qualified_name                                          ';' { $$ = ast_node_opr(@1.first_line, T_USE, 1, $2); }
         /* import <foo> from <bar> */
-    |   T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_string_dup(@4.first_line, $4)); }
+        T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), $4); smm_free($2); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@6.first_line, $6)); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), $6); smm_free($4); ast_free_node($2); }
         /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); smm_free($4); ast_free_node($2); }
         /* import <foo> */
-    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_string_dup(@2.first_line, $2)); }
+    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string_dup(@2.first_line, $2)); ast_free_node($2); }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -494,7 +490,7 @@ non_empty_tuple_list:
 
 pe_no_parenthesis:
         primary_expression_first_part        { $$ = $1; }
-    |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); }
+    |   primary_expression '.' T_IDENTIFIER  { $$ = ast_node_property(@1.first_line, $1, ast_node_string(@3.first_line, $3)); smm_free($3);}
     |   primary_expression callable          { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, ast_node_add($2, ast_node_null(@1.first_line))); } /* Add termination varargs list */
     |   primary_expression var_callable      { $$ = ast_node_opr(@1.first_line, T_CALL, 2, $1, $2); }
     |   primary_expression subscription      { $$ = ast_node_opr(@1.first_line, T_SUBSCRIPT, 2, $1, $2); }
@@ -511,12 +507,12 @@ primary_expression_first_part:
 /* A name that is namespaced (or not). */
 qualified_name:
         qualified_name_first_part               { $$ = $1; }
-    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_concat($1, "::"); $$ = ast_node_concat($$, $3); }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_identifier_concat($$, "::"); $$ = ast_node_identifier_concat($$, $3); smm_free($3); }
 ;
 
 qualified_name_first_part:
-        T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_string(@1.first_line, "::"); $$ = ast_node_concat($$, $2); $$ = ast_node_identifier(@1.first_line, $$->string.value); }
+        T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "::"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
 ;
 
 

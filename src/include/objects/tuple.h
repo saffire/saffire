@@ -30,7 +30,7 @@
     #include "objects/object.h"
     #include "general/hashtable.h"
 
-    #define RETURN_TUPLE(t)   RETURN_OBJECT(object_new(Object_Tuple, 1, t));
+    #define RETURN_TUPLE(t)   RETURN_OBJECT(object_alloc(Object_Tuple, 1, t));
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER

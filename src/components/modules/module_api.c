@@ -31,6 +31,7 @@
 #include "debug.h"
 #include "general/hashtable.h"
 #include "vm/vm.h"
+#include "general/smm.h"
 #include "modules/io.h"
 #include "modules/saffire.h"
 #include "modules/sapi/fastcgi.h"
@@ -64,10 +65,10 @@ int register_module(t_module *mod) {
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        char key[100]; // @TODO: fixme
-        sprintf(key, "%s::%s", mod->name, obj->name);
-
+        char *key;
+        smm_asprintf(&key, "%s::%s", mod->name, obj->name);
         vm_populate_builtins(key, obj);
+        smm_free(key);
 
         idx++;
         obj = (t_object *)mod->objects[idx];
@@ -82,7 +83,13 @@ int unregister_module(t_module *mod) {
     // Fini module
     mod->fini();
 
-    // @TODO: Remove from builtins or so
+    int idx = 0;
+    t_object *obj = (t_object *)mod->objects[idx];
+    while (obj != NULL) {
+        object_release(obj);
+        idx++;
+        obj = (t_object *)mod->objects[idx];
+    }
 
     // Nothing found
     return 0;

@@ -76,7 +76,8 @@ libcompiler_a_SOURCES = components/compiler/parser.tab.c \
                         components/compiler/lex.yy.c \
                         components/compiler/parser_helpers.c \
                         components/compiler/ast_nodes.c \
-                        components/compiler/bytecode.c \
+                        components/compiler/bytecode/marshal.c \
+                        components/compiler/bytecode/io.c \
                         components/compiler/ast_to_asm.c \
                         components/compiler/output/dot.c \
                         components/compiler/output/asm.c

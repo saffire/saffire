@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     if(nr_of_fails == 0) {
         printf("\n\x1b[1;37;42m\x1b[2K%s\n\x1b[0m\x1b[37;41m\x1b[0m\x1b[2K\n", "Success!");
     } else {
-        printf("\n\x1b[1;37;41m\x1b[2K%s\n\x1b[0m\x1b[37;41m\x1b[2K\x1b[0m\x1b[2K\n", "FAILURES!");
+        printf("\n\x1b[1;37;41m\x1b[2K%s: %s\n\x1b[0m\x1b[37;41m\x1b[2K\x1b[0m\x1b[2K\n", "FAILURE", CU_get_error_msg());
     }
 
     return nr_of_fails > 0 ? 1 : 0;

@@ -44,10 +44,10 @@ static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
 
     // @TODO: assert sp < frame->bytecode->max_sp
 
-    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
+//    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
-        printf("Too many blocks!");
+        fatal_error(1, "Too many blocks!");
         exit(1);
     }
 
@@ -88,11 +88,10 @@ void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, 
 t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
     t_vm_frameblock *block;
 
-    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
+//    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
 
     if (frame->block_cnt <= 0) {
-        printf("Not enough blocks!");
-        exit(1);
+        fatal_error(1, "Not enough blocks\n");
     }
 
     frame->block_cnt--;
@@ -103,6 +102,6 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
 /**
  *
  */
-t_vm_frameblock *vm_fetch_block(t_vm_frame *frame) {
+t_vm_frameblock *vm_peek_block(t_vm_frame *frame) {
     return &frame->blocks[frame->block_cnt - 1];
 }
