@@ -109,15 +109,22 @@ static char *_build_class_path(char *module) {
 static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *module_path) {
     // We must make sure that things like . are actually resolved to the path of the CURRENT frame source.
     char *old_cwd = NULL;
-    if (frame && frame->context) {
-        getcwd(old_cwd, 0);
-        chdir(frame->context->file.path);
-    }
-    char *path = realpath(root_path, NULL);
-    if (frame && frame->context) {
-        chdir(old_cwd);
-        free(old_cwd);
-    }
+    char *path = NULL;
+
+//    if (frame && frame->context) {
+//        // Change to context path
+//        long size = pathconf(".", _PC_PATH_MAX);
+//        old_cwd = (char *)smm_malloc((size_t)size);
+//        getcwd(old_cwd, (size_t)size);
+//        printf("newpath: %s\n", frame->context->file.path);
+//        chdir(frame->context->file.path);
+//    }
+    path = realpath(root_path, NULL);
+//    if (frame && frame->context) {
+//        // Change back from context path
+//        chdir(old_cwd);
+//        smm_free(old_cwd);
+//    }
     if (! path) return NULL;
 
     // Strip trailing /
@@ -125,6 +132,7 @@ static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *mo
         path[strlen(path)-1] = '\0';
     }
 
+    // If path is just .  we need to use the current filepath
     if (strcmp(path, ".") == 0) {
         path = smm_strdup(frame->context->file.path);
     }
@@ -139,7 +147,12 @@ static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *mo
     }
     smm_free(class_path);
     smm_free(path); // free realpath()
-    return final_path;
+
+
+    char *real_final_path = realpath(final_path, NULL);
+    smm_free(final_path);
+
+    return real_final_path;
 }
 
 /**

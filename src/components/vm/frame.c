@@ -63,7 +63,7 @@ char *vm_frame_absolute_namespace(t_vm_frame *frame, char *classname) {
         return abs_classname;
     }
 
-    printf("Current class path: %s\n", frame->context->class.path);
+    DEBUG_PRINT("Current class path: %s\n", frame->context->class.path);
     smm_asprintf(&abs_classname, "%s::%s", frame->context->class.path, classname);
     return abs_classname;
 }
