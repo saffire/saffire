@@ -1501,6 +1501,9 @@ block_end:
     thread_set_current_frame(old_current_frame);
 
     //printf("RETURNING FROM _VM_EXEC(): %s {%d}\n", object_debug(ret), ret->ref_count);
+
+    // Increase reference count. Otherwise we might not be able to return objects from one frame to another
+    if (ret) object_inc_ref(ret);
     return ret;
 }
 
@@ -1720,14 +1723,18 @@ int vm_execute(t_vm_frame *frame) {
     if (OBJECT_IS_NUMERICAL(result)) {
         // Correct numerical returned, use as return code
         ret_val = ((t_numerical_object *) result)->value;
+        object_dec_ref(result);
     } else {
         // Convert returned object to numerical, so we can use it as an error code
         t_attrib_object *result_numerical = object_attrib_find(result, "__numerical");
         if (result_numerical) {
-            result = vm_object_call(result, result_numerical, 0);
-            ret_val = ((t_numerical_object *) result)->value;
+            t_object *result2 = vm_object_call(result, result_numerical, 0);
+            object_dec_ref(result);
+            ret_val = ((t_numerical_object *) result2)->value;
+            object_dec_ref(result2);
         } else {
             // Not a numerical result returned, and we cannot cast it to numerical neither :/
+            object_dec_ref(result);
             ret_val = 1;
         }
     }
