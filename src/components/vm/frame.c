@@ -313,7 +313,6 @@ t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
  * Same as get, but does not halt on error (but returns NULL)
  */
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
-    ht_debug(frame->local_identifiers->ht);
     t_object *obj = vm_frame_local_identifier_exists(frame, id);
     if (obj) return obj;
 
@@ -334,12 +333,14 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
         fatal_error(1, "Trying to fetch from outside identifier range");
     }
 
+#ifdef __DEBUG
     DEBUG_PRINT("---------------------\n");
     DEBUG_PRINT("frame identifiers:\n");
     for (int i=0; i!=frame->bytecode->identifiers_len; i++) {
         DEBUG_PRINT("ID %d: %s\n", i, frame->bytecode->identifiers[i]->s);
     }
     print_debug_table(frame->local_identifiers->ht, "Locals");
+#endif
 
     return frame->bytecode->identifiers[idx]->s;
 }
