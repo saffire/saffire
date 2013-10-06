@@ -83,7 +83,7 @@ class Dumper {
         printf(str_repeat(self::PADDING, $level) . "  Stack size          : %5d (0x%08X)\n", $code->getStackSize(), $code->getStackSize());
         printf(str_repeat(self::PADDING, $level) . "  Code size           : %5d (0x%08X)\n", $code->getCodeSize(), $code->getCodeSize());
         printf(str_repeat(self::PADDING, $level) . "  Constant count      : %5d\n", count($code->getConstants()));
-        printf(str_repeat(self::PADDING, $level) . "  Identifier count    : %5d\n", count($code->getIdentifier()));
+        printf(str_repeat(self::PADDING, $level) . "  Identifier count    : %5d\n", count($code->getIdentifiers()));
         printf(str_repeat(self::PADDING, $level) . "  Lineno start        : %5d (0x%08X)\n", $code->getLinenoOffset(), $code->getLinenoOffset());
         printf(str_repeat(self::PADDING, $level) . "  Lineno size         : %5d (0x%08X)\n", $code->getLinenoLength(), $code->getLinenoLength());
         printf(str_repeat(self::PADDING, $level) . "-------------------------------------------------------------------------------\n");
@@ -91,6 +91,13 @@ class Dumper {
 
         printf(str_repeat(self::PADDING, $level) . "-- Uncompressed bytecode ------------------------------------------------------\n");
         $this->hexdump($code->getOpcodes(), str_repeat(self::PADDING, $level)."  ");
+        printf(str_repeat(self::PADDING, $level) . "-------------------------------------------------------------------------------\n");
+        echo "\n";
+
+        printf(str_repeat(self::PADDING, $level) . "-- Identifiers ----------------------------------------------------------------\n");
+        foreach ($code->getIdentifiers() as $k => $i) {
+            printf(str_repeat(self::PADDING, $level) . "  %d: %s\n", $k+1, $i->getData());
+        }
         printf(str_repeat(self::PADDING, $level) . "-------------------------------------------------------------------------------\n");
         echo "\n";
 
@@ -112,13 +119,6 @@ class Dumper {
                     $this->ansi->bold();
                     break;
             }
-        }
-        printf(str_repeat(self::PADDING, $level) . "-------------------------------------------------------------------------------\n");
-        echo "\n";
-
-        printf(str_repeat(self::PADDING, $level) . "-- Identifiers ----------------------------------------------------------------\n");
-        foreach ($code->getIdentifier() as $k => $i) {
-            printf(str_repeat(self::PADDING, $level) . "  %d: %s\n", $k+1, $i->getData());
         }
         printf(str_repeat(self::PADDING, $level) . "-------------------------------------------------------------------------------\n");
         echo "\n";

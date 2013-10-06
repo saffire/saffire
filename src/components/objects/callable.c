@@ -80,18 +80,30 @@ SAFFIRE_METHOD(callable, internal) {
     RETURN_FALSE;
 }
 
-/**
- * Rebinds the callable to another object
- */
-SAFFIRE_METHOD(callable, bind) {
-    // @TODO: use object_parse_parameters
-
-    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-    t_object *newbound_obj = (t_object *)e->data;
-    self->binding = newbound_obj;
-
-    RETURN_SELF;
-}
+///**
+//* Rebinds the callable to an object
+//*/
+//SAFFIRE_METHOD(callable, bind) {
+//    t_object *newbound_obj;
+//
+//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "u",  &newbound_obj)) {
+//        return NULL;
+//    }
+//
+//    object_release(self->attribute);
+//    self->attribute = newbound_obj;
+//    object_inc_ref(newbound_obj);
+//    RETURN_SELF;
+//}
+//
+///**
+//* Unbinds the callable from an object
+//*/
+//SAFFIRE_METHOD(callable, unbind) {
+//    object_release(self->attribute);
+//    self->attribute =  NULL;
+//    RETURN_SELF;
+//}
 
 
 /**
@@ -132,14 +144,15 @@ SAFFIRE_METHOD(callable, conv_null) {
  */
 void object_callable_init(void) {
     Object_Callable_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__internal?",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__bind",         0, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+    object_add_internal_method((t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+//    object_add_internal_method((t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+//    object_add_internal_method((t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
 }
 
 /**
@@ -147,8 +160,7 @@ void object_callable_init(void) {
  */
 void object_callable_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Callable_struct);
-    ht_destroy(Object_Callable_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Callable_struct);
 }
 
 
@@ -157,6 +169,9 @@ static t_object *obj_new(t_object *self) {
     t_callable_object *obj = smm_malloc(sizeof(t_callable_object));
     memcpy(obj, Object_Callable, sizeof(t_callable_object));
 
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
+
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
     obj->flags |= OBJECT_TYPE_INSTANCE;
@@ -164,26 +179,29 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
+/**
+ * Note that when we create a callable, we do not connect this to any attribute. This is done when we build attributes.
+ * Thus, it IS possible that a callable is used with a NULL attribute.
+ */
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
 
+    // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->callable_flags = (int)e->data;
+    callable_obj->routing = (int)e->data;
     e = DLL_NEXT(e);
-
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // internal code is just a pointer to the code
         callable_obj->code.native_func = (void *)e->data;
-        e = DLL_NEXT(e);
     } else {
+        // external code is a bytecode structure
         callable_obj->code.bytecode = (t_bytecode *)e->data;
-        e = DLL_NEXT(e);
     }
-
-    callable_obj->binding = (t_object *)e->data;
     e = DLL_NEXT(e);
 
-    callable_obj->arguments = (t_hash_object *)e->data;
+    // Add arguments for the callable
+    callable_obj->arguments = (t_hash_table *)e->data;
     e = DLL_NEXT(e);
 }
 
@@ -191,14 +209,45 @@ static void obj_destroy(t_object *obj) {
     smm_free(obj);
 }
 
+static void obj_free(t_object *obj) {
+    t_callable_object *callable_obj = (t_callable_object *)obj;
+
+    if (callable_obj->binding) {
+        object_release(callable_obj->binding);
+    }
+
+    if (callable_obj->arguments) {
+        t_hash_iter iter;
+        ht_iter_init(&iter, callable_obj->arguments);
+        while (ht_iter_valid(&iter)) {
+            t_method_arg *arg = ht_iter_value(&iter);
+
+            // Keys are destroyed through ht_destroy
+
+            object_release((t_object *)arg->value);
+            object_release((t_object *)arg->typehint);
+            smm_free(arg);
+
+            ht_iter_next(&iter);
+        }
+
+        ht_destroy(callable_obj->arguments);
+    }
+}
+
 
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "callable object. F: %d", self->callable_flags);
+    sprintf(global_buf, "%s callable(%d parameters)",
+        CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
+        self->arguments ? self->arguments->element_count : 0
+    );
+
     return global_buf;
 }
+
 #endif
 
 
@@ -206,9 +255,10 @@ static char *obj_debug(t_object *obj) {
 t_object_funcs callable_funcs = {
         obj_new,              // Allocate a new callable object
         obj_populate,         // Populates a callable object
-        NULL,                 // Free a callable object
+        obj_free,             // Free a callable object
         obj_destroy,          // Destroy a callable object
-        NULL,               // Clone
+        NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

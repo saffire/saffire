@@ -44,7 +44,7 @@
 
     typedef struct _asm_opr {
         int type;
-        union {
+        struct {            // Not a union, but a struct. This way we can always figure out easily if "s" has to be freed.
             char    *s;
             long    l;
         } data;

@@ -57,18 +57,17 @@ foreach ($yaml['interfaces'] as $interface) {
     fwrite($fp, "static void object_".$interface['name']."_init(void) {\n");
     fwrite($fp, "    Object_".ucfirst(strtolower($interface['name']))."_struct.attributes = ht_create();\n");
     foreach ($interface['methods'] as $method) {
-        fwrite($fp, "    object_add_internal_method((t_object *)&Object_".ucfirst(strtolower($interface['name']))."_struct, \"".$method."\", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);\n");
+        fwrite($fp, "    object_add_internal_method((t_object *)&Object_".ucfirst(strtolower($interface['name']))."_struct, \"".$method."\", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);\n");
     }
     fwrite($fp, "    vm_populate_builtins(\"".$interface['name']."\", (t_object *)&Object_".ucfirst(strtolower($interface['name']))."_struct);\n");
     fwrite($fp, "}\n");
     fwrite($fp, "\n");
     fwrite($fp, "static void object_".$interface['name']."_fini(void) {\n");
-    fwrite($fp, "    object_remove_all_internal_attributes((t_object *)&Object_".ucfirst(strtolower($interface['name']))."_struct);\n");
-    fwrite($fp, "    ht_destroy(Object_".ucfirst(strtolower($interface['name']))."_struct.attributes);\n");
+    fwrite($fp, "    object_free_internal_object((t_object *)&Object_".ucfirst(strtolower($interface['name']))."_struct);\n");
     fwrite($fp, "}\n");
     fwrite($fp, "\n");
     fwrite($fp, "t_interface_object Object_".ucfirst(strtolower($interface['name']))."_struct = {\n");
-    fwrite($fp, "    OBJECT_HEAD_INIT(\"".$interface['name']."\", objectTypeUser, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL),\n");
+    fwrite($fp, "    OBJECT_HEAD_INIT(\"".ucfirst(strtolower($interface['name']))."\", objectTypeUser, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL),\n");
     fwrite($fp, "};\n");
     fwrite($fp, "\n");
     fwrite($fp, "\n");

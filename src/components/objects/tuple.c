@@ -171,17 +171,17 @@ SAFFIRE_METHOD(tuple, conv_string) {
  */
 void object_tuple_init(void) {
     Object_Tuple_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__boolean",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__null",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }
@@ -191,8 +191,7 @@ void object_tuple_init(void) {
  */
 void object_tuple_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Tuple_struct);
-    ht_destroy(Object_Tuple_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Tuple_struct);
 }
 
 
@@ -201,6 +200,9 @@ static t_object *obj_new(t_object *self) {
     // Create new object and copy all info
     t_tuple_object *obj = smm_malloc(sizeof(t_tuple_object));
     memcpy(obj, Object_Tuple, sizeof(t_tuple_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -244,7 +246,11 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        sprintf(global_buf, "Tuple");
+    } else {
+        sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
+    }
     return global_buf;
 }
 #endif
@@ -257,6 +263,7 @@ t_object_funcs tuple_funcs = {
         obj_free,             // Free a tuple object
         obj_destroy,
         NULL,                 // Clone a tuple object
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

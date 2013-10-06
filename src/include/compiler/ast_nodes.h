@@ -150,7 +150,7 @@
 
     t_ast_element *ast_node_string(int lineno, char *value);
     t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src);
-    t_ast_element *ast_node_string_context_class(int lineno, t_ast_element *src);
+    t_ast_element *ast_node_string_context_class(int lineno, char *element);
     t_ast_element *ast_node_numerical(int lineno, int value);
     t_ast_element *ast_node_identifier(int lineno, char *var_name);
     t_ast_element *ast_node_property(int lineno, t_ast_element *class, t_ast_element *property);
@@ -160,7 +160,7 @@
     t_ast_element *ast_node_add(t_ast_element *src, t_ast_element *new_element);
     t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group);
     t_ast_element *ast_node_string_concat(t_ast_element *src, char *s);
-    t_ast_element *ast_node_concat(t_ast_element *src, char *s);
+    t_ast_element *ast_node_identifier_concat(t_ast_element *src, char *s);
     t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body);
     t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_element *implements, t_ast_element *body);
     t_ast_element *ast_node_nop(void);
@@ -170,6 +170,8 @@
     t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
+
+    void ast_free_node(t_ast_element *p);
 
 
     t_ast_element *ast_generate_from_file(const char *filename);

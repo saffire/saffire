@@ -18,6 +18,9 @@ void test_hashtable_replace_does_not_affect_original_after_shallow_copy() {
 
     char *copy_after = (char *) ht_find_str(copy, "key");
     CU_ASSERT(strcmp(copy_after, "replaced_value") == 0);
+
+    ht_destroy(original);
+    ht_destroy(copy);
 }
 
 

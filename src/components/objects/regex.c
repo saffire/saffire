@@ -158,16 +158,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__ctor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__dtor",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__boolean",     CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__null",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__numerical",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__string",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__boolean",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__null",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__numerical",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "__string",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
+    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     vm_populate_builtins("regex", (t_object *)&Object_Regex_struct);
 }
@@ -177,14 +177,16 @@ void object_regex_init(void) {
  */
 void object_regex_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Regex_struct);
-    ht_destroy(Object_Regex_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Regex_struct);
 }
 
 
 static t_object *obj_new(t_object *self) {
     t_regex_object *obj = smm_malloc(sizeof(t_regex_object));
     memcpy(obj, Object_Regex, sizeof(t_regex_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -229,9 +231,11 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    char *s = ((t_regex_object *)obj)->regex_string;
-    strncpy(global_buf, s, 1023);
-    global_buf[1023] = 0;
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        strcpy(global_buf, "Regex");
+    } else {
+        sprintf(global_buf, "regex(%s)", ((t_regex_object *)obj)->regex_string);
+    }
     return global_buf;
 }
 #endif
@@ -243,6 +247,7 @@ t_object_funcs regex_funcs = {
         obj_free,             // Free a regex object
         obj_destroy,          // Clone a regex object
         NULL,                 // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

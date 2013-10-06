@@ -39,6 +39,7 @@
     #include "numerical.h"
     #include "regex.h"
     #include "tuple.h"
+    #include "userland.h"
     #include "interfaces.h"
     #include "exception.h"
 

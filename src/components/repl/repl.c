@@ -100,8 +100,8 @@ void repl_exec(SaffireParser *sp) {
 
         t_hash_table *asm_code = ast_to_asm(sp->ast, 0);
         assembler_output_stream(asm_code, stdout);
-        t_bytecode *bc = assembler(asm_code, NULL);
-        bc = 0;
+        //t_bytecode *bc = assembler(asm_code, NULL);
+        //bc = 0;
         //vm_execute(sp->initial_frame, bc);
 
         printf("---------------------------------------------------------------\n");
@@ -187,7 +187,8 @@ int repl(void) {
     }
 
     // Initialize runner
-    t_vm_frame *initial_frame = vm_init(sp, VM_RUNMODE_REPL);
+    vm_init(sp, VM_RUNMODE_REPL);
+    t_vm_frame *initial_frame = vm_frame_new(NULL, "", "", NULL);
 
     // Main loop of the REPL
     while (! sp->eof) {
@@ -221,7 +222,8 @@ int repl(void) {
      */
     free_parserinfo(sp->parserinfo);
 
-    vm_fini(initial_frame);
+    vm_frame_destroy(initial_frame);
+    vm_fini();
 
     // Destroy scanner structure
     yylex_destroy(scanner);

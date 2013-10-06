@@ -73,7 +73,7 @@ static void resize(t_hash_table *ht, int new_bucket_count) {
     t_hash_table_bucket *htb = ht->head;
     while (htb) {
         hash_t hash_capped = htb->hash % new_bucket_count;
-        htb->next_in_list = new_bucket_list[hash_capped];       // just add the element in front of the line
+        htb->next_in_bucket = new_bucket_list[hash_capped];       // just add the element in front of the line
         new_bucket_list[hash_capped] = htb;
         htb = htb->next_element;
     }
@@ -118,7 +118,7 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
                 break;
         }
         if (found) break;
-        htb = htb->next_in_list;
+        htb = htb->next_in_bucket;
     }
 
     return htb;
@@ -165,7 +165,7 @@ static int add(t_hash_table *ht, t_hash_key *key, void *value) {
     htb->hash = hash_value;         // Store original hash value (for quick rehashing)
     htb->key = key;
     htb->value = value;
-    htb->next_in_list = NULL;
+    htb->next_in_bucket = NULL;
 
     // Set this element to head if no head is found yet
     if (ht->head == NULL) {
@@ -187,10 +187,10 @@ static int add(t_hash_table *ht, t_hash_key *key, void *value) {
     } else {
         // Allocated, added to end
         t_hash_table_bucket *cur_htb = ht->bucket_list[hash_value_capped];
-        while (cur_htb->next_in_list) cur_htb = cur_htb->next_in_list;
+        while (cur_htb->next_in_bucket) cur_htb = cur_htb->next_in_bucket;
 
         // Make sure links are correct
-        cur_htb->next_in_list = htb;
+        cur_htb->next_in_bucket = htb;
     }
 
     // Increase element count
@@ -241,6 +241,7 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
     if (ht->bucket_list[hash_value_capped] == NULL) return 0;
 
     // Traverse list to find actual element
+    t_hash_table_bucket *prev_htb = NULL;   // Keep a reference to the previous element in the bucket
     t_hash_table_bucket *htb = ht->bucket_list[hash_value_capped];
     while (htb) {
         int found = 0;
@@ -256,7 +257,8 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
                 break;
         }
         if (found) break;
-        htb = htb->next_in_list;
+        prev_htb = htb;
+        htb = htb->next_in_bucket;
     }
 
     // Key is still not found
@@ -275,9 +277,13 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
         ht->tail = htb->prev_element;
     }
 
-    // If we remove the element at the start of our bucket list, we need to make sure the bucket stays connected
-    if (htb == ht->bucket_list[hash_value_capped]) {
-        ht->bucket_list[hash_value_capped] = ht->bucket_list[hash_value_capped]->next_in_list;
+    // Check if we removed the first element of the bucket
+    if (prev_htb == NULL) {
+        // First element, so we need to "relink" the bucket
+        ht->bucket_list[hash_value_capped] = ht->bucket_list[hash_value_capped]->next_in_bucket;
+    } else {
+        // Otherwise, it's in the middle or at the end of the bucket, make sure it's connected correctly
+        prev_htb->next_in_bucket = htb->next_in_bucket;
     }
 
     // Remove the element from the element LL
@@ -288,7 +294,7 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
 
 
     // Free key and bucket
-    smm_free(htb->key);
+    ht_key_free(htb->key);
     smm_free(htb);
 
     // Decrease element count
@@ -302,20 +308,20 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
 t_hash_table_bucket *_copy_bucket(t_hash_table_bucket *bucket) {
     t_hash_table_bucket *copy = smm_malloc(sizeof(t_hash_table_bucket));
 
-    copy->key = bucket->key;
+    copy->key = ht_key_copy(bucket->key);
     copy->value = bucket->value;
     copy->hash = bucket->hash;
 
     copy->prev_element = bucket->prev_element;
     copy->next_element = bucket->next_element;
-    copy->next_in_list = bucket->next_in_list;
+    copy->next_in_bucket = bucket->next_in_bucket;
 
     return copy;
 }
 
 void _place_bucket(t_hash_table *ht, t_hash_table_bucket *bucket) {
     hash_t capped_hash = bucket->hash % ht->bucket_count;
-    bucket->next_in_list = ht->bucket_list[capped_hash];
+    bucket->next_in_bucket = ht->bucket_list[capped_hash];
     ht->bucket_list[capped_hash] = bucket;
 }
 
@@ -332,6 +338,7 @@ void deep_copy(t_hash_table *ht) {
     t_hash_table_bucket *new_current = ht->head;
     _place_bucket(ht, new_current);
     t_hash_table_bucket *new_bucket;
+    old_current = old_current->next_element;
 
     while(old_current) {
         new_bucket = _copy_bucket(old_current);

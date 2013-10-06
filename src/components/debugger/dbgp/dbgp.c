@@ -119,7 +119,7 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
 /**
  *
  */
-t_debuginfo *dbgp_init(t_vm_frame *frame) {
+t_debuginfo *dbgp_init(void) {
     DEBUG_PRINT(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
 
     t_debuginfo *di = (t_debuginfo *)malloc(sizeof(t_debuginfo));
@@ -137,7 +137,7 @@ t_debuginfo *dbgp_init(t_vm_frame *frame) {
     di->cur_cmd = NULL;
     di->cur_txid = NULL;
 
-    di->frame = frame;
+    di->frame = NULL;
 
 
     // Create a connection to the IDE.
@@ -169,8 +169,8 @@ t_debuginfo *dbgp_init(t_vm_frame *frame) {
 /**
  *
  */
-void dbgp_fini(t_debuginfo *di, t_vm_frame *frame) {
-    di->frame = frame;
+void dbgp_fini(t_debuginfo *di) {
+    di->frame = NULL;
 
     di->state = DBGP_STATE_STOPPING;
     di->reason = DBGP_REASON_OK;

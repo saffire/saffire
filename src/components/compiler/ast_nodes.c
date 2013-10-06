@@ -137,12 +137,12 @@ t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
     return p;
 }
 
-t_ast_element *ast_node_string_context_class(int lineno, t_ast_element *src) {
+t_ast_element *ast_node_string_context_class(int lineno, char *identifier) {
     t_ast_element *p = ast_node_alloc_element();
 
     p->lineno = lineno;
     p->type = typeAstString;
-    p->string.value = vm_context_get_class(src->identifier.name);
+    p->string.value = vm_context_strip_class(identifier);
 
     return p;
 }
@@ -375,7 +375,7 @@ t_ast_element *ast_node_opr(int lineno, int opr, int nops, ...) {
 /**
  * Concatenates an identifier node onto an existing identifier node
  */
-t_ast_element *ast_node_concat(t_ast_element *src, char *s) {
+t_ast_element *ast_node_identifier_concat(t_ast_element *src, char *s) {
     src->identifier.name= smm_realloc(src->identifier.name, strlen(src->identifier.name) + strlen(s) + 1);
     strcat(src->identifier.name, s);
     return src;
@@ -557,8 +557,7 @@ t_ast_element *ast_generate_tree(FILE *fp, char *filename) {
     free_parserinfo(sp.parserinfo);
     sp.parserinfo = NULL;
 
-    // @TODO: Cleanup sp structure?
-
+    yylex_destroy(scanner);
 
     return ast;
 }

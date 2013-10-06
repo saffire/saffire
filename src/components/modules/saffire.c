@@ -67,24 +67,24 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 }
 
 
-t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeAny, OBJECT_TYPE_INSTANCE, NULL) };
+t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
 
 static void _init(void) {
     saffire_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&saffire_struct, "version",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
-    object_add_internal_method((t_object *)&saffire_struct, "git_revision", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
-    object_add_internal_method((t_object *)&saffire_struct, "sapi",         CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
-    object_add_internal_method((t_object *)&saffire_struct, "debug",        CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
+    object_add_internal_method((t_object *)&saffire_struct, "version",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
+    object_add_internal_method((t_object *)&saffire_struct, "git_revision", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
+    object_add_internal_method((t_object *)&saffire_struct, "sapi",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
+    object_add_internal_method((t_object *)&saffire_struct, "debug",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
 
-    object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property((t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
+    object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
+    object_add_property((t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
 }
 
 static void _fini(void) {
     // Destroy methods and properties
-    ht_destroy(saffire_struct.attributes);
+    object_free_internal_object(&saffire_struct);
 }
 
 static t_object *_objects[] = {

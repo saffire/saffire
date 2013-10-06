@@ -25,40 +25,97 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include <libgen.h>
+#include "general/output.h"
 #include "vm/frame.h"
 #include "general/smm.h"
 
-char *vm_context_get_path(char *context) {
-    char *s = smm_strdup(context);
 
+/**
+ * Returns the context path from a specified context
+ */
+char *vm_context_strip_path(char *class_path) {
+    char *s = smm_strdup(class_path);
+
+    // Seek last ':'
     char *c = strrchr(s, ':');
-    if (c == NULL) return smm_strdup("");
-    if ((s - c) == 0) return smm_strdup("");
+    if (c == NULL) {
+        smm_free(s);
+        // @TODO: none
+        fatal_error(1, "context does not have any ::");
+    }
 
     c--;
-    if (*c == ':') *c = '\0';
+    if (c == s) {
+        // if we stripped everything, we should just return the :: part. this is an edge-case for top-level class paths
+        c+=2;
+    }
+    *c = '\0';
     return s;
 }
 
 
-char *vm_context_get_class(char *context) {
-
-    char *c = strrchr(context, ':');
-    if (c == NULL) return smm_strdup(context);
-    if ((context - c) == 0) return smm_strdup(context);
+/**
+ * Returns the context path from a specified context.
+ */
+char *vm_context_strip_class(char *class_path) {
+    char *c = strrchr(class_path, ':');
+    if (c == NULL) return smm_strdup(class_path);
+    if ((class_path - c) == 0) return smm_strdup(class_path);
 
     c++;
     return smm_strdup(c);
 }
 
 
-void vm_context_set_context(t_vm_frame *frame, char *context) {
-    if (frame->context) smm_free(frame->context);
-    frame->context = smm_strdup(context);
+/**
+ * Sets the context for this frame and plits the nessesary class and path.
+ */
+void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path) {
+    frame->context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
+    bzero(frame->context, sizeof(t_vm_context));
 
-    if (frame->context_path) smm_free(frame->context_path);
-    frame->context_path = vm_context_get_path(context);
+    if (class_path) {
+        frame->context->class.path = vm_context_strip_path(class_path);
+        frame->context->class.name = vm_context_strip_class(class_path);
+    }
 
-    if (frame->context_class) smm_free(frame->context_class);
-    frame->context_class = vm_context_get_class(context);
+    if (file_path) {
+        char *duppath = smm_strdup(file_path);
+        frame->context->file.path = smm_strdup(dirname(duppath));
+        frame->context->file.name = smm_strdup(basename(duppath));
+        smm_free(duppath);
+    }
 }
+
+/**
+ * Frees the context for this frame
+ */
+void vm_context_free_context(t_vm_frame *frame) {
+    smm_free(frame->context->class.path);
+    smm_free(frame->context->class.name);
+
+    smm_free(frame->context->file.path);
+    smm_free(frame->context->file.name);
+
+    smm_free(frame->context);
+    frame->context = NULL;
+}
+
+
+char *vm_context_get_class_path(t_vm_context *context) {
+    return context->class.path;
+}
+
+char *vm_context_get_class_name(t_vm_context *context) {
+    return context->class.name;
+}
+
+char *vm_context_get_file_path(t_vm_context *context) {
+    return context->file.path;
+}
+
+char *vm_context_get_file_name(t_vm_context *context) {
+    return context->file.name;
+}
+

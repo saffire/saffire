@@ -37,7 +37,7 @@
     typedef struct _vm_frame t_vm_frame;
 
 
-    void vm_populate_builtins(const char *name, void *data);
+    void vm_populate_builtins(const char *name, t_object *obj);
 
 //    // Forward define
 //    typedef struct _object t_object;
@@ -49,6 +49,7 @@
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
         t_object *(*clone)(t_object *);             // Clone this object to a new object
+        t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
 #ifdef __DEBUG
         char *(*debug)(t_object *);                 // Return debug string (value and info)
 #endif
@@ -68,6 +69,7 @@
     #define OPERATOR_COA    10
 
 
+    // Comparisson defines
     #define COMPARISON_EQ     0     // Equals
     #define COMPARISON_NE     1     // Not equals
     #define COMPARISON_LT     2     // Less than
@@ -76,32 +78,20 @@
     #define COMPARISON_GE     5     // Greater or equal
     #define COMPARISON_IN     6     // In set
     #define COMPARISON_NI     7     // Not in set
-    #define COMPARISON_EX     8     // Compare exception
+    #define COMPARISON_EX     8     // Compare exception, not a "real" comparison, but performs an "instanceof" check
 
 
     // Object flags
     #define OBJECT_TYPE_CLASS         1            /* Object is a class */
     #define OBJECT_TYPE_INTERFACE     2            /* Object is an interface */
     #define OBJECT_TYPE_ABSTRACT      4            /* Object is an abstract class */
-    #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance (object) */
+    #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance */
     #define OBJECT_TYPE_MASK         15            /* Object type bitmask */
 
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
-    #define OBJECT_FLAG_STATIC        32           /* Do not free memory for this object */
+    #define OBJECT_FLAG_ALLOCATED     32           /* Object can be freed, as it is allocated through alloc() */
     #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
-
-
-
-    typedef struct _attribute {
-        // Meta data
-        struct {
-            char        visibility;
-            char        access;
-        } meta;
-
-        t_object *attribute;
-    } t_attribute;
 
 
     // Object type and flag checks
@@ -111,8 +101,8 @@
     #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
 
     #define OBJECT_TYPE_IS_IMMUTABLE(obj) ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
-    #define OBJECT_TYPE_IS_STATIC(obj) ((obj->flags & OBJECT_FLAG_STATIC) == OBJECT_FLAG_STATIC)
     #define OBJECT_TYPE_IS_FINAL(obj) ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
+    #define OBJECT_IS_ALLOCATED(obj)  ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
 
 
     // Simple macro's for object type checks
@@ -129,8 +119,13 @@
     #define OBJECT_IS_HASH(obj)         (obj->type == objectTypeHash)
 
 
-    // Convert object to value
-    #define OBJ2STR(_obj_) smm_strdup(((t_string_object *)_obj_)->value)
+    // fetch a duplicated (string) value from a string object. Must be freed afterwards
+    #define DUP_OBJ2STR(_obj_) smm_strdup(OBJ2STR(_obj_))
+
+    // fetch (string) value from a string object
+    #define OBJ2STR(_obj_) (((t_string_object *)_obj_)->value)
+
+    // fetch (long) value from a numerical object
     #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
 
 
@@ -208,27 +203,30 @@
     void object_init(void);
     void object_fini(void);
 
-    t_object *object_find_actual_attribute(t_object *obj, char *attr_name);
-    t_object *object_find_attribute(t_object *obj, char *attribute_name);
-
-    void object_free(t_object *obj);
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
     t_object *object_new(t_object *obj, int arg_count, ...);
     t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
+    t_object *object_alloca(t_object *obj, t_dll *arguments);
+    t_object *object_alloc(t_object *obj, int arg_count, ...);
     void object_inc_ref(t_object *obj);
-    void object_dec_ref(t_object *obj);
+    long object_dec_ref(t_object *obj);
+
+    t_object *object_allocate(t_object *obj, int arg_count, ...);
+    long object_release(t_object *obj);
 
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
-    void object_remove_all_internal_attributes(t_object *obj);
+    void object_free_internal_object(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
     int object_check_interface_implementations(t_object *obj);
     int object_has_interface(t_object *obj, const char *interface);
 
     void object_raise_exception(t_object *exception, int code, char *format, ...);
+
+    //void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name);
 
 #endif

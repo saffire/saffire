@@ -28,6 +28,7 @@
 #define __DEBUG_H__
 
     #include <stdio.h>
+    #include "general/output.h"
 
     #ifdef __DEBUG
         #define DEBUG_PRINT output_debug

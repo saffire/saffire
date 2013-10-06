@@ -58,8 +58,10 @@ void *stack_pop(t_stack *stack) {
     }
     t_dll_element *e = DLL_TAIL(stack->dll);
 
+    // As dll_remove will throw away 'e', we must save data first..
+    void *ret = e->data;
     dll_remove(stack->dll, e);
-    return e->data;
+    return ret;
 }
 
 /**

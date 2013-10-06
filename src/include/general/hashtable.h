@@ -39,10 +39,10 @@
     typedef struct _hash_key {
         char type;                          // One of the HASH_KEY_* defines
         union {
-            char *s;
-            int n;
-            void *p;
-        } val;                              // Actual key
+            char *s;                        // String value
+            int n;                          // Numerical value
+            void *p;                        // Custom value (normally, t_object)
+        } val;
     } t_hash_key;
 
 
@@ -56,7 +56,7 @@
         struct _hash_table_bucket *prev_element; // Link to next element (any bucket)
         struct _hash_table_bucket *next_element; // Link to next element (any bucket)
 
-        struct _hash_table_bucket *next_in_list; // Link to next entry in this bucket
+        struct _hash_table_bucket *next_in_bucket; // Link to next entry in this bucket
     } t_hash_table_bucket;
 
 
@@ -121,6 +121,9 @@
     void *ht_remove_num(t_hash_table *ht, unsigned long key);
     void *ht_remove_obj(t_hash_table *ht, t_object *key);
 
+#ifdef __DEBUG
+    void ht_debug(t_hash_table *ht);
+#endif
 
 
     // Functionality for iterating a hash table (forward only)
@@ -139,6 +142,10 @@
     unsigned long ht_iter_key_num(t_hash_iter *iter);
     t_object *ht_iter_key_obj(t_hash_iter *iter);
     void *ht_iter_value(t_hash_iter *iter);
+
+    t_hash_key *ht_key_create(int type, void *val);
+    t_hash_key *ht_key_copy(t_hash_key *org);
+    void ht_key_free(t_hash_key *hk);
 
 
 #endif

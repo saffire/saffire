@@ -140,22 +140,23 @@ void object_exception_add_generated_exceptions(void);
 void object_exception_init(void) {
     Object_Exception_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__ctor",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_ctor);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__ctor",   ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_ctor);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__string",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
 
     vm_populate_builtins("exception", Object_Exception);
+
     object_exception_add_generated_exceptions();
 }
 
@@ -164,8 +165,7 @@ void object_exception_init(void) {
  */
 void object_exception_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Exception_struct);
-    ht_destroy(Object_Exception_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Exception_struct);
 }
 
 /**
@@ -180,6 +180,9 @@ void object_exception_fini(void) {
 static t_object *obj_new(t_object *self) {
     t_exception_object *obj = smm_malloc(sizeof(t_exception_object));
     memcpy(obj, self, sizeof(t_exception_object));
+
+    // Dynamically allocated
+    obj->flags |= OBJECT_FLAG_ALLOCATED;
 
     // These are instances
     obj->flags &= ~OBJECT_TYPE_MASK;
@@ -221,8 +224,12 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    t_exception_object *exception = (t_exception_object *)obj;
-    snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        snprintf(global_buf, 1023, "%s", obj->name);
+    } else {
+        t_exception_object *exception = (t_exception_object *)obj;
+        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message);
+    }
     return global_buf;
 }
 #endif
@@ -233,6 +240,7 @@ t_object_funcs exception_funcs = {
         obj_free,           // Free a exception object
         obj_destroy,        // Destroy a exception object
         NULL,               // Clone
+        NULL,                 // Cache
 #ifdef __DEBUG
         obj_debug
 #endif

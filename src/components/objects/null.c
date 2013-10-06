@@ -74,12 +74,15 @@ SAFFIRE_COMPARISON_METHOD(null, ne) {
 void object_null_init(void) {
     Object_Null_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Null_struct, "__boolean",   CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Null_struct, "__null",      CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Null_struct, "__numerical", CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Null_struct, "__string",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
+//    // These are instances, not classes, so they should have a refcount of 1 to start with
+//    Object_Null_struct.ref_count = 1;
 
-    object_add_internal_method((t_object *)&Object_Null_struct, "__cmp_ne",    CALLABLE_FLAG_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__boolean",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__null",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__numerical", ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__string",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
+
+    object_add_internal_method((t_object *)&Object_Null_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
 
     vm_populate_builtins("null", Object_Null);
 }
@@ -89,15 +92,19 @@ void object_null_init(void) {
  */
 void object_null_fini(void) {
     // Free attributes
-    object_remove_all_internal_attributes((t_object *)&Object_Null_struct);
-    ht_destroy(Object_Null_struct.attributes);
+    object_free_internal_object((t_object *)&Object_Null_struct);
 }
 
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
-    return "null";
+    return "Null";
 }
 #endif
+
+
+static t_object *obj_cache(t_object *self, t_dll *arg_list) {
+    return Object_Null;
+}
 
 
 t_object_funcs null_funcs = {
@@ -106,12 +113,13 @@ t_object_funcs null_funcs = {
         NULL,               // Free
         NULL,               // Destroy
         NULL,               // Clone
+        obj_cache,          // Cache
 #ifdef __DEBUG
         obj_debug
 #endif
 };
 
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_STATIC | OBJECT_FLAG_IMMUTABLE, &null_funcs) };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_IMMUTABLE, &null_funcs) };
 
 

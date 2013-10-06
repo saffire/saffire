@@ -59,7 +59,7 @@ int thread_exception_thrown(void) {
  * Creates a new exception based on the base class, on the code and message given
  */
 void thread_create_exception(t_exception_object *exception, int code, const char *message) {
-    current_thread->exception = (t_exception_object *)object_new((t_object *)exception, 2, code, message);
+    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 2, code, message);
 }
 
 /**
