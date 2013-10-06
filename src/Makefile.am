@@ -22,7 +22,7 @@ endif
 AM_CFLAGS += -I$(top_srcdir)/src/include $(edit_CFLAGS) ${libxml2_CFLAGS}
 
 # Complain about everything, except unused functions
-AM_CFLAGS += -Wall -Wno-unused-function
+AM_CFLAGS += -Wall -Wno-unused-function -Wunused-result
 
 
 noinst_LIBRARIES =
