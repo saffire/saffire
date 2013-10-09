@@ -2,19 +2,17 @@ title: Use and import tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip use is not supported yet
-use io;
-====
-@@@@
-!skip use is not supported yet
-use io as blaat;
-====
-@@@@
 import io from io;
+
+io.print("hello\n");
 ====
+hello
 @@@@
 import io as foo from io;
+
+foo.print("hello\n");
 ====
+hello
 @@@@
 import io as foo;
 ====

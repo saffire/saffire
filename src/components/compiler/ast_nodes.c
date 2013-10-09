@@ -124,6 +124,16 @@ t_ast_element *ast_node_string(int lineno, char *value) {
     return p;
 }
 
+t_ast_element *ast_node_id_to_string(t_ast_element *src) {
+    t_ast_element *p = ast_node_alloc_element();
+
+    p->lineno = src->lineno;
+    p->type = typeAstString;
+    p->string.value = smm_strdup(src->identifier.name);
+
+    return p;
+}
+
 /**
  * Duplicate AST string node
  */
