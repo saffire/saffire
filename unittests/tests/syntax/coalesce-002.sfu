@@ -46,10 +46,10 @@ io.print(b, "\n");
 import io;
 
 class foo {
-    public method bar() {
+    static public method bar() {
         return false;
     }
-    public method baz() {
+    static public method baz() {
         return true;
     }
 }
