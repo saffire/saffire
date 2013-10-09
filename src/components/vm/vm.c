@@ -202,7 +202,12 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
         char *name = ht_iter_key_str(&iter);
         t_attrib_object *attrib = ht_iter_value(&iter);
 
+        // We need to (re)bind the attribute to the class.
+        object_dec_ref(attrib->bound_class);
         attrib->bound_class = (t_object *)user_obj;
+        object_inc_ref((t_object *)user_obj);
+
+        smm_free(attrib->bound_name);
         attrib->bound_name = smm_strdup(name);
 
         ht_iter_next(&iter);
@@ -210,7 +215,6 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
 
     return user_obj;
 }
-
 
 /**
  * Call a callable with arguments
@@ -307,7 +311,6 @@ static int _check_attribute_for_static_call(t_object *self, t_attrib_object *att
     return ATTRIB_METHOD_IS_STATIC(attrib_obj) ? 1 : 0;
 }
 
-
 /**
  * Checks visibility, returns 0 when not allowed, 1 when allowed.
  *
@@ -327,20 +330,24 @@ static int _check_attribute_for_static_call(t_object *self, t_attrib_object *att
  *   3) if attribute == private, we only allow from the same class
  */
 static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
-//    // Not bound, so always ok
-//    if (! attrib->bound_self) return 1;
+    if (attrib->bound_class == NULL) {
+        int i = 0;
+    }
+
+    // Not bound, so always ok
+    if (! attrib->bound_instance) return 1;
 
     // Public attributes are always ok
     if (ATTRIB_IS_PUBLIC(attrib)) return 1;
 
     // Private visiblity is allowed when we are inside the SAME class.
-    if (ATTRIB_IS_PRIVATE(attrib) && attrib->bound_class == self) return 1;
+    if (ATTRIB_IS_PRIVATE(attrib) && attrib->bound_instance->class == self) return 1;
 
     if (ATTRIB_IS_PROTECTED(attrib)) {
         // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
-        t_object *parent_binding = self->parent;
+        t_object *parent_binding = self;
         while (parent_binding) {
-            if (parent_binding == attrib->bound_class) return 1;
+            if (parent_binding->class == attrib->bound_class) return 1;
             parent_binding = parent_binding->parent;
         }
     }
@@ -423,8 +430,6 @@ void vm_fini(void) {
     object_fini();
     gc_fini();
 }
-
-
 
 int getlineno(t_vm_frame *frame) {
     if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
@@ -651,6 +656,9 @@ dispatch:
                     DEBUG_PRINT("Loading attribute: '%s'\n", OBJ2STR(name));
 
                     t_object *self_obj = vm_frame_stack_pop(frame);
+//                    if (OBJECT_IS_ATTRIBUTE(self_obj)) {
+//                        self_obj = ((t_attrib_object *)self_obj)->attribute;
+//                    }
                     t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name));
 
                     if (attrib_obj == NULL) {
@@ -674,6 +682,8 @@ dispatch:
                         goto block_end;
                     }
 
+                    // We don't actually use the original attribute, but a duplicated one. Here we add our reference to the
+                    // current object so we can do correct calls to the attributes method.
                     attrib_obj = object_attrib_duplicate(attrib_obj, self_obj);
                     DEBUG_PRINT("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->bound_name);
 
@@ -685,17 +695,14 @@ dispatch:
             // Store an attribute into an object
             case VM_STORE_ATTRIB :
                 {
-                    // @TODO: Store_attrib is not yet really ok
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     t_object *search_obj = vm_frame_stack_pop(frame);
-                    //t_object *bound_obj = vm_frame_find_identifier(frame, "self");
 
                     t_attrib_object *attrib_obj = object_attrib_find(search_obj, OBJ2STR(name));
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
                         goto block_end;
-
                     }
                     if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name));
@@ -703,6 +710,8 @@ dispatch:
                         goto block_end;
                     }
 
+                    // @TODO: if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
+                    // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
                     t_object *value = vm_frame_stack_pop(frame);
                     object_add_property(search_obj, OBJ2STR(name), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
 
@@ -876,18 +885,18 @@ dispatch:
             case VM_CALL :
                 {
                     // Fetch methods to call
-                    obj1 = vm_frame_stack_pop(frame);
-                    t_object *self = ((t_attrib_object *)obj1)->bound_self;
-
+                    obj1 = vm_frame_stack_pop_attrib(frame);
                     if (
                          ! (OBJECT_IS_ATTRIBUTE(obj1) && ATTRIB_IS_METHOD(obj1)) &&
                          ! (OBJECT_TYPE_IS_CLASS(obj1))
                        ) {
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is class or callable", OBJ2STR(obj1));
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR(obj1));
                         goto block_end;
                         break;
                     }
+
+                    t_object *self = ((t_attrib_object *)obj1)->bound_instance;
 
                     if (OBJECT_TYPE_IS_CLASS(obj1)) {
                         // Do actual instantiation (pass nothing)
@@ -1129,7 +1138,7 @@ So:
                     }
 
                     // Create new attribute object
-                    dst = object_alloc(Object_Attrib, 5, oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
+                    dst = object_alloc(Object_Attrib, 7, NULL, "", oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
 
                     // Push method object
                     vm_frame_stack_push(frame, dst);
@@ -1215,7 +1224,7 @@ So:
                     t_hash_table *attributes = ht_create();
                     for (int i=0; i!=oparg1; i++) {
                         t_object *name = vm_frame_stack_pop(frame);
-                        t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame);
+                        t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop_attrib(frame);
 
                         // Add method attribute to class
                         ht_add_str(attributes, OBJ2STR(name), attrib_obj);
@@ -1507,7 +1516,6 @@ block_end:
     return ret;
 }
 
-
 /**
  * Unwind blocks. There are two types of blocks: LOOP and EXCEPTION. When this function is called
  * we will by default unwind everything down EXCEPT when certain conditions are met.
@@ -1675,6 +1683,7 @@ t_object *vm_execute_import(t_vm_frame *import_frame) {
 
     return result;
 }
+
 /**
  *
  */
@@ -1743,7 +1752,6 @@ int vm_execute(t_vm_frame *frame) {
     return ret_val;
 }
 
-
 /**
  *
  */
@@ -1751,7 +1759,6 @@ void vm_populate_builtins(const char *name, t_object *obj) {
     obj->ref_count = 1;
     ht_add_obj(builtin_identifiers_ht, object_alloc(Object_String, 1, name), (void *)obj);
 }
-
 
 /**
 * Calls a method from specified object. Returns NULL when method is not found.
@@ -1774,7 +1781,6 @@ t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_co
 
     return ret_obj;
 }
-
 
 /**
  * This method is called when we need to call an operator method. Even though eventually

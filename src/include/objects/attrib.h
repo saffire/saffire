@@ -85,10 +85,10 @@
 
         t_object *attribute;                // Actual attribute (callback, or data value)
 
+        t_object *bound_instance;           // Instance to which the attribute is bound. NULL when not bound (ie; when defined in a class)
         t_object *bound_class;              // Class to which the attribute is bound. This is always a class.
         char *bound_name;                   // Name on which the attribute is known in the class.
 
-        t_object *bound_self;               // When duplicated, the attribute is called from this object (its "self")
     } t_attrib_object;
 
     t_attrib_object Object_Attrib_struct;

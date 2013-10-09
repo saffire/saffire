@@ -57,10 +57,14 @@ extern t_dll *dupped_attributes;
  * Duplicate the attribute object and link it to the bound-obj
  */
 t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self) {
+    DEBUG_PRINT("duplicating attrib '%s.%s' to '%s.%s'", attrib->bound_class->name, attrib->bound_name, self->name, attrib->bound_name);
     t_attrib_object *dup = smm_malloc(sizeof(Object_Attrib_struct));
     memcpy(dup, attrib, sizeof(Object_Attrib_struct));
 
     dup->ref_count = 0;     // no references yet
+
+    // @TODO: So we keep a list of max 100 duplicated attributes. But we don't use it for caching, but just to make sure that our
+    // attribute doesn't get eaten by the GC. Fix this into something a bit better...
 
     // Append to duplicated attributes
     object_inc_ref((t_object *)dup);    // increase reference count, so it's protected in this dll
@@ -71,7 +75,7 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
     }
 
     object_inc_ref(self);
-    dup->bound_self = self;
+    dup->bound_instance = self;
 
     return dup;
 }
@@ -84,7 +88,7 @@ t_attrib_object *object_attrib_find(t_object *self, char *name) {
     t_object *cur_obj = self;
 
     while (attr == NULL) {
-        // DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", attr_name, cur_obj->name);
+        DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", name, cur_obj->name);
 
         // Find the attribute in the current object
         attr = ht_find_str(cur_obj->attributes, name);
@@ -157,6 +161,13 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
+    attrib_obj->bound_class = (t_object *)e->data;
+    object_inc_ref(attrib_obj->bound_class);
+
+    e = DLL_NEXT(e);
+    attrib_obj->bound_name = smm_strdup((char *)e->data);
+
+    e = DLL_NEXT(e);
     attrib_obj->attr_type = (long)e->data;
 
     e = DLL_NEXT(e);
@@ -170,7 +181,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     e = DLL_NEXT(e);
     attrib_obj->attr_method_flags  = (long)e->data;
-
 
     // We "own" this attribute object. increase refcount
     object_inc_ref(attrib_obj->attribute);
