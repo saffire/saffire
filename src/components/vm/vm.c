@@ -1047,9 +1047,9 @@ So:
                 // need to do it here.
                 if (oparg1 == COMPARISON_EX) {
                     if (object_instance_of(right_obj, left_obj->name)) {
-                        vm_frame_stack_push(frame, object_alloc(Object_True, 0));
+                        vm_frame_stack_push(frame, Object_True);
                     } else {
-                        vm_frame_stack_push(frame, object_alloc(Object_False, 0));
+                        vm_frame_stack_push(frame, Object_False);
                     }
                     goto dispatch;
                     break;
