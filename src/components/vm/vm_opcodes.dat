@@ -65,13 +65,13 @@ BUILD_TUPLE          0xAD
 ITER_FETCH           0xB1
 
 STORE_ATTRIB         0xBD
-LOAD_ATTRIB          0xBE
 CALL                 0xBF
 
 
 ; 2 operands per opcode
 SETUP_ELSE_LOOP      0xC1
 BUILD_ATTRIB         0xC2
+LOAD_ATTRIB          0xC3
 
 ; 3 operands per opcode
 SETUP_EXCEPT         0xE0

@@ -126,7 +126,20 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
     switch (leaf->type) {
         case typeAstProperty :
+        {
+            // figure out scope
+            int scope = OBJECT_SCOPE_SELF;
+            node = leaf->property.class;
+            if (node->type == typeAstIdentifier && strcmp(node->identifier.name, "parent") == 0) {
+                scope = OBJECT_SCOPE_PARENT;
+
+                // We know the scope now. We still need to use "self"
+                smm_free(node->identifier.name);
+                node->identifier.name = smm_strdup("self");
+            }
+
             stack_push(state->context, (void *)st_ctx_load);
+            t_ast_element *node = leaf->property.class;
             WALK_LEAF(leaf->property.class);
             stack_pop(state->context);
 
@@ -135,12 +148,17 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             enum context ctx = (enum context)stack_peek(state->context);
             if (ctx == st_ctx_load) {
-                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ATTRIB, 1, opr1));
+                opr2 = asm_create_opr(ASM_LINE_TYPE_OP_REALNUM, NULL, scope);
+                dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ATTRIB, 2, opr1, opr2));
             } else {
+                if (scope == OBJECT_SCOPE_PARENT) {
+                    // We cannot do: parent.foo = 1
+                    fatal_error(1, "Cannot store in parent class attributes!");
+                }
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ATTRIB, 1, opr1));
             }
             break;
-
+        }
         case typeAstString :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, leaf->string.value, 0);
             stack_push(state->type, (void *)st_type_const);

@@ -55,6 +55,10 @@
 #endif
     } t_object_funcs;
 
+
+    #define OBJECT_SCOPE_SELF       1       // LOAD_ATTRIB scope is SELF
+    #define OBJECT_SCOPE_PARENT     2       // LOAD_ATTRIB scope is PARENT (start looking for attribs in the first parent)
+
     // Operator defines
     #define OPERATOR_ADD    0       // Start at 0, to make sure function lookups work
     #define OPERATOR_SUB    1

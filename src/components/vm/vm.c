@@ -267,11 +267,6 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
     if (old_self_obj) object_release(old_self_obj);
     object_inc_ref(self_obj);
 
-    // Replace parent (or remove parent reference if no parent is found)
-    t_object *old_parent_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "parent"), self_obj ? self_obj->parent : NULL);
-    if (old_parent_obj) object_release(old_parent_obj);
-    object_inc_ref(self_obj->parent);
-
     // Parse calling arguments to see if they match our signatures
     if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
         vm_frame_destroy(new_frame);
@@ -653,13 +648,11 @@ dispatch:
             case VM_LOAD_ATTRIB :
                 {
                     t_object *name = vm_frame_get_constant(frame, oparg1);
-                    DEBUG_PRINT("Loading attribute: '%s'\n", OBJ2STR(name));
+                    int scope = oparg2;
+                    DEBUG_PRINT("Loading attribute: '%s' from '%s'\n", OBJ2STR(name), scope == 1 ? "self" : "parent");
 
                     t_object *self_obj = vm_frame_stack_pop(frame);
-//                    if (OBJECT_IS_ATTRIBUTE(self_obj)) {
-//                        self_obj = ((t_attrib_object *)self_obj)->attribute;
-//                    }
-                    t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name));
+                    t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name), scope);
 
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
@@ -698,7 +691,7 @@ dispatch:
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     t_object *search_obj = vm_frame_stack_pop(frame);
 
-                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, OBJ2STR(name));
+                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, OBJ2STR(name), OBJECT_SCOPE_SELF);
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
@@ -804,7 +797,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean", OBJECT_SCOPE_SELF);
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -820,7 +813,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean", OBJECT_SCOPE_SELF);
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -834,7 +827,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean", OBJECT_SCOPE_SELF);
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -852,7 +845,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
-                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
+                    t_attrib_object *bool_method = object_attrib_find(dst, "__boolean", OBJECT_SCOPE_SELF);
                     dst = vm_object_call(dst, bool_method, 0);
                 }
 
@@ -900,11 +893,11 @@ dispatch:
 
                     if (OBJECT_TYPE_IS_CLASS(obj1)) {
                         // Do actual instantiation (pass nothing)
-                        t_attrib_object *new_method = object_attrib_find(obj1, "__new");
+                        t_attrib_object *new_method = object_attrib_find(obj1, "__new", OBJECT_SCOPE_SELF);
                         self = vm_object_call(obj1, new_method, 0);
 
                         // We continue the function, but using the constructor as our attribute
-                        obj1 = (t_object *)object_attrib_find(self, "__ctor");
+                        obj1 = (t_object *)object_attrib_find(self, "__ctor", OBJECT_SCOPE_SELF);
                     }
 
 /*
@@ -1069,7 +1062,7 @@ So:
 
                     // Try an implicit cast if possible
                     DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
-                    t_attrib_object *cast_method = object_attrib_find(right_obj, left_obj->name);
+                    t_attrib_object *cast_method = object_attrib_find(right_obj, left_obj->name, OBJECT_SCOPE_SELF);
                     if (! cast_method) {
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
@@ -1373,12 +1366,12 @@ So:
                     }
 
                     // Fetch the actual iterator and push it to the stack
-                    attr_obj = object_attrib_find(obj1, "__iterator");
+                    attr_obj = object_attrib_find(obj1, "__iterator", OBJECT_SCOPE_SELF);
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     // Call rewind
-                    attr_obj = object_attrib_find(obj3, "__rewind");
+                    attr_obj = object_attrib_find(obj3, "__rewind", OBJECT_SCOPE_SELF);
                     vm_object_call(obj3, attr_obj, 0);
 
                 }
@@ -1395,24 +1388,24 @@ So:
                         vm_frame_stack_push(frame, Object_Null);
                     }
                     // Always push value
-                    attr_obj = object_attrib_find(obj1, "__value");
+                    attr_obj = object_attrib_find(obj1, "__value", OBJECT_SCOPE_SELF);
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     if (oparg1 >= 2) {
                         // Push value of key
-                        attr_obj = object_attrib_find(obj1, "__key");
+                        attr_obj = object_attrib_find(obj1, "__key", OBJECT_SCOPE_SELF);
                         obj3 = vm_object_call(obj1, attr_obj, 0);
                         vm_frame_stack_push(frame, obj3);
                     }
 
                     // Push value of hasNext
-                    attr_obj = object_attrib_find(obj1, "__hasNext");
+                    attr_obj = object_attrib_find(obj1, "__hasNext", OBJECT_SCOPE_SELF);
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
 
                     if (IS_BOOLEAN_TRUE(obj3)) {
-                        attr_obj = object_attrib_find(obj1, "__next");
+                        attr_obj = object_attrib_find(obj1, "__next", OBJECT_SCOPE_SELF);
                         obj3 = vm_object_call(obj1, attr_obj, 0);
                     }
                 }
@@ -1463,7 +1456,7 @@ So:
                     obj1 = vm_frame_stack_pop(frame);       // datastructure
                     obj2 = vm_frame_stack_pop(frame);       // key
 
-                    attr_obj = object_attrib_find(obj1, "__get");
+                    attr_obj = object_attrib_find(obj1, "__get", OBJECT_SCOPE_SELF);
                     t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
                     vm_frame_stack_push(frame, ret_obj);
                 }
@@ -1477,7 +1470,7 @@ So:
                     obj2 = vm_frame_stack_pop(frame);       // key
 
                     //
-                    attr_obj = object_attrib_find(obj1, "__set");
+                    attr_obj = object_attrib_find(obj1, "__set", OBJECT_SCOPE_SELF);
                     t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
                     vm_frame_stack_push(frame, ret_obj);
                 }
@@ -1716,7 +1709,7 @@ int vm_execute(t_vm_frame *frame) {
             // handle exceptions
             t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
             if (saffire_obj) {
-                t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
+                t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler", OBJECT_SCOPE_SELF);
                 // We assume that finding our exception handler always work
                 result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
             }
@@ -1735,7 +1728,7 @@ int vm_execute(t_vm_frame *frame) {
         object_dec_ref(result);
     } else {
         // Convert returned object to numerical, so we can use it as an error code
-        t_attrib_object *result_numerical = object_attrib_find(result, "__numerical");
+        t_attrib_object *result_numerical = object_attrib_find(result, "__numerical", OBJECT_SCOPE_SELF);
         if (result_numerical) {
             t_object *result2 = vm_object_call(result, result_numerical, 0);
             object_dec_ref(result);
@@ -1790,7 +1783,7 @@ t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_co
 t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
     char *opr_method = objectOprMethods[opr];
 
-    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method);
+    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method, OBJECT_SCOPE_SELF);
     if (! found_obj) {
         thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
         return NULL;
@@ -1808,7 +1801,7 @@ t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
 t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     char *cmp_method = objectCmpMethods[cmp];
 
-    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method);
+    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method, OBJECT_SCOPE_SELF);
     if (! found_obj) {
         thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
         return NULL;
@@ -1822,7 +1815,7 @@ t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     // Implicit conversion to boolean if needed
     if (! OBJECT_IS_BOOLEAN(ret)) {
-        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean");
+        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean", OBJECT_SCOPE_SELF);
         ret = vm_object_call(ret, bool_method, 0);
     }
 

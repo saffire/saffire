@@ -99,6 +99,6 @@
     void object_attrib_fini(void);
 
     t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *bound_obj);
-    t_attrib_object *object_attrib_find(t_object *self, char *name);
+    t_attrib_object *object_attrib_find(t_object *self, char *name, int scope);
 
 #endif

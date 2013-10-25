@@ -258,7 +258,6 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
 
     if (! mainframe) {
         _convert_identifier(frame, "self");
-        _convert_identifier(frame, "parent");
     }
 
     t_dll *tc = dll_init();

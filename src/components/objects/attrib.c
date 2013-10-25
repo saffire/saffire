@@ -83,9 +83,19 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
 /**
  * find attribute inside a object. return either NULL or the actual attribute
  */
-t_attrib_object *object_attrib_find(t_object *self, char *name) {
+t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
     t_attrib_object *attr = NULL;
     t_object *cur_obj = self;
+
+    if (scope == OBJECT_SCOPE_PARENT) {
+        if (cur_obj->parent == NULL) {
+            // @TODO: We should throw an exception, as we don't have a parent class
+            return NULL;
+        }
+        // We should start in parent object
+        cur_obj = cur_obj->parent;
+    }
+
 
     while (attr == NULL) {
         DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", name, cur_obj->name);
