@@ -23,7 +23,7 @@ try {
     io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
 }
 ======
-extendException: Object must extend the 'exception' class(1)
+Object must extend the 'exception' class
 @@@@@@
 import io;
 class myexception extends exception { }

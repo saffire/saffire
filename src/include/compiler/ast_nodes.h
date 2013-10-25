@@ -151,6 +151,7 @@
     t_ast_element *ast_node_string(int lineno, char *value);
     t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src);
     t_ast_element *ast_node_string_context_class(int lineno, char *element);
+    t_ast_element *ast_node_id_to_string(t_ast_element *src);
     t_ast_element *ast_node_numerical(int lineno, int value);
     t_ast_element *ast_node_identifier(int lineno, char *var_name);
     t_ast_element *ast_node_property(int lineno, t_ast_element *class, t_ast_element *property);

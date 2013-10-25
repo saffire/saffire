@@ -178,9 +178,9 @@ non_empty_use_statement_list:
 
 use_statement:
         /* import <foo> from <bar> */
-        T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), $4); smm_free($2); }
+        T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_id_to_string($4)); smm_free($2); ast_free_node($4); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), $6); smm_free($4); ast_free_node($2); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); smm_free($4); ast_free_node($2); ast_free_node($6); }
         /* import <foo> as <bar> */
     |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); smm_free($4); ast_free_node($2); }
         /* import <foo> */

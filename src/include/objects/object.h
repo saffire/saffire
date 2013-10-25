@@ -55,6 +55,10 @@
 #endif
     } t_object_funcs;
 
+
+    #define OBJECT_SCOPE_SELF       1       // LOAD_ATTRIB scope is SELF
+    #define OBJECT_SCOPE_PARENT     2       // LOAD_ATTRIB scope is PARENT (start looking for attribs in the first parent)
+
     // Operator defines
     #define OPERATOR_ADD    0       // Start at 0, to make sure function lookups work
     #define OPERATOR_SUB    1
@@ -151,6 +155,7 @@
         \
         int flags;                      /* object flags */ \
         \
+        t_object *class;                /* Points to the class that has been instantiated from this, or points to NULL if it's a class */ \
         t_object *parent;               /* Parent object (only t_base_object is allowed to have this NULL) */ \
         \
         t_dll *interfaces;              /* Actual interfaces */ \
@@ -172,6 +177,7 @@
                 type,           /* scalar type */          \
                 name,           /* name */                 \
                 flags,          /* flags */                \
+                NULL,           /* class */                \
                 base,           /* parent */               \
                 interfaces,     /* implements */           \
                 NULL,           /* attribute */            \

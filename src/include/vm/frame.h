@@ -81,6 +81,7 @@
     unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);
     unsigned int vm_frame_get_operand(t_vm_frame *frame);
 
+    t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame);
     t_object *vm_frame_stack_pop(t_vm_frame *frame);
     void vm_frame_stack_push(t_vm_frame *frame, t_object *obj);
     void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj);

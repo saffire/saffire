@@ -97,11 +97,20 @@ unsigned int vm_frame_get_operand(t_vm_frame *frame) {
     return ret;
 }
 
+/**
+ * Pops an object from the stack. If the object is an attribute, fetch the actual data of that attribute.
+ * Errors when the stack is empty
+ */
+t_object *vm_frame_stack_pop(t_vm_frame *frame) {
+    t_object *obj = vm_frame_stack_pop_attrib(frame);
+    if (OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->attribute;
+    return obj;
+}
 
 /**
  * Pops an object from the stack. Errors when the stack is empty
  */
-t_object *vm_frame_stack_pop(t_vm_frame *frame) {
+t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
     DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
