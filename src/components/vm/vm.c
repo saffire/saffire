@@ -325,9 +325,9 @@ static int _check_attribute_for_static_call(t_object *self, t_attrib_object *att
  *   3) if attribute == private, we only allow from the same class
  */
 static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
-    if (attrib->bound_class == NULL) {
-        int i = 0;
-    }
+//    if (attrib->bound_class == NULL) {
+//        int i = 0;
+//    }
 
     // Not bound, so always ok
     if (! attrib->bound_instance) return 1;

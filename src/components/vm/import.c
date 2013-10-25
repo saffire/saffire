@@ -108,7 +108,7 @@ static char *_build_class_path(char *module) {
  */
 static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *module_path) {
     // We must make sure that things like . are actually resolved to the path of the CURRENT frame source.
-    char *old_cwd = NULL;
+//    char *old_cwd = NULL;
     char *path = NULL;
 
 //    if (frame && frame->context) {

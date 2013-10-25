@@ -2,6 +2,7 @@ title: tuple tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+!skip
 import io;
 
 t = tuple.__new("foo", "bar", "baz");
