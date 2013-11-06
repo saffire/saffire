@@ -1182,6 +1182,135 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     break;
                 case T_SWITCH :
+                    state->loop_cnt++;
+                    clc = state->loop_cnt;
+
+                    state->blocks[state->block_cnt].type = BLOCK_TYPE_LOOP;
+                    if (state->blocks[state->block_cnt].labels) {
+                        ht_destroy(state->blocks[state->block_cnt].labels);
+                        state->blocks[state->block_cnt].labels = ht_create();
+                    }
+                    state->block_cnt++;
+
+                    // load switch expression before doing loop
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[0]);
+                    stack_pop(state->context);
+
+
+                    sprintf(label1, "switch_%03d_begin", clc);
+                    sprintf(label2, "switch_%03d_default", clc);        // we "breakelse" to here
+                    sprintf(label3, "switch_%03d_end", clc);            // we "break" to here
+                    dll_append(frame, asm_create_labelline(label1));
+
+                    // we "abuse" a loop so break and breakelse works correctly.
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label3, 0);
+                    opr2 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(0, VM_SETUP_ELSE_LOOP, 2, opr1, opr2));
+
+                    int default_found = 0;
+
+
+
+
+                    // 2 case statements
+                    for (int i=0; i!=(leaf->opr.ops[1])->group.len; i++) {
+                        node = (leaf->opr.ops[1])->group.items[i];
+
+                        //int lastcase = (i < (leaf->opr.ops[1])->group.len-1);
+
+                        if (i > 0) {
+                            // When comparing our case expression, we need to pop the boolean value. Therefor,
+                            // we jump to the case_X_pre label which pops this. We don't need to do this for the
+                            // first case statement though.
+                            sprintf(label4, "switch_%03d_case_%d_pre", clc, i);
+                            dll_append(frame, asm_create_labelline(label4));
+
+                            if (node->opr.oper == T_DEFAULT) {
+                                sprintf(label4, "switch_%03d_case_%d_pre", clc, i+1);
+                                opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+                                dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
+                            } else {
+                                dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                            }
+                        }
+
+                        sprintf(label4, "switch_%03d_case_%d", clc, i);
+                        dll_append(frame, asm_create_labelline(label4));
+
+                        int default_case = 0;
+                        if (node->opr.oper == T_CASE) {
+                            // duplicate our original switch expression
+                            dll_append(frame, asm_create_codeline(node->lineno, VM_DUP_TOP, 0));
+
+                            stack_push(state->context, st_ctx_load);
+                            WALK_LEAF(node->opr.ops[0]);
+                            stack_pop(state->context);
+
+                            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, COMPARISON_EQ);
+                            dll_append(frame, asm_create_codeline(node->lineno, VM_COMPARE_OP, 1, opr1));
+
+                            sprintf(label4, "switch_%03d_case_%d_pre", clc, i+1);
+                            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+                            dll_append(frame, asm_create_codeline(node->lineno, VM_JUMP_IF_FALSE, 1, opr1));
+
+                            // Pop boolean
+                            dll_append(frame, asm_create_codeline(node->lineno, VM_POP_TOP, 0));
+                        }
+
+                        if (node->opr.oper == T_DEFAULT) {
+                            default_case = 1;
+                            default_found = 1;
+
+                            sprintf(label4, "switch_%03d_case_%d", clc, i+1);
+                            //sprintf(label4, "switch_%03d_default", clc);
+//                            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+//                            dll_append(frame, asm_create_codeline(node->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
+
+                            dll_append(frame, asm_create_labelline(label2));
+                        }
+
+                        // Body of the case-statement
+                        sprintf(label4, "switch_%03d_case_%d_body", clc, i);
+                        dll_append(frame, asm_create_labelline(label4));
+
+
+                        stack_push(state->context, st_ctx_load);
+                        WALK_LEAF(node->opr.ops[default_case ? 0 : 1]);     // "Default" is in 0, but cases are in 1
+                        stack_pop(state->context);
+
+                        // After we have done the body of the case, we jump to the body of the next case-statement.
+                        sprintf(label4, "switch_%03d_case_%d_body", clc, i+1);
+                        opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
+                        dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
+                    }
+
+                    int i = (leaf->opr.ops[1])->group.len;
+
+
+
+                    // This is a "dummy" label. Needed so we don't have to create special cases
+                    // inside our last case statement
+                    sprintf(label4, "switch_%03d_case_%d_pre", clc, i);
+                    dll_append(frame, asm_create_labelline(label4));
+                    dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                    // We have reached the end of the statements,
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
+                    dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
+
+                    sprintf(label4, "switch_%03d_case_%d", clc, i);
+                    dll_append(frame, asm_create_labelline(label4));
+                    sprintf(label4, "switch_%03d_case_%d_body", clc, i);
+                    dll_append(frame, asm_create_labelline(label4));
+
+                    if (! default_found) {
+                        dll_append(frame, asm_create_labelline(label2));
+                    }
+
+                    // End of switch statement
+                    dll_append(frame, asm_create_labelline(label3));
+                    dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+
                     break;
                 case T_COALESCE :
                     state->loop_cnt++;

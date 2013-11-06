@@ -44,6 +44,40 @@ t_hash_table *string_cache;
  * ======================================================================
  */
 
+// Kindly taken from: http://stackoverflow.com/questions/198199/how-do-you-reverse-a-string-in-place-in-c-or-c
+#define SWP(x,y) (x^=y, y^=x, x^=y)
+
+static void strrev(char *p) {
+  char *q = p;
+  while(q && *q) ++q; /* find eos */
+  for(--q; p < q; ++p, --q) SWP(*p, *q);
+}
+
+static void strrev_utf8(char *p) {
+  char *q = p;
+  strrev(p); /* call base case */
+
+  /* Ok, now fix bass-ackwards UTF chars. */
+  while(q && *q) ++q; /* find eos */
+  while(p < --q)
+    switch( (*q & 0xF0) >> 4 ) {
+    case 0xF: /* U+010000-U+10FFFF: four bytes. */
+      SWP(*(q-0), *(q-3));
+      SWP(*(q-1), *(q-2));
+      q -= 3;
+      break;
+    case 0xE: /* U+000800-U+00FFFF: three bytes. */
+      SWP(*(q-0), *(q-2));
+      q -= 2;
+      break;
+    case 0xC: /* fall-through */
+    case 0xD: /* U+000080-U+0007FF: two bytes. */
+      SWP(*(q-0), *(q-1));
+      q--;
+      break;
+    }
+}
+
 /**
  * Returns the number of characters inside a (UTF8) string
  */
@@ -143,7 +177,11 @@ SAFFIRE_METHOD(string, byte_length) {
  */
 SAFFIRE_METHOD(string, upper) {
     // @TODO: UTF8 - UPPER!
-    RETURN_SELF;
+    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
+    for (int i=0; i!=strlen(dst->value); i++) {
+        dst->value[i] = toupper(dst->value[i]);
+    }
+    RETURN_OBJECT(dst);
 }
 
 /**
@@ -151,7 +189,11 @@ SAFFIRE_METHOD(string, upper) {
  */
 SAFFIRE_METHOD(string, lower) {
     // @TODO: UTF8 - LOWER!
-    RETURN_SELF;
+    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
+    for (int i=0; i!=strlen(dst->value); i++) {
+        dst->value[i] = tolower(dst->value[i]);
+    }
+    RETURN_OBJECT(dst);
 }
 
 /**
@@ -159,7 +201,10 @@ SAFFIRE_METHOD(string, lower) {
  */
 SAFFIRE_METHOD(string, reverse) {
     // @TODO: UTF8 - REVERSE!
-    RETURN_SELF;
+    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
+
+    strrev_utf8(dst->value);
+    RETURN_OBJECT(dst);
 }
 
 
@@ -440,10 +485,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Set internal data
     str_obj->value = smm_strdup(value);
-    str_obj->char_length = strlen(value);
+    str_obj->char_length = utf8_len(value);
 
     // Calculate length for each character, and add to total
-    str_obj->byte_length = utf8_len(value);
+    str_obj->byte_length = strlen(value);
     recalc_hash(str_obj);
 
     // Add to string cache
