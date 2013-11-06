@@ -116,7 +116,6 @@ switch (a) {
 ====
 Error in line 3: syntax error, unexpected default
 @@@@
-!skip
 switch (a) {
     default:
         a = 1;

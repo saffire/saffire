@@ -253,10 +253,10 @@ case_statements:
 ;
 
 case_statement:
-        T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
-    |   T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line); }    { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
-    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
-    |   T_DEFAULT ':'                       { parser_switch_default(saffireParser, @1.first_line); } { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
+        T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line);    } statement_list { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, $5); }
+    |   T_CASE expression ':'   { parser_switch_case(saffireParser, @1.first_line);    }                { $$ = ast_node_opr(@1.first_line, T_CASE, 2, $2, ast_node_nop()); }
+    |   T_DEFAULT ':'           { parser_switch_default(saffireParser, @1.first_line); } statement_list { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, $4); }
+    |   T_DEFAULT ':'           { parser_switch_default(saffireParser, @1.first_line); }                { $$ = ast_node_opr(@1.first_line, T_DEFAULT, 1, ast_node_nop()); }
 ;
 
 

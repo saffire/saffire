@@ -1,0 +1,214 @@
+title: switch control tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+foo = 1;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+    default :
+        io.print("fd\n");
+        break;
+}
+====
+f1
+@@@@
+import io;
+
+foo = 2;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+    default :
+        io.print("fd\n");
+        break;
+}
+====
+f2
+@@@@
+import io;
+
+foo = 3;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+    default :
+        io.print("fd\n");
+        break;
+}
+====
+f3
+f4
+@@@@
+import io;
+
+foo = 4;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+    default :
+        io.print("fd\n");
+        break;
+}
+====
+f4
+@@@@
+import io;
+
+foo = 5;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+    default :
+        io.print("fd\n");
+        break;
+}
+====
+fd
+@@@@
+import io;
+
+foo = 4;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    default :
+        io.print("fd\n");
+        break;
+    case 4 :
+        io.print("f4\n");
+        break;
+}
+====
+f4
+@@@@
+import io;
+
+foo = 5;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+    default :
+        io.print("fd\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+}
+====
+fd
+f4
+@@@@
+import io;
+
+foo = 3;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+        breakelse;
+    default :
+        io.print("fd\n");
+    case 4 :
+        io.print("f4\n");
+        break;
+}
+====
+f3
+fd
+f4
+@@@@
+import io;
+
+foo = 3;
+switch (foo) {
+    case 1 :
+        io.print("f1\n");
+        break;
+    case 2 :
+        io.print("f2\n");
+        break;
+    case 3 :
+        io.print("f3\n");
+        breakelse;
+    case 4 :
+        io.print("f4\n");
+        break;
+}
+====
+f3
+@@@@
+import io;
+
+foo = 3;
+switch (foo) {
+    default :
+        io.print("fd\n");
+}
+====
+fd
+@@@@
+
