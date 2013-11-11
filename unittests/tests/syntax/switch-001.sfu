@@ -48,32 +48,34 @@ switch (1) {
 }
 ====
 @@@@
-!skip
-switch (a) {
+switch ("foo") {
     case "foo" :
     case "bar" :
 }
-
 ====
+
 @@@@
-!skip
-switch (a) {
+switch ("bar") {
     case "foo" :
 }
 
 ====
+
 @@@@
-!skip
-switch (a) {
+import io;
+a = b = 1;
+switch (true) {
     case a == 1 :
-    case b == 1 :
+        io.print("a");
+    case b == 2 :
+        io.print("b");
         break;
     default :
          a = 1;
          break;
 }
-
 ====
+ab
 @@@@
 switch (a) {
     break;
@@ -82,8 +84,7 @@ switch (a) {
 ====
 Error in line 3: syntax error, unexpected break, expecting case or default
 @@@@
-!skip
-switch (a) {
+switch (1) {
     case 1:
         a = 1;
         break;
@@ -94,8 +95,7 @@ switch (a) {
 
 ====
 @@@@
-!skip
-switch (a) {
+switch (1) {
     case 1:
         a = 1;
         break;
@@ -130,15 +130,14 @@ switch (a) {
 ====
 default label already supplied
 @@@@
-!skip
-switch (a) {
-    case False:
+switch (false) {
+    case false:
         a = 1;
         break;
-    case True:
+    case true:
         a = 1;
         break;
-    case Null:
+    case null:
         a = 1;
         break;
 }
