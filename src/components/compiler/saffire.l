@@ -139,7 +139,7 @@
 
 
 /* Our actual lexemes */
-lnum            [0-9]+
+lnum            -?[0-9]+
 /* identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
 identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
 whitespace      [ \t\r]+
@@ -167,6 +167,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 "??"        { do_yylloc; saffire_push_state(st_regex); return T_COALESCE; }
 "..."       { do_yylloc; saffire_push_state(st_regex); return T_ELLIPSIS; }
+".."        { do_yylloc; saffire_push_state(st_regex); return T_SUBSCRIPT; }
 "::"        { do_yylloc; saffire_push_state(st_regex); return T_NS_SEP; }
 "~="        { do_yylloc; saffire_push_state(st_regex); return T_RE; }
 ">="        { do_yylloc; saffire_push_state(st_regex); return T_GE; }

@@ -905,26 +905,50 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         int element_count = 0;
                         node = leaf->opr.ops[1];
 
-                        if (node->type == typeAstNull) {
-                            // we have a [] subscription
-                            element_count = 0;
+                        switch (node->group.len) {
+                            case 0 :
+                                // we have a [] subscription
+                                element_count = 0;
+                                break;
 
-                            /* @TODO:  It's possible to do something like this:   a = foo[];
-                             *         This should result in an error. Preferably on compile-time */
+                            case 1 :
+                                // We have a [n] subscription
+                                element_count = 1;
 
-                        } else {
-                            // We have a [n] subscription
-                            element_count = 1;
+                                stack_push(state->context, st_ctx_load);
+                                WALK_LEAF(node->group.items[0]);
+                                stack_pop(state->context);
 
-                            stack_push(state->context, st_ctx_load);
-                            WALK_LEAF(node);
-                            stack_pop(state->context);
+                                break;
+                            case 2 :
+                                // We have a [n..m] subscription
+                                element_count = 2;
+
+                                stack_push(state->context, st_ctx_load);
+                                WALK_LEAF(node->group.items[0]);
+                                stack_pop(state->context);
+
+                                stack_push(state->context, st_ctx_load);
+                                WALK_LEAF(node->group.items[1]);
+                                stack_pop(state->context);
+
+                                break;
                         }
 
                         // Load the actual datastructure class
                         stack_push(state->context, st_ctx_load);
                         WALK_LEAF(leaf->opr.ops[0]);
                         stack_pop(state->context);
+
+
+                        if (element_count == 2 && ctx == st_ctx_store) {
+                            // We cannot store on something like foo[1..2], only foo[] and foo[n]
+                            fatal_error(1, "Cannot write to a [n..m] subscription");
+                        }
+                        if (element_count == 0 && ctx == st_ctx_load) {
+                            // We cannot load on something like foo[]
+                            fatal_error(1, "Cannot read from an empty [] subscription");
+                        }
 
 
                         // If opr
@@ -1497,4 +1521,5 @@ t_hash_table *ast_to_asm(t_ast_element *ast, int append_return_statement) {
 
     return output;
 }
+
 

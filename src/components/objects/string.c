@@ -244,22 +244,24 @@ SAFFIRE_METHOD(string, conv_string) {
 }
 
 SAFFIRE_METHOD(string, splice) {
-    // @TODO: use parse_args
-    t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-    t_object *obj1 = e->data;
-    e = DLL_NEXT(e);
-    t_object *obj2 = e->data;
+    t_object *min_obj;
+    t_object *max_obj;
 
-    // We can just return self when we want to do a whole range?
-    if (OBJECT_IS_NULL(obj1) && OBJECT_IS_NULL(obj2)) RETURN_SELF;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &min_obj, &max_obj)) {
+        return NULL;
+    }
 
-    // @TODO: make sure obj1 is numerical!
-    long min = OBJECT_IS_NULL(obj1) ? 0 : OBJ2NUM(obj1);
-    // @TODO: make sure obj1 is numerical!
-    long max = OBJECT_IS_NULL(obj2) ? self->char_length : OBJ2NUM(obj2);
+    long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
+    long max = OBJECT_IS_NULL(max_obj) ? self->char_length : OBJ2NUM(max_obj);
+
+    if (min == 0 && max == 0) RETURN_SELF;
+
+    // Below 0, means we have to seek from the end of the string
+    if (min < 0) min = self->char_length + min - 1;
+    if (max < 0) max = self->char_length + max - 1;
 
     if (min > self->char_length) min = self->char_length;
-    if (max > self->char_length) max = self->char_length;
+    if (max > self->char_length || max == 0) max = self->char_length;
 
     // Sanity check
     if (max < min) {
@@ -274,7 +276,7 @@ SAFFIRE_METHOD(string, splice) {
 
     // Make a new copy of length. Allocate worst-case scenario bytes.
     char *new_string = smm_malloc(new_size + 1);
-    memcpy(new_string, self->value + min_idx, new_size);
+    memcpy(new_string, self->value+min_idx, new_size);
     new_string[new_size] = '\0';
 
     t_object *obj = object_alloc(Object_String, 1, new_string);
@@ -393,6 +395,78 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
 }
 
 
+
+
+SAFFIRE_METHOD(string, __iterator) {
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(string, __key) {
+    RETURN_NUMERICAL(self->iter);
+}
+SAFFIRE_METHOD(string, __value) {
+    char s[2];
+
+    s[0] = self->value[self->iter];
+    s[1] = 0;
+
+    RETURN_STRING(s);
+}
+SAFFIRE_METHOD(string, __next) {
+    self->iter++;
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(string, __rewind) {
+    self->iter = 0;
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(string, __hasNext) {
+    if (self->iter < self->char_length) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
+}
+
+
+SAFFIRE_METHOD(string, __add) {
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(string, __remove) {
+    RETURN_SELF;
+}
+SAFFIRE_METHOD(string, __get) {
+    t_object *idx_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj)) {
+        return NULL;
+    }
+
+    long idx = OBJ2NUM(idx_obj);
+    if (idx < 0 || idx > self->char_length) {
+        object_raise_exception(Object_IndexException, 1, "Index out of range");
+        return NULL;
+    }
+
+    char s[2];
+    s[0] = self->value[idx];
+    s[1] = 0;
+    RETURN_STRING(s);
+}
+
+
+SAFFIRE_METHOD(string, __has) {
+    t_object *idx_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj)) {
+        return NULL;
+    }
+
+    long idx = OBJ2NUM(idx_obj);
+    if (idx < 0 || idx > self->char_length) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -431,6 +505,25 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
     object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
     object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
+
+
+    // Iterator interface
+    object_add_internal_method((t_object *)&Object_String_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___iterator);
+    object_add_internal_method((t_object *)&Object_String_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___key);
+    object_add_internal_method((t_object *)&Object_String_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___value);
+    object_add_internal_method((t_object *)&Object_String_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___rewind);
+    object_add_internal_method((t_object *)&Object_String_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___next);
+    object_add_internal_method((t_object *)&Object_String_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___hasNext);
+    object_add_interface((t_object *)&Object_String_struct, Object_Iterator);
+
+    // Subscription interface
+    object_add_internal_method((t_object *)&Object_String_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method((t_object *)&Object_String_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___add);
+    object_add_internal_method((t_object *)&Object_String_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___remove);
+    object_add_internal_method((t_object *)&Object_String_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___get);
+    object_add_internal_method((t_object *)&Object_String_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___has);
+    object_add_internal_method((t_object *)&Object_String_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_interface((t_object *)&Object_String_struct, Object_Subscription);
 
     vm_populate_builtins("string", (t_object *)&Object_String_struct);
 }

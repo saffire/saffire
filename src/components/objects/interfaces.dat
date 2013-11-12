@@ -22,4 +22,11 @@ interfaces:
         methods:
             - __populate
 
-
+    -   name: subscription
+        methods:
+            - __length
+            - __add
+            - __remove
+            - __get
+            - __has
+            - __splice

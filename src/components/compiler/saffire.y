@@ -544,8 +544,11 @@ datastructure:
 ;
 
 subscription:
-        '[' ']'                                          { $$ = ast_node_null(@1.first_line); }
-    |   '[' pe_no_parenthesis ']'                        { $$ = $2; }
+        '[' ']'                                                 { $$ = ast_node_group(0, ast_node_null(@1.first_line)); }
+    |   '[' pe_no_parenthesis ']'                               { $$ = ast_node_group(1, $2) ; }
+    |   '[' pe_no_parenthesis T_SUBSCRIPT pe_no_parenthesis ']' { $$ = ast_node_group(2, $2, $4); }
+    |   '['                   T_SUBSCRIPT pe_no_parenthesis ']' { $$ = ast_node_group(2, ast_node_null(@1.first_line), $3); }
+    |   '[' pe_no_parenthesis T_SUBSCRIPT ']'                   { $$ = ast_node_group(2, $2, ast_node_null(@1.first_line)); }
 ;
 
 /**
