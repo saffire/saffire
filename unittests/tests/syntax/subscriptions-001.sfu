@@ -1,0 +1,61 @@
+title: Subscriptions
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+import io;
+
+f = "foobarbaz";
+
+// Iterate over the string
+foreach (f as k,v) {
+    io.print("K: ",k," V: ", v,"\n");
+}
+
+// Splice string
+io.print("f[2..6] : ",f[2..6],"\n");
+
+// Just get some direct indexes
+io.print("f[4]    : ",f[4],"\n");
+io.print("f[0]    : ",f[0],"\n");
+try {
+  io.print("f[63]    : ",f[63],"\n");
+} catch (indexException e) {
+   io.print("Index exception occurred.\n");
+}
+
+// Splice in different ways
+io.print("f[..2]  : ",f[..2],"\n");
+io.print("f[6..]  : ",f[6..],"\n");
+
+// Negative numbers means starting from the back of the string
+io.print("f[..-3]  : ",f[..-3],"\n");
+io.print("f[-2..]  : ",f[-2..],"\n");
+io.print("f[-6..-2]  : ",f[-6..-2],"\n");
+====
+K: 0 V: f
+K: 1 V: o
+K: 2 V: o
+K: 3 V: b
+K: 4 V: a
+K: 5 V: r
+K: 6 V: b
+K: 7 V: a
+K: 8 V: z
+f[2..6] : obarb
+f[4]    : a
+f[0]    : f
+Index exception occurred.
+f[..2]  : foo
+f[6..]  : baz
+f[..-3]  : foobar
+f[-2..]  : baz
+f[-6..-2]  : obarb
+@@@@
+a = "foobar"[];
+====
+Cannot read from an empty [] subscription
+@@@@
+a[1..4] = "foobar";
+====
+Variable is not writable

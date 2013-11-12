@@ -1200,7 +1200,7 @@ So:
                         parent_class = vm_frame_find_identifier(frame, OBJ2STR(parent_class));
                         if (parent_class == NULL) {
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", name, parent_class);
+                            thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", parent_class);
                             goto block_end;
                             break;
                         }
@@ -1452,12 +1452,52 @@ So:
             // Load a subscription [] value out of a datastructure onto the stack
             case VM_LOAD_SUBSCRIPT :
                 {
-                    // @TODO: oparg1 is not used
-                    obj1 = vm_frame_stack_pop(frame);       // datastructure
-                    obj2 = vm_frame_stack_pop(frame);       // key
+                    // Fetch actual data structure
+                    obj1 = vm_frame_stack_pop(frame);
+                    if (! object_has_interface(obj1, "iterator")) {
+                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'iterator' interface");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
 
-                    attr_obj = object_attrib_find(obj1, "__get", OBJECT_SCOPE_SELF);
-                    t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+                    t_object *ret_obj = NULL;
+
+                    switch (oparg1) {
+                        case 0 :
+                            // foo[]
+                            thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "not supporting [] yet");
+                            reason = REASON_EXCEPTION;
+                            goto block_end;
+
+                            break;
+                        case 1 :
+                            // foo[n]
+                            obj2 = vm_frame_stack_pop(frame);       // first key
+
+                            attr_obj = object_attrib_find(obj1, "__get", OBJECT_SCOPE_SELF);
+
+                            ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+                            break;
+                        case 2 :
+                            // foo[n..m]
+                            obj3 = vm_frame_stack_pop(frame);       // max
+                            obj2 = vm_frame_stack_pop(frame);       // min
+
+                            attr_obj = object_attrib_find(obj1, "__splice", OBJECT_SCOPE_SELF);
+                            if (! attr_obj) {
+                                thread_create_exception((t_exception_object *)Object_AttributeException, 1, "__splice() not found");
+                                reason = REASON_EXCEPTION;
+                                goto block_end;
+                            }
+                            ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
+                            break;
+                    }
+
+                    if (! ret_obj) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
                     vm_frame_stack_push(frame, ret_obj);
                 }
                 goto dispatch;

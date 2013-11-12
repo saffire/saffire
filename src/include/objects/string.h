@@ -39,6 +39,8 @@
         size_t char_length;     // length of the string in characters
         size_t byte_length;     // length of the string in bytes
         md5_byte_t hash[16];    // (MD5) hash of the string
+
+        int iter;               // Simple iteration index on the characters
     } t_string_object;
 
     t_string_object Object_String_struct;

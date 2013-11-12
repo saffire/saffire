@@ -60,11 +60,14 @@ Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
 import io;
 foreach ("foo" as a) {
-  io.print("foo\n");
+  io.print(a,"\n");
 }
 io.print("done\n");
 ====
-Object must inherit the 'iterator' interface
+f
+o
+o
+done
 @@@@
 import io;
 foreach (list[[]] as a) {
