@@ -165,6 +165,12 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             _load_or_store(leaf->lineno, opr1, frame, state);
             stack_pop(state->type);
             break;
+        case typeAstRegex :
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_REGEX, leaf->regex.value, 0);
+            stack_push(state->type, (void *)st_type_const);
+            _load_or_store(leaf->lineno, opr1, frame, state);
+            stack_pop(state->type);
+            break;
         case typeAstNumerical :
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_NUM, NULL, leaf->numerical.value);
             stack_push(state->type, (void *)st_type_const);
@@ -241,6 +247,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case '<'  : tmp = COMPARISON_LT; break;
                 case T_GE : tmp = COMPARISON_GE; break;
                 case T_LE : tmp = COMPARISON_LE; break;
+                case T_RE : tmp = COMPARISON_RE; break;
+                case T_NRE : tmp = COMPARISON_NRE; break;
                 default :
                     fatal_error(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
             }

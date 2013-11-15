@@ -360,6 +360,34 @@ static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *
 }
 
 
+#define MAX_VEC 30
+
+static t_object *_do_regex_match(t_regex_object *regex_obj, t_string_object *str_obj) {
+    int subStrVec[MAX_VEC];
+    int ret;
+
+
+    ret = pcre_exec(regex_obj->regex, NULL /* no study yet */,
+        str_obj->value, str_obj->byte_length,
+        0,  /* start */
+        0,  /* options */
+        subStrVec, MAX_VEC);
+
+    if (ret < -1) {
+        // Error occurred
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Error during regex: %d", ret);
+        return NULL;
+    }
+
+    if (ret == -1) {
+        RETURN_FALSE;
+    }
+
+    // 0 or higher are ok
+    RETURN_TRUE;
+}
+
+
 int debug = 0;
 t_debuginfo *debug_info;
 
@@ -1042,6 +1070,37 @@ So:
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
+
+                if (oparg1 == COMPARISON_RE || oparg1 == COMPARISON_NRE) {
+
+                    if (! OBJECT_IS_REGEX(right_obj)) {
+                        reason = REASON_EXCEPTION;
+                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Can only regmatch against a regular expression");
+                        goto block_end;
+                    }
+
+                    if (! OBJECT_IS_STRING(left_obj)) {
+                        reason = REASON_EXCEPTION;
+                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Can only regmatch a string");
+                        goto block_end;
+                    }
+
+
+                    t_object *ret_obj = _do_regex_match((t_regex_object *)right_obj, (t_string_object *)left_obj);
+                    if (! ret_obj) {
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    if (oparg1 == COMPARISON_NRE) {
+                        // Inverse the result, as we are NOT matching.
+                        ret_obj = (ret_obj == Object_True) ? Object_False : Object_True;
+                    }
+
+                    vm_frame_stack_push(frame, ret_obj);
+                    goto dispatch;
+                }
+
 
                 // Exception compare is special case. We don't let classes handle that themselves, but we
                 // need to do it here.

@@ -46,6 +46,9 @@ static void _free_constant(t_bytecode_constant *c) {
          case BYTECODE_CONST_STRING :
             smm_free(c->data.s);
             break;
+         case BYTECODE_CONST_REGEX :
+            smm_free(c->data.s);
+            break;
          case BYTECODE_CONST_NUMERICAL :
              break;
          case BYTECODE_CONST_CODE :
@@ -76,6 +79,19 @@ static void _new_constant_string(t_bytecode *bc, char *s) {
     // Setup constant
     t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
     c->type = BYTECODE_CONST_STRING;
+    c->len = strlen(s);
+    c->data.s = smm_strdup(s);
+
+    _add_constant(bc, c);
+}
+
+/**
+ * Add a new regex constant to the bytecode structure
+ */
+static void _new_constant_regex(t_bytecode *bc, char *s) {
+    // Setup constant
+    t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
+    c->type = BYTECODE_CONST_REGEX;
     c->len = strlen(s);
     c->data.s = smm_strdup(s);
 
@@ -201,6 +217,14 @@ t_bytecode *bytecode_unmarshal(char *bincode) {
                 _new_constant_string(bytecode, s);
                 smm_free(s);
                 break;
+            case BYTECODE_CONST_REGEX :
+                // Constant rexeg do not have a trailing \0 on disk.
+                s = smm_malloc(len+1);
+                _read_buffer(bincode, &pos, len, s);
+                s[len] = '\0';
+                _new_constant_regex(bytecode, s);
+                smm_free(s);
+                break;
             case BYTECODE_CONST_NUMERICAL :
                 _read_buffer(bincode, &pos, len, &l);
                 _new_constant_long(bytecode, l);
@@ -261,6 +285,10 @@ int bytecode_marshal(t_bytecode *bytecode, int *bincode_off, char **bincode) {
                 _write_buffer(bincode, bincode_off, child_bincode_len, child_bincode);
                 break;
             case BYTECODE_CONST_STRING :
+                _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
+                _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
+                break;
+            case BYTECODE_CONST_REGEX :
                 _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
@@ -349,6 +377,9 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
                 break;
             case const_string :
                 _new_constant_string(bc, c->data.s);
+                break;
+            case const_regex :
+                _new_constant_regex(bc, c->data.s);
                 break;
             case const_long :
                 _new_constant_long(bc, c->data.l);

@@ -170,6 +170,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 ".."        { do_yylloc; saffire_push_state(st_regex); return T_SUBSCRIPT; }
 "::"        { do_yylloc; saffire_push_state(st_regex); return T_NS_SEP; }
 "~="        { do_yylloc; saffire_push_state(st_regex); return T_RE; }
+"!~="       { do_yylloc; saffire_push_state(st_regex); return T_RE; }
 ">="        { do_yylloc; saffire_push_state(st_regex); return T_GE; }
 "<="        { do_yylloc; saffire_push_state(st_regex); return T_LE; }
 "=="        { do_yylloc; saffire_push_state(st_regex); return T_EQ; }

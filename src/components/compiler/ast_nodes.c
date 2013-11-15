@@ -124,6 +124,17 @@ t_ast_element *ast_node_string(int lineno, char *value) {
     return p;
 }
 
+t_ast_element *ast_node_regex(int lineno, char *value) {
+    t_ast_element *p = ast_node_alloc_element();
+
+    p->lineno = lineno;
+    p->type = typeAstRegex;
+    p->regex.value = smm_strdup(value);
+
+    return p;
+}
+
+
 t_ast_element *ast_node_id_to_string(t_ast_element *src) {
     t_ast_element *p = ast_node_alloc_element();
 
@@ -494,6 +505,9 @@ void ast_free_node(t_ast_element *p) {
             break;
         case typeAstString :
             smm_free(p->string.value);
+            break;
+        case typeAstRegex :
+            smm_free(p->regex.value);
             break;
         case typeAstIdentifier :
             smm_free(p->identifier.name);

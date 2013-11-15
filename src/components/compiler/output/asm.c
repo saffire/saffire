@@ -134,6 +134,25 @@ static int _convert_constant_string(t_asm_frame *frame, char *s) {
 
     return frame->constants->size - 1;
 }
+static int _convert_constant_regex(t_asm_frame *frame, char *r) {
+    int pos = 0;
+    t_dll_element *e = DLL_HEAD(frame->constants);
+    while (e) {
+        t_asm_constant *c = (t_asm_constant *)e->data;
+
+        if (c->type == const_regex && strcmp(r, c->data.s) == 0) return pos;
+        pos++;
+        e = DLL_NEXT(e);
+    }
+
+    // Add to DLL
+    t_asm_constant *c = smm_malloc(sizeof(t_asm_constant));
+    c->type = const_regex;
+    c->data.s = smm_strdup(r);
+    dll_append(frame->constants, c);
+
+    return frame->constants->size - 1;
+}
 static int _convert_constant_code(t_asm_frame *frame, char *s) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
@@ -203,6 +222,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
                 break;
             case const_code :
             case const_string :
+            case const_regex :
                 smm_free(c->data.s);
                 break;
         }
@@ -324,6 +344,9 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
                         break;
                     case ASM_LINE_TYPE_OP_STRING :
                         opr = _convert_constant_string(frame, line->opr[i]->data.s);
+                        break;
+                    case ASM_LINE_TYPE_OP_REGEX :
+                        opr = _convert_constant_regex(frame, line->opr[i]->data.s);
                         break;
                     case ASM_LINE_TYPE_OP_CODE :
                         opr = _convert_constant_code(frame, line->opr[i]->data.s);
@@ -549,6 +572,9 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                     case ASM_LINE_TYPE_OP_STRING :
                         fprintf(f, "\"%s\"", line->opr[i]->data.s);
                         break;
+                    case ASM_LINE_TYPE_OP_REGEX :
+                        fprintf(f, "regex(%s)", line->opr[i]->data.s);
+                        break;
                     case ASM_LINE_TYPE_OP_CODE :
                         fprintf(f, "@%s", line->opr[i]->data.s);
                         break;
@@ -584,6 +610,8 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                             case COMPARISON_IN : fprintf(f, "IN"); break;
                             case COMPARISON_NI : fprintf(f, "NI"); break;
                             case COMPARISON_EX : fprintf(f, "EX"); break;
+                            case COMPARISON_RE : fprintf(f, "RE"); break;
+                            case COMPARISON_NRE : fprintf(f, "NRE"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_ID :

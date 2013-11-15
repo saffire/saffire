@@ -202,17 +202,65 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     int erroffset;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    re_obj->regex_string = (char *)e->data;
-    e = DLL_NEXT(e);
+    char *regex = (char *)e->data;
+    char sep = *regex;
+    regex++;   // Skip initial separator (only / is supported)
 
-    int pcre_options = (int)e->data;
+    // Fetch optional flags
+    char *flags = strrchr(regex, sep);
 
-    re_obj->regex = pcre_compile(re_obj->regex_string, PCRE_UTF8 | pcre_options, &error, &erroffset, 0);
+    // Zero-terminate the regex
+    *flags = '\0';
+    flags++;
+
+    // Now we can safely store regex-string and flags
+    re_obj->regex_string = smm_strdup(regex);
+    re_obj->regex_flags = 0;
+
+    while (*flags) {
+        switch (*flags) {
+            case 'i' :
+                re_obj->regex_flags |= PCRE_CASELESS;
+                break;
+            case 'm' :
+                re_obj->regex_flags |= PCRE_MULTILINE;
+                break;
+            case 's' :
+                re_obj->regex_flags |= PCRE_DOTALL;
+                break;
+            case 'x' :
+                re_obj->regex_flags |= PCRE_EXTENDED;
+                break;
+            case 'A' :
+                re_obj->regex_flags |= PCRE_ANCHORED;
+                break;
+            case 'D' :
+                re_obj->regex_flags |= PCRE_DOLLAR_ENDONLY;
+                break;
+            case 'U' :
+                re_obj->regex_flags |= PCRE_UNGREEDY;
+                break;
+            case 'X' :
+                re_obj->regex_flags |= PCRE_EXTRA;
+                break;
+            case 'J' :
+                re_obj->regex_flags |= PCRE_DUPNAMES;
+                break;
+            case 'u' :
+                re_obj->regex_flags |= PCRE_UTF8;
+                break;
+            default :
+                // @TODO: unknown chars are found in the flags.
+                object_raise_exception(Object_ArgumentException, 1, "Incorrect regex flag found '%c'", *flags);
+                return NULL;
+        }
+        flags++;
+    }
+
+    re_obj->regex = pcre_compile(re_obj->regex_string, re_obj->regex_flags, &error, &erroffset, 0);
     if (! re_obj->regex) {
-        // @TODO: How do we detect an exception that has been thrown here!??
         object_raise_exception(Object_ArgumentException, 1, "Error while compiling regular expression at offset %d: %s", erroffset, error);
-        // @TODO: We must return NULL
-        //return NULL;
+        return NULL;
     }
 }
 

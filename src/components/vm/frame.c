@@ -406,6 +406,9 @@ void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_
             case BYTECODE_CONST_STRING :
                 obj = object_alloc(Object_String, 1, bytecode->constants[i]->data.s);
                 break;
+            case BYTECODE_CONST_REGEX :
+                obj = object_alloc(Object_Regex, 1, bytecode->constants[i]->data.r);
+                break;
             case BYTECODE_CONST_NUMERICAL :
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;

@@ -97,7 +97,7 @@
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
 %token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
 %token T_SELF "self" T_PARENT "parent" T_NS_SEP "::"
-%left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_REGEX
+%left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_NRE T_REGEX
 %left '+' '-'
 %left '*' '/'
 %token T_AND "and" T_OR "or" T_SHIFT_LEFT "shift left" T_SHIFT_RIGHT "shift right" T_COALESCE "coalesce (??)"
@@ -120,7 +120,7 @@
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement class_constant_definition
 %type <nPtr> unary_expression primary_expression pe_no_parenthesis
-%type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression regex_expression
+%type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression
 %type <nPtr> catch_header conditional_expression coalesce_expression assignment_expression real_scalar_value
 %type <nPtr> method_argument interface_inner_statement interface_method_declaration interface_property_declaration
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
@@ -384,8 +384,8 @@ and_expression:
 ;
 
 equality_expression:
-        regex_expression { $$ = $1; }
-    |   equality_expression comparison_operator regex_expression { $$ = ast_node_comparison(@2.first_line, $2, $1, $3); }
+        shift_expression { $$ = $1; }
+    |   equality_expression comparison_operator shift_expression { $$ = ast_node_comparison(@2.first_line, $2, $1, $3); }
 ;
 
 
@@ -397,11 +397,8 @@ comparison_operator:
     |   '<'  { $$ = '<';  }
     |   T_LE { $$ = T_LE; }
     |   T_GE { $$ = T_GE; }
-;
-
-regex_expression:
-        shift_expression { $$ = $1; }
-    |   regex_expression T_RE T_REGEX { $$ = ast_node_opr(@1.first_line, T_RE, 2, $1, ast_node_string(@3.first_line, $3)); smm_free($3); }
+    |   T_RE { $$ = T_RE; }
+    |   T_NRE { $$ = T_NRE; }
 ;
 
 shift_expression:
@@ -462,7 +459,7 @@ assignment_operator:
 real_scalar_value:
         T_LNUM        { $$ = ast_node_numerical(@1.first_line, $1); }
     |   T_STRING      { $$ = ast_node_string(@1.first_line, $1); smm_free($1); }
-    |   T_REGEX       { $$ = ast_node_string(@1.first_line, $1); smm_free($1); }
+    |   T_REGEX       { $$ = ast_node_regex(@1.first_line, $1); smm_free($1); }
 ;
 
 /* Any number, any string, any regex or null|true|false */

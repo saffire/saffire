@@ -38,14 +38,16 @@
     #define ASM_LINE_TYPE_OP_COMPARE    6
     #define ASM_LINE_TYPE_OP_ID         7
     #define ASM_LINE_TYPE_OP_OPERATOR   8
+    #define ASM_LINE_TYPE_OP_REGEX      9
 
     #define ASM_LINE_TYPE_LABEL         1
     #define ASM_LINE_TYPE_CODE          2
 
     typedef struct _asm_opr {
         int type;
-        struct {            // Not a union, but a struct. This way we can always figure out easily if "s" has to be freed.
+        struct {            // Not a union, but a struct. This way we can always figure out easily if "s" or "r" has to be freed.
             char    *s;
+            char    *r;
             long    l;
         } data;
     } t_asm_opr;
@@ -77,9 +79,9 @@
     } t_asm_frame;
 
     typedef struct _asm_constant {
-        enum { const_string, const_long, const_code } type;     // Constant type
+        enum { const_string, const_long, const_code, const_regex } type;     // Constant type
         union {
-            char *s;                                // String storage
+            char *s;                                // String, code, regex storage
             long l;                                 // Numerical storage
         } data;
     } t_asm_constant;
