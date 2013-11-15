@@ -118,6 +118,9 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
         case typeAstString :
             fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=String|Value=\\\"%s\\\"}\"]\n", cur_node_nr, p->lineno, sanitize(p->string.value));
             break;
+        case typeAstRegex :
+            fprintf(fp, "fillcolor=cornsilk3,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=Regex|Value=%s}\"]\n", cur_node_nr, p->lineno, sanitize(p->regex.value));
+            break;
 
         case typeAstNumerical :
             fprintf(fp, "fillcolor=cornsilk2,style=\"filled, rounded\",label=\"{%d (#%ld)|Type=Numerical|Value=%d}\"]\n", cur_node_nr, p->lineno, p->numerical.value);

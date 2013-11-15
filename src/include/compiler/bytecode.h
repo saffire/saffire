@@ -39,6 +39,7 @@
     #define BYTECODE_CONST_STRING           0
     #define BYTECODE_CONST_NUMERICAL        1
     #define BYTECODE_CONST_CODE             2
+    #define BYTECODE_CONST_REGEX            3
 
     #define BYTECODE_FLAG_SIGNED            1        // Code is signed
 
@@ -59,6 +60,7 @@
 
         union {
             char *s;                    // String
+            char *r;                    // Regex
             long l;                     // Long
             t_bytecode *code;           // Code block
             void *ptr;                  // Generic pointer

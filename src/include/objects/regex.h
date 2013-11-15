@@ -40,6 +40,7 @@
 
         pcre *regex;
         char *regex_string;
+        int  regex_flags;
     } t_regex_object;
 
     t_regex_object Object_Regex_struct;

@@ -39,7 +39,7 @@
                    typeAstOpr, typeAstNop, typeAstGroup,
                    typeAstClass, typeAstInterface, typeAstAttribute, typeAstProperty,
                    typeAstAssignment, typeAstComparison, typeAstBool, typeAstOperator,
-                   typeAstTuple,
+                   typeAstTuple, typeAstRegex,
                  } nodeEnum;
 
     typedef struct {
@@ -134,6 +134,7 @@
         union {
             numericalNode numerical;    // constant int
             stringNode string;          // constant string
+            stringNode regex;           // constant regex
             identifierNode identifier;  // variable
             propertyNode property;      // property
             attributeNode attribute;    // attribute
@@ -148,6 +149,7 @@
         };
     } t_ast_element;
 
+    t_ast_element *ast_node_regex(int lineno, char *value);
     t_ast_element *ast_node_string(int lineno, char *value);
     t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src);
     t_ast_element *ast_node_string_context_class(int lineno, char *element);

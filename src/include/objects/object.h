@@ -83,6 +83,8 @@
     #define COMPARISON_IN     6     // In set
     #define COMPARISON_NI     7     // Not in set
     #define COMPARISON_EX     8     // Compare exception, not a "real" comparison, but performs an "instanceof" check
+    #define COMPARISON_RE     9     // Regex match
+    #define COMPARISON_NRE   10     // Regex inverse match
 
 
     // Object flags
@@ -113,6 +115,7 @@
     #define OBJECT_IS_NULL(obj)         (obj->type == objectTypeNull)
     #define OBJECT_IS_NUMERICAL(obj)    (obj->type == objectTypeNumerical)
     #define OBJECT_IS_STRING(obj)       (obj->type == objectTypeString)
+    #define OBJECT_IS_REGEX(obj)        (obj->type == objectTypeRegex)
     #define OBJECT_IS_BOOLEAN(obj)      (obj->type == objectTypeBoolean)
     #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CALLABLE(obj)     (obj->type == objectTypeCallable)
