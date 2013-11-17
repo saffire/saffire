@@ -343,8 +343,7 @@ void object_init() {
     object_list_init();
     object_exception_init();
 
-    object_iterator_init();
-    object_datastructure_init();
+    object_interfaces_init();
 }
 
 
@@ -381,8 +380,7 @@ void object_fini() {
 
 
 
-    object_datastructure_fini();
-    object_iterator_fini();
+    object_interfaces_fini();
 
     object_exception_fini();
     object_list_fini();
