@@ -232,7 +232,7 @@ t_ast_element *ast_node_null(int lineno) {
 
 t_ast_element *ast_node_add_multi(t_ast_element *src, t_ast_element *group) {
     if (group->grouping == 0) {
-        fatal_error(1, "Cannot add a non-grouping element to group");
+        fatal_error(1, "Cannot add a non-grouping element to group");   /* LCOV_EXCL_LINE */
     }
 
     switch (group->type) {
@@ -602,8 +602,7 @@ t_ast_element *ast_generate_from_file(const char *source_file) {
         fp_name = (char *)source_file;
     }
     if (!fp) {
-        fatal_error(1, "Could not open file: %s\n", source_file);
-        return NULL;
+        fatal_error(1, "Could not open file: %s\n", source_file);   /* LCOV_EXCL_LINE */
     }
 
     // Generate source file into an AST tree

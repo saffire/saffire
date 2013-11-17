@@ -47,8 +47,7 @@ static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
 //    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
-        fatal_error(1, "Too many blocks!");
-        exit(1);
+        fatal_error(1, "Too many blocks!"); /* LCOV_EXCL_LINE */
     }
 
     block = &frame->blocks[frame->block_cnt];
@@ -91,7 +90,7 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
 //    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
 
     if (frame->block_cnt <= 0) {
-        fatal_error(1, "Not enough blocks\n");
+        fatal_error(1, "Not enough blocks\n");  /* LCOV_EXCL_LINE */
     }
 
     frame->block_cnt--;

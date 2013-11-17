@@ -497,5 +497,5 @@ void parser_error(SaffireParser *sp, int lineno, const char *format, ...) {
     snprintf(errorbuf, 2047, format, args);
     va_end(args);
 
-    fatal_error(1, "%s, found in %s on line %d\n", errorbuf, sp->filename, lineno);
+    fatal_error(1, "%s, found in %s on line %d\n", errorbuf, sp->filename, lineno); /* LCOV_EXCL_LINE */
 }

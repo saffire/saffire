@@ -425,7 +425,7 @@ void vm_init(SaffireParser *sp, int runmode) {
 
     t_object *saffire_module_obj = vm_import(NULL, "::saffire", "saffire");
     if (!saffire_module_obj) {
-        fatal_error(1, "Cannot find the mandatory saffire module.");
+        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
     }
     vm_populate_builtins("saffire", saffire_module_obj);
 
@@ -613,7 +613,7 @@ dispatch:
 
         if (opcode == VM_STOP) break;
         if (opcode == VM_RESERVED) {
-            fatal_error(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");
+            fatal_error(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");       /* LCOV_EXCL_LINE */
         }
 
 
@@ -801,7 +801,7 @@ dispatch:
                 left_obj = vm_frame_stack_pop(frame);
 
                 if (left_obj->type != right_obj->type) {
-                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");
+                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");      /* LCOV_EXCL_LINE */
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {

@@ -68,7 +68,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
         if (! ht_exists_str(frame->label_offsets, bp->label)) {
             char *label = bp->label;
             label += strlen("userlabel_");
-            fatal_error(1, "Cannot find label '%s'\n", label);
+            fatal_error(1, "Cannot find label '%s'\n", label);  /* LCOV_EXCL_LINE */
         }
         // Fetch the offset of the label so we can patch it
         unsigned int label_offset = (int)ht_find_str(frame->label_offsets, bp->label);
@@ -291,7 +291,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
             if (ht_exists_str(frame->label_offsets, line->s)) {
-                fatal_error(1, "Label '%s' is already defined", line->s);
+                fatal_error(1, "Label '%s' is already defined", line->s);   /* LCOV_EXCL_LINE */
             }
             ht_add_str(frame->label_offsets, line->s, (void *)frame->code_len);
         }

@@ -40,9 +40,7 @@ char *vm_context_strip_path(char *class_path) {
     // Seek last ':'
     char *c = strrchr(s, ':');
     if (c == NULL) {
-        smm_free(s);
-        // @TODO: none
-        fatal_error(1, "context does not have any ::");
+        fatal_error(1, "context does not have any ::");     /* LCOV_EXCL_LINE */
     }
 
     c--;

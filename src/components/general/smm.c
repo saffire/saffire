@@ -42,7 +42,7 @@ void *smm_malloc(size_t size) {
     smm_malloc_calls++;
     void *ptr = malloc(size);
     if (ptr == NULL) {
-        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);
+        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);        /* LCOV_EXCL_LINE */
     }
     return ptr;
 }
@@ -57,7 +57,7 @@ void *smm_realloc(void *ptr, size_t size) {
     smm_realloc_calls++;
     void *newptr = realloc(ptr, size);
     if (newptr == NULL) {
-        fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);
+        fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);      /* LCOV_EXCL_LINE */
     }
     return newptr;
 }

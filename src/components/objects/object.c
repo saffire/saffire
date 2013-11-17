@@ -513,13 +513,11 @@ done:
  */
 void object_add_interface(t_object *class, t_object *interface) {
     if (! OBJECT_TYPE_IS_CLASS(class)) {
-        fatal_error(1, "Interface can only be added to a class\n");
-        return;
+        fatal_error(1, "Interface can only be added to a class\n");     /* LCOV_EXCL_LINE */
     }
 
     if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
-        fatal_error(1, "%s is not an interface\n", interface->name);
-        return;
+        fatal_error(1, "%s is not an interface\n", interface->name);        /* LCOV_EXCL_LINE */
     }
 
     if (! class->interfaces) {
@@ -566,7 +564,7 @@ void object_add_constant(t_object *obj, char *name, int visibility, t_object *co
 
     if (ht_exists_str(obj->attributes, name)) {
         object_release((t_object *)attrib_obj);
-        fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);
+        fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);      /* LCOV_EXCL_LINE */
     }
 
     ht_add_str(obj->attributes, name, attrib_obj);

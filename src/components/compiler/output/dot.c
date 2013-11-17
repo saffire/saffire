@@ -237,8 +237,7 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
 void dot_generate(t_ast_element *ast, const char *outputfile) {
     FILE *fp = fopen(outputfile, "w");
     if (!fp) {
-        fatal_error(1, "Cannot open %s for writing\n", outputfile);
-        return;
+        fatal_error(1, "Cannot open %s for writing\n", outputfile); /* LCOV_EXCL_LINE */
     }
 
     char *png_file = replace_extension(outputfile, ".dot", ".png");

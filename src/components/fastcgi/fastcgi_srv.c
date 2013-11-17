@@ -159,9 +159,7 @@ static int fcgi_loop(void) {
             t_hash_table *asm_code = ast_to_asm(ast, 1);
             ast_free_node(ast);
             if (! asm_code) {
-                fatal_error(1, "Cannot create assembler</h1>");
-                smm_free(bytecode_file);
-                continue;
+                fatal_error(1, "Cannot create assembler</h1>");     /* LCOV_EXCL_LINE */
             }
             bc = assembler(asm_code, source_file);
             bytecode_save(bytecode_file, source_file, bc);
@@ -171,9 +169,7 @@ static int fcgi_loop(void) {
 
         // Something went wrong with the bytecode loading or generating
         if (!bc) {
-            fatal_error(1, "Error while loading bytecode</h1>");
-            smm_free(bytecode_file);
-            continue;
+            fatal_error(1, "Error while loading bytecode</h1>");        /* LCOV_EXCL_LINE */
         }
 
         smm_free(bytecode_file);
