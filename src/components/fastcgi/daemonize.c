@@ -61,8 +61,7 @@ int drop_privileges(char *user, char *group) {
     if (pwd == NULL) {
         pwd = getpwuid(atoi(user));
         if (pwd == NULL || atoi(user) == 0) {
-            fatal_error(1, "Cannot find user '%s'\n", user);
-            return -1;
+            fatal_error(1, "Cannot find user '%s'\n", user);    /* LCOV_EXCL_LINE */
         }
     }
 
@@ -72,21 +71,18 @@ int drop_privileges(char *user, char *group) {
     if (grp == NULL) {
         grp = getgrgid(atoi(group));
         if (grp == NULL || atoi(group) == 0) {
-            fatal_error(1, "Cannot find group '%s'\n", group);
-            return -1;
+            fatal_error(1, "Cannot find group '%s'\n", group);  /* LCOV_EXCL_LINE */
         }
     }
 
     // Drop to group privs
     if (setgid(grp->gr_gid) != 0) {
-        fatal_error(1, "setgid() failed: %s\n", strerror(errno));
-        return -1;
+        fatal_error(1, "setgid() failed: %s\n", strerror(errno));   /* LCOV_EXCL_LINE */
     }
 
     // Drop to user privs
     if (setuid(pwd->pw_uid) != 0) {
-        fatal_error(1, "setuid() failed: %s\n", strerror(errno));
-        return -1;
+        fatal_error(1, "setuid() failed: %s\n", strerror(errno));   /* LCOV_EXCL_LINE */
     }
 
     return 0;
@@ -111,23 +107,20 @@ int setup_socket(char *socket_name) {
 
         char *colon = strchr(socket_name, ':');
         if (colon == NULL) {
-            fatal_error(1, "bind address should be in <host|ip>:<port> format\n");
-            return -1;
+            fatal_error(1, "bind address should be in <host|ip>:<port> format\n");      /* LCOV_EXCL_LINE */
         }
 
         char *addr = strndup(socket_name, colon-socket_name);
         int port = strtol(colon+1, NULL, 10);
         if (port < 1 || port > 65535) {
-            fatal_error(1, "Incorrect value for port specified\n");
-            return -1;
+            fatal_error(1, "Incorrect value for port specified\n");     /* LCOV_EXCL_LINE */
         }
 
         sockdata.data.in.sin_port = htons(port);
         sockdata.data.in.sin_addr.s_addr = inet_addr(addr);
 
         if (sockdata.data.in.sin_addr.s_addr == -1) {
-            fatal_error(1, "Incorrect value for addr specified\n");
-            return -1;
+            fatal_error(1, "Incorrect value for addr specified\n");     /* LCOV_EXCL_LINE */
         }
         sockdata.len = sizeof(sockdata.data.in);
     }
@@ -135,8 +128,7 @@ int setup_socket(char *socket_name) {
 
     // Create socket
     if ((sock_fd = socket(sockdata.data.in.sin_family, SOCK_STREAM, 0)) < 0) {
-        fatal_error(1, "Cannot create socket\n");
-        return -1;
+        fatal_error(1, "Cannot create socket\n");       /* LCOV_EXCL_LINE */
     }
 
 
@@ -144,15 +136,13 @@ int setup_socket(char *socket_name) {
     int val = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != 0) {
         close(sock_fd);
-        fatal_error(1, "Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));
-        return -1;
+        fatal_error(1, "Cannot set SO_REUSEADDR on socket: %s\n", strerror(errno));     /* LCOV_EXCL_LINE */
     }
 
     // Bind
     if (bind(sock_fd, (struct sockaddr *) &sockdata.data, sockdata.len) != 0) {
         close(sock_fd);
-        fatal_error(1, "Cannot bind() socket: %s\n", strerror(errno));
-        return -1;
+        fatal_error(1, "Cannot bind() socket: %s\n", strerror(errno));      /* LCOV_EXCL_LINE */
     }
 
     // Listen to the socket
@@ -160,8 +150,7 @@ int setup_socket(char *socket_name) {
     if (backlog <= 0) backlog = 1024;
     if (listen (sock_fd, backlog) == -1) {
         close(sock_fd);
-        fatal_error(1, "Cannot listen() on socket: %s\n", strerror(errno));
-        return -1;
+        fatal_error(1, "Cannot listen() on socket: %s\n", strerror(errno));     /* LCOV_EXCL_LINE */
     }
 
     if (IS_UNIXSOCK(sockdata)) {
@@ -178,8 +167,7 @@ int setup_socket(char *socket_name) {
             if (*endptr != '\0') {
                 pwd = getpwnam(socket_user);
                 if (pwd == NULL) {
-                    fatal_error(1 ,"Cannot find user: %s: %s", socket_user, strerror(errno));
-                    return -1;
+                    fatal_error(1 ,"Cannot find user: %s: %s", socket_user, strerror(errno));       /* LCOV_EXCL_LINE */
                 }
                 uid = pwd->pw_uid;
             }
@@ -190,8 +178,7 @@ int setup_socket(char *socket_name) {
                 grp = getgrnam(socket_group);
                 if (grp == NULL) {
                     close(sock_fd);
-                    fatal_error(1, "Cannot find group: %s: %s", socket_group, strerror(errno));
-                    return -1;
+                    fatal_error(1, "Cannot find group: %s: %s", socket_group, strerror(errno));     /* LCOV_EXCL_LINE */
                 }
                 gid = grp->gr_gid;
             }
@@ -199,8 +186,7 @@ int setup_socket(char *socket_name) {
             // Change owner of socket
             if (chown(socket_name, uid, gid) == -1) {
                 close(sock_fd);
-                fatal_error(1, "Cannot chown(): %s\n", strerror(errno));
-                return -1;
+                fatal_error(1, "Cannot chown(): %s\n", strerror(errno));        /* LCOV_EXCL_LINE */
             }
 
         }
@@ -210,8 +196,7 @@ int setup_socket(char *socket_name) {
         if (modei == 0) modei = 0600;  // RW for user if not correct settings
         if (chmod(socket_name, modei) == -1) {
             close(sock_fd);
-            fatal_error(1, "Cannot chmod(): %s\n", strerror(errno));
-            return -1;
+            fatal_error(1, "Cannot chmod(): %s\n", strerror(errno));        /* LCOV_EXCL_LINE */
         }
     }
 
@@ -226,8 +211,7 @@ int fork_child(void) {
     pid_t child_pid = fork();
 
     if (child_pid == -1) {
-        fatal_error(1, "Cannot fork(): %s", strerror(errno));
-        return -1;
+        fatal_error(1, "Cannot fork(): %s", strerror(errno));       /* LCOV_EXCL_LINE */
     }
 
     return child_pid;
@@ -240,8 +224,7 @@ int fork_child(void) {
 int check_suidroot(void) {
     // Make sure we don't run as SUID root, but running as root is allowed (since we can drop our privs then)
     if (getuid() != 0 && (geteuid() == 0 || getegid() == 0)) {
-        fatal_error(1, "Please do not run this app with SUID root.\n");
-        return -1;
+        fatal_error(1, "Please do not run this app with SUID root.\n");     /* LCOV_EXCL_LINE */
     }
 
     return 1;

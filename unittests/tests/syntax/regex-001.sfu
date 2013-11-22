@@ -1,0 +1,13 @@
+title: regex tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+if ("FOOBAR" ~= /^f/i) {
+    io.print("match");
+} else {
+    io.print("nomatch");
+}
+====
+match

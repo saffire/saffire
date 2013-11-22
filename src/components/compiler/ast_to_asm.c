@@ -101,7 +101,7 @@ static void _load_or_store(int lineno, t_asm_opr *opr, t_dll *frame, t_state *st
             dll_append(frame, asm_create_codeline(lineno, VM_STORE_ID, 1, opr));
             break;
         default :
-            fatal_error(1, "Unknown load/store state for %d!", opr->type);
+            fatal_error(1, "Unknown load/store state for %d!", opr->type);  /* LCOV_EXCL_LINE */
     }
 }
 
@@ -153,7 +153,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
             } else {
                 if (scope == OBJECT_SCOPE_PARENT) {
                     // We cannot do: parent.foo = 1
-                    fatal_error(1, "Cannot store in parent class attributes!");
+                    fatal_error(1, "Cannot store in parent class attributes!"); /* LCOV_EXCL_LINE */
                 }
                 dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ATTRIB, 1, opr1));
             }
@@ -250,7 +250,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_RE : tmp = COMPARISON_RE; break;
                 case T_NRE : tmp = COMPARISON_NRE; break;
                 default :
-                    fatal_error(1, "Unknown comparison: %s\n", leaf->comparison.cmp);
+                    fatal_error(1, "Unknown comparison: %s\n", leaf->comparison.cmp);   /* LCOV_EXCL_LINE */
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_COMPARE, NULL, tmp);
@@ -536,7 +536,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         }
                         break;
                     default :
-                        fatal_error(1, "Unknown load/store state for %d!", leaf->type);
+                        fatal_error(1, "Unknown load/store state for %d!", leaf->type); /* LCOV_EXCL_LINE */
                 }
             }
             break;
@@ -636,7 +636,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     while (i >= 0 && state->blocks[i].type != BLOCK_TYPE_LOOP) i--;
 
                     if (i < 0) {
-                        fatal_error(1, "No loop block found to continue too.");
+                        fatal_error(1, "No loop block found to continue too."); /* LCOV_EXCL_LINE */
                     }
 
                     // If we need to break out several loops (ie: break 2) we need to traverse back multiple
@@ -951,11 +951,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                         if (element_count == 2 && ctx == st_ctx_store) {
                             // We cannot store on something like foo[1..2], only foo[] and foo[n]
-                            fatal_error(1, "Cannot write to a [n..m] subscription");
+                            fatal_error(1, "Cannot write to a [n..m] subscription");    /* LCOV_EXCL_LINE */
                         }
                         if (element_count == 0 && ctx == st_ctx_load) {
                             // We cannot load on something like foo[]
-                            fatal_error(1, "Cannot read from an empty [] subscription");
+                            fatal_error(1, "Cannot read from an empty [] subscription");    /* LCOV_EXCL_LINE */
                         }
 
 
@@ -986,7 +986,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Check for duplicate label inside current block
                     sprintf(label1, "userlabel_%s", node->string.value);
                     if (ht_exists_str(state->blocks[state->block_cnt].labels, label1)) {
-                        fatal_error(1, "Duplicate label '%s' found\n", node->string.value);
+                        fatal_error(1, "Duplicate label '%s' found\n", node->string.value); /* LCOV_EXCL_LINE */
                     }
                     ht_add_str(state->blocks[state->block_cnt].labels, label1, (void *)1);
 
@@ -1164,7 +1164,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         node2 = node->group.items[i];       // Catch group
                         node3 = node2->group.items[0];
                         if (node3->opr.oper != T_CATCH) {
-                            fatal_error(1, "Expected a T_CATCH operator node\n");
+                            fatal_error(1, "Expected a T_CATCH operator node\n");   /* LCOV_EXCL_LINE */
                         }
                         t_ast_element *exception = node3->opr.ops[0];
                         t_ast_element *identifier = node3->opr.ops[1];
@@ -1438,11 +1438,11 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
 
                 default :
-                    fatal_error(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper));
+                    fatal_error(1, "Unknown AST Operator: %s\n", get_token_string(leaf->opr.oper)); /* LCOV_EXCL_LINE */
             }
             break;
         default :
-            fatal_error(1, "Unknown AST type : %d\n", leaf->type);
+            fatal_error(1, "Unknown AST type : %d\n", leaf->type);  /* LCOV_EXCL_LINE */
     }
 }
 

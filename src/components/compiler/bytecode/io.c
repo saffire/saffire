@@ -56,14 +56,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     // Read header
     FILE *f = fopen(filename, "rb");
     if (! f) {
-        fatal_error(1, "can't open file '%s'", filename);
-        return NULL;
+        fatal_error(1, "can't open file '%s'", filename);   /* LCOV_EXCL_LINE */
     }
 
     int rb = fread(&header, 1, sizeof(header), f);
     if (rb != sizeof(header)) {
-        fatal_error(1, "can't read file '%s'", filename);
-        return NULL;
+        fatal_error(1, "can't read file '%s'", filename);   /* LCOV_EXCL_LINE */
     }
 
     // Allocate room and read binary code
@@ -91,7 +89,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
         // Verify signature
         if (! gpg_verify(bincode, header.bytecode_len, signature, header.signature_len)) {
-            fatal_error(1, "The signature for this bytecode is INVALID!");
+            fatal_error(1, "The signature for this bytecode is INVALID!");      /* LCOV_EXCL_LINE */
         }
     }
 
@@ -101,12 +99,12 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     unsigned int bzip_buf_len = header.bytecode_uncompressed_len;
     char *bzip_buf = smm_malloc(bzip_buf_len);
     if (! bzip2_decompress(bzip_buf, &bzip_buf_len, bincode, header.bytecode_len)) {
-        fatal_error(1, "Error while decompressing data");
+        fatal_error(1, "Error while decompressing data");       /* LCOV_EXCL_LINE */
     }
 
     // Sanity check. These should match
     if (bzip_buf_len != header.bytecode_uncompressed_len) {
-        fatal_error(1, "Header information does not match with the size of the uncompressed data block");
+        fatal_error(1, "Header information does not match with the size of the uncompressed data block");   /* LCOV_EXCL_LINE */
     }
 
     // Free unpacked binary code. We don't need it anymore
@@ -119,7 +117,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     // Convert binary to bytecode
     t_bytecode *bc = bytecode_unmarshal(bincode);
     if (! bc) {
-        fatal_error(1, "Could not convert bytecode data");
+        fatal_error(1, "Could not convert bytecode data");  /* LCOV_EXCL_LINE */
     }
 
     smm_free(bzip_buf);
@@ -144,8 +142,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
 
     // Convert bytecode to bincode
     if (! bytecode_marshal(bc, &bincode_len, &bincode)) {
-        fatal_error(1, "Could not convert bytecode data");
-        return 0;
+        fatal_error(1, "Could not convert bytecode data");  /* LCOV_EXCL_LINE */
     }
 
     // Let header point to the reserved header position
@@ -174,7 +171,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
     unsigned int bzip_buf_len = 0;
     char *bzip_buf = NULL;
     if (! bzip2_compress(&bzip_buf, &bzip_buf_len, bincode, bincode_len)) {
-        fatal_error(1, "Error while compressing data");
+        fatal_error(1, "Error while compressing data"); /* LCOV_EXCL_LINE */
     }
 
     // Forget about the original bincode and replace it with out bzip2 data.
@@ -321,8 +318,7 @@ int bytecode_add_signature(const char *path, char *gpg_key) {
         _gpg_key = gpg_key;
     }
     if (_gpg_key == NULL) {
-        fatal_error(1, "Cannot find GPG key. Please set the correct GPG key inside your INI file");
-        return 1;
+        fatal_error(1, "Cannot find GPG key. Please set the correct GPG key inside your INI file"); /* LCOV_EXCL_LINE */
     }
     gpg_sign(_gpg_key, bincode, header.bytecode_len, &gpg_signature, &gpg_signature_len);
 

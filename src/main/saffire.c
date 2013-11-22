@@ -33,6 +33,7 @@
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/hashtable.h"
+#include "general/config.h"
 
 /*
  * Info structures for the Saffire commands
@@ -59,10 +60,33 @@ struct command commands[] = {
                                         { NULL, NULL }
                                 };
 
+
+
+static void opt_config(void *data) {
+    config_which_ini = USE_INI_CUSTOM;
+    config_custom_ini_path = smm_strdup((char *)data);
+}
+
+static void opt_global(void *data) {
+    config_which_ini = USE_INI_GLOBAL;
+}
+
+static void opt_local(void *data) {
+    config_which_ini = USE_INI_LOCAL;
+}
+
+static struct saffire_option global_options[] = {
+    { "config", "", required_argument, opt_config },
+    { "global", "", no_argument, opt_global },
+    { "local",  "", no_argument, opt_local },
+    { 0, 0, 0, 0 }
+};
+
+
+
 // Original argc and argv. Since we are moving around the argument pointers.
 int original_argc;
 char **original_argv;
-
 
 
 /**
@@ -71,8 +95,13 @@ char **original_argv;
 void print_usage(void) {
     output("Usage: saffire <command> [options] [script -- [args]]\n"
            "\n"
+           "Global arguments:\n"
+           "    --config <filename>   Configuration file to read\n"
+           "    --global              Use global configuration\n"
+           "\n"
            "Available commands:\n");
 
+    // Display all available commands
     struct command *p = commands;
     while (p->name) {
         output("  %-15s %s\n", p->name, p->info->description);
@@ -106,7 +135,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
 
             // Parse options clears the options as soon as they are processed
             if (action->options) {
-                saffire_parse_options(argc, argv, &action->options);
+                saffire_parse_options(&argc, argv, &action->options, 1);
             }
 
             // Parse the rest of the arguments, confirming the action's signature
@@ -172,6 +201,10 @@ static char *parse_command_line(int *argc, char **argv[]) {
         return "version";
     }
 
+    // We parse and get rid of any global values
+    struct saffire_option *opts = global_options;
+    saffire_parse_options(argc, *argv, &opts, 0);
+
     // We assume the first argument is a command
     char *command = (*argv)[1];
 
@@ -200,6 +233,11 @@ int main(int argc, char *argv[]) {
     original_argv = argv;
 
     char *command = parse_command_line(&argc, &argv);
+
+    // Read configuration first
+    if (! config_read() && config_which_ini != USE_INI_SEARCH) {
+        output("Warning: cannot read configuration '%s/saffire.ini' \n", config_get_path());
+    }
 
     // Iterate commands and see if we have a match and run it.
     struct command *p = commands;

@@ -114,7 +114,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
     DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
-        fatal_error(1, "Trying to pop from an empty stack");
+        fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
     }
     t_object *ret = frame->stack[frame->sp];
     frame->stack[frame->sp] = NULL;
@@ -134,7 +134,7 @@ void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
 
 
     if (frame->sp < 0) {
-        fatal_error(1, "Trying to push to a full stack");
+        fatal_error(1, "Trying to push to a full stack");       /* LCOV_EXCL_LINE */
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
@@ -160,7 +160,7 @@ t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
  */
 t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->stack_size) {
-        fatal_error(1, "Trying to fetch from outside stack range");
+        fatal_error(1, "Trying to fetch from outside stack range");     /* LCOV_EXCL_LINE */
     }
 
     return frame->stack[idx];
@@ -172,7 +172,7 @@ t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
  */
 void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
-        fatal_error(1, "Trying to fetch from outside constant range");
+        fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
     t_bytecode_constant *c = frame->bytecode->constants[idx];
@@ -185,7 +185,7 @@ void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
  */
 t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->constants_len) {
-        fatal_error(1, "Trying to fetch from outside constant range");
+        fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
     return frame->constants_objects[idx];
@@ -339,7 +339,7 @@ t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
  */
 char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
-        fatal_error(1, "Trying to fetch from outside identifier range");
+        fatal_error(1, "Trying to fetch from outside identifier range");        /* LCOV_EXCL_LINE */
     }
 
 #ifdef __DEBUG
@@ -413,8 +413,7 @@ void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
             default :
-                fatal_error(1, "Cannot convert constant type into object!");
-                break;
+                fatal_error(1, "Cannot convert constant type into object!");        /* LCOV_EXCL_LINE */
         }
         frame->constants_objects[i] = obj;
     }

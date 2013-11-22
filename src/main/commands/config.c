@@ -134,39 +134,6 @@ static const char *default_ini[] = {
     "remote.idekey = SAFFIRE"
 };
 
-// Default INI file @TODO: platform specific!
-char global_ini_path[]  = "/etc/saffire/saffire.ini";
-char user_ini_path[]    = "~/saffire.ini";
-
-#define USE_INI_GLOBAL      1       // Use the global ini
-#define USE_INI_LOCAL       2       // Use the local user ini
-#define USE_INI_CUSTOM      3       // Use a custom ini
-
-int which_ini = USE_INI_LOCAL;
-char *custom_ini_path;     // Specifies custom ini path
-
-
-static void read_config(void) {
-    char *ini_path;
-
-    switch (which_ini) {
-        case USE_INI_LOCAL :
-        default :
-            ini_path = user_ini_path;
-            break;
-        case USE_INI_GLOBAL :
-            ini_path = global_ini_path;
-            break;
-        case USE_INI_CUSTOM :
-            ini_path = custom_ini_path;
-            break;
-    }
-
-    if (! config_init(ini_path)) {
-        output("Error: cannot read the configuration file '%s'\n", ini_path);
-    }
-}
-
 
 /**
  * Action: ./saffire config generate
@@ -196,8 +163,6 @@ static int do_generate(void) {
  * Action: ./saffire config get <setting>
  */
 static int do_get(void) {
-    read_config();
-
     char *key = saffire_getopt_string(0);
 
     char *val = config_get_string(key, NULL);
@@ -217,8 +182,6 @@ static int do_get(void) {
  * Action: ./saffire config set <setting> <value>
  */
 static int do_set(void) {
-    read_config();
-
     char *setting = saffire_getopt_string(0);
     char *value = saffire_getopt_string(1);
 
@@ -232,8 +195,6 @@ static int do_set(void) {
  * Action: ./saffire config unset <setting>
  */
 static int do_unset(void) {
-    read_config();
-
     char *setting = saffire_getopt_string(0);
 
     return config_set_string(setting, NULL);
@@ -244,8 +205,6 @@ static int do_unset(void) {
  * Action: ./saffire config list <search>
  */
 static int do_list(void) {
-    read_config();
-
     char *pattern = saffire_getopt_string(0);
     if (! pattern) pattern = "";
 
@@ -278,48 +237,25 @@ static int do_list(void) {
  ***/
 
 
-static void opt_file(void *data) {
-    which_ini = USE_INI_CUSTOM;
-    custom_ini_path = (char *)data;
-}
-
-static void opt_global(void *data) {
-    which_ini = USE_INI_GLOBAL;
-}
 
 /* Usage string */
 static const char help[]   = "Configure Saffire settings.\n"
                              "\n"
-                             "Global settings:\n"
-                             "    -f, --file <filename>   File to read/write.\n"
-                             "    --global                Write to global configuration file.\n"
-                             "\n"
                              "Actions:\n"
-                             "   generate                 Generates configuration settings\n"
+                             "   generate                 Generates and outputs configuration settings\n"
                              "   get <setting>            Returns value (if set)\n"
                              "   set <setting> <value>    Set value in your configuration\n"
                              "   unset <setting>          Unsets value in your configuration\n"
-                             "   list [pattern]           Returns all settings, or that matches [pattern]\n"
-                             "\n"
-                             "Configuration paths:\n"
-                             "  By default, saffire will use ~/.saffire.ini, when the --global has been \n"
-                             "  added as an option, it will try to read/write to /etc/saffire/saffire.ini\n"
-                             "  if the -f or --file has been entered, it will use the given path \n";
+                             "   list [pattern]           Returns all settings, or that matches [pattern]\n";
 
-
-static struct saffire_option global_options[] = {
-    { "file", "f", required_argument, opt_file },
-    { "global", "", no_argument, opt_global },
-    { 0, 0, 0, 0 }
-};
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "generate", "", do_generate, NULL },        // Generate new ini file
-    { "get", "s", do_get, global_options },       // Get a section
-    { "set", "ss", do_set, global_options },      // Sets a section value
-    { "unset", "s", do_unset, global_options },   // Unsets a section value
-    { "list", "|s", do_list, global_options },    // List section value (or everything)
+    { "generate", "", do_generate, NULL },      // Generate new ini file
+    { "get", "s", do_get, NULL },               // Get a section
+    { "set", "ss", do_set, NULL },              // Sets a section value
+    { "unset", "s", do_unset, NULL },           // Unsets a section value
+    { "list", "|s", do_list, NULL },            // List section value (or everything)
     { 0, 0, 0, 0 }
 };
 

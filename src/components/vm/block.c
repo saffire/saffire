@@ -30,6 +30,8 @@
 #include "debug.h"
 #include "general/output.h"
 
+
+#ifdef __DEBUG
 void vm_frame_block_debug(t_vm_frame *frame) {
     DEBUG_PRINT("\nFRAME BLOCK STACK\n");
     DEBUG_PRINT("=======================\n");
@@ -38,6 +40,7 @@ void vm_frame_block_debug(t_vm_frame *frame) {
     }
     DEBUG_PRINT("\n");
 }
+#endif
 
 static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
     t_vm_frameblock *block;
@@ -47,8 +50,7 @@ static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
 //    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
-        fatal_error(1, "Too many blocks!");
-        exit(1);
+        fatal_error(1, "Too many blocks!"); /* LCOV_EXCL_LINE */
     }
 
     block = &frame->blocks[frame->block_cnt];
@@ -58,7 +60,9 @@ static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
     block->sp = sp;
     block->visited = 0;
 
+#ifdef __DEBUG
 vm_frame_block_debug(frame);
+#endif
 
     return block;
 }
@@ -91,7 +95,7 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
 //    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
 
     if (frame->block_cnt <= 0) {
-        fatal_error(1, "Not enough blocks\n");
+        fatal_error(1, "Not enough blocks\n");  /* LCOV_EXCL_LINE */
     }
 
     frame->block_cnt--;

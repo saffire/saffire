@@ -55,8 +55,7 @@ static void _free_constant(t_bytecode_constant *c) {
              bytecode_free(c->data.code);
              break;
          default :
-             fatal_error(1, "Unknown constant type %d\n", c->type);
-             break;
+             fatal_error(1, "Unknown constant type %d\n", c->type); /* LCOV_EXCL_LINE */
      }
 }
 
@@ -236,8 +235,7 @@ t_bytecode *bytecode_unmarshal(char *bincode) {
                 _new_constant_code(bytecode, child_bytecode);
                 break;
             default :
-                fatal_error(1, "Unknown constant type %d\n", type);
-                break;
+                fatal_error(1, "Unknown constant type %d\n", type); /* LCOV_EXCL_LINE */
         }
     }
 
@@ -297,8 +295,7 @@ int bytecode_marshal(t_bytecode *bytecode, int *bincode_off, char **bincode) {
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, &bytecode->constants[i]->data.l);
                 break;
             default :
-                fatal_error(1, "Unknown constant type %d\n", bytecode->constants[i]->type);
-                break;
+                fatal_error(1, "Unknown constant type %d\n", bytecode->constants[i]->type); /* LCOV_EXCL_LINE */
         }
     }
 

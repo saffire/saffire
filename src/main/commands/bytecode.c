@@ -345,14 +345,14 @@ static void opt_key(void *data) {
 
 static void opt_sign(void *data) {
     if (flag_sign > 0) {
-        fatal_error(1, "Cannot have both the --no-sign and --sign options");
+        fatal_error(1, "Cannot have both the --no-sign and --sign options");        /* LCOV_EXCL_LINE */
     }
     flag_sign = 1;
 }
 
 static void opt_no_sign(void *data) {
     if (flag_sign > 0) {
-        fatal_error(1, "Cannot have both the --no-sign and --sign options");
+        fatal_error(1, "Cannot have both the --no-sign and --sign options");        /* LCOV_EXCL_LINE */
     }
     flag_sign = 2;
 }

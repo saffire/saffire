@@ -9,10 +9,14 @@ AC_CONFIG_HEADERS([src/config.h])
 # Store configure args
 AC_DEFINE_UNQUOTED([CONFIGURE_ARGS],["$ac_configure_args"],[arguments passed to configure script])
 
+
 # Checks for programs.
 AC_LANG_C
-AM_PROG_CC_C_O
+
+cflags_save="$CFLAGS"
+AC_PROG_CC
 AC_PROG_CC_STDC
+CFLAGS="$cflags_save"
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_YACC
