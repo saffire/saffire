@@ -48,7 +48,7 @@
         void(*func)(void *);        // Function to call when this setting is found
     };
 
-    void saffire_parse_options(int, char **, struct saffire_option *options[]);
+    void saffire_parse_options(int *, char **, struct saffire_option *options[], int halt_on_error);
     int saffire_parse_signature(int argc, char **argv, char *signature, char **error);
     char *saffire_getopt_string(int idx);
     char saffire_getopt_bool(int idx);

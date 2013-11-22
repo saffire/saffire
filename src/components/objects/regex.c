@@ -252,7 +252,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
             default :
                 // @TODO: unknown chars are found in the flags.
                 object_raise_exception(Object_ArgumentException, 1, "Incorrect regex flag found '%c'", *flags);
-                return NULL;
         }
         flags++;
     }
@@ -260,7 +259,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     re_obj->regex = pcre_compile(re_obj->regex_string, re_obj->regex_flags, &error, &erroffset, 0);
     if (! re_obj->regex) {
         object_raise_exception(Object_ArgumentException, 1, "Error while compiling regular expression at offset %d: %s", erroffset, error);
-        return NULL;
     }
 }
 

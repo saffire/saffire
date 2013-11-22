@@ -108,11 +108,11 @@ static void process_argument(int idx, int argc, char *argv[], struct saffire_opt
  * Parse commandline options. This is similar to getopt_long, but with some modifications.
  * It WILL modify the argv by cleaning the arguments. This makes it easier to process.
  */
-void saffire_parse_options(int argc, char **argv, struct saffire_option *options[]) {
+void saffire_parse_options(int *argc, char **argv, struct saffire_option *options[], int halt_on_error) {
     int found;
 
     // Iterate all arguments
-    for (int idx=0; idx != argc; idx++) {
+    for (int idx=0; idx != *argc; idx++) {
         found = 0;
 
         struct saffire_option *opt = options[0];
@@ -121,13 +121,13 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
             if (argv[idx] && argv[idx][0] == '-' && argv[idx][1] == '-') {
                 // Long option found (--option)
                 if (! strcasecmp(argv[idx]+2, opt->longname)) {
-                    process_argument(idx, argc, argv, opt);
+                    process_argument(idx, *argc, argv, opt);
                     found = 1;
                 }
             } else if (argv[idx] && argv[idx][0] == '-' && argv[idx][1] != '-' && argv[idx][2] == '\0') {
                 // Short option found (-o)
                 if (! strcasecmp(argv[idx]+1, opt->shortname)) {
-                    process_argument(idx, argc, argv, opt);
+                    process_argument(idx, *argc, argv, opt);
                     found = 1;
                 }
             } else {
@@ -139,11 +139,28 @@ void saffire_parse_options(int argc, char **argv, struct saffire_option *options
         }
 
         // Unknown option found
-        if (! found) {
+        if (! found && halt_on_error) {
             fatal_error(1, "saffire: invalid option '%s'\n"
                              "Try 'saffire help config' for more information\n", argv[idx]);        /* LCOV_EXCL_LINE */
         }
     }
+
+    // We must "clean" all empty slots
+    int i = 0;
+    for (i=0; i!=*argc-1; i++) {
+        // skip if it's already filled
+        if (argv[i]) continue;
+
+        // Fill with first non-empty we find
+        int j = i;
+        while (! argv[j] && j < *argc-1) j++;
+        argv[i] = argv[j];
+        argv[j] = NULL;
+    }
+
+    // Recalculate our argument count
+    *argc = 0;
+    while (argv[*argc]) (*argc)++;
 }
 
 
@@ -180,6 +197,9 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
         *error = smm_strdup("Not enough arguments found");
         return 0;
     }
+
+    // Start with optional items
+    if (signature[0] == '|') optional = 1;
 
     // Process each character in the signature
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {

@@ -28,25 +28,90 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fnmatch.h>
-
+#include <libgen.h>
+#include <linux/limits.h>
+#include "general/config.h"
 #include "general/output.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
+#include "general/path_handling.h"
 #include "general/ini.h"
-
 #include "debug.h"
 
+
+#define SAFFIRE_INI_FILENAME "saffire.ini"
+
+// Default paths
+char global_ini_path[]  = "/etc/saffire";
+char user_ini_path[]    = "~";
+char *search_paths[] = {
+    ".",                    // First find in current directory
+    "~",                    // Find in user home dir
+    "/etc/saffire",         // Find in specific etc directory
+    "/etc",                 // Find in /etc
+    NULL
+};
+
+int config_which_ini = USE_INI_SEARCH;
+char *config_custom_ini_path;     // Specifies custom ini path
+
 t_ini *config_ini = NULL;
-char *config_path;
+char *config_path;      // Path
+char *config_file;      // Filename
+
+char *config_get_path(void) {
+    return config_path;
+}
+
+t_ini *config_get_ini(void) {
+    return config_ini;
+}
+
+
+char *config_seek(char *searchpaths[], char *file) {
+    char path[PATH_MAX];
+
+    int idx = 0;
+    while (searchpaths[idx]) {
+        snprintf(path, PATH_MAX-1, "%s/%s", searchpaths[idx], file);
+        if (is_file(path)) return searchpaths[idx];
+
+        idx++;
+    }
+
+    return NULL;
+}
 
 
 /**
  * Read INI file file
  */
-int config_init(char *path) {
-    DEBUG_PRINT("config_init(%s)\n", path);
-    config_path = path;
-    config_ini = ini_read(config_path);
+int config_read(void) {
+    config_file = SAFFIRE_INI_FILENAME;
+
+    switch (config_which_ini) {
+        case USE_INI_SEARCH :
+        default :
+            config_path = config_seek(search_paths, SAFFIRE_INI_FILENAME);
+            if (config_path == NULL) return 0;   // Not found
+            break;
+        case USE_INI_LOCAL :
+            config_path = user_ini_path;
+            break;
+        case USE_INI_GLOBAL :
+            config_path = global_ini_path;
+            break;
+        case USE_INI_CUSTOM :
+            config_path = config_custom_ini_path;
+            if (is_file(config_path)) {
+                // If we are pointing to a file, split it into dir and file
+                config_file = basename(config_path);
+                config_path = dirname(config_path);
+            }
+            break;
+    }
+
+    config_ini = ini_read(config_path, config_file);
     return (config_ini != NULL);
 }
 
@@ -62,7 +127,7 @@ int config_set_string(char *key, char *val) {
     } else {
         ini_add(config_ini, key, val);
     }
-    ini_save(config_ini, config_path);
+    ini_save(config_ini, config_path, config_file);
 
     return 1;
 }

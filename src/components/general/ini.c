@@ -29,6 +29,7 @@
 #include <pcre.h>
 #include <fnmatch.h>
 #include <ctype.h>
+#include <linux/limits.h>
 #include "general/ini.h"
 #include "general/smm.h"
 #include "general/dll.h"
@@ -155,18 +156,34 @@ static void ini_parse(t_ini *ini) {
 }
 
 
+char *realpathex(const char *path, char *buff) {
+    char *home;
+    if (*path=='~' && (home = getenv("HOME"))) {
+        char s[PATH_MAX];
+        return realpath(strcat(strcpy(s, home), path+1), buff);
+    } else {
+        return realpath(path, buff);
+    }
+}
+
+
 
 /**
  * Read a file and returns as a (parsed) ini
  */
-t_ini *ini_read(const char *filename) {
+t_ini *ini_read(const char *path, char *filename) {
+    char fullpath[PATH_MAX];
+
     t_ini *ini = (t_ini *)smm_malloc(sizeof(t_ini));
 
     ini->_private.ini_lines = dll_init();
     ini->_private.section_endings = ht_create();
     ini->keys = ht_create();
 
-    FILE *f = fopen(filename, "r");
+    snprintf(fullpath, PATH_MAX-1, "%s/%s", path, filename);
+    char *rp = realpathex(fullpath, NULL);
+    FILE *f = fopen(rp, "r");
+    free(rp);
     if (! f) return NULL;
 
     char line[2048];
@@ -229,8 +246,15 @@ t_hash_table *ini_match(t_ini *ini, const char *pattern) {
     ht_iter_init(&iter, ini->keys);
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
+        t_ini_element *ie = ht_iter_value(&iter);
+        char *val = ie->value;
 
         if (fnmatch(pattern, key, 0) == 0) {
+            t_ini_element *ie = ht_iter_value(&iter);
+            ht_add_str(matches, key, ie->value);
+        }
+
+        if (fnmatch(pattern, val, 0) == 0) {
             t_ini_element *ie = ht_iter_value(&iter);
             ht_add_str(matches, key, ie->value);
         }
@@ -375,8 +399,13 @@ int ini_remove(t_ini *ini, const char *key) {
  * Saves current ini back into 'filename'
  * Returns 0 on failuire, 1 on success
  */
-int ini_save(t_ini *ini, const char *filename) {
+int ini_save(t_ini *ini, const char *path, const char *filename) {
+    char fullpath[PATH_MAX];
+
+    snprintf(fullpath, PATH_MAX-1, "%s/%s", path, filename);
+    char *rp = realpathex(fullpath, NULL);
     FILE *f = fopen(filename, "w");
+    free(rp);
     if (!f) return 0;
 
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);

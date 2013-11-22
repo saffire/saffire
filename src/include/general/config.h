@@ -28,10 +28,22 @@
 #define __GENERAL_CONFIG_H__
 
     #include "general/hashtable.h"
+    #include "general/ini.h"
 
-    int config_init(char *path);
+    int config_which_ini;
+    char *config_custom_ini_path;
 
-    int config_set_string(const char *key, const char *value);
+    #define USE_INI_SEARCH      0       // Use search path to find ini file
+    #define USE_INI_GLOBAL      1       // Use the global ini
+    #define USE_INI_LOCAL       2       // Use the local user ini
+    #define USE_INI_CUSTOM      3       // Use a custom ini
+
+    int config_read(void);
+    char *config_get_path(void);
+    t_ini *config_get_ini(void);
+
+
+    int config_set_string(char *key, char *value);
     char *config_get_string(const char *key, const char *default_value);
     char config_get_bool(const char *key, char default_value);
     long config_get_long(const char *key, long default_value);

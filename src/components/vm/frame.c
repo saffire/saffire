@@ -414,7 +414,6 @@ void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_
                 break;
             default :
                 fatal_error(1, "Cannot convert constant type into object!");        /* LCOV_EXCL_LINE */
-                break;
         }
         frame->constants_objects[i] = obj;
     }

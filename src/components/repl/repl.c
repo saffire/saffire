@@ -122,9 +122,6 @@ int repl(void) {
     // Ignore CTRL-C. We use CTRL-D to represent EOF / exit
     signal(SIGINT, SIG_IGN);
 
-    // @TODO: remove configuration reading like this
-    config_init("/etc/saffire/saffire.ini");
-
     /*
      * Initialize our repl argument structure
      */
