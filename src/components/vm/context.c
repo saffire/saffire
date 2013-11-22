@@ -100,20 +100,3 @@ void vm_context_free_context(t_vm_frame *frame) {
     frame->context = NULL;
 }
 
-
-char *vm_context_get_class_path(t_vm_context *context) {
-    return context->class.path;
-}
-
-char *vm_context_get_class_name(t_vm_context *context) {
-    return context->class.name;
-}
-
-char *vm_context_get_file_path(t_vm_context *context) {
-    return context->file.path;
-}
-
-char *vm_context_get_file_name(t_vm_context *context) {
-    return context->file.name;
-}
-

@@ -44,12 +44,6 @@
     char *vm_context_strip_path(char *full_namespace);
     char *vm_context_strip_class(char *full_namespace);
 
-    char *vm_context_get_class_path(t_vm_context *context);
-    char *vm_context_get_class_class(t_vm_context *context);
-
-    char *vm_context_get_file_path(t_vm_context *context);
-    char *vm_context_get_file_name(t_vm_context *context);
-
     void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path);
     void vm_context_free_context(t_vm_frame *frame);
 
