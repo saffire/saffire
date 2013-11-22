@@ -1,8 +1,10 @@
 Read the following twice. Three times if it still confuses you:
 ---------------------------------------------------------------
 Saffire is nowhere near production ready. You can compile saffire, run some example code but don't expect to be
-programming websites or applications in it. We are still a long way from a v0.1 release. Compile Saffire if you
-like to see how the
+programming websites or applications in it very soon. We are still a long way from a v0.1 release. Compile Saffire 
+if you like to see how saffire works and getting your feet wet in the language. Also did we tell you we LOVE new 
+contributers that can help out writing all kind of things like saffire modules so you CAN do some serious 
+programming in it?
 
 
 Installation through vagrant:
