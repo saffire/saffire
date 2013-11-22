@@ -252,9 +252,7 @@ t_hash_table *ini_match(t_ini *ini, const char *pattern) {
         if (fnmatch(pattern, key, 0) == 0) {
             t_ini_element *ie = ht_iter_value(&iter);
             ht_add_str(matches, key, ie->value);
-        }
-
-        if (fnmatch(pattern, val, 0) == 0) {
+        } else if (fnmatch(pattern, val, 0) == 0) {
             t_ini_element *ie = ht_iter_value(&iter);
             ht_add_str(matches, key, ie->value);
         }

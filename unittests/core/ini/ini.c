@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <libgen.h>
 #include "ini.h"
 #include "../../src/include/general/ini.h"
 
@@ -37,8 +38,10 @@ static int create_ini(void) {
     }
     close(fd);
 
+    char *file = basename(tmpfilename);
+    char *path = dirname(tmpfilename);
 
-    ini = ini_read(tmpfilename);
+    ini = ini_read(path, file);
     return 1;
 }
 
