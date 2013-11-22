@@ -7,8 +7,8 @@ if DEBUG
   AM_CFLAGS = -ggdb -g3 -fno-inline -O0 -D__DEBUG
   AM_CXXFLAGS = -ggdb -g3 -fno-inline -O0 -D__DEBUG
 else
-  AM_CFLAGS = -O2
-  AM_CXXFLAGS = -O2
+  AM_CFLAGS = -O3
+  AM_CXXFLAGS = -O3
 endif
 
 if PARSEDEBUG
