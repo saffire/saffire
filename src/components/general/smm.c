@@ -36,7 +36,7 @@
 
 long smm_malloc_calls = 0;
 long smm_realloc_calls = 0;
-long smm_strdup_calls = 0;
+long string_strdup_calls = 0;
 
 void *smm_malloc(size_t size) {
     smm_malloc_calls++;
@@ -64,11 +64,4 @@ void *smm_realloc(void *ptr, size_t size) {
 
 void smm_free(void *ptr) {
     return free(ptr);
-}
-
-char *smm_strdup(const char *s) {
-    smm_strdup_calls++;
-    char *d = smm_malloc(strlen(s)+1);
-    strcpy(d, s);
-    return d;
 }

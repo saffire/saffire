@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include "general/string.h"
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -43,7 +44,7 @@ SAFFIRE_METHOD(exception, ctor) {
         return NULL;
     }
 
-    self->message = smm_strdup(msg_obj->value);
+    self->message = string_strdup(msg_obj->value);
     self->code = code_obj->value;
 
     RETURN_SELF;
@@ -196,15 +197,15 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    // Optional (string) message
+    // Optional (numerical) code
     if (e != NULL) {
         exception_obj->code = (int)e->data;
         e = DLL_NEXT(e);
     }
 
-    // Optional (numerical) code
     if (e != NULL) {
-        exception_obj->message = smm_strdup((char *)e->data);
+        exception_obj->message = (t_string *)e->data;
+        e = DLL_NEXT(e);
     }
 }
 
@@ -228,7 +229,7 @@ static char *obj_debug(t_object *obj) {
         snprintf(global_buf, 1023, "%s", obj->name);
     } else {
         t_exception_object *exception = (t_exception_object *)obj;
-        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message);
+        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message ? exception->message->val : "");
     }
     return global_buf;
 }
@@ -240,14 +241,15 @@ t_object_funcs exception_funcs = {
         obj_free,           // Free a exception object
         obj_destroy,        // Destroy a exception object
         NULL,               // Clone
-        NULL,                 // Cache
+        NULL,               // Cache
+        NULL,               // Hash
 #ifdef __DEBUG
         obj_debug
 #endif
 };
 
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), "", 0};
+t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), NULL, 0};
 
 // Include generated exceptions
 #include "_generated_exceptions.inc"

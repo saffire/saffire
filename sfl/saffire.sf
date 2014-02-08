@@ -13,7 +13,7 @@ class saffire {
     }
 
     /**
-     * Returnst the git SHA commit that is used for compiling this version
+     * Returns the git SHA commit that is used for compiling this version
      */
     static public method git_revision() {
         return ::_sfl::saffire::saffire.git_revision();
@@ -26,6 +26,21 @@ class saffire {
         io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
         return e.getCode();
     }
+
+    /**
+     *
+     */
+    static public method getLocale() {
+        return ::_sfl::saffire::saffire.get_locale();
+    }
+
+    /**
+     *
+     */
+    static public method setLocale(string locale) {
+        return ::_sfl::saffire::saffire.set_locale(locale);
+    }
+
 
     /**
      * Returns the current server API, could be "fastcgi", "cli", "repl" or "unknown"

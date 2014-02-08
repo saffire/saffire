@@ -49,7 +49,7 @@ t_gc_queue gc_queue[OBJECT_TYPE_LEN];
  * Do garbage collection
  */
 void gc_collect(void) {
-    DEBUG_PRINT("gc_collect()");
+    DEBUG_PRINT_CHAR("gc_collect()");
 }
 
 

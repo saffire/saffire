@@ -120,8 +120,8 @@ SAFFIRE_METHOD(hash, populate) {
         t_object *val = ht_iter_value(&iter);
         ht_iter_next(&iter);
 
-    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
-    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+    DEBUG_PRINT_CHAR("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
         object_inc_ref(key);
         object_inc_ref(val);
         ht_add_obj(self->ht, key, val);
@@ -193,8 +193,8 @@ SAFFIRE_METHOD(hash, add) {
         return NULL;
     }
 
-    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
-    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+    DEBUG_PRINT_CHAR("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
 
     object_inc_ref(key);
     object_inc_ref(val);
@@ -260,7 +260,7 @@ SAFFIRE_METHOD(hash, conv_string) {
     char s[100];
 
     snprintf(s, 99, "hash[%d]", self->ht->element_count);
-    RETURN_STRING(s);
+    RETURN_STRING_FROM_CHAR(s);
 }
 
 
@@ -392,8 +392,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         if (! e) break;
         t_object *val = (t_object *)e->data;
 
-    DEBUG_PRINT("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
-    DEBUG_PRINT("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
+    DEBUG_PRINT_CHAR("KEY Hash increasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count+1);
+    DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
 
         object_inc_ref(key);
         object_inc_ref(val);
@@ -415,8 +415,8 @@ static void obj_free(t_object *obj) {
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-//        DEBUG_PRINT("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
-//        DEBUG_PRINT("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
+//        DEBUG_PRINT_CHAR("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
+//        DEBUG_PRINT_CHAR("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
         object_release(key);
         object_release(val);
         ht_iter_next(&iter);
@@ -450,7 +450,8 @@ t_object_funcs hash_funcs = {
         obj_free,             // Free a hash object
         obj_destroy,          // Destroy a hash object
         NULL,                 // Clone
-        NULL,                 // Cach
+        NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

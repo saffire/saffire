@@ -117,7 +117,9 @@ libgeneral_a_SOURCES = components/general/hashtable.c \
                        components/general/mutex.c \
                        components/general/printf/arg_printf.c \
                        components/general/ini.c \
-                       components/general/base64.c
+                       components/general/base64.c \
+                       components/general/string.c \
+                       components/general/unicode.c
 
 
 ########################################################################
@@ -234,8 +236,6 @@ libgc_a_SOURCES = components/gc/gc.c
 SAFFIRE_LIBS = \
                  libobjects.a \
                  libgeneral.a \
-                 libobjects.a \
-                 libgeneral.a \
                  libcompiler.a \
                  libfastcgi.a \
                  librepl.a \
@@ -247,7 +247,7 @@ SAFFIRE_LIBS = \
 
 bin_PROGRAMS = saffire
 
-saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} -lpthread
+saffire_LDADD =  $(SAFFIRE_LIBS) $(SAFFIRE_LIBS) $(edit_LIBS) ${libxml2_LIBS} ${ICU_LIBS} -lpthread
 
 saffire_SOURCES = main/saffire.c \
                   main/commands/config.c main/commands/fastcgi.c main/commands/lint.c \

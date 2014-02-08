@@ -135,7 +135,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 // We know the scope now. We still need to use "self"
                 smm_free(node->identifier.name);
-                node->identifier.name = smm_strdup("self");
+                node->identifier.name = string_strdup0("self");
             }
 
             stack_push(state->context, (void *)st_ctx_load);

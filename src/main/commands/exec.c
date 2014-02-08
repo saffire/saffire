@@ -96,7 +96,7 @@ static int do_exec(void) {
     smm_free(bytecode_filepath);
     bytecode_free(bc);
 
-    DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
+    DEBUG_PRINT_CHAR("VM ended with exitcode: %d\n", exitcode);
 
     return exitcode;
 }

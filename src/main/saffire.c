@@ -64,7 +64,7 @@ struct command commands[] = {
 
 static void opt_config(void *data) {
     config_which_ini = USE_INI_CUSTOM;
-    config_custom_ini_path = smm_strdup((char *)data);
+    config_custom_ini_path = string_strdup0((char *)data);
 }
 
 static void opt_global(void *data) {
@@ -93,7 +93,7 @@ char **original_argv;
  * Prints usage information
  */
 void print_usage(void) {
-    output("Usage: saffire <command> [options] [script -- [args]]\n"
+    output_char("Usage: saffire <command> [options] [script -- [args]]\n"
            "\n"
            "Global arguments:\n"
            "    --config <filename>   Configuration file to read\n"
@@ -104,12 +104,12 @@ void print_usage(void) {
     // Display all available commands
     struct command *p = commands;
     while (p->name) {
-        output("  %-15s %s\n", p->name, p->info->description);
+        output_char("  %-15s %s\n", p->name, p->info->description);
         p++;
     }
-    output("\n");
+    output_char("\n");
 
-    output("Use saffire help <command> to find out more information about the command usage.\n\n");
+    output_char("Use saffire help <command> to find out more information about the command usage.\n\n");
 }
 
 
@@ -141,9 +141,9 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             // Parse the rest of the arguments, confirming the action's signature
             char *error = NULL;
             if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
-                output("%s\n", error);
-                output("%s", cmd->info->help);
-                output("\n");
+                output_char("%s\n", error);
+                output_char("%s", cmd->info->help);
+                output_char("\n");
                 if (error) smm_free(error);
                 return 1;
             }
@@ -157,10 +157,10 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
 
     // Nothing was found. Display help if available.
     if (cmd->info->help) {
-        output("%s", cmd->info->help);
-        output("\n");
+        output_char("%s", cmd->info->help);
+        output_char("\n");
     } else {
-        output("No additional help is available. Use 'saffire help' for more information.\n");
+        output_char("No additional help is available. Use 'saffire help' for more information.\n");
     }
     return 1;
 }
@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 
     // Read configuration first
     if (! config_read() && config_which_ini != USE_INI_SEARCH) {
-        output("Warning: cannot read configuration '%s/saffire.ini' \n", config_get_path());
+        output_char("Warning: cannot read configuration '%s/saffire.ini' \n", config_get_path());
     }
 
     // Iterate commands and see if we have a match and run it.

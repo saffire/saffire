@@ -79,15 +79,15 @@ AM_CONDITIONAL(ENABLE_COVERAGE, test "x$enable_coverage" = "xyes")
 
 
 
-dnl # check for icu-config
-dnl AC_PATH_PROG(icu_config, icu-config, no)
-dnl if test "$icu_config" = "no"; then
-dnl 	AC_MSG_ERROR([Cannot find icu-config. ICU library is needed.])
-dnl fi
-dnl ICU_CPPFLAGS=`$icu_config --cppflags`
-dnl ICU_LIBS=`$icu_config --ldflags`
-dnl AC_SUBST([ICU_CPPFLAGS])
-dnl AC_SUBST([ICU_LIBS])
+# check for icu-config
+AC_PATH_PROG(icu_config, icu-config, no)
+if test "$icu_config" = "no"; then
+	AC_MSG_ERROR([Cannot find icu-config. ICU library is needed.])
+fi
+ICU_CFLAGS=`$icu_config --cflags`
+ICU_LIBS=`$icu_config --ldflags`
+AC_SUBST([ICU_CFLAGS])
+AC_SUBST([ICU_LIBS])
 
 
 # Checks for libraries.

@@ -161,7 +161,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     /* Only match regex when we are in the regex state */
 <st_regex>\/[^\/\\]*(?:\\.[^\/\\]*)*\/[a-z]*    {
     do_yylloc;
-    yylval->sVal = smm_strdup(yytext);
+    yylval->sVal = string_strdup0(yytext);
     return T_REGEX;
 }
 
@@ -257,7 +257,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_string_dbl>\"           {
                                 do_yylloc;
                                 /* Closing double string quote */
-                                yylval->sVal = smm_strdup(strbuf ? strbuf : "");
+                                yylval->sVal = string_strdup0(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
@@ -265,7 +265,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_string_sgl>\'           {
                                 do_yylloc;
                                 /* Closing Single string quote */
-                                yylval->sVal = smm_strdup(strbuf ? strbuf : "");
+                                yylval->sVal = string_strdup0(strbuf ? strbuf : "");
                                 smm_free(strbuf);
                                 saffire_pop_state();
                                 return T_STRING;
@@ -350,7 +350,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 {identifier} {
     do_yylloc;
     saffire_push_state(st_div);
-    yylval->sVal = smm_strdup(yytext);
+    yylval->sVal = string_strdup0(yytext);
     return T_IDENTIFIER;
 }
 

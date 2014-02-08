@@ -27,20 +27,30 @@
 #ifndef __OBJECT_STRING_H__
 #define __OBJECT_STRING_H__
 
-    #include "general/md5.h"
     #include "objects/object.h"
 
-    #define RETURN_STRING(s)   RETURN_OBJECT(object_alloc(Object_String, 1, s));
+    // Return a zero-terminated string
+    #define RETURN_STRING_FROM_CHAR(s)                  RETURN_OBJECT(object_alloc(Object_String, 1, char_to_string(s, strlen(s))))
+
+    // Return binary safe string
+    #define RETURN_STRING_FROM_BINSAFE_CHAR(l, s)       RETURN_OBJECT(object_alloc(Object_String, 1, char_to_string(s, l)))
+
+    #define RETURN_STRING(s)                            RETURN_OBJECT(object_alloc(Object_String, 1, s))
+
+    // Returns value inside the string object's t_string
+    #define STROBJ2CHAR0(obj)                           ((((t_string_object *)obj)->value)->val)
+    // Returns length inside the string object's t_string
+    #define STROBJ2CHAR0LEN(obj)                        ((((t_string_object *)obj)->value)->len)
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        char *value;            // Actual string value (always zero terminated, but binary safe, must keep in sync with lengths!)
-        size_t char_length;     // length of the string in characters
-        size_t byte_length;     // length of the string in bytes
-        md5_byte_t hash[16];    // (MD5) hash of the string
+        t_string *value;            // string value
+        md5_byte_t hash[16];        // (MD5) hash of the actual string
+        int needs_hashing;          // 1 : string needs hashing, 0 : hash done
 
-        int iter;               // Simple iteration index on the characters
+        int iter;                   // Simple iteration index on the characters
+        char *locale;               // Locale
     } t_string_object;
 
     t_string_object Object_String_struct;
@@ -49,5 +59,9 @@
 
     void object_string_init(void);
     void object_string_fini(void);
+
+
+    int object_string_hash_compare(t_string_object *s1, t_string_object *s2);
+    int object_string_compare(t_string_object *s1, t_string_object *s2);
 
 #endif

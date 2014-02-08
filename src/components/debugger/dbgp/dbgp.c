@@ -120,7 +120,7 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
  *
  */
 t_debuginfo *dbgp_init(void) {
-    DEBUG_PRINT(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
 
     t_debuginfo *di = (t_debuginfo *)malloc(sizeof(t_debuginfo));
 

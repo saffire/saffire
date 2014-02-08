@@ -38,12 +38,12 @@ static int flag_long_version = 0;
 static int do_version(void) {
     // Output long version info
     if (flag_long_version) {
-        output("%s - %s\n%s\n%s\n", saffire_version, saffire_copyright, saffire_compiled, saffire_configured);
+        output_char("%s - %s\n%s\n%s\n", saffire_version, saffire_copyright, saffire_compiled, saffire_configured);
         return 0;
     }
 
     // Output simple parsable version
-    output("%s.%s.%s\n", saffire_version_major, saffire_version_minor, saffire_version_build);
+    output_char("%s.%s.%s\n", saffire_version_major, saffire_version_minor, saffire_version_build);
     return 0;
 }
 

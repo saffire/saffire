@@ -50,6 +50,7 @@
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
         t_object *(*clone)(t_object *);             // Clone this object to a new object
         t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
+        char *(*hash)(t_object *);                  // Returns a string hash (prob md5) of the object
 #ifdef __DEBUG
         char *(*debug)(t_object *);                 // Return debug string (value and info)
 #endif
@@ -125,9 +126,6 @@
     #define OBJECT_IS_LIST(obj)         (obj->type == objectTypeList)
     #define OBJECT_IS_HASH(obj)         (obj->type == objectTypeHash)
 
-
-    // fetch a duplicated (string) value from a string object. Must be freed afterwards
-    #define DUP_OBJ2STR(_obj_) smm_strdup(OBJ2STR(_obj_))
 
     // fetch (string) value from a string object
     #define OBJ2STR(_obj_) (((t_string_object *)_obj_)->value)
@@ -217,6 +215,7 @@
     t_object *object_new(t_object *obj, int arg_count, ...);
     t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
+    char *object_get_hash(t_object *obj);
     t_object *object_alloca(t_object *obj, t_dll *arguments);
     t_object *object_alloc(t_object *obj, int arg_count, ...);
     void object_inc_ref(t_object *obj);

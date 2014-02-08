@@ -31,9 +31,11 @@
     #include "general/output.h"
 
     #ifdef __DEBUG
-        #define DEBUG_PRINT output_debug
+        #define DEBUG_PRINT_CHAR output_debug_char
+        #define DEBUG_PRINT_STRING output_debug_string
     #else
-        #define DEBUG_PRINT(format, args...) ((void)0)
+        #define DEBUG_PRINT_CHAR(format, args...) ((void)0)
+        #define DEBUG_PRINT_STRING(format, args...) ((void)0)
     #endif
 
 #endif

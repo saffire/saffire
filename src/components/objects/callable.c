@@ -259,6 +259,7 @@ t_object_funcs callable_funcs = {
         obj_destroy,          // Destroy a callable object
         NULL,                 // Clone
         NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

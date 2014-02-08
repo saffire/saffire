@@ -54,17 +54,17 @@ char *vm_frame_absolute_namespace(t_vm_frame *frame, char *classname) {
 
     // It's already absolute
     if (strstr(classname, "::") == classname) {
-        return smm_strdup(classname);
+        return string_strdup0(classname);
     }
 
     // no context for this frame, just make it absolute
     if (! frame || ! frame->context || ! frame->context->class.path) {
-        smm_asprintf(&abs_classname, "%s::%s", "", classname);
+        smm_asprintf_char(&abs_classname, "%s::%s", "", classname);
         return abs_classname;
     }
 
-    DEBUG_PRINT("Current class path: %s\n", frame->context->class.path);
-    smm_asprintf(&abs_classname, "%s::%s", frame->context->class.path, classname);
+    DEBUG_PRINT_CHAR("Current class path: %s\n", frame->context->class.path);
+    smm_asprintf_char(&abs_classname, "%s::%s", frame->context->class.path, classname);
     return abs_classname;
 }
 
@@ -74,7 +74,7 @@ char *vm_frame_absolute_namespace(t_vm_frame *frame, char *classname) {
 unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
     // Sanity stop
     if (frame->ip >= frame->bytecode->code_len) {
-        DEBUG_PRINT("Running outside bytecode!\n\n\n");
+        DEBUG_PRINT_CHAR("Running outside bytecode!\n\n\n");
         return VM_STOP;
     }
 
@@ -111,7 +111,7 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
  * Pops an object from the stack. Errors when the stack is empty
  */
 t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
-    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
     if (frame->sp >= frame->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
@@ -130,7 +130,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
  * Pushes an object onto the stack. Errors when the stack is full
  */
 void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
-    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET), frame->sp-1, object_debug(obj), (unsigned long)obj);
 
 
     if (frame->sp < 0) {
@@ -142,7 +142,7 @@ void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
 }
 
 void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
-    DEBUG_PRINT(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET, idx, object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET), idx, object_debug(obj), (unsigned long)obj);
     frame->stack[idx] = obj;
 }
 
@@ -196,7 +196,7 @@ t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
 void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *key = object_alloc(Object_String, 1, id);
+    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     if (obj == NULL) {
         t_object *old = ht_remove_obj(frame->global_identifiers->ht, key);
@@ -215,7 +215,7 @@ void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) 
 * Return object from the global identifier table
 */
 t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
-    t_object *key = object_alloc(Object_String, 1, id);
+    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     t_object *obj = (t_object *)ht_find_obj(frame->global_identifiers->ht, key);
 
@@ -229,13 +229,13 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, id), obj);
+    t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
     object_release(old_obj);
     object_inc_ref(obj);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_obj(frame->builtin_identifiers->ht, object_alloc(Object_String, 1, id), obj);
+    t_object *old_obj = ht_replace_obj(frame->builtin_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
 
     object_release(old_obj);
     object_inc_ref(obj);
@@ -252,8 +252,8 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_key_obj(&iter);
         t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT("%-10s KEY: [%08X] '%-40s'{%d} ", prefix, (unsigned int)key, object_debug(key), key->ref_count);
-        DEBUG_PRINT("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
+        DEBUG_PRINT_STRING(char0_to_string("%-10s KEY: [%08X] '%-40s'{%d} "), prefix, (unsigned int)key, object_debug(key), key->ref_count);
+        DEBUG_PRINT_STRING(char0_to_string("=> [%08X] %s{%d}\n"), (unsigned int)val, object_debug(val), val->ref_count);
 
         ht_iter_next(&iter);
     }
@@ -268,7 +268,7 @@ t_object *vm_frame_resolve_identifier(t_vm_frame *frame, char *id) {
 
 
 t_object *vm_frame_local_identifier_exists(t_vm_frame *frame, char *id) {
-    t_object *key = object_alloc(Object_String, 1, id);
+    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     t_object *obj = ht_find_obj(frame->local_identifiers->ht, key);
     if (obj != NULL) {
@@ -322,6 +322,8 @@ t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
  * Same as get, but does not halt on error (but returns NULL)
  */
 t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
+    if (! frame) return NULL;
+
     t_object *obj = vm_frame_local_identifier_exists(frame, id);
     if (obj) return obj;
 
@@ -343,10 +345,10 @@ char *vm_frame_get_name(t_vm_frame *frame, int idx) {
     }
 
 #ifdef __DEBUG
-    DEBUG_PRINT("---------------------\n");
-    DEBUG_PRINT("frame identifiers:\n");
+    DEBUG_PRINT_CHAR("---------------------\n");
+    DEBUG_PRINT_CHAR("frame identifiers:\n");
     for (int i=0; i!=frame->bytecode->identifiers_len; i++) {
-        DEBUG_PRINT("ID %d: %s\n", i, frame->bytecode->identifiers[i]->s);
+        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->bytecode->identifiers[i]->s);
     }
     print_debug_table(frame->local_identifiers->ht, "Locals");
 #endif
@@ -362,13 +364,13 @@ void vm_detach_bytecode(t_vm_frame *frame) {
 
     smm_free(frame->stack);
 
-    DEBUG_PRINT("vm_detach_bytecode: freeing constants init\n");
+    DEBUG_PRINT_CHAR("vm_detach_bytecode: freeing constants init\n");
     // Free constants objects
     for (int i=0; i!=frame->bytecode->constants_len; i++) {
-        DEBUG_PRINT("Freeing: %s\n", object_debug((t_object *)frame->constants_objects[i]));
+        DEBUG_PRINT_STRING(char0_to_string("Freeing: %s\n"), object_debug((t_object *)frame->constants_objects[i]));
         object_release((t_object *)frame->constants_objects[i]);
     }
-    DEBUG_PRINT("vm_detach_bytecode: freeing constants fini\n");
+    DEBUG_PRINT_CHAR("vm_detach_bytecode: freeing constants fini\n");
     smm_free(frame->constants_objects);
 
     frame->bytecode = NULL;
@@ -400,14 +402,14 @@ void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_
         switch (c->type) {
             case BYTECODE_CONST_CODE :
                 // We create a reference to the source filename of the original bytecode name.
-                bytecode->constants[i]->data.code->source_filename = smm_strdup(bytecode->source_filename);
+                bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
                 obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, /* arguments */ NULL);
                 break;
             case BYTECODE_CONST_STRING :
-                obj = object_alloc(Object_String, 1, bytecode->constants[i]->data.s);
+                obj = object_alloc(Object_String, 2, strlen(bytecode->constants[i]->data.s), bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_REGEX :
-                obj = object_alloc(Object_Regex, 1, bytecode->constants[i]->data.r);
+                obj = object_alloc(Object_Regex, 2, strlen(bytecode->constants[i]->data.r), bytecode->constants[i]->data.r);
                 break;
             case BYTECODE_CONST_NUMERICAL :
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
@@ -457,7 +459,7 @@ t_vm_frame *vm_frame_new_scoped(t_vm_frame *scope_frame, t_vm_frame *parent_fram
 * Creates and initializes a new frame
 */
 t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_path, t_bytecode *bytecode) {
-    DEBUG_PRINT("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", class_path, parent_frame ? parent_frame->context->class.path : "none");
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", class_path, parent_frame ? parent_frame->context->class.path : "none");
     t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
     bzero(frame, sizeof(t_vm_frame));
 
@@ -465,7 +467,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_
 
     frame->created_objects = dll_init();
 
-    DEBUG_PRINT("Increasing builtin_identifiers refcount\n");
+    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
@@ -483,7 +485,6 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_
     if (frame->parent == NULL) {
         // global identifiers are the same as the local identifiers for the initial frame
         frame->global_identifiers = frame->local_identifiers;
-        //ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, "superglobalvar"), object_alloc(Object_Null, 0));
     } else {
         // if not the initial frame, link globals from the parent frame
         frame->global_identifiers = frame->parent->global_identifiers;
@@ -501,20 +502,22 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_
  *
  */
 void vm_frame_destroy(t_vm_frame *frame) {
-    DEBUG_PRINT("FRAME DESTROY: %s::%s\n", frame->context ? frame->context->class.path : "<empty>", frame->context ? frame->context->class.name : "<empty>");
+    DEBUG_PRINT_CHAR("FRAME DESTROY: %s :: %s\n",
+        frame->context ? frame->context->class.path : "<empty>",
+        frame->context ? frame->context->class.name : "<empty>");
 
 #ifdef __DEBUG
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-//    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
 #endif
 
 
-    DEBUG_PRINT("detach bytecode init\n");
+    DEBUG_PRINT_CHAR("detach bytecode init\n");
     if (frame->bytecode) {
         vm_detach_bytecode(frame);
     }
-    DEBUG_PRINT("detach bytecode fini\n");
+    DEBUG_PRINT_CHAR("detach bytecode fini\n");
 
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
@@ -527,10 +530,10 @@ void vm_frame_destroy(t_vm_frame *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
-//        DEBUG_PRINT("Frame destroy: Releasing => %s [%08X]\n", object_debug(val), (unsigned int)val);
+        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s [%08X]\n"), object_debug(val), (unsigned int)val);
 
         object_release(val);
-        object_release(key);
+        //object_release(key);
         ht_remove_obj(frame->local_identifiers->ht, key);
     }
 
@@ -587,11 +590,11 @@ void vm_frame_stack_debug(t_vm_frame *frame) {
         return;
     }
 
-    DEBUG_PRINT("\nFRAME STACK\n");
-    DEBUG_PRINT("=======================\n");
+    DEBUG_PRINT_CHAR("\nFRAME STACK\n");
+    DEBUG_PRINT_CHAR("=======================\n");
     for (int i=frame->sp; i<=frame->bytecode->stack_size-1; i++) {
-        DEBUG_PRINT("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
+        DEBUG_PRINT_CHAR("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
-    DEBUG_PRINT("\n");
+    DEBUG_PRINT_CHAR("\n");
 }
 #endif

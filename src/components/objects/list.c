@@ -269,7 +269,7 @@ SAFFIRE_METHOD(list, conv_string) {
     char s[100];
 
     snprintf(s, 99, "list[%d]", self->ht->element_count);
-    RETURN_STRING(s);
+    RETURN_STRING_FROM_CHAR(s);
 }
 
 
@@ -425,6 +425,7 @@ t_object_funcs list_funcs = {
         obj_destroy,          // Destroy a list object
         NULL,                 // Clone
         NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

@@ -26,6 +26,8 @@
 */
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+#include "general/config.h"
 #include "vm/thread.h"
 #include "general/smm.h"
 
@@ -34,11 +36,30 @@
 t_thread *current_thread;
 
 
+t_thread *thread_new(void) {
+    t_thread *thread = smm_malloc(sizeof(t_thread));
+    bzero(thread, sizeof(t_thread));
+
+    thread->locale = config_get_string("intl.locale", "nl_NL");
+    return thread;
+}
+
+void thread_free(t_thread *thread) {
+    if (thread->locale) {
+        smm_free(thread->locale);
+    }
+
+    smm_free(thread);
+}
 /**
  * Returns the running frame inside the current thread
  */
 t_vm_frame *thread_get_current_frame() {
     return current_thread->frame;
+}
+
+t_thread *thread_get_current() {
+    return current_thread;
 }
 
 /**
@@ -59,7 +80,7 @@ int thread_exception_thrown(void) {
  * Creates a new exception based on the base class, on the code and message given
  */
 void thread_create_exception(t_exception_object *exception, int code, const char *message) {
-    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 2, code, message);
+    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 2, code, char0_to_string(message));
 }
 
 /**
@@ -78,7 +99,7 @@ void thread_create_exception_printf(t_exception_object *exception, int code, con
     char *buf;
 
     va_start(args, format);
-    smm_vasprintf(&buf, format, args);
+    smm_vasprintf_char(&buf, format, args);
     va_end(args);
 
     thread_create_exception(exception, code, buf);

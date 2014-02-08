@@ -74,7 +74,7 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
     if (verify_signature == 0 &&
         (header.flags & BYTECODE_FLAG_SIGNED) == BYTECODE_FLAG_SIGNED &&
         header.signature_offset != 0) {
-        output("A signature is present, but verification is disabled");
+        output_char("A signature is present, but verification is disabled");
     }
 
     // We need to check signature, and there is one present

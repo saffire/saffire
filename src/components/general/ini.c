@@ -66,7 +66,7 @@ static void ini_parse(t_ini *ini) {
 
 
     // We default to the global section
-    char *section = smm_strdup("global");
+    char *section = string_strdup0("global");
 
     // Sanity check
     if (! ini || ! ini->_private.ini_lines) return;
@@ -96,7 +96,7 @@ static void ini_parse(t_ini *ini) {
             // Found a [section] line
             pcre_get_substring(e->data, offsets, rc, 1, (const char **)&match1);
             smm_free(section);
-            section = smm_strdup(match1);
+            section = string_strdup0(match1);
             pcre_free_substring(match1);
         } else {
             rc = pcre_exec(key_re, 0, e->data, strlen(e->data), 0, 0, offsets, 30);
@@ -116,7 +116,7 @@ static void ini_parse(t_ini *ini) {
                 // Create IE element and add to our key hash
                 t_ini_element *ie = (t_ini_element *)smm_malloc(sizeof(t_ini_element));
                 ie->offset = lineno;
-                ie->value = smm_strdup(match2);
+                ie->value = string_strdup0(match2);
                 ht_add_str(ini->keys, fullkey, ie);
 
                 pcre_free_substring(match1);
@@ -197,7 +197,7 @@ t_ini *ini_read(const char *path, char *filename) {
         while (line[off] == '\r' || line[off] == '\n') {
             line[off] = '\0';
         }
-        dll_append(ini->_private.ini_lines, smm_strdup(line));
+        dll_append(ini->_private.ini_lines, string_strdup0(line));
     }
     fclose(f);
 
@@ -285,7 +285,7 @@ static char *ini_get_key(const char *key) {
 
     char *dotpos = strstr(key, ".");
     if (dotpos == NULL) {
-        k = smm_strdup(key);
+        k = string_strdup0(key);
     } else {
         int len = strlen(key) - (dotpos - key);
         k = (char *)smm_malloc(len + 1);
@@ -300,7 +300,7 @@ static char *ini_get_section(const char *key) {
 
     char *dotpos = strstr(key, ".");
     if (!dotpos) {
-        section = smm_strdup("global");
+        section = string_strdup0("global");
     } else {
         int len = (dotpos - key);
         section = (char *)smm_malloc(len + 1);
@@ -332,11 +332,11 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
     if (ht_exists_str(ini->keys, (char *)key)) {
        t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
        if (ie->value) smm_free(ie->value);
-       ie->value = smm_strdup(val);
+       ie->value = string_strdup0(val);
 
         t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
         smm_free(e->data);
-        e->data = smm_strdup(line);
+        e->data = string_strdup0(line);
     } else {
         char *section = ini_get_section(key);
 
@@ -345,11 +345,11 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
             offset = (int)ht_find_str(ini->_private.section_endings, section);
         } else {
             // Append the new section at the end of the file
-            dll_append(ini->_private.ini_lines, smm_strdup(""));
+            dll_append(ini->_private.ini_lines, string_strdup0(""));
 
             char buf[1024];
             snprintf(buf, 1023, "[%s]", section);
-            dll_append(ini->_private.ini_lines, smm_strdup(buf));
+            dll_append(ini->_private.ini_lines, string_strdup0(buf));
 
             // We can add our line to the end of the file (as it is the last section)
             offset = ini->_private.ini_lines->size;
@@ -357,7 +357,7 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
 
         // Add line after the 'offset'-th element
         t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, offset-1);
-        dll_insert_after(ini->_private.ini_lines, e, smm_strdup(line));
+        dll_insert_after(ini->_private.ini_lines, e, string_strdup0(line));
 
         smm_free(section);
     }

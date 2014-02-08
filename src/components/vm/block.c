@@ -33,12 +33,12 @@
 
 #ifdef __DEBUG
 void vm_frame_block_debug(t_vm_frame *frame) {
-    DEBUG_PRINT("\nFRAME BLOCK STACK\n");
-    DEBUG_PRINT("=======================\n");
+    DEBUG_PRINT_CHAR("\nFRAME BLOCK STACK\n");
+    DEBUG_PRINT_CHAR("=======================\n");
     for (int i=0; i!=frame->block_cnt; i++) {
-        DEBUG_PRINT("  %02d %d\n", i, frame->blocks[i].type);
+        DEBUG_PRINT_CHAR("  %02d %d\n", i, frame->blocks[i].type);
     }
-    DEBUG_PRINT("\n");
+    DEBUG_PRINT_CHAR("\n");
 }
 #endif
 
@@ -47,7 +47,7 @@ static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
 
     // @TODO: assert sp < frame->bytecode->max_sp
 
-//    DEBUG_PRINT(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
+//    DEBUG_PRINT_CHAR(">>> PUSH BLOCK [%d]\n", frame->block_cnt);
 
     if (frame->block_cnt >= BLOCK_MAX_DEPTH) {
         fatal_error(1, "Too many blocks!"); /* LCOV_EXCL_LINE */
@@ -92,7 +92,7 @@ void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, 
 t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
     t_vm_frameblock *block;
 
-//    DEBUG_PRINT(">>> POP BLOCK [%d] \n", frame->block_cnt);
+//    DEBUG_PRINT_CHAR(">>> POP BLOCK [%d] \n", frame->block_cnt);
 
     if (frame->block_cnt <= 0) {
         fatal_error(1, "Not enough blocks\n");  /* LCOV_EXCL_LINE */

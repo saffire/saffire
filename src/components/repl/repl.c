@@ -180,7 +180,7 @@ int repl(void) {
 
     // Display the logo if needed
     if (config_get_bool("repl.logo", 1) == 1) {
-        output(repl_logo);
+        output_char((char *)repl_logo);
     }
 
     // Initialize runner

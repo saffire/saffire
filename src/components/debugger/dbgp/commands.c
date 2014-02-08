@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "general/config.h"
+#include "general/string.h"
 #include "debugger/dbgp/xml.h"
 #include "debugger/dbgp/args.h"
 #include "debugger/dbgp/sock.h"
@@ -408,7 +409,10 @@ DBGP_CMD_DEF(context_get) {
             } else if (OBJECT_IS_STRING(obj)) {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "string");
 
-                basebuf = base64_encode((const unsigned char *)((t_string_object *)obj)->value, strlen(((t_string_object *)obj)->value), &basebuflen);
+                t_string *s = ((t_string_object *)obj)->value;
+
+                // @TODO: We have to convert
+                basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
                 printf("basebuf: '%s'\n", basebuf);
                 xmlNodeSetContent(node, BAD_CAST basebuf);
                 free(basebuf);
@@ -555,7 +559,7 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Filename
     i = dbgp_args_find("-f", argc, argv);
-    bp->filename = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->filename = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Line number
     i = dbgp_args_find("-n", argc, argv);
@@ -563,11 +567,11 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Function
     i = dbgp_args_find("-m", argc, argv);
-    bp->function = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->function = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Exception
     i = dbgp_args_find("-x", argc, argv);
-    bp->exception = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->exception = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Hit value
     i = dbgp_args_find("-h", argc, argv);
@@ -575,7 +579,7 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Hit condition
     i = dbgp_args_find("-o", argc, argv);
-    bp->hit_condition = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->hit_condition = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // temporary
     i = dbgp_args_find("-r", argc, argv);
@@ -583,13 +587,13 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // expression
     i = dbgp_args_find("--", argc, argv);
-    bp->expression = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->expression = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // String representation of the breakpoint id
     di->breakpoint_id++;
     char buf[10];
     snprintf(buf, 9, "%d", di->breakpoint_id);
-    bp->id = smm_strdup(buf);
+    bp->id = string_strdup0(buf);
 
     ht_add_str(di->breakpoints, bp->id, bp);
 
@@ -663,7 +667,7 @@ DBGP_CMD_DEF(breakpoint_update) {
 
     // Hit condition
     i = dbgp_args_find("-o", argc, argv);
-    bp->hit_condition = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->hit_condition = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);

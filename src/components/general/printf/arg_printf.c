@@ -54,80 +54,77 @@ static long _get_long(t_dll_element **e) {
 /**
  *
  */
-static unsigned char *_get_string(t_dll_element **e) {
+static t_string *_get_string(t_dll_element **e) {
     t_object *obj = (*e)->data;
 
     if (! OBJECT_IS_STRING(obj)) {
-        t_attrib_object *bool_method = object_attrib_find(obj, "__string", OBJECT_SCOPE_SELF);
-        obj = vm_object_call(obj, bool_method, 0);
+        t_attrib_object *string_method = object_attrib_find(obj, "__string", OBJECT_SCOPE_SELF);
+        obj = vm_object_call(obj, string_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));
 
-    return (unsigned char *)((t_string_object *)obj)->value;
+    return ((t_string_object *)obj)->value;
 }
 
 
 /**
  *
  */
-int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output) {
+int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output) {
     unsigned flags, actual_wd, count, given_wd;
-    unsigned char *where, buf[PR_BUFLEN];
+    unsigned char *where_char, buf[PR_BUFLEN];
     unsigned char state, radix;
+    t_string *where;
     long num;
     t_dll_element *e = DLL_HEAD(args);
+    char *fmt_char = fmt->val;
 
     state = flags = count = given_wd = 0;
+
 /* begin scanning format specifier list */
-    for(; *fmt; fmt++)
+    for (; fmt_char <= fmt->val + fmt->len; fmt_char++)
     {
         switch(state)
         {
 /* STATE 0: AWAITING % */
         case 0:
-            if(*fmt != '%')	/* not %... */
-            {
-                output(f, *fmt);	/* ...just echo it */
+            if (*fmt_char != '%') {  /* not %... */
+                output(f, *fmt_char);   /* ...just echo it */
                 count++;
                 break;
             }
 /* found %, get next char and advance state to check if next char is a flag */
             state++;
-            fmt++;
             /* FALL THROUGH */
 /* STATE 1: AWAITING FLAGS (%-0) */
         case 1:
-            if(*fmt == '%')	/* %% */
-            {
-                output(f, *fmt);
+            if (*fmt_char == '%') {  /* %% */
+                output(f, *fmt_char);
                 count++;
                 state = flags = given_wd = 0;
                 break;
             }
-            if(*fmt == '-')
-            {
-                if(flags & PR_LJ)/* %-- is illegal */
+            if (*fmt_char == '-') {
+                if (flags & PR_LJ) { /* %-- is illegal */
                     state = flags = given_wd = 0;
-                else
+                } else {
                     flags |= PR_LJ;
+                }
                 break;
             }
 /* not a flag char: advance state to check if it's field width */
             state++;
 /* check now for '%0...' */
-            if(*fmt == '0')
-            {
+            if (*fmt_char == '0') {
                 flags |= PR_LZ;
-                fmt++;
+                fmt_char++;
             }
             /* FALL THROUGH */
 /* STATE 2: AWAITING (NUMERIC) FIELD WIDTH */
         case 2:
-            if(*fmt >= '0' && *fmt <= '9')
-            {
-                given_wd = 10 * given_wd +
-                    (*fmt - '0');
+            if (*fmt_char >= '0' && *fmt_char <= '9') {
+                given_wd = 10 * given_wd + (*fmt_char - '0');
                 break;
             }
 /* not field width: advance state to check if it's a modifier */
@@ -135,20 +132,16 @@ int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output) {
             /* FALL THROUGH */
 /* STATE 3: AWAITING MODIFIER CHARS (FNlh) */
         case 3:
-            if(*fmt == 'F')
-            {
+            if (*fmt_char == 'F') {
                 flags |= PR_FP;
                 break;
             }
-            if(*fmt == 'N')
-                break;
-            if(*fmt == 'l')
-            {
+            if (*fmt_char == 'N') break;
+            if (*fmt_char == 'l') {
                 flags |= PR_32;
                 break;
             }
-            if(*fmt == 'h')
-            {
+            if (*fmt_char == 'h') {
                 flags |= PR_16;
                 break;
             }
@@ -157,10 +150,9 @@ int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output) {
             /* FALL THROUGH */
 /* STATE 4: AWAITING CONVERSION CHARS (Xxpndiuocs) */
         case 4:
-            where = buf + PR_BUFLEN - 1;
-            *where = '\0';
-            switch(*fmt)
-            {
+            where_char = buf + PR_BUFLEN - 1;
+            *where_char = '\0';
+            switch (*fmt_char) {
             case 'X':
                 flags |= PR_CA;
                 /* FALL THROUGH */
@@ -181,103 +173,95 @@ int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output) {
                 radix = 8;
 /* load the value to be printed. l=long=32 bits: */
 DO_NUM:
-                if(flags & PR_32) {
+                if (flags & PR_32) {
                     num = _get_long(&e);
                 }
 /* h=short=16 bits (signed or unsigned) */
-                else if(flags & PR_16)
-                {
-                    if(flags & PR_SG)
+                else if (flags & PR_16) {
+                    if (flags & PR_SG) {
                         num = _get_long(&e);
-                    else
+                    } else {
                         num = _get_long(&e);
-                }
+                    }
+                } else {
 /* no h nor l: sizeof(int) bits (signed or unsigned) */
-                else
-                {
-                    if(flags & PR_SG)
+                    if (flags & PR_SG) {
                         num = _get_long(&e);
-                    else
+                    } else {
                         num = _get_long(&e);
+                    }
                 }
 /* take care of sign */
-                if(flags & PR_SG)
-                {
-                    if(num < 0)
-                    {
+                if (flags & PR_SG) {
+                    if (num < 0) {
                         flags |= PR_WS;
                         num = -num;
                     }
                 }
 /* convert binary to octal/decimal/hex ASCII
 OK, I found my mistake. The math here is _always_ unsigned */
-                do
-                {
+                do {
                     unsigned long temp;
 
                     temp = (unsigned long)num % radix;
-                    where--;
-                    if(temp < 10)
-                        *where = (unsigned char)(temp + '0');
-                    else if(flags & PR_CA)
-                        *where = (unsigned char)(temp - 10 + 'A');
-                    else
-                        *where = (unsigned char)(temp - 10 + 'a');
+                    where_char--;
+                    if (temp < 10) {
+                        *where_char = (unsigned char)(temp + '0');
+                    } else if(flags & PR_CA) {
+                        *where_char = (unsigned char)(temp - 10 + 'A');
+                    } else {
+                        *where_char = (unsigned char)(temp - 10 + 'a');
+                    }
                     num = (unsigned long)num / radix;
-                }
-                while(num != 0);
+                } while(num != 0);
                 goto EMIT;
             case 'c':
 /* disallow pad-left-with-zeroes for %c */
                 flags &= ~PR_LZ;
-                where--;
-                unsigned char *tmp = _get_string(&e);
-                *where = tmp[0];
+                where_char--;
+                t_string *tmp = _get_string(&e);
+                *where_char = tmp->val[0];
                 actual_wd = 1;
                 goto EMIT2;
             case 's':
 /* disallow pad-left-with-zeroes for %s */
                 flags &= ~PR_LZ;
                 where = _get_string(&e);
+                where_char = (unsigned char *)where->val;
 EMIT:
-                actual_wd = (unsigned int)strlen((const char *)where);
-                if(flags & PR_WS)
-                    actual_wd++;
+                actual_wd = where->len;
+                if (flags & PR_WS) actual_wd++;
 /* if we pad left with ZEROES, do the sign now */
-                if((flags & (PR_WS | PR_LZ)) ==
-                    (PR_WS | PR_LZ))
-                {
+                if((flags & (PR_WS | PR_LZ)) == (PR_WS | PR_LZ)) {
                     output(f, '-');
                     count++;
                 }
 /* pad on left with spaces or zeroes (for right justify) */
-EMIT2:				if((flags & PR_LJ) == 0)
-                {
-                    while(given_wd > actual_wd)
-                    {
+EMIT2:
+                if ((flags & PR_LJ) == 0) {
+                    while(given_wd > actual_wd) {
                         output(f, flags & PR_LZ ? '0' : ' ');
                         count++;
                         given_wd--;
                     }
                 }
 /* if we pad left with SPACES, do the sign now */
-                if((flags & (PR_WS | PR_LZ)) == PR_WS)
-                {
+                if ((flags & (PR_WS | PR_LZ)) == PR_WS) {
                     output(f, '-');
                     count++;
                 }
 /* emit string/char/converted number */
-                while(*where != '\0')
-                {
-                    output(f, *where++);
+                while (*where_char != '\0') {
+                    output(f, *where_char++);
                     count++;
                 }
 /* pad on right with spaces (for left justify) */
-                if(given_wd < actual_wd)
+                if (given_wd < actual_wd) {
                     given_wd = 0;
-                else given_wd -= actual_wd;
-                for(; given_wd; given_wd--)
-                {
+                } else {
+                    given_wd -= actual_wd;
+                }
+                for (; given_wd; given_wd--) {
                     output(f, ' ');
                     count++;
                 }

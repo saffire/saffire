@@ -22,43 +22,51 @@
  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SU^CH DAMAGE.
 */
-#ifndef __OUTPUT_H__
-#define __OUTPUT_H__
+#ifndef __UNICODE_H__
+#define __UNICODE_H__
 
-    #include <stdio.h>
-    #include <stdarg.h>
-    #include "general/dll.h"
-    #include "general/string.h"
+    #define U_CHARSET_IS_UTF8 1
 
-    #define ANSI_BRIGHTRED    "\33[31;1m"
-    #define ANSI_BRIGHTGREEN  "\33[32;1m"
-    #define ANSI_BRIGHTYELLOW "\33[33;1m"
-    #define ANSI_BRIGHTBLUE   "\33[34;1m"
-    #define ANSI_RESET        "\33[0m"
+    #include "unicode/uchar.h"
+    #include "unicode/ucnv.h"
+    #include "unicode/ustring.h"
 
-    void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s));
+    typedef struct _string t_string;
 
-    void output_flush(void);
+//    typedef struct {
+//        UChar   *val;       // Binary safe UTF8 string
+//    } t_unicode_string;
 
-    // Normal output
-    void output_char(char *format, ...);
-    void output_string(t_string *format, ...);
+    void utf8_free_unicode(t_string *str);
 
-    void output_debug_char(char *format, ...);
-    void output_debug_string(t_string *format, ...);
+    int utf8_strcmp(t_string *s1, t_string *s2);
 
-//    void output_char_printf(char *format, t_dll *args);
-    void output_string_printf(t_string *format, t_dll *args);
+//    #define UTF8_C2U(c) utf8_char_to_string(c, strlen(c))
 
-    void output_debug_char_printf(char *format, t_dll *args);
-    void output_debug_string_printf(t_string *format, t_dll *args);
+//    t_string *utf8_string_new(int len);
+//    void utf8_string_free(t_string *s);
 
+//    t_string *utf8_char_to_string(char *value, size_t value_len);
+//    char *utf8_string_to_char(t_string *str, int *bytes_len);
 
-    // Errors and warnings are only for chars. We probably don't need string/unicode variants for this
-    void error(char *format, ...);
-    void warning(char *format, ...);
-    void fatal_error(int exitcode, char *format, ...);
+//    size_t utf8_strlen(t_string *str);
+
+//    t_string *utf8_memcpy_offset(t_string *src, int offset, int count);
+
+//    int utf8_strcmp(t_string *s1, t_string *s2);
+//    t_string *utf8_strdup(t_string *src);
+
+//    void utf8_strcpy(t_string *dst, t_string *src);
+//    void utf8_strcat(t_string *dst, t_string *src);
+
+    int utf8_strstr(t_string *haystack, t_string *needle);
+
+    t_string *utf8_toupper(t_string *src, char *locale);
+    t_string *utf8_tolower(t_string *src, char *locale);
+
+//    int utf8_strstr(t_string *haystack, t_string *needle);
 
 #endif
+

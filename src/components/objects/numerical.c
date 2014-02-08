@@ -101,7 +101,7 @@ SAFFIRE_METHOD(numerical, conv_numerical) {
 SAFFIRE_METHOD(numerical, conv_string) {
     char tmp[32];       // @TODO: Should be enough??
     snprintf(tmp, 31, "%ld", self->value);
-    RETURN_STRING(tmp);
+    RETURN_STRING_FROM_CHAR(tmp);
 }
 
 
@@ -388,6 +388,13 @@ static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
     return NULL;
 }
 
+static char *obj_hash(t_object *obj) {
+    char *s = (char *)smm_malloc(32);
+    snprintf(s, 31, "%ld", ((t_numerical_object *)obj)->value);
+    return s;
+}
+
+
 
 /**
  * Creates a new numerical object by "cloning" the original one
@@ -440,6 +447,7 @@ t_object_funcs numerical_funcs = {
         obj_destroy,        // Destroy a numerical object
         NULL,               // Clone
         obj_cache,          // cache
+        obj_hash,           // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

@@ -27,11 +27,37 @@
 #include <stdio.h>
 #include "general/output.h"
 #include "modules/module_api.h"
+#include "general/string.h"
 #include "objects/object.h"
 #include "objects/objects.h"
+#include "general/config.h"
 #include "general/dll.h"
 #include "version.h"
 #include "vm/vm.h"
+#include "vm/thread.h"
+#include "general/smm.h"
+#include "string.h"
+
+SAFFIRE_MODULE_METHOD(saffire, get_locale) {
+    t_thread *thread = thread_get_current();
+    RETURN_STRING_FROM_CHAR(thread->locale);
+
+}
+
+SAFFIRE_MODULE_METHOD(saffire, set_locale) {
+    t_string_object *locale_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale_obj)) {
+        return NULL;
+    }
+
+    // Set locale
+    t_thread *thread = thread_get_current();
+    thread->locale = string_strdup0(STROBJ2CHAR0(locale_obj));
+
+    RETURN_SELF;
+}
+
 
 /**
  *
@@ -46,16 +72,16 @@ SAFFIRE_MODULE_METHOD(saffire, gitrev) {
 
 SAFFIRE_MODULE_METHOD(saffire, sapi) {
     if ((vm_runmode & VM_RUNMODE_FASTCGI) == VM_RUNMODE_FASTCGI) {
-        RETURN_STRING("fastcgi");
+        RETURN_STRING_FROM_CHAR("fastcgi");
     }
     if ((vm_runmode & VM_RUNMODE_CLI) == VM_RUNMODE_CLI) {
-        RETURN_STRING("cli");
+        RETURN_STRING_FROM_CHAR("cli");
     }
     if ((vm_runmode & VM_RUNMODE_REPL) == VM_RUNMODE_REPL) {
-        RETURN_STRING("repl");
+        RETURN_STRING_FROM_CHAR("repl");
     }
 
-    RETURN_STRING("unknown");
+    RETURN_STRING_FROM_CHAR("unknown");
 }
 
 SAFFIRE_MODULE_METHOD(saffire, debug) {
@@ -76,6 +102,8 @@ static void _init(void) {
     object_add_internal_method((t_object *)&saffire_struct, "git_revision", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
     object_add_internal_method((t_object *)&saffire_struct, "sapi",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
     object_add_internal_method((t_object *)&saffire_struct, "debug",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
+    object_add_internal_method((t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
+    object_add_internal_method((t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
 
     object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
     object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));

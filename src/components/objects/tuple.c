@@ -145,7 +145,7 @@ SAFFIRE_METHOD(tuple, conv_numerical) {
  *
  */
 SAFFIRE_METHOD(tuple, conv_string) {
-    RETURN_STRING("tuple");
+    RETURN_STRING_FROM_CHAR("tuple");
 }
 
 
@@ -222,7 +222,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     while (e) {
         t_object *arg_obj = (t_object *)e->data;
 
-        DEBUG_PRINT("Adding object: %s\n", object_debug(arg_obj));
+        DEBUG_PRINT_STRING(char0_to_string("Adding object: %s\n"), object_debug(arg_obj));
         ht_add_num(tuple_obj->ht, cnt++, arg_obj);
 
         e = DLL_NEXT(e);
@@ -264,6 +264,7 @@ t_object_funcs tuple_funcs = {
         obj_destroy,
         NULL,                 // Clone a tuple object
         NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

@@ -78,7 +78,7 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
     char buf[256];
     bzero(buf, 256);
     while (read(pipe[2], buf, 255) > 0) {
-        output("%s", buf);
+        output_char("%s", buf);
         bzero(buf, 256);
     }
 

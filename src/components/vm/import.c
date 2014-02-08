@@ -86,7 +86,7 @@ static t_vm_frame *_execute_import_frame(t_vm_frame *frame, char *class_path, ch
  * @return
  */
 static char *_build_class_path(char *module) {
-    char *class_path = smm_strdup(module);
+    char *class_path = string_strdup0(module);
     char *c;
 
     // We find all '::', replace the first character with '/', and move all
@@ -134,16 +134,16 @@ static char *_construct_import_path(t_vm_frame *frame, char *root_path, char *mo
 
     // If path is just .  we need to use the current filepath
     if (strcmp(path, ".") == 0) {
-        path = smm_strdup(frame->context->file.path);
+        path = string_strdup0(frame->context->file.path);
     }
 
     char *class_path = _build_class_path(module_path);
 
     char *final_path = NULL;
     if (strstr(module_path, "::") == module_path) {
-        smm_asprintf(&final_path, "%s%s.sf", path, class_path);
+        smm_asprintf_char(&final_path, "%s%s.sf", path, class_path);
     } else {
-        smm_asprintf(&final_path, "%s%s%s.sf", path, frame->context, class_path);
+        smm_asprintf_char(&final_path, "%s%s%s.sf", path, frame->context, class_path);
     }
     smm_free(class_path);
     smm_free(path); // free realpath()
@@ -162,7 +162,7 @@ static t_vm_frame *_search_import_path(t_vm_frame *frame, char *class_path, char
     if (! is_file(file_path)) return NULL;
 
     t_vm_frame *imported_frame = _execute_import_frame(frame, class_path, file_path);
-    DEBUG_PRINT("IMPORT FRAME: %08lX\n", (unsigned long)imported_frame);
+    DEBUG_PRINT_CHAR("IMPORT FRAME: %08lX\n", (unsigned long)imported_frame);
     return imported_frame;
 }
 
@@ -177,7 +177,7 @@ static t_vm_frame *_search_import_paths(t_vm_frame *frame, char *class_path) {
         // Create our actual search path
         char *final_search_path = _construct_import_path(frame, *search_root_path, class_path);
         if (final_search_path) {
-            DEBUG_PRINT(" * *** Searching path: %s \n", final_search_path);
+            DEBUG_PRINT_CHAR(" * *** Searching path: %s \n", final_search_path);
 
             // Return object
             imported_frame = _search_import_path(frame, class_path, final_search_path);
@@ -204,11 +204,11 @@ static t_vm_frame *_search_import_paths(t_vm_frame *frame, char *class_path) {
  * @return
  */
 t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *class_path) {
-    DEBUG_PRINT("Importing module '%s'\n", class_path);
+    DEBUG_PRINT_CHAR("Importing module '%s'\n", class_path);
 
     // Check if we already executed the frame before. If so, it's stored in cache
     t_vm_frame *cached_frame = ht_find_str(frame_import_cache, class_path);
-    DEBUG_PRINT(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, (cached_frame ? "Found" : "Nothing found"));
+    DEBUG_PRINT_CHAR(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, cached_frame ? "Found" : "Nothing found");
     if (cached_frame) {
         return cached_frame;
     }
@@ -231,9 +231,7 @@ t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *class_path) {
  */
 t_object *vm_import(t_vm_frame *frame, char *class_path, char *class_name) {
     // Find and import the file
-    DEBUG_PRINT("RCP: %s\n", class_path);
     char *abs_cp = vm_frame_absolute_namespace(frame, class_path);
-    DEBUG_PRINT("ACP: %s\n", abs_cp);
     t_vm_frame *imported_frame = vm_import_find_file(frame, abs_cp);
     if (! imported_frame) {
         // If we couldn't import the frame, and no exception has been thrown in the meantime, we just throw our own exception
@@ -264,7 +262,7 @@ t_object *vm_import(t_vm_frame *frame, char *class_path, char *class_name) {
  * Free all the imported files
  */
 void vm_free_import_cache(void) {
-    DEBUG_PRINT("\n\n\n\n\nFreeing import cache\n");
+    DEBUG_PRINT_CHAR("\n\n\n\n\nFreeing import cache\n");
 
     t_hash_iter iter;
     ht_iter_init(&iter, frame_import_cache);
@@ -274,7 +272,7 @@ void vm_free_import_cache(void) {
         // @TODO: This should not happen. Frames inside the import-cache should stay
         // here until we actually remove it in the code below
         if (frame) {
-            DEBUG_PRINT("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context->file.path);
+            DEBUG_PRINT_CHAR("DESTROY FRAME: %08lX (%s)\n", (unsigned long)frame, frame->context->file.path);
 
             t_bytecode *bc = frame->bytecode;
 
@@ -282,7 +280,7 @@ void vm_free_import_cache(void) {
 
             if (bc) bytecode_free(bc);
 
-            DEBUG_PRINT("\n");
+            DEBUG_PRINT_CHAR("\n");
         }
 
         ht_iter_next(&iter);

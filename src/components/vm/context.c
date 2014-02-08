@@ -35,7 +35,7 @@
  * Returns the context path from a specified context
  */
 char *vm_context_strip_path(char *class_path) {
-    char *s = smm_strdup(class_path);
+    char *s = string_strdup0(class_path);
 
     // Seek last ':'
     char *c = strrchr(s, ':');
@@ -58,11 +58,11 @@ char *vm_context_strip_path(char *class_path) {
  */
 char *vm_context_strip_class(char *class_path) {
     char *c = strrchr(class_path, ':');
-    if (c == NULL) return smm_strdup(class_path);
-    if ((class_path - c) == 0) return smm_strdup(class_path);
+    if (c == NULL) return string_strdup0(class_path);
+    if ((class_path - c) == 0) return string_strdup0(class_path);
 
     c++;
-    return smm_strdup(c);
+    return string_strdup0(c);
 }
 
 
@@ -79,9 +79,9 @@ void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path
     }
 
     if (file_path) {
-        char *duppath = smm_strdup(file_path);
-        frame->context->file.path = smm_strdup(dirname(duppath));
-        frame->context->file.name = smm_strdup(basename(duppath));
+        char *duppath = string_strdup0(file_path);
+        frame->context->file.path = string_strdup0(dirname(duppath));
+        frame->context->file.name = string_strdup0(basename(duppath));
         smm_free(duppath);
     }
 }

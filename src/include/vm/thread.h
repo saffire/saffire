@@ -34,11 +34,16 @@
      * All data relevant to a single thread
      */
     typedef struct _thread {
-        t_vm_frame *frame;
-        t_exception_object *exception;
+        t_vm_frame *frame;                  // Current frame
+        t_exception_object *exception;      // Current thrown exception
+
+        char *locale;                       // Current global locale
     } t_thread;
 
     t_thread *current_thread;
+
+    t_thread *thread_new(void);
+    void thread_free(t_thread *);
 
     t_thread *thread_get_current(void);
     t_vm_frame *thread_get_current_frame(void);

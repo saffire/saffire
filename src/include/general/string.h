@@ -22,43 +22,41 @@
  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SU^CH DAMAGE.
 */
-#ifndef __OUTPUT_H__
-#define __OUTPUT_H__
+#ifndef __STRING_H__
+#define __STRING_H__
 
-    #include <stdio.h>
-    #include <stdarg.h>
-    #include "general/dll.h"
-    #include "general/string.h"
-
-    #define ANSI_BRIGHTRED    "\33[31;1m"
-    #define ANSI_BRIGHTGREEN  "\33[32;1m"
-    #define ANSI_BRIGHTYELLOW "\33[33;1m"
-    #define ANSI_BRIGHTBLUE   "\33[34;1m"
-    #define ANSI_RESET        "\33[0m"
-
-    void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s));
-
-    void output_flush(void);
-
-    // Normal output
-    void output_char(char *format, ...);
-    void output_string(t_string *format, ...);
-
-    void output_debug_char(char *format, ...);
-    void output_debug_string(t_string *format, ...);
-
-//    void output_char_printf(char *format, t_dll *args);
-    void output_string_printf(t_string *format, t_dll *args);
-
-    void output_debug_char_printf(char *format, t_dll *args);
-    void output_debug_string_printf(t_string *format, t_dll *args);
+    #include "general/unicode.h"
 
 
-    // Errors and warnings are only for chars. We probably don't need string/unicode variants for this
-    void error(char *format, ...);
-    void warning(char *format, ...);
-    void fatal_error(int exitcode, char *format, ...);
+    // Forward defined in general/unicode.h
+
+    // t_string are compatible with 0-terminated char strings.
+    struct _string {
+        char            *val;           // Pointer to char data
+        size_t          len;            // Length of the string
+        UChar           *unicode;       // Unicode string. May or may not be filled.
+    };
+
+    t_string *char0_to_string(const char *s);
+    t_string *char_to_string(const char *s, size_t len);
+    char *string_to_char(const t_string *s);
+
+    t_string *string_new(void);
+
+    int string_strcmp(t_string *s1, t_string *s2);
+    int string_strcmp0(t_string *s1, const char *c_str);
+
+    char *string_strdup0(const char *s);
+    t_string *string_strdup(t_string *s);
+
+    t_string *string_strcat0(t_string *dst, const char *src);
+    t_string *string_strcat(t_string *dst, const t_string *src);
+
+    t_string *string_copy_partial(t_string *src, int offset, int count);
+
+    void string_free(t_string *str);
 
 #endif
+

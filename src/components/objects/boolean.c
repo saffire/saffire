@@ -24,7 +24,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
+#include <string.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -51,9 +51,9 @@ SAFFIRE_METHOD(boolean, conv_numerical) {
 
 SAFFIRE_METHOD(boolean, conv_string) {
     if (self->value == 1) {
-        RETURN_STRING("true");
+        RETURN_STRING_FROM_CHAR("true");
     } else {
-        RETURN_STRING("false");
+        RETURN_STRING_FROM_CHAR("false");
     }
 }
 
@@ -321,7 +321,8 @@ t_object_funcs bool_funcs = {
         NULL,               // Free a bool object
         NULL,               // Destroy a bool object
         NULL,               // Clone
-        NULL,
+        NULL,               // Cache
+        NULL,               // Hash
 #ifdef __DEBUG
         obj_debug,
 #endif

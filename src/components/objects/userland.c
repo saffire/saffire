@@ -80,14 +80,14 @@ static void obj_populate(t_object *self, t_dll *arg_list) {
 static void obj_free(t_object *obj) {
     t_userland_object *user_obj = (t_userland_object *)obj;
 
-    DEBUG_PRINT("Freeing user object: %s\n", user_obj->name);
+    DEBUG_PRINT_CHAR("Freeing user object: %s\n", user_obj->name);
 
     // Free attributes
     t_hash_iter iter;
     ht_iter_init(&iter, user_obj->attributes);
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
-        DEBUG_PRINT("Releasing attribute: %s\n", key);
+        DEBUG_PRINT_CHAR("Releasing attribute: %s\n", key);
 
         t_object *attr_obj = (t_object *)ht_iter_value(&iter);
         object_release(attr_obj);
@@ -134,6 +134,7 @@ t_object_funcs userland_funcs = {
         obj_destroy,          // Destroy a user object
         NULL,                 // Clone
         NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
 #endif
