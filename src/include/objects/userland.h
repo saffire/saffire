@@ -30,12 +30,11 @@
     #include "objects/object.h"
     #include "objects/hash.h"
     #include "general/md5.h"
-    #include "vm/frame.h"
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        t_vm_frame *frame;      // The frame in which the class is defined.
+        t_vm_stackframe *frame;      // The frame in which the class is defined.
     } t_userland_object;
 
     t_userland_object Object_Userland_struct;

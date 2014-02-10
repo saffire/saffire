@@ -35,7 +35,7 @@
 #include <fnmatch.h>
 #include "general/output.h"
 #include "vm/vm.h"
-#include "vm/frame.h"
+#include "vm/stackframe.h"
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/parse_options.h"

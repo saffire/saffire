@@ -174,9 +174,13 @@ static int fcgi_loop(void) {
 
         smm_free(bytecode_file);
 
-        t_vm_frame *initial_frame = vm_frame_new(NULL, source_file, "", bc);
+        t_vm_context *ctx = vm_context_new("::", source_file);
+        t_vm_codeframe *codeframe = vm_codeframe_new(bc, ctx);
+        t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeframe);
+
         vm_execute(initial_frame);
-        vm_frame_destroy(initial_frame);
+
+        vm_stackframe_destroy(initial_frame);
         bytecode_free(bc);
     }
 

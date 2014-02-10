@@ -396,16 +396,17 @@ void object_fini() {
     object_callable_fini();
 
 
+#ifdef __DEBUG
     // We really can't show anything here, since objects should have been gone now. Expect failures
     DEBUG_PRINT_CHAR("At object_fini(), we still have %ld objects left on the stack\n", all_objects->size);
     e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        //printf("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
         DEBUG_PRINT_CHAR("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
+#endif
 }
 
 

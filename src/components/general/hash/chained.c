@@ -108,8 +108,8 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
     t_hash_table_bucket *htb = ht->bucket_list[hash_value_capped];
 
 
-    // Cache the key hashval when we are dealing with objects
-    char *key_hash_val;
+    // Cache the key hashval when we are dealing with objects.
+    char *key_hash_val = NULL;
     if (key->type == HASH_KEY_OBJ) {
         key_hash_val = object_get_hash((t_object *)(htb->key->val.o));
     }

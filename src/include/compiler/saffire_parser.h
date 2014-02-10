@@ -29,7 +29,7 @@
 
     #include "compiler/parser_helpers.h"
     #include "compiler/ast_nodes.h"
-    #include "vm/frame.h"
+    #include "vm/stackframe.h"
 
     // @TODO: Add VM running mode into this structure
 
@@ -66,7 +66,7 @@
 
         void    (*yyexec)(SaffireParser *); // Actual executor for the saffire parser ast.
 
-        t_vm_frame *initial_frame;          // Initial frame to run the bytecode in
+        t_vm_stackframe *initial_frame;          // Initial frame to run the bytecode in
 
         t_parserinfo *parserinfo;           // Structure with all relevant parser info
 

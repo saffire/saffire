@@ -26,7 +26,7 @@
 */
 #include <string.h>
 #include "vm/vm.h"
-#include "vm/frame.h"
+#include "vm/stackframe.h"
 #include "vm/thread.h"
 #include "vm/context.h"
 #include "vm/import.h"
@@ -44,41 +44,16 @@
 
 
 /**
- * Returns the absolute fqcp based
- * @param frame
- * @param classname
- * @return
- */
-char *vm_frame_absolute_namespace(t_vm_frame *frame, char *classname) {
-    char *abs_classname = NULL;
-
-    // It's already absolute
-    if (strstr(classname, "::") == classname) {
-        return string_strdup0(classname);
-    }
-
-    // no context for this frame, just make it absolute
-    if (! frame || ! frame->context || ! frame->context->class.path) {
-        smm_asprintf_char(&abs_classname, "%s::%s", "", classname);
-        return abs_classname;
-    }
-
-    DEBUG_PRINT_CHAR("Current class path: %s\n", frame->context->class.path);
-    smm_asprintf_char(&abs_classname, "%s::%s", frame->context->class.path, classname);
-    return abs_classname;
-}
-
-/**
  * Returns the next opcode
  */
-unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
+unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame) {
     // Sanity stop
-    if (frame->ip >= frame->bytecode->code_len) {
+    if (frame->ip >= frame->codeframe->bytecode->code_len) {
         DEBUG_PRINT_CHAR("Running outside bytecode!\n\n\n");
         return VM_STOP;
     }
 
-    unsigned char op = frame->bytecode->code[frame->ip];
+    unsigned char op = frame->codeframe->bytecode->code[frame->ip];
     frame->ip++;
 
     return op;
@@ -88,9 +63,9 @@ unsigned char vm_frame_get_next_opcode(t_vm_frame *frame) {
 /**
  * Returns he next operand. Does not do any sanity checks if it actually is an operand.
  */
-unsigned int vm_frame_get_operand(t_vm_frame *frame) {
+unsigned int vm_frame_get_operand(t_vm_stackframe *frame) {
     // Read operand
-    uint16_t *ptr = (uint16_t *)(frame->bytecode->code + frame->ip);
+    uint16_t *ptr = (uint16_t *)(frame->codeframe->bytecode->code + frame->ip);
     unsigned int ret = (*ptr & 0xFFFF);
 
     frame->ip += sizeof(uint16_t);
@@ -101,7 +76,7 @@ unsigned int vm_frame_get_operand(t_vm_frame *frame) {
  * Pops an object from the stack. If the object is an attribute, fetch the actual data of that attribute.
  * Errors when the stack is empty
  */
-t_object *vm_frame_stack_pop(t_vm_frame *frame) {
+t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
     t_object *obj = vm_frame_stack_pop_attrib(frame);
     if (OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->attribute;
     return obj;
@@ -110,10 +85,10 @@ t_object *vm_frame_stack_pop(t_vm_frame *frame) {
 /**
  * Pops an object from the stack. Errors when the stack is empty
  */
-t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
+t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
 
-    if (frame->sp >= frame->bytecode->stack_size) {
+    if (frame->sp >= frame->codeframe->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
     }
     t_object *ret = frame->stack[frame->sp];
@@ -129,7 +104,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame) {
 /**
  * Pushes an object onto the stack. Errors when the stack is full
  */
-void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
+void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
     DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET), frame->sp-1, object_debug(obj), (unsigned long)obj);
 
 
@@ -141,7 +116,7 @@ void vm_frame_stack_push(t_vm_frame *frame, t_object *obj) {
     object_inc_ref(obj);
 }
 
-void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
+void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
     DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET), idx, object_debug(obj), (unsigned long)obj);
     frame->stack[idx] = obj;
 }
@@ -150,7 +125,7 @@ void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj) {
 /**
  * Fetches the top of the stack. Does not pop anything.
  */
-t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
+t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame) {
     return frame->stack[frame->sp];
 }
 
@@ -158,8 +133,8 @@ t_object *vm_frame_stack_fetch_top(t_vm_frame *frame) {
 /**
  * Fetches a non-top element form the stack. Does not pop anything.
  */
-t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
-    if (idx < 0 || idx >= frame->bytecode->stack_size) {
+t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx) {
+    if (idx < 0 || idx >= frame->codeframe->bytecode->stack_size) {
         fatal_error(1, "Trying to fetch from outside stack range");     /* LCOV_EXCL_LINE */
     }
 
@@ -170,12 +145,12 @@ t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx) {
 /**
  * Return a constant literal, without converting to an object
  */
-void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
-    if (idx < 0 || idx >= frame->bytecode->constants_len) {
+void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx) {
+    if (idx < 0 || idx >= frame->codeframe->bytecode->constants_len) {
         fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
-    t_bytecode_constant *c = frame->bytecode->constants[idx];
+    t_bytecode_constant *c = frame->codeframe->bytecode->constants[idx];
     return c->data.ptr;
 }
 
@@ -183,19 +158,19 @@ void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx) {
 /**
  * Returns an object from the constant table
  */
-t_object *vm_frame_get_constant(t_vm_frame *frame, int idx) {
-    if (idx < 0 || idx >= frame->bytecode->constants_len) {
+t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
+    if (idx < 0 || idx >= frame->codeframe->bytecode->constants_len) {
         fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
-    return frame->constants_objects[idx];
+    return frame->codeframe->constants_objects[idx];
 }
 
 
 /**
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
-void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
     t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     if (obj == NULL) {
@@ -214,7 +189,7 @@ void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj) 
 /**
 * Return object from the global identifier table
 */
-t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
+t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
     t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     t_object *obj = (t_object *)ht_find_obj(frame->global_identifiers->ht, key);
@@ -228,13 +203,13 @@ t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id) {
 /**
  * Store object into either the local or global identifier table
  */
-void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
     t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
     object_release(old_obj);
     object_inc_ref(obj);
 }
 
-void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj) {
+void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
     t_object *old_obj = ht_replace_obj(frame->builtin_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
 
     object_release(old_obj);
@@ -262,12 +237,12 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 #endif
 
 
-t_object *vm_frame_resolve_identifier(t_vm_frame *frame, char *id) {
+t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id) {
     return vm_frame_local_identifier_exists(frame, id);
 }
 
 
-t_object *vm_frame_local_identifier_exists(t_vm_frame *frame, char *id) {
+t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
     t_object *key = object_alloc(Object_String, 2, strlen(id), id);
 
     t_object *obj = ht_find_obj(frame->local_identifiers->ht, key);
@@ -288,198 +263,88 @@ t_object *vm_frame_local_identifier_exists(t_vm_frame *frame, char *id) {
 }
 
 
-
-
-/**
- * Resolves the frame for id's like: "::foo::bar", "::bar", "bar";
- *
- */
-t_vm_frame *vm_frame_resolve_frame(t_vm_frame *current_frame, char *id) {
-    // if relative and no separators, it's inside the current frame
-    if (strstr(id, "::") == NULL) {
-        return current_frame;
-    }
-
-    // convert into absolute namespace
-    char *abs_ns = vm_frame_absolute_namespace(current_frame, id);
-
-    // split id from the context
-    char *p = vm_context_strip_path(abs_ns);
-    char *i = vm_context_strip_class(abs_ns);
-
-    t_vm_frame *cur_frame = thread_get_current_frame();
-    t_vm_frame *frame = vm_import_find_file(cur_frame, p);
-
-    smm_free(abs_ns);
-    smm_free(p);
-    smm_free(i);
-
-    return frame;
-}
-
-
 /**
  * Same as get, but does not halt on error (but returns NULL)
  */
-t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id) {
+t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id) {
     if (! frame) return NULL;
 
     t_object *obj = vm_frame_local_identifier_exists(frame, id);
     if (obj) return obj;
 
-    t_vm_frame *local_frame = vm_frame_resolve_frame(frame, id);
-    if (frame == NULL) {
-        // @TODO: Frame was not found.. throw error?
-        return NULL;
-    }
-    return vm_frame_local_identifier_exists(local_frame, id);
+    return NULL;
 }
 
 
 /**
  * Returns an identifier name as string
  */
-char *vm_frame_get_name(t_vm_frame *frame, int idx) {
-    if (idx < 0 || idx >= frame->bytecode->identifiers_len) {
+char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
+    if (idx < 0 || idx >= frame->codeframe->bytecode->identifiers_len) {
         fatal_error(1, "Trying to fetch from outside identifier range");        /* LCOV_EXCL_LINE */
     }
 
 #ifdef __DEBUG
     DEBUG_PRINT_CHAR("---------------------\n");
     DEBUG_PRINT_CHAR("frame identifiers:\n");
-    for (int i=0; i!=frame->bytecode->identifiers_len; i++) {
-        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->bytecode->identifiers[i]->s);
+    for (int i=0; i!=frame->codeframe->bytecode->identifiers_len; i++) {
+        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeframe->bytecode->identifiers[i]->s);
     }
     print_debug_table(frame->local_identifiers->ht, "Locals");
 #endif
 
-    return frame->bytecode->identifiers[idx]->s;
+    return frame->codeframe->bytecode->identifiers[idx]->s;
 }
 
 
-void vm_detach_bytecode(t_vm_frame *frame) {
-    if (frame->bytecode == NULL) return;
 
-    vm_context_free_context(frame);
-
-    smm_free(frame->stack);
-
-    DEBUG_PRINT_CHAR("vm_detach_bytecode: freeing constants init\n");
-    // Free constants objects
-    for (int i=0; i!=frame->bytecode->constants_len; i++) {
-        DEBUG_PRINT_STRING(char0_to_string("Freeing: %s\n"), object_debug((t_object *)frame->constants_objects[i]));
-        object_release((t_object *)frame->constants_objects[i]);
-    }
-    DEBUG_PRINT_CHAR("vm_detach_bytecode: freeing constants fini\n");
-    smm_free(frame->constants_objects);
-
-    frame->bytecode = NULL;
-}
-
-
-extern t_dll *all_objects;
-
-
-void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_bytecode *bytecode) {
-    if (frame->context) {
-        vm_context_free_context(frame);
-    }
-    vm_context_set_context(frame, class_path, file_path);
-
-    frame->bytecode = bytecode;
-    frame->ip = 0;
-    frame->sp = bytecode->stack_size;
-
-    // Setup variable stack
-    frame->stack = smm_malloc(bytecode->stack_size * sizeof(t_object *));
-    bzero(frame->stack, bytecode->stack_size * sizeof(t_object *));
-
-    // Create constants @TODO: Rebuild on every frame (ie: method call?). Can we reuse them?
-    frame->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
-    for (int i=0; i!=bytecode->constants_len; i++) {
-        t_object *obj = NULL;
-        t_bytecode_constant *c = bytecode->constants[i];
-        switch (c->type) {
-            case BYTECODE_CONST_CODE :
-                // We create a reference to the source filename of the original bytecode name.
-                bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
-                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, /* arguments */ NULL);
-                break;
-            case BYTECODE_CONST_STRING :
-                obj = object_alloc(Object_String, 2, strlen(bytecode->constants[i]->data.s), bytecode->constants[i]->data.s);
-                break;
-            case BYTECODE_CONST_REGEX :
-                obj = object_alloc(Object_Regex, 2, strlen(bytecode->constants[i]->data.r), bytecode->constants[i]->data.r);
-                break;
-            case BYTECODE_CONST_NUMERICAL :
-                obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
-                break;
-            default :
-                fatal_error(1, "Cannot convert constant type into object!");        /* LCOV_EXCL_LINE */
-        }
-        frame->constants_objects[i] = obj;
-    }
-
-
-
-//    printf("\n\n---- AttachBytecode ----\n");
-//    t_dll_element *e = DLL_HEAD(all_objects);
-//    while (e) {
-//        t_object *obj = (t_object *)e->data;
-//        printf("%-20s %d (%s)\n", obj->name, obj->ref_count, object_debug(obj));
-//        e = DLL_NEXT(e);
+//t_vm_stackframe *vm_frame_new_scoped(t_vm_stackframe *scope_frame, t_vm_stackframe *parent_frame, t_vm_context *context, t_bytecode *bytecode) {
+//    t_vm_stackframe *frame = vm_stackframe_new(parent_frame, context->class.path, context->file.path, bytecode);
+//
+//    // Populate local identifiers
+//
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, scope_frame->local_identifiers->ht);
+//    while (ht_iter_valid(&iter)) {
+//        t_object *key = ht_iter_key_obj(&iter);
+//        t_object *val = ht_iter_value(&iter);
+//
+//        ht_add_obj(frame->local_identifiers->ht, key, val);
+//
+//        object_inc_ref(key);
+//        object_inc_ref(val);
+//
+//        ht_iter_next(&iter);
 //    }
-//    printf("----------------------------\n");
-}
-
-t_vm_frame *vm_frame_new_scoped(t_vm_frame *scope_frame, t_vm_frame *parent_frame, t_vm_context *context, t_bytecode *bytecode) {
-    t_vm_frame *frame = vm_frame_new(parent_frame, context->class.path, context->file.path, bytecode);
-
-    // Populate local identifiers
-
-    t_hash_iter iter;
-    ht_iter_init(&iter, scope_frame->local_identifiers->ht);
-    while (ht_iter_valid(&iter)) {
-        t_object *key = ht_iter_key_obj(&iter);
-        t_object *val = ht_iter_value(&iter);
-
-        ht_add_obj(frame->local_identifiers->ht, key, val);
-
-        object_inc_ref(key);
-        object_inc_ref(val);
-
-        ht_iter_next(&iter);
-    }
-
-    return frame;
-}
+//
+//    return frame;
+//}
 
 
 /**
 * Creates and initializes a new frame
 */
-t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_path, t_bytecode *bytecode) {
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", class_path, parent_frame ? parent_frame->context->class.path : "none");
-    t_vm_frame *frame = smm_malloc(sizeof(t_vm_frame));
-    bzero(frame, sizeof(t_vm_frame));
+t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe *codeframe) {
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeframe->context->class.path, parent_frame ? parent_frame->codeframe->context->class.path : "none");
+    t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
+    bzero(frame, sizeof(t_vm_stackframe));
 
     frame->parent = parent_frame;
+    frame->codeframe = codeframe;
 
-    frame->created_objects = dll_init();
+    frame->sp = codeframe->bytecode->stack_size;
+    frame->stack = smm_malloc(codeframe->bytecode->stack_size * sizeof(t_object *));
+    bzero(frame->stack, codeframe->bytecode->stack_size * sizeof(t_object *));
+
+
+    frame->created_userland_objects = dll_init();
 
     DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
-    vm_context_set_context(frame, class_path, file_path);
-
-    frame->bytecode = NULL;
-
     // Create new local identifier hash
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
-
-    // By default, don't create file identifiers
-    frame->constants_objects = NULL;
 
     // Set the variable hashes
     if (frame->parent == NULL) {
@@ -492,7 +357,7 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_
     object_inc_ref((t_object *)frame->global_identifiers);
 
 
-    vm_attach_bytecode(frame, class_path, file_path, bytecode);
+//    vm_attach_bytecode(frame, class_path, file_path, bytecode);
 
     return frame;
 }
@@ -501,10 +366,10 @@ t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_
 /**
  *
  */
-void vm_frame_destroy(t_vm_frame *frame) {
+void vm_stackframe_destroy(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR("FRAME DESTROY: %s :: %s\n",
-        frame->context ? frame->context->class.path : "<empty>",
-        frame->context ? frame->context->class.name : "<empty>");
+        frame->codeframe->context ? frame->codeframe->context->class.path : "<empty>",
+        frame->codeframe->context ? frame->codeframe->context->class.name : "<empty>");
 
 #ifdef __DEBUG
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
@@ -513,11 +378,8 @@ void vm_frame_destroy(t_vm_frame *frame) {
 #endif
 
 
-    DEBUG_PRINT_CHAR("detach bytecode init\n");
-    if (frame->bytecode) {
-        vm_detach_bytecode(frame);
-    }
-    DEBUG_PRINT_CHAR("detach bytecode fini\n");
+    // Remove codeframe reference (don't mind cleanup, since we still have it on the codeframe stack)
+    frame->codeframe = NULL;
 
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
@@ -532,25 +394,28 @@ void vm_frame_destroy(t_vm_frame *frame) {
 
         DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s [%08X]\n"), object_debug(val), (unsigned int)val);
 
-        object_release(val);
-        //object_release(key);
+        // Remove the key from the hash. Do this BEFORE releasing key, otherwise we end up with bad data if the
+        // refcount of key becomes 0, and it released the key's memory while we are still referencing it in this
+        // ht_remove_obj() call..
         ht_remove_obj(frame->local_identifiers->ht, key);
+
+        // Release key and value, as their values are no longer needed.
+        object_release(val);
+        object_release(key);
     }
 
-    // Free created objects
-    t_dll_element *e = DLL_HEAD(frame->created_objects);
+    // Free created user objects
+    t_dll_element *e = DLL_HEAD(frame->created_userland_objects);
     while (e) {
         object_release((t_object *)e->data);
         e = DLL_NEXT(e);
     }
-    dll_free(frame->created_objects);
+    dll_free(frame->created_userland_objects);
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
-
-    smm_free(frame->context);
 
     smm_free(frame);
 }
@@ -577,22 +442,22 @@ void vm_frame_destroy(t_vm_frame *frame) {
  *              again, it must be newly allocated. In this case, the object state because "born" again.
  *
  */
-void vm_frame_register_userobject(t_vm_frame *frame, t_object *obj) {
+void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
     // @TODO: shouldn't we increase the refcount? We don't, as we ASSUME that refcount is already initialized with 1.
-    dll_append(frame->created_objects, obj);
+    dll_append(frame->created_userland_objects, obj);
 }
 
 
 #ifdef __DEBUG
-void vm_frame_stack_debug(t_vm_frame *frame) {
-    if (frame->sp == frame->bytecode->stack_size) {
-        //printf("\nEmpty framestack\n");
+void vm_frame_stack_debug(t_vm_stackframe *frame) {
+    // Nothing on the stack
+    if (frame->sp == frame->codeframe->bytecode->stack_size) {
         return;
     }
 
     DEBUG_PRINT_CHAR("\nFRAME STACK\n");
     DEBUG_PRINT_CHAR("=======================\n");
-    for (int i=frame->sp; i<=frame->bytecode->stack_size-1; i++) {
+    for (int i=frame->sp; i<=frame->codeframe->bytecode->stack_size-1; i++) {
         DEBUG_PRINT_CHAR("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
     DEBUG_PRINT_CHAR("\n");

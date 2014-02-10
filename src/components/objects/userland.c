@@ -86,8 +86,10 @@ static void obj_free(t_object *obj) {
     t_hash_iter iter;
     ht_iter_init(&iter, user_obj->attributes);
     while (ht_iter_valid(&iter)) {
+#ifdef __DEBUG
         char *key = ht_iter_key_str(&iter);
         DEBUG_PRINT_CHAR("Releasing attribute: %s\n", key);
+#endif
 
         t_object *attr_obj = (t_object *)ht_iter_value(&iter);
         object_release(attr_obj);

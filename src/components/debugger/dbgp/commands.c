@@ -262,13 +262,13 @@ DBGP_CMD_DEF(step_into) {
     di->state = DBGP_STATE_RUNNING;
     di->step_into = 1;
 
-    if (di->frame == NULL || di->frame->bytecode == NULL || di->frame->bytecode->source_filename == NULL) {
+    if (di->frame == NULL || di->frame->codeframe->bytecode == NULL || di->frame->codeframe->bytecode->source_filename == NULL) {
         di->step_data.frame = NULL;
         di->step_data.file = NULL;
         di->step_data.lineno = 0;
     } else {
         di->step_data.frame = di->frame;
-        di->step_data.file = di->frame->bytecode->source_filename;
+        di->step_data.file = di->frame->codeframe->bytecode->source_filename;
         di->step_data.lineno = di->frame->lineno_current_line;
     }
 
@@ -284,7 +284,7 @@ DBGP_CMD_DEF(step_over) {
     di->step_over = 1;
 
     di->step_data.frame = di->frame;
-    di->step_data.file = di->frame->bytecode->source_filename;
+    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -299,7 +299,7 @@ DBGP_CMD_DEF(step_out) {
     di->step_out = 1;
 
     di->step_data.frame = di->frame->parent;
-    di->step_data.file = di->frame->bytecode->source_filename;
+    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -319,7 +319,7 @@ DBGP_CMD_DEF(stack_get) {
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);
 
-    t_vm_frame *frame = di->frame;
+    t_vm_stackframe *frame = di->frame;
 
     int level = 0;
     while (frame) {
@@ -328,9 +328,9 @@ DBGP_CMD_DEF(stack_get) {
         xmlSetProp(node, BAD_CAST "level", BAD_CAST xmlbuf);
         xmlSetProp(node, BAD_CAST "type", BAD_CAST "file");
 
-        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->context);
+        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->codeframe->context);
 
-        snprintf(xmlbuf, 999, "file://%s", frame->bytecode->source_filename);
+        snprintf(xmlbuf, 999, "file://%s", frame->codeframe->bytecode->source_filename);
         xmlSetProp(node, BAD_CAST "filename", BAD_CAST xmlbuf);
         snprintf(xmlbuf, 999, "%d", frame->lineno_current_line);
         xmlSetProp(node, BAD_CAST "lineno", BAD_CAST xmlbuf);
@@ -373,7 +373,7 @@ DBGP_CMD_DEF(context_get) {
     snprintf(xmlbuf, 999, "%d", context_id);
     xmlSetProp(root_node, BAD_CAST "context", BAD_CAST xmlbuf);
 
-    t_vm_frame *frame = di->frame;
+    t_vm_stackframe *frame = di->frame;
 
     t_hash_table *ht;
     if (context_id == 0) {

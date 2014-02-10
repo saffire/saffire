@@ -24,22 +24,65 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_FRAME_H__
-#define __VM_FRAME_H__
+#ifndef __VM_TYPES_H__
+#define __VM_TYPES_H__
 
-    #include "objects/hash.h"
     #include "compiler/bytecode.h"
-    #include "block.h"
-    #include "vm/context.h"
+    #include "objects/objects.h"
 
 
+    #define BLOCK_MAX_DEPTH             20          // Maximum depth of the number of blocks we can have (nested if's, for instance)
+                                                    // This is the same depth as defined in python
 
-    struct _vm_frame {
-        t_vm_frame *parent;                         // Parent frame, or NULL when we reached the initial / global frame.
 
-        t_vm_context *context;                      // Actual context
+    typedef struct _vm_frame_context {
+        struct {
+            char *path;      // absolute namespace (::foo in case of ::foo::bar)
+            char *name;      // Class name (bar in case of ::foo::bar)
+            char *full;      // full namespace (::foo::bar)
+        } class;
 
-        t_bytecode *bytecode;                       // Global bytecode array
+        struct {
+            char *path;      // Path with loaded bytecode
+            char *name;      // bytecode filename
+            char *full;      // Full path
+        } file;
+    } t_vm_context;
+
+
+    typedef struct _vm_codeframe {
+        t_vm_context *context;          // Context of this codeframe
+
+        t_bytecode *bytecode;           // Frame's bytecode
+        t_object **constants_objects;   // Constants taken from bytecode, converted to actual objects
+    } t_vm_codeframe;
+
+
+    typedef struct _vm_frameblock {
+        int type;       // Type (any of the BLOCK_TYPE_*)
+        union {
+            struct {
+                int ip;         // Saved instruction pointer
+                int ip_else;    // Saved instruction pointer to ELSE part
+            } loop;
+            struct {
+                int ip_catch;           // Saved instruction pointer to CATCH blocks
+                int ip_finally;         // Saved instruction pointer to FINALLY block
+                int ip_end_finally;     // Saved instruction pointer to the end of FINALLY block
+
+                int in_finally;         // 1: We are currently handling the finally block
+            } exception;
+        } handlers;
+        int sp;         // Saved stack pointer
+        int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
+    } t_vm_frameblock;
+
+
+    typedef struct _vm_stackframe {
+        t_vm_stackframe *parent;                    // Parent frame, or NULL when we reached the initial / global frame.
+
+        t_vm_codeframe *codeframe;                  // Actual codeframe
+
         int ip;                                     // Instruction pointer
 
         int lineno_lowerbound;                      // Lower bytecode offset for this line
@@ -54,8 +97,7 @@
         t_hash_object *global_identifiers;          // Global identifiers
         t_hash_object *builtin_identifiers;         // Builtin identifiers
 
-        t_object **constants_objects;               // Constants converted to objects
-        t_dll *created_objects;                     // Created objects by the bytecode
+        t_dll *created_userland_objects;            // Created objects by the bytecode
 
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
@@ -67,49 +109,6 @@
 
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
-    };
-
-    char *vm_frame_absolute_namespace(t_vm_frame *frame, char *namespace);
-
-
-    t_vm_frame *vm_frame_new_scoped(t_vm_frame *scope_frame, t_vm_frame *parent_frame, t_vm_context *context, t_bytecode *bytecode);
-    t_vm_frame *vm_frame_new(t_vm_frame *parent_frame, char *class_path, char *file_path, t_bytecode *bytecode);
-    void vm_frame_destroy(t_vm_frame *frame);
-    void vm_attach_bytecode(t_vm_frame *frame, char *class_path, char *file_path, t_bytecode *bytecode);
-    void vm_detach_bytecode(t_vm_frame *frame);
-
-    unsigned char vm_frame_get_next_opcode(t_vm_frame *frame);
-    unsigned int vm_frame_get_operand(t_vm_frame *frame);
-
-    t_object *vm_frame_stack_pop_attrib(t_vm_frame *frame);
-    t_object *vm_frame_stack_pop(t_vm_frame *frame);
-    void vm_frame_stack_push(t_vm_frame *frame, t_object *obj);
-    void vm_frame_stack_modify(t_vm_frame *frame, int idx, t_object *obj);
-    t_object *vm_frame_stack_fetch_top(t_vm_frame *frame);
-    t_object *vm_frame_stack_fetch(t_vm_frame *frame, int idx);
-
-    t_object *vm_frame_get_constant(t_vm_frame *frame, int idx);
-    t_object *vm_frame_get_identifier(t_vm_frame *frame, char *id);
-    t_object *vm_frame_find_identifier(t_vm_frame *frame, char *id);
-    t_object *vm_frame_get_global_identifier(t_vm_frame *frame, char *id);
-    t_object *vm_frame_local_identifier_exists(t_vm_frame *frame, char *id);
-    t_object *vm_frame_resolve_identifier(t_vm_frame *frame, char *id);
-
-    void vm_frame_set_global_identifier(t_vm_frame *frame, char *id, t_object *obj);
-    void vm_frame_set_identifier(t_vm_frame *frame, char *id, t_object *obj);
-
-    void vm_frame_set_builtin_identifier(t_vm_frame *frame, char *id, t_object *obj);
-
-    void *vm_frame_get_constant_literal(t_vm_frame *frame, int idx);
-    char *vm_frame_get_name(t_vm_frame *frame, int idx);
-
-    char *vm_frame_get_context_path(char *path);
-
-    void vm_frame_register_userobject(t_vm_frame *frame, t_object *obj);
-
-#ifdef __DEBUG
-    void vm_frame_stack_debug(t_vm_frame *frame);
-    void print_debug_table(t_hash_table *ht, char *prefix);
-#endif
+    } t_vm_stackframe;
 
 #endif

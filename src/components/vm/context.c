@@ -27,8 +27,9 @@
 #include <string.h>
 #include <libgen.h>
 #include "general/output.h"
-#include "vm/frame.h"
+#include "vm/codeframe.h"
 #include "general/smm.h"
+#include "debug.h"
 
 
 /**
@@ -66,37 +67,74 @@ char *vm_context_strip_class(char *class_path) {
 }
 
 
-/**
- * Sets the context for this frame and plits the nessesary class and path.
- */
-void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path) {
-    frame->context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
-    bzero(frame->context, sizeof(t_vm_context));
+t_vm_context *vm_context_new(char *class_path, char *file_path) {
+    t_vm_context *context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
+    bzero(context, sizeof(t_vm_context));
 
     if (class_path) {
-        frame->context->class.path = vm_context_strip_path(class_path);
-        frame->context->class.name = vm_context_strip_class(class_path);
+        context->class.path = vm_context_strip_path(class_path);
+        context->class.name = vm_context_strip_class(class_path);
+        context->class.full = string_strdup0(class_path);
     }
 
     if (file_path) {
-        char *duppath = string_strdup0(file_path);
-        frame->context->file.path = string_strdup0(dirname(duppath));
-        frame->context->file.name = string_strdup0(basename(duppath));
+        char *duppath = NULL;
+
+        context->file.full = string_strdup0(file_path);
+
+        // dirname and/or basename can (and will)modify existing path
+        duppath = string_strdup0(file_path);
+        context->file.path = string_strdup0(dirname(duppath));
+        smm_free(duppath);
+
+        duppath = string_strdup0(file_path);
+        context->file.name = string_strdup0(basename(duppath));
         smm_free(duppath);
     }
+
+    return context;
 }
 
 /**
- * Frees the context for this frame
+ * Frees the context for this codeframe
  */
-void vm_context_free_context(t_vm_frame *frame) {
-    smm_free(frame->context->class.path);
-    smm_free(frame->context->class.name);
+void vm_context_free_context(t_vm_codeframe *codeframe) {
+    if (! codeframe || ! codeframe->context) return;
 
-    smm_free(frame->context->file.path);
-    smm_free(frame->context->file.name);
+    smm_free(codeframe->context->class.path);
+    smm_free(codeframe->context->class.name);
 
-    smm_free(frame->context);
-    frame->context = NULL;
+    smm_free(codeframe->context->file.path);
+    smm_free(codeframe->context->file.name);
+
+    smm_free(codeframe->context);
 }
 
+
+
+
+/**
+ * Returns the absolute fqcp based
+ * @param frame
+ * @param classname
+ * @return
+ */
+char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *class_name) {
+    char *absolute_class_name = NULL;
+
+    // It's already absolute
+    if (strstr(class_name, "::") == class_name) {
+        return string_strdup0(class_name);
+    }
+
+    // If we have a relative name, but we are actually without a codeframe. Only allowed when we import from
+    // our main file.
+    if (! codeframe) {
+        smm_asprintf_char(&absolute_class_name, "::%s", class_name);
+        return absolute_class_name;
+    }
+
+    t_vm_context *ctx = codeframe->context;
+    smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->class.path, class_name);
+    return absolute_class_name;
+}

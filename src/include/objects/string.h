@@ -28,6 +28,7 @@
 #define __OBJECT_STRING_H__
 
     #include "objects/object.h"
+    #include "general/string.h"
 
     // Return a zero-terminated string
     #define RETURN_STRING_FROM_CHAR(s)                  RETURN_OBJECT(object_alloc(Object_String, 1, char_to_string(s, strlen(s))))

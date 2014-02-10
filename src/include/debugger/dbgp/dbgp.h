@@ -27,7 +27,7 @@
 #ifndef __DEBUGGER_DBGP_H__
 #define __DEBUGGER_DBGP_H__
 
-    #include "vm/frame.h"
+    #include "vm/stackframe.h"
 
     typedef struct _debuginfo {
         int sock_fd;            // Network socket for read/write
@@ -42,7 +42,7 @@
         struct _step_data {
             char *file;
             int lineno;
-            t_vm_frame *frame;
+            t_vm_stackframe *frame;
         } step_data;
 
         int breakpoint_id;      // Counter for unique breakpoint ID's
@@ -52,7 +52,7 @@
         char *cur_cmd;          // Current running command
         char *cur_txid;         // Current transaction id
 
-        t_vm_frame *frame;      // Current attached frame
+        t_vm_stackframe *frame;      // Current attached frame
     } t_debuginfo;
 
 
@@ -90,7 +90,7 @@
     #define DBGP_STATE_BREAK                    4
 
 
-    void dbgp_debug(t_debuginfo *di, t_vm_frame *frame);
+    void dbgp_debug(t_debuginfo *di, t_vm_stackframe *frame);
     void dbgp_parse_incoming_commands(t_debuginfo *di);
     t_debuginfo *dbgp_init(void);
     void dbgp_fini(t_debuginfo *di);

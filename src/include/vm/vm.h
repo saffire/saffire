@@ -29,7 +29,7 @@
 
     #include "compiler/bytecode.h"
     #include "objects/hash.h"
-    #include "vm/frame.h"
+    #include "vm/stackframe.h"
     #include "compiler/saffire_parser.h"
     #include "objects/attrib.h"
 
@@ -47,13 +47,11 @@
 
     void vm_init(SaffireParser *sp, int runmode);
     void vm_fini(void);
-    int vm_execute(t_vm_frame *frame);
+    int vm_execute(t_vm_stackframe *stackframe);
     void vm_populate_builtins(const char *name, t_object *obj);
 
+    t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result);
     t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
-
-    t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2);
-    t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2);
 
 #endif
 

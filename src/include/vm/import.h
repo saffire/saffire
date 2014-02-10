@@ -28,11 +28,12 @@
 #define __VM_IMPORT_H__
 
     #include "objects/object.h"
-    #include "vm/frame.h"
+    #include "vm/vmtypes.h"
+    #include "vm/stackframe.h"
 
-    t_object *vm_import(t_vm_frame *frame, char *module, char *class);
-    t_vm_frame *vm_import_find_file(t_vm_frame *frame, char *class_path);
-    t_object *vm_execute_import(t_vm_frame *import_frame);
-    void vm_free_import_cache(void);
+    t_object *vm_import(t_vm_codeframe *codeframe, char *module, char *class);
+//    t_vm_stackframe *vm_import_find_file(char *class_path);
+//    t_object *vm_execute_import(t_vm_stackframe *import_frame);
+//    void vm_free_import_cache(void);
 
 #endif

@@ -27,24 +27,14 @@
 #ifndef __VM_CONTEXT_H__
 #define __VM_CONTEXT_H__
 
-    #include "vm/frame.h"
-
-    typedef struct _vm_frame_context {
-        struct {
-            char *path;      // absolute namespace (::foo in case of ::foo::bar)
-            char *name;      // Class name (bar in case of ::foo::bar)
-        } class;
-
-        struct {
-            char *path;      // Path with loaded bytecode
-            char *name;      // bytecode filename
-        } file;
-    } t_vm_context;
+    #include "vm/vmtypes.h"
 
     char *vm_context_strip_path(char *full_namespace);
     char *vm_context_strip_class(char *full_namespace);
 
-    void vm_context_set_context(t_vm_frame *frame, char *class_path, char *file_path);
-    void vm_context_free_context(t_vm_frame *frame);
+    char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *namespace);
+
+    t_vm_context *vm_context_new(char *class_path, char *file_path);
+    void vm_context_free_context(t_vm_codeframe *codeframe);
 
 #endif

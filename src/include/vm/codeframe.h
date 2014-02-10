@@ -24,19 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_BLOCK_H__
-#define __VM_BLOCK_H__
+#ifndef __VM_CODEFRAME_H__
+#define __VM_CODEFRAME_H__
 
     #include "vm/vmtypes.h"
+    #include "compiler/bytecode.h"
 
-    #define BLOCK_TYPE_LOOP             1
-    #define BLOCK_TYPE_EXCEPTION        2
+    t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context);
+    void vm_codeframe_destroy(t_vm_codeframe *codeframe);
 
-    void vm_push_block_loop(t_vm_stackframe *frame, int type, int sp, int ip, int ip_else);
-    void vm_push_block_exception(t_vm_stackframe *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally);
-    t_vm_frameblock *vm_pop_block(t_vm_stackframe *frame);
-    t_vm_frameblock *vm_peek_block(t_vm_stackframe *frame);
+    void vm_codeframe_init(void);
+    void vm_codeframe_fini(void);
 
 #endif
-
-

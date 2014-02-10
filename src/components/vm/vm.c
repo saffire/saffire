@@ -28,10 +28,10 @@
 #include <limits.h>
 #include "compiler/bytecode.h"
 #include "vm/vm.h"
+#include "vm/stackframe.h"
 #include "vm/context.h"
 #include "vm/vm_opcodes.h"
 #include "vm/block.h"
-#include "vm/frame.h"
 #include "vm/thread.h"
 #include "vm/import.h"
 #include "general/dll.h"
@@ -63,7 +63,56 @@ t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
 extern char *objectOprMethods[];
 extern char *objectCmpMethods[];
 
-t_object *_vm_execute(t_vm_frame *frame);
+t_object *_vm_execute(t_vm_stackframe *frame);
+
+/**
+ * This method is called when we need to call an operator method. Even though eventually
+ * it is a normal method call to a _opr_* method, we go a different route so we can easily
+ * do custom optimizations later on.
+ */
+static t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
+    char *opr_method = objectOprMethods[opr];
+
+    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method, OBJECT_SCOPE_SELF);
+    if (! found_obj) {
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT_CHAR(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
+
+    // Call the actual operator and return the result
+    return vm_object_call(obj1, found_obj, 1, obj2);
+}
+
+
+/**
+ * Calls an comparison function. Returns true or false
+ */
+static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+    char *cmp_method = objectCmpMethods[cmp];
+
+    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method, OBJECT_SCOPE_SELF);
+    if (! found_obj) {
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT_CHAR(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
+
+    // Call the actual operator and return the result
+    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
+    if (! ret) return ret;
+
+    // Implicit conversion to boolean if needed
+    if (! OBJECT_IS_BOOLEAN(ret)) {
+        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean", OBJECT_SCOPE_SELF);
+        ret = vm_object_call(ret, bool_method, 0);
+    }
+
+    return ret;
+}
+
 
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
@@ -71,7 +120,7 @@ t_object *_vm_execute(t_vm_frame *frame);
  *
  * Returns 1 in success, 0 on failure/exception is thrown
  */
-static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
+static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *callable, t_dll *arg_list) {
     t_hash_table *ht = callable->arguments;
     t_dll_element *e = DLL_HEAD(arg_list);
 
@@ -167,7 +216,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 /**
  * Creates an object that
  */
-static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+static t_userland_object *_create_userland_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     t_userland_object *user_obj = smm_malloc(sizeof(Object_Userland_struct));
     memcpy(user_obj, &Object_Userland_struct, sizeof(Object_Userland_struct));
 
@@ -219,7 +268,7 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
 /**
  * Call a callable with arguments
  */
-static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame *scope_frame, t_callable_object *callable_obj, t_dll *arg_list) {
+static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackframe *scope_frame, t_callable_object *callable_obj, t_dll *arg_list) {
     t_object *ret;
 
     // Check if the object is actually a callable
@@ -257,8 +306,19 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
 
     // Create a new execution frame
-    t_vm_frame *cur_frame = thread_get_current_frame();
-    t_vm_frame *new_frame = vm_frame_new_scoped(scope_frame, cur_frame, cur_frame->context, callable_obj->code.bytecode);
+    t_vm_stackframe *cur_frame = thread_get_current_frame();
+
+    // @TODO
+    // @TODO
+    // @TODO
+    // @TODO
+    // @TODO
+    // @TODO
+    // @TODO
+    // @TODO
+
+    t_vm_stackframe *new_frame = NULL;
+    //t_vm_stackframe *new_frame = vm_stackframe_new(scope_frame, cur_frame, cur_frame->codeframe->context, callable_obj->code.bytecode);
 
     // Copy stuff from frame over to new_frame
 
@@ -269,7 +329,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
 
     // Parse calling arguments to see if they match our signatures
     if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
-        vm_frame_destroy(new_frame);
+        vm_stackframe_destroy(new_frame);
 
         // Exception thrown in the argument parsing
         return NULL;
@@ -279,7 +339,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
     ret = _vm_execute(new_frame);
 
     // Destroy frame
-    vm_frame_destroy(new_frame);
+    vm_stackframe_destroy(new_frame);
 
     if (ret == NULL) {
         // exception occurred
@@ -409,6 +469,8 @@ void vm_init(SaffireParser *sp, int runmode) {
     object_init();
     module_init();
 
+    vm_codeframe_init();
+
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
 
@@ -437,7 +499,7 @@ void vm_fini(void) {
         dbgp_fini(debug_info);
     }
 
-    vm_free_import_cache();
+    vm_codeframe_fini();
 
     thread_free(current_thread);
 
@@ -453,7 +515,7 @@ void vm_fini(void) {
     gc_fini();
 }
 
-int getlineno(t_vm_frame *frame) {
+int getlineno(t_vm_stackframe *frame) {
     if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
         return frame->lineno_current_line;
     }
@@ -462,17 +524,17 @@ int getlineno(t_vm_frame *frame) {
     int delta_line = 0;
 
     // @TODO: Check if lino_offset doesn't go out of bounds
-    if (frame->lineno_current_lino_offset >= frame->bytecode->lino_length) {
+    if (frame->lineno_current_lino_offset >= frame->codeframe->bytecode->lino_length) {
         return frame->lineno_current_line;
     }
 
     int i;
     do {
-        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
     } while (i > 127);
     do {
-        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
     } while (i > 127);
 
@@ -484,12 +546,12 @@ int getlineno(t_vm_frame *frame) {
 }
 
 
-t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
+t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret);
 
 /**
  *
  */
-t_object *_vm_execute(t_vm_frame *frame) {
+t_object *_vm_execute(t_vm_stackframe *frame) {
     t_object *obj1, *obj2, *obj3, *obj4;
     t_object *left_obj, *right_obj;
     t_attrib_object *attr_obj;
@@ -498,10 +560,9 @@ t_object *_vm_execute(t_vm_frame *frame) {
     t_object *dst;
     char *s;
 
-
 #ifdef DEBUG
     DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
-    t_vm_frame *tb_frame = frame;
+    t_vm_stackframe *tb_frame = frame;
     int tb_history = 0;
     while (tb_frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
@@ -522,7 +583,7 @@ t_object *_vm_execute(t_vm_frame *frame) {
 #endif
 
     // Set the correct current frame
-    t_vm_frame *old_current_frame = thread_get_current_frame();
+    t_vm_stackframe *parent_frame = thread_get_current_frame();
     thread_set_current_frame(frame);
 
     // Default return value;
@@ -569,7 +630,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
@@ -580,7 +641,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
@@ -591,7 +652,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         } else {
@@ -601,7 +662,7 @@ dispatch:
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         }
@@ -1021,7 +1082,7 @@ So:
                         class_name = separator_pos + 1;
                     }
 
-                    dst = vm_import(frame, module_name, class_name);
+                    dst = vm_import(frame->codeframe, module_name, class_name);
                     if (!dst) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1613,7 +1674,7 @@ block_end:
 
 
     // Restore current frame
-    thread_set_current_frame(old_current_frame);
+    thread_set_current_frame(parent_frame);
 
     //printf("RETURNING FROM _VM_EXEC(): %s {%d}\n", object_debug(ret), ret->ref_count);
 
@@ -1629,7 +1690,7 @@ block_end:
  * This function can change the reason and the blocks in the frame. It will not change any return values, but it can
  * change the IP pointer as well (continue, break, finally, catch etc)
  */
-t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
+t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret) {
     // Peek block to see if there is any
     t_vm_frameblock *block = vm_peek_block(frame);
 //    DEBUG_PRINT_CHAR("init unwind_blocks: [curblocks %d] (%d)\n", frame->block_cnt, *reason);
@@ -1773,38 +1834,39 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 }
 
 /**
- * The same as a normal execute, but when an exception is thrown, this will be stored in the parent frame
+ * The same as a normal execute, but don't handle exceptions
+
  * @param frame
  * @return
  */
-t_object *vm_execute_import(t_vm_frame *import_frame) {
-    // We assume this is the main frame.
-    thread_set_current_frame(import_frame);
-
+t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result) {
     // Execute the frame
-    t_object *result = _vm_execute(import_frame);
-    DEBUG_PRINT_CHAR("\n============================ VM import execution done ============================\n");
+    DEBUG_PRINT_CHAR("\n============================ VM import execution start ============================\n");
+    t_vm_stackframe *import_frame = vm_stackframe_new(thread_get_current_frame(), codeframe);
 
-    // Don't handle exceptions
+    if (*result) {
+        *result = _vm_execute(import_frame);
+    } else {
+        _vm_execute(import_frame);
+    }
 
-    return result;
+    DEBUG_PRINT_CHAR("\n============================ VM import execution fini ============================\n");
+
+    return import_frame;
 }
 
 /**
  *
  */
-int vm_execute(t_vm_frame *frame) {
+int vm_execute(t_vm_stackframe *frame) {
     int ret_val = 0;
-
-    // We assume this is the main frame.
-    thread_set_current_frame(frame);
 
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
     DEBUG_PRINT_CHAR("\n\n\n\n============================ VM execution done ============================\n");
 #ifdef __DEBUG
-    DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->context->class.path, frame->context->class.name, (unsigned int)frame);
+    DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
@@ -1888,51 +1950,4 @@ t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_co
     dll_free(arg_list);
 
     return ret_obj;
-}
-
-/**
- * This method is called when we need to call an operator method. Even though eventually
- * it is a normal method call to a _opr_* method, we go a different route so we can easily
- * do custom optimizations later on.
- */
-t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
-    char *opr_method = objectOprMethods[opr];
-
-    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method, OBJECT_SCOPE_SELF);
-    if (! found_obj) {
-        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
-        return NULL;
-    }
-
-    DEBUG_PRINT_CHAR(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
-
-    // Call the actual operator and return the result
-    return vm_object_call(obj1, found_obj, 1, obj2);
-}
-
-/**
- * Calls an comparison function. Returns true or false
- */
-t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
-    char *cmp_method = objectCmpMethods[cmp];
-
-    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method, OBJECT_SCOPE_SELF);
-    if (! found_obj) {
-        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
-        return NULL;
-    }
-
-    DEBUG_PRINT_CHAR(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
-
-    // Call the actual operator and return the result
-    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
-    if (! ret) return ret;
-
-    // Implicit conversion to boolean if needed
-    if (! OBJECT_IS_BOOLEAN(ret)) {
-        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean", OBJECT_SCOPE_SELF);
-        ret = vm_object_call(ret, bool_method, 0);
-    }
-
-    return ret;
 }

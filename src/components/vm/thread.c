@@ -54,7 +54,7 @@ void thread_free(t_thread *thread) {
 /**
  * Returns the running frame inside the current thread
  */
-t_vm_frame *thread_get_current_frame() {
+t_vm_stackframe *thread_get_current_frame() {
     return current_thread->frame;
 }
 
@@ -65,7 +65,7 @@ t_thread *thread_get_current() {
 /**
  * Sets the frame inside the current thread
  */
-void thread_set_current_frame(t_vm_frame *frame) {
+void thread_set_current_frame(t_vm_stackframe *frame) {
     current_thread->frame = frame;
 }
 

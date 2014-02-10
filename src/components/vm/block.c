@@ -25,14 +25,13 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "vm/block.h"
-#include "vm/frame.h"
+#include "vm/vmtypes.h"
 #include "debug.h"
 #include "general/output.h"
 
 
 #ifdef __DEBUG
-void vm_frame_block_debug(t_vm_frame *frame) {
+void vm_frame_block_debug(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR("\nFRAME BLOCK STACK\n");
     DEBUG_PRINT_CHAR("=======================\n");
     for (int i=0; i!=frame->block_cnt; i++) {
@@ -42,7 +41,7 @@ void vm_frame_block_debug(t_vm_frame *frame) {
 }
 #endif
 
-static t_vm_frameblock *_create_block(t_vm_frame *frame, int type, int sp) {
+static t_vm_frameblock *_create_block(t_vm_stackframe *frame, int type, int sp) {
     t_vm_frameblock *block;
 
     // @TODO: assert sp < frame->bytecode->max_sp
@@ -70,14 +69,14 @@ vm_frame_block_debug(frame);
 /**
  *
  */
-void vm_push_block_loop(t_vm_frame *frame, int type, int sp, int ip, int ip_else) {
+void vm_push_block_loop(t_vm_stackframe *frame, int type, int sp, int ip, int ip_else) {
     t_vm_frameblock *block = _create_block(frame, type, sp);
 
     block->handlers.loop.ip = ip;
     block->handlers.loop.ip_else = ip_else;       // Else IP for while/else
 }
 
-void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally) {
+void vm_push_block_exception(t_vm_stackframe *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally) {
     t_vm_frameblock *block = _create_block(frame, type, sp);
 
     block->handlers.exception.ip_catch = ip_catch;
@@ -89,7 +88,7 @@ void vm_push_block_exception(t_vm_frame *frame, int type, int sp, int ip_catch, 
 /**
  *
  */
-t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
+t_vm_frameblock *vm_pop_block(t_vm_stackframe *frame) {
     t_vm_frameblock *block;
 
 //    DEBUG_PRINT_CHAR(">>> POP BLOCK [%d] \n", frame->block_cnt);
@@ -106,6 +105,6 @@ t_vm_frameblock *vm_pop_block(t_vm_frame *frame) {
 /**
  *
  */
-t_vm_frameblock *vm_peek_block(t_vm_frame *frame) {
+t_vm_frameblock *vm_peek_block(t_vm_stackframe *frame) {
     return &frame->blocks[frame->block_cnt - 1];
 }
