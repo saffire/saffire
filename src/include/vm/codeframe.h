@@ -31,6 +31,7 @@
     #include "compiler/bytecode.h"
 
     t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context);
+    t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent, t_bytecode *bytecode);
     void vm_codeframe_destroy(t_vm_codeframe *codeframe);
 
     void vm_codeframe_init(void);

@@ -284,18 +284,17 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
         fatal_error(1, "Trying to fetch from outside identifier range");        /* LCOV_EXCL_LINE */
     }
 
-#ifdef __DEBUG
-    DEBUG_PRINT_CHAR("---------------------\n");
-    DEBUG_PRINT_CHAR("frame identifiers:\n");
-    for (int i=0; i!=frame->codeframe->bytecode->identifiers_len; i++) {
-        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeframe->bytecode->identifiers[i]->s);
-    }
-    print_debug_table(frame->local_identifiers->ht, "Locals");
-#endif
+//#ifdef __DEBUG
+//    DEBUG_PRINT_CHAR("---------------------\n");
+//    DEBUG_PRINT_CHAR("frame identifiers:\n");
+//    for (int i=0; i!=frame->codeframe->bytecode->identifiers_len; i++) {
+//        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeframe->bytecode->identifiers[i]->s);
+//    }
+//    print_debug_table(frame->local_identifiers->ht, "Locals");
+//#endif
 
     return frame->codeframe->bytecode->identifiers[idx]->s;
 }
-
 
 
 //t_vm_stackframe *vm_frame_new_scoped(t_vm_stackframe *scope_frame, t_vm_stackframe *parent_frame, t_vm_context *context, t_bytecode *bytecode) {
@@ -339,7 +338,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
 
     frame->created_userland_objects = dll_init();
 
-    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
+//    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 

@@ -193,10 +193,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // internal code is just a pointer to the code
-        callable_obj->code.native_func = (void *)e->data;
+        callable_obj->code.internal.native_func = (void *)e->data;
     } else {
         // external code is a bytecode structure
-        callable_obj->code.bytecode = (t_bytecode *)e->data;
+        callable_obj->code.external.codeframe = (t_vm_codeframe *)e->data;
     }
     e = DLL_NEXT(e);
 
@@ -269,7 +269,7 @@ t_object_funcs callable_funcs = {
 t_callable_object Object_Callable_struct = {
     OBJECT_HEAD_INIT("callable", objectTypeCallable, OBJECT_TYPE_CLASS, &callable_funcs),
     0,
-    { NULL },
+    { { NULL } },
     NULL,
     NULL
 };

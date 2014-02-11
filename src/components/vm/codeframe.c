@@ -36,15 +36,12 @@ t_hash_table *imported_codeframes;    // Hash table with all code frames
 /**
  *
  */
-t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
+static t_vm_codeframe *_vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
     t_vm_codeframe *codeframe = smm_malloc(sizeof(t_vm_codeframe));
 
     // Add context and bytecode to codeframe
     codeframe->bytecode = bytecode;
     codeframe->context = context;
-
-    ht_add_str(imported_codeframes, context->class.full, codeframe);
-
 
     // Create constants that are located in the bytecode and store inside the codeframe
     codeframe->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
@@ -53,10 +50,13 @@ t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
         t_bytecode_constant *c = bytecode->constants[i];
         switch (c->type) {
             case BYTECODE_CONST_CODE :
+            {
                 // We create a reference to the source filename of the original bytecode name.
-                bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
-                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, bytecode->constants[i]->data.code, /* arguments */ NULL);
+                //bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
+                t_vm_codeframe *child_codeframe = vm_codeframe_addchild(codeframe, bytecode->constants[i]->data.code);
+                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeframe, /* arguments */ NULL);
                 break;
+            }
             case BYTECODE_CONST_STRING :
                 obj = object_alloc(Object_String, 2, strlen(bytecode->constants[i]->data.s), bytecode->constants[i]->data.s);
                 break;
@@ -74,6 +74,28 @@ t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
 
     return codeframe;
 }
+
+
+/**
+ * Add a codeframe that is actually a child of another codeframe
+ */
+t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent_codeframe, t_bytecode *bytecode) {
+    t_vm_codeframe *codeframe = _vm_codeframe_new(bytecode, parent_codeframe->context);
+
+    return codeframe;
+}
+
+/**
+ * Add a new codeframe
+ */
+t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
+    t_vm_codeframe *codeframe = _vm_codeframe_new(bytecode, context);
+
+    ht_add_str(imported_codeframes, context->class.full, codeframe);
+
+    return codeframe;
+}
+
 
 
 /**

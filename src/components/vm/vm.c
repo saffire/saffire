@@ -283,7 +283,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     // Call native code
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // Internal function call
-        return callable_obj->code.native_func(self_obj, arg_list);
+        return callable_obj->code.internal.native_func(self_obj, arg_list);
     }
 
 
@@ -306,40 +306,30 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
 
     // Create a new execution frame
-    t_vm_stackframe *cur_frame = thread_get_current_frame();
+    t_vm_stackframe *parent_frame = thread_get_current_frame();
+    t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->code.external.codeframe);
 
-    // @TODO
-    // @TODO
-    // @TODO
-    // @TODO
-    // @TODO
-    // @TODO
-    // @TODO
-    // @TODO
-
-    t_vm_stackframe *new_frame = NULL;
-    //t_vm_stackframe *new_frame = vm_stackframe_new(scope_frame, cur_frame, cur_frame->codeframe->context, callable_obj->code.bytecode);
-
-    // Copy stuff from frame over to new_frame
+//    // Since it's an external codeframe, also set the IP to point to the start of the actual function
+//    child_frame->ip = callable_obj->code.external.ip;
 
     // Create self inside the new frame
-    t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen("self"), "self"), self_obj);
+    t_object *old_self_obj = ht_replace_obj(child_frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen("self"), "self"), self_obj);
     if (old_self_obj) object_release(old_self_obj);
     object_inc_ref(self_obj);
 
     // Parse calling arguments to see if they match our signatures
-    if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
-        vm_stackframe_destroy(new_frame);
+    if (! _parse_calling_arguments(child_frame, callable_obj, arg_list)) {
+        vm_stackframe_destroy(child_frame);
 
         // Exception thrown in the argument parsing
         return NULL;
     }
 
     // Execute frame, return the last object
-    ret = _vm_execute(new_frame);
+    ret = _vm_execute(child_frame);
 
     // Destroy frame
-    vm_stackframe_destroy(new_frame);
+    vm_stackframe_destroy(child_frame);
 
     if (ret == NULL) {
         // exception occurred
@@ -738,7 +728,7 @@ dispatch:
                 {
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     int scope = oparg2;
-                    DEBUG_PRINT_CHAR("Loading attribute: '%s' from '%s'\n", OBJ2STR(name), scope == 1 ? "self" : "parent");
+                    DEBUG_PRINT_CHAR("Loading attribute: '%s' from '%s'\n", string_to_char(OBJ2STR(name)), scope == 1 ? "self" : "parent");
 
                     t_object *self_obj = vm_frame_stack_pop(frame);
                     char *s = string_to_char(OBJ2STR(name));
@@ -747,7 +737,7 @@ dispatch:
 
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", OBJ2STR(name), self_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", string_to_char(OBJ2STR(name)), self_obj->name);
                         goto block_end;
                         break;
                     }

@@ -129,6 +129,7 @@
 
     // fetch (string) value from a string object
     #define OBJ2STR(_obj_) (((t_string_object *)_obj_)->value)
+    #define OBJ2STR0(_obj_) (((t_string_object *)_obj_)->value->val)
 
     // fetch (long) value from a numerical object
     #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
