@@ -30,7 +30,7 @@
 #include "general/smm.h"
 #include "debug.h"
 
-t_hash_table *imported_codeframes;    // Hash table with all code frames
+t_hash_table *codeframes;    // Hash table with all code frames
 
 
 /**
@@ -91,7 +91,7 @@ t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent_codeframe, t_byteco
 t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
     t_vm_codeframe *codeframe = _vm_codeframe_new(bytecode, context);
 
-    ht_add_str(imported_codeframes, context->class.full, codeframe);
+    ht_add_str(codeframes, context->class.full, codeframe);
 
     return codeframe;
 }
@@ -102,7 +102,7 @@ t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
  *
  */
 t_vm_codeframe *vm_codeframe_find(char *class_path) {
-    t_vm_codeframe *codeframe = ht_find_str(imported_codeframes, class_path);
+    t_vm_codeframe *codeframe = ht_find_str(codeframes, class_path);
     DEBUG_PRINT_CHAR(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, codeframe ? "Found" : "Nothing found");
 
     return codeframe;
@@ -138,7 +138,7 @@ void vm_codeframe_destroy(t_vm_codeframe *codeframe) {
  *
  */
 void vm_codeframe_init(void) {
-    imported_codeframes = ht_create();
+    codeframes = ht_create();
 }
 
 /**
@@ -147,7 +147,7 @@ void vm_codeframe_init(void) {
 void vm_codeframe_fini(void) {
     // Release all code frames
     t_hash_iter iter;
-    ht_iter_init(&iter, imported_codeframes);
+    ht_iter_init(&iter, codeframes);
     while (ht_iter_valid(&iter)) {
         t_vm_codeframe *codeframe = ht_iter_value(&iter);
 
@@ -158,5 +158,5 @@ void vm_codeframe_fini(void) {
         ht_iter_next(&iter);
     }
 
-    ht_destroy(imported_codeframes);
+    ht_destroy(codeframes);
 }

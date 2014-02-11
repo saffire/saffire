@@ -45,7 +45,8 @@
 #include "gc/gc.h"
 #include "debugger/dbgp/dbgp.h"
 
-t_hash_table *frame_import_cache;                // Cache for all imported frames
+t_hash_table *frame_import_cache;          // Cache for all imported stackframes
+
 
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
@@ -464,7 +465,7 @@ void vm_init(SaffireParser *sp, int runmode) {
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
 
-    frame_import_cache = ht_create();
+    vm_import_cache_init();
 
     // Initialize debugging if neededht
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
@@ -488,6 +489,9 @@ void vm_fini(void) {
     if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
         dbgp_fini(debug_info);
     }
+
+    // Free all imported codeframes
+    vm_import_cache_fini();
 
     vm_codeframe_fini();
 

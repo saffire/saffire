@@ -135,6 +135,12 @@ char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *class_name)
     }
 
     t_vm_context *ctx = codeframe->context;
-    smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->class.path, class_name);
+    if (! strcmp(ctx->class.full, "::")) {
+        // :: main context, don't do double ::
+        smm_asprintf_char(&absolute_class_name, "::%s", class_name);
+    } else {
+        smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->class.path, class_name);
+    }
     return absolute_class_name;
+
 }

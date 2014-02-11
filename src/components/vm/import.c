@@ -52,6 +52,25 @@ const char *module_search_paths[] = {
 };
 
 
+void vm_import_cache_init(void) {
+    frame_import_cache = ht_create();
+}
+
+void vm_import_cache_fini(void) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, frame_import_cache);
+    while (ht_iter_valid(&iter)) {
+        t_vm_stackframe *stackframe = ht_iter_value(&iter);
+
+        vm_stackframe_destroy(stackframe);
+
+        ht_iter_next(&iter);
+    }
+
+    ht_destroy(frame_import_cache);
+}
+
+
 /**
  * Executes a source-file inside a frame, and extracts the needed class from the frame
  *
@@ -150,37 +169,7 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
 
 
 
-
-
-
-/**
- * Import a classname from the namespace into the given frame.
- *
- */
-t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_name) {
-    // Create absolute class path for this file
-    char *absolute_class_path = vm_context_absolute_namespace(codeframe, class_path);
-
-    /*
-     * Now we have our arguments:
-     *
-     * codeframe->context:   ::somewhere::inside::a::namespace
-     * class_path:           mymodule
-     * class_name:           myclass
-     *
-     * So we need to find the file that contains ::somewhere::inside::a::namespace::mymodule::myclass
-     * For this, we check our module import path, starting from the top of the module_search_paths
-     *
-     * Iterate all search paths
-     *   When a valid file is found
-     *     import as codeframe
-     *     if exception, return
-     *     if no exceptions, check if class "class_name" exists inside codeframe
-     *     if "class_name" does not exist, throw exception "import not found" or something
-     *     if found, break from loop, and return codeframe
-     *   try next path
-     * If nothing is found, throw import exception
-     */
+static t_vm_stackframe *_vm_import(t_vm_codeframe *codeframe, char *absolute_class_path) {
 
     // Iterate all module search paths
     char **ptr = (char **)&module_search_paths;
@@ -204,18 +193,8 @@ t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_nam
                 return NULL;
             }
 
-            // Find actual object inside the
-            t_object *obj = vm_frame_local_identifier_exists(import_stackframe, class_name);
-            if (! obj) {
-                thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s'", class_name);
-                smm_free(absolute_import_path);
-                smm_free(absolute_class_path);
-                return NULL;
-            }
-
             smm_free(absolute_import_path);
-            smm_free(absolute_class_path);
-            return obj;
+            return import_stackframe;
         }
 
         if (absolute_import_path) {
@@ -226,10 +205,49 @@ t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_nam
         ptr++;
     }
 
-
-    // Nothing found that actually matches a file inside the searchpaths
-    thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find any file matching '%s' in searchpath", class_path);
-
-    smm_free(absolute_class_path);
     return NULL;
+}
+
+
+
+/**
+ * Import a classname from the namespace into the given frame.
+ *
+ */
+t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_name) {
+    // Create absolute class path for this file
+    char *absolute_class_path = vm_context_absolute_namespace(codeframe, class_path);
+
+    // Check cache for this context
+    t_vm_stackframe *imported_stackframe = ht_find_str(frame_import_cache, absolute_class_path);
+    if (! imported_stackframe) {
+        // Not found, import it
+        imported_stackframe = _vm_import(codeframe, absolute_class_path);
+
+        // Only add to cache when something is there
+        if (imported_stackframe) {
+            ht_add_str(frame_import_cache, absolute_class_path, imported_stackframe);
+        } else {
+            // Nothing found that actually matches a file inside the searchpaths
+            thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find any file matching '%s' in searchpath", class_path);
+        }
+    } else {
+        DEBUG_PRINT_CHAR("Using cached import class: '%s'\n", absolute_class_path);
+    }
+
+    // Exception is thrown, or nothing found, don't continue
+    if (thread_exception_thrown()) {
+        return NULL;
+    }
+
+    // Find actual object inside the
+    t_object *obj = vm_frame_local_identifier_exists(imported_stackframe, class_name);
+    if (! obj) {
+        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s' inside imported file ", class_name, absolute_class_path);
+        return NULL;
+    }
+
+    DEBUG_PRINT_CHAR("Import: found class %s::%s\n", absolute_class_path, class_name);
+
+    return obj;
 }
