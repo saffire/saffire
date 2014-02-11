@@ -328,6 +328,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
     // Execute frame, return the last object
     ret = _vm_execute(child_frame);
+    object_inc_ref(ret);
 
     // Destroy frame
     vm_stackframe_destroy(child_frame);
@@ -495,14 +496,14 @@ void vm_fini(void) {
 
     vm_codeframe_fini();
 
-    thread_free(current_thread);
-
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 //    DEBUG_PRINT_CHAR("\n\n\nDecreasing builtins\n");
 //#ifdef __DEBUG
 //    ht_debug(builtin_identifiers->ht);
 //#endif
     object_release((t_object *)builtin_identifiers);
+
+    thread_free(current_thread);
 
     module_fini();
     object_fini();
@@ -1865,10 +1866,12 @@ int vm_execute(t_vm_stackframe *frame) {
 
     DEBUG_PRINT_CHAR("\n============================ VM execution done ============================\n");
 #ifdef __DEBUG
-    DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
-    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+    #if __DEBUG_STACKFRAME_DESTROY
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
+        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+    #endif
 #endif
 
 

@@ -173,11 +173,15 @@ long object_dec_ref(t_object *obj) {
 
     if (obj->ref_count != 0) return obj->ref_count;
 
+#if __DEBUG_FREE_OBJECT
     DEBUG_PRINT_CHAR("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+#endif
 
     // Don't free static objects
     if (! OBJECT_IS_ALLOCATED(obj)) {
+#if __DEBUG_FREE_OBJECT
         DEBUG_PRINT_CHAR("*** Not freeing static object %s\n", object_debug(obj));
+#endif
         return 0;
     }
 

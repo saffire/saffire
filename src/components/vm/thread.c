@@ -40,7 +40,7 @@ t_thread *thread_new(void) {
     t_thread *thread = smm_malloc(sizeof(t_thread));
     bzero(thread, sizeof(t_thread));
 
-    thread->locale = config_get_string("intl.locale", "nl_NL");
+    thread->locale = string_strdup0(config_get_string("intl.locale", "nl_NL"));
     return thread;
 }
 

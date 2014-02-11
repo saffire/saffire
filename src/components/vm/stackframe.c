@@ -370,14 +370,16 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
  *
  */
 void vm_stackframe_destroy(t_vm_stackframe *frame) {
-    DEBUG_PRINT_CHAR("FRAME DESTROY: %s :: %s\n",
-        frame->codeframe->context ? frame->codeframe->context->class.path : "<empty>",
-        frame->codeframe->context ? frame->codeframe->context->class.name : "<empty>");
 
 #ifdef __DEBUG
-    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+    #if __DEBUG_STACKFRAME_DESTROY
+        DEBUG_PRINT_CHAR("STACKFRAME DESTROY: %s\n",
+            frame->codeframe->context ? frame->codeframe->context->class.full : "<root>");
+
+        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+        //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+    #endif
 #endif
 
 
@@ -395,7 +397,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
-        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s [%08X]\n"), object_debug(val), (unsigned int)val);
+        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s => %s [%08X]\n"), object_debug(key), object_debug(val), (unsigned int)val);
 
         // Remove the key from the hash. Do this BEFORE releasing key, otherwise we end up with bad data if the
         // refcount of key becomes 0, and it released the key's memory while we are still referencing it in this

@@ -99,7 +99,6 @@ static int do_exec(void) {
     vm_stackframe_destroy(initial_frame);
     vm_fini();
     smm_free(bytecode_filepath);
-    bytecode_free(bc);
 
     DEBUG_PRINT_CHAR("VM ended with exitcode: %d\n", exitcode);
 

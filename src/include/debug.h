@@ -45,7 +45,15 @@
     #endif
     #ifndef __DEBUG_VM_OPCODES
         // Display VM opcodes
-        #define __DEBUG_VM_OPCODES   0
+        #define __DEBUG_VM_OPCODES   1
+    #endif
+    #ifndef __DEBUG_FREE_OBJECT
+        // Display when free'ing objects
+        #define __DEBUG_FREE_OBJECT  0
+    #endif
+    #ifndef __DEBUG_STACKFRAME_DESTROY
+        // Display variables when destroying stackframe
+        #define __DEBUG_STACKFRAME_DESTROY  0
     #endif
 
 
