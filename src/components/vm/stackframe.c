@@ -86,7 +86,9 @@ t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
  * Pops an object from the stack. Errors when the stack is empty
  */
 t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
+    #if __DEBUG_STACK
     DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
+    #endif
 
     if (frame->sp >= frame->codeframe->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
@@ -105,7 +107,9 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
  * Pushes an object onto the stack. Errors when the stack is full
  */
 void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
+    #if __DEBUG_STACK
     DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET), frame->sp-1, object_debug(obj), (unsigned long)obj);
+    #endif
 
 
     if (frame->sp < 0) {
@@ -324,7 +328,7 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
 * Creates and initializes a new frame
 */
 t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe *codeframe) {
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeframe->context->class.path, parent_frame ? parent_frame->codeframe->context->class.path : "none");
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeframe->context->class.full, parent_frame ? parent_frame->codeframe->context->class.full : "<root>");
     t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
     bzero(frame, sizeof(t_vm_stackframe));
 

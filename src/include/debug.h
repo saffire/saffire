@@ -38,5 +38,16 @@
         #define DEBUG_PRINT_STRING(format, args...) ((void)0)
     #endif
 
+
+    #ifndef __DEBUG_STACK
+        // Display stack pushes and pops
+        #define __DEBUG_STACK        0
+    #endif
+    #ifndef __DEBUG_VM_OPCODES
+        // Display VM opcodes
+        #define __DEBUG_VM_OPCODES   0
+    #endif
+
+
 #endif
 

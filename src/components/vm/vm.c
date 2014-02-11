@@ -593,9 +593,11 @@ dispatch:
 
 
 #ifdef __DEBUG
+    #if __DEBUG_VM_OPCODES
         int ln = getlineno(frame);
         unsigned long cip = frame->ip;
         //vm_frame_stack_debug(frame);
+    #endif
 #endif
 
 
@@ -616,6 +618,7 @@ dispatch:
         oparg3 = ((opcode & 0xE0) == 0xE0) ? vm_frame_get_operand(frame) : 0;
 
 #ifdef __DEBUG
+    #if __DEBUG_VM_OPCODES
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X, 0x%02X)     "
@@ -660,6 +663,7 @@ dispatch:
                         ln
                     );
         }
+    #endif
 #endif
 
 
@@ -1835,7 +1839,8 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
  */
 t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result) {
     // Execute the frame
-    DEBUG_PRINT_CHAR("\n============================ VM import execution start ============================\n");
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeframe->context->class.full);
+
     t_vm_stackframe *import_frame = vm_stackframe_new(thread_get_current_frame(), codeframe);
 
     if (*result) {
@@ -1844,7 +1849,7 @@ t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result)
         _vm_execute(import_frame);
     }
 
-    DEBUG_PRINT_CHAR("\n============================ VM import execution fini ============================\n");
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeframe->context->class.full);
 
     return import_frame;
 }
@@ -1858,7 +1863,7 @@ int vm_execute(t_vm_stackframe *frame) {
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT_CHAR("\n\n\n\n============================ VM execution done ============================\n");
+    DEBUG_PRINT_CHAR("\n============================ VM execution done ============================\n");
 #ifdef __DEBUG
     DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
