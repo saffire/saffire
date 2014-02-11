@@ -43,7 +43,12 @@
 int smm_vasprintf_string(t_string **ret, t_string *format, va_list args) {
     char *tmp;
 
-    int len = smm_vasprintf_char(&tmp, format->val, args);
+    va_list copy;
+    va_copy(copy, args);
+
+    int len = smm_vasprintf_char(&tmp, format->val, copy);
+
+    va_end(copy);
 
     *ret = string_new();
     (*ret)->val = tmp;
