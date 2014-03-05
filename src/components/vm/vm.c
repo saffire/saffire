@@ -474,17 +474,6 @@ void vm_init(SaffireParser *sp, int runmode) {
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
         debug_info = dbgp_init();
     }
-
-    // Implicit load the saffire module, without any debugging
-    vm_runmode &= ~VM_RUNMODE_DEBUG;
-
-    t_object *saffire_module_obj = vm_import(NULL, "::saffire", "saffire");
-    if (!saffire_module_obj) {
-        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
-    }
-    vm_populate_builtins("saffire", saffire_module_obj);
-
-    vm_runmode = runmode;
 }
 
 void vm_fini(void) {
@@ -564,13 +553,15 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     while (tb_frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
-                ANSI_BRIGHTGREEN "%s%s::%s"
-                ANSI_BRIGHTGREEN "()"
+                ANSI_BRIGHTGREEN "[%s] %s::%s"
+                ANSI_BRIGHTGREEN "(<args>)"
                 ANSI_RESET "\n",
                 tb_depth,
                 tb_frame->codeframe->context->file.full ? tb_frame->codeframe->context->file.full : "<none>",
                 getlineno(tb_frame),
-                tb_frame->codeframe->context->class.full, tb_frame->trace_class, tb_frame->trace_method
+                tb_frame->codeframe->context->class.full ? tb_frame->codeframe->context->class.full : "",
+                tb_frame->trace_class ? tb_frame->trace_class : "",
+                tb_frame->trace_method ? tb_frame->trace_method : ""
             );
         tb_frame = tb_frame->parent;
         tb_depth++;
@@ -1843,7 +1834,11 @@ t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result)
     // Execute the frame
     DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeframe->context->class.full);
 
-    t_vm_stackframe *import_frame = vm_stackframe_new(thread_get_current_frame(), codeframe);
+    t_vm_stackframe *current_frame = thread_get_current_frame();
+    t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeframe);
+    import_frame->trace_class = string_strdup0(current_frame->trace_class);
+    import_frame->trace_method = string_strdup0("#import");
+
 
     if (*result) {
         *result = _vm_execute(import_frame);
@@ -1856,16 +1851,41 @@ t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result)
     return import_frame;
 }
 
+
+/**
+ *
+ */
+void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
+    // Implicit load the saffire module, without any debugging
+    int runmode = vm_runmode;
+    vm_runmode &= ~VM_RUNMODE_DEBUG;
+
+    // Load mandatory saffire object
+    t_object *saffire_module_obj = vm_import(frame, "::saffire", "saffire");
+    if (!saffire_module_obj) {
+        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
+    }
+    vm_populate_builtins("saffire", saffire_module_obj);
+
+    // Back to normal runmode again
+    vm_runmode = runmode;
+}
+
 /**
  *
  */
 int vm_execute(t_vm_stackframe *frame) {
     int ret_val = 0;
 
+    thread_set_current_frame(frame);
+
+    _vm_load_implicit_buildins(frame);
+
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT_CHAR("\n============================ VM execution done ============================\n");
+
+    DEBUG_PRINT_CHAR("\n\n\n============================ TOTAL VM execution done ============================\n\n\n");
 #ifdef __DEBUG
     #if __DEBUG_STACKFRAME_DESTROY
         DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);

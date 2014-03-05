@@ -314,6 +314,21 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
     // Create new local identifier hash
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
 
+    // Copy all the parent identifiers into the new frame (REALLY????)
+    if (frame->parent && frame->parent->local_identifiers && frame->parent->local_identifiers->ht) {
+        t_hash_iter iter;
+        ht_iter_init(&iter, frame->parent->local_identifiers->ht);
+        while (ht_iter_valid(&iter)) {
+            char *key = ht_iter_key_str(&iter);
+            t_object *obj = ht_iter_value(&iter);
+
+            object_inc_ref(obj);
+            ht_add_str(frame->local_identifiers->ht, key, obj);
+
+            ht_iter_next(&iter);
+        }
+    }
+
     // Set the variable hashes
     if (frame->parent == NULL) {
         // global identifiers are the same as the local identifiers for the initial frame
@@ -323,9 +338,6 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
         frame->global_identifiers = frame->parent->global_identifiers;
     }
     object_inc_ref((t_object *)frame->global_identifiers);
-
-
-//    vm_attach_bytecode(frame, class_path, file_path, bytecode);
 
     return frame;
 }

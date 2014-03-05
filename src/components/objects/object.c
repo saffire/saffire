@@ -77,7 +77,7 @@ int object_instance_of(t_object *obj, const char *instance) {
 
     t_object *cur_obj = obj;
     while (cur_obj != NULL) {
-        DEBUG_PRINT_CHAR("  * Checking: %s against %s\n", cur_obj->name, instance);
+        DEBUG_PRINT_CHAR("  *   Checking: %s against %s\n", cur_obj->name, instance);
         // Check if name of object matches instance
         if (strcmp(cur_obj->name, instance) == 0) {
             return 1;
