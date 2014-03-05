@@ -111,7 +111,7 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
     // Cache the key hashval when we are dealing with objects.
     char *key_hash_val = NULL;
     if (key->type == HASH_KEY_OBJ) {
-        key_hash_val = object_get_hash((t_object *)(htb->key->val.o));
+        key_hash_val = object_get_hash((t_object *)(key->val.o));
     }
 
 
@@ -127,11 +127,11 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
                 if (strcmp(object_get_hash((t_object *)(htb->key->val.o)), key_hash_val) == 0) found = 1;
                 break;
         }
-        if (found) break;
+        if (found) return htb;
         htb = htb->next_in_bucket;
     }
 
-    return htb;
+    return NULL;
 }
 
 
