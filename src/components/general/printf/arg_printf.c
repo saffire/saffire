@@ -83,7 +83,7 @@ int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output) {
     state = flags = count = given_wd = 0;
 
 /* begin scanning format specifier list */
-    for (; fmt_char <= fmt->val + fmt->len; fmt_char++)
+    for (; fmt_char <= fmt->val + fmt->len - 1; fmt_char++)
     {
         switch(state)
         {
@@ -96,6 +96,7 @@ int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output) {
             }
 /* found %, get next char and advance state to check if next char is a flag */
             state++;
+            fmt_char++;
             /* FALL THROUGH */
 /* STATE 1: AWAITING FLAGS (%-0) */
         case 1:
