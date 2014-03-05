@@ -184,7 +184,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen(name), name), obj);
+        ht_add_str(frame->local_identifiers->ht, name, obj);
         object_inc_ref(obj);
 
         need_count--;
@@ -269,7 +269,7 @@ static t_userland_object *_create_userland_object(t_vm_stackframe *frame, char *
 /**
  * Call a callable with arguments
  */
-static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackframe *scope_frame, t_callable_object *callable_obj, t_dll *arg_list) {
+static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackframe *scope_frame, char *name, t_callable_object *callable_obj, t_dll *arg_list) {
     t_object *ret;
 
     // Check if the object is actually a callable
@@ -279,10 +279,10 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     }
 
 
-    // @TODO: should internal code not have a frame as well?
-
     // Call native code
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // @TODO: should internal code not have a frame as well?
+
         // Internal function call
         return callable_obj->code.internal.native_func(self_obj, arg_list);
     }
@@ -305,16 +305,18 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
         if (e) strcat(args, ", ");
     }
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
-
+    
     // Create a new execution frame
     t_vm_stackframe *parent_frame = thread_get_current_frame();
     t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->code.external.codeframe);
+    child_frame->trace_class = self_obj ? string_strdup0(self_obj->name) : string_strdup0("<anonymous>");
+    child_frame->trace_method = string_strdup0(name);
 
 //    // Since it's an external codeframe, also set the IP to point to the start of the actual function
 //    child_frame->ip = callable_obj->code.external.ip;
 
     // Create self inside the new frame
-    t_object *old_self_obj = ht_replace_obj(child_frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen("self"), "self"), self_obj);
+    t_object *old_self_obj = ht_replace_str(child_frame->local_identifiers->ht, "self", self_obj);
     if (old_self_obj) object_release(old_self_obj);
     object_inc_ref(self_obj);
 
@@ -408,7 +410,7 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
  * Check an attribute and if ok, chck
  */
 static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *attrib_obj, t_dll *arg_list) {
-    return _object_call_callable_with_args(self, ((t_userland_object *)attrib_obj->bound_class)->frame, (t_callable_object *)attrib_obj->attribute, arg_list);
+    return _object_call_callable_with_args(self, ((t_userland_object *)attrib_obj->bound_class)->frame, attrib_obj->bound_name, (t_callable_object *)attrib_obj->attribute, arg_list);
 }
 
 
@@ -555,24 +557,23 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     t_object *dst;
     char *s;
 
-#ifdef DEBUG
+#ifdef __DEBUG
     DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
     t_vm_stackframe *tb_frame = frame;
-    int tb_history = 0;
+    int tb_depth = 0;
     while (tb_frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
-                ANSI_BRIGHTGREEN "%s.%s "
-                ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
+                ANSI_BRIGHTGREEN "%s%s::%s"
+                ANSI_BRIGHTGREEN "()"
                 ANSI_RESET "\n",
-                tb_history,
-                tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
-                123,
-                "class",
-                "method"
-                );
+                tb_depth,
+                tb_frame->codeframe->context->file.full ? tb_frame->codeframe->context->file.full : "<none>",
+                getlineno(tb_frame),
+                tb_frame->codeframe->context->class.full, tb_frame->trace_class, tb_frame->trace_method
+            );
         tb_frame = tb_frame->parent;
-        tb_history++;
+        tb_depth++;
     }
     DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
 #endif
@@ -1927,7 +1928,7 @@ int vm_execute(t_vm_stackframe *frame) {
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
     obj->ref_count = 1;
-    ht_add_obj(builtin_identifiers_ht, object_alloc(Object_String, 2, strlen(name), name), (void *)obj);
+    ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }
 
 /**

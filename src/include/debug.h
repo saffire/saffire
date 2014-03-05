@@ -45,7 +45,7 @@
     #endif
     #ifndef __DEBUG_VM_OPCODES
         // Display VM opcodes
-        #define __DEBUG_VM_OPCODES   1
+        #define __DEBUG_VM_OPCODES   0
     #endif
     #ifndef __DEBUG_FREE_OBJECT
         // Display when free'ing objects

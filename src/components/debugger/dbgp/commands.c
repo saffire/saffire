@@ -387,7 +387,7 @@ DBGP_CMD_DEF(context_get) {
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key_str(&iter);     // @TODO: We are dealing with objects?
+        char *key = ht_iter_key_str(&iter);
         t_object *obj = ht_iter_value(&iter);
 
         if (OBJECT_TYPE_IS_INSTANCE(obj)) {

@@ -576,16 +576,24 @@ static t_object *obj_new(t_object *self) {
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_string_object *str_obj = (t_string_object *)obj;
 
-    // Get length of string
-    t_dll_element *e = DLL_HEAD(arg_list);
-    int value_len = (int)e->data;
+    if (arg_list->size == 1) {
+        // 1 element: it's already a string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        str_obj->value = (t_string *)e->data;
+    } else {
+        // 2 (or more) elements: it's a size + char0 string
+        
+        // Get length of string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        int value_len = (int)e->data;
 
-    // Get actual binary safe and non-encoded string
-    e = DLL_NEXT(e);
-    char *value = (char *)e->data;
+        // Get actual binary safe and non-encoded string
+        e = DLL_NEXT(e);
+        char *value = (char *)e->data;
 
-    // Convert our stream to UTF8
-    str_obj->value = char_to_string(value, value_len);
+        // Convert our stream to UTF8
+        str_obj->value = char_to_string(value, value_len);
+    }
 
     t_thread *thread = thread_get_current();
     str_obj->locale = thread->locale ? string_strdup0(thread->locale) : NULL;

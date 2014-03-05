@@ -175,17 +175,14 @@ t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
 void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
-
     if (obj == NULL) {
-        t_object *old = ht_remove_obj(frame->global_identifiers->ht, key);
-        object_release(key);
+        t_object *old = ht_remove_str(frame->global_identifiers->ht, id);
 
         if (old) object_release(old);
         return;
     }
 
-    ht_add_obj(frame->global_identifiers->ht, key, obj);
+    ht_add_str(frame->global_identifiers->ht, id, obj);
     object_inc_ref(obj);
 }
 
@@ -194,11 +191,8 @@ void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *
 * Return object from the global identifier table
 */
 t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
-    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
+    t_object *obj = (t_object *)ht_find_str(frame->global_identifiers->ht, id);
 
-    t_object *obj = (t_object *)ht_find_obj(frame->global_identifiers->ht, key);
-
-    object_release(key);
     if (obj == NULL) RETURN_NULL;
     return obj;
 }
@@ -208,13 +202,13 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = (t_object *)ht_replace_obj(frame->local_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
+    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->ht, id, obj);
     object_release(old_obj);
     object_inc_ref(obj);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_obj(frame->builtin_identifiers->ht, object_alloc(Object_String, 2, strlen(id), id), obj);
+    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->ht, id, obj);
 
     object_release(old_obj);
     object_inc_ref(obj);
@@ -229,9 +223,9 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
-        t_object *key = ht_iter_key_obj(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT_STRING(char0_to_string("%-10s KEY: [%08X] '%-40s'{%d} "), prefix, (unsigned int)key, object_debug(key), key->ref_count);
+        DEBUG_PRINT_STRING(char0_to_string("%-10s KEY: '%s' "), prefix, key);
         DEBUG_PRINT_STRING(char0_to_string("=> [%08X] %s{%d}\n"), (unsigned int)val, object_debug(val), val->ref_count);
 
         ht_iter_next(&iter);
@@ -247,22 +241,13 @@ t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id) {
 
 
 t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
-    t_object *key = object_alloc(Object_String, 2, strlen(id), id);
-
-    t_object *obj = ht_find_obj(frame->local_identifiers->ht, key);
-    if (obj != NULL) {
-        object_release(key);
-        return obj;
-    }
+    t_object *obj = ht_find_str(frame->local_identifiers->ht, id);
+    if (obj) return obj;
 
     // Last, check builtins
-    obj = ht_find_obj(frame->builtin_identifiers->ht, key);
-    if (obj != NULL) {
-        object_release(key);
-        return obj;
-    }
+    obj = ht_find_str(frame->builtin_identifiers->ht, id);
+    if (obj) return obj;
 
-    object_release(key);
     return NULL;
 }
 
@@ -301,29 +286,6 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
 }
 
 
-//t_vm_stackframe *vm_frame_new_scoped(t_vm_stackframe *scope_frame, t_vm_stackframe *parent_frame, t_vm_context *context, t_bytecode *bytecode) {
-//    t_vm_stackframe *frame = vm_stackframe_new(parent_frame, context->class.path, context->file.path, bytecode);
-//
-//    // Populate local identifiers
-//
-//    t_hash_iter iter;
-//    ht_iter_init(&iter, scope_frame->local_identifiers->ht);
-//    while (ht_iter_valid(&iter)) {
-//        t_object *key = ht_iter_key_obj(&iter);
-//        t_object *val = ht_iter_value(&iter);
-//
-//        ht_add_obj(frame->local_identifiers->ht, key, val);
-//
-//        object_inc_ref(key);
-//        object_inc_ref(val);
-//
-//        ht_iter_next(&iter);
-//    }
-//
-//    return frame;
-//}
-
-
 /**
 * Creates and initializes a new frame
 */
@@ -334,6 +296,9 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
 
     frame->parent = parent_frame;
     frame->codeframe = codeframe;
+
+    frame->trace_class = NULL;
+    frame->trace_method = NULL;
 
     frame->sp = codeframe->bytecode->stack_size;
     frame->stack = smm_malloc(codeframe->bytecode->stack_size * sizeof(t_object *));
@@ -389,7 +354,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
     while (ht_iter_valid(&iter)) {
-        t_object *key = ht_iter_key_obj(&iter);
+        char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
 
         // Because we MIGHT change the hash-table, we need to fetch the next
@@ -397,16 +362,12 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
-        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s => %s [%08X]\n"), object_debug(key), object_debug(val), (unsigned int)val);
+        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s => %s [%08X]\n"), key, object_debug(val), (unsigned int)val);
 
-        // Remove the key from the hash. Do this BEFORE releasing key, otherwise we end up with bad data if the
-        // refcount of key becomes 0, and it released the key's memory while we are still referencing it in this
-        // ht_remove_obj() call..
-        ht_remove_obj(frame->local_identifiers->ht, key);
-
-        // Release key and value, as their values are no longer needed.
+        // Release value, as it's no longer needed.
         object_release(val);
-        object_release(key);
+
+        ht_remove_str(frame->local_identifiers->ht, key);
     }
 
     // Free created user objects
