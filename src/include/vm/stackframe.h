@@ -57,6 +57,7 @@
     t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id);
 
     void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
+    void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
     void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
 
     void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj);

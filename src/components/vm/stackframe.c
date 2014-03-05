@@ -172,6 +172,26 @@ t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
 
 
 /**
+ * Store object into the frame identifier table. When obj == NULL, it will remove the actual reference (plus object)
+ */
+void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
+    if (obj == NULL) {
+        t_object *old = ht_remove_str(frame->frame_identifiers->ht, id);
+
+        if (old) object_release(old);
+        return;
+    }
+
+    if (! ht_exists_str(frame->frame_identifiers->ht, id)) {
+        ht_add_str(frame->frame_identifiers->ht, id, obj);
+        object_inc_ref(obj);
+    } else {
+        // @TODO: Overwrite, or throw error?
+    }
+}
+
+
+/**
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
  */
 void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
@@ -182,8 +202,12 @@ void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *
         return;
     }
 
-    ht_add_str(frame->global_identifiers->ht, id, obj);
-    object_inc_ref(obj);
+    if (! ht_exists_str(frame->global_identifiers->ht, id)) {
+        ht_add_str(frame->global_identifiers->ht, id, obj);
+        object_inc_ref(obj);
+    } else {
+        // @TODO: Overwrite, or throw error?
+    }
 }
 
 
@@ -241,7 +265,14 @@ t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id) {
 
 
 t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
-    t_object *obj = ht_find_str(frame->local_identifiers->ht, id);
+    t_object *
+
+    // Check local identifiers
+    obj = ht_find_str(frame->local_identifiers->ht, id);
+    if (obj) return obj;
+
+    // Check frames
+    obj = ht_find_str(frame->frame_identifiers->ht, id);
     if (obj) return obj;
 
     // Last, check builtins
@@ -311,22 +342,15 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
-    // Create new local identifier hash
+    // Create new empty local identifier hash
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
 
-    // Copy all the parent identifiers into the new frame (REALLY????)
-    if (frame->parent && frame->parent->local_identifiers && frame->parent->local_identifiers->ht) {
-        t_hash_iter iter;
-        ht_iter_init(&iter, frame->parent->local_identifiers->ht);
-        while (ht_iter_valid(&iter)) {
-            char *key = ht_iter_key_str(&iter);
-            t_object *obj = ht_iter_value(&iter);
-
-            object_inc_ref(obj);
-            ht_add_str(frame->local_identifiers->ht, key, obj);
-
-            ht_iter_next(&iter);
-        }
+    // Copy all the parent identifiers into the new frame. This should take care of things like the imports
+    if (frame->parent == NULL) {
+        frame->frame_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
+    } else {
+        frame->frame_identifiers = frame->parent->frame_identifiers;
+        object_inc_ref((t_object *)frame->frame_identifiers);
     }
 
     // Set the variable hashes
@@ -354,6 +378,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
             frame->codeframe->context ? frame->codeframe->context->class.full : "<root>");
 
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
         //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
     #endif
@@ -392,6 +417,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
+    object_release((t_object *)frame->frame_identifiers);
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
 

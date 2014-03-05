@@ -305,7 +305,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
         if (e) strcat(args, ", ");
     }
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
-    
+
     // Create a new execution frame
     t_vm_stackframe *parent_frame = thread_get_current_frame();
     t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->code.external.codeframe);
@@ -545,6 +545,14 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     long reason = REASON_NONE;
     t_object *dst;
     char *s;
+
+
+#ifdef __DEBUG
+    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+    if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
+    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+#endif
+
 
 #ifdef __DEBUG
     DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
@@ -798,6 +806,16 @@ dispatch:
                 goto dispatch;
                 break;
 
+            // store SP+0 as a frame identifier
+            case VM_STORE_FRAME_ID :
+                // Refcount stays equal. So no inc/dec ref needed
+                dst = vm_frame_stack_pop(frame);
+                s = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_frame_identifier(frame, s, dst);
+                goto dispatch;
+                break;
+
+
 //            // Load a global identifier
 //            case VM_LOAD_GLOBAL :
 //                dst = vm_frame_get_global_identifier(frame, oparg1);
@@ -833,18 +851,18 @@ dispatch:
             case VM_STORE_ID :
                 // Refcount stays equal. So no inc/dec ref needed
                 dst = vm_frame_stack_pop(frame);
-                char *name = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_identifier(frame, name, dst);
+                s = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_identifier(frame, s, dst);
                 goto dispatch;
                 break;
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                name = vm_frame_get_name(frame, oparg1);
-                dst = vm_frame_find_identifier(frame, name);
+                s = vm_frame_get_name(frame, oparg1);
+                dst = vm_frame_find_identifier(frame, s);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", name, dst);
+                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", s, dst);
                     goto block_end;
                     break;
                 }
@@ -1861,7 +1879,7 @@ void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
     // Load mandatory saffire object
-    t_object *saffire_module_obj = vm_import(frame, "::saffire", "saffire");
+    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
     if (!saffire_module_obj) {
         fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
     }
@@ -1890,6 +1908,7 @@ int vm_execute(t_vm_stackframe *frame) {
     #if __DEBUG_STACKFRAME_DESTROY
         DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
     #endif

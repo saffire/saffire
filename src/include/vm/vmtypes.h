@@ -93,9 +93,10 @@
         t_object **stack;                           // Local variable stack
         unsigned int sp;                            // Stack pointer
 
-        t_hash_object *local_identifiers;           // Local identifiers
+        t_hash_object *local_identifiers;           // Local identifiers (local variables, method arguments etc)
+        t_hash_object *frame_identifiers;           // Frame identifiers (imports, classes etc)
         t_hash_object *global_identifiers;          // Global identifiers
-        t_hash_object *builtin_identifiers;         // Builtin identifiers
+        t_hash_object *builtin_identifiers;         // Builtin identifiers (String, Numerical, modules etc)
 
         t_dll *created_userland_objects;            // Created objects by the bytecode
 

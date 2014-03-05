@@ -51,7 +51,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output_char("%s", ((t_string_object *)obj)->value->val);
+        output_char("%s", OBJ2STR0(obj));
 
         e = DLL_NEXT(e);
     }

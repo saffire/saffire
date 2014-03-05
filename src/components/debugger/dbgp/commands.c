@@ -379,6 +379,8 @@ DBGP_CMD_DEF(context_get) {
     if (context_id == 0) {
         ht = frame->local_identifiers->ht;
     } else if (context_id == 1) {
+        ht = frame->frame_identifiers->ht;
+    } else if (context_id == 2) {
         ht = frame->global_identifiers->ht;
     } else {
         ht = frame->builtin_identifiers->ht;

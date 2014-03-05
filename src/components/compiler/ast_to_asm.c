@@ -385,7 +385,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->class.name, 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
 
             break;
 
@@ -424,7 +424,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->interface.name, 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
             break;
 
         case typeAstAttribute :
@@ -562,7 +562,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
                     break;
 
                 case T_CALL_ARGUMENT_LIST :
