@@ -102,14 +102,19 @@ t_string *string_strdup(t_string *s) {
 
 
 t_string *string_strcat0(t_string *dst, const char *src) {
-    t_string *str = string_new();
-    return str;
+    t_string *s = char0_to_string(src);
+    return string_strcat(dst, s);
 }
 
 
 t_string *string_strcat(t_string *dst, const t_string *src) {
-    t_string *str = string_new();
-    return str;
+    dst->val = (char *)smm_realloc(dst->val, dst->len + src->len);
+    memcpy(dst->val + dst->len, src->val, src->len);
+    dst->val[dst->len + src->len] = '\0';
+    dst->len += src->len;
+
+    return dst;
+
 }
 
 
