@@ -28,10 +28,10 @@
 #include <limits.h>
 #include "compiler/bytecode.h"
 #include "vm/vm.h"
+#include "vm/stackframe.h"
 #include "vm/context.h"
 #include "vm/vm_opcodes.h"
 #include "vm/block.h"
-#include "vm/frame.h"
 #include "vm/thread.h"
 #include "vm/import.h"
 #include "general/dll.h"
@@ -45,7 +45,8 @@
 #include "gc/gc.h"
 #include "debugger/dbgp/dbgp.h"
 
-t_hash_table *frame_import_cache;                // Cache for all imported frames
+t_hash_table *frame_import_cache;          // Cache for all imported stackframes
+
 
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
@@ -63,7 +64,56 @@ t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
 extern char *objectOprMethods[];
 extern char *objectCmpMethods[];
 
-t_object *_vm_execute(t_vm_frame *frame);
+t_object *_vm_execute(t_vm_stackframe *frame);
+
+/**
+ * This method is called when we need to call an operator method. Even though eventually
+ * it is a normal method call to a _opr_* method, we go a different route so we can easily
+ * do custom optimizations later on.
+ */
+static t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
+    char *opr_method = objectOprMethods[opr];
+
+    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method, OBJECT_SCOPE_SELF);
+    if (! found_obj) {
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT_CHAR(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
+
+    // Call the actual operator and return the result
+    return vm_object_call(obj1, found_obj, 1, obj2);
+}
+
+
+/**
+ * Calls an comparison function. Returns true or false
+ */
+static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
+    char *cmp_method = objectCmpMethods[cmp];
+
+    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method, OBJECT_SCOPE_SELF);
+    if (! found_obj) {
+        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
+        return NULL;
+    }
+
+    DEBUG_PRINT_CHAR(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
+
+    // Call the actual operator and return the result
+    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
+    if (! ret) return ret;
+
+    // Implicit conversion to boolean if needed
+    if (! OBJECT_IS_BOOLEAN(ret)) {
+        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean", OBJECT_SCOPE_SELF);
+        ret = vm_object_call(ret, bool_method, 0);
+    }
+
+    return ret;
+}
+
 
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
@@ -71,7 +121,7 @@ t_object *_vm_execute(t_vm_frame *frame);
  *
  * Returns 1 in success, 0 on failure/exception is thrown
  */
-static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callable, t_dll *arg_list) {
+static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *callable, t_dll *arg_list) {
     t_hash_table *ht = callable->arguments;
     t_dll_element *e = DLL_HEAD(arg_list);
 
@@ -92,7 +142,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         t_method_arg *arg = ht_iter_value(&iter);
 
         int is_vararg =0 ;
-        if (arg->typehint->type != objectTypeNull && ! strcmp(OBJ2STR(arg->typehint), "...")) {
+        if (arg->typehint->type != objectTypeNull && ! string_strcmp0(arg->typehint->value, "...")) {
             is_vararg = 1;
         }
 
@@ -124,7 +174,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 
                 // Make sure we add our List[] to the local_identifiers below
                 obj = (t_object *)vararg_obj;
-            } else if (! object_instance_of(obj, (const char *)OBJ2STR(arg->typehint))) {
+            } else if (! object_instance_of(obj, string_to_char(OBJ2STR(arg->typehint)))) {
                 // classname does not match the typehint
 
                 // @TODO: we need to check if object as a parent or interface that matches!
@@ -134,7 +184,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add_obj(frame->local_identifiers->ht, object_alloc(Object_String, 1, name), obj);
+        ht_add_str(frame->local_identifiers->ht, name, obj);
         object_inc_ref(obj);
 
         need_count--;
@@ -167,7 +217,7 @@ static int _parse_calling_arguments(t_vm_frame *frame, t_callable_object *callab
 /**
  * Creates an object that
  */
-static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+static t_userland_object *_create_userland_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     t_userland_object *user_obj = smm_malloc(sizeof(Object_Userland_struct));
     memcpy(user_obj, &Object_Userland_struct, sizeof(Object_Userland_struct));
 
@@ -175,7 +225,7 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
     user_obj->frame = frame;
 
     // Set name
-    user_obj->name = smm_strdup(name);
+    user_obj->name = string_strdup0(name);
 
     // Set flags
     user_obj->flags |= flags;
@@ -208,7 +258,7 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
         object_inc_ref((t_object *)user_obj);
 
         smm_free(attrib->bound_name);
-        attrib->bound_name = smm_strdup(name);
+        attrib->bound_name = string_strdup0(name);
 
         ht_iter_next(&iter);
     }
@@ -219,7 +269,7 @@ static t_userland_object *_create_userland_object(t_vm_frame *frame, char *name,
 /**
  * Call a callable with arguments
  */
-static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame *scope_frame, t_callable_object *callable_obj, t_dll *arg_list) {
+static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackframe *scope_frame, char *name, t_callable_object *callable_obj, t_dll *arg_list) {
     t_object *ret;
 
     // Check if the object is actually a callable
@@ -229,12 +279,12 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
     }
 
 
-    // @TODO: should internal code not have a frame as well?
-
     // Call native code
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
+        // @TODO: should internal code not have a frame as well?
+
         // Internal function call
-        return callable_obj->code.native_func(self_obj, arg_list);
+        return callable_obj->code.internal.native_func(self_obj, arg_list);
     }
 
 
@@ -257,29 +307,33 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_frame 
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
 
     // Create a new execution frame
-    t_vm_frame *cur_frame = thread_get_current_frame();
-    t_vm_frame *new_frame = vm_frame_new_scoped(scope_frame, cur_frame, cur_frame->context, callable_obj->code.bytecode);
+    t_vm_stackframe *parent_frame = thread_get_current_frame();
+    t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->code.external.codeframe);
+    child_frame->trace_class = self_obj ? string_strdup0(self_obj->name) : string_strdup0("<anonymous>");
+    child_frame->trace_method = string_strdup0(name);
 
-    // Copy stuff from frame over to new_frame
+//    // Since it's an external codeframe, also set the IP to point to the start of the actual function
+//    child_frame->ip = callable_obj->code.external.ip;
 
     // Create self inside the new frame
-    t_object *old_self_obj = ht_replace_obj(new_frame->local_identifiers->ht, object_alloc(Object_String, 1, "self"), self_obj);
+    t_object *old_self_obj = ht_replace_str(child_frame->local_identifiers->ht, "self", self_obj);
     if (old_self_obj) object_release(old_self_obj);
     object_inc_ref(self_obj);
 
     // Parse calling arguments to see if they match our signatures
-    if (! _parse_calling_arguments(new_frame, callable_obj, arg_list)) {
-        vm_frame_destroy(new_frame);
+    if (! _parse_calling_arguments(child_frame, callable_obj, arg_list)) {
+        vm_stackframe_destroy(child_frame);
 
         // Exception thrown in the argument parsing
         return NULL;
     }
 
     // Execute frame, return the last object
-    ret = _vm_execute(new_frame);
+    ret = _vm_execute(child_frame);
+    object_inc_ref(ret);
 
     // Destroy frame
-    vm_frame_destroy(new_frame);
+    vm_stackframe_destroy(child_frame);
 
     if (ret == NULL) {
         // exception occurred
@@ -356,7 +410,7 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
  * Check an attribute and if ok, chck
  */
 static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *attrib_obj, t_dll *arg_list) {
-    return _object_call_callable_with_args(self, ((t_userland_object *)attrib_obj->bound_class)->frame, (t_callable_object *)attrib_obj->attribute, arg_list);
+    return _object_call_callable_with_args(self, ((t_userland_object *)attrib_obj->bound_class)->frame, attrib_obj->bound_name, (t_callable_object *)attrib_obj->attribute, arg_list);
 }
 
 
@@ -368,7 +422,7 @@ static t_object *_do_regex_match(t_regex_object *regex_obj, t_string_object *str
 
 
     ret = pcre_exec(regex_obj->regex, NULL /* no study yet */,
-        str_obj->value, str_obj->byte_length,
+        STROBJ2CHAR0(str_obj), STROBJ2CHAR0LEN(str_obj),
         0,  /* start */
         0,  /* options */
         subStrVec, MAX_VEC);
@@ -398,8 +452,7 @@ void vm_init(SaffireParser *sp, int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
-    t_thread *thread = smm_malloc(sizeof(t_thread));
-    bzero(thread, sizeof(t_thread));
+    t_thread *thread = thread_new();
     current_thread = thread;
 
     gc_init();
@@ -410,26 +463,17 @@ void vm_init(SaffireParser *sp, int runmode) {
     object_init();
     module_init();
 
+    vm_codeframe_init();
+
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
 
-    frame_import_cache = ht_create();
+    vm_import_cache_init();
 
     // Initialize debugging if neededht
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
         debug_info = dbgp_init();
     }
-
-    // Implicit load the saffire module, without any debugging
-    vm_runmode &= ~VM_RUNMODE_DEBUG;
-
-    t_object *saffire_module_obj = vm_import(NULL, "::saffire", "saffire");
-    if (!saffire_module_obj) {
-        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
-    }
-    vm_populate_builtins("saffire", saffire_module_obj);
-
-    vm_runmode = runmode;
 }
 
 void vm_fini(void) {
@@ -438,23 +482,26 @@ void vm_fini(void) {
         dbgp_fini(debug_info);
     }
 
-    vm_free_import_cache();
+    // Free all imported codeframes
+    vm_import_cache_fini();
 
-    smm_free(current_thread);
+    vm_codeframe_fini();
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
-//    DEBUG_PRINT("\n\n\nDecreasing builtins\n");
+//    DEBUG_PRINT_CHAR("\n\n\nDecreasing builtins\n");
 //#ifdef __DEBUG
 //    ht_debug(builtin_identifiers->ht);
 //#endif
     object_release((t_object *)builtin_identifiers);
+
+    thread_free(current_thread);
 
     module_fini();
     object_fini();
     gc_fini();
 }
 
-int getlineno(t_vm_frame *frame) {
+int getlineno(t_vm_stackframe *frame) {
     if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
         return frame->lineno_current_line;
     }
@@ -463,17 +510,17 @@ int getlineno(t_vm_frame *frame) {
     int delta_line = 0;
 
     // @TODO: Check if lino_offset doesn't go out of bounds
-    if (frame->lineno_current_lino_offset >= frame->bytecode->lino_length) {
+    if (frame->lineno_current_lino_offset >= frame->codeframe->bytecode->lino_length) {
         return frame->lineno_current_line;
     }
 
     int i;
     do {
-        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
     } while (i > 127);
     do {
-        i = (frame->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
     } while (i > 127);
 
@@ -485,44 +532,53 @@ int getlineno(t_vm_frame *frame) {
 }
 
 
-t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret);
+t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret);
 
 /**
  *
  */
-t_object *_vm_execute(t_vm_frame *frame) {
+t_object *_vm_execute(t_vm_stackframe *frame) {
     t_object *obj1, *obj2, *obj3, *obj4;
     t_object *left_obj, *right_obj;
     t_attrib_object *attr_obj;
     unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     t_object *dst;
+    char *s;
 
 
-#ifdef DEBUG
-    DEBUG_PRINT(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
-    t_vm_frame *tb_frame = frame;
-    int tb_history = 0;
+#ifdef __DEBUG
+    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+    if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
+    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+#endif
+
+
+#ifdef __DEBUG
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "------------ NEW FRAME ------------\n" ANSI_RESET);
+    t_vm_stackframe *tb_frame = frame;
+    int tb_depth = 0;
     while (tb_frame) {
-        DEBUG_PRINT(ANSI_BRIGHTBLUE "#%d "
+        DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
-                ANSI_BRIGHTGREEN "%s.%s "
-                ANSI_BRIGHTGREEN "((string)foo, (string)bar, (string)baz)"
+                ANSI_BRIGHTGREEN "[%s] %s::%s"
+                ANSI_BRIGHTGREEN "(<args>)"
                 ANSI_RESET "\n",
-                tb_history,
-                tb_frame->bytecode->source_filename ? tb_frame->bytecode->source_filename : "<none>",
-                123,
-                "class",
-                "method"
-                );
+                tb_depth,
+                tb_frame->codeframe->context->file.full ? tb_frame->codeframe->context->file.full : "<none>",
+                getlineno(tb_frame),
+                tb_frame->codeframe->context->class.full ? tb_frame->codeframe->context->class.full : "",
+                tb_frame->trace_class ? tb_frame->trace_class : "",
+                tb_frame->trace_method ? tb_frame->trace_method : ""
+            );
         tb_frame = tb_frame->parent;
-        tb_history++;
+        tb_depth++;
     }
-    DEBUG_PRINT(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "-----------------------------------\n" ANSI_RESET);
 #endif
 
     // Set the correct current frame
-    t_vm_frame *old_current_frame = thread_get_current_frame();
+    t_vm_stackframe *parent_frame = thread_get_current_frame();
     thread_set_current_frame(frame);
 
     // Default return value;
@@ -538,9 +594,11 @@ dispatch:
 
 
 #ifdef __DEBUG
+    #if __DEBUG_VM_OPCODES
         int ln = getlineno(frame);
         unsigned long cip = frame->ip;
         //vm_frame_stack_debug(frame);
+    #endif
 #endif
 
 
@@ -561,50 +619,52 @@ dispatch:
         oparg3 = ((opcode & 0xE0) == 0xE0) ? vm_frame_get_operand(frame) : 0;
 
 #ifdef __DEBUG
+    #if __DEBUG_VM_OPCODES
         if ((opcode & 0xE0) == 0xE0) {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+            DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X, 0x%02X)     "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+            DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X)           "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+            DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s (0x%02X)                 "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         } else {
-            DEBUG_PRINT(ANSI_BRIGHTBLUE "%08lX "
+            DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s                        "
                         ANSI_BRIGHTYELLOW "[%s:%d] "
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->bytecode->source_filename,
+                        frame->codeframe->bytecode->source_filename,
                         ln
                     );
         }
+    #endif
 #endif
 
 
@@ -677,14 +737,16 @@ dispatch:
                 {
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     int scope = oparg2;
-                    DEBUG_PRINT("Loading attribute: '%s' from '%s'\n", OBJ2STR(name), scope == 1 ? "self" : "parent");
+                    DEBUG_PRINT_CHAR("Loading attribute: '%s' from '%s'\n", string_to_char(OBJ2STR(name)), scope == 1 ? "self" : "parent");
 
                     t_object *self_obj = vm_frame_stack_pop(frame);
-                    t_attrib_object *attrib_obj = object_attrib_find(self_obj, OBJ2STR(name), scope);
+                    char *s = string_to_char(OBJ2STR(name));
+                    t_attrib_object *attrib_obj = object_attrib_find(self_obj, s, scope);
+                    smm_free(s);
 
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", OBJ2STR(name), self_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", string_to_char(OBJ2STR(name)), self_obj->name);
                         goto block_end;
                         break;
                     }
@@ -706,7 +768,7 @@ dispatch:
                     // We don't actually use the original attribute, but a duplicated one. Here we add our reference to the
                     // current object so we can do correct calls to the attributes method.
                     attrib_obj = object_attrib_duplicate(attrib_obj, self_obj);
-                    DEBUG_PRINT("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->bound_name);
+                    DEBUG_PRINT_CHAR("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->bound_name);
 
                     vm_frame_stack_push(frame, (t_object *)attrib_obj);
                 }
@@ -719,7 +781,10 @@ dispatch:
                     t_object *name = vm_frame_get_constant(frame, oparg1);
                     t_object *search_obj = vm_frame_stack_pop(frame);
 
-                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, OBJ2STR(name), OBJECT_SCOPE_SELF);
+                    s = string_to_char(OBJ2STR(name));
+                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, s, OBJECT_SCOPE_SELF);
+                    smm_free(s);
+
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name));
                         reason = REASON_EXCEPTION;
@@ -734,11 +799,22 @@ dispatch:
                     // @TODO: if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
                     // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
                     t_object *value = vm_frame_stack_pop(frame);
-                    object_add_property(search_obj, OBJ2STR(name), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
-
+                    s = string_to_char(OBJ2STR(name));
+                    object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
+                    smm_free(s);
                 }
                 goto dispatch;
                 break;
+
+            // store SP+0 as a frame identifier
+            case VM_STORE_FRAME_ID :
+                // Refcount stays equal. So no inc/dec ref needed
+                dst = vm_frame_stack_pop(frame);
+                s = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_frame_identifier(frame, s, dst);
+                goto dispatch;
+                break;
+
 
 //            // Load a global identifier
 //            case VM_LOAD_GLOBAL :
@@ -775,18 +851,18 @@ dispatch:
             case VM_STORE_ID :
                 // Refcount stays equal. So no inc/dec ref needed
                 dst = vm_frame_stack_pop(frame);
-                char *name = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_identifier(frame, name, dst);
+                s = vm_frame_get_name(frame, oparg1);
+                vm_frame_set_identifier(frame, s, dst);
                 goto dispatch;
                 break;
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                name = vm_frame_get_name(frame, oparg1);
-                dst = vm_frame_find_identifier(frame, name);
+                s = vm_frame_get_name(frame, oparg1);
+                dst = vm_frame_find_identifier(frame, s);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", name, dst);
+                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", s, dst);
                     goto block_end;
                     break;
                 }
@@ -1003,11 +1079,11 @@ So:
                 {
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame);
-                    char *module_name = OBJ2STR(module_obj);
+                    char *module_name = string_to_char(OBJ2STR(module_obj));
 
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
-                    char *class_name = OBJ2STR(class_obj);
+                    char *class_name = string_to_char(OBJ2STR(class_obj));
 
                     // Check for namespace separator, and use only the class name, not the modules.
                     char *separator_pos = strrchr(class_name, ':');
@@ -1015,7 +1091,7 @@ So:
                         class_name = separator_pos + 1;
                     }
 
-                    dst = vm_import(frame, module_name, class_name);
+                    dst = vm_import(frame->codeframe, module_name, class_name);
                     if (!dst) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1114,13 +1190,13 @@ So:
                     break;
                 }
 
-                DEBUG_PRINT("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
+                DEBUG_PRINT_CHAR("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
 
                 // Compare types do not match
                 if (left_obj->type != right_obj->type && !(OBJECT_IS_NULL(left_obj) || OBJECT_IS_NULL(right_obj))) {
 
                     // Try an implicit cast if possible
-                    DEBUG_PRINT("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
+                    DEBUG_PRINT_CHAR("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
                     t_attrib_object *cast_method = object_attrib_find(right_obj, left_obj->name, OBJECT_SCOPE_SELF);
                     if (! cast_method) {
                         reason = REASON_EXCEPTION;
@@ -1174,7 +1250,10 @@ So:
 
                             object_inc_ref((t_object *)arg->value);
                             object_inc_ref((t_object *)arg->typehint);
-                            ht_add_str(arg_list, OBJ2STR(name_obj), arg);
+
+                            s = string_to_char(OBJ2STR(name_obj));
+                            ht_add_str(arg_list, s, arg);
+                            smm_free(s);
                         }
 
                         // Value object is already a callable, but has no arguments (or binding). Here we add the arglist
@@ -1221,15 +1300,17 @@ So:
                     t_dll *interfaces = dll_init();
                     t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
-                    DEBUG_PRINT("Number of interfaces we need to implement: %ld\n", interface_cnt);
+                    DEBUG_PRINT_CHAR("Number of interfaces we need to implement: %ld\n", interface_cnt);
 
                     // Fetch all interface objects
                     for (int i=0; i!=interface_cnt; i++) {
                         t_object *interface_name_obj = vm_frame_stack_pop(frame);
-                        DEBUG_PRINT("Implementing interface: %s\n", object_debug(interface_name_obj));
+                        DEBUG_PRINT_STRING(char0_to_string("Implementing interface: %s\n"), object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
-                        t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), OBJ2STR(interface_name_obj));
+                        s = string_to_char(OBJ2STR(interface_name_obj));
+                        t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), s);
+                        smm_free(s);
                         if (! interface_obj) {
                             dll_free(interfaces);
 
@@ -1256,7 +1337,9 @@ So:
                         object_inc_ref(parent_class);
                     } else {
                         // Find the object of this string
-                        parent_class = vm_frame_find_identifier(frame, OBJ2STR(parent_class));
+                        s = string_to_char(OBJ2STR(parent_class));
+                        parent_class = vm_frame_find_identifier(frame, s);
+                        smm_free(s);
                         if (parent_class == NULL) {
                             reason = REASON_EXCEPTION;
                             thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", parent_class);
@@ -1269,8 +1352,7 @@ So:
 
                     // pop class name
                     t_object *name_obj = vm_frame_stack_pop(frame);
-                    char *name = OBJ2STR(name_obj);
-
+                    char *name = string_to_char(OBJ2STR(name_obj));
 
                     // Fetch all attributes
                     t_hash_table *attributes = ht_create();
@@ -1279,7 +1361,9 @@ So:
                         t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop_attrib(frame);
 
                         // Add method attribute to class
-                        ht_add_str(attributes, OBJ2STR(name), attrib_obj);
+                        s = string_to_char(OBJ2STR(name));
+                        ht_add_str(attributes, s, attrib_obj);
+                        smm_free(s);
                     }
 
                     // Actually create the object
@@ -1599,7 +1683,7 @@ block_end:
 
 
     // Restore current frame
-    thread_set_current_frame(old_current_frame);
+    thread_set_current_frame(parent_frame);
 
     //printf("RETURNING FROM _VM_EXEC(): %s {%d}\n", object_debug(ret), ret->ref_count);
 
@@ -1615,27 +1699,27 @@ block_end:
  * This function can change the reason and the blocks in the frame. It will not change any return values, but it can
  * change the IP pointer as well (continue, break, finally, catch etc)
  */
-t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
+t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret) {
     // Peek block to see if there is any
     t_vm_frameblock *block = vm_peek_block(frame);
-//    DEBUG_PRINT("init unwind_blocks: [curblocks %d] (%d)\n", frame->block_cnt, *reason);
+//    DEBUG_PRINT_CHAR("init unwind_blocks: [curblocks %d] (%d)\n", frame->block_cnt, *reason);
 
     // Unwind block as long as there is a reason to unwind
     while (*reason != REASON_NONE && frame->block_cnt > 0) {
-//        DEBUG_PRINT("  CUR block: %d\n", frame->block_cnt);
-//        DEBUG_PRINT("  Current reason: %d\n", *reason);
-//        DEBUG_PRINT("  Block Type: %d\n", block->type);
+//        DEBUG_PRINT_CHAR("  CUR block: %d\n", frame->block_cnt);
+//        DEBUG_PRINT_CHAR("  Current reason: %d\n", *reason);
+//        DEBUG_PRINT_CHAR("  Block Type: %d\n", block->type);
 
         // The next scenario's will change the instruction pointer (and maybe some other values), but they don't
         // change anything with the block-stack. For instance, when we continue a while-loop. This means we will only
         // peek at the current block, but not pop it.
         block = vm_peek_block(frame);
-        //DEBUG_PRINT("Checking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
+        //DEBUG_PRINT_CHAR("Checking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
 
         // Case 1: Continue called inside a loop block
         if (*reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
-//            DEBUG_PRINT("CASE 1\n");
-//            DEBUG_PRINT("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
+//            DEBUG_PRINT_CHAR("CASE 1\n");
+//            DEBUG_PRINT_CHAR("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
 
             // Continue to at the start of the block
             frame->ip = OBJ2NUM(ret);
@@ -1646,7 +1730,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 
         // Case 2: Return called inside try (or catch) block, but not inside finally block
         if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION) {
-//            DEBUG_PRINT("CASE 2: RETURN IN TRY, CATCH OR FINALLY\n");
+//            DEBUG_PRINT_CHAR("CASE 2: RETURN IN TRY, CATCH OR FINALLY\n");
             /* We push the return value and the reason (REASON_RETURN) onto the stack, since END_FINALLY will expect
              * this. We have no real way to know if a try block has a return statement inside, so SETUP_EXCEPT will
              * push a REASON_NONE and a dummy retval onto the stack as well. END_EXCEPTION will catch this because
@@ -1666,20 +1750,20 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
              * be triggered from both the try or a catch block (both are handled the same, so this distinction is not
              * needed. However, when ABOVE, we ASSUME to be triggered from the finally block, and this we need to skip
              * until the end of the finally */
-            DEBUG_PRINT("IP F : %02X %02X\n", frame->ip, block->handlers.exception.ip_finally);
-            DEBUG_PRINT("IP C : %02X %02X\n", frame->ip, block->handlers.exception.ip_catch);
-            DEBUG_PRINT("IP EF: %02X %02X\n", frame->ip, block->handlers.exception.ip_end_finally);
+            DEBUG_PRINT_CHAR("IP F : %02X %02X\n", frame->ip, block->handlers.exception.ip_finally);
+            DEBUG_PRINT_CHAR("IP C : %02X %02X\n", frame->ip, block->handlers.exception.ip_catch);
+            DEBUG_PRINT_CHAR("IP EF: %02X %02X\n", frame->ip, block->handlers.exception.ip_end_finally);
 
             if (frame->ip <= block->handlers.exception.ip_finally) {
-                DEBUG_PRINT("RETTING into FINALLY\n");
+                DEBUG_PRINT_CHAR("RETTING into FINALLY\n");
                 frame->ip = block->handlers.exception.ip_finally;
             } else if (frame->ip <= block->handlers.exception.ip_end_finally) {
-                DEBUG_PRINT("RETTING out from FINALLY\n");
+                DEBUG_PRINT_CHAR("RETTING out from FINALLY\n");
                 frame->ip = block->handlers.exception.ip_end_finally;
 
                 *reason = REASON_FINALLY;
             } else {
-                DEBUG_PRINT("Not retting in anything\n");
+                DEBUG_PRINT_CHAR("Not retting in anything\n");
                 *reason = REASON_FINALLY;
             }
             break;
@@ -1687,11 +1771,11 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
 
         // Case 3: Exception raised inside a try block (normal behaviour)
         if (*reason == REASON_EXCEPTION && block->type == BLOCK_TYPE_EXCEPTION) {
-            DEBUG_PRINT("CASE 4: EXCEPTION TRIGGERED (IN TRY BLOCK)\n");
+            DEBUG_PRINT_CHAR("CASE 4: EXCEPTION TRIGGERED (IN TRY BLOCK)\n");
 
             // Clean up any remaining items on the variable stack, but keep the last "REASON_FINALLY"
             while (frame->sp < block->sp - 1) {
-                DEBUG_PRINT("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
+                DEBUG_PRINT_CHAR("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
                 vm_frame_stack_pop(frame);
             }
 
@@ -1705,7 +1789,7 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
             break;
         }
 
-        DEBUG_PRINT("unwind!\n");
+        DEBUG_PRINT_CHAR("unwind!\n");
 
         /*
          * All cases below here will change the block-stack, so we can pop the block from this point onwards.
@@ -1754,46 +1838,80 @@ t_vm_frameblock *unwind_blocks(t_vm_frame *frame, long *reason, t_object *ret) {
     // It might be possible that we unwind every block and still have a a reason different than REASON_NONE. This will
     // be handled by the parent frame.
 
-    DEBUG_PRINT("fini unwind_blocks: [block_cnt: %d] %d\n", frame->block_cnt, *reason);
+    DEBUG_PRINT_CHAR("fini unwind_blocks: [block_cnt: %d] %d\n", frame->block_cnt, *reason);
     return block;
 }
 
 /**
- * The same as a normal execute, but when an exception is thrown, this will be stored in the parent frame
+ * The same as a normal execute, but don't handle exceptions
+
  * @param frame
  * @return
  */
-t_object *vm_execute_import(t_vm_frame *import_frame) {
-    // We assume this is the main frame.
-    thread_set_current_frame(import_frame);
-
+t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result) {
     // Execute the frame
-    t_object *result = _vm_execute(import_frame);
-    DEBUG_PRINT("\n============================ VM import execution done ============================\n");
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeframe->context->class.full);
 
-    // Don't handle exceptions
+    t_vm_stackframe *current_frame = thread_get_current_frame();
+    t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeframe);
+    import_frame->trace_class = string_strdup0(current_frame->trace_class);
+    import_frame->trace_method = string_strdup0("#import");
 
-    return result;
+
+    if (*result) {
+        *result = _vm_execute(import_frame);
+    } else {
+        _vm_execute(import_frame);
+    }
+
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeframe->context->class.full);
+
+    return import_frame;
+}
+
+
+/**
+ *
+ */
+void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
+    // Implicit load the saffire module, without any debugging
+    int runmode = vm_runmode;
+    vm_runmode &= ~VM_RUNMODE_DEBUG;
+
+    // Load mandatory saffire object
+    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
+    if (!saffire_module_obj) {
+        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
+    }
+    vm_populate_builtins("saffire", saffire_module_obj);
+
+    // Back to normal runmode again
+    vm_runmode = runmode;
 }
 
 /**
  *
  */
-int vm_execute(t_vm_frame *frame) {
+int vm_execute(t_vm_stackframe *frame) {
     int ret_val = 0;
 
-    // We assume this is the main frame.
     thread_set_current_frame(frame);
+
+    _vm_load_implicit_buildins(frame);
 
     // Execute the frame
     t_object *result = _vm_execute(frame);
 
-    DEBUG_PRINT("\n\n\n\n============================ VM execution done ============================\n");
+
+    DEBUG_PRINT_CHAR("\n\n\n============================ TOTAL VM execution done ============================\n\n\n");
 #ifdef __DEBUG
-    DEBUG_PRINT("----- [END FRAME: %s::%s (%08X)] ----\n", frame->context->class.path, frame->context->class.name, (unsigned int)frame);
-    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-    if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
+    #if __DEBUG_STACKFRAME_DESTROY
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
+        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
+        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
+        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
 //    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+    #endif
 #endif
 
 
@@ -1849,13 +1967,15 @@ int vm_execute(t_vm_frame *frame) {
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
     obj->ref_count = 1;
-    ht_add_obj(builtin_identifiers_ht, object_alloc(Object_String, 1, name), (void *)obj);
+    ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }
 
 /**
 * Calls a method from specified object. Returns NULL when method is not found.
 */
 t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...) {
+    if (! self || ! attrib_obj) return NULL;
+
     // Create DLL with all arguments
     va_list args;
     va_start(args, arg_count);
@@ -1872,51 +1992,4 @@ t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_co
     dll_free(arg_list);
 
     return ret_obj;
-}
-
-/**
- * This method is called when we need to call an operator method. Even though eventually
- * it is a normal method call to a _opr_* method, we go a different route so we can easily
- * do custom optimizations later on.
- */
-t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
-    char *opr_method = objectOprMethods[opr];
-
-    t_attrib_object *found_obj = object_attrib_find(obj1, opr_method, OBJECT_SCOPE_SELF);
-    if (! found_obj) {
-        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", opr_method, obj1->name);
-        return NULL;
-    }
-
-    DEBUG_PRINT(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
-
-    // Call the actual operator and return the result
-    return vm_object_call(obj1, found_obj, 1, obj2);
-}
-
-/**
- * Calls an comparison function. Returns true or false
- */
-t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
-    char *cmp_method = objectCmpMethods[cmp];
-
-    t_attrib_object *found_obj = object_attrib_find(obj1, cmp_method, OBJECT_SCOPE_SELF);
-    if (! found_obj) {
-        thread_create_exception_printf((t_exception_object *)Object_CallException, 1, "Cannot find method '%s' in class '%s'", cmp_method, obj1->name);
-        return NULL;
-    }
-
-    DEBUG_PRINT(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
-
-    // Call the actual operator and return the result
-    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
-    if (! ret) return ret;
-
-    // Implicit conversion to boolean if needed
-    if (! OBJECT_IS_BOOLEAN(ret)) {
-        t_attrib_object *bool_method = object_attrib_find(ret, "__boolean", OBJECT_SCOPE_SELF);
-        ret = vm_object_call(ret, bool_method, 0);
-    }
-
-    return ret;
 }

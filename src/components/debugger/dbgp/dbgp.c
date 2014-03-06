@@ -120,7 +120,7 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
  *
  */
 t_debuginfo *dbgp_init(void) {
-    DEBUG_PRINT(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "Initializing debugger" ANSI_RESET "\n");
 
     t_debuginfo *di = (t_debuginfo *)malloc(sizeof(t_debuginfo));
 
@@ -199,7 +199,7 @@ void dbgp_parse_incoming_commands(t_debuginfo *di) {
 
     printf("dbgp_parse_incoming_commands() init\n");
 
-    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->bytecode) ? di->frame->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
+    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->codeframe->bytecode) ? di->frame->codeframe->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
 
     // Repeat fetching commands until certain states
     while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED && di->state != DBGP_STATE_STOPPING) {
@@ -213,12 +213,12 @@ void dbgp_parse_incoming_commands(t_debuginfo *di) {
 }
 
 
-void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
+void dbgp_debug(t_debuginfo *di, t_vm_stackframe *frame) {
     // Set the current frame in our DI object. This allows our commands to deal with frame related data
     di->frame = frame;
 
     printf("dbgp_debug\n");
-    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->bytecode) ? di->frame->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
+    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->codeframe->bytecode) ? di->frame->codeframe->bytecode->source_filename : "<none>", di->frame->lineno_current_line);
 
 //    printf("Debug breakpoints\n");
 //    printf("-----------------\n");
@@ -236,7 +236,7 @@ void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
         int breaking = 0;
 
         // Break when we just started
-        if (frame->bytecode == NULL) breaking = 1;
+        if (frame->codeframe->bytecode == NULL) breaking = 1;
         // Break when no frame is known
         else if (di->step_data.frame == NULL) breaking = 1;
         // Break when we are in the same frame, but different line number
@@ -267,7 +267,7 @@ void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
         }
     }
 
-    printf("Frame sourcefile: '%s'\n", frame->bytecode->source_filename);
+    printf("Frame sourcefile: '%s'\n", frame->codeframe->bytecode->source_filename);
     printf("LOC.FILE: '%s'\n", di->step_data.file);
 
 
@@ -355,7 +355,7 @@ void dbgp_debug(t_debuginfo *di, t_vm_frame *frame) {
         if (strcmp(bp->type, DBGP_BREAKPOINT_TYPE_LINE) == 0) {
             // Check line number first, easier match
             if (bp->lineno == frame->lineno_current_line &&
-                strcmp(bp->filename+7, frame->bytecode->source_filename) == 0 &&
+                strcmp(bp->filename+7, frame->codeframe->bytecode->source_filename) == 0 &&
                 strncmp(bp->filename, "file://", 7) == 0) {
 
                 // Matched line breakpoint!

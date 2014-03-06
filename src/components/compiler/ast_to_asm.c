@@ -37,7 +37,7 @@
 #include "general/dll.h"
 #include "debug.h"
 #include "vm/vm_opcodes.h"
-#include "vm/frame.h"
+#include "vm/stackframe.h"
 #include "objects/attrib.h"
 
 #define MAX_LABEL_LEN       100
@@ -56,7 +56,7 @@ enum call_state { st_call_pop, st_call_stay };
  * Structure that holds info for current block in the frame (while, if, foreach etc)
  */
 typedef struct _state_frame {
-    int type;           // BLOCK_TYPE_* as defined in vm/frame.h
+    int type;           // BLOCK_TYPE_* as defined in vm/stackframe.h
     char label[MAX_LABEL_LEN];
     t_hash_table *labels;       // Defined labels inside this block (so we can tests for duplicates)
 } t_state_frame;
@@ -135,7 +135,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                 // We know the scope now. We still need to use "self"
                 smm_free(node->identifier.name);
-                node->identifier.name = smm_strdup("self");
+                node->identifier.name = string_strdup0("self");
             }
 
             stack_push(state->context, (void *)st_ctx_load);
@@ -385,7 +385,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->class.name, 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
 
             break;
 
@@ -424,7 +424,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Store class into identifier
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, leaf->interface.name, 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
             break;
 
         case typeAstAttribute :
@@ -562,7 +562,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     node = leaf->opr.ops[1];
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_ID, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
                     break;
 
                 case T_CALL_ARGUMENT_LIST :

@@ -58,15 +58,16 @@ static int do_exec(void) {
         return 1;
     }
 
+    // @TODO: Why do realpath() AFTER stat()?
     char full_source_path[PATH_MAX+1];
     realpath(source_file, full_source_path); // @TODO: Check result char *ptr?
 
     // Check if bytecode exists, or has a correct timestamp
-    char *bytecode_filepath = replace_extension(source_file, ".sf", ".sfc");
+    char *bytecode_filepath = replace_extension(full_source_path, ".sf", ".sfc");
     int bytecode_exists = (access(bytecode_filepath, F_OK) == 0);
 
     if (! bytecode_exists || bytecode_get_timestamp(bytecode_filepath) != source_stat.st_mtime) {
-        bc = bytecode_generate_diskfile(source_file, write_bytecode ? bytecode_filepath : NULL, NULL);
+        bc = bytecode_generate_diskfile(full_source_path, write_bytecode ? bytecode_filepath : NULL, NULL);
         if (! bc) {
             return 1;
         }
@@ -85,18 +86,23 @@ static int do_exec(void) {
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
     vm_init(NULL, runmode);
-    t_vm_frame *initial_frame = vm_frame_new(NULL, "::", bytecode_filepath, bc);
+
+
+    // Create initial code & stackframe
+    t_vm_context *ctx = vm_context_new("::", full_source_path);
+    t_vm_codeframe *codeframe = vm_codeframe_new(bc, ctx);
+    t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeframe);
+    initial_frame->trace_class = string_strdup0("#main");
+    initial_frame->trace_method = string_strdup0("#main");
 
     // Run the frame
     int exitcode = vm_execute(initial_frame);
 
-    vm_detach_bytecode(initial_frame);
-    vm_frame_destroy(initial_frame);
+    vm_stackframe_destroy(initial_frame);
     vm_fini();
     smm_free(bytecode_filepath);
-    bytecode_free(bc);
 
-    DEBUG_PRINT("VM ended with exitcode: %d\n", exitcode);
+    DEBUG_PRINT_CHAR("VM ended with exitcode: %d\n", exitcode);
 
     return exitcode;
 }

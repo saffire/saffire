@@ -35,32 +35,50 @@
 
 
 /**
- * Generic output handlers that write to stdout
+ * Generic output handlers that write to a file
  */
 static int _stdio_output_char_helper(FILE *f, char c) {
     return fwrite(&c, 1, 1, f);
 }
-static int _stdio_output_string_helper(FILE *f, char *s) {
-    return fwrite(s, strlen(s), 1, f);
+static int _stdio_output_string_helper(FILE *f, t_string *s) {
+    return fwrite(s->val, s->len, 1, f);
 }
 
+// Default helpers will print to STDIO
 int (*output_char_helper)(FILE *f, char c) = _stdio_output_char_helper;
-int (*output_string_helper)(FILE *f, char *s) = _stdio_output_string_helper;
+int (*output_string_helper)(FILE *f, t_string *s) = _stdio_output_string_helper;
 
 
 
 /**
  * Outputs to a specified file
  */
-static void _output(FILE *f, const char *format, va_list args) {
+static void _output_string(FILE *f, t_string *format, va_list args) {
+    t_string *expanded_str;
+
+    if (args == NULL) {
+        smm_asprintf_string(&expanded_str, format, NULL);
+    } else {
+        smm_vasprintf_string(&expanded_str, format, args);
+    }
+    output_string_helper(f, expanded_str);
+    smm_free(expanded_str);
+}
+
+/**
+ * Outputs to a specified file
+ */
+static void _output_char(FILE *f, char *format, va_list args) {
     char *buf;
 
     if (args == NULL) {
-        smm_asprintf(&buf, format, NULL);
+        smm_asprintf_char(&buf, format, NULL);
     } else {
-        smm_vasprintf(&buf, format, args);
+        smm_vasprintf_char(&buf, format, args);
     }
-    output_string_helper(f, buf);
+    t_string *str = char0_to_string(buf);
+    output_string_helper(f, str);
+    smm_free(str);
     smm_free(buf);
 }
 
@@ -73,35 +91,58 @@ void output_flush(void) {
 /**
  * Outputs (to stdout)
  */
-void output(const char *format, ...) {
+void output_string(t_string *format, ...) {
     va_list args;
 
     va_start(args, format);
-    _output(stdout, format, args);
+    _output_string(stdout, format, args);
+    va_end(args);
+}
+
+/**
+ * Outputs (to stdout)
+ */
+void output_char(char  *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    _output_char(stdout, format, args);
+    va_end(args);
+}
+
+
+
+/**
+ * Output warning (to stderr)
+ */
+void output_debug_string(t_string *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    _output_string(stderr, format, args);
     va_end(args);
 }
 
 /**
  * Output warning (to stderr)
  */
-void output_debug(const char *format, ...) {
+void output_debug_char(char *format, ...) {
     va_list args;
 
     va_start(args, format);
-    _output(stderr, format, args);
+    _output_char(stderr, format, args);
     va_end(args);
 }
-
 
 /**
  * Output warning (to stderr)
  */
-void warning(const char *format, ...) {
+void warning(char *format, ...) {
     va_list args;
 
-    _output(stderr, "Warning: ", NULL);
+    _output_char(stderr, "Warning: ", NULL);
     va_start(args, format);
-    _output(stderr, format, args);
+    _output_char(stderr, format, args);
     va_end(args);
 
     fflush(stderr);
@@ -110,12 +151,12 @@ void warning(const char *format, ...) {
 /**
  * Output error (to stderr)
  */
-void error(const char *format, ...) {
+void error(char *format, ...) {
     va_list args;
 
-    _output(stderr, "Error: ", NULL);
+    _output_char(stderr, "Error: ", NULL);
     va_start(args, format);
-    _output(stderr, format, args);
+    _output_char(stderr, format, args);
     va_end(args);
 
     fflush(stderr);
@@ -125,12 +166,12 @@ void error(const char *format, ...) {
 /**
  * Ouputs error (to stderr) and exists with code.
  */
-void fatal_error(int exitcode, const char *format, ...) {
+void fatal_error(int exitcode, char *format, ...) {
     va_list args;
 
-    _output(stderr, "Fatal error: ", NULL);
+    _output_char(stderr, "Fatal error: ", NULL);
     va_start(args, format);
-    _output(stderr, format, args);
+    _output_char(stderr, format, args);
     va_end(args);
 
     fflush(stderr);
@@ -140,38 +181,39 @@ void fatal_error(int exitcode, const char *format, ...) {
 
 
 /**
- */
-void output_printf(const char *format, t_dll *args) {
-    arg_printf(stdout, format, args, output_char_helper);
+*/
+void output_string_printf(t_string *format, t_dll *args) {
+    arg_printf_string(stdout, format, args, output_char_helper);
 }
 
 
-/**
- *
- */
-static int detect_terminal() {
-    return isatty(fileno(stdout));
-}
 
-int is_tty = -1;
+///**
+// *
+// */
+//static int detect_terminal() {
+//    return isatty(fileno(stdout));
+//}
+//static int is_tty = -1;
 
-void output_ansi(char sequence[]) {
-    if (is_tty == -1) {
-        is_tty = detect_terminal();
-    }
 
-    if (! is_tty) return;
-
-    output("\033[%s", sequence);
-    fflush(stdout);
-}
+//void output_ansi(char sequence[]) {
+//    if (is_tty == -1) {
+//        is_tty = detect_terminal();
+//    }
+//
+//    if (! is_tty) return;
+//
+//    output_char("\033[%s", sequence);
+//    fflush(stdout);
+//}
 
 
 /**
  * @param char_helper
  * @param string_helper
  */
-void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, char *s)) {
+void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s)) {
     output_char_helper = char_helper;
     output_string_helper = string_helper;
 }

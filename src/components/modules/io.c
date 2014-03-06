@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include <string.h>
 #include "general/output.h"
 #include "modules/module_api.h"
 #include "objects/object.h"
@@ -50,7 +51,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output("%s", ((t_string_object *)obj)->value);
+        output_char("%s", OBJ2STR0(obj));
 
         e = DLL_NEXT(e);
     }
@@ -73,18 +74,18 @@ SAFFIRE_MODULE_METHOD(io, printf) {
         obj = vm_object_call(obj, string_method, 0);
     }
 
-    char *format = ((t_string_object *)obj)->value;
+    t_string *format = ((t_string_object *)obj)->value;
 
     // @TODO: Don't change the args DLL!
     e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     dll_remove(SAFFIRE_METHOD_ARGS, e);
 
 #ifdef __DEBUG
-    output_ansi(ANSI_BRIGHTYELLOW);
+    output_char(ANSI_BRIGHTYELLOW);
 #endif
-    output_printf(format, SAFFIRE_METHOD_ARGS);
+    output_string_printf(format, SAFFIRE_METHOD_ARGS);
 #ifdef __DEBUG
-    output_ansi(ANSI_RESET);
+    output_char(ANSI_RESET);
 #endif
 
     RETURN_SELF;
@@ -94,14 +95,14 @@ SAFFIRE_MODULE_METHOD(io, printf) {
  *
  */
 SAFFIRE_MODULE_METHOD(io, sprintf) {
-    RETURN_STRING("IO.sprintf\n");
+    RETURN_STRING_FROM_CHAR("IO.sprintf\n");
 }
 
 /**
  *
  */
 SAFFIRE_MODULE_METHOD(console, print) {
-    output("console.print: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
+    output_char("console.print: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 
@@ -109,7 +110,7 @@ SAFFIRE_MODULE_METHOD(console, print) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, printf) {
-    output("console.printf: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
+    output_char("console.printf: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
 }
 
@@ -117,7 +118,7 @@ SAFFIRE_MODULE_METHOD(console, printf) {
  *
  */
 SAFFIRE_MODULE_METHOD(console, sprintf) {
-    RETURN_STRING("console.sprintf\n");
+    RETURN_STRING_FROM_CHAR("console.sprintf\n");
 }
 
 

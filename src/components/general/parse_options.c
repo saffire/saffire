@@ -194,7 +194,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
 
 
     if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        *error = smm_strdup("Not enough arguments found");
+        *error = string_strdup0("Not enough arguments found");
         return 0;
     }
 
@@ -205,7 +205,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
         if (argp >= argc && ! optional) {
-            *error = smm_strdup("Not enough arguments found");
+            *error = string_strdup0("Not enough arguments found");
             return 0;
         }
 
@@ -222,7 +222,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'b' :
                 // Try and convert to boolean
                 if (to_bool(argv[argp]) == -1) {
-                    smm_asprintf(error, "Found '%s', but expected a boolean value", argv[argp]);
+                    smm_asprintf_char(error, "Found '%s', but expected a boolean value", argv[argp]);
                     return 0;
                 }
 
@@ -230,20 +230,20 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
             case 'l' :
                 // Convert to long. string("0") should be ok too!
                 if (! strcasecmp(argv[argp], "0") && ! atol(argv[argp])) {
-                    smm_asprintf(error, "Found '%s', but expected a numerical value", argv[argp]);
+                    smm_asprintf_char(error, "Found '%s', but expected a numerical value", argv[argp]);
                     return 0;
                 }
 
                 break;
             default :
-                smm_asprintf(error, "Incorrect signature command '%c' found", signature[idx]);
+                smm_asprintf_char(error, "Incorrect signature command '%c' found", signature[idx]);
                 return 0;
         }
     }
 
     // Not enough arguments!
     if (argc > argp) {
-        *error = smm_strdup("Too many arguments found");
+        *error = string_strdup0("Too many arguments found");
         return 0;
     }
 

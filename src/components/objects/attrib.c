@@ -57,7 +57,7 @@ extern t_dll *dupped_attributes;
  * Duplicate the attribute object and link it to the bound-obj
  */
 t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self) {
-    DEBUG_PRINT("duplicating attrib '%s.%s' to '%s.%s'", attrib->bound_class->name, attrib->bound_name, self->name, attrib->bound_name);
+    DEBUG_PRINT_CHAR("duplicating attrib '%s.%s' to '%s.%s'\n", attrib->bound_class->name, attrib->bound_name, self->name, attrib->bound_name);
     t_attrib_object *dup = smm_malloc(sizeof(Object_Attrib_struct));
     memcpy(dup, attrib, sizeof(Object_Attrib_struct));
 
@@ -87,6 +87,8 @@ t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
     t_attrib_object *attr = NULL;
     t_object *cur_obj = self;
 
+    if (! self) return NULL;
+
     if (scope == OBJECT_SCOPE_PARENT) {
         if (cur_obj->parent == NULL) {
             // @TODO: We should throw an exception, as we don't have a parent class
@@ -98,7 +100,7 @@ t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
 
 
     while (attr == NULL) {
-        DEBUG_PRINT(">>> Finding attribute '%s' on object %s\n", name, cur_obj->name);
+        DEBUG_PRINT_CHAR(">>> Finding attribute '%s' on object %s\n", name, cur_obj->name);
 
         // Find the attribute in the current object
         attr = ht_find_str(cur_obj->attributes, name);
@@ -106,7 +108,7 @@ t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
 
         // Not found and there is no parent, we're done!
         if (cur_obj->parent == NULL) {
-            DEBUG_PRINT(">>> Cannot find attribute '%s' in object %s:\n", name, self->name);
+            DEBUG_PRINT_CHAR(">>> Cannot find attribute '%s' in object %s:\n", name, self->name);
             return NULL;
         }
 
@@ -114,7 +116,7 @@ t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
         cur_obj = cur_obj->parent;
     }
 
-    // DEBUG_PRINT(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
+    // DEBUG_PRINT_CHAR(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
 
     return attr;
 }
@@ -175,7 +177,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     object_inc_ref(attrib_obj->bound_class);
 
     e = DLL_NEXT(e);
-    attrib_obj->bound_name = smm_strdup((char *)e->data);
+    attrib_obj->bound_name = string_strdup0((char *)e->data);
 
     e = DLL_NEXT(e);
     attrib_obj->attr_type = (long)e->data;
@@ -199,7 +201,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 static void obj_free(t_object *obj) {
     t_attrib_object *attr_obj = (t_attrib_object *)obj;
 
-    //DEBUG_PRINT("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
+    //DEBUG_PRINT_CHAR("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
 
     // "free" the attribute object. decrease refcount
     object_release(attr_obj->attribute);
@@ -241,6 +243,7 @@ t_object_funcs attrib_funcs = {
         obj_destroy,          // Destroy an attrib object
         NULL,                 // Clone
         NULL,                 // Cache
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug,
 #endif

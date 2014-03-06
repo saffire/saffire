@@ -30,6 +30,7 @@
     #include "objects/object.h"
     #include "objects/objects.h"
     #include "compiler/bytecode.h"
+    #include "vm/vmtypes.h"
 
     // A method-argument hash consists of name => structure
     typedef struct _method_arg {
@@ -50,8 +51,12 @@
         int routing;     // CALLABLE_CODE_*
 
         union {
-            t_bytecode *bytecode;                              // External bytecode
-            t_object *(*native_func)(t_object *, t_dll *);     // internal function
+            struct {
+                struct _vm_codeframe *codeframe;                    // Internal codeframe
+            } external;
+            struct {
+                t_object *(*native_func)(t_object *, t_dll *);      // internal function
+            } internal;
         } code;
 
         t_object *binding;                  // Bound to this attrib.  // @TODO: could be NULL when it's not bound (like a closure???)

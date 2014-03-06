@@ -93,7 +93,7 @@ SAFFIRE_METHOD(base, properties) {
  */
 SAFFIRE_METHOD(base, methods) {
     // @TODO: return list of methods
-    RETURN_STRING("methods");
+    RETURN_STRING_FROM_CHAR("methods");
 }
 
 /**
@@ -101,14 +101,14 @@ SAFFIRE_METHOD(base, methods) {
  */
 SAFFIRE_METHOD(base, parents) {
     // @TODO: return list of parents
-    RETURN_STRING("parents");
+    RETURN_STRING_FROM_CHAR("parents");
 }
 
 /**
  * Returns the name of the class
  */
 SAFFIRE_METHOD(base, name) {
-    RETURN_STRING(self->name);
+    RETURN_STRING_FROM_CHAR(self->name);
 }
 
 /**
@@ -116,7 +116,7 @@ SAFFIRE_METHOD(base, name) {
  */
 SAFFIRE_METHOD(base, implements) {
     // @TODO: return list of implementations
-    RETURN_STRING("implementations");
+    RETURN_STRING_FROM_CHAR("implementations");
 }
 
 /**
@@ -132,7 +132,7 @@ SAFFIRE_METHOD(base, memory) {
  */
 SAFFIRE_METHOD(base, annotations) {
     // @TODO: return method annotations
-    RETURN_STRING("annotations");
+    RETURN_STRING_FROM_CHAR("annotations");
 }
 
 /**
@@ -221,7 +221,6 @@ void object_base_fini() {
     // Free attributes
     object_free_internal_object((t_object *)&Object_Base_struct);
 }
-
 
 
 // Initial object

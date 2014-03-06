@@ -29,112 +29,58 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+
+#include "general/string.h"
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
 #include "general/md5.h"
 #include "general/output.h"
 #include "debug.h"
-
-t_hash_table *string_cache;
-
+#include "vm/thread.h"
 
 /* ======================================================================
  *   Supporting functions
  * ======================================================================
  */
-
-// Kindly taken from: http://stackoverflow.com/questions/198199/how-do-you-reverse-a-string-in-place-in-c-or-c
-#define SWP(x,y) (x^=y, y^=x, x^=y)
-
-static void strrev(char *p) {
-  char *q = p;
-  while(q && *q) ++q; /* find eos */
-  for(--q; p < q; ++p, --q) SWP(*p, *q);
-}
-
-static void strrev_utf8(char *p) {
-  char *q = p;
-  strrev(p); /* call base case */
-
-  /* Ok, now fix bass-ackwards UTF chars. */
-  while(q && *q) ++q; /* find eos */
-  while(p < --q)
-    switch( (*q & 0xF0) >> 4 ) {
-    case 0xF: /* U+010000-U+10FFFF: four bytes. */
-      SWP(*(q-0), *(q-3));
-      SWP(*(q-1), *(q-2));
-      q -= 3;
-      break;
-    case 0xE: /* U+000800-U+00FFFF: three bytes. */
-      SWP(*(q-0), *(q-2));
-      q -= 2;
-      break;
-    case 0xC: /* fall-through */
-    case 0xD: /* U+000080-U+0007FF: two bytes. */
-      SWP(*(q-0), *(q-1));
-      q--;
-      break;
-    }
-}
-
-/**
- * Returns the number of characters inside a (UTF8) string
- */
-static int utf8_len(char *s) {
-    int i = 0;
-    int j = 0;
-
-    while (s[i]) {
-        if ((s[i] & 0xC0) != 0x80) j++;
-        i++;
-    }
-    return j;
-}
-
-
 /**
  * Returns a byte[16] md5 hash of the given widestring
  */
-static void hash_string(char *str, md5_byte_t *hash) {
+static void calculate_hash(t_string_object *str_obj) {
     md5_state_t state;
 
     md5_init(&state);
-    md5_append(&state, (md5_byte_t *)str, strlen(str));
-    md5_finish(&state, hash);
+    md5_append(&state, (md5_byte_t *)STROBJ2CHAR0(str_obj), STROBJ2CHAR0LEN(str_obj));
+    md5_finish(&state, str_obj->hash);
 }
 
-/**
- * Returns a char[32] (+\0) md5 hash of the given widestring in text.
- */
-static void hash_string_text(char *str, char *strhash) {
-    md5_byte_t hash[16];
 
-    hash_string(str, hash);
-
-    for (int i=0; i!=16; i++) {
-        sprintf(strhash+(i*2), "%02X", (unsigned char)hash[i]);
+static void string_change_locale(t_string_object *str_obj, char *locale) {
+    if (str_obj->locale) {
+        smm_free(str_obj->locale);
     }
-    strhash[32] = '\0';
+    str_obj->locale = string_strdup0(locale);
 }
 
-/**
- * Recalculate MD5 hash for current string in object.
- */
-static void recalc_hash(t_string_object *obj) {
-    hash_string(obj->value, obj->hash);
+static t_string_object *string_create_new_object(t_string *str, char *locale) {
+    t_string_object *uc_obj = (t_string_object *)object_alloc(Object_String, 0);
+    uc_obj->value = str;
+    uc_obj->locale = string_strdup0(locale);
+
+    uc_obj->needs_hashing = 1;
+
+    return uc_obj;
 }
 
+t_string *object_string_cat(t_string_object *s1, t_string_object *s2) {
+    t_string *dst = string_strdup(s1->value);
+    string_strcat(dst, s2->value);
 
-static long find_utf_idx(t_string_object *obj, long idx) {
-    long utf_idx = 0;
+    return dst;
+}
 
-    for (long i=0; i!=idx; i++) {
-        while ((obj->value[utf_idx] & 0xC0) == 0x80) utf_idx++;
-        utf_idx++;
-    }
-
-    return utf_idx;
+int object_string_compare(t_string_object *s1, t_string_object *s2) {
+    return utf8_strcmp(s1->value, s2->value);
 }
 
 /* ======================================================================
@@ -142,6 +88,16 @@ static long find_utf_idx(t_string_object *obj, long idx) {
  * ======================================================================
  */
 
+
+ int object_string_hash_compare(t_string_object *s1, t_string_object *s2) {
+    int c = 0;
+
+    // Do a complete hash check to counter timing attacks
+    for (int i=0; i!=16; i++) {
+        c += (s1->hash[i] ^ s2->hash[i]);
+    }
+    return (c == 0);
+ }
 
 /**
  * Saffire method: constructor
@@ -162,49 +118,46 @@ SAFFIRE_METHOD(string, dtor) {
  * Saffire method: Returns length of the string (in characters)
  */
 SAFFIRE_METHOD(string, length) {
-    RETURN_NUMERICAL(self->char_length);
-}
-
-/**
- * Saffire method: Returns length of the string (in bytes)
- */
-SAFFIRE_METHOD(string, byte_length) {
-    RETURN_NUMERICAL(self->byte_length);
+    RETURN_NUMERICAL(self->value->len);
 }
 
 /**
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
-    // @TODO: UTF8 - UPPER!
-    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
-    for (int i=0; i!=strlen(dst->value); i++) {
-        dst->value[i] = toupper(dst->value[i]);
-    }
-    RETURN_OBJECT(dst);
+    t_string *dst = utf8_toupper(self->value, self->locale);
+
+    // Create new object
+    t_string_object *obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(obj);
 }
+
 
 /**
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
-    // @TODO: UTF8 - LOWER!
-    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
-    for (int i=0; i!=strlen(dst->value); i++) {
-        dst->value[i] = tolower(dst->value[i]);
-    }
-    RETURN_OBJECT(dst);
+    t_string *dst = utf8_tolower(self->value, self->locale);
+
+    // Create new object
+    t_string_object *obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(obj);
 }
 
 /**
  * Saffire method: Returns reversed string object
  */
 SAFFIRE_METHOD(string, reverse) {
-    // @TODO: UTF8 - REVERSE!
-    t_string_object *dst = (t_string_object *)object_alloc(Object_String, 1, self->value);
+    t_string *dst = string_strdup(self->value);
 
-    strrev_utf8(dst->value);
-    RETURN_OBJECT(dst);
+    // Reverse all chars
+    for (int i=0; i!=dst->len; i++) {
+        dst->val[i] = self->value->val[dst->len - i];
+    }
+    utf8_free_unicode(dst);
+
+    t_string_object *obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(obj);
 }
 
 
@@ -212,7 +165,7 @@ SAFFIRE_METHOD(string, reverse) {
  *
  */
 SAFFIRE_METHOD(string, conv_boolean) {
-    if (self->char_length == 0) {
+    if (self->value->len == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -230,9 +183,7 @@ SAFFIRE_METHOD(string, conv_null) {
  *
  */
 SAFFIRE_METHOD(string, conv_numerical) {
-    // Convert wide into char
-    long value = strtol(self->value, NULL, 0);
-
+    long value = strtol(STROBJ2CHAR0(self), NULL, 0);
     RETURN_NUMERICAL(value);
 }
 
@@ -243,7 +194,11 @@ SAFFIRE_METHOD(string, conv_string) {
     RETURN_SELF;
 }
 
+/**
+ *
+ */
 SAFFIRE_METHOD(string, splice) {
+    // @TODO: We probably want to just change the length and the offset of the t_string. Not doing any real copies
     t_object *min_obj;
     t_object *max_obj;
 
@@ -252,16 +207,16 @@ SAFFIRE_METHOD(string, splice) {
     }
 
     long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
-    long max = OBJECT_IS_NULL(max_obj) ? self->char_length : OBJ2NUM(max_obj);
+    long max = OBJECT_IS_NULL(max_obj) ? self->value->len : OBJ2NUM(max_obj);
 
     if (min == 0 && max == 0) RETURN_SELF;
 
     // Below 0, means we have to seek from the end of the string
-    if (min < 0) min = self->char_length + min - 1;
-    if (max < 0) max = self->char_length + max - 1;
+    if (min < 0) min = self->value->len + min - 1;
+    if (max < 0) max = self->value->len + max - 1;
 
-    if (min > self->char_length) min = self->char_length;
-    if (max > self->char_length || max == 0) max = self->char_length;
+    if (min > self->value->len) min = self->value->len;
+    if (max > self->value->len || max == 0) max = self->value->len;
 
     // Sanity check
     if (max < min) {
@@ -269,21 +224,48 @@ SAFFIRE_METHOD(string, splice) {
         return NULL;
     }
 
-    long min_idx = find_utf_idx(self, min);
-    long max_idx = find_utf_idx(self, max);
+    long new_size = (max - min) + 1;
 
-    long new_size = max_idx - min_idx + 1;
+    if (new_size == 0) {
+        object_raise_exception(Object_SystemException, 1, "lenght == 0");
+        return NULL;
+    }
 
-    // Make a new copy of length. Allocate worst-case scenario bytes.
-    char *new_string = smm_malloc(new_size + 1);
-    memcpy(new_string, self->value+min_idx, new_size);
-    new_string[new_size] = '\0';
 
-    t_object *obj = object_alloc(Object_String, 1, new_string);
-    smm_free(new_string);
+    t_string *dst = string_copy_partial(self->value, min, new_size);
 
+    t_string_object *obj = string_create_new_object(dst, self->locale);
     RETURN_OBJECT(obj);
 }
+
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, to_locale) {
+    t_string_object *str_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", (t_object *)&str_obj)) {
+        return NULL;
+    }
+
+    // Clone as new string
+    t_string_object *dst = (t_string_object *)object_clone((t_object *)self);
+
+    // Set new locale
+    string_change_locale(dst, STROBJ2CHAR0(str_obj));
+
+    RETURN_OBJECT(dst);
+}
+
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, get_locale) {
+    RETURN_STRING_FROM_CHAR(self->locale);
+}
+
 
 
 /* ======================================================================
@@ -297,15 +279,11 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
         return NULL;
     }
 
-    int new_length = self->byte_length + other->byte_length;
-    char *str = smm_malloc(new_length + 1);
-    strcpy(str, self->value);
-    strcat(str, other->value);
 
-    t_object *obj = object_alloc(Object_String, 1, str);
-    smm_free(str);
+    t_string *dst = object_string_cat(self, other);
 
-    RETURN_OBJECT(obj);
+    t_string_object *uc_obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(uc_obj);
 }
 
 /* ======================================================================
@@ -319,8 +297,17 @@ SAFFIRE_COMPARISON_METHOD(string, eq) {
         return NULL;
     }
 
-    // @TODO: Assuming that every unique string will return the same object, we could do a object check instead of a strcmp
-    (strcmp(self->value, other->value) == 0) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (self->value->len != other->value->len) {
+        RETURN_FALSE;
+    }
+
+    // @TODO: Assuming that every unique string will be at the same address, we could do a simple address check
+    //        instead of a memcmp. However, it means that we MUST make sure that the value_len's are also matching,
+    //        otherwise "foo" would match "foobar", as they both have the same start address
+    if (object_string_compare(self, other) == 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ne) {
@@ -330,8 +317,17 @@ SAFFIRE_COMPARISON_METHOD(string, ne) {
         return NULL;
     }
 
-    // @TODO: Assuming that every unique string will return the same object, we could do a object check instead of a strcmp
-    (strcmp(self->value, other->value) != 0) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (self->value->len != other->value->len) {
+        RETURN_TRUE;
+    }
+
+    // @TODO: Assuming that every unique string will be at the same address, we could do a simple address check
+    //        instead of a memcmp. However, it means that we MUST make sure that the value_len's are also matching,
+    //        otherwise "foo" would match "foobar", as they both have the same start address
+    if (object_string_compare(self, other) != 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, lt) {
@@ -341,7 +337,10 @@ SAFFIRE_COMPARISON_METHOD(string, lt) {
         return NULL;
     }
 
-    (strcmp(self->value, other->value) == -1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (object_string_compare(self, other) < 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, gt) {
@@ -351,7 +350,10 @@ SAFFIRE_COMPARISON_METHOD(string, gt) {
         return NULL;
     }
 
-    (strcmp(self->value, other->value) == 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (object_string_compare(self, other) > 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, le) {
@@ -361,7 +363,11 @@ SAFFIRE_COMPARISON_METHOD(string, le) {
         return NULL;
     }
 
-    (strcmp(self->value, other->value) <= 0) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (object_string_compare(self, other) <= 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
+
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ge) {
@@ -371,7 +377,10 @@ SAFFIRE_COMPARISON_METHOD(string, ge) {
         return NULL;
     }
 
-    (strcmp(self->value, other->value) >= 0) ? (RETURN_TRUE) : (RETURN_FALSE);
+    if (object_string_compare(self, other) >= 0) {
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, in) {
@@ -381,7 +390,7 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
         return NULL;
     }
 
-    (strstr(self->value, other->value) != NULL) ? (RETURN_TRUE) : (RETURN_FALSE);
+    utf8_strstr(self->value, other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ni) {
@@ -391,7 +400,7 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
         return NULL;
     }
 
-    (strstr(self->value, other->value) == NULL) ? (RETURN_TRUE) : (RETURN_FALSE);
+    utf8_strstr(self->value, other->value) ? (RETURN_FALSE) : (RETURN_TRUE);
 }
 
 
@@ -400,32 +409,33 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
 SAFFIRE_METHOD(string, __iterator) {
     RETURN_SELF;
 }
+
 SAFFIRE_METHOD(string, __key) {
     RETURN_NUMERICAL(self->iter);
 }
+
 SAFFIRE_METHOD(string, __value) {
-    char s[2];
-
-    s[0] = self->value[self->iter];
-    s[1] = 0;
-
-    RETURN_STRING(s);
+    t_string *dst = string_copy_partial(self->value, self->iter, 1);
+    t_string_object *dst_obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(dst_obj);
 }
+
 SAFFIRE_METHOD(string, __next) {
     self->iter++;
     RETURN_SELF;
 }
+
 SAFFIRE_METHOD(string, __rewind) {
     self->iter = 0;
     RETURN_SELF;
 }
+
 SAFFIRE_METHOD(string, __hasNext) {
-    if (self->iter < self->char_length) {
+    if (self->iter < self->value->len) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
-
 
 SAFFIRE_METHOD(string, __add) {
     RETURN_SELF;
@@ -441,15 +451,15 @@ SAFFIRE_METHOD(string, __get) {
     }
 
     long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->char_length) {
+    if (idx < 0 || idx > self->value->len) {
         object_raise_exception(Object_IndexException, 1, "Index out of range");
         return NULL;
     }
 
-    char s[2];
-    s[0] = self->value[idx];
-    s[1] = 0;
-    RETURN_STRING(s);
+
+    t_string *dst = string_copy_partial(self->value, idx, 1);
+    t_string_object *dst_obj = string_create_new_object(dst, self->locale);
+    RETURN_OBJECT(dst_obj);
 }
 
 
@@ -461,7 +471,7 @@ SAFFIRE_METHOD(string, __has) {
     }
 
     long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->char_length) {
+    if (idx < 0 || idx > self->value->len) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
@@ -485,11 +495,15 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_String_struct, "__string",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_length);
+//    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_lengthx);
     object_add_internal_method((t_object *)&Object_String_struct, "length",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
     object_add_internal_method((t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
     object_add_internal_method((t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
     object_add_internal_method((t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+
+    object_add_internal_method((t_object *)&Object_String_struct, "toLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_to_locale);
+    object_add_internal_method((t_object *)&Object_String_struct, "getLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_get_locale);
+
 
     object_add_internal_method((t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
@@ -538,17 +552,6 @@ void object_string_fini(void) {
 
 
 
-static t_object *obj_cache(t_object *self, t_dll *arg_list) {
-    // Get the widestring from the argument list
-    t_dll_element *e = DLL_HEAD(arg_list);
-    char *value = (char *)e->data;
-
-    // Create a hash from the string
-    char strhash[33];
-    hash_string_text(value, strhash);
-
-    return ht_find_str(string_cache, strhash);
-}
 
 static t_object *obj_new(t_object *self) {
     // Create new object from string object template
@@ -565,40 +568,38 @@ static t_object *obj_new(t_object *self) {
     return (t_object *)obj;
 }
 
+
+
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_string_object *str_obj = (t_string_object *)obj;
 
-    // Get the widestring from the argument list
-    t_dll_element *e = DLL_HEAD(arg_list);
-    char *value = (char *)e->data;
+    if (arg_list->size == 1) {
+        // 1 element: it's already a string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        str_obj->value = (t_string *)e->data;
+    } else if (arg_list->size > 1) {
+        // 2 (or more) elements: it's a size + char0 string
 
-    // Create a hash from the string
-    char strhash[33];
-    hash_string_text(value, strhash);
+        // Get length of string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        int value_len = (int)e->data;
 
-    // Set internal data
-    str_obj->value = smm_strdup(value);
-    str_obj->char_length = utf8_len(value);
+        // Get actual binary safe and non-encoded string
+        e = DLL_NEXT(e);
+        char *value = (char *)e->data;
 
-    // Calculate length for each character, and add to total
-    str_obj->byte_length = strlen(value);
-    recalc_hash(str_obj);
+        // Convert our stream to UTF8
+        str_obj->value = char_to_string(value, value_len);
+    }
 
-    // Add to string cache
-//    printf("Adding %s to string_cache\n", str_obj->value);
-    ht_add_str(string_cache, strhash, str_obj);
+    t_thread *thread = thread_get_current();
+    str_obj->locale = thread->locale ? string_strdup0(thread->locale) : NULL;
 }
 
 static void obj_free(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
-    if (! str_obj->value) return;
-
-    char strhash[33];
-    hash_string_text(str_obj->value, strhash);
-
-    ht_remove_str(string_cache, strhash);
-
-    smm_free(str_obj->value);
+    if (str_obj->value) smm_free(str_obj->value);
+    if (str_obj->locale) smm_free(str_obj->locale);
 }
 
 
@@ -608,17 +609,39 @@ static void obj_destroy(t_object *obj) {
 
 
 #ifdef __DEBUG
+
+/**
+ * Object debug doesn't output binary safe strings
+ */
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    char *s = ((t_string_object *)obj)->value;
+
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         snprintf(global_buf, 1023, "String");
     } else {
-        snprintf(global_buf, 1023, "string(\"%s\")", s);
+        snprintf(global_buf, 1023, "string(\"%s\")", STROBJ2CHAR0(obj));
     }
+
     return global_buf;
 }
 #endif
+
+static char *obj_hash(t_object *obj) {
+    t_string_object *str_obj = (t_string_object *)obj;
+
+    char *s = (char *)smm_malloc(17);
+
+    if (str_obj->needs_hashing == 1) {
+        // Generate hash
+        calculate_hash(str_obj);
+        str_obj->needs_hashing = 0;
+    }
+    memcpy(s, str_obj->hash, 16);
+    s[16] = '\0';
+
+    return s;
+}
+
 
 
 // String object management functions
@@ -628,7 +651,8 @@ t_object_funcs string_funcs = {
         obj_free,             // Free a string object
         obj_destroy,          // Destroy a string object
         NULL,                 // Clone
-        obj_cache,            // Object cache
+        NULL,                 // Object cache
+        obj_hash,             // Hash
 #ifdef __DEBUG
         obj_debug,
 #endif
@@ -637,8 +661,9 @@ t_object_funcs string_funcs = {
 // Intial object
 t_string_object Object_String_struct = {
     OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs),
-    '\0',
-    0,
-    0,
-    ""
+    NULL,       // Value
+    "",         // Hash value
+    1,          // Needs hashing
+    0,          // Internal iteration index
+    NULL,       // Locale
 };

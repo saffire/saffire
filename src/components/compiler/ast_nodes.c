@@ -119,7 +119,7 @@ t_ast_element *ast_node_string(int lineno, char *value) {
 
     p->lineno = lineno;
     p->type = typeAstString;
-    p->string.value = smm_strdup(value);
+    p->string.value = string_strdup0(value);
 
     return p;
 }
@@ -129,7 +129,7 @@ t_ast_element *ast_node_regex(int lineno, char *value) {
 
     p->lineno = lineno;
     p->type = typeAstRegex;
-    p->regex.value = smm_strdup(value);
+    p->regex.value = string_strdup0(value);
 
     return p;
 }
@@ -140,7 +140,7 @@ t_ast_element *ast_node_id_to_string(t_ast_element *src) {
 
     p->lineno = src->lineno;
     p->type = typeAstString;
-    p->string.value = smm_strdup(src->identifier.name);
+    p->string.value = string_strdup0(src->identifier.name);
 
     return p;
 }
@@ -153,7 +153,7 @@ t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
 
     p->lineno = lineno;
     p->type = typeAstString;
-    p->string.value = smm_strdup(src->string.value);
+    p->string.value = string_strdup0(src->string.value);
 
     return p;
 }
@@ -189,7 +189,7 @@ t_ast_element *ast_node_identifier(int lineno, char *var_name) {
 
     p->lineno = lineno;
     p->type = typeAstIdentifier;
-    p->identifier.name = smm_strdup(var_name);
+    p->identifier.name = string_strdup0(var_name);
     return p;
 }
 
@@ -420,7 +420,7 @@ t_ast_element *ast_node_class(int lineno, t_class *class, t_ast_element *body) {
     p->lineno = lineno;
     p->type = typeAstClass;
     p->class.modifiers = class->modifiers;
-    p->class.name = smm_strdup(class->name);
+    p->class.name = string_strdup0(class->name);
 
     p->class.extends = class->extends;
     p->class.implements = class->implements;
@@ -439,7 +439,7 @@ t_ast_element *ast_node_interface(int lineno, int modifiers, char *name, t_ast_e
     p->lineno = lineno;
     p->type = typeAstInterface;
     p->interface.modifiers = modifiers;
-    p->interface.name = smm_strdup(name);
+    p->interface.name = string_strdup0(name);
     p->interface.implements = implements;
     p->interface.body = body;
 
@@ -454,7 +454,7 @@ t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char
 
     p->lineno = lineno;
     p->type = typeAstAttribute;
-    p->attribute.name = smm_strdup(name);
+    p->attribute.name = string_strdup0(name);
     p->attribute.attrib_type = attrib_type;
     p->attribute.visibility = visibility;
     p->attribute.access = access;

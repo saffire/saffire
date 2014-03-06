@@ -129,7 +129,7 @@ static int _convert_constant_string(t_asm_frame *frame, char *s) {
     // Add to DLL
     t_asm_constant *c = smm_malloc(sizeof(t_asm_constant));
     c->type = const_string;
-    c->data.s = smm_strdup(s);
+    c->data.s = string_strdup0(s);
     dll_append(frame->constants, c);
 
     return frame->constants->size - 1;
@@ -148,7 +148,7 @@ static int _convert_constant_regex(t_asm_frame *frame, char *r) {
     // Add to DLL
     t_asm_constant *c = smm_malloc(sizeof(t_asm_constant));
     c->type = const_regex;
-    c->data.s = smm_strdup(r);
+    c->data.s = string_strdup0(r);
     dll_append(frame->constants, c);
 
     return frame->constants->size - 1;
@@ -167,7 +167,7 @@ static int _convert_constant_code(t_asm_frame *frame, char *s) {
     // Add to DLL
     t_asm_constant *c = smm_malloc(sizeof(t_asm_constant));
     c->type = const_code;
-    c->data.s = smm_strdup(s);
+    c->data.s = string_strdup0(s);
     dll_append(frame->constants, c);
 
     return frame->constants->size - 1;
@@ -337,7 +337,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
                         bp = smm_malloc(sizeof(struct _backpatch));
                         bp->opcode_offset = opcode_off;
                         bp->operand_offset = frame->code_len;
-                        bp->label = smm_strdup(line->opr[i]->data.s);
+                        bp->label = string_strdup0(line->opr[i]->data.s);
                         dll_append(frame->backpatch_offsets, bp);
 
                         opr = 0xFFFF; // Add dummy bytes keep the offsets happy
@@ -459,7 +459,7 @@ void assembler_free(t_hash_table *asm_code) {
 t_asm_opr *asm_create_opr(int type, char *s, int l) {
     t_asm_opr *opr = smm_malloc(sizeof(t_asm_opr));
     opr->type = type;
-    opr->data.s = s ? smm_strdup(s) : NULL;
+    opr->data.s = s ? string_strdup0(s) : NULL;
     opr->data.l = l;
     return opr;
 }
@@ -492,7 +492,7 @@ t_asm_line *asm_create_codeline(int lineno, int opcode, int opr_cnt, ...) {
 t_asm_line *asm_create_labelline(char *label) {
     t_asm_line *line = smm_malloc(sizeof(t_asm_line));
     line->type = ASM_LINE_TYPE_LABEL;
-    line->s = smm_strdup(label);
+    line->s = string_strdup0(label);
     return line;
 }
 
@@ -520,7 +520,7 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     }
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
-    bc->source_filename = filename ? smm_strdup(filename) : NULL;
+    bc->source_filename = filename ? string_strdup0(filename) : NULL;
 
 
     // Cleanup our frames

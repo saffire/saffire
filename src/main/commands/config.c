@@ -145,13 +145,13 @@ static int do_generate(void) {
     current_time = time (NULL);
     local_time = localtime (&current_time);
 
-    output("#\n");
-    output("# Default configuration file for saffire. It consists of all configuration settings.\n");
-    output("# Generated on %s", asctime(local_time));
-    output("#\n");
+    output_char("#\n");
+    output_char("# Default configuration file for saffire. It consists of all configuration settings.\n");
+    output_char("# Generated on %s", asctime(local_time));
+    output_char("#\n");
 
     for (int i=0; i!=ARRAY_SIZE(default_ini); i++) {
-        output("%s\n", default_ini[i]);
+        output_char("%s\n", default_ini[i]);
     }
     return 0;
 }
@@ -167,10 +167,10 @@ static int do_get(void) {
 
     char *val = config_get_string(key, NULL);
     if (val) {
-        output("%s : %s\n", key, val);
+        output_char("%s : %s\n", key, val);
         return 0;
     } else {
-        output("Cannot find key %s\n", key);
+        output_char("Cannot find key %s\n", key);
     }
     return 1;
 }
@@ -221,7 +221,7 @@ static int do_list(void) {
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         char *val = ht_iter_value(&iter);
-        output("%s : %s\n", key, val);
+        output_char("%s : %s\n", key, val);
 
         ht_iter_next(&iter);
     }

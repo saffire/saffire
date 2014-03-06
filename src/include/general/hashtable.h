@@ -34,14 +34,14 @@
 
     #define HASH_KEY_STR         0
     #define HASH_KEY_NUM         1
-    #define HASH_KEY_PTR         2
+    #define HASH_KEY_OBJ         2
 
     typedef struct _hash_key {
         char type;                          // One of the HASH_KEY_* defines
         union {
             char *s;                        // String value
             int n;                          // Numerical value
-            void *p;                        // Custom value (normally, t_object)
+            t_object *o;                    // Objects
         } val;
     } t_hash_key;
 

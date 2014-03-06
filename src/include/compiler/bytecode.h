@@ -28,6 +28,7 @@
 #define __BYTECODE_H__
 
     #include <stdint.h>
+    #include "general/string.h"
     #include "compiler/ast_nodes.h"
     #include "general/dll.h"
     #include "objects/object.h"
@@ -59,8 +60,7 @@
         unsigned int  len;          // Length of data
 
         union {
-            char *s;                    // String
-            char *r;                    // Regex
+            char *s;                    // String or regex (binary safe)
             long l;                     // Long
             t_bytecode *code;           // Code block
             void *ptr;                  // Generic pointer

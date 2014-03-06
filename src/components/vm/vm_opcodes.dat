@@ -64,6 +64,8 @@ BUILD_TUPLE          0xAD
 
 ITER_FETCH           0xB1
 
+STORE_FRAME_ID       0xB8
+
 STORE_ATTRIB         0xBD
 CALL                 0xBF
 

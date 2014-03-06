@@ -61,7 +61,7 @@ static int do_lint(void) {
         dircheck = 1;
         process_directory(target);
     } else {
-        output("Received neither a file nor a directory.\n");
+        output_char("Received neither a file nor a directory.\n");
     }
 
     return 0;
@@ -74,9 +74,9 @@ static int do_lint(void) {
 void process_file(const char *filename) {
     if ( ! is_saffire_file(filename)) {
         if (! dircheck) {   // we are lint-checking a single file, display error on this file
-            output_ansi(ANSI_BRIGHTRED);
-            output("%s is not a saffire file.\n", filename);
-            output_ansi(ANSI_RESET);
+            output_char(ANSI_BRIGHTRED);
+            output_char("%s is not a saffire file.\n", filename);
+            output_char(ANSI_RESET);
         }
     } else {
         check_file(filename);
@@ -90,7 +90,7 @@ void process_directory(const char *directory) {
     glob_t buffer;
     char *pattern;
 
-    smm_asprintf(&pattern, "%s/*", directory);
+    smm_asprintf_char(&pattern, "%s/*", directory);
     glob(pattern, 0, NULL, &buffer);
     smm_free(pattern);
 
@@ -107,18 +107,18 @@ void process_directory(const char *directory) {
  * perform the actual syntax check
  */
 int check_file(const char *filename) {
-    output_ansi(ANSI_BRIGHTRED);
+    output_char(ANSI_BRIGHTRED);
     t_ast_element *ast = ast_generate_from_file(filename);
-    output_ansi(ANSI_RESET);
+    output_char(ANSI_RESET);
 
     if (ast == NULL) {
         return 0;
     }
     ast_free_node(ast);
 
-    output_ansi(ANSI_BRIGHTGREEN);
-    output("No syntax errors in %s\n", filename);
-    output_ansi(ANSI_RESET);
+    output_char(ANSI_BRIGHTGREEN);
+    output_char("No syntax errors in %s\n", filename);
+    output_char(ANSI_RESET);
     return 1;
 }
 

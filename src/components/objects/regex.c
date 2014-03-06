@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <pcre.h>
+#include "general/string.h"
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -88,7 +89,7 @@ SAFFIRE_METHOD(regex, match) {
     }
 
     // Convert to utf8 and execute regex
-    rc = pcre_exec(self->regex, 0, str->value, strlen(str->value), 0, 0, ovector, OVECCOUNT);
+    rc = pcre_exec(self->regex, 0, STROBJ2CHAR0(str), STROBJ2CHAR0LEN(str), 0, 0, ovector, OVECCOUNT);
 
     // Check result
     if (rc < 0) {
@@ -105,7 +106,7 @@ SAFFIRE_METHOD(regex, match) {
 
     // Display result
     for (int i=0; i<rc; i++) {
-        DEBUG_PRINT("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], str->value + ovector[2*i]);
+        DEBUG_PRINT_CHAR("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], str->value + ovector[2*i]);
     }
 
     // Return number of matches
@@ -201,8 +202,25 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     const char *error;
     int erroffset;
 
-    t_dll_element *e = DLL_HEAD(arg_list);
-    char *regex = (char *)e->data;
+    char *regex;
+    if (arg_list->size == 1) {
+        // 1 element: it's already a string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        regex = ((t_string *)e->data)->val;
+    } else {
+        // 2 (or more) elements: it's a size + char0 string
+
+        // Get length of string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        int value_len = (int)e->data;
+
+        // Get actual binary safe and non-encoded string
+        e = DLL_NEXT(e);
+        char *value = (char *)e->data;
+
+        regex = value;
+    }
+
     char sep = *regex;
     regex++;   // Skip initial separator (only / is supported)
 
@@ -214,7 +232,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     flags++;
 
     // Now we can safely store regex-string and flags
-    re_obj->regex_string = smm_strdup(regex);
+    re_obj->regex_string = string_strdup0(regex);
     re_obj->regex_flags = 0;
 
     while (*flags) {
@@ -286,6 +304,13 @@ static char *obj_debug(t_object *obj) {
 }
 #endif
 
+static char *obj_hash(t_object *obj) {
+    char *s;
+    smm_asprintf_char(&s, "%s%d", ((t_regex_object *)obj)->regex_string, ((t_regex_object *)obj)->regex_flags);
+    return s;
+}
+
+
 // Regex object management functions
 t_object_funcs regex_funcs = {
         obj_new,              // Allocate a new regex object
@@ -294,6 +319,7 @@ t_object_funcs regex_funcs = {
         obj_destroy,          // Clone a regex object
         NULL,                 // Clone
         NULL,                 // Cache
+        obj_hash,             // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

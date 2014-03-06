@@ -24,41 +24,17 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OUTPUT_H__
-#define __OUTPUT_H__
+#ifndef __VM_CODEFRAME_H__
+#define __VM_CODEFRAME_H__
 
-    #include <stdio.h>
-    #include <stdarg.h>
-    #include "general/dll.h"
-    #include "general/string.h"
+    #include "vm/vmtypes.h"
+    #include "compiler/bytecode.h"
 
-    #define ANSI_BRIGHTRED    "\33[31;1m"
-    #define ANSI_BRIGHTGREEN  "\33[32;1m"
-    #define ANSI_BRIGHTYELLOW "\33[33;1m"
-    #define ANSI_BRIGHTBLUE   "\33[34;1m"
-    #define ANSI_RESET        "\33[0m"
+    t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context);
+    t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent, t_bytecode *bytecode);
+    void vm_codeframe_destroy(t_vm_codeframe *codeframe);
 
-    void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s));
-
-    void output_flush(void);
-
-    // Normal output
-    void output_char(char *format, ...);
-    void output_string(t_string *format, ...);
-
-    void output_debug_char(char *format, ...);
-    void output_debug_string(t_string *format, ...);
-
-//    void output_char_printf(char *format, t_dll *args);
-    void output_string_printf(t_string *format, t_dll *args);
-
-    void output_debug_char_printf(char *format, t_dll *args);
-    void output_debug_string_printf(t_string *format, t_dll *args);
-
-
-    // Errors and warnings are only for chars. We probably don't need string/unicode variants for this
-    void error(char *format, ...);
-    void warning(char *format, ...);
-    void fatal_error(int exitcode, char *format, ...);
+    void vm_codeframe_init(void);
+    void vm_codeframe_fini(void);
 
 #endif

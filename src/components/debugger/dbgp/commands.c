@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "general/config.h"
+#include "general/string.h"
 #include "debugger/dbgp/xml.h"
 #include "debugger/dbgp/args.h"
 #include "debugger/dbgp/sock.h"
@@ -261,13 +262,13 @@ DBGP_CMD_DEF(step_into) {
     di->state = DBGP_STATE_RUNNING;
     di->step_into = 1;
 
-    if (di->frame == NULL || di->frame->bytecode == NULL || di->frame->bytecode->source_filename == NULL) {
+    if (di->frame == NULL || di->frame->codeframe->bytecode == NULL || di->frame->codeframe->bytecode->source_filename == NULL) {
         di->step_data.frame = NULL;
         di->step_data.file = NULL;
         di->step_data.lineno = 0;
     } else {
         di->step_data.frame = di->frame;
-        di->step_data.file = di->frame->bytecode->source_filename;
+        di->step_data.file = di->frame->codeframe->bytecode->source_filename;
         di->step_data.lineno = di->frame->lineno_current_line;
     }
 
@@ -283,7 +284,7 @@ DBGP_CMD_DEF(step_over) {
     di->step_over = 1;
 
     di->step_data.frame = di->frame;
-    di->step_data.file = di->frame->bytecode->source_filename;
+    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -298,7 +299,7 @@ DBGP_CMD_DEF(step_out) {
     di->step_out = 1;
 
     di->step_data.frame = di->frame->parent;
-    di->step_data.file = di->frame->bytecode->source_filename;
+    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -318,7 +319,7 @@ DBGP_CMD_DEF(stack_get) {
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);
 
-    t_vm_frame *frame = di->frame;
+    t_vm_stackframe *frame = di->frame;
 
     int level = 0;
     while (frame) {
@@ -327,9 +328,9 @@ DBGP_CMD_DEF(stack_get) {
         xmlSetProp(node, BAD_CAST "level", BAD_CAST xmlbuf);
         xmlSetProp(node, BAD_CAST "type", BAD_CAST "file");
 
-        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->context);
+        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->codeframe->context);
 
-        snprintf(xmlbuf, 999, "file://%s", frame->bytecode->source_filename);
+        snprintf(xmlbuf, 999, "file://%s", frame->codeframe->bytecode->source_filename);
         xmlSetProp(node, BAD_CAST "filename", BAD_CAST xmlbuf);
         snprintf(xmlbuf, 999, "%d", frame->lineno_current_line);
         xmlSetProp(node, BAD_CAST "lineno", BAD_CAST xmlbuf);
@@ -372,12 +373,14 @@ DBGP_CMD_DEF(context_get) {
     snprintf(xmlbuf, 999, "%d", context_id);
     xmlSetProp(root_node, BAD_CAST "context", BAD_CAST xmlbuf);
 
-    t_vm_frame *frame = di->frame;
+    t_vm_stackframe *frame = di->frame;
 
     t_hash_table *ht;
     if (context_id == 0) {
         ht = frame->local_identifiers->ht;
     } else if (context_id == 1) {
+        ht = frame->frame_identifiers->ht;
+    } else if (context_id == 2) {
         ht = frame->global_identifiers->ht;
     } else {
         ht = frame->builtin_identifiers->ht;
@@ -386,7 +389,7 @@ DBGP_CMD_DEF(context_get) {
     t_hash_iter iter;
     ht_iter_init(&iter, ht);
     while (ht_iter_valid(&iter)) {
-        char *key = ht_iter_key_str(&iter);     // @TODO: We are dealing with objects?
+        char *key = ht_iter_key_str(&iter);
         t_object *obj = ht_iter_value(&iter);
 
         if (OBJECT_TYPE_IS_INSTANCE(obj)) {
@@ -408,7 +411,10 @@ DBGP_CMD_DEF(context_get) {
             } else if (OBJECT_IS_STRING(obj)) {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "string");
 
-                basebuf = base64_encode((const unsigned char *)((t_string_object *)obj)->value, strlen(((t_string_object *)obj)->value), &basebuflen);
+                t_string *s = ((t_string_object *)obj)->value;
+
+                // @TODO: We have to convert
+                basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
                 printf("basebuf: '%s'\n", basebuf);
                 xmlNodeSetContent(node, BAD_CAST basebuf);
                 free(basebuf);
@@ -555,7 +561,7 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Filename
     i = dbgp_args_find("-f", argc, argv);
-    bp->filename = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->filename = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Line number
     i = dbgp_args_find("-n", argc, argv);
@@ -563,11 +569,11 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Function
     i = dbgp_args_find("-m", argc, argv);
-    bp->function = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->function = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Exception
     i = dbgp_args_find("-x", argc, argv);
-    bp->exception = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->exception = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // Hit value
     i = dbgp_args_find("-h", argc, argv);
@@ -575,7 +581,7 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // Hit condition
     i = dbgp_args_find("-o", argc, argv);
-    bp->hit_condition = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->hit_condition = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // temporary
     i = dbgp_args_find("-r", argc, argv);
@@ -583,13 +589,13 @@ DBGP_CMD_DEF(breakpoint_set) {
 
     // expression
     i = dbgp_args_find("--", argc, argv);
-    bp->expression = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->expression = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
     // String representation of the breakpoint id
     di->breakpoint_id++;
     char buf[10];
     snprintf(buf, 9, "%d", di->breakpoint_id);
-    bp->id = smm_strdup(buf);
+    bp->id = string_strdup0(buf);
 
     ht_add_str(di->breakpoints, bp->id, bp);
 
@@ -663,7 +669,7 @@ DBGP_CMD_DEF(breakpoint_update) {
 
     // Hit condition
     i = dbgp_args_find("-o", argc, argv);
-    bp->hit_condition = (i == -1) ? NULL : smm_strdup(argv[i+1]);
+    bp->hit_condition = (i == -1) ? NULL : string_strdup0(argv[i+1]);
 
 
     xmlNodePtr root_node = dbgp_xml_create_response(di);

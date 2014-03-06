@@ -31,10 +31,31 @@
     #include "general/output.h"
 
     #ifdef __DEBUG
-        #define DEBUG_PRINT output_debug
+        #define DEBUG_PRINT_CHAR output_debug_char
+        #define DEBUG_PRINT_STRING output_debug_string
     #else
-        #define DEBUG_PRINT(format, args...) ((void)0)
+        #define DEBUG_PRINT_CHAR(format, args...) ((void)0)
+        #define DEBUG_PRINT_STRING(format, args...) ((void)0)
     #endif
+
+
+    #ifndef __DEBUG_STACK
+        // Display stack pushes and pops
+        #define __DEBUG_STACK        0
+    #endif
+    #ifndef __DEBUG_VM_OPCODES
+        // Display VM opcodes
+        #define __DEBUG_VM_OPCODES   1
+    #endif
+    #ifndef __DEBUG_FREE_OBJECT
+        // Display when free'ing objects
+        #define __DEBUG_FREE_OBJECT  0
+    #endif
+    #ifndef __DEBUG_STACKFRAME_DESTROY
+        // Display variables when destroying stackframe
+        #define __DEBUG_STACKFRAME_DESTROY  1
+    #endif
+
 
 #endif
 

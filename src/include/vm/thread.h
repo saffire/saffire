@@ -27,22 +27,27 @@
 #ifndef __VM_THREAD_H__
 #define __VM_THREAD_H__
 
-    #include "vm/frame.h"
+    #include "vm/stackframe.h"
     #include "objects/objects.h"
 
     /**
      * All data relevant to a single thread
      */
     typedef struct _thread {
-        t_vm_frame *frame;
-        t_exception_object *exception;
+        t_vm_stackframe *frame;                  // Current frame
+        t_exception_object *exception;      // Current thrown exception
+
+        char *locale;                       // Current global locale
     } t_thread;
 
     t_thread *current_thread;
 
+    t_thread *thread_new(void);
+    void thread_free(t_thread *);
+
     t_thread *thread_get_current(void);
-    t_vm_frame *thread_get_current_frame(void);
-    void thread_set_current_frame(t_vm_frame *frame);
+    t_vm_stackframe *thread_get_current_frame(void);
+    void thread_set_current_frame(t_vm_stackframe *frame);
 
     void thread_create_exception(t_exception_object *exception, int code, const char *message);
     void thread_create_exception_printf(t_exception_object *exception, int code, const char *format, ...);

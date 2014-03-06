@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include <string.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -34,7 +35,7 @@
 #include <fnmatch.h>
 #include "general/output.h"
 #include "vm/vm.h"
-#include "vm/frame.h"
+#include "vm/stackframe.h"
 #include "commands/command.h"
 #include "general/smm.h"
 #include "general/parse_options.h"
@@ -103,7 +104,7 @@ static int _compile_file(const char *source_file, int sign, char *gpg_key) {
 
     // Save bytecode structure to disk
     sfc_dest_file = replace_extension(source_file, ".sf", ".sfc");
-    output("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", sfc_dest_file);
+    output_char("Compiling %s into %s%s\n", source_file, sign ? "signed " : "", sfc_dest_file);
     bytecode_save(sfc_dest_file, source_file, bc);
 
     // Add signature at the end of the file, if needed

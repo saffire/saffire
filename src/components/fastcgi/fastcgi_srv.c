@@ -75,9 +75,9 @@ static int _fcgi_output_char_helper(FILE *f, char c) {
     if (f == stdout) return FCGX_PutChar(c, fcgi_out);
     return FCGX_PutChar(c, fcgi_err);
 }
-static int _fcgi_output_string_helper(FILE *f, char *s) {
-    if (f == stdout) return FCGX_PutS(s, fcgi_out);
-    return FCGX_PutS(s, fcgi_err);
+static int _fcgi_output_string_helper(FILE *f, t_string *s) {
+    if (f == stdout) return FCGX_PutStr(s->val, s->len, fcgi_out);
+    return FCGX_PutStr(s->val, s->len, fcgi_err);
 }
 
 
@@ -97,7 +97,7 @@ char *fcgi_getenv(const char *key) {
     return NULL;
 }
 
-extern int is_tty;
+//extern int is_tty;
 
 /**
  * Make sure this loop does not return
@@ -116,7 +116,7 @@ static int fcgi_loop(void) {
     vm_init(NULL, VM_RUNMODE_FASTCGI);
 
     output_set_helpers(_fcgi_output_char_helper, _fcgi_output_string_helper);
-    is_tty = 0;
+//    is_tty = 0;
 
     int ret;
     while (ret = FCGX_Accept(&fcgi_in, &fcgi_out, &fcgi_err, &fcgi_env), ret >= 0) {
@@ -174,9 +174,13 @@ static int fcgi_loop(void) {
 
         smm_free(bytecode_file);
 
-        t_vm_frame *initial_frame = vm_frame_new(NULL, source_file, "", bc);
+        t_vm_context *ctx = vm_context_new("::", source_file);
+        t_vm_codeframe *codeframe = vm_codeframe_new(bc, ctx);
+        t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeframe);
+
         vm_execute(initial_frame);
-        vm_frame_destroy(initial_frame);
+
+        vm_stackframe_destroy(initial_frame);
         bytecode_free(bc);
     }
 

@@ -29,6 +29,7 @@
 #define __PRINTF_H__
 
     #include "general/dll.h"
+    #include "general/string.h"
 
     // Flags user in processing format string
     #define PR_LJ   0x01    // Left Justify
@@ -44,6 +45,6 @@
 
     typedef int (*fnptr)(FILE *f, char c);
 
-    int arg_printf (FILE *f, const char *fmt, t_dll *args, fnptr output);
+    int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output);
 
 #endif

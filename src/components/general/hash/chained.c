@@ -26,6 +26,7 @@
 */
 #include <string.h>
 #include <math.h>
+#include "objects/object.h"
 #include "general/hashtable.h"
 #include "general/hash/hash_funcs.h"
 #include "general/smm.h"
@@ -45,8 +46,8 @@ static hash_t ht_hash(t_hash_table *ht, t_hash_key *key) {
         case HASH_KEY_NUM :
             hash_value = key->val.n;
             break;
-        case HASH_KEY_PTR :
-            hash_value = (unsigned long)key->val.p;
+        case HASH_KEY_OBJ :
+            hash_value = ht->hashfuncs->hash(ht, (const char *)object_get_hash((t_object *)(key->val.o)));
             break;
     }
 
@@ -56,7 +57,7 @@ static hash_t ht_hash(t_hash_table *ht, t_hash_key *key) {
 /**
  * Resize the hashtable, and rehash all values
  */
-static void resize(t_hash_table *ht, int new_bucket_count) {
+static void chf_resize(t_hash_table *ht, int new_bucket_count) {
     if (ht->bucket_count == 0) {
         // Initial allocation.
         ht->bucket_count = new_bucket_count;
@@ -105,6 +106,15 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
     // Found bucket. Try and find the key. Traverse linked list if needed.
     int found = 0;
     t_hash_table_bucket *htb = ht->bucket_list[hash_value_capped];
+
+
+    // Cache the key hashval when we are dealing with objects.
+    char *key_hash_val = NULL;
+    if (key->type == HASH_KEY_OBJ) {
+        key_hash_val = object_get_hash((t_object *)(key->val.o));
+    }
+
+
     while (htb) {
         switch (key->type) {
             case HASH_KEY_STR :
@@ -113,22 +123,22 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
             case HASH_KEY_NUM :
                 if (htb->key->val.n == key->val.n) found = 1;
                 break;
-            case HASH_KEY_PTR :
-                if (htb->key->val.p == key->val.p) found = 1;
+            case HASH_KEY_OBJ :
+                if (strcmp(object_get_hash((t_object *)(htb->key->val.o)), key_hash_val) == 0) found = 1;
                 break;
         }
-        if (found) break;
+        if (found) return htb;
         htb = htb->next_in_bucket;
     }
 
-    return htb;
+    return NULL;
 }
 
 
 /**
  * Find key in hash table
  */
-static void *find(t_hash_table *ht, t_hash_key *key) {
+static void *chf_find(t_hash_table *ht, t_hash_key *key) {
     if (! ht) return NULL;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -141,7 +151,7 @@ static void *find(t_hash_table *ht, t_hash_key *key) {
 /**
  * Check if a key exists in a hashtable
  */
-static int exists(t_hash_table *ht, t_hash_key *key) {
+static int chf_exists(t_hash_table *ht, t_hash_key *key) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
@@ -154,7 +164,7 @@ static int exists(t_hash_table *ht, t_hash_key *key) {
 /**
  * Add key/value pair to the hash
  */
-static int add(t_hash_table *ht, t_hash_key *key, void *value) {
+static int chf_add(t_hash_table *ht, t_hash_key *key, void *value) {
     if (! ht) return 0;      // Not a hash table
 
     hash_t hash_value = ht_hash(ht, key);
@@ -199,7 +209,7 @@ static int add(t_hash_table *ht, t_hash_key *key, void *value) {
     // Calculate load_factor and resize if needed
     float lf = ht->element_count / (float)ht->bucket_count;
     if (lf > ht->load_factor) {
-        resize(ht, floor(ht->bucket_count * ht->resize_factor));
+        chf_resize(ht, floor(ht->bucket_count * ht->resize_factor));
     }
 
     return 1;
@@ -209,12 +219,12 @@ static int add(t_hash_table *ht, t_hash_key *key, void *value) {
 /**
  * Add key/value pair to the hash
  */
-static void *replace(t_hash_table *ht, t_hash_key *key, void *value) {
+static void *chf_replace(t_hash_table *ht, t_hash_key *key, void *value) {
     if (! ht) return 0;      // Not a hash table
 
     t_hash_table_bucket *htb = find_bucket(ht, key);
     if (! htb) {
-        add(ht, key, value);
+        chf_add(ht, key, value);
         return NULL;
     }
 
@@ -227,7 +237,7 @@ static void *replace(t_hash_table *ht, t_hash_key *key, void *value) {
 /**
  * Remove key from hash table
  */
-static void *remove(t_hash_table *ht, t_hash_key *key) {
+static void *chf_remove(t_hash_table *ht, t_hash_key *key) {
     void *val;
 
     if (! ht) return 0;      // Not a hash table
@@ -252,8 +262,8 @@ static void *remove(t_hash_table *ht, t_hash_key *key) {
             case HASH_KEY_NUM :
                 found = htb->key->val.n == key->val.n;
                 break;
-            case HASH_KEY_PTR :
-                found = htb->key->val.p == key->val.p;
+            case HASH_KEY_OBJ :
+                found = strcmp(object_get_hash((t_object *)(htb->key->val.o)), object_get_hash((t_object *)(key->val.o)));
                 break;
         }
         if (found) break;
@@ -325,12 +335,12 @@ void _place_bucket(t_hash_table *ht, t_hash_table_bucket *bucket) {
     ht->bucket_list[capped_hash] = bucket;
 }
 
-void deep_copy(t_hash_table *ht) {
+void chf_deep_copy(t_hash_table *ht) {
     ht->copy_on_write = 0;
 
     int bucket_count = ht->bucket_count;
     ht->bucket_count = 0;
-    resize(ht, bucket_count);
+    chf_resize(ht, bucket_count);
 
     t_hash_table_bucket *old_current = ht->head;
     ht->head = _copy_bucket(old_current);
@@ -358,11 +368,11 @@ void deep_copy(t_hash_table *ht) {
 t_hashfuncs chained_hf = {
     hash_native,                // Use the native hashing method
     //hash_djbx33a,
-    find,
-    exists,
-    add,
-    replace,
-    remove,
-    resize,
-    deep_copy,
+    chf_find,
+    chf_exists,
+    chf_add,
+    chf_replace,
+    chf_remove,
+    chf_resize,
+    chf_deep_copy,
 };

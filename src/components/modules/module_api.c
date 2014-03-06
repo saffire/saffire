@@ -44,7 +44,7 @@
  * Register an module
  */
 int register_module(t_module *mod) {
-    DEBUG_PRINT("   Registering module: %s\n", mod->name);
+    DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
 
 //    t_dll_element *e = DLL_HEAD(modules);
 //    while (e) {
@@ -66,7 +66,7 @@ int register_module(t_module *mod) {
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
         char *key;
-        smm_asprintf(&key, "%s::%s", mod->name, obj->name);
+        smm_asprintf_char(&key, "%s::%s", mod->name, obj->name);
         vm_populate_builtins(key, obj);
         smm_free(key);
 

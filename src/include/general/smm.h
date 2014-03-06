@@ -29,14 +29,17 @@
 
     #include <stdlib.h>
     #include <stdarg.h>
+    #include "general/string.h"
 
     void *smm_malloc(size_t size);
     void *smm_zalloc(size_t size);
     void *smm_realloc(void *ptr, size_t size);
     void smm_free(void *ptr);
-    char *smm_strdup(const char *s);
 
-    int smm_asprintf(char **ret, const char *format, ...);
-    int smm_vasprintf(char **ret, const char *format, va_list args);
+    int smm_asprintf_char(char **ret, const char *format, ...);
+    int smm_vasprintf_char(char **ret, const char *format, va_list args);
+    int smm_asprintf_string(t_string **ret, t_string *format, ...);
+    int smm_vasprintf_string(t_string **ret, t_string *format, va_list args);
+
 
 #endif

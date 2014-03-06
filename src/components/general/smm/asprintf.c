@@ -27,12 +27,40 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "general/string.h"
 #include "general/smm.h"
+
+
+/**
+ * Our own custom ASPRINTF functionality. This is basically sprintf(), but
+ * it will automatically allocate the memory for the string.
+ *
+ * Both t_string* and char* functions are present
+ */
+
+
+
+int smm_vasprintf_string(t_string **ret, t_string *format, va_list args) {
+    char *tmp;
+
+    va_list copy;
+    va_copy(copy, args);
+
+    int len = smm_vasprintf_char(&tmp, format->val, copy);
+
+    va_end(copy);
+
+    *ret = string_new();
+    (*ret)->val = tmp;
+    (*ret)->len = len;
+    return (*ret)->len;
+}
+
 
 /**
  * Our own implementation. This ensures that *ret will always be NULL on an error.
  */
-int smm_vasprintf(char **ret, const char *format, va_list args) {
+int smm_vasprintf_char(char **ret, const char *format, va_list args) {
     va_list copy;
     va_copy(copy, args);
 
@@ -57,12 +85,21 @@ int smm_vasprintf(char **ret, const char *format, va_list args) {
     return len;
 }
 
-
-int smm_asprintf(char **ret, const char *format, ...) {
+int smm_asprintf_string(t_string **ret, t_string *format, ...) {
     va_list args;
 
     va_start(args, format);
-    int len = smm_vasprintf(ret, format, args);
+    int len = smm_vasprintf_string(ret, format, args);
+    va_end(args);
+
+    return(len);
+}
+
+int smm_asprintf_char(char **ret, const char *format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    int len = smm_vasprintf_char(ret, format, args);
     va_end(args);
 
     return(len);

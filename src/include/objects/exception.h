@@ -31,8 +31,8 @@
 
     typedef struct _exeption_object {
         SAFFIRE_OBJECT_HEADER
-        char    *message;
-        long    code;
+        t_string    *message;
+        long        code;
     } t_exception_object;
 
     t_exception_object Object_Exception_struct;

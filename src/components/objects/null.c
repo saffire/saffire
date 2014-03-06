@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <string.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -48,7 +49,7 @@ SAFFIRE_METHOD(null, conv_numerical) {
 }
 
 SAFFIRE_METHOD(null, conv_string) {
-    RETURN_STRING("null");
+    RETURN_STRING_FROM_CHAR("null");
 }
 
 SAFFIRE_COMPARISON_METHOD(null, ne) {
@@ -114,6 +115,7 @@ t_object_funcs null_funcs = {
         NULL,               // Destroy
         NULL,               // Clone
         obj_cache,          // Cache
+        NULL,               // Hash
 #ifdef __DEBUG
         obj_debug
 #endif

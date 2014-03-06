@@ -180,12 +180,15 @@ int repl(void) {
 
     // Display the logo if needed
     if (config_get_bool("repl.logo", 1) == 1) {
-        output(repl_logo);
+        output_char((char *)repl_logo);
     }
 
     // Initialize runner
     vm_init(sp, VM_RUNMODE_REPL);
-    t_vm_frame *initial_frame = vm_frame_new(NULL, "", "", NULL);
+
+    t_vm_context *ctx = vm_context_new("::", NULL);
+    t_vm_codeframe *codeframe = vm_codeframe_new(NULL, ctx);
+    t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeframe);
 
     // Main loop of the REPL
     while (! sp->eof) {
@@ -219,7 +222,7 @@ int repl(void) {
      */
     free_parserinfo(sp->parserinfo);
 
-    vm_frame_destroy(initial_frame);
+    vm_stackframe_destroy(initial_frame);
     vm_fini();
 
     // Destroy scanner structure

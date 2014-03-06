@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "general/hashtable.h"
 #include "general/smm.h"
+#include "general/string.h"
 #include "objects/object.h"
 #include "debug.h"
 
@@ -153,7 +154,7 @@ void *ht_find_num(t_hash_table *ht, unsigned long key) {
     return ret;
 }
 void *ht_find_obj(t_hash_table *ht, t_object *key) {
-    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, (void *)key);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
     void *ret = ht_find(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -178,7 +179,7 @@ int ht_exists_num(t_hash_table *ht, unsigned long key) {
     return ret;
 }
 int ht_exists_obj(t_hash_table *ht, t_object *key) {
-    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, (void *)key);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
     int ret = ht_exists(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -206,7 +207,7 @@ int ht_add_num(t_hash_table *ht, unsigned long key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
 }
 int ht_add_obj(t_hash_table *ht, t_object *key, void *value) {
-    return ht_add(ht, ht_key_create(HASH_KEY_PTR, (void *)key), value);
+    return ht_add(ht, ht_key_create(HASH_KEY_OBJ, key), value);
 }
 
 /**
@@ -238,7 +239,7 @@ void *ht_replace_num(t_hash_table *ht, unsigned long key, void *value) {
 
 }
 void *ht_replace_obj(t_hash_table *ht, t_object *key, void *value) {
-    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
     return ht_replace(ht, hkey, value);
 }
 
@@ -264,7 +265,7 @@ void *ht_remove_num(t_hash_table *ht, unsigned long key) {
     return ret;
 }
 void *ht_remove_obj(t_hash_table *ht, t_object *key) {
-    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
+    t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
     void *ret = ht_remove(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -338,7 +339,7 @@ unsigned long ht_iter_key_num(t_hash_iter *iter) {
 
 t_object *ht_iter_key_obj(t_hash_iter *iter) {
     if (iter->bucket == NULL) return NULL;
-    return iter->bucket->key->val.p;
+    return iter->bucket->key->val.o;
 }
 
 /**
@@ -358,17 +359,18 @@ t_hash_key *ht_key_create(int type, void *val) {
     switch (type) {
         case HASH_KEY_STR :
             hk->type = HASH_KEY_STR;
-            hk->val.s = smm_strdup((char *)val);
+            hk->val.s = string_strdup0((char *)val);
             break;
         case HASH_KEY_NUM :
             hk->type = HASH_KEY_NUM;
             hk->val.n = (int)val;
             break;
         default:
-        case HASH_KEY_PTR :
-            hk->type = HASH_KEY_PTR;
-            hk->val.p = val;
+        case HASH_KEY_OBJ :
+            hk->type = HASH_KEY_OBJ;
+            hk->val.o = (t_object *)val;
             break;
+
     }
     return hk;
 }
@@ -381,7 +383,7 @@ t_hash_key *ht_key_copy(t_hash_key *org) {
     memcpy(cpy, org, sizeof(t_hash_key));
 
     if (cpy->type == HASH_KEY_STR) {
-        cpy->val.s = smm_strdup(org->val.s);
+        cpy->val.s = string_strdup0(org->val.s);
     }
     return cpy;
 }
@@ -407,17 +409,16 @@ void ht_debug(t_hash_table *ht) {
 
     while (ht_iter_valid(&iter)) {
         t_hash_key *key = ht_iter_key(&iter);
-        char *s;
+        t_string *s;
         if (key->type == HASH_KEY_STR) {
-            s = smm_strdup(key->val.s);
+            s = char0_to_string(key->val.s);
         } else if (key->type == HASH_KEY_NUM) {
-            smm_asprintf(&s, "%d", key->val.n);
-        } else if (key->type == HASH_KEY_PTR) {
-            //s = smm_strdup(object_debug(key->val.p));
-            smm_asprintf(&s, "%s{%d}", object_debug(key->val.p), ((t_object *)key->val.p)->ref_count);
+            smm_asprintf_string(&s, char0_to_string("%d"), key->val.n);
+        } else if (key->type == HASH_KEY_OBJ) {
+            smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);
-        DEBUG_PRINT("%-40s => %s{%d}\n", s, object_debug(obj), obj->ref_count);
+        DEBUG_PRINT_STRING(char0_to_string("%-40s => %s{%d}\n"), s, object_debug(obj), obj->ref_count);
         smm_free(s);
         ht_iter_next(&iter);
     }
