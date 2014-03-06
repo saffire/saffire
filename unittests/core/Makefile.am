@@ -41,7 +41,7 @@ bin_PROGRAMS =
 TESTS = utmain
 check_PROGRAMS = utmain
 
-utmain_LDADD = $(SAFFIRE_LIBS) ${libxml2_LIBS} -lpthread -lcunit
+utmain_LDADD = $(SAFFIRE_LIBS) ${libxml2_LIBS} ${ICU_LIBS} -lpthread -lcunit
 
 utmain_SOURCES = \
                     utmain.c \
