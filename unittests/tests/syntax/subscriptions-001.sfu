@@ -3,7 +3,6 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 import io;
-import io;
 
 f = "foobarbaz";
 

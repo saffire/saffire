@@ -134,7 +134,9 @@ int string_strcmp0(t_string *s1, const char *c_str) {
 t_string *string_copy_partial(t_string *src, int offset, int count) {
     t_string *dst = string_new();
     dst->len = count;
+    dst->val = smm_malloc(count+1);
     memcpy(dst->val, (char *)(src->val + offset), count);
+    dst->val[count] = '\0';
 
     return dst;
 }

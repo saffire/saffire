@@ -224,10 +224,7 @@ SAFFIRE_METHOD(string, splice) {
         return NULL;
     }
 
-//    long min_idx = find_utf_idx(self, min);
-//    long max_idx = find_utf_idx(self, max);
-
-    long new_size = max - min;
+    long new_size = (max - min) + 1;
 
     if (new_size == 0) {
         object_raise_exception(Object_SystemException, 1, "lenght == 0");
@@ -580,9 +577,9 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
         str_obj->value = (t_string *)e->data;
-    } else {
+    } else if (arg_list->size > 1) {
         // 2 (or more) elements: it's a size + char0 string
-        
+
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
         int value_len = (int)e->data;

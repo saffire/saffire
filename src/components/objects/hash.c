@@ -413,8 +413,8 @@ static void obj_free(t_object *obj) {
     t_hash_iter iter;
     ht_iter_init(&iter, hash_obj->ht);
     while (ht_iter_valid(&iter)) {
-        t_object *key = ht_iter_key_obj(&iter);
-        t_object *val = ht_iter_value(&iter);
+//        t_object *key = ht_iter_key_obj(&iter);
+//        t_object *val = ht_iter_value(&iter);
 //        DEBUG_PRINT_CHAR("KEY Hash decreasing reference: %08X from %d to %d\n", (unsigned int)key, key->ref_count, key->ref_count-1);
 //        DEBUG_PRINT_CHAR("VAL Hash decreasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count-1);
 
