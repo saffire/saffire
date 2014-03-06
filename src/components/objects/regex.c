@@ -202,8 +202,25 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     const char *error;
     int erroffset;
 
-    t_dll_element *e = DLL_HEAD(arg_list);
-    char *regex = (char *)e->data;
+    char *regex;
+    if (arg_list->size == 1) {
+        // 1 element: it's already a string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        regex = ((t_string *)e->data)->val;
+    } else {
+        // 2 (or more) elements: it's a size + char0 string
+
+        // Get length of string
+        t_dll_element *e = DLL_HEAD(arg_list);
+        int value_len = (int)e->data;
+
+        // Get actual binary safe and non-encoded string
+        e = DLL_NEXT(e);
+        char *value = (char *)e->data;
+
+        regex = value;
+    }
+
     char sep = *regex;
     regex++;   // Skip initial separator (only / is supported)
 

@@ -92,8 +92,8 @@ char *string_strdup0(const char *s) {
 t_string *string_strdup(t_string *s) {
     t_string *str = string_new();
 
-    str->val = (char *)smm_malloc(s->len);
-    memcpy(str->val, s->val, s->len);
+    str->val = (char *)smm_malloc(s->len+1);    // 0 zerminated
+    memcpy(str->val, s->val, s->len+1);
     str->len = s->len;
 
     return str;
@@ -119,7 +119,7 @@ int string_strcmp(t_string *s1, t_string *s2) {
 
     res = memcmp(s1->val, s2->val, len);
     if (! res) return res;
-    
+
     return s1->len > s2->len ? 1 : -1;
 }
 

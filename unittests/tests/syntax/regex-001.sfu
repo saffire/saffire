@@ -4,7 +4,27 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
 import io;
 
+if ("FOOBAR" ~= /^f/) {
+    io.print("match");
+} else {
+    io.print("nomatch");
+}
+====
+nomatch
+@@@@@
+import io;
+
 if ("FOOBAR" ~= /^f/i) {
+    io.print("match");
+} else {
+    io.print("nomatch");
+}
+====
+match
+@@@@@
+import io;
+
+if ("info@example.org" ~= /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/) {
     io.print("match");
 } else {
     io.print("nomatch");

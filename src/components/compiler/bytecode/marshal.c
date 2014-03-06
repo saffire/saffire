@@ -44,8 +44,6 @@
 static void _free_constant(t_bytecode_constant *c) {
      switch (c->type) {
          case BYTECODE_CONST_STRING :
-            smm_free(c->data.s);
-            break;
          case BYTECODE_CONST_REGEX :
             smm_free(c->data.s);
             break;
@@ -93,7 +91,7 @@ static void _new_constant_regex(t_bytecode *bc, t_string *r) {
     t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
     c->type = BYTECODE_CONST_REGEX;
     c->len = r->len;
-    c->data.r = r->val;
+    c->data.s = r->val;
 
     _add_constant(bc, c);
 }
@@ -218,7 +216,7 @@ t_bytecode *bytecode_unmarshal(char *bincode) {
                 smm_free(s);
                 break;
             case BYTECODE_CONST_REGEX :
-                // Constant rexeg do not have a trailing \0 on disk.
+                // Constant regex do not have a trailing \0 on disk.
                 s = smm_malloc(len+1);
                 _read_buffer(bincode, &pos, len, s);
                 s[len] = '\0';
@@ -284,9 +282,6 @@ int bytecode_marshal(t_bytecode *bytecode, int *bincode_off, char **bincode) {
                 _write_buffer(bincode, bincode_off, child_bincode_len, child_bincode);
                 break;
             case BYTECODE_CONST_STRING :
-                _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
-                _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
-                break;
             case BYTECODE_CONST_REGEX :
                 _write_buffer(bincode, bincode_off, sizeof(int), &bytecode->constants[i]->len);
                 _write_buffer(bincode, bincode_off, bytecode->constants[i]->len, bytecode->constants[i]->data.s);

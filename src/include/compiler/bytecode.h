@@ -60,8 +60,7 @@
         unsigned int  len;          // Length of data
 
         union {
-            char *s;                    // String (binary safe)
-            char *r;                    // Regex  (binary safe)
+            char *s;                    // String or regex (binary safe)
             long l;                     // Long
             t_bytecode *code;           // Code block
             void *ptr;                  // Generic pointer
