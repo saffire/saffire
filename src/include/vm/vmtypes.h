@@ -78,7 +78,7 @@
     } t_vm_frameblock;
 
 
-    typedef struct _vm_stackframe {
+    struct _vm_stackframe {
         t_vm_stackframe *parent;                    // Parent frame, or NULL when we reached the initial / global frame.
 
         t_vm_codeframe *codeframe;                  // Actual codeframe
@@ -110,6 +110,6 @@
 
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
-    } t_vm_stackframe;
+    };
 
 #endif

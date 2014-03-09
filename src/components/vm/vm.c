@@ -993,8 +993,9 @@ dispatch:
                         break;
                     }
 
-                    t_object *self = ((t_attrib_object *)obj1)->bound_instance;
+                    t_object *self;
 
+                    // Check if we are a calling a class, if so, we are actually instantiating it
                     if (OBJECT_TYPE_IS_CLASS(obj1)) {
                         // Do actual instantiation (pass nothing)
                         t_attrib_object *new_method = object_attrib_find(obj1, "__new", OBJECT_SCOPE_SELF);
@@ -1002,6 +1003,9 @@ dispatch:
 
                         // We continue the function, but using the constructor as our attribute
                         obj1 = (t_object *)object_attrib_find(self, "__ctor", OBJECT_SCOPE_SELF);
+                    } else {
+                        // Otherwise, we are just calling an attribute from an instance.
+                        self = ((t_attrib_object *)obj1)->bound_instance;
                     }
 
 /*
@@ -1858,7 +1862,7 @@ t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result)
     import_frame->trace_method = string_strdup0("#import");
 
 
-    if (*result) {
+    if (result) {
         *result = _vm_execute(import_frame);
     } else {
         _vm_execute(import_frame);

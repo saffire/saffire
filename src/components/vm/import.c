@@ -182,7 +182,7 @@ static t_vm_stackframe *_vm_import(t_vm_codeframe *codeframe, char *absolute_cla
             t_vm_context *context = vm_context_new(absolute_class_path, absolute_import_path);
             t_vm_codeframe *import_codeframe = _create_import_codeframe(context);
 
-            t_object *result;
+            t_object *result = NULL;
             t_vm_stackframe *import_stackframe = vm_execute_import(import_codeframe, &result);
 
             // Exception is thrown, don't continue

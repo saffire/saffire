@@ -33,14 +33,7 @@
     #include "general/dll.h"
     #include "compiler/ast_nodes.h"
 
-    typedef struct _bytecode t_bytecode;
-    typedef struct _vm_stackframe t_vm_stackframe;
-
-
     void vm_populate_builtins(const char *name, t_object *obj);
-
-//    // Forward define
-//    typedef struct _object t_object;
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
