@@ -218,7 +218,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         e = DLL_NEXT(e);
         char *value = (char *)e->data;
 
-        regex = value;
+        t_string *str = char_to_string(value, value_len);
+
+        // @TODO: Not binary safe
+        regex = string_to_char(str);
     }
 
     char sep = *regex;
