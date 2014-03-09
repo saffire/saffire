@@ -294,8 +294,8 @@ t_object *object_alloca(t_object *obj, t_dll *arguments) {
     // generate new object
     res = _object_new(obj, arguments);
 
-    // Populate values
-    if (res->funcs->populate) {
+    // Populate values, if needed
+    if (res->funcs->populate && arguments) {
         res->funcs->populate(res, arguments);
     }
 
@@ -355,7 +355,6 @@ void object_init() {
     object_regex_init();
     object_hash_init();
     object_tuple_init();
-    object_userland_init();
     object_list_init();
     object_exception_init();
 
@@ -386,7 +385,6 @@ void object_fini() {
 
     object_exception_fini();
     object_list_fini();
-    object_userland_fini();
     object_tuple_fini();
     object_regex_fini();
     object_numerical_fini();
