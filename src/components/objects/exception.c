@@ -45,7 +45,9 @@ SAFFIRE_METHOD(exception, ctor) {
     }
 
     self->message = string_strdup(msg_obj->value);
-    self->code = code_obj->value;
+    if (code_obj) {
+        self->code = code_obj->value;
+    }
 
     RETURN_SELF;
 }
@@ -194,7 +196,6 @@ static t_object *obj_new(t_object *self) {
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_exception_object *exception_obj = (t_exception_object *)obj;
-
 
     t_dll_element *e = DLL_HEAD(arg_list);
     // Optional (numerical) code
