@@ -336,7 +336,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
     bzero(frame->stack, codeframe->bytecode->stack_size * sizeof(t_object *));
 
 
-    frame->created_userland_objects = dll_init();
+    frame->created_user_objects = dll_init();
 
 //    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
@@ -408,12 +408,12 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     }
 
     // Free created user objects
-    t_dll_element *e = DLL_HEAD(frame->created_userland_objects);
+    t_dll_element *e = DLL_HEAD(frame->created_user_objects);
     while (e) {
         object_release((t_object *)e->data);
         e = DLL_NEXT(e);
     }
-    dll_free(frame->created_userland_objects);
+    dll_free(frame->created_user_objects);
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
@@ -448,7 +448,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
  */
 void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
     // @TODO: shouldn't we increase the refcount? We don't, as we ASSUME that refcount is already initialized with 1.
-    dll_append(frame->created_userland_objects, obj);
+    dll_append(frame->created_user_objects, obj);
 }
 
 

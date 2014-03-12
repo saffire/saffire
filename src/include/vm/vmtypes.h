@@ -98,7 +98,7 @@
         t_hash_object *global_identifiers;          // Global identifiers
         t_hash_object *builtin_identifiers;         // Builtin identifiers (String, Numerical, modules etc)
 
-        t_dll *created_userland_objects;            // Created objects by the bytecode
+        t_dll *created_user_objects;                // Created objects by the bytecode
 
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks

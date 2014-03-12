@@ -733,7 +733,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
         DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n"), key, object_debug((t_object *)attribute));
 
-        t_attrib_object *found_obj = (t_attrib_object *)object_attrib_find(obj, key, OBJECT_SCOPE_SELF);
+        t_attrib_object *found_obj = (t_attrib_object *)object_attrib_find(obj, key);
         if (! found_obj) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', missing attribute '%s'", obj->name, interface->name, key);
             return 0;

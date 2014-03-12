@@ -27,7 +27,6 @@
 #ifndef __OBJECTS_H__
 #define __OBJECTS_H__
 
-    #include "userland.h"
     typedef struct _vm_stackframe t_vm_stackframe;
 
     #include "attrib.h"
