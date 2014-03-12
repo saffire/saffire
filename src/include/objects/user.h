@@ -24,24 +24,24 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECTS_H__
-#define __OBJECTS_H__
+#ifndef __OBJECT_USER_H__
+#define __OBJECT_USER_H__
 
-    typedef struct _vm_stackframe t_vm_stackframe;
+    #include "objects/object.h"
+    #include "objects/hash.h"
+    #include "general/md5.h"
 
-    #include "attrib.h"
-    #include "base.h"
-    #include "user.h"
-    #include "string.h"
-    #include "boolean.h"
-    #include "hash.h"
-    #include "list.h"
-    #include "callable.h"
-    #include "null.h"
-    #include "numerical.h"
-    #include "regex.h"
-    #include "tuple.h"
-    #include "interfaces.h"
-    #include "exception.h"
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        t_vm_stackframe *frame;      // The frame in which the class is defined.
+    } t_user_object;
+
+    t_user_object Object_User_struct;
+
+    #define Object_User   (t_object *)&Object_User_struct
+
+    void object_user_init(void);
+    void object_user_fini(void);
 
 #endif
