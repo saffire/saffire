@@ -103,9 +103,11 @@ void vm_context_free_context(t_vm_codeframe *codeframe) {
 
     smm_free(codeframe->context->class.path);
     smm_free(codeframe->context->class.name);
+    smm_free(codeframe->context->class.full);
 
     smm_free(codeframe->context->file.path);
     smm_free(codeframe->context->file.name);
+    smm_free(codeframe->context->file.full);
 
     smm_free(codeframe->context);
 }

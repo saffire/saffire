@@ -62,7 +62,7 @@ static void _output_string(FILE *f, t_string *format, va_list args) {
         smm_vasprintf_string(&expanded_str, format, args);
     }
     output_string_helper(f, expanded_str);
-    smm_free(expanded_str);
+    string_free(expanded_str);
 }
 
 /**
@@ -77,9 +77,10 @@ static void _output_char(FILE *f, char *format, va_list args) {
         smm_vasprintf_char(&buf, format, args);
     }
     t_string *str = char0_to_string(buf);
-    output_string_helper(f, str);
-    smm_free(str);
     smm_free(buf);
+
+    output_string_helper(f, str);
+    string_free(str);
 }
 
 

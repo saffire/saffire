@@ -118,6 +118,7 @@
     #define OBJECT_IS_TUPLE(obj)        (obj->type == objectTypeTuple)
     #define OBJECT_IS_LIST(obj)         (obj->type == objectTypeList)
     #define OBJECT_IS_HASH(obj)         (obj->type == objectTypeHash)
+    #define OBJECT_IS_BASE(obj)         (obj->type == objectTypeBase)
 
 
     // fetch (string) value from a string object
@@ -136,7 +137,7 @@
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser, objectTypeList, objectTypeException
+                   objectTypeTuple, objectTypeUser, objectTypeList, objectTypeException,
                  } t_objectype_enum;
 
 

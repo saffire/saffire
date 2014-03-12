@@ -193,26 +193,29 @@ long object_dec_ref(t_object *obj) {
 #ifdef __DEBUG
 char global_debug_info[256];
 char *object_debug(t_object *obj) {
-
     if (! obj) return "(null)<0x0>";
 
-    if (obj && obj->funcs && obj->funcs->debug) {
-        char *s = obj->funcs->debug(obj);
-        if (OBJECT_TYPE_IS_CLASS(obj)) {
-            //s[0] = toupper(s[0]);
-        }
-        return s;
-    }
+    snprintf(global_debug_info, 255, "%s [%c] (%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);
+    return global_debug_info;
 
-    if (OBJECT_IS_USER(obj)) {
-        snprintf(global_debug_info, 255, "user[%s]", obj->name);
-        if (OBJECT_TYPE_IS_CLASS(obj)) {
-            global_debug_info[0] = toupper(global_debug_info[0]);
-        }
-        return global_debug_info;
-    }
 
-    return "(no debug info)";
+//    if (OBJECT_IS_USER(obj)) {
+//        snprintf(global_debug_info, 255, "user[%s]", obj->name);
+//        if (OBJECT_TYPE_IS_CLASS(obj)) {
+//            global_debug_info[0] = toupper(global_debug_info[0]);
+//        }
+//        return global_debug_info;
+//    }
+//
+//    if (obj && obj->funcs && obj->funcs->debug) {
+//        char *s = obj->funcs->debug(obj);
+//        if (OBJECT_TYPE_IS_CLASS(obj)) {
+//            //s[0] = toupper(s[0]);
+//        }
+//        return s;
+//    }
+//
+//    return "(no debug info)";
 }
 #endif
 

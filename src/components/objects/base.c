@@ -26,6 +26,7 @@
 */
 
 #include <string.h>
+#include <ctype.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -250,10 +251,9 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
 
+    snprintf(global_buf, 1023, objectTypeNames[obj->type]);
     if (OBJECT_TYPE_IS_CLASS(obj)) {
-        snprintf(global_buf, 1023, "Base");
-    } else {
-        snprintf(global_buf, 1023, "base");
+        toupper(global_buf[0]);
     }
 
     return global_buf;

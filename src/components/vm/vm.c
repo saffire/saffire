@@ -218,11 +218,16 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
  * Creates an object that
  */
 static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
-    // Allocate through the parent_class type, or use default base class (@TODO: why not use a default userland class?)
+    // Allocate through the parent_class type, or use default base class (@TODO: why not use a default user class?)
     t_object *user_obj = object_alloca(Object_User, NULL);
 
-//    // Copy the parent type (either a core object (or extended from a core object), or a usertype.
-//    user_obj->type = objectTypeUser;
+    // Make sure we use the allocation functionality of the PARENT class. In most cases, the base-class, but some cases,
+    user_obj->funcs = parent_class->funcs;
+
+//    // Set the correct type
+//    if (! OBJECT_IS_BASE(parent_class)) {
+//        user_obj->type = parent_class->type;
+//    }
 
     // Set name
     user_obj->name = string_strdup0(name);
@@ -1105,6 +1110,7 @@ So:
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
                     char *class_name = string_to_char(OBJ2STR(class_obj));
+                    char *orig_class_name = class_name;
 
                     // Check for namespace separator, and use only the class name, not the modules.
                     char *separator_pos = strrchr(class_name, ':');
@@ -1113,6 +1119,11 @@ So:
                     }
 
                     dst = vm_import(frame->codeframe, module_name, class_name);
+
+                    smm_free(module_name);
+                    smm_free(orig_class_name);
+
+
                     if (!dst) {
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1381,7 +1392,7 @@ So:
                         t_object *name = vm_frame_stack_pop(frame);
                         t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop_attrib(frame);
 
-                        object_inc_ref(attrib_obj);
+                        object_inc_ref((t_object *)attrib_obj);
 
                         // Add method attribute to class
                         s = string_to_char(OBJ2STR(name));
@@ -1391,6 +1402,8 @@ So:
 
                     // Actually create the object
                     t_object *new_obj = vm_create_user_object(frame, name, flags, interfaces, parent_class, attributes);
+
+                    smm_free(name);
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {

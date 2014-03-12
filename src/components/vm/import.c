@@ -189,7 +189,7 @@ static t_vm_stackframe *_vm_import(t_vm_codeframe *codeframe, char *absolute_cla
             if (thread_exception_thrown()) {
                 vm_stackframe_destroy(import_stackframe);
                 smm_free(absolute_import_path);
-                smm_free(absolute_class_path);
+//                smm_free(absolute_class_path);
                 return NULL;
             }
 
@@ -229,14 +229,18 @@ t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_nam
             ht_add_str(frame_import_cache, absolute_class_path, imported_stackframe);
         } else {
             // Nothing found that actually matches a file inside the searchpaths
-            thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find any file matching '%s' in searchpath", class_path);
+            if (! thread_exception_thrown()) {
+                thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find any file matching '%s' in searchpath", class_path);
+            }
         }
     } else {
         DEBUG_PRINT_CHAR("Using cached import class: '%s'\n", absolute_class_path);
     }
 
+
     // Exception is thrown, or nothing found, don't continue
     if (thread_exception_thrown()) {
+        smm_free(absolute_class_path);
         return NULL;
     }
 
@@ -244,10 +248,12 @@ t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_nam
     t_object *obj = vm_frame_local_identifier_exists(imported_stackframe, class_name);
     if (! obj) {
         thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s' inside imported file ", class_name, absolute_class_path);
+        smm_free(absolute_class_path);
         return NULL;
     }
 
     DEBUG_PRINT_CHAR("Import: found class %s::%s\n", absolute_class_path, class_name);
+    smm_free(absolute_class_path);
 
     return obj;
 }

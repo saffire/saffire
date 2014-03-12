@@ -108,7 +108,9 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
  */
 void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
     #if __DEBUG_STACK
-    DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET), frame->sp-1, object_debug(obj), (unsigned long)obj);
+        t_string *str = char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET);
+        DEBUG_PRINT_STRING(str, frame->sp-1, object_debug(obj), (unsigned long)obj);
+        string_free(str);
     #endif
 
 
@@ -249,8 +251,13 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
-        DEBUG_PRINT_STRING(char0_to_string("%-10s KEY: '%s' "), prefix, key);
-        DEBUG_PRINT_STRING(char0_to_string("=> [%08X] %s{%d}\n"), (unsigned int)val, object_debug(val), val->ref_count);
+        t_string *str = char0_to_string("%-10s KEY: '%s' ");
+        DEBUG_PRINT_STRING(str, prefix, key);
+        string_free(str);
+
+        str = char0_to_string("=> [%08X] %s{%d}\n");
+        DEBUG_PRINT_STRING(str, (unsigned int)val, object_debug(val), val->ref_count);
+        string_free(str);
 
         ht_iter_next(&iter);
     }
@@ -387,6 +394,8 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
     // Remove codeframe reference (don't mind cleanup, since we still have it on the codeframe stack)
     frame->codeframe = NULL;
+    if (frame->trace_class) smm_free(frame->trace_class);
+    if (frame->trace_method) smm_free(frame->trace_method);
 
     t_hash_iter iter;
     ht_iter_init(&iter, frame->local_identifiers->ht);
@@ -420,6 +429,9 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     object_release((t_object *)frame->frame_identifiers);
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
+
+
+    smm_free(frame->stack);
 
     smm_free(frame);
 }

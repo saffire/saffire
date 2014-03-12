@@ -55,7 +55,7 @@ UChar *utf8_from_string(t_string *str) {
     if (str->unicode) return str->unicode;
 
     // Create unicode from string, and store this in string
-    str->unicode = (UChar *)smm_malloc(str->len);
+    str->unicode = (UChar *)smm_malloc(sizeof(UChar) * (str->len + 1));
     u_uastrncpy(str->unicode, str->val, str->len);
 
     return str->unicode;
@@ -178,8 +178,8 @@ t_string *utf8_toupper(t_string *src, char *locale) {
     utf8_from_string(src);
 
     // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(src->len);
-    u_strToUpper(u_str, src->len, src->unicode, src->len, locale, &status);
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
+    u_strToUpper(u_str, src->len+1, src->unicode, src->len, locale, &status);
 
     t_string *dst = utf8_to_string(u_str, src->len);
     return dst;
@@ -195,7 +195,7 @@ t_string *utf8_tolower(t_string *src, char *locale) {
     utf8_from_string(src);
 
     // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(src->len);
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
     u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
 
     t_string *dst = utf8_to_string(u_str, src->len);
