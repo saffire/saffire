@@ -42,34 +42,16 @@
 /**
  * Initializes base methods and properties
  */
-void object_userland_init() {
-    //Object_Userland_struct.attributes = ht_create();
+void object_user_init() {
+    //Object_User_struct.attributes = ht_create();
 }
 
 
 /**
  * Frees memory for a base object
  */
-void object_userland_fini() {
-    object_free_internal_object((t_object *)&Object_Userland_struct);
-}
-
-
-static t_object *obj_new(t_object *self) {
-    t_userland_object *obj = smm_malloc(sizeof(t_userland_object));
-    memcpy(obj, self, sizeof(t_userland_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-
-    // We should copy / clone the attributes?
-
-    return (t_object *)obj;
+void object_user_fini() {
+    object_free_internal_object((t_object *)&Object_User_struct);
 }
 
 
@@ -78,7 +60,7 @@ static void obj_populate(t_object *self, t_dll *arg_list) {
 }
 
 static void obj_free(t_object *obj) {
-    t_userland_object *user_obj = (t_userland_object *)obj;
+    t_user_object *user_obj = (t_user_object *)obj;
 
     DEBUG_PRINT_CHAR("Freeing user object: %s\n", user_obj->name);
 
@@ -129,8 +111,7 @@ static char *obj_debug(t_object *obj) {
 
 
 // object management functions
-t_object_funcs userland_funcs = {
-        obj_new,              // Allocate a new user object
+t_object_funcs user_funcs = {
         obj_populate,         // Populate a user object
         obj_free,             // Free a user object
         obj_destroy,          // Destroy a user object
@@ -145,8 +126,7 @@ t_object_funcs userland_funcs = {
 
 
 // Initial object
-t_userland_object Object_Userland_struct = {
-    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &userland_funcs),
-    NULL
+t_user_object Object_User_struct = {
+    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, 0),
 };
 

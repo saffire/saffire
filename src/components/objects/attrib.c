@@ -57,7 +57,7 @@ extern t_dll *dupped_attributes;
  * Duplicate the attribute object and link it to the bound-obj
  */
 t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self) {
-    DEBUG_PRINT_CHAR("duplicating attrib '%s.%s' to '%s.%s'\n", attrib->bound_class->name, attrib->bound_name, self->name, attrib->bound_name);
+    DEBUG_PRINT_CHAR("duplicating attrib '%s.%s' to '%s.%s'\n", attrib->data.bound_class->name, attrib->data.bound_name, self->name, attrib->data.bound_name);
     t_attrib_object *dup = smm_malloc(sizeof(Object_Attrib_struct));
     memcpy(dup, attrib, sizeof(Object_Attrib_struct));
 
@@ -75,7 +75,7 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
     }
 
     object_inc_ref(self);
-    dup->bound_instance = self;
+    dup->data.bound_instance = self;
 
     return dup;
 }
@@ -83,21 +83,11 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
 /**
  * find attribute inside a object. return either NULL or the actual attribute
  */
-t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
+t_attrib_object *object_attrib_find(t_object *self, char *name) {
     t_attrib_object *attr = NULL;
     t_object *cur_obj = self;
 
     if (! self) return NULL;
-
-    if (scope == OBJECT_SCOPE_PARENT) {
-        if (cur_obj->parent == NULL) {
-            // @TODO: We should throw an exception, as we don't have a parent class
-            return NULL;
-        }
-        // We should start in parent object
-        cur_obj = cur_obj->parent;
-    }
-
 
     while (attr == NULL) {
         DEBUG_PRINT_CHAR(">>> Finding attribute '%s' on object %s\n", name, cur_obj->name);
@@ -116,8 +106,7 @@ t_attrib_object *object_attrib_find(t_object *self, char *name, int scope) {
         cur_obj = cur_obj->parent;
     }
 
-    // DEBUG_PRINT_CHAR(">>> Found attribute '%s' in object %s (actually found in object %s)\n", attr_name, obj->name, cur_obj->name);
-
+    DEBUG_PRINT_CHAR(">>> Found attribute '%s' in object %s (actually found in object %s)\n", name, self->name, cur_obj->name);
     return attr;
 }
 
@@ -154,48 +143,33 @@ void object_attrib_fini(void) {
 
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object and copy all info
-    t_attrib_object *obj = smm_malloc(sizeof(t_attrib_object));
-    memcpy(obj, Object_Attrib, sizeof(t_attrib_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
-
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_attrib_object *attrib_obj = (t_attrib_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    attrib_obj->bound_class = (t_object *)e->data;
-    object_inc_ref(attrib_obj->bound_class);
+    attrib_obj->data.bound_class = (t_object *)e->data;
+    object_inc_ref(attrib_obj->data.bound_class);
 
     e = DLL_NEXT(e);
-    attrib_obj->bound_name = string_strdup0((char *)e->data);
+    attrib_obj->data.bound_name = string_strdup0((char *)e->data);
 
     e = DLL_NEXT(e);
-    attrib_obj->attr_type = (long)e->data;
+    attrib_obj->data.attr_type = (long)e->data;
 
     e = DLL_NEXT(e);
-    attrib_obj->attr_visibility = (long)e->data;
+    attrib_obj->data.attr_visibility = (long)e->data;
 
     e = DLL_NEXT(e);
-    attrib_obj->attr_access = (long)e->data;
+    attrib_obj->data.attr_access = (long)e->data;
 
     e = DLL_NEXT(e);
-    attrib_obj->attribute = (t_object *)e->data;
+    attrib_obj->data.attribute = (t_object *)e->data;
 
     e = DLL_NEXT(e);
-    attrib_obj->attr_method_flags  = (long)e->data;
+    attrib_obj->data.attr_method_flags  = (long)e->data;
 
     // We "own" this attribute object. increase refcount
-    object_inc_ref(attrib_obj->attribute);
+    object_inc_ref(attrib_obj->data.attribute);
 }
 
 static void obj_free(t_object *obj) {
@@ -204,10 +178,10 @@ static void obj_free(t_object *obj) {
     //DEBUG_PRINT_CHAR("Freeing attrib-object's attribute: %s\n", object_debug(attr_obj->attribute));
 
     // "free" the attribute object. decrease refcount
-    object_release(attr_obj->attribute);
+    object_release(attr_obj->data.attribute);
 
-    if (attr_obj->bound_name) {
-        smm_free(attr_obj->bound_name);
+    if (attr_obj->data.bound_name) {
+        smm_free(attr_obj->data.bound_name);
     }
 }
 
@@ -222,12 +196,12 @@ static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *)obj;
 
     char attrbuf[1024];
-    snprintf(attrbuf, 1024, "%s", object_debug(self->attribute));
+    snprintf(attrbuf, 1024, "%s", object_debug(self->data.attribute));
 
     snprintf(global_buf, 1024, "%s [%s%s%s] Attached: %s", self->name,
-        self->attr_type == 0 ? "M" : self->attr_type == 1 ? "C" : self->attr_type == 2 ? "P" : "?",
-        self->attr_visibility == 0 ? "P" : self->attr_visibility == 1 ? "R" : self->attr_visibility == 2 ? "V" : "?",
-        self->attr_access == 0 ? "W" : "R",
+        self->data.attr_type == 0 ? "M" : self->data.attr_type == 1 ? "C" : self->data.attr_type == 2 ? "P" : "?",
+        self->data.attr_visibility == 0 ? "P" : self->data.attr_visibility == 1 ? "R" : self->data.attr_visibility == 2 ? "V" : "?",
+        self->data.attr_access == 0 ? "W" : "R",
         attrbuf);
 
     return global_buf;
@@ -237,7 +211,6 @@ static char *obj_debug(t_object *obj) {
 
 // Attrib object management functions
 t_object_funcs attrib_funcs = {
-        obj_new,              // Allocate a new attrib object
         obj_populate,         // Populate an attrib object
         obj_free,             // Free an attrib object
         obj_destroy,          // Destroy an attrib object
@@ -251,12 +224,14 @@ t_object_funcs attrib_funcs = {
 
 // Intial object
 t_attrib_object Object_Attrib_struct = {
-    OBJECT_HEAD_INIT("attrib", objectTypeAttribute, OBJECT_TYPE_CLASS, &attrib_funcs),
-    0,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL
+    OBJECT_HEAD_INIT("attrib", objectTypeAttribute, OBJECT_TYPE_CLASS, &attrib_funcs, sizeof(t_attrib_object_data)),
+    {
+        0,
+        0,
+        0,
+        0,
+        NULL,
+        NULL,
+        NULL
+    }
 };

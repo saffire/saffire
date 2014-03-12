@@ -26,6 +26,7 @@
 */
 
 #include <string.h>
+#include <ctype.h>
 #include "objects/object.h"
 #include "objects/objects.h"
 #include "general/smm.h"
@@ -223,8 +224,45 @@ void object_base_fini() {
 }
 
 
+
+static void obj_destroy(t_object *obj) {
+    smm_free(obj);
+}
+
+#ifdef __DEBUG
+
+/**
+ * Object debug doesn't output binary safe strings
+ */
+char global_buf[1024];
+static char *obj_debug(t_object *obj) {
+
+    snprintf(global_buf, 1023, objectTypeNames[obj->type]);
+    if (OBJECT_TYPE_IS_CLASS(obj)) {
+        global_buf[0] = toupper(global_buf[0]);
+    }
+
+    return global_buf;
+}
+#endif
+
+
+// String object management functions
+t_object_funcs base_funcs = {
+        NULL,                 // Populate a string object
+        NULL,                 // Free a string object
+        obj_destroy,          // Destroy a string object
+        NULL,                 // Clone
+        NULL,                 // Object cache
+        NULL,             // Hash
+#ifdef __DEBUG
+        obj_debug,
+#endif
+};
+
+
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, NULL, NULL, NULL)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, &base_funcs, NULL, NULL, 0)
 };
 

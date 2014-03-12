@@ -68,7 +68,7 @@ SAFFIRE_METHOD(tuple, dtor) {
  * Saffire method: Returns the number of elements stored inside the tuple
  */
 SAFFIRE_METHOD(tuple, length) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 /**
@@ -81,7 +81,7 @@ SAFFIRE_METHOD(tuple, get) {
         return NULL;
     }
 
-    t_object *obj = ht_find_num(self->ht, OBJ2NUM(index));
+    t_object *obj = ht_find_num(self->data.ht, OBJ2NUM(index));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -95,7 +95,7 @@ SAFFIRE_METHOD(tuple, add) {
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
         return NULL;
     }
-    ht_add_num(self->ht, self->ht->element_count, val);
+    ht_add_num(self->data.ht, self->data.ht->element_count, val);
     RETURN_SELF;
 }
 
@@ -110,7 +110,7 @@ SAFFIRE_METHOD(tuple, remove) {
         return NULL;
     }
 
-    ht_remove(self->ht, key->value);
+    ht_remove(self->data.ht, key->value);
     RETURN_SELF;
 }
 */
@@ -120,7 +120,7 @@ SAFFIRE_METHOD(tuple, remove) {
  *
  */
 SAFFIRE_METHOD(tuple, conv_boolean) {
-    if (self->ht->element_count == 0) {
+    if (self->data.ht->element_count == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -138,7 +138,7 @@ SAFFIRE_METHOD(tuple, conv_null) {
  *
  */
 SAFFIRE_METHOD(tuple, conv_numerical) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 /**
@@ -196,26 +196,11 @@ void object_tuple_fini(void) {
 
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object and copy all info
-    t_tuple_object *obj = smm_malloc(sizeof(t_tuple_object));
-    memcpy(obj, Object_Tuple, sizeof(t_tuple_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
-
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
 
     // Create new hash list
-    tuple_obj->ht = ht_create();
+    tuple_obj->data.ht = ht_create();
 
     int cnt = 0;
     t_dll_element *e = DLL_HEAD(arg_list);
@@ -223,7 +208,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         t_object *arg_obj = (t_object *)e->data;
 
         DEBUG_PRINT_STRING(char0_to_string("Adding object: %s\n"), object_debug(arg_obj));
-        ht_add_num(tuple_obj->ht, cnt++, arg_obj);
+        ht_add_num(tuple_obj->data.ht, cnt++, arg_obj);
 
         e = DLL_NEXT(e);
     }
@@ -233,8 +218,8 @@ static void obj_free(t_object *obj) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
     if (! tuple_obj) return;
 
-    if (tuple_obj->ht) {
-        ht_destroy(tuple_obj->ht);
+    if (tuple_obj->data.ht) {
+        ht_destroy(tuple_obj->data.ht);
     }
 }
 
@@ -249,7 +234,7 @@ static char *obj_debug(t_object *obj) {
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         sprintf(global_buf, "Tuple");
     } else {
-        sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->ht ? ((t_tuple_object *)obj)->ht->element_count : 0);
+        sprintf(global_buf, "tuple[%d]", ((t_tuple_object *)obj)->data.ht ? ((t_tuple_object *)obj)->data.ht->element_count : 0);
     }
     return global_buf;
 }
@@ -258,7 +243,6 @@ static char *obj_debug(t_object *obj) {
 
 // Tuple object management functions
 t_object_funcs tuple_funcs = {
-        obj_new,              // Allocate a new tuple object
         obj_populate,
         obj_free,             // Free a tuple object
         obj_destroy,
@@ -274,6 +258,8 @@ t_object_funcs tuple_funcs = {
 
 // Intial object
 t_tuple_object Object_Tuple_struct = {
-    OBJECT_HEAD_INIT("tuple", objectTypeTuple, OBJECT_TYPE_CLASS, &tuple_funcs),
-    NULL
+    OBJECT_HEAD_INIT("tuple", objectTypeTuple, OBJECT_TYPE_CLASS, &tuple_funcs, sizeof(t_tuple_object_data)),
+    {
+        NULL
+    }
 };

@@ -44,8 +44,10 @@ SAFFIRE_METHOD(exception, ctor) {
         return NULL;
     }
 
-    self->message = string_strdup(msg_obj->value);
-    self->code = code_obj->value;
+    self->data.message = string_strdup(msg_obj->data.value);
+    if (code_obj) {
+        self->data.code = code_obj->data.value;
+    }
 
     RETURN_SELF;
 }
@@ -59,15 +61,15 @@ SAFFIRE_METHOD(exception, conv_null) {
 }
 
 SAFFIRE_METHOD(exception, conv_numerical) {
-    RETURN_NUMERICAL(self->code);
+    RETURN_NUMERICAL(self->data.code);
 }
 
 SAFFIRE_METHOD(exception, conv_string) {
-    RETURN_STRING(self->message);
+    RETURN_STRING(self->data.message);
 }
 
 SAFFIRE_METHOD(exception, getmessage) {
-    RETURN_STRING(self->message);
+    RETURN_STRING(self->data.message);
 }
 
 SAFFIRE_METHOD(exception, setmessage) {
@@ -78,12 +80,12 @@ SAFFIRE_METHOD(exception, setmessage) {
         return NULL;
     }
 
-    self->message = message->value;
+    self->data.message = message->data.value;
     RETURN_SELF;
 }
 
 SAFFIRE_METHOD(exception, getcode) {
-    RETURN_NUMERICAL(self->code);
+    RETURN_NUMERICAL(self->data.code);
 }
 
 SAFFIRE_METHOD(exception, setcode) {
@@ -93,7 +95,7 @@ SAFFIRE_METHOD(exception, setcode) {
         return NULL;
     }
 
-    self->code = code->value;
+    self->data.code = code->data.value;
     RETURN_SELF;
 }
 
@@ -169,42 +171,19 @@ void object_exception_fini(void) {
     object_free_internal_object((t_object *)&Object_Exception_struct);
 }
 
-/**
- * obj_new is called dynamically. The "self" class points to the actual object
- * we want to "new". This is always based on exception, so we are ok by actually
- * copying self and using the size of the base exception object (so code and
- * message gets copied too)
- *
- * @param self
- * @return
- */
-static t_object *obj_new(t_object *self) {
-    t_exception_object *obj = smm_malloc(sizeof(t_exception_object));
-    memcpy(obj, self, sizeof(t_exception_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_exception_object *exception_obj = (t_exception_object *)obj;
 
-
     t_dll_element *e = DLL_HEAD(arg_list);
     // Optional (numerical) code
     if (e != NULL) {
-        exception_obj->code = (int)e->data;
+        exception_obj->data.code = (int)e->data;
         e = DLL_NEXT(e);
     }
 
     if (e != NULL) {
-        exception_obj->message = (t_string *)e->data;
+        exception_obj->data.message = (t_string *)e->data;
         e = DLL_NEXT(e);
     }
 }
@@ -229,14 +208,13 @@ static char *obj_debug(t_object *obj) {
         snprintf(global_buf, 1023, "%s", obj->name);
     } else {
         t_exception_object *exception = (t_exception_object *)obj;
-        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->code, exception->message ? exception->message->val : "");
+        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->data.code, exception->data.message ? exception->data.message->val : "");
     }
     return global_buf;
 }
 #endif
 
 t_object_funcs exception_funcs = {
-        obj_new,            // Allocate a new exception object
         obj_populate,       // Populate a exception object
         obj_free,           // Free a exception object
         obj_destroy,        // Destroy a exception object
@@ -249,7 +227,12 @@ t_object_funcs exception_funcs = {
 };
 
 
-t_exception_object Object_Exception_struct = { OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs), NULL, 0};
+t_exception_object Object_Exception_struct = {
+    OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs, sizeof(t_exception_object_data)),
+    {
+        NULL, 0
+    }
+};
 
 // Include generated exceptions
 #include "_generated_exceptions.inc"

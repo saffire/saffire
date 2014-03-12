@@ -109,7 +109,6 @@ static t_object *obj_cache(t_object *self, t_dll *arg_list) {
 
 
 t_object_funcs null_funcs = {
-        NULL,               // Allocate
         NULL,               // Populate
         NULL,               // Free
         NULL,               // Destroy
@@ -122,6 +121,6 @@ t_object_funcs null_funcs = {
 };
 
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_IMMUTABLE, &null_funcs) };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_IMMUTABLE, &null_funcs, 0) };
 
 

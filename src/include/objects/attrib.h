@@ -36,17 +36,17 @@
     #define ATTRIB_VISIBILITY_PROTECTED        1        // Visible for current object and parents
     #define ATTRIB_VISIBILITY_PRIVATE          2        // Only visible for current object
 
-    #define ATTRIB_IS_PUBLIC(attrib)    (((t_attrib_object *)attrib)->attr_visibility == ATTRIB_VISIBILITY_PUBLIC)
-    #define ATTRIB_IS_PROTECTED(attrib) (((t_attrib_object *)attrib)->attr_visibility == ATTRIB_VISIBILITY_PROTECTED)
-    #define ATTRIB_IS_PRIVATE(attrib)   (((t_attrib_object *)attrib)->attr_visibility == ATTRIB_VISIBILITY_PRIVATE)
+    #define ATTRIB_IS_PUBLIC(attrib)    (((t_attrib_object *)attrib)->data.attr_visibility == ATTRIB_VISIBILITY_PUBLIC)
+    #define ATTRIB_IS_PROTECTED(attrib) (((t_attrib_object *)attrib)->data.attr_visibility == ATTRIB_VISIBILITY_PROTECTED)
+    #define ATTRIB_IS_PRIVATE(attrib)   (((t_attrib_object *)attrib)->data.attr_visibility == ATTRIB_VISIBILITY_PRIVATE)
 
 
     // Attribute access
     #define ATTRIB_ACCESS_RW                   0        // Can be redefined to another value
     #define ATTRIB_ACCESS_RO                   1        // Cannot be redefined.
 
-    #define ATTRIB_IS_READWRITE(attrib) (((t_attrib_object *)attrib)->attr_access == ATTRIB_ACCESS_RW)
-    #define ATTRIB_IS_READONLY(attrib)  (((t_attrib_object *)attrib)->attr_access == ATTRIB_ACCESS_RO)
+    #define ATTRIB_IS_READWRITE(attrib) (((t_attrib_object *)attrib)->data.attr_access == ATTRIB_ACCESS_RW)
+    #define ATTRIB_IS_READONLY(attrib)  (((t_attrib_object *)attrib)->data.attr_access == ATTRIB_ACCESS_RO)
 
 
     // Attribute types
@@ -54,9 +54,9 @@
     #define ATTRIB_TYPE_CONSTANT               1        // Constant
     #define ATTRIB_TYPE_PROPERTY               2        // Property
 
-    #define ATTRIB_IS_METHOD(attrib)    (((t_attrib_object *)attrib)->attr_type == ATTRIB_TYPE_METHOD)
-    #define ATTRIB_IS_CONSTANT(attrib)  (((t_attrib_object *)attrib)->attr_type == ATTRIB_TYPE_CONSTANT)
-    #define ATTRIB_IS_PROPERTY(attrib)  (((t_attrib_object *)attrib)->attr_type == ATTRIB_TYPE_PROPERTY)
+    #define ATTRIB_IS_METHOD(attrib)    (((t_attrib_object *)attrib)->data.attr_type == ATTRIB_TYPE_METHOD)
+    #define ATTRIB_IS_CONSTANT(attrib)  (((t_attrib_object *)attrib)->data.attr_type == ATTRIB_TYPE_CONSTANT)
+    #define ATTRIB_IS_PROPERTY(attrib)  (((t_attrib_object *)attrib)->data.attr_type == ATTRIB_TYPE_PROPERTY)
 
 
     // Method types
@@ -67,17 +67,14 @@
     #define ATTRIB_METHOD_CTOR                 8        // Constructor method
     #define ATTRIB_METHOD_DTOR                16        // Descructor method
 
-    #define ATTRIB_METHOD_IS_STATIC(attrib)     ((((t_attrib_object *)attrib)->attr_method_flags & ATTRIB_METHOD_STATIC) == ATTRIB_METHOD_STATIC)
-    #define ATTRIB_METHOD_IS_ABSTRACT(attrib)   ((((t_attrib_object *)attrib)->attr_method_flags & ATTRIB_METHOD_ABSTRACT) == ATTRIB_METHOD_ABSTRACT)
-    #define ATTRIB_METHOD_IS_FINAL(attrib)      ((((t_attrib_object *)attrib)->attr_method_flags & ATTRIB_METHOD_FINAL) == ATTRIB_METHOD_FINAL)
-    #define ATTRIB_METHOD_IS_CTOR(attrib)       ((((t_attrib_object *)attrib)->attr_method_flags & ATTRIB_METHOD_CTOR) == ATTRIB_METHOD_CTOR)
-    #define ATTRIB_METHOD_IS_DTOR(attrib)       ((((t_attrib_object *)attrib)->attr_method_flags & ATTRIB_METHOD_DTOR) == ATTRIB_METHOD_DTOR)
-
+    #define ATTRIB_METHOD_IS_STATIC(attrib)     ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_STATIC) == ATTRIB_METHOD_STATIC)
+    #define ATTRIB_METHOD_IS_ABSTRACT(attrib)   ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_ABSTRACT) == ATTRIB_METHOD_ABSTRACT)
+    #define ATTRIB_METHOD_IS_FINAL(attrib)      ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_FINAL) == ATTRIB_METHOD_FINAL)
+    #define ATTRIB_METHOD_IS_CTOR(attrib)       ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_CTOR) == ATTRIB_METHOD_CTOR)
+    #define ATTRIB_METHOD_IS_DTOR(attrib)       ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_DTOR) == ATTRIB_METHOD_DTOR)
 
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         long attr_type;                     // ATTRIB_TYPE_* constants
         long attr_visibility;               // ATTRIB_VISIBILITY_* constants
         long attr_access;                   // ATTRIB_ACCESS_* constants
@@ -89,6 +86,12 @@
         t_object *bound_class;              // Class to which the attribute is bound. This is always a class.
         char *bound_name;                   // Name on which the attribute is known in the class.
 
+    } t_attrib_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+
+        t_attrib_object_data data;
     } t_attrib_object;
 
     t_attrib_object Object_Attrib_struct;
@@ -99,6 +102,6 @@
     void object_attrib_fini(void);
 
     t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *bound_obj);
-    t_attrib_object *object_attrib_find(t_object *self, char *name, int scope);
+    t_attrib_object *object_attrib_find(t_object *self, char *name);
 
 #endif

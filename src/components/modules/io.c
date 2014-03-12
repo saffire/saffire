@@ -47,7 +47,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
-            t_attrib_object *string_method = object_attrib_find(obj, "__string", OBJECT_SCOPE_SELF);
+            t_attrib_object *string_method = object_attrib_find(obj, "__string");
             obj = vm_object_call(obj, string_method, 0);
         }
 
@@ -70,11 +70,11 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     obj = (t_object *)e->data;
     if (! OBJECT_IS_STRING(obj)) {
-        t_attrib_object *string_method = object_attrib_find(obj, "__string", OBJECT_SCOPE_SELF);
+        t_attrib_object *string_method = object_attrib_find(obj, "__string");
         obj = vm_object_call(obj, string_method, 0);
     }
 
-    t_string *format = ((t_string_object *)obj)->value;
+    t_string *format = ((t_string_object *)obj)->data.value;
 
     // @TODO: Don't change the args DLL!
     e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
@@ -123,8 +123,8 @@ SAFFIRE_MODULE_METHOD(console, sprintf) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
-t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeUser, OBJECT_TYPE_CLASS, NULL) };
+t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeUser, OBJECT_TYPE_CLASS, NULL, 0) };
+t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeUser, OBJECT_TYPE_CLASS, NULL, 0) };
 
 
 static void _init(void) {

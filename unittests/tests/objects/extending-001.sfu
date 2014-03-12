@@ -1,0 +1,32 @@
+title: extending core objects
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+class myexception extends exception { }
+
+try {
+    i = 1;
+    throw myexception("foobar", 100);
+} catch (exception e) {
+    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+}
+=====
+myexception: foobar(100)
+@@@@@
+import io;
+
+class mystring extends string { }
+
+s = mystring("foo");
+t = s.upper();
+u = "bar";
+
+io.print(s," - ", s.__name(), "\n");
+io.print(t," - ", t.__name(), "\n");
+io.print(u," - ", u.__name(), "\n");
+=====
+foo - mystring
+FOO - string
+bar - string

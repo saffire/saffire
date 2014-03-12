@@ -164,21 +164,6 @@ void object_callable_fini(void) {
 }
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object and copy all info
-    t_callable_object *obj = smm_malloc(sizeof(t_callable_object));
-    memcpy(obj, Object_Callable, sizeof(t_callable_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
-
 /**
  * Note that when we create a callable, we do not connect this to any attribute. This is done when we build attributes.
  * Thus, it IS possible that a callable is used with a NULL attribute.
@@ -188,20 +173,20 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->routing = (int)e->data;
+    callable_obj->data.routing = (int)e->data;
     e = DLL_NEXT(e);
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // internal code is just a pointer to the code
-        callable_obj->code.internal.native_func = (void *)e->data;
+        callable_obj->data.code.internal.native_func = (void *)e->data;
     } else {
         // external code is a bytecode structure
-        callable_obj->code.external.codeframe = (t_vm_codeframe *)e->data;
+        callable_obj->data.code.external.codeframe = (t_vm_codeframe *)e->data;
     }
     e = DLL_NEXT(e);
 
     // Add arguments for the callable
-    callable_obj->arguments = (t_hash_table *)e->data;
+    callable_obj->data.arguments = (t_hash_table *)e->data;
     e = DLL_NEXT(e);
 }
 
@@ -212,13 +197,13 @@ static void obj_destroy(t_object *obj) {
 static void obj_free(t_object *obj) {
     t_callable_object *callable_obj = (t_callable_object *)obj;
 
-    if (callable_obj->binding) {
-        object_release(callable_obj->binding);
+    if (callable_obj->data.binding) {
+        object_release(callable_obj->data.binding);
     }
 
-    if (callable_obj->arguments) {
+    if (callable_obj->data.arguments) {
         t_hash_iter iter;
-        ht_iter_init(&iter, callable_obj->arguments);
+        ht_iter_init(&iter, callable_obj->data.arguments);
         while (ht_iter_valid(&iter)) {
             t_method_arg *arg = ht_iter_value(&iter);
 
@@ -231,7 +216,7 @@ static void obj_free(t_object *obj) {
             ht_iter_next(&iter);
         }
 
-        ht_destroy(callable_obj->arguments);
+        ht_destroy(callable_obj->data.arguments);
     }
 }
 
@@ -242,7 +227,7 @@ static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
     sprintf(global_buf, "%s callable(%d parameters)",
         CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
-        self->arguments ? self->arguments->element_count : 0
+        self->data.arguments ? self->data.arguments->element_count : 0
     );
 
     return global_buf;
@@ -253,7 +238,6 @@ static char *obj_debug(t_object *obj) {
 
 // Callable object management functions
 t_object_funcs callable_funcs = {
-        obj_new,              // Allocate a new callable object
         obj_populate,         // Populates a callable object
         obj_free,             // Free a callable object
         obj_destroy,          // Destroy a callable object
@@ -267,9 +251,11 @@ t_object_funcs callable_funcs = {
 
 // Initial object
 t_callable_object Object_Callable_struct = {
-    OBJECT_HEAD_INIT("callable", objectTypeCallable, OBJECT_TYPE_CLASS, &callable_funcs),
-    0,
-    { { NULL } },
-    NULL,
-    NULL
+    OBJECT_HEAD_INIT("callable", objectTypeCallable, OBJECT_TYPE_CLASS, &callable_funcs, sizeof(t_callable_object_data)),
+    {
+        0,
+        { { NULL } },
+        NULL,
+        NULL
+    }
 };

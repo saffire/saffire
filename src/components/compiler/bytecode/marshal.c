@@ -72,13 +72,13 @@ static void _add_constant(t_bytecode *bc, t_bytecode_constant *c) {
 /**
  * Add a new string constant to the bytecode structure
  */
-static void _new_constant_string(t_bytecode *bc, t_string *s) {
+static void _new_constant_string(t_bytecode *bc, char *s, int len) {
     // Setup constant
     t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
     c->type = BYTECODE_CONST_STRING;
-    c->len = s->len;
-    c->data.s = s->val;
-
+    c->len = len;
+    c->data.s = smm_malloc(len);
+    memcpy(c->data.s, s, len);
 
     _add_constant(bc, c);
 }
@@ -86,12 +86,13 @@ static void _new_constant_string(t_bytecode *bc, t_string *s) {
 /**
  * Add a new regex constant to the bytecode structure
  */
-static void _new_constant_regex(t_bytecode *bc, t_string *r) {
+static void _new_constant_regex(t_bytecode *bc, char *s, int len) {
     // Setup constant
     t_bytecode_constant *c = (t_bytecode_constant *)smm_malloc(sizeof(t_bytecode_constant));
     c->type = BYTECODE_CONST_REGEX;
-    c->len = r->len;
-    c->data.s = r->val;
+    c->len = len;
+    c->data.s = smm_malloc(len);
+    memcpy(c->data.s, s, len);
 
     _add_constant(bc, c);
 }
@@ -212,7 +213,7 @@ t_bytecode *bytecode_unmarshal(char *bincode) {
                 s = smm_malloc(len+1);
                 _read_buffer(bincode, &pos, len, s);
                 s[len] = '\0';
-                _new_constant_string(bytecode, char_to_string(s, len));
+                _new_constant_string(bytecode, s, len);
                 smm_free(s);
                 break;
             case BYTECODE_CONST_REGEX :
@@ -220,7 +221,7 @@ t_bytecode *bytecode_unmarshal(char *bincode) {
                 s = smm_malloc(len+1);
                 _read_buffer(bincode, &pos, len, s);
                 s[len] = '\0';
-                _new_constant_regex(bytecode, char_to_string(s, len));
+                _new_constant_regex(bytecode, s, len);
                 smm_free(s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
@@ -369,10 +370,10 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
                 _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s, 1));
                 break;
             case const_string :
-                _new_constant_string(bc, char0_to_string(c->data.s));
+                _new_constant_string(bc, c->data.s, strlen(c->data.s));
                 break;
             case const_regex :
-                _new_constant_regex(bc, char0_to_string(c->data.s));
+                _new_constant_regex(bc, c->data.s, strlen(c->data.s));
                 break;
             case const_long :
                 _new_constant_long(bc, c->data.l);

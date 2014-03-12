@@ -78,7 +78,7 @@
     } t_vm_frameblock;
 
 
-    typedef struct _vm_stackframe {
+    struct _vm_stackframe {
         t_vm_stackframe *parent;                    // Parent frame, or NULL when we reached the initial / global frame.
 
         t_vm_codeframe *codeframe;                  // Actual codeframe
@@ -98,7 +98,7 @@
         t_hash_object *global_identifiers;          // Global identifiers
         t_hash_object *builtin_identifiers;         // Builtin identifiers (String, Numerical, modules etc)
 
-        t_dll *created_userland_objects;            // Created objects by the bytecode
+        t_dll *created_user_objects;                // Created objects by the bytecode
 
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)
         t_vm_frameblock blocks[BLOCK_MAX_DEPTH];    // Frame blocks
@@ -110,6 +110,6 @@
 
         //unsigned int time;                        // Total time spend in this bytecode block
         unsigned int executions;                    // Number of total executions (opcodes processed)
-    } t_vm_stackframe;
+    };
 
 #endif

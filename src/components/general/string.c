@@ -108,7 +108,7 @@ t_string *string_strcat0(t_string *dst, const char *src) {
 
 
 t_string *string_strcat(t_string *dst, const t_string *src) {
-    dst->val = (char *)smm_realloc(dst->val, dst->len + src->len);
+    dst->val = (char *)smm_realloc(dst->val, dst->len + src->len + 1);
     memcpy(dst->val + dst->len, src->val, src->len);
     dst->val[dst->len + src->len] = '\0';
     dst->len += src->len;

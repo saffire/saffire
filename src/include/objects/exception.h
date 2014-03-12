@@ -29,10 +29,14 @@
 
     #include "objects/object.h"
 
-    typedef struct _exeption_object {
-        SAFFIRE_OBJECT_HEADER
+    typedef struct {
         t_string    *message;
         long        code;
+    } t_exception_object_data;
+
+    typedef struct _exeption_object {
+        SAFFIRE_OBJECT_HEADER
+        t_exception_object_data data;
     } t_exception_object;
 
     t_exception_object Object_Exception_struct;

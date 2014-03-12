@@ -28,6 +28,7 @@
 #define __STRING_H__
 
     #include "general/unicode.h"
+    #include "general/md5.h"
 
 
     // Forward defined in general/unicode.h

@@ -33,10 +33,13 @@
     #define RETURN_HASH(h)   RETURN_OBJECT(object_alloc(Object_Hash, 1, h));
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         t_hash_table *ht;
         t_hash_iter iter;
+    } t_hash_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        t_hash_object_data data;
     } t_hash_object;
 
     t_hash_object Object_Hash_struct;

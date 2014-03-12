@@ -182,8 +182,8 @@ libobjects_a_SOURCES = components/objects/object.c \
                        components/objects/attrib.c \
                        components/objects/hash.c \
                        components/objects/tuple.c \
-                       components/objects/userland.c \
                        components/objects/list.c \
+                       components/objects/user.c \
                        components/objects/exception.c
 
 

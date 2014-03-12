@@ -42,12 +42,10 @@
     #define CALLABLE_CODE_INTERNAL         1        /* This is an internal function (native_func) */
     #define CALLABLE_CODE_EXTERNAL         2        /* This is an external function (bytecode) */
 
-    #define CALLABLE_IS_CODE_INTERNAL(callable) ((((t_callable_object *)callable)->routing & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL)
-    #define CALLABLE_IS_CODE_EXTERNAL(callable) ((((t_callable_object *)callable)->routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL)
+    #define CALLABLE_IS_CODE_INTERNAL(callable) ((((t_callable_object *)callable)->data.routing & CALLABLE_CODE_INTERNAL) == CALLABLE_CODE_INTERNAL)
+    #define CALLABLE_IS_CODE_EXTERNAL(callable) ((((t_callable_object *)callable)->data.routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL)
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         int routing;     // CALLABLE_CODE_*
 
         union {
@@ -61,6 +59,11 @@
 
         t_object *binding;                  // Bound to this attrib.  // @TODO: could be NULL when it's not bound (like a closure???)
         t_hash_table *arguments;            // Arguments (key => default value (or NULL))
+    } t_callable_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        t_callable_object_data data;
     } t_callable_object;
 
     t_callable_object Object_Callable_struct;

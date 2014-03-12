@@ -24,8 +24,8 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECT_USERLAND_H__
-#define __OBJECT_USERLAND_H__
+#ifndef __OBJECT_USER_H__
+#define __OBJECT_USER_H__
 
     #include "objects/object.h"
     #include "objects/hash.h"
@@ -35,13 +35,13 @@
         SAFFIRE_OBJECT_HEADER
 
         t_vm_stackframe *frame;      // The frame in which the class is defined.
-    } t_userland_object;
+    } t_user_object;
 
-    t_userland_object Object_Userland_struct;
+    t_user_object Object_User_struct;
 
-    #define Object_Userland   (t_object *)&Object_Userland_struct
+    #define Object_User   (t_object *)&Object_User_struct
 
-    void object_userland_init(void);
-    void object_userland_fini(void);
+    void object_user_init(void);
+    void object_user_fini(void);
 
 #endif

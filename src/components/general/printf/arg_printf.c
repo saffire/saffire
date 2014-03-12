@@ -41,13 +41,13 @@ static long _get_long(t_dll_element **e) {
     t_object *obj = (t_object *)(*e)->data;
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
-        t_attrib_object *numerical_method = object_attrib_find(obj, "__numerical", OBJECT_SCOPE_SELF);
+        t_attrib_object *numerical_method = object_attrib_find(obj, "__numerical");
         obj = vm_object_call(obj, numerical_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));
 
-    return ((t_numerical_object *)obj)->value;
+    return ((t_numerical_object *)obj)->data.value;
 }
 
 
@@ -58,13 +58,13 @@ static t_string *_get_string(t_dll_element **e) {
     t_object *obj = (*e)->data;
 
     if (! OBJECT_IS_STRING(obj)) {
-        t_attrib_object *string_method = object_attrib_find(obj, "__string", OBJECT_SCOPE_SELF);
+        t_attrib_object *string_method = object_attrib_find(obj, "__string");
         obj = vm_object_call(obj, string_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));
 
-    return ((t_string_object *)obj)->value;
+    return ((t_string_object *)obj)->data.value;
 }
 
 

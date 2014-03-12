@@ -30,8 +30,12 @@
     #include "objects/object.h"
 
     typedef struct {
+        long value;
+    } t_boolean_object_data;
+
+    typedef struct {
         SAFFIRE_OBJECT_HEADER
-        long    value;              // 0 = false, 1 = true
+        t_boolean_object_data data;
     } t_boolean_object;
 
     t_boolean_object Object_Boolean_struct;

@@ -58,10 +58,10 @@ static t_vm_codeframe *_vm_codeframe_new(t_bytecode *bytecode, t_vm_context *con
                 break;
             }
             case BYTECODE_CONST_STRING :
-                obj = object_alloc(Object_String, 2, strlen(bytecode->constants[i]->data.s), bytecode->constants[i]->data.s);
+                obj = object_alloc(Object_String, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_REGEX :
-                obj = object_alloc(Object_Regex, 2, strlen(bytecode->constants[i]->data.s), bytecode->constants[i]->data.s);
+                obj = object_alloc(Object_Regex, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
                 obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);

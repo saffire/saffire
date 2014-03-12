@@ -68,7 +68,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_object *obj = object_alloc(Object_Numerical, 1, abs(self->value));
+    t_object *obj = object_alloc(Object_Numerical, 1, abs(self->data.value));
     RETURN_OBJECT(obj);
 }
 
@@ -77,13 +77,13 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_object *obj = object_alloc(Object_Numerical, 1, 0 - self->value);
+    t_object *obj = object_alloc(Object_Numerical, 1, 0 - self->data.value);
     RETURN_OBJECT(obj);
 }
 
 
 SAFFIRE_METHOD(numerical, conv_boolean) {
-    if (self->value == 0) {
+    if (self->data.value == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -100,7 +100,7 @@ SAFFIRE_METHOD(numerical, conv_numerical) {
 
 SAFFIRE_METHOD(numerical, conv_string) {
     char tmp[32];       // @TODO: Should be enough??
-    snprintf(tmp, 31, "%ld", self->value);
+    snprintf(tmp, 31, "%ld", self->data.value);
     RETURN_STRING_FROM_CHAR(tmp);
 }
 
@@ -116,7 +116,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->value + other->value);
+    return object_alloc(Object_Numerical, 1, self->data.value + other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
@@ -126,7 +126,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->value - other->value);
+    return object_alloc(Object_Numerical, 1, self->data.value - other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
@@ -136,7 +136,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->value * other->value);
+    return object_alloc(Object_Numerical, 1, self->data.value * other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
@@ -146,12 +146,12 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
         return NULL;
     }
 
-    if (other->value == 0) {
+    if (other->data.value == 0) {
         object_raise_exception(Object_DivideByZeroException, 1, "Cannot divide by zero");
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->value / other->value);
+    return object_alloc(Object_Numerical, 1, self->data.value / other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
@@ -161,7 +161,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->value % other->value);
+    return object_alloc(Object_Numerical, 1, self->data.value % other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
@@ -171,7 +171,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->value & other->value));
+    return object_alloc(Object_Numerical, 1, (self->data.value & other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
@@ -181,7 +181,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->value | other->value));
+    return object_alloc(Object_Numerical, 1, (self->data.value | other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
@@ -191,7 +191,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->value ^ other->value));
+    return object_alloc(Object_Numerical, 1, (self->data.value ^ other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
@@ -201,7 +201,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->value << other->value));
+    return object_alloc(Object_Numerical, 1, (self->data.value << other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
@@ -211,7 +211,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->value >> other->value));
+    return object_alloc(Object_Numerical, 1, (self->data.value >> other->data.value));
 }
 
 
@@ -226,7 +226,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, eq) {
         return NULL;
     }
 
-    (self->value == other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value == other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, ne) {
@@ -236,7 +236,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, ne) {
         return NULL;
     }
 
-    (self->value != other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value != other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, lt) {
@@ -246,7 +246,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, lt) {
         return NULL;
     }
 
-    (self->value < other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value < other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, gt) {
@@ -256,7 +256,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, gt) {
         return NULL;
     }
 
-    (self->value > other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value > other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, le) {
@@ -266,7 +266,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, le) {
         return NULL;
     }
 
-    (self->value <= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value <= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, ge) {
@@ -276,7 +276,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
         return NULL;
     }
 
-    (self->value >= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value >= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 
@@ -328,7 +328,7 @@ void object_numerical_init(void) {
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
         numerical_cache[i] = smm_malloc(sizeof(t_numerical_object));
         memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
-        numerical_cache[i]->value = value;
+        numerical_cache[i]->data.value = value;
 
         // Immutable objects, and we don't allocate
         numerical_cache[i]->flags |= (OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_ALLOCATED);
@@ -390,28 +390,11 @@ static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
 
 static char *obj_hash(t_object *obj) {
     char *s = (char *)smm_malloc(32);
-    snprintf(s, 31, "%ld", ((t_numerical_object *)obj)->value);
+    snprintf(s, 31, "%ld", ((t_numerical_object *)obj)->data.value);
     return s;
 }
 
 
-
-/**
- * Creates a new numerical object by "cloning" the original one
- */
- static t_object *obj_new(t_object *self) {
-    t_numerical_object *obj = smm_malloc(sizeof(t_numerical_object));
-    memcpy(obj, Object_Numerical, sizeof(t_numerical_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
@@ -419,7 +402,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
     long value = (long)e->data;
 
-    num_obj->value = value;
+    num_obj->data.value = value;
 }
 
 static void obj_destroy(t_object *obj) {
@@ -432,7 +415,7 @@ static char *obj_debug(t_object *obj) {
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         sprintf(tmp, "Numerical");
     } else {
-        sprintf(tmp, "numerical(%ld)", ((t_numerical_object *)obj)->value);
+        sprintf(tmp, "numerical(%ld)", ((t_numerical_object *)obj)->data.value);
     }
     return tmp;
 }
@@ -441,7 +424,6 @@ static char *obj_debug(t_object *obj) {
 
 // String object management functions
 t_object_funcs numerical_funcs = {
-        obj_new,            // Allocate a new numerical object
         obj_populate,       // Populate a numerical object
         NULL,               // Free a numerical object
         obj_destroy,        // Destroy a numerical object
@@ -456,6 +438,8 @@ t_object_funcs numerical_funcs = {
 
 // Intial object
 t_numerical_object Object_Numerical_struct = {
-    OBJECT_HEAD_INIT("numerical", objectTypeNumerical, OBJECT_TYPE_CLASS, &numerical_funcs),
-    0
+    OBJECT_HEAD_INIT("numerical", objectTypeNumerical, OBJECT_TYPE_CLASS, &numerical_funcs, sizeof(t_numerical_object_data)),
+    {
+        0   // value
+    }
 };

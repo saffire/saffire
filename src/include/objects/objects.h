@@ -27,9 +27,11 @@
 #ifndef __OBJECTS_H__
 #define __OBJECTS_H__
 
-    #include "userland.h"
+    typedef struct _vm_stackframe t_vm_stackframe;
+
     #include "attrib.h"
     #include "base.h"
+    #include "user.h"
     #include "string.h"
     #include "boolean.h"
     #include "hash.h"
@@ -39,7 +41,6 @@
     #include "numerical.h"
     #include "regex.h"
     #include "tuple.h"
-    #include "userland.h"
     #include "interfaces.h"
     #include "exception.h"
 
