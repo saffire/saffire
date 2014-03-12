@@ -47,7 +47,7 @@ static long _get_long(t_dll_element **e) {
 
     (*e) = DLL_NEXT((*e));
 
-    return ((t_numerical_object *)obj)->value;
+    return ((t_numerical_object *)obj)->data.value;
 }
 
 
@@ -64,7 +64,7 @@ static t_string *_get_string(t_dll_element **e) {
 
     (*e) = DLL_NEXT((*e));
 
-    return ((t_string_object *)obj)->value;
+    return ((t_string_object *)obj)->data.value;
 }
 
 

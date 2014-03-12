@@ -37,7 +37,6 @@
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
-        t_object *(*new)(t_object *);               // Allocates a new object from base object
         void (*populate)(t_object *, t_dll *);      // Populates an object with new values
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
@@ -95,14 +94,14 @@
 
 
     // Object type and flag checks
-    #define OBJECT_TYPE_IS_CLASS(obj) ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS)
-    #define OBJECT_TYPE_IS_INTERFACE(obj) ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE)
-    #define OBJECT_TYPE_IS_ABSTRACT(obj) ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
-    #define OBJECT_TYPE_IS_INSTANCE(obj) ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
+    #define OBJECT_TYPE_IS_CLASS(obj)       ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS)
+    #define OBJECT_TYPE_IS_INTERFACE(obj)   ((obj->flags & OBJECT_TYPE_INTERFACE) == OBJECT_TYPE_INTERFACE)
+    #define OBJECT_TYPE_IS_ABSTRACT(obj)    ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
+    #define OBJECT_TYPE_IS_INSTANCE(obj)    ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
 
-    #define OBJECT_TYPE_IS_IMMUTABLE(obj) ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
-    #define OBJECT_TYPE_IS_FINAL(obj) ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
-    #define OBJECT_IS_ALLOCATED(obj)  ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
+    #define OBJECT_TYPE_IS_IMMUTABLE(obj)   ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
+    #define OBJECT_TYPE_IS_FINAL(obj)       ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
+    #define OBJECT_IS_ALLOCATED(obj)        ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
 
 
     // Simple macro's for object type checks
@@ -122,11 +121,11 @@
 
 
     // fetch (string) value from a string object
-    #define OBJ2STR(_obj_) (((t_string_object *)_obj_)->value)
-    #define OBJ2STR0(_obj_) (((t_string_object *)_obj_)->value->val)
+    #define OBJ2STR(_obj_)  (((t_string_object *)_obj_)->data.value)
+    #define OBJ2STR0(_obj_) (((t_string_object *)_obj_)->data.value->val)
 
     // fetch (long) value from a numerical object
-    #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->value)
+    #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->data.value)
 
 
     // Number of different object types (also needed for GC queues)
@@ -158,7 +157,9 @@
         \
         t_hash_table *attributes;       /* Object attributes, properties or constants */ \
         \
-        t_object_funcs *funcs;          /* Functions for internal maintenance (new, free, clone etc) */
+        t_object_funcs *funcs;          /* Functions for internal maintenance (new, free, clone etc) */ \
+        \
+        int data_size;                  /* Additional data size. If 0, no additional data is used in this object */ \
 
 
     // Actual "global" object. Every object is typed on this object.
@@ -168,7 +169,7 @@
 
     extern t_object Object_Base_struct;
 
-    #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base, interfaces) \
+    #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base, interfaces, data_size) \
                 0,              /* initial refcount */     \
                 type,           /* scalar type */          \
                 name,           /* name */                 \
@@ -177,11 +178,12 @@
                 base,           /* parent */               \
                 interfaces,     /* implements */           \
                 NULL,           /* attribute */            \
-                funcs           /* functions */
+                funcs,          /* functions */            \
+                data_size       /* data lenght */          \
 
     // Object header initialization without any functions or base
-    #define OBJECT_HEAD_INIT(name, type, flags, funcs) \
-            OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, &Object_Base_struct, NULL)
+    #define OBJECT_HEAD_INIT(name, type, flags, funcs, data_size) \
+            OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, &Object_Base_struct, NULL, data_size)
 
     /*
      * Header macros

@@ -240,24 +240,26 @@ t_object *object_clone(t_object *obj) {
  * arguments. This should be done in the populate() callback. The arguments presented
  * here can be used to decide if we have a cached version of the object laying around.
  */
-static t_object *_object_new(t_object *obj, t_dll *arguments) {
-    t_object *res;
-
-    // Return NULL when we cannot 'new' this object
-    if (! obj->funcs->new) {
-        RETURN_NULL;
-    }
+static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
 
     // Create new object
-    res = obj->funcs->new(obj);
-    res->ref_count = 1;
+    t_object *instance_obj = smm_malloc(sizeof(t_object) + class_obj->data_size);
+    memcpy(instance_obj, class_obj, sizeof(t_object) + class_obj->data_size);
 
-    res->class = obj;
+    // Since we just allocated the object, it can always be destroyed
+    instance_obj->flags |= OBJECT_FLAG_ALLOCATED;
+
+    // Object is an instance, not a class
+    instance_obj->flags &= ~OBJECT_TYPE_MASK;
+    instance_obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    instance_obj->ref_count = 1;
+    instance_obj->class = class_obj;
 
     // We add 'res' to our list of generated objects.
-    dll_append(all_objects, res);
+    dll_append(all_objects, instance_obj);
 
-    return res;
+    return instance_obj;
 }
 
 char *object_get_hash(t_object *obj) {
@@ -295,7 +297,7 @@ t_object *object_alloca(t_object *obj, t_dll *arguments) {
     }
 
     // generate new object
-    res = _object_new(obj, arguments);
+    res = _object_instantiate(obj, arguments);
 
     // Populate values, if needed
     if (res->funcs->populate && arguments) {
@@ -638,7 +640,7 @@ static void _object_remove_all_internal_attributes(t_object *obj) {
         object_release((t_object *)attr);
 
         // Release callable,property or constant from the attribute
-        object_release(((t_attrib_object *)attr)->attribute);
+        object_release(((t_attrib_object *)attr)->data.attribute);
 
         // Release attribute again, so it can be destroyed, and implicitly destroy the callable as well
         object_release((t_object *)attr);
@@ -688,8 +690,8 @@ void object_raise_exception(t_object *exception, int code, char *format, ...) {
 
 
 static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_object *obj2) {
-    t_hash_table *ht1 = obj1->arguments;
-    t_hash_table *ht2 = obj2->arguments;
+    t_hash_table *ht1 = obj1->data.arguments;
+    t_hash_table *ht2 = obj2->data.arguments;
 
     // Sanity check
     if (ht1->element_count != ht2->element_count) {
@@ -745,17 +747,17 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
         DEBUG_PRINT_STRING(char0_to_string("     - Found object : %s\n"), object_debug((t_object *)found_obj));
         DEBUG_PRINT_STRING(char0_to_string("     - Matching     : %s\n"), object_debug((t_object *)attribute));
 
-        if (found_obj->attr_type != attribute->attr_type ||
-            found_obj->attr_visibility != attribute->attr_visibility ||
-            found_obj->attr_access != attribute->attr_access) {
+        if (found_obj->data.attr_type != attribute->data.attr_type ||
+            found_obj->data.attr_visibility != attribute->data.attr_visibility ||
+            found_obj->data.attr_access != attribute->data.attr_access) {
             thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching settings for attribute '%s'", obj->name, interface->name, key);
             return 0;
         }
 
         // If we are a callable, check arguments
-        if (OBJECT_IS_CALLABLE(found_obj->attribute)) {
+        if (OBJECT_IS_CALLABLE(found_obj->data.attribute)) {
             DEBUG_PRINT_CHAR("     - Checking parameter signatures\n");
-            if (!_object_check_matching_arguments((t_callable_object *)attribute->attribute, (t_callable_object *)found_obj->attribute)) {
+            if (!_object_check_matching_arguments((t_callable_object *)attribute->data.attribute, (t_callable_object *)found_obj->data.attribute)) {
                 thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Class '%s' does not fully implement interface '%s', mismatching argument list for attribute '%s'", obj->name, interface->name, key);
                 return 0;
             }

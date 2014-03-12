@@ -161,7 +161,7 @@ fwrite($fp, "\n\n");
 foreach ($exceptions as $exception) {
     list($exception, $parent) = $exception;
 
-    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".ucfirst($exception)."\", objectTypeException, OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct, NULL), NULL, 0};\n");
+    fwrite($fp, "t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"".ucfirst($exception)."\", objectTypeException, OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_".(empty($parent)?"":$parent."_")."struct, NULL, sizeof(t_exception_object_data)), { NULL, 0 } };\n");
 }
 
 fclose($fp);

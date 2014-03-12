@@ -39,19 +39,23 @@
     #define RETURN_STRING(s)                            RETURN_OBJECT(object_alloc(Object_String, 1, s))
 
     // Returns value inside the string object's t_string
-    #define STROBJ2CHAR0(obj)                           ((((t_string_object *)obj)->value)->val)
+    #define STROBJ2CHAR0(obj)                           ((((t_string_object *)obj)->data.value)->val)
     // Returns length inside the string object's t_string
-    #define STROBJ2CHAR0LEN(obj)                        ((((t_string_object *)obj)->value)->len)
+    #define STROBJ2CHAR0LEN(obj)                        ((((t_string_object *)obj)->data.value)->len)
+
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         t_string *value;            // string value
         md5_byte_t hash[16];        // (MD5) hash of the actual string
         int needs_hashing;          // 1 : string needs hashing, 0 : hash done
 
         int iter;                   // Simple iteration index on the characters
         char *locale;               // Locale
+    } t_string_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        t_string_object_data data;
     } t_string_object;
 
     t_string_object Object_String_struct;

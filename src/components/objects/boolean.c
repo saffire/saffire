@@ -46,11 +46,11 @@ SAFFIRE_METHOD(boolean, conv_null) {
 }
 
 SAFFIRE_METHOD(boolean, conv_numerical) {
-    RETURN_NUMERICAL(self->value);
+    RETURN_NUMERICAL(self->data.value);
 }
 
 SAFFIRE_METHOD(boolean, conv_string) {
-    if (self->value == 1) {
+    if (self->data.value == 1) {
         RETURN_STRING_FROM_CHAR("true");
     } else {
         RETURN_STRING_FROM_CHAR("false");
@@ -69,7 +69,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, add) {
         return NULL;
     }
 
-    (self->value + other->value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value + other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sub) {
@@ -79,7 +79,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, sub) {
         return NULL;
     }
 
-    (self->value - other->value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value - other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, mul) {
@@ -89,7 +89,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, mul) {
         return NULL;
     }
 
-    (self->value * other->value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value * other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, div) {
@@ -99,9 +99,9 @@ SAFFIRE_OPERATOR_METHOD(boolean, div) {
         return NULL;
     }
 
-    if (! other->value) RETURN_FALSE;
+    if (! other->data.value) RETURN_FALSE;
 
-    (self->value / other->value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value / other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, mod) {
@@ -111,7 +111,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, mod) {
         return NULL;
     }
 
-    (self->value % other->value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value % other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, and) {
@@ -121,7 +121,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, and) {
         return NULL;
     }
 
-    ((self->value & other->value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value & other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, or) {
@@ -131,7 +131,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, or) {
         return NULL;
     }
 
-    ((self->value | other->value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value | other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, xor) {
@@ -141,7 +141,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, xor) {
         return NULL;
     }
 
-    ((self->value ^ other->value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value ^ other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sl) {
@@ -151,7 +151,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, sl) {
         return NULL;
     }
 
-    ((self->value << other->value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value << other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sr) {
@@ -161,7 +161,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, sr) {
         return NULL;
     }
 
-    ((self->value >> other->value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value >> other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 
@@ -176,7 +176,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, eq) {
         return NULL;
     }
 
-    (self->value == other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value == other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, ne) {
@@ -186,7 +186,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, ne) {
         return NULL;
     }
 
-    (self->value != other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value != other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, lt) {
@@ -196,7 +196,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, lt) {
         return NULL;
     }
 
-    (self->value < other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value < other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, gt) {
@@ -206,7 +206,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, gt) {
         return NULL;
     }
 
-    (self->value > other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value > other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, le) {
@@ -216,7 +216,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, le) {
         return NULL;
     }
 
-    (self->value <= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value <= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, ge) {
@@ -226,7 +226,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, ge) {
         return NULL;
     }
 
-    (self->value >= other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value >= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 
@@ -310,13 +310,12 @@ void object_boolean_fini(void) {
 
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
-    if (((t_boolean_object *)obj)->value == 0) return "boolean(False)";
+    if (((t_boolean_object *)obj)->data.value == 0) return "boolean(False)";
     return "boolean(True)";
 }
 #endif
 
 t_object_funcs bool_funcs = {
-        NULL,               // Allocate a new bool object
         NULL,               // Populate a bool object
         NULL,               // Free a bool object
         NULL,               // Destroy a bool object
@@ -328,6 +327,6 @@ t_object_funcs bool_funcs = {
 #endif
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_CLASS, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 0 };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs), 1 };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_CLASS, &bool_funcs, sizeof(t_boolean_object_data)), { 0 } };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 0 } };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 1 } };

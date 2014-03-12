@@ -377,13 +377,13 @@ DBGP_CMD_DEF(context_get) {
 
     t_hash_table *ht;
     if (context_id == 0) {
-        ht = frame->local_identifiers->ht;
+        ht = frame->local_identifiers->data.ht;
     } else if (context_id == 1) {
-        ht = frame->frame_identifiers->ht;
+        ht = frame->frame_identifiers->data.ht;
     } else if (context_id == 2) {
-        ht = frame->global_identifiers->ht;
+        ht = frame->global_identifiers->data.ht;
     } else {
-        ht = frame->builtin_identifiers->ht;
+        ht = frame->builtin_identifiers->data.ht;
     }
 
     t_hash_iter iter;
@@ -399,19 +399,19 @@ DBGP_CMD_DEF(context_get) {
             if (OBJECT_IS_NUMERICAL(obj)) {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "int");
 
-                snprintf(xmlbuf, 999, "%ld", ((t_numerical_object *)obj)->value);
+                snprintf(xmlbuf, 999, "%ld", ((t_numerical_object *)obj)->data.value);
                 xmlNodeSetContent(node, BAD_CAST xmlbuf);
 
             } else if (OBJECT_IS_BOOLEAN(obj)) {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "bool");
 
-                snprintf(xmlbuf, 999, "%ld", ((t_boolean_object *)obj)->value);
+                snprintf(xmlbuf, 999, "%ld", ((t_boolean_object *)obj)->data.value);
                 xmlNodeSetContent(node, BAD_CAST xmlbuf);
 
             } else if (OBJECT_IS_STRING(obj)) {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "string");
 
-                t_string *s = ((t_string_object *)obj)->value;
+                t_string *s = ((t_string_object *)obj)->data.value;
 
                 // @TODO: We have to convert
                 basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);

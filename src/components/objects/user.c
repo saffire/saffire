@@ -55,24 +55,6 @@ void object_user_fini() {
 }
 
 
-static t_object *obj_new(t_object *self) {
-    t_user_object *obj = smm_malloc(sizeof(t_user_object));
-    memcpy(obj, self, sizeof(t_user_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-
-    // We should copy / clone the attributes?
-
-    return (t_object *)obj;
-}
-
-
 
 static void obj_populate(t_object *self, t_dll *arg_list) {
 }
@@ -130,7 +112,6 @@ static char *obj_debug(t_object *obj) {
 
 // object management functions
 t_object_funcs user_funcs = {
-        obj_new,              // Allocate a new user object
         obj_populate,         // Populate a user object
         obj_free,             // Free a user object
         obj_destroy,          // Destroy a user object
@@ -146,7 +127,6 @@ t_object_funcs user_funcs = {
 
 // Initial object
 t_user_object Object_User_struct = {
-    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs),
-    NULL
+    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, 0),
 };
 

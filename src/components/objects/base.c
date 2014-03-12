@@ -224,20 +224,6 @@ void object_base_fini() {
 }
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object from string object template
-    t_base_object *obj = smm_malloc(sizeof(t_base_object));
-    memcpy(obj, Object_Base, sizeof(t_base_object));
-
-    // Since we just allocated the object, it can always be destroyed
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // Object is an instance, not a class
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
 
 static void obj_destroy(t_object *obj) {
     smm_free(obj);
@@ -253,7 +239,7 @@ static char *obj_debug(t_object *obj) {
 
     snprintf(global_buf, 1023, objectTypeNames[obj->type]);
     if (OBJECT_TYPE_IS_CLASS(obj)) {
-        toupper(global_buf[0]);
+        global_buf[0] = toupper(global_buf[0]);
     }
 
     return global_buf;
@@ -263,7 +249,6 @@ static char *obj_debug(t_object *obj) {
 
 // String object management functions
 t_object_funcs base_funcs = {
-        obj_new,              // Allocate a new string object
         NULL,                 // Populate a string object
         NULL,                 // Free a string object
         obj_destroy,          // Destroy a string object
@@ -278,6 +263,6 @@ t_object_funcs base_funcs = {
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, &base_funcs, NULL, NULL)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, &base_funcs, NULL, NULL, 0)
 };
 

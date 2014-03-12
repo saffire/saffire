@@ -36,11 +36,14 @@
     #define RETURN_REGEX(s)   RETURN_OBJECT(object_alloc(Object_Regex, 1, s));
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         pcre *regex;
         char *regex_string;
         int  regex_flags;
+    } t_regex_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        t_regex_object_data data;
     } t_regex_object;
 
     t_regex_object Object_Regex_struct;

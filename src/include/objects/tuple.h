@@ -33,9 +33,12 @@
     #define RETURN_TUPLE(t)   RETURN_OBJECT(object_alloc(Object_Tuple, 1, t));
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
         t_hash_table *ht;
+    } t_tuple_object_data;
+
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        t_tuple_object_data data;
     } t_tuple_object;
 
     t_tuple_object Object_Tuple_struct;

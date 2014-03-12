@@ -67,30 +67,30 @@ SAFFIRE_METHOD(list, dtor) {
  * Saffire method: Returns the number of elements stored inside the list
  */
 SAFFIRE_METHOD(list, length) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 SAFFIRE_METHOD(list, __iterator) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(list, __key) {
-    RETURN_NUMERICAL(self->iter.idx);
+    RETURN_NUMERICAL(self->data.iter.idx);
 }
 SAFFIRE_METHOD(list, __value) {
-    t_object *obj = ht_find_num(self->ht, self->iter.idx);
+    t_object *obj = ht_find_num(self->data.ht, self->data.iter.idx);
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
 SAFFIRE_METHOD(list, __next) {
-    self->iter.idx++;
+    self->data.iter.idx++;
     RETURN_SELF;
 }
 SAFFIRE_METHOD(list, __rewind) {
-    self->iter.idx = 0;
+    self->data.iter.idx = 0;
     RETURN_SELF;
 }
 SAFFIRE_METHOD(list, __hasNext) {
-    if (self->iter.idx < self->ht->element_count) {
+    if (self->data.iter.idx < self->data.ht->element_count) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -107,7 +107,7 @@ SAFFIRE_METHOD(list, get) {
         return NULL;
     }
 
-    t_object *obj = ht_find_num(self->ht, key->value);
+    t_object *obj = ht_find_num(self->data.ht, key->data.value);
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -128,15 +128,15 @@ SAFFIRE_METHOD(list, shuffle) {
     srand(rdtscll());
 
     // The hashtable has a linked list, we shuffle this one as it is used during iteration
-    for (int i = self->ht->element_count-1; i >= 1; i--) {
+    for (int i = self->data.ht->element_count-1; i >= 1; i--) {
         /* because we are exchanging values, the keys can stay the same. We basically fetch the
          * objects and swap them. */
 
         int j = (rand () % i);
-        t_object *obj1 = ht_find_num(self->ht, i);
-        t_object *obj2 = ht_find_num(self->ht, j);
-        ht_replace_num(self->ht, i, obj2);
-        ht_replace_num(self->ht, j, obj1);
+        t_object *obj1 = ht_find_num(self->data.ht, i);
+        t_object *obj2 = ht_find_num(self->data.ht, j);
+        ht_replace_num(self->data.ht, i, obj2);
+        ht_replace_num(self->data.ht, j, obj1);
     }
     RETURN_SELF;
 }
@@ -145,7 +145,7 @@ SAFFIRE_METHOD(list, shuffle) {
   * Pick random element
   */
 SAFFIRE_METHOD(list, random) {
-    t_object *obj = ht_find_num(self->ht, (rand () % self->ht->element_count));
+    t_object *obj = ht_find_num(self->data.ht, (rand () % self->data.ht->element_count));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -160,7 +160,7 @@ SAFFIRE_METHOD(list, add) {
         return NULL;
     }
 
-    ht_add_num(self->ht, self->ht->element_count, val);
+    ht_add_num(self->data.ht, self->data.ht->element_count, val);
     RETURN_SELF;
 }
 
@@ -180,14 +180,14 @@ SAFFIRE_METHOD(list, populate) {
         return NULL;
     }
 
-    if (! self->ht) {
-        self->ht = ht_create();
+    if (! self->data.ht) {
+        self->data.ht = ht_create();
     }
 
     t_hash_iter iter;
-    ht_iter_init(&iter, ht_obj->ht);
+    ht_iter_init(&iter, ht_obj->data.ht);
     while (ht_iter_valid(&iter)) {
-        ht_add_num(self->ht, self->ht->element_count, ht_iter_value(&iter));
+        ht_add_num(self->data.ht, self->data.ht->element_count, ht_iter_value(&iter));
         ht_iter_next(&iter);
     }
 
@@ -217,19 +217,19 @@ SAFFIRE_METHOD(list, sequence) {
         return NULL;
     }
 
-    if (((t_numerical_object *)from)->value > ((t_numerical_object *)to)->value) {
+    if (((t_numerical_object *)from)->data.value > ((t_numerical_object *)to)->data.value) {
         object_raise_exception(Object_ArgumentException, 1, "'from' value must be lower than the 'to' value");
         return NULL;
     }
 
-    if (((t_numerical_object *)skip)->value <= 0) {
+    if (((t_numerical_object *)skip)->data.value <= 0) {
         object_raise_exception(Object_ArgumentException, 1, "'skip' must be 1 or higher");
         return NULL;
     }
 
     t_list_object *list_obj = (t_list_object *)object_alloc(Object_List, 0);
-    for (int i=((t_numerical_object *)from)->value; i<=((t_numerical_object *)to)->value; i+=((t_numerical_object *)skip)->value) {
-        ht_add_num(list_obj->ht, list_obj->ht->element_count, object_alloc(Object_Numerical, 1, i));
+    for (int i=((t_numerical_object *)from)->data.value; i<=((t_numerical_object *)to)->data.value; i+=((t_numerical_object *)skip)->data.value) {
+        ht_add_num(list_obj->data.ht, list_obj->data.ht->element_count, object_alloc(Object_Numerical, 1, i));
     }
 
     RETURN_OBJECT(list_obj);
@@ -241,7 +241,7 @@ SAFFIRE_METHOD(list, sequence) {
  *
  */
 SAFFIRE_METHOD(list, conv_boolean) {
-    if (self->ht->element_count == 0) {
+    if (self->data.ht->element_count == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -259,7 +259,7 @@ SAFFIRE_METHOD(list, conv_null) {
  *
  */
 SAFFIRE_METHOD(list, conv_numerical) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 /**
@@ -268,7 +268,7 @@ SAFFIRE_METHOD(list, conv_numerical) {
 SAFFIRE_METHOD(list, conv_string) {
     char s[100];
 
-    snprintf(s, 99, "list[%d]", self->ht->element_count);
+    snprintf(s, 99, "list[%d]", self->data.ht->element_count);
     RETURN_STRING_FROM_CHAR(s);
 }
 
@@ -347,45 +347,31 @@ void object_list_fini(void) {
 }
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object and copy all info
-    t_list_object *obj = smm_malloc(sizeof(t_list_object));
-    memcpy(obj, Object_List, sizeof(t_list_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_list_object *list_obj = (t_list_object *)obj;
 
     // No arguments
     if (arg_list->size == 0) {
-        list_obj->ht = ht_create();
+        list_obj->data.ht = ht_create();
         return;
     }
 
     if (arg_list->size == 1) {
         // Simple hash table. Direct copy
-        list_obj->ht = DLL_HEAD(arg_list)->data;
+        list_obj->data.ht = DLL_HEAD(arg_list)->data;
         return;
     }
 
     // 2 (or higher). Use the DLL in arg2
-    list_obj->ht = ht_create();
+    list_obj->data.ht = ht_create();
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
     t_dll *dll = (t_dll *)e->data;
     e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
     while (e) {
         t_object *val = (t_object *)e->data;
-        ht_add_num(list_obj->ht, list_obj->ht->element_count, val);
+        ht_add_num(list_obj->data.ht, list_obj->data.ht->element_count, val);
         e = DLL_NEXT(e);
     }
 }
@@ -394,8 +380,8 @@ static void obj_free(t_object *obj) {
     t_list_object *list_obj = (t_list_object *)obj;
     if (! list_obj) return;
 
-    if (list_obj->ht) {
-        ht_destroy(list_obj->ht);
+    if (list_obj->data.ht) {
+        ht_destroy(list_obj->data.ht);
     }
 }
 
@@ -409,7 +395,7 @@ static char *obj_debug(t_object *obj) {
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         sprintf(global_buf, "List");
     } else {
-        t_hash_table *ht = ((t_list_object *)obj)->ht;
+        t_hash_table *ht = ((t_list_object *)obj)->data.ht;
         sprintf(global_buf, "list[%d]", ht ? ht->element_count : 0);
     }
     return global_buf;
@@ -419,7 +405,6 @@ static char *obj_debug(t_object *obj) {
 
 // List object management functions
 t_object_funcs list_funcs = {
-        obj_new,              // Allocate a new list object
         obj_populate,         // Populate a list object
         obj_free,             // Free a list object
         obj_destroy,          // Destroy a list object
@@ -435,10 +420,12 @@ t_object_funcs list_funcs = {
 
 // Intial object
 t_list_object Object_List_struct = {
-    OBJECT_HEAD_INIT("list", objectTypeList, OBJECT_TYPE_CLASS, &list_funcs),
-    NULL,
+    OBJECT_HEAD_INIT("list", objectTypeList, OBJECT_TYPE_CLASS, &list_funcs, sizeof(t_list_object_data)),
     {
-        0,
+        NULL,
+        {
+            0,
+        }
     }
 };
 

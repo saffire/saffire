@@ -78,7 +78,7 @@ unsigned int vm_frame_get_operand(t_vm_stackframe *frame) {
  */
 t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
     t_object *obj = vm_frame_stack_pop_attrib(frame);
-    if (OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->attribute;
+    if (OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->data.attribute;
     return obj;
 }
 
@@ -178,14 +178,14 @@ t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
  */
 void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
     if (obj == NULL) {
-        t_object *old = ht_remove_str(frame->frame_identifiers->ht, id);
+        t_object *old = ht_remove_str(frame->frame_identifiers->data.ht, id);
 
         if (old) object_release(old);
         return;
     }
 
-    if (! ht_exists_str(frame->frame_identifiers->ht, id)) {
-        ht_add_str(frame->frame_identifiers->ht, id, obj);
+    if (! ht_exists_str(frame->frame_identifiers->data.ht, id)) {
+        ht_add_str(frame->frame_identifiers->data.ht, id, obj);
         object_inc_ref(obj);
     } else {
         // @TODO: Overwrite, or throw error?
@@ -198,14 +198,14 @@ void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *o
  */
 void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
     if (obj == NULL) {
-        t_object *old = ht_remove_str(frame->global_identifiers->ht, id);
+        t_object *old = ht_remove_str(frame->global_identifiers->data.ht, id);
 
         if (old) object_release(old);
         return;
     }
 
-    if (! ht_exists_str(frame->global_identifiers->ht, id)) {
-        ht_add_str(frame->global_identifiers->ht, id, obj);
+    if (! ht_exists_str(frame->global_identifiers->data.ht, id)) {
+        ht_add_str(frame->global_identifiers->data.ht, id, obj);
         object_inc_ref(obj);
     } else {
         // @TODO: Overwrite, or throw error?
@@ -217,7 +217,7 @@ void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *
 * Return object from the global identifier table
 */
 t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
-    t_object *obj = (t_object *)ht_find_str(frame->global_identifiers->ht, id);
+    t_object *obj = (t_object *)ht_find_str(frame->global_identifiers->data.ht, id);
 
     if (obj == NULL) RETURN_NULL;
     return obj;
@@ -228,13 +228,13 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
  * Store object into either the local or global identifier table
  */
 void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->ht, id, obj);
+    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->data.ht, id, obj);
     object_release(old_obj);
     object_inc_ref(obj);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->ht, id, obj);
+    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->data.ht, id, obj);
 
     object_release(old_obj);
     object_inc_ref(obj);
@@ -275,15 +275,15 @@ t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
     t_object *
 
     // Check local identifiers
-    obj = ht_find_str(frame->local_identifiers->ht, id);
+    obj = ht_find_str(frame->local_identifiers->data.ht, id);
     if (obj) return obj;
 
     // Check frames
-    obj = ht_find_str(frame->frame_identifiers->ht, id);
+    obj = ht_find_str(frame->frame_identifiers->data.ht, id);
     if (obj) return obj;
 
     // Last, check builtins
-    obj = ht_find_str(frame->builtin_identifiers->ht, id);
+    obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
     if (obj) return obj;
 
     return NULL;
@@ -384,10 +384,10 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         DEBUG_PRINT_CHAR("STACKFRAME DESTROY: %s\n",
             frame->codeframe->context ? frame->codeframe->context->class.full : "<root>");
 
-        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->ht, "Locals");
-        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->ht, "Frame");
-        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->ht, "Globals");
-        //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->ht, "Builtins");
+        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
+        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
+        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
+        //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
     #endif
 #endif
 
@@ -398,7 +398,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     if (frame->trace_method) smm_free(frame->trace_method);
 
     t_hash_iter iter;
-    ht_iter_init(&iter, frame->local_identifiers->ht);
+    ht_iter_init(&iter, frame->local_identifiers->data.ht);
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
@@ -413,7 +413,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         // Release value, as it's no longer needed.
         object_release(val);
 
-        ht_remove_str(frame->local_identifiers->ht, key);
+        ht_remove_str(frame->local_identifiers->data.ht, key);
     }
 
     // Free created user objects

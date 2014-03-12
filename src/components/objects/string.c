@@ -51,36 +51,36 @@ static void calculate_hash(t_string_object *str_obj) {
 
     md5_init(&state);
     md5_append(&state, (md5_byte_t *)STROBJ2CHAR0(str_obj), STROBJ2CHAR0LEN(str_obj));
-    md5_finish(&state, str_obj->hash);
+    md5_finish(&state, str_obj->data.hash);
 }
 
 
 static void string_change_locale(t_string_object *str_obj, char *locale) {
-    if (str_obj->locale) {
-        smm_free(str_obj->locale);
+    if (str_obj->data.locale) {
+        smm_free(str_obj->data.locale);
     }
-    str_obj->locale = string_strdup0(locale);
+    str_obj->data.locale = string_strdup0(locale);
 }
 
 static t_string_object *string_create_new_object(t_string *str, char *locale) {
     t_string_object *uc_obj = (t_string_object *)object_alloc(Object_String, 0);
-    uc_obj->value = str;
-    uc_obj->locale = string_strdup0(locale);
+    uc_obj->data.value = str;
+    uc_obj->data.locale = string_strdup0(locale);
 
-    uc_obj->needs_hashing = 1;
+    uc_obj->data.needs_hashing = 1;
 
     return uc_obj;
 }
 
 t_string *object_string_cat(t_string_object *s1, t_string_object *s2) {
-    t_string *dst = string_strdup(s1->value);
-    string_strcat(dst, s2->value);
+    t_string *dst = string_strdup(s1->data.value);
+    string_strcat(dst, s2->data.value);
 
     return dst;
 }
 
 int object_string_compare(t_string_object *s1, t_string_object *s2) {
-    return utf8_strcmp(s1->value, s2->value);
+    return utf8_strcmp(s1->data.value, s2->data.value);
 }
 
 /* ======================================================================
@@ -94,7 +94,7 @@ int object_string_compare(t_string_object *s1, t_string_object *s2) {
 
     // Do a complete hash check to counter timing attacks
     for (int i=0; i!=16; i++) {
-        c += (s1->hash[i] ^ s2->hash[i]);
+        c += (s1->data.hash[i] ^ s2->data.hash[i]);
     }
     return (c == 0);
  }
@@ -103,6 +103,18 @@ int object_string_compare(t_string_object *s1, t_string_object *s2) {
  * Saffire method: constructor
  */
 SAFFIRE_METHOD(string, ctor) {
+    t_string_object *str_obj, *locale_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str_obj, &locale_obj)) {
+        return NULL;
+    }
+
+    self->data.value = string_strdup(str_obj->data.value);
+    if (locale_obj) {
+        self->data.locale = string_to_char(locale_obj->data.value);
+    } else {
+        t_thread *thread = thread_get_current();
+        self->data.locale = thread->locale ? string_strdup0(thread->locale) : NULL;
+    }
     RETURN_SELF;
 }
 
@@ -118,17 +130,17 @@ SAFFIRE_METHOD(string, dtor) {
  * Saffire method: Returns length of the string (in characters)
  */
 SAFFIRE_METHOD(string, length) {
-    RETURN_NUMERICAL(self->value->len);
+    RETURN_NUMERICAL(self->data.value->len);
 }
 
 /**
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
-    t_string *dst = utf8_toupper(self->value, self->locale);
+    t_string *dst = utf8_toupper(self->data.value, self->data.locale);
 
     // Create new object
-    t_string_object *obj = string_create_new_object(dst, self->locale);
+    t_string_object *obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(obj);
 }
 
@@ -137,10 +149,10 @@ SAFFIRE_METHOD(string, upper) {
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
-    t_string *dst = utf8_tolower(self->value, self->locale);
+    t_string *dst = utf8_tolower(self->data.value, self->data.locale);
 
     // Create new object
-    t_string_object *obj = string_create_new_object(dst, self->locale);
+    t_string_object *obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(obj);
 }
 
@@ -148,15 +160,15 @@ SAFFIRE_METHOD(string, lower) {
  * Saffire method: Returns reversed string object
  */
 SAFFIRE_METHOD(string, reverse) {
-    t_string *dst = string_strdup(self->value);
+    t_string *dst = string_strdup(self->data.value);
 
     // Reverse all chars
     for (int i=0; i!=dst->len; i++) {
-        dst->val[i] = self->value->val[dst->len - i];
+        dst->val[i] = self->data.value->val[dst->len - i];
     }
     utf8_free_unicode(dst);
 
-    t_string_object *obj = string_create_new_object(dst, self->locale);
+    t_string_object *obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(obj);
 }
 
@@ -165,7 +177,7 @@ SAFFIRE_METHOD(string, reverse) {
  *
  */
 SAFFIRE_METHOD(string, conv_boolean) {
-    if (self->value->len == 0) {
+    if (self->data.value->len == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -207,16 +219,16 @@ SAFFIRE_METHOD(string, splice) {
     }
 
     long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
-    long max = OBJECT_IS_NULL(max_obj) ? self->value->len : OBJ2NUM(max_obj);
+    long max = OBJECT_IS_NULL(max_obj) ? self->data.value->len : OBJ2NUM(max_obj);
 
     if (min == 0 && max == 0) RETURN_SELF;
 
     // Below 0, means we have to seek from the end of the string
-    if (min < 0) min = self->value->len + min - 1;
-    if (max < 0) max = self->value->len + max - 1;
+    if (min < 0) min = self->data.value->len + min - 1;
+    if (max < 0) max = self->data.value->len + max - 1;
 
-    if (min > self->value->len) min = self->value->len;
-    if (max > self->value->len || max == 0) max = self->value->len;
+    if (min > self->data.value->len) min = self->data.value->len;
+    if (max > self->data.value->len || max == 0) max = self->data.value->len;
 
     // Sanity check
     if (max < min) {
@@ -232,9 +244,9 @@ SAFFIRE_METHOD(string, splice) {
     }
 
 
-    t_string *dst = string_copy_partial(self->value, min, new_size);
+    t_string *dst = string_copy_partial(self->data.value, min, new_size);
 
-    t_string_object *obj = string_create_new_object(dst, self->locale);
+    t_string_object *obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(obj);
 }
 
@@ -263,7 +275,7 @@ SAFFIRE_METHOD(string, to_locale) {
  *
  */
 SAFFIRE_METHOD(string, get_locale) {
-    RETURN_STRING_FROM_CHAR(self->locale);
+    RETURN_STRING_FROM_CHAR(self->data.locale);
 }
 
 
@@ -282,7 +294,7 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
 
     t_string *dst = object_string_cat(self, other);
 
-    t_string_object *uc_obj = string_create_new_object(dst, self->locale);
+    t_string_object *uc_obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(uc_obj);
 }
 
@@ -297,7 +309,7 @@ SAFFIRE_COMPARISON_METHOD(string, eq) {
         return NULL;
     }
 
-    if (self->value->len != other->value->len) {
+    if (self->data.value->len != other->data.value->len) {
         RETURN_FALSE;
     }
 
@@ -317,7 +329,7 @@ SAFFIRE_COMPARISON_METHOD(string, ne) {
         return NULL;
     }
 
-    if (self->value->len != other->value->len) {
+    if (self->data.value->len != other->data.value->len) {
         RETURN_TRUE;
     }
 
@@ -390,7 +402,7 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
         return NULL;
     }
 
-    utf8_strstr(self->value, other->value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    utf8_strstr(self->data.value, other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ni) {
@@ -400,7 +412,7 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
         return NULL;
     }
 
-    utf8_strstr(self->value, other->value) ? (RETURN_FALSE) : (RETURN_TRUE);
+    utf8_strstr(self->data.value, other->data.value) ? (RETURN_FALSE) : (RETURN_TRUE);
 }
 
 
@@ -411,27 +423,27 @@ SAFFIRE_METHOD(string, __iterator) {
 }
 
 SAFFIRE_METHOD(string, __key) {
-    RETURN_NUMERICAL(self->iter);
+    RETURN_NUMERICAL(self->data.iter);
 }
 
 SAFFIRE_METHOD(string, __value) {
-    t_string *dst = string_copy_partial(self->value, self->iter, 1);
-    t_string_object *dst_obj = string_create_new_object(dst, self->locale);
+    t_string *dst = string_copy_partial(self->data.value, self->data.iter, 1);
+    t_string_object *dst_obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(dst_obj);
 }
 
 SAFFIRE_METHOD(string, __next) {
-    self->iter++;
+    self->data.iter++;
     RETURN_SELF;
 }
 
 SAFFIRE_METHOD(string, __rewind) {
-    self->iter = 0;
+    self->data.iter = 0;
     RETURN_SELF;
 }
 
 SAFFIRE_METHOD(string, __hasNext) {
-    if (self->iter < self->value->len) {
+    if (self->data.iter < self->data.value->len) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -451,14 +463,14 @@ SAFFIRE_METHOD(string, __get) {
     }
 
     long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->value->len) {
+    if (idx < 0 || idx > self->data.value->len) {
         object_raise_exception(Object_IndexException, 1, "Index out of range");
         return NULL;
     }
 
 
-    t_string *dst = string_copy_partial(self->value, idx, 1);
-    t_string_object *dst_obj = string_create_new_object(dst, self->locale);
+    t_string *dst = string_copy_partial(self->data.value, idx, 1);
+    t_string_object *dst_obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(dst_obj);
 }
 
@@ -471,7 +483,7 @@ SAFFIRE_METHOD(string, __has) {
     }
 
     long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->value->len) {
+    if (idx < 0 || idx > self->data.value->len) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
@@ -552,31 +564,13 @@ void object_string_fini(void) {
 
 
 
-
-static t_object *obj_new(t_object *self) {
-    // Create new object from string object template
-    t_string_object *obj = smm_malloc(sizeof(t_string_object));
-    memcpy(obj, Object_String, sizeof(t_string_object));
-
-    // Since we just allocated the object, it can always be destroyed
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // Object is an instance, not a class
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
-
-
-
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_string_object *str_obj = (t_string_object *)obj;
 
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        str_obj->value = (t_string *)e->data;
+        str_obj->data.value = (t_string *)e->data;
     } else if (arg_list->size > 1) {
         // 2 (or more) elements: it's a size + char0 string
 
@@ -589,17 +583,17 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         char *value = (char *)e->data;
 
         // Convert our stream to UTF8
-        str_obj->value = char_to_string(value, value_len);
+        str_obj->data.value = char_to_string(value, value_len);
     }
 
     t_thread *thread = thread_get_current();
-    str_obj->locale = thread->locale ? string_strdup0(thread->locale) : NULL;
+    str_obj->data.locale = thread->locale ? string_strdup0(thread->locale) : NULL;
 }
 
 static void obj_free(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
-    if (str_obj->value) smm_free(str_obj->value);
-    if (str_obj->locale) smm_free(str_obj->locale);
+    if (str_obj->data.value) smm_free(str_obj->data.value);
+    if (str_obj->data.locale) smm_free(str_obj->data.locale);
 }
 
 
@@ -631,12 +625,12 @@ static char *obj_hash(t_object *obj) {
 
     char *s = (char *)smm_malloc(17);
 
-    if (str_obj->needs_hashing == 1) {
+    if (str_obj->data.needs_hashing == 1) {
         // Generate hash
         calculate_hash(str_obj);
-        str_obj->needs_hashing = 0;
+        str_obj->data.needs_hashing = 0;
     }
-    memcpy(s, str_obj->hash, 16);
+    memcpy(s, str_obj->data.hash, 16);
     s[16] = '\0';
 
     return s;
@@ -646,7 +640,6 @@ static char *obj_hash(t_object *obj) {
 
 // String object management functions
 t_object_funcs string_funcs = {
-        obj_new,              // Allocate a new string object
         obj_populate,         // Populate a string object
         obj_free,             // Free a string object
         obj_destroy,          // Destroy a string object
@@ -658,12 +651,16 @@ t_object_funcs string_funcs = {
 #endif
 };
 
+
 // Intial object
 t_string_object Object_String_struct = {
-    OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs),
-    NULL,       // Value
-    "",         // Hash value
-    1,          // Needs hashing
-    0,          // Internal iteration index
-    NULL,       // Locale
+    OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs, sizeof(t_string_object_data)),
+
+    {
+        NULL,       // Value
+        "",         // Hash value
+        1,          // Needs hashing
+        0,          // Internal iteration index
+        NULL,       // Locale
+    }
 };

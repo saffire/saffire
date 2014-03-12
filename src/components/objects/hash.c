@@ -67,7 +67,7 @@ SAFFIRE_METHOD(hash, dtor) {
  * Saffire method: Returns the number of elements stored inside the hash
  */
 SAFFIRE_METHOD(hash, length) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 
@@ -75,21 +75,21 @@ SAFFIRE_METHOD(hash, __iterator) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(hash, __key) {
-    RETURN_OBJECT(ht_iter_key_obj(&self->iter));
+    RETURN_OBJECT(ht_iter_key_obj(&self->data.iter));
 }
 SAFFIRE_METHOD(hash, __value) {
-    RETURN_OBJECT(ht_iter_value(&self->iter));
+    RETURN_OBJECT(ht_iter_value(&self->data.iter));
 }
 SAFFIRE_METHOD(hash, __next) {
-    ht_iter_next(&self->iter);
+    ht_iter_next(&self->data.iter);
     RETURN_SELF;
 }
 SAFFIRE_METHOD(hash, __rewind) {
-    ht_iter_init(&self->iter, self->ht);
+    ht_iter_init(&self->data.iter, self->data.ht);
     RETURN_SELF;
 }
 SAFFIRE_METHOD(hash, __hasNext) {
-    if (self->iter.bucket->next_element != NULL) {
+    if (self->data.iter.bucket->next_element != NULL) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -108,12 +108,12 @@ SAFFIRE_METHOD(hash, populate) {
         return NULL;
     }
 
-    if (! self->ht) {
-        self->ht = ht_create();
+    if (! self->data.ht) {
+        self->data.ht = ht_create();
     }
 
     t_hash_iter iter;
-    ht_iter_init(&iter, ht_obj->ht);
+    ht_iter_init(&iter, ht_obj->data.ht);
     while (ht_iter_valid(&iter)) {
         t_object *key = ht_iter_value(&iter);
         ht_iter_next(&iter);
@@ -124,7 +124,7 @@ SAFFIRE_METHOD(hash, populate) {
     DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (unsigned int)val, val->ref_count, val->ref_count+1);
         object_inc_ref(key);
         object_inc_ref(val);
-        ht_add_obj(self->ht, key, val);
+        ht_add_obj(self->data.ht, key, val);
     }
 
     RETURN_SELF;
@@ -142,7 +142,7 @@ SAFFIRE_METHOD(hash, get) {
         return NULL;
     }
 
-    t_object *obj = ht_find_obj(self->ht, key);
+    t_object *obj = ht_find_obj(self->data.ht, key);
     if (obj == NULL) return default_value ? default_value : object_alloc(Object_Null, 0);
     RETURN_OBJECT(obj);
 }
@@ -154,7 +154,7 @@ SAFFIRE_METHOD(hash, keys) {
     t_hash_table *ht = ht_create();
 
     t_hash_iter iter;
-    ht_iter_init(&iter, self->ht);
+    ht_iter_init(&iter, self->data.ht);
     while (ht_iter_valid(&iter)) {
         t_object *key = (t_object *)ht_iter_key_obj(&iter);
         ht_add_num(ht, ht->element_count, (t_object *)key);
@@ -176,7 +176,7 @@ SAFFIRE_METHOD(hash, has) {
     }
 
     // We need to check if the address of the key(object) exists, as we only deal with object keys and values
-    if (ht_exists_obj(self->ht, key)) {
+    if (ht_exists_obj(self->data.ht, key)) {
         RETURN_TRUE;
     }
 
@@ -198,7 +198,7 @@ SAFFIRE_METHOD(hash, add) {
 
     object_inc_ref(key);
     object_inc_ref(val);
-    ht_add_obj(self->ht, key, val);
+    ht_add_obj(self->data.ht, key, val);
     RETURN_SELF;
 }
 
@@ -212,7 +212,7 @@ SAFFIRE_METHOD(hash, remove) {
         return NULL;
     }
 
-    t_object *obj = ht_remove_obj(self->ht, key);
+    t_object *obj = ht_remove_obj(self->data.ht, key);
     object_release(key);
     if (obj) object_release(obj);
 
@@ -232,7 +232,7 @@ SAFFIRE_METHOD(hash, splice) {
  *
  */
 SAFFIRE_METHOD(hash, conv_boolean) {
-    if (self->ht->element_count == 0) {
+    if (self->data.ht->element_count == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -250,7 +250,7 @@ SAFFIRE_METHOD(hash, conv_null) {
  *
  */
 SAFFIRE_METHOD(hash, conv_numerical) {
-    RETURN_NUMERICAL(self->ht->element_count);
+    RETURN_NUMERICAL(self->data.ht->element_count);
 }
 
 /**
@@ -259,7 +259,7 @@ SAFFIRE_METHOD(hash, conv_numerical) {
 SAFFIRE_METHOD(hash, conv_string) {
     char s[100];
 
-    snprintf(s, 99, "hash[%d]", self->ht->element_count);
+    snprintf(s, 99, "hash[%d]", self->data.ht->element_count);
     RETURN_STRING_FROM_CHAR(s);
 }
 
@@ -347,20 +347,6 @@ void object_hash_fini(void) {
 }
 
 
-static t_object *obj_new(t_object *self) {
-    // Create new object and copy all info
-    t_hash_object *obj = smm_malloc(sizeof(t_hash_object));
-    memcpy(obj, Object_Hash, sizeof(t_hash_object));
-
-    // Dynamically allocated
-    obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    // These are instances
-    obj->flags &= ~OBJECT_TYPE_MASK;
-    obj->flags |= OBJECT_TYPE_INSTANCE;
-
-    return (t_object *)obj;
-}
 
 /**
  * Datastructures populate can be done in 2 ways:   1 argument: HASHTABLE.   2nd argument: DLL (first arg is ignored)
@@ -370,18 +356,18 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // No arguments
     if (arg_list->size == 0) {
-        hash_obj->ht = ht_create();
+        hash_obj->data.ht = ht_create();
         return;
     }
 
     if (arg_list->size == 1) {
         // Simple hash table. Direct copy
-        hash_obj->ht = DLL_HEAD(arg_list)->data;
+        hash_obj->data.ht = DLL_HEAD(arg_list)->data;
         return;
     }
 
     // 2 (or higher). Use the DLL in arg2
-    hash_obj->ht = ht_create();
+    hash_obj->data.ht = ht_create();
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
     t_dll *dll = (t_dll *)e->data;
@@ -398,7 +384,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         object_inc_ref(key);
         object_inc_ref(val);
 
-        ht_add_obj(hash_obj->ht, key, val);
+        ht_add_obj(hash_obj->data.ht, key, val);
         e = DLL_NEXT(e);
     }
 }
@@ -411,7 +397,7 @@ static void obj_free(t_object *obj) {
     // We must decrease their references as well
 
     t_hash_iter iter;
-    ht_iter_init(&iter, hash_obj->ht);
+    ht_iter_init(&iter, hash_obj->data.ht);
     while (ht_iter_valid(&iter)) {
 //        t_object *key = ht_iter_key_obj(&iter);
 //        t_object *val = ht_iter_value(&iter);
@@ -423,7 +409,7 @@ static void obj_free(t_object *obj) {
         ht_iter_next(&iter);
     }
 
-    ht_destroy(hash_obj->ht);
+    ht_destroy(hash_obj->data.ht);
 }
 
 static void obj_destroy(t_object *obj) {
@@ -436,7 +422,7 @@ static char *obj_debug(t_object *obj) {
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         sprintf(global_buf, "Hash");
     } else {
-        t_hash_table *ht = ((t_hash_object *)obj)->ht;
+        t_hash_table *ht = ((t_hash_object *)obj)->data.ht;
         sprintf(global_buf, "hash[%d]", ht ? ht->element_count : 0);
     }
     return global_buf;
@@ -446,7 +432,6 @@ static char *obj_debug(t_object *obj) {
 
 // Hash object management functions
 t_object_funcs hash_funcs = {
-        obj_new,              // Allocate a new hash object
         obj_populate,         // Populate a hash object
         obj_free,             // Free a hash object
         obj_destroy,          // Destroy a hash object
@@ -462,8 +447,10 @@ t_object_funcs hash_funcs = {
 
 // Intial object
 t_hash_object Object_Hash_struct = {
-    OBJECT_HEAD_INIT("hash", objectTypeHash, OBJECT_TYPE_CLASS, &hash_funcs),
-    NULL,
-    /* t_hash_iter */
+    OBJECT_HEAD_INIT("hash", objectTypeHash, OBJECT_TYPE_CLASS, &hash_funcs, sizeof(t_hash_object_data)),
+    {
+        NULL,
+        /* t_hash_iter */
+    }
 };
 

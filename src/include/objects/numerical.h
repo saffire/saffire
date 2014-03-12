@@ -31,10 +31,15 @@
 
     #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_alloc(Object_Numerical, 1, n));
 
+
+    typedef struct {
+        long value;     // Current value
+    } t_numerical_object_data;
+    
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 
-        long value;     // Current value
+        t_numerical_object_data data;
     } t_numerical_object;
 
     t_numerical_object Object_Numerical_struct;
