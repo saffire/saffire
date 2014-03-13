@@ -35,18 +35,50 @@ switch (1) {
 ====
 Error in line 7: syntax error, unexpected case
 @@@@
-!skip
+import io;
+a = 1;
 switch (1) {
     default :
         switch (2) {
             default:
                 if (a == 1) {
+                    io.print("ok1\n");
                 }
         }
+        io.print("ok2\n");
     case 4:
+        io.print("ok3\n");
         break;
 }
 ====
+ok1
+ok2
+ok3
+@@@@
+import io;
+a = 1;
+switch (1) {
+    default :
+        io.print("switch\n");
+        switch (2) {
+            case 2 :
+                io.print("2!\n");
+            default:
+                if (a == 1) {
+                    io.print("ok1\n");
+                }
+        }
+        io.print("ok2\n");
+    case 4:
+        io.print("ok3\n");
+        break;
+}
+====
+switch
+2!
+ok1
+ok2
+ok3
 @@@@
 switch ("foo") {
     case "foo" :

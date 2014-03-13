@@ -689,8 +689,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     dll_append(frame, asm_create_labelline(label2));
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
                     dll_append(frame, asm_create_labelline(label5));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
 
                     state->block_cnt--;
                     break;
@@ -753,7 +753,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     if (has_else_statement) {
                         dll_append(frame, asm_create_labelline(label4));
                         dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                        dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
                         dll_append(frame, asm_create_labelline(label6));
 
                         // Add else body
@@ -768,8 +767,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label2));
 
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
                     dll_append(frame, asm_create_labelline(label5));
+                    dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
 
                     state->block_cnt--;
                     break;
@@ -834,9 +833,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     dll_append(frame, asm_create_labelline(label4));
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
-
                     dll_append(frame, asm_create_labelline(label5));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_BLOCK, 0));
 
                     state->block_cnt--;
                     break;
@@ -1087,7 +1085,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         // Pop true/false, and original iterator object
                         dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
                         dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                        dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
 
                         // else - called on breakelse, which doesn't need any cleanup
                         dll_append(frame, asm_create_labelline(label3));
@@ -1108,10 +1105,10 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     // Pop true/false, and original iterator object
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
 
-// End - no more commands after.
+// End of loop
                     dll_append(frame, asm_create_labelline(label5));
+                    dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
 
                     state->block_cnt--;
                     break;
@@ -1231,8 +1228,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
 
                     sprintf(label1, "switch_%03d_begin", clc);
-                    sprintf(label2, "switch_%03d_default", clc);        // we "breakelse" to here
-                    sprintf(label3, "switch_%03d_end", clc);            // we "break" to here
+                    sprintf(label2, "switch_%03d_default", clc);            // we "breakelse" to here
+                    sprintf(label3, "switch_%03d_end", clc);                // we "break" to here
                     dll_append(frame, asm_create_labelline(label1));
 
                     // we "abuse" a loop so break and breakelse works correctly.
@@ -1249,9 +1246,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     for (int i=0; i!=(leaf->opr.ops[1])->group.len; i++) {
                         node = (leaf->opr.ops[1])->group.items[i];
 
-                        //int lastcase = (i < (leaf->opr.ops[1])->group.len-1);
-
-                        if (i > 0) {
+//                        if (i > 0) {
                             // When comparing our case expression, we need to pop the boolean value. Therefor,
                             // we jump to the case_X_pre label which pops this. We don't need to do this for the
                             // first case statement though.
@@ -1259,18 +1254,23 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                             dll_append(frame, asm_create_labelline(label4));
 
                             if (node->opr.oper == T_DEFAULT) {
+                                if (i == 0) {
+                                    dll_append(frame, asm_create_codeline(0, VM_DUP_TOP, 0));
+                                }
                                 sprintf(label4, "switch_%03d_case_%d_pre", clc, i+1);
                                 opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
                                 dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
                             } else {
-                                dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                                if (i > 0) {
+                                    dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                                }
                             }
-                        }
+//                        }
 
                         sprintf(label4, "switch_%03d_case_%d", clc, i);
                         dll_append(frame, asm_create_labelline(label4));
 
-                        int default_case = 0;
+                        int body_index = 0;
                         if (node->opr.oper == T_CASE) {
                             // duplicate our original switch expression
                             dll_append(frame, asm_create_codeline(node->lineno, VM_DUP_TOP, 0));
@@ -1291,15 +1291,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         }
 
                         if (node->opr.oper == T_DEFAULT) {
-                            default_case = 1;
+                            body_index = 1;
                             default_found = 1;
 
-                            sprintf(label4, "switch_%03d_case_%d", clc, i+1);
-                            //sprintf(label4, "switch_%03d_default", clc);
-//                            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
-//                            dll_append(frame, asm_create_codeline(node->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
-
+                            // We jump with breakelse to here (so AFTER the pop-block)
                             dll_append(frame, asm_create_labelline(label2));
+
+                            sprintf(label4, "switch_%03d_case_%d", clc, i+1);
                         }
 
                         // Body of the case-statement
@@ -1307,32 +1305,33 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         dll_append(frame, asm_create_labelline(label4));
 
 
+                        // Add body of the case statement (break will work properly because of the setup-loop)
                         stack_push(state->context, st_ctx_load);
-                        WALK_LEAF(node->opr.ops[default_case ? 0 : 1]);     // "Default" is in 0, but cases are in 1
+                        WALK_LEAF(node->opr.ops[body_index ? 0 : 1]);     // "Default" is in 0, but cases are in 1
                         stack_pop(state->context);
 
-                        // After we have done the body of the case, we jump to the body of the next case-statement.
+
+                        // If the body didn't break/breakelse, we need to jump to the body of the next case statement.
                         sprintf(label4, "switch_%03d_case_%d_body", clc, i+1);
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label4, 0);
                         dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
                     }
 
-                    int i = (leaf->opr.ops[1])->group.len;
+                    // After all case statements, add a "dummy" case statement. This is here so
+                    // we don't need any special handling of the last case statement in the loop above
 
+                    int last_case_index = (leaf->opr.ops[1])->group.len;
 
-
-                    // This is a "dummy" label. Needed so we don't have to create special cases
-                    // inside our last case statement
-                    sprintf(label4, "switch_%03d_case_%d_pre", clc, i);
+                    sprintf(label4, "switch_%03d_case_%d_pre", clc, last_case_index);
                     dll_append(frame, asm_create_labelline(label4));
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
                     // We have reached the end of the statements,
                     opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label2, 0);
                     dll_append(frame, asm_create_codeline(0, VM_JUMP_ABSOLUTE, 1, opr1));
 
-                    sprintf(label4, "switch_%03d_case_%d", clc, i);
+                    sprintf(label4, "switch_%03d_case_%d", clc, last_case_index);
                     dll_append(frame, asm_create_labelline(label4));
-                    sprintf(label4, "switch_%03d_case_%d_body", clc, i);
+                    sprintf(label4, "switch_%03d_case_%d_body", clc, last_case_index);
                     dll_append(frame, asm_create_labelline(label4));
 
                     if (! default_found) {
@@ -1341,6 +1340,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
                     // End of switch statement
                     dll_append(frame, asm_create_labelline(label3));
+                    dll_append(frame, asm_create_codeline(0, VM_POP_BLOCK, 0));
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
 
                     break;
