@@ -1178,7 +1178,7 @@ So:
             // Compare 2 objects and push a boolean(true) or boolean(false) object back onto the stack
             case VM_COMPARE_OP :
                 left_obj = vm_frame_stack_pop(frame);
-                right_obj = vm_frame_stack_pop(frame);
+                    right_obj = vm_frame_stack_pop(frame);
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
@@ -1837,7 +1837,7 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
         /* Pop the block from the frame, but we still use it. As long as we don't push another block in
          * this function, this works ok. */
-        block = vm_pop_block(frame);
+        block = vm_peek_block(frame);
 
         // Unwind the variable stack. This will remove all variables used in the current (unwound) block.
         while (frame->sp < block->sp) {
@@ -1847,12 +1847,15 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
         // Case 4: Exception raised, but we are not an exception block. Try again with the next block.
         if (*reason == REASON_EXCEPTION && block->type != BLOCK_TYPE_EXCEPTION) {
+            vm_pop_block(frame);
             // Ignore this block. Keep on iterating blocks until we find an exception-block (or we run out of blocks)
             continue;
         }
 
         // Case 5: retting out of an exception or finally block
         if (*reason == REASON_FINALLY && block->type == BLOCK_TYPE_EXCEPTION) {
+            vm_pop_block(frame);
+
             // Don't need to do anything.
             *reason = REASON_NONE;
             break;

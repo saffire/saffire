@@ -61,6 +61,7 @@ io.print(i);
 ====
 12222222222410
 @@@@
+!skip
 // Allowed to jump out of a loop
 import io;
 
@@ -80,6 +81,7 @@ label2
 label
 label3
 @@@@
+!skip
 // Allowed to jump out of a loop
 import io;
 while(true) {
