@@ -18,20 +18,20 @@ for (;;) {
 
 ====
 @@@@
-!skip , does not work
+!skip cannot do multiples assignments
 for (i=0,b=1; ; i++) {
 }
 
 ====
 @@@@
-!skip
+!skip strings are not supported? (why not?)
 for (i=0; "foo"; i!=1) {
   i=i+1;
 }
 
 ====
 @@@@
-!skip
+!skip cannot do multiples assignments
 for (i=0; i!=10; i++,j++) {
 }
 

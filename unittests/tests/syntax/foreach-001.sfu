@@ -12,10 +12,9 @@ foreach (foo as k)  {
 2
 3
 @@@@
-!skip
 import io;
-foo = hash["a":1,"b":2,"c":3];
-foreach (blaat as k:v)  {
+foo = hash[["a":1,"b":2,"c":3]];
+foreach (foo as k,v)  {
     io.print(k,"=>",v,"\n");
 }
 ====
@@ -23,16 +22,14 @@ a=>1
 b=>2
 c=>3
 @@@@
-!skip
 import io;
-foo = hash["a":1,"b":2,"c":3];
-foreach (blaat as k)  {
+foreach (hash[["a":1,"b":2,"c":3]] as k)  {
     io.print(k,"\n");
 }
 ====
-a
-b
-c
+1
+2
+3
 @@@@
 foo = list[[1,2,3]];
 foreach (blaat as k:v, i, j)  {
