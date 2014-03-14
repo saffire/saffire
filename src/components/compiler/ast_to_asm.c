@@ -1082,9 +1082,13 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         // pre-else - called when first item is false. Cleans up pending items so "else" block is fresh
                         dll_append(frame, asm_create_labelline(label2));
 
-                        // Pop true/false, and original iterator object
+                        // Pop true/false
                         dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                        dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+
+                        // Pop additional k,v,m elements
+                        for (i=0; i!=kvm_count; i++) {
+                            dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                        }
 
                         // else - called on breakelse, which doesn't need any cleanup
                         dll_append(frame, asm_create_labelline(label3));
@@ -1102,9 +1106,14 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     }
 // Pre-end - cleanup
                     dll_append(frame, asm_create_labelline(label4));
-                    // Pop true/false, and original iterator object
+                    // Pop true/false
                     dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
-                    dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+
+                    // Pop additional k,v,m elements
+                    for (i=0; i!=kvm_count; i++) {
+                        dll_append(frame, asm_create_codeline(0, VM_POP_TOP, 0));
+                    }
+
 
 // End of loop
                     dll_append(frame, asm_create_labelline(label5));

@@ -81,21 +81,56 @@ SAFFIRE_METHOD(tuple, get) {
         return NULL;
     }
 
+    // Check index boundaries
+    long idx = OBJ2NUM(index);
+    if (idx < 0 || idx >= self->data.ht->element_count) {
+        object_raise_exception(Object_IndexException, 1, "Index out of range");
+        return NULL;
+    }
+
     t_object *obj = ht_find_num(self->data.ht, OBJ2NUM(index));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
 
+///**
+// * Saffire method:
+// */
+//SAFFIRE_METHOD(tuple, add) {
+//    t_object *val;
+//
+//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
+//        return NULL;
+//    }
+//    ht_add_num(self->data.ht, self->data.ht->element_count, val);
+//    RETURN_SELF;
+//}
+
 /**
  * Saffire method:
  */
-SAFFIRE_METHOD(tuple, add) {
-    t_object *val;
+SAFFIRE_METHOD(tuple, populate) {
+    t_hash_object *ht_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
         return NULL;
     }
-    ht_add_num(self->data.ht, self->data.ht->element_count, val);
+    if (! OBJECT_IS_HASH(ht_obj)) {
+        object_raise_exception(Object_ArgumentException, 1, "populate() expects a tuple object");
+        return NULL;
+    }
+
+    if (! self->data.ht) {
+        self->data.ht = ht_create();
+    }
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht_obj->data.ht);
+    while (ht_iter_valid(&iter)) {
+        ht_add_num(self->data.ht, self->data.ht->element_count, ht_iter_value(&iter));
+        ht_iter_next(&iter);
+    }
+
     RETURN_SELF;
 }
 
@@ -179,9 +214,15 @@ void object_tuple_init(void) {
     object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
+    // Datastructure interface
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_populate);
+
+
+//    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+
+    object_add_interface((t_object *)&Object_Tuple_struct, Object_Datastructure);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }
@@ -204,6 +245,13 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     int cnt = 0;
     t_dll_element *e = DLL_HEAD(arg_list);
+    if (! e) return;
+
+
+    e = DLL_NEXT(e);
+
+    t_dll *dll = (t_dll *)e->data;
+    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
     while (e) {
         t_object *arg_obj = (t_object *)e->data;
 

@@ -767,7 +767,7 @@ dispatch:
                     t_attrib_object *attrib_obj = object_attrib_find(offset_obj, name);
                     if (attrib_obj == NULL) {
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", char0_to_string(name), self_obj->name);
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", name, self_obj->name);
                         smm_free(name);
                         goto block_end;
                         break;

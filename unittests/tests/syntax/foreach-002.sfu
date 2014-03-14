@@ -12,13 +12,24 @@ foreach (foo as k,v)  {
 A
 3
 @@@@
-!skip
 import io;
 foo = hash[["a":1,"b":2,"c":3]];
-foreach (blaat as k:v:x)  {
+foreach (foo as k)  {
+    io.print(k,"\n");
+}
+foreach (foo as k,v)  {
+    io.print(k,"=>",v,"\n");
+}
+foreach (foo as k,v,x)  {
     io.print(k,"=>",v,x,"\n");
 }
 ====
+1
+2
+3
+a=>1
+b=>2
+c=>3
 a=>1Null
 b=>2Null
 c=>3Null
