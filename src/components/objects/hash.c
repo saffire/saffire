@@ -75,10 +75,15 @@ SAFFIRE_METHOD(hash, __iterator) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(hash, __key) {
-    RETURN_OBJECT(ht_iter_key_obj(&self->data.iter));
+    t_object *obj = ht_iter_key_obj(&self->data.iter);
+    if (! obj) RETURN_NULL;
+    RETURN_OBJECT(obj);
+
 }
 SAFFIRE_METHOD(hash, __value) {
-    RETURN_OBJECT(ht_iter_value(&self->data.iter));
+    t_object *obj = ht_iter_value(&self->data.iter);
+    if (! obj) RETURN_NULL;
+    RETURN_OBJECT(obj);
 }
 SAFFIRE_METHOD(hash, __next) {
     ht_iter_next(&self->data.iter);
@@ -89,7 +94,7 @@ SAFFIRE_METHOD(hash, __rewind) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(hash, __hasNext) {
-    if (self->data.iter.bucket->next_element != NULL) {
+    if (ht_iter_valid(&self->data.iter)) {
         RETURN_TRUE;
     }
     RETURN_FALSE;

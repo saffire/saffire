@@ -38,14 +38,6 @@ class Foo {
 ====
 Error in line 3: Cannot have multiple visiblity masks
 @@@@
-!skip
-class Foo {
-    static protected method Bar()[] {
-    }
-}
-====
-@@@@
-!skip
 class Foo {
     static final protected method Bar() {
     }

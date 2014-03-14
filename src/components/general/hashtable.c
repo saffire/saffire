@@ -333,7 +333,7 @@ char *ht_iter_key_str(t_hash_iter *iter) {
 }
 
 unsigned long ht_iter_key_num(t_hash_iter *iter) {
-    if (iter->bucket == NULL) return 0;
+    if (iter->bucket == NULL) return NULL;
     return iter->bucket->key->val.n;
 }
 

@@ -26,21 +26,6 @@ class Foo {
 ====
 syntax error, unexpected numerical value, expecting identifier
 @@@@
-!skip Not supporting bang methods at the moment
-class Foo {
-    public method bar!() {
-    }
-}
-
-====
-@@@@
-!skip Not supporting bang methods at the moment
-class Foo {
-    public method bar?() {
-    }
-}
-====
-@@@@
 class Foo {
     public method _bar() {
     }
