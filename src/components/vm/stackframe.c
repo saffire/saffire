@@ -419,7 +419,9 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     // Free created user objects
     t_dll_element *e = DLL_HEAD(frame->created_user_objects);
     while (e) {
-        object_release((t_object *)e->data);
+        t_object *obj = (t_object *)e->data;
+
+        object_release(obj);
         e = DLL_NEXT(e);
     }
     dll_free(frame->created_user_objects);

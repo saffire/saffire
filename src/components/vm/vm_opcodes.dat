@@ -22,7 +22,6 @@ BREAKELSE_LOOP       0x75
 END_FINALLY          0x7A
 ITER_RESET           0x7B
 
-USE                  0x7E
 IMPORT               0x7F
 
 ; 1 operand per opcode
@@ -60,7 +59,6 @@ OPERATOR             0xAA
 
 PACK_TUPLE           0xAB
 UNPACK_TUPLE         0xAC
-BUILD_TUPLE          0xAD
 
 ITER_FETCH           0xB1
 

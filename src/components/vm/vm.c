@@ -492,9 +492,9 @@ void vm_fini(void) {
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 //    DEBUG_PRINT_CHAR("\n\n\nDecreasing builtins\n");
-//#ifdef __DEBUG
-//    ht_debug(builtin_identifiers->ht);
-//#endif
+#ifdef __DEBUG
+    ht_debug(builtin_identifiers->data.ht);
+#endif
     object_release((t_object *)builtin_identifiers);
 
     thread_free(current_thread);
@@ -1411,6 +1411,8 @@ So:
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
+                        object_release(new_obj);
+
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }

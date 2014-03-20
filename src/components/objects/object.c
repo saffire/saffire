@@ -409,7 +409,7 @@ void object_fini() {
     e = DLL_HEAD(all_objects);
     while (e) {
         t_object *obj = (t_object *)e->data;
-        DEBUG_PRINT_CHAR("%-30s %08X %d\n", obj->name, (unsigned int)obj, obj->ref_count);
+        DEBUG_PRINT_CHAR("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
         e = DLL_NEXT(e);
     }
     dll_free(all_objects);
