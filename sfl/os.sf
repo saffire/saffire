@@ -34,7 +34,7 @@ class os {
      * Changes group ownership of symlink
      */
     static public method lchgrp(String $filename, String $group) {
-        return _os::;chgrp($filename, $group);
+        return _os::lchgrp($filename, $group);
     }
     static public method lchgrp(String $filename, Numerical $group_id) {
         return _os::lchgrp($filename, $group);
