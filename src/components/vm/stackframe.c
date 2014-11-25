@@ -97,8 +97,6 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     frame->stack[frame->sp] = NULL;
     frame->sp++;
 
-
-//    object_dec_ref(ret);
     return ret;
 }
 
@@ -119,7 +117,6 @@ void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
-//    object_inc_ref(obj);
 }
 
 void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
@@ -467,7 +464,6 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
  *
  */
 void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
-    // @TODO: shouldn't we increase the refcount? We don't, as we ASSUME that refcount is already initialized with 1.
     object_inc_ref(obj);
     dll_append(frame->created_user_objects, obj);
 }

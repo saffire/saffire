@@ -155,7 +155,7 @@ void object_inc_ref(t_object *obj) {
 
     obj->ref_count++;
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
-//    DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 }
 
 
@@ -165,10 +165,15 @@ void object_inc_ref(t_object *obj) {
 long object_dec_ref(t_object *obj) {
     if (! obj) return 0;
 
+    if (obj->ref_count < 0) {
+        DEBUG_PRINT_CHAR("ERROR: Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+        fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", obj, obj->ref_count);
+        abort();
+    }
     obj->ref_count--;
 
 //    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-//        DEBUG_PRINT_CHAR("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+        DEBUG_PRINT_CHAR("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
 //    }
 
     if (obj->ref_count != 0) return obj->ref_count;
@@ -259,6 +264,17 @@ static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
     // We add 'res' to our list of generated objects.
     dll_append(all_objects, instance_obj);
 
+#ifdef __DEBUG
+    // We really can't show anything here, since objects should have been gone now. Expect failures
+    DEBUG_PRINT_CHAR("object instantiate: (%d) \n", all_objects->size);
+    t_dll_element *e = DLL_HEAD(all_objects);
+    while (e) {
+//        t_object *obj = (t_object *)e->data;
+//        DEBUG_PRINT_CHAR("%-30s %08X %d : %s\n", obj->name, (unsigned int)obj, obj->ref_count, object_debug(obj));
+        e = DLL_NEXT(e);
+    }
+#endif
+
     return instance_obj;
 }
 
@@ -291,12 +307,11 @@ t_object *object_alloca(t_object *obj, t_dll *arguments) {
     if (obj->funcs->cache) {
         res = obj->funcs->cache(obj, arguments);
         if (res) {
-            object_inc_ref(res);
             return res;
         }
     }
 
-    // generate new object, with refcount = 1
+    // generate new object
     res = _object_instantiate(obj, arguments);
 
     // Populate values, if needed
@@ -513,6 +528,8 @@ done:
  * Adds interface to object (class)
  */
 void object_add_interface(t_object *class, t_object *interface) {
+    object_inc_ref(interface);
+
     if (! OBJECT_TYPE_IS_CLASS(class)) {
         fatal_error(1, "Interface can only be added to a class\n");     /* LCOV_EXCL_LINE */
     }
@@ -547,8 +564,7 @@ void object_add_internal_method(t_object *obj, char *name, int method_flags, int
  */
 void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 7, obj, name, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
-
-    object_inc_ref(property);
+//    object_inc_ref(property);
 
     ht_replace_str(obj->attributes, name, attrib_obj);
     object_inc_ref((t_object *)attrib_obj);
@@ -560,8 +576,7 @@ void object_add_property(t_object *obj, char *name, int visibility, t_object *pr
  */
 void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 7, obj, name, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
-
-    object_inc_ref(constant);
+//    object_inc_ref(constant);
 
     if (ht_exists_str(obj->attributes, name)) {
         object_release((t_object *)attrib_obj);

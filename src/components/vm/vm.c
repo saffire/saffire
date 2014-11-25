@@ -1518,6 +1518,7 @@ So:
             case VM_RETURN :
                 // Pop "ret" from the stack
                 ret = vm_frame_stack_pop(frame);
+                object_release(ret);
 
                 reason = REASON_RETURN;
                 goto block_end;
@@ -2069,12 +2070,12 @@ void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
-    // Load mandatory saffire object
-    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
-    if (!saffire_module_obj) {
-        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
-    }
-    vm_populate_builtins("saffire", saffire_module_obj);
+//    // Load mandatory saffire object
+//    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
+//    if (!saffire_module_obj) {
+//        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
+//    }
+//    vm_populate_builtins("saffire", saffire_module_obj);
 
     // Back to normal runmode again
     vm_runmode = runmode;
@@ -2157,6 +2158,7 @@ int vm_execute(t_vm_stackframe *frame) {
  *
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
+    printf("Populating building: %s\n", name);
     object_inc_ref(obj);
     ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }

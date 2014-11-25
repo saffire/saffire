@@ -62,19 +62,20 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
     memcpy(dup, attrib, sizeof (Object_Attrib_struct));
 
     // Set refcount
-    dup->ref_count = 0;
+    dup->ref_count = 1;
 
-    // @TODO: So we keep a list of max 100 duplicated attributes. But we don't use it for caching, but just to make sure that our
-    // attribute doesn't get eaten by the GC. Fix this into something a bit better...
+//    // @TODO: So we keep a list of max 100 duplicated attributes. But we don't use it for caching, but just to make sure that our
+//    // attribute doesn't get eaten by the GC. Fix this into something a bit better...
+//
+//    // Append to duplicated attributes
+//    object_inc_ref((t_object *) dup); // increase reference count, so it's protected in this dll
+//    dll_append(attribute_cache, dup);
+//    if (attribute_cache->size > 100) {
+//        t_object *old_dup = (t_object *) (DLL_HEAD(attribute_cache))->data;
+//        object_release(old_dup);
+//    }
 
-    // Append to duplicated attributes
-    object_inc_ref((t_object *) dup); // increase reference count, so it's protected in this dll
-    dll_append(attribute_cache, dup);
-    if (attribute_cache->size > 100) {
-        t_object *old_dup = (t_object *) (DLL_HEAD(attribute_cache))->data;
-        object_release(old_dup);
-    }
-
+    // Self object is used in this attribute as bound instance
     object_inc_ref(self);
     dup->data.bound_instance = self;
 
