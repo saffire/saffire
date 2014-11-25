@@ -221,6 +221,8 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
     // Allocate through the parent_class type, or use default base class (@TODO: why not use a default user class?)
     t_object *user_obj = object_alloca(parent_class, NULL);
 
+    DEBUG_PRINT_CHAR("User object created %08X\n", user_obj);
+
     // Make sure we use the allocation functionality of the PARENT class. In most cases, the base-class, but some cases,
     //user_obj->type = objectTypeUser;
     //user_obj->funcs = parent_class->funcs;
@@ -235,6 +237,7 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
 
     // Set flags
     user_obj->flags |= flags;
+    user_obj->flags |= OBJECT_TYPE_USER;
 
     // Set interfaces
     user_obj->interfaces = interfaces;
@@ -269,7 +272,7 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
         ht_iter_next(&iter);
     }
 
-    user_obj->ref_count = 0;
+    user_obj->ref_count = 1;
 
     return user_obj;
 }
@@ -2070,12 +2073,12 @@ void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
-//    // Load mandatory saffire object
-//    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
-//    if (!saffire_module_obj) {
-//        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
-//    }
-//    vm_populate_builtins("saffire", saffire_module_obj);
+    // Load mandatory saffire object
+    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
+    if (!saffire_module_obj) {
+        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
+    }
+    vm_populate_builtins("saffire", saffire_module_obj);
 
     // Back to normal runmode again
     vm_runmode = runmode;

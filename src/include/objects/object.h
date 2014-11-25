@@ -92,6 +92,8 @@
     #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
 
+    #define OBJECT_TYPE_USER        4096           /* Object is user generated class */
+
 
     // Object type and flag checks
     #define OBJECT_TYPE_IS_CLASS(obj)       ((obj->flags & OBJECT_TYPE_CLASS) == OBJECT_TYPE_CLASS)

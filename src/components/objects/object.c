@@ -132,6 +132,10 @@ static void _object_free(t_object *obj) {
         obj->funcs->destroy(obj);
     }
 
+    if (obj->flags & OBJECT_TYPE_USER == OBJECT_TYPE_USER) {
+        string_free(obj->name);
+    }
+
     // Object is destroyed. We cannot use object anymore.
     obj = NULL;
 
