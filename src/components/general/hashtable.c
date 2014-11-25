@@ -418,9 +418,9 @@ void ht_debug(t_hash_table *ht) {
             smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);
-        t_string *s2 = char0_to_string("%-40s => %s{%d}\n");
-        DEBUG_PRINT_STRING(s2, s->val, object_debug(obj), obj->ref_count);
-        string_free(s2);
+
+        DEBUG_PRINT_STRING_ARGS("%-40s => %s{%d}\n", s->val, object_debug(obj), obj->ref_count);
+
         string_free(s);
         ht_iter_next(&iter);
     }

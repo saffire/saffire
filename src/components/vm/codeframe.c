@@ -120,9 +120,7 @@ void vm_codeframe_destroy(t_vm_codeframe *codeframe) {
         // Free constants objects
         for (int i=0; i!=codeframe->bytecode->constants_len; i++) {
 #if __DEBUG_FREE_OBJECT
-            t_string *s = char0_to_string("Freeing: %s\n");
-            DEBUG_PRINT_STRING(s, object_debug((t_object *)codeframe->constants_objects[i]));
-            string_free(s);
+            DEBUG_PRINT_STRING_ARGS("Freeing %s\n", object_debug((t_object *)codeframe->constants_objects[i]));
 #endif
             object_release((t_object *)codeframe->constants_objects[i]);
         }

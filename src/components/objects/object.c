@@ -699,8 +699,8 @@ static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_
         t_method_arg *arg1 = ht_iter_value(&iter1);
         t_method_arg *arg2 = ht_iter_value(&iter2);
 
-        DEBUG_PRINT_STRING(char0_to_string("        - typehint1: '%-20s (%d)'  value1: '%-20s' \n"), OBJ2STR(arg1->typehint), object_debug(arg1->value));
-        DEBUG_PRINT_STRING(char0_to_string("        - typehint2: '%-20s (%d)'  value2: '%-20s' \n"), OBJ2STR(arg2->typehint), object_debug(arg2->value));
+        DEBUG_PRINT_STRING_ARGS("        - typehint1: '%-20s (%d)'  value1: '%-20s' \n", OBJ2STR(arg1->typehint), object_debug(arg1->value));
+        DEBUG_PRINT_STRING_ARGS("        - typehint2: '%-20s (%d)'  value2: '%-20s' \n", OBJ2STR(arg2->typehint), object_debug(arg2->value));
 
         if (object_string_compare(arg1->typehint, arg2->typehint) != 0) {
             return 0;
@@ -725,7 +725,7 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         t_attrib_object *attribute = (t_attrib_object *)ht_iter_value(&iter);
-        DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n"), key, object_debug((t_object *)attribute));
+        DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTBLUE "    interface attribute '" ANSI_BRIGHTGREEN "%s" ANSI_BRIGHTBLUE "' : " ANSI_BRIGHTGREEN "%s" ANSI_RESET "\n", key, object_debug((t_object *)attribute));
 
         t_attrib_object *found_obj = (t_attrib_object *)object_attrib_find(obj, key);
         if (! found_obj) {
@@ -733,8 +733,8 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
             return 0;
         }
 
-        DEBUG_PRINT_STRING(char0_to_string("     - Found object : %s\n"), object_debug((t_object *)found_obj));
-        DEBUG_PRINT_STRING(char0_to_string("     - Matching     : %s\n"), object_debug((t_object *)attribute));
+        DEBUG_PRINT_STRING_ARGS("     - Found object : %s\n", object_debug((t_object *)found_obj));
+        DEBUG_PRINT_STRING_ARGS("     - Matching     : %s\n", object_debug((t_object *)attribute));
 
         if (found_obj->data.attr_type != attribute->data.attr_type ||
             found_obj->data.attr_visibility != attribute->data.attr_visibility ||

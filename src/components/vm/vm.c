@@ -1422,7 +1422,7 @@ So:
                     // Fetch all interface objects
                     for (int i=0; i!=interface_cnt; i++) {
                         t_object *interface_name_obj = vm_frame_stack_pop(frame);
-                        DEBUG_PRINT_STRING(char0_to_string("Implementing interface: %s\n"), object_debug(interface_name_obj));
+                        DEBUG_PRINT_STRING_ARGS("Implementing interface: %s\n", object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
                         s = string_to_char(OBJ2STR(interface_name_obj));

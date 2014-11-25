@@ -255,7 +255,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     while (e) {
         t_object *arg_obj = (t_object *)e->data;
 
-        DEBUG_PRINT_STRING(char0_to_string("Adding object: %s\n"), object_debug(arg_obj));
+        DEBUG_PRINT_STRING_ARGS("Adding object: %s\n", object_debug(arg_obj));
         ht_add_num(tuple_obj->data.ht, cnt++, arg_obj);
 
         e = DLL_NEXT(e);

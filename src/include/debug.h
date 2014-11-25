@@ -33,9 +33,17 @@
     #ifdef __DEBUG
         #define DEBUG_PRINT_CHAR output_debug_char
         #define DEBUG_PRINT_STRING output_debug_string
+
+        #define DEBUG_PRINT_STRING_ARGS(format, args...) \
+            { \
+                t_string *s__COUNTER__ = char0_to_string(format); \
+                output_debug_string(s__COUNTER__, args); \
+                string_free(s__COUNTER__); \
+            }
     #else
         #define DEBUG_PRINT_CHAR(format, args...) ((void)0)
         #define DEBUG_PRINT_STRING(format, args...) ((void)0)
+        #define DEBUG_PRINT_STRING_ARGS(format, args...) ((void)0)
     #endif
 
 

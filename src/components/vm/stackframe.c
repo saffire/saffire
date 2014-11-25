@@ -106,9 +106,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
  */
 void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
     #if __DEBUG_STACK
-        t_string *str = char0_to_string(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET);
-        DEBUG_PRINT_STRING(str, frame->sp-1, object_debug(obj), (unsigned long)obj);
-        string_free(str);
+        DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
     #endif
 
 
@@ -120,7 +118,7 @@ void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
 }
 
 void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
-    DEBUG_PRINT_STRING(char0_to_string(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET), idx, object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTYELLOW "STACK CHANGE(%d): %s %08lX \n" ANSI_RESET, idx, object_debug(obj), (unsigned long)obj);
     frame->stack[idx] = obj;
 }
 
@@ -248,13 +246,8 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
-        t_string *str = char0_to_string("%-10s KEY: '%s' ");
-        DEBUG_PRINT_STRING(str, prefix, key);
-        string_free(str);
-
-        str = char0_to_string("=> [%08X] %s{%d}\n");
-        DEBUG_PRINT_STRING(str, (unsigned int)val, object_debug(val), val->ref_count);
-        string_free(str);
+        DEBUG_PRINT_STRING_ARGS("%-10s KEY: '%s' ", prefix, key);
+        DEBUG_PRINT_STRING_ARGS("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
 
         ht_iter_next(&iter);
     }
@@ -407,7 +400,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
-        DEBUG_PRINT_STRING(char0_to_string("Frame destroy: Releasing => %s => %s [%08X]\n"), key, object_debug(val), (unsigned int)val);
+        DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (unsigned int)val);
 
         // Release value, as it's no longer needed.
         object_release(val);
