@@ -292,10 +292,6 @@ void object_boolean_init(void) {
     Object_Boolean_False_struct.attributes = Object_Boolean_struct.attributes;
     Object_Boolean_True_struct.attributes = Object_Boolean_struct.attributes;
 
-//    // These are instances, not classes, so they should have a refcount of 1 to start with
-//    Object_Boolean_False_struct.ref_count = 1;
-//    Object_Boolean_True_struct.ref_count = 1;
-
     vm_populate_builtins("false", Object_False);
     vm_populate_builtins("true", Object_True);
 }

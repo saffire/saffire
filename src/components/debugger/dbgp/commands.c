@@ -420,9 +420,9 @@ DBGP_CMD_DEF(context_get) {
                 free(basebuf);
                 xmlSetProp(node, BAD_CAST "encoding", BAD_CAST "base64");
 
-            } else if (OBJECT_IS_USER(obj)) {
-                xmlSetProp(node, BAD_CAST "type", BAD_CAST "object");
-                xmlNodeSetContent(node, BAD_CAST "object");
+//            } else if (OBJECT_IS_USER(obj)) {
+//                xmlSetProp(node, BAD_CAST "type", BAD_CAST "object");
+//                xmlNodeSetContent(node, BAD_CAST "object");
 
             } else {
                 xmlSetProp(node, BAD_CAST "type", BAD_CAST "object");

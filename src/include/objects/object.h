@@ -112,7 +112,6 @@
     #define OBJECT_IS_BOOLEAN(obj)      (obj->type == objectTypeBoolean)
     #define OBJECT_IS_ATTRIBUTE(obj)    (obj->type == objectTypeAttribute)
     #define OBJECT_IS_CALLABLE(obj)     (obj->type == objectTypeCallable)
-    #define OBJECT_IS_USER(obj)         (obj->type == objectTypeUser)
     #define OBJECT_IS_EXCEPTION(obj)    (obj->type == objectTypeException)
     #define OBJECT_IS_TUPLE(obj)        (obj->type == objectTypeTuple)
     #define OBJECT_IS_LIST(obj)         (obj->type == objectTypeList)
@@ -129,14 +128,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     14
+    #define OBJECT_TYPE_LEN     13
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeUser, objectTypeList, objectTypeException,
+                   objectTypeTuple, objectTypeList, objectTypeException,
                  } t_objectype_enum;
 
 

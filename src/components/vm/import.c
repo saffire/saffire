@@ -61,6 +61,7 @@ void vm_import_cache_fini(void) {
     ht_iter_init(&iter, frame_import_cache);
     while (ht_iter_valid(&iter)) {
         t_vm_stackframe *stackframe = ht_iter_value(&iter);
+        DEBUG_PRINT_CHAR("Freeing stackframe: %08X\n", stackframe);
 
         vm_stackframe_destroy(stackframe);
 

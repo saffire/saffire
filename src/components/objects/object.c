@@ -48,7 +48,7 @@ t_dll *all_objects;
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "callable", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "user", "list", "exception" };
+                                                 "hash", "tuple", "list", "exception" };
 
 // Object comparison methods. These should map on the COMPARISON_* defines
 const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_gt", "__cmp_le", "__cmp_ge",
@@ -253,7 +253,7 @@ static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
     instance_obj->flags &= ~OBJECT_TYPE_MASK;
     instance_obj->flags |= OBJECT_TYPE_INSTANCE;
 
-    instance_obj->ref_count = 1;
+    instance_obj->ref_count = 0;
     instance_obj->class = class_obj;
 
     // We add 'res' to our list of generated objects.
@@ -296,16 +296,13 @@ t_object *object_alloca(t_object *obj, t_dll *arguments) {
         }
     }
 
-    // generate new object
+    // generate new object, with refcount = 1
     res = _object_instantiate(obj, arguments);
 
     // Populate values, if needed
     if (res->funcs->populate && arguments) {
         res->funcs->populate(res, arguments);
     }
-
-    res->ref_count = 0;
-    object_inc_ref(res);
 
     return res;
 }
@@ -335,7 +332,7 @@ t_object *object_new(t_object *obj, int arg_count, ...) {
 }
 
 
-t_dll *dupped_attributes;
+t_dll *attribute_cache;
 
 
 /**
@@ -346,7 +343,7 @@ void object_init() {
     all_objects = dll_init();
 
     // All duplicated attributes are references here, because they are short-lived, we can do some other stuff with them later.
-    dupped_attributes = dll_init();
+    attribute_cache = dll_init();
 
 
     object_callable_init();
@@ -376,14 +373,14 @@ void object_fini() {
     DEBUG_PRINT_CHAR("object fini\n");
 
     // Remove all duplicated attributes
-    e = DLL_HEAD(dupped_attributes);
+    e = DLL_HEAD(attribute_cache);
     while (e) {
-        //t_object *dup = (t_object *)(e->data);
-        //object_release(dup);
+        t_object *dup = (t_object *)(e->data);
+        object_release(dup);
 
         e = DLL_NEXT(e);
     }
-
+    dll_free(attribute_cache);
 
 
     object_interfaces_fini();
@@ -598,49 +595,26 @@ static void _object_remove_all_internal_attributes(t_object *obj) {
 
     ht_iter_init(&iter, obj->attributes);
     while (ht_iter_valid(&iter)) {
+
+        // @TODO: There should be a generic free for attrib objects that does all this already?
+
         t_attrib_object *attr = (t_attrib_object *)ht_iter_value(&iter);
-//        char *key = ht_iter_key_str(&iter);
 
-        /* This is tricky. Attributes can links to other objects (callables, but also properties and constants). These
-         * are created in object_add_internal_method, object_add_property, object_add_constant, or through the vm's
-         * BUILD_CLASS + BUILD_ATTRIB opcodes.
-         * However, allocating objects will automatically increase their refcount (normally, to 1, but if we allocate
-         * an object that already exists, we could get that object, with it's refcount increased).
-         * What happens, is that attributes will look something like this:
-         *
-         *      attrib-object (refcount = 1)
-         *        -> callable-object (refcount = 2)
-         *
-         * The reason refcount on callable is 2, is because the attrib-object will automatically increase the refcount
-         * as well. This makes sense, because the callable is "used" by the attrib, and we must make sure it can never
-         * be destroyed without destroying the attrib first.
-         *
-         * But attrib-objects are normally added to a (user-object) class as well inside their obj->attributes hashtable.
-         * This hash-table "uses" the attrib-object, which means we increase the attrib-refcount as well:
-         *
-         *     user-object (refcount = 1)
-         *        -> attrib-object (refcount = 2)
-         *             -> callable-object (refcount = 2)
-         *
-         * At this point, a userclass, has attrib with a refcount of AT LEAST 2, and internally callable (or property
-         * or constant) objects of again AT LEAST 2. Because this is the place we are destroying the attributes, we must
-         * make sure we release the attribute from the obj->attributes, and again release the attribute by itself. When
-         * an attrib-objects refcount gets to 0, it will also decrease the refcount of it's used object. This means we
-         * end up with a callable object with a refcount of 1: we decreased the attrib twice, but the callable only once.
-         *
-         * This is a tricky situation, and hopefully we can resolve this a better way than this, but for now all we do
-         * is iterate our attributes, decrease attributes ONCE, decrease the callable inside the attribute ONCE, and then
-         * decrease the attribute again. If everything goes according to plan, it will decrease it to 0, and
-         * automatically decrease the callable as well, resulting in both objects being destroyed. If the attribute (or
-         * callable) is shared and their refcount was higher than 2 to begin with, things will still work out correctly, as
-         * they will be freed somewhere else.
-         */
+//        // Release callable,property or constant from the attribute
+//        object_release(((t_attrib_object *)attr)->data.attribute);
 
-        // Release attribute from the hash
-        object_release((t_object *)attr);
+//        // bound class
+//        if (((t_attrib_object *)attr)->data.bound_class) {
+//            object_release(((t_attrib_object *)attr)->data.bound_class);
+//        }
+//
+//        // bound instance
+//        if (((t_attrib_object *)attr)->data.bound_instance) {
+//            object_release(((t_attrib_object *)attr)->data.bound_instance);
+//        }
 
-        // Release callable,property or constant from the attribute
-        object_release(((t_attrib_object *)attr)->data.attribute);
+//        // bound name
+//        smm_free(((t_attrib_object *)attr)->data.bound_name);
 
         // Release attribute again, so it can be destroyed, and implicitly destroy the callable as well
         object_release((t_object *)attr);

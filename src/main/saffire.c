@@ -162,6 +162,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
     } else {
         output_char("No additional help is available. Use 'saffire help' for more information.\n");
     }
+
     return 1;
 }
 

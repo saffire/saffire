@@ -83,10 +83,21 @@ char *config_seek(char *searchpaths[], char *file) {
 }
 
 
+/*
+ * Free configuration file, called by atexit()
+ */
+void atexit_config_free() {
+    if (config_ini) {
+        ini_free(config_ini);
+    }
+}
+
 /**
  * Read INI file file
  */
 int config_read(void) {
+    atexit(atexit_config_free);
+
     config_file = SAFFIRE_INI_FILENAME;
 
     switch (config_which_ini) {

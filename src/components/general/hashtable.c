@@ -333,7 +333,7 @@ char *ht_iter_key_str(t_hash_iter *iter) {
 }
 
 unsigned long ht_iter_key_num(t_hash_iter *iter) {
-    if (iter->bucket == NULL) return NULL;
+    if (iter->bucket == NULL) return 0;
     return iter->bucket->key->val.n;
 }
 
@@ -418,8 +418,10 @@ void ht_debug(t_hash_table *ht) {
             smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);
-        DEBUG_PRINT_STRING(char0_to_string("%-40s => %s{%d}\n"), s, object_debug(obj), obj->ref_count);
-        smm_free(s);
+        t_string *s2 = char0_to_string("%-40s => %s{%d}\n");
+        DEBUG_PRINT_STRING(s2, s->val, object_debug(obj), obj->ref_count);
+        string_free(s2);
+        string_free(s);
         ht_iter_next(&iter);
     }
 }

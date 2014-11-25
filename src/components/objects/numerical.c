@@ -321,26 +321,26 @@ void object_numerical_init(void) {
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_le",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_le);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ge",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ge);
 
-    // Create a numerical cache
+    vm_populate_builtins("numerical", (t_object *)&Object_Numerical_struct);
+
+
+    // Create a numerical cache of numerical instances
     numerical_cache = (t_numerical_object **)smm_malloc(sizeof(t_numerical_object *) * (NUMERICAL_CACHED_CNT + 1));
+
+    // Save numerical cache function and set it to NULL, as we don't want the allocation of the cache
+    // numericals,  actually use the cache
+
+    void *temp_cache_func = Object_Numerical_struct.funcs->cache;
+    Object_Numerical_struct.funcs->cache = NULL;
+
 
     int value = NUMERICAL_CACHED_MIN;
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
-        numerical_cache[i] = smm_malloc(sizeof(t_numerical_object));
-        memcpy(numerical_cache[i], Object_Numerical, sizeof(t_numerical_object));
-        numerical_cache[i]->data.value = value;
-
-        // Immutable objects, and we don't allocate
-        numerical_cache[i]->flags |= (OBJECT_FLAG_IMMUTABLE | OBJECT_FLAG_ALLOCATED);
-
-        // These are instances
-        numerical_cache[i]->flags &= ~OBJECT_TYPE_MASK;
-        numerical_cache[i]->flags |= OBJECT_TYPE_INSTANCE;
-
-        numerical_cache[i]->ref_count = 1;
+        numerical_cache[i] = (t_numerical_object *)object_alloc(Object_Numerical, 1, value);
     }
 
-    vm_populate_builtins("numerical", (t_object *)&Object_Numerical_struct);
+    // Restore cache function for numericals, as we can use it now.
+    Object_Numerical_struct.funcs->cache = temp_cache_func;
 }
 
 
@@ -369,8 +369,8 @@ static t_object *obj_clone(t_object *obj) {
     t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
     memcpy(new_obj, num_obj, sizeof(t_numerical_object));
 
-    // New separated object, so refcount = 1
-    new_obj->ref_count = 1;
+    // New separated object
+    new_obj->ref_count = 0;
 
     return (t_object *)new_obj;
 }

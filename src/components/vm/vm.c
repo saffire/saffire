@@ -222,7 +222,7 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
     t_object *user_obj = object_alloca(parent_class, NULL);
 
     // Make sure we use the allocation functionality of the PARENT class. In most cases, the base-class, but some cases,
-    user_obj->type = objectTypeUser;
+    //user_obj->type = objectTypeUser;
     //user_obj->funcs = parent_class->funcs;
 
 //    // Set the correct type
@@ -268,6 +268,8 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
 
         ht_iter_next(&iter);
     }
+
+    user_obj->ref_count = 0;
 
     return user_obj;
 }
@@ -470,6 +472,7 @@ void vm_init(SaffireParser *sp, int runmode) {
 
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
+    object_inc_ref((t_object *)builtin_identifiers);
 
     vm_import_cache_init();
 
@@ -684,6 +687,7 @@ dispatch:
             // Removes SP-0
             case VM_POP_TOP :
                 obj1 = vm_frame_stack_pop(frame);
+                object_dec_ref(obj1);
                 goto dispatch;
                 break;
 
@@ -710,9 +714,8 @@ dispatch:
             // Duplicate SP-0
             case VM_DUP_TOP :
                 obj1 = vm_frame_stack_fetch_top(frame);
-                // increasing refcount because we now have 2 references onto the stack
-                object_inc_ref(obj1);
                 vm_frame_stack_push(frame, obj1);
+                object_inc_ref(obj1);
                 goto dispatch;
                 break;
 
@@ -756,6 +759,8 @@ dispatch:
                     // If we need the parent scope (parent.whatever), just move directly to the parent class before looking
                     if (scope == OBJECT_SCOPE_PARENT) {
                         if (self_obj->parent == NULL) {
+                            object_dec_ref(self_obj);
+
                             // @TODO: We should throw an exception, as we don't have a parent class. Can only happen
                             // when we are inside the base-class, and we do: parent.whatever
                             return NULL;
@@ -766,6 +771,8 @@ dispatch:
 
                     t_attrib_object *attrib_obj = object_attrib_find(offset_obj, name);
                     if (attrib_obj == NULL) {
+                        object_dec_ref(self_obj);
+
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Attribute '%s' in class '%s' not found", name, self_obj->name);
                         smm_free(name);
@@ -775,6 +782,8 @@ dispatch:
 
                     // Make sure we are not loading a non-static attribute from a static context
                     if (! _check_attribute_for_static_call(self_obj, attrib_obj)) {
+                        object_dec_ref(self_obj);
+
                         thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", attrib_obj->data.bound_name, self_obj->name);
                         smm_free(name);
                         reason = REASON_EXCEPTION;
@@ -783,12 +792,15 @@ dispatch:
 
                     // Check visibility of attribute
                     if (! _check_attrib_visibility(self_obj, attrib_obj)) {
+                        object_dec_ref(self_obj);
+
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
                         smm_free(name);
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
+                    object_dec_ref(self_obj);
                     smm_free(name);
 
                     // We don't actually use the original attribute, but a duplicated one. Here we add our reference to the
@@ -797,6 +809,7 @@ dispatch:
                     DEBUG_PRINT_CHAR("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->data.bound_name);
 
                     vm_frame_stack_push(frame, (t_object *)attrib_obj);
+                    object_inc_ref((t_object *)attrib_obj);
                 }
                 goto dispatch;
                 break;
@@ -812,11 +825,15 @@ dispatch:
                     smm_free(s);
 
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
+                        object_dec_ref(search_obj);
+
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
                     if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
+                        object_dec_ref(search_obj);
+
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", OBJ2STR(name_obj));
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -828,6 +845,9 @@ dispatch:
                     s = string_to_char(OBJ2STR(name_obj));
                     object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
                     smm_free(s);
+
+                    object_dec_ref(value);
+                    object_dec_ref(search_obj);
                 }
                 goto dispatch;
                 break;
@@ -838,6 +858,8 @@ dispatch:
                 dst = vm_frame_stack_pop(frame);
                 s = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_frame_identifier(frame, s, dst);
+
+                object_dec_ref(dst);
                 goto dispatch;
                 break;
 
@@ -870,6 +892,7 @@ dispatch:
             case VM_LOAD_CONST :
                 dst = vm_frame_get_constant(frame, oparg1);
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -879,6 +902,8 @@ dispatch:
                 dst = vm_frame_stack_pop(frame);
                 s = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_identifier(frame, s, dst);
+
+                object_dec_ref(dst);
                 goto dispatch;
                 break;
 
@@ -894,6 +919,7 @@ dispatch:
                 }
 
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -907,12 +933,19 @@ dispatch:
                 }
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
+                    object_dec_ref(right_obj);
+                    object_dec_ref(left_obj);
+
                     reason = REASON_EXCEPTION;
                     goto block_end;
                     break;
                 }
 
+                object_dec_ref(right_obj);
+                object_dec_ref(left_obj);
+
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -1000,6 +1033,7 @@ dispatch:
                 dst = vm_frame_stack_fetch_top(frame);
                 for (int i=0; i!=oparg1; i++) {
                     vm_frame_stack_push(frame, dst);
+                    object_inc_ref(dst);
                 }
                 goto dispatch;
                 break;
@@ -1013,6 +1047,8 @@ dispatch:
                          ! (OBJECT_IS_ATTRIBUTE(obj1) && ATTRIB_IS_METHOD(obj1)) &&
                          ! (OBJECT_TYPE_IS_CLASS(obj1))
                        ) {
+
+                        object_dec_ref(obj1);
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR(obj1));
                         goto block_end;
@@ -1088,8 +1124,19 @@ So:
 
                     t_object *ret_obj = _object_call_attrib_with_args(self, (t_attrib_object *)obj1, arg_list);
 
-                    // @TODO: decref our arguments here
+
+                    // Decrefs our arguments here
+                    t_dll_element *e = DLL_HEAD(arg_list);
+                    while (e) {
+                        object_dec_ref(e->data);
+                        e = DLL_NEXT(e);
+                    }
                     dll_free(arg_list);
+
+                    object_dec_ref(obj1);
+                    object_dec_ref((t_object *)varargs);
+
+
 
                     if (ret_obj == NULL) {
                         // NULL returned means exception occurred.
@@ -1099,6 +1146,7 @@ So:
                     }
 
                     vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
                 }
 
                 goto dispatch;
@@ -1127,6 +1175,9 @@ So:
                     smm_free(module_name);
                     smm_free(orig_class_name);
 
+                    object_dec_ref(module_obj);
+                    object_dec_ref(class_obj);
+
 
                     if (!dst) {
                         reason = REASON_EXCEPTION;
@@ -1134,6 +1185,7 @@ So:
                     }
 
                     vm_frame_stack_push(frame, dst);
+                    object_inc_ref(dst);
                 }
                 goto dispatch;
                 break;
@@ -1178,7 +1230,7 @@ So:
             // Compare 2 objects and push a boolean(true) or boolean(false) object back onto the stack
             case VM_COMPARE_OP :
                 left_obj = vm_frame_stack_pop(frame);
-                    right_obj = vm_frame_stack_pop(frame);
+                right_obj = vm_frame_stack_pop(frame);
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
@@ -1186,12 +1238,20 @@ So:
                 if (oparg1 == COMPARISON_RE || oparg1 == COMPARISON_NRE) {
 
                     if (! OBJECT_IS_REGEX(right_obj)) {
+
+                        object_dec_ref(left_obj);
+                        object_dec_ref(right_obj);
+
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Can only regmatch against a regular expression");
                         goto block_end;
                     }
 
                     if (! OBJECT_IS_STRING(left_obj)) {
+
+                        object_dec_ref(left_obj);
+                        object_dec_ref(right_obj);
+
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Can only regmatch a string");
                         goto block_end;
@@ -1200,6 +1260,9 @@ So:
 
                     t_object *ret_obj = _do_regex_match((t_regex_object *)right_obj, (t_string_object *)left_obj);
                     if (! ret_obj) {
+                        object_dec_ref(left_obj);
+                        object_dec_ref(right_obj);
+
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1209,7 +1272,11 @@ So:
                         ret_obj = (ret_obj == Object_True) ? Object_False : Object_True;
                     }
 
+                    object_dec_ref(left_obj);
+                    object_dec_ref(right_obj);
+
                     vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
                     goto dispatch;
                 }
 
@@ -1219,8 +1286,10 @@ So:
                 if (oparg1 == COMPARISON_EX) {
                     if (object_instance_of(right_obj, left_obj->name)) {
                         vm_frame_stack_push(frame, Object_True);
+                        object_inc_ref(Object_True);
                     } else {
                         vm_frame_stack_push(frame, Object_False);
+                        object_inc_ref(Object_False);
                     }
                     goto dispatch;
                     break;
@@ -1246,6 +1315,9 @@ So:
                     }
                 }
 
+                object_dec_ref(left_obj);
+                object_dec_ref(right_obj);
+
                 dst = vm_object_comparison(left_obj, oparg1, right_obj);
                 if (! dst) {
                     reason = REASON_EXCEPTION;
@@ -1254,6 +1326,7 @@ So:
                 }
 
                 vm_frame_stack_push(frame, dst);
+                object_inc_ref(dst);
                 goto dispatch;
                 break;
 
@@ -1309,8 +1382,14 @@ So:
 
                     // Push method object
                     vm_frame_stack_push(frame, dst);
+                    object_inc_ref(dst);
 
                     vm_frame_register_userobject(frame, (t_object *)dst);
+
+
+                    object_dec_ref(access);
+                    object_dec_ref(visibility);
+                    object_dec_ref(value_obj);
                 }
                 goto dispatch;
                 break;
@@ -1323,6 +1402,7 @@ So:
                     // @TODO: Do we need to mask certain flags, as they should not be set directly through opcodes?
                     obj1 = vm_frame_stack_pop(frame);
                     int flags = OBJ2NUM(obj1);
+                    object_dec_ref(obj1);
 
                     // Depending on the opcode, we are building a class or an interface
                     if (opcode == VM_BUILD_CLASS) {
@@ -1336,6 +1416,7 @@ So:
                     t_dll *interfaces = dll_init();
                     t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
+                    object_dec_ref(interface_cnt_obj);
                     DEBUG_PRINT_CHAR("Number of interfaces we need to implement: %ld\n", interface_cnt);
 
                     // Fetch all interface objects
@@ -1347,6 +1428,7 @@ So:
                         s = string_to_char(OBJ2STR(interface_name_obj));
                         t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), s);
                         smm_free(s);
+
                         if (! interface_obj) {
                             dll_free(interfaces);
 
@@ -1369,11 +1451,13 @@ So:
                     // pop parent code object (as string)
                     t_object *parent_class = vm_frame_stack_pop(frame);
                     if (OBJECT_IS_NULL(parent_class)) {
+                        object_dec_ref(parent_class);
                         parent_class = Object_Base;
                         object_inc_ref(parent_class);
                     } else {
                         // Find the object of this string
                         s = string_to_char(OBJ2STR(parent_class));
+                        object_dec_ref(parent_class);
                         parent_class = vm_frame_find_identifier(frame, s);
                         smm_free(s);
                         if (parent_class == NULL) {
@@ -1389,6 +1473,7 @@ So:
                     // pop class name
                     t_object *name_obj = vm_frame_stack_pop(frame);
                     char *name = string_to_char(OBJ2STR(name_obj));
+                    object_dec_ref(name_obj);
 
                     // Fetch all attributes
                     t_hash_table *attributes = ht_create();
@@ -1396,11 +1481,13 @@ So:
                         t_object *name = vm_frame_stack_pop(frame);
                         t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop_attrib(frame);
 
-                        object_inc_ref((t_object *)attrib_obj);
+                        // attrib does not need any decref, as we use it inside the attributes hash
 
                         // Add method attribute to class
                         s = string_to_char(OBJ2STR(name));
+                        object_dec_ref(name);
                         ht_add_str(attributes, s, attrib_obj);
+
                         smm_free(s);
                     }
 
@@ -1419,6 +1506,7 @@ So:
 
                     // All done
                     vm_frame_stack_push(frame, (t_object *)new_obj);
+                    object_inc_ref((t_object *)new_obj);
 
                     vm_frame_register_userobject(frame, (t_object *)new_obj);
                 }
@@ -1438,7 +1526,10 @@ So:
             // Setup an exception try/catch block
             case VM_SETUP_EXCEPT :
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
-                vm_frame_stack_push(frame, object_alloc(Object_Numerical, 1, REASON_FINALLY));
+
+                t_object *obj = object_alloc(Object_Numerical, 1, REASON_FINALLY);
+                vm_frame_stack_push(frame, obj);
+                object_inc_ref(obj);
 
                 goto dispatch;
                 break;
@@ -1450,19 +1541,25 @@ So:
                 if (OBJECT_IS_NUMERICAL(ret)) {
                     reason = OBJ2NUM(ret);
 
+                    object_dec_ref(ret);
+
                     if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
                         ret = vm_frame_stack_pop(frame);
                     }
                     goto block_end;
                     break;
                 } else if (OBJECT_IS_EXCEPTION(ret)) {
+                    object_dec_ref(ret);
+
                     reason = REASON_RERAISE;
                     ret = NULL;
                     goto block_end;
                     break;
 
                 } else {
-                    // This should not happen (oreally?)
+                    object_dec_ref(ret);
+
+                    // This should not happen (orly?)
                     thread_create_exception((t_exception_object *)Object_SystemException, 1, "Unknown value on the stack during finally cleanup (probably a saffire-bug)");
                     reason = REASON_EXCEPTION;
                     goto block_end;
@@ -1477,12 +1574,16 @@ So:
 
                     // Check if object extends exception
                     if (! object_instance_of(obj, "exception")) {
+                        object_dec_ref(obj);
+
                         thread_create_exception((t_exception_object *)Object_ExtendException, 1, "Object must extend the 'exception' class");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
                     thread_set_exception((t_exception_object *)obj);
+
+                    object_dec_ref(obj);
                     reason = REASON_EXCEPTION;
                     goto block_end;
 
@@ -1500,11 +1601,11 @@ So:
                         t_object *val = vm_frame_stack_pop(frame);
 
                         ht_add_num(obj->data.ht, oparg1 - i - 1, val);
-                        object_inc_ref(val);
                     }
 
                     // Push tuple on the stack
                     vm_frame_stack_push(frame, (t_object *)obj);
+                    object_inc_ref((t_object *)obj);
                 }
 
                 goto dispatch;
@@ -1517,6 +1618,8 @@ So:
                     t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
 
                     if (! OBJECT_IS_TUPLE(obj)) {
+                        object_dec_ref((t_object *)obj);
+
                         thread_create_exception((t_exception_object *)Object_TypeException, 1, "Argument is not a tuple");
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1527,11 +1630,15 @@ So:
                     for (int i=0; i < offset; i++) {
                         t_object *val = ht_find_num(obj->data.ht, i);
                         vm_frame_stack_push(frame, val);
+                        object_inc_ref(val);
                     }
+
+                    object_dec_ref((t_object *)obj);
 
                     // If we haven't got enough elements in our tuple, pad the result with NULLs first
                     while (oparg1-- > obj->data.ht->element_count) {
                         vm_frame_stack_push(frame, Object_Null);
+                        object_inc_ref(Object_Null);
                     }
                 }
 
@@ -1545,6 +1652,8 @@ So:
 
                     // check if we have the iterator interface implemented
                     if (! object_has_interface(obj1, "iterator")) {
+                        object_dec_ref(obj1);
+
                         thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Object must inherit the 'iterator' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1554,11 +1663,13 @@ So:
                     attr_obj = object_attrib_find(obj1, "__iterator");
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
 
                     // Call rewind
                     attr_obj = object_attrib_find(obj3, "__rewind");
                     vm_object_call(obj3, attr_obj, 0);
 
+                    object_dec_ref(obj1);
                 }
                 goto dispatch;
                 break;
@@ -1571,28 +1682,34 @@ So:
                     // If we need 3 values, create and push metadata
                     if (oparg1 == 3) {
                         vm_frame_stack_push(frame, Object_Null);
+                        object_inc_ref(Object_Null);
                     }
                     // Always push value
                     attr_obj = object_attrib_find(obj1, "__value");
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
 
                     if (oparg1 >= 2) {
                         // Push value of key
                         attr_obj = object_attrib_find(obj1, "__key");
                         obj3 = vm_object_call(obj1, attr_obj, 0);
                         vm_frame_stack_push(frame, obj3);
+                        object_inc_ref(obj3);
                     }
 
                     // Push value of hasNext
                     attr_obj = object_attrib_find(obj1, "__hasNext");
                     obj3 = vm_object_call(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
+                    object_inc_ref(obj3);
 
                     if (IS_BOOLEAN_TRUE(obj3)) {
                         attr_obj = object_attrib_find(obj1, "__next");
                         obj3 = vm_object_call(obj1, attr_obj, 0);
                     }
+
+                    object_dec_ref(obj1);
                 }
                 goto dispatch;
                 break;
@@ -1606,6 +1723,8 @@ So:
 
                     // We can only call a class, as we are instantiating a data structure
                     if (! OBJECT_TYPE_IS_CLASS(obj)) {
+                        object_dec_ref(obj);
+
                         // We can only instantiate here through a class!
                         thread_create_exception((t_exception_object *)Object_CallException, 1, "Datastructure must be a class, not an instance");
                         reason = REASON_EXCEPTION;
@@ -1614,6 +1733,8 @@ So:
 
                     // Check if object has interface datastructure
                     if (! object_has_interface(obj, "datastructure")) {
+                        object_dec_ref(obj);
+
                         thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'datastructure' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1629,7 +1750,9 @@ So:
                     // Create new object, because we know it's a data-structure, just add them to the list
                     t_object *ret_obj = (t_object *)object_alloc(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
                     vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
 
+                    object_dec_ref(obj);
                 }
                 goto dispatch;
                 break;
@@ -1640,6 +1763,8 @@ So:
                     // Fetch actual data structure
                     obj1 = vm_frame_stack_pop(frame);
                     if (! object_has_interface(obj1, "iterator")) {
+                        object_dec_ref(obj1);
+
                         thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'iterator' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -1649,6 +1774,7 @@ So:
 
                     switch (oparg1) {
                         case 0 :
+                            object_dec_ref(obj1);
                             // foo[]
                             thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "not supporting [] yet");
                             reason = REASON_EXCEPTION;
@@ -1662,6 +1788,8 @@ So:
                             attr_obj = object_attrib_find(obj1, "__get");
 
                             ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+
+                            object_dec_ref(obj2);
                             break;
                         case 2 :
                             // foo[n..m]
@@ -1670,13 +1798,21 @@ So:
 
                             attr_obj = object_attrib_find(obj1, "__splice");
                             if (! attr_obj) {
+                                object_dec_ref(obj2);
+                                object_dec_ref(obj3);
+
                                 thread_create_exception((t_exception_object *)Object_AttributeException, 1, "__splice() not found");
                                 reason = REASON_EXCEPTION;
                                 goto block_end;
                             }
                             ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
+
+                            object_dec_ref(obj2);
+                            object_dec_ref(obj3);
                             break;
                     }
+
+                    object_dec_ref(obj1);
 
                     if (! ret_obj) {
                         reason = REASON_EXCEPTION;
@@ -1684,21 +1820,24 @@ So:
                     }
 
                     vm_frame_stack_push(frame, ret_obj);
+                    object_inc_ref(ret_obj);
                 }
                 goto dispatch;
                 break;
 
             // Store a value into a datastructure
             case VM_STORE_SUBSCRIPT :
-                {
-                    obj1 = vm_frame_stack_pop(frame);       // datastructure
-                    obj2 = vm_frame_stack_pop(frame);       // key
+                obj1 = vm_frame_stack_pop(frame);       // datastructure
+                obj2 = vm_frame_stack_pop(frame);       // key
 
-                    //
-                    attr_obj = object_attrib_find(obj1, "__set");
-                    t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
-                    vm_frame_stack_push(frame, ret_obj);
-                }
+                attr_obj = object_attrib_find(obj1, "__set");
+                t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+                vm_frame_stack_push(frame, ret_obj);
+                object_inc_ref(ret_obj);
+
+                object_dec_ref(obj2);
+                object_dec_ref(obj1);
+
                 goto dispatch;
                 break;
 
@@ -1782,7 +1921,11 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
              * present) */
 
             vm_frame_stack_push(frame, ret);
-            vm_frame_stack_push(frame, object_alloc(Object_Numerical, 1, *reason));
+            object_inc_ref(ret);
+
+            t_object *obj = object_alloc(Object_Numerical, 1, *reason);
+            vm_frame_stack_push(frame, obj);
+            object_inc_ref(obj);
 
             /* Instead of actually returning, continue with executing the finally block. END_FINALLY will deal with
              * the delayed return. */
@@ -1818,11 +1961,13 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             // Clean up any remaining items on the variable stack, but keep the last "REASON_FINALLY"
             while (frame->sp < block->sp - 1) {
                 DEBUG_PRINT_CHAR("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
-                vm_frame_stack_pop(frame);
+                t_object *obj = vm_frame_stack_pop(frame);
+                object_dec_ref(obj);
             }
 
             // We throw the current exception onto the stack. The catch-blocks will expect this.
             vm_frame_stack_push(frame, (t_object *)thread_get_exception());
+            object_inc_ref((t_object *)thread_get_exception());
 
             // Continue with handling the exception in the current vm frame.
             *reason = REASON_NONE;
@@ -1843,7 +1988,8 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
         // Unwind the variable stack. This will remove all variables used in the current (unwound) block.
         while (frame->sp < block->sp) {
-            vm_frame_stack_pop(frame);
+            t_object *obj = vm_frame_stack_pop(frame);
+            object_dec_ref(obj);
         }
 
 
@@ -2011,7 +2157,7 @@ int vm_execute(t_vm_stackframe *frame) {
  *
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
-    obj->ref_count = 1;
+    object_inc_ref(obj);
     ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }
 

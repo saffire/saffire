@@ -67,7 +67,7 @@ foreach ($yaml['interfaces'] as $interface) {
     fwrite($fp, "}\n");
     fwrite($fp, "\n");
     fwrite($fp, "t_interface_object Object_".ucfirst(strtolower($interface['name']))."_struct = {\n");
-    fwrite($fp, "    OBJECT_HEAD_INIT(\"".ucfirst(strtolower($interface['name']))."\", objectTypeUser, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL, 0),\n");
+    fwrite($fp, "    OBJECT_HEAD_INIT(\"".ucfirst(strtolower($interface['name']))."\", objectTypeBase, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL, 0),\n");
     fwrite($fp, "};\n");
     fwrite($fp, "\n");
     fwrite($fp, "\n");

@@ -98,7 +98,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     frame->sp++;
 
 
-    object_dec_ref(ret);
+//    object_dec_ref(ret);
     return ret;
 }
 
@@ -119,7 +119,7 @@ void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
-    object_inc_ref(obj);
+//    object_inc_ref(obj);
 }
 
 void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
@@ -350,15 +350,17 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
     object_inc_ref((t_object *)builtin_identifiers);
 
     // Create new empty local identifier hash
+    DEBUG_PRINT_CHAR("Creating local ID table for frame %08x\n", frame);
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
+    object_inc_ref((t_object *)frame->local_identifiers);
 
     // Copy all the parent identifiers into the new frame. This should take care of things like the imports
     if (frame->parent == NULL) {
         frame->frame_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
     } else {
         frame->frame_identifiers = frame->parent->frame_identifiers;
-        object_inc_ref((t_object *)frame->frame_identifiers);
     }
+    object_inc_ref((t_object *)frame->frame_identifiers);
 
     // Set the variable hashes
     if (frame->parent == NULL) {
@@ -429,6 +431,10 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->frame_identifiers);
+    DEBUG_PRINT_CHAR("Releasing local ID table for frame %08x\n", frame);
+    if (((t_object *)frame->local_identifiers)->ref_count != 1) {
+        DEBUG_PRINT_CHAR("BOOBOO.. REFCOUNT FOR LOCAL ID TABLE IS %d\n", (t_object *)frame->local_identifiers->ref_count);
+    }
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
 
@@ -462,6 +468,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
  */
 void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
     // @TODO: shouldn't we increase the refcount? We don't, as we ASSUME that refcount is already initialized with 1.
+    object_inc_ref(obj);
     dll_append(frame->created_user_objects, obj);
 }
 

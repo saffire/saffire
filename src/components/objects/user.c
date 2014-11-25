@@ -127,6 +127,6 @@ t_object_funcs user_funcs = {
 
 // Initial object
 t_user_object Object_User_struct = {
-    OBJECT_HEAD_INIT("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, 0),
+    OBJECT_HEAD_INIT("user", objectTypeBase, OBJECT_TYPE_CLASS, &user_funcs, 0),
 };
 
