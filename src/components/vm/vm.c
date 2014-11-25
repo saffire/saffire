@@ -2158,7 +2158,6 @@ int vm_execute(t_vm_stackframe *frame) {
  *
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
-    printf("Populating building: %s\n", name);
     object_inc_ref(obj);
     ht_add_str(builtin_identifiers_ht, (char *)name, (void *)obj);
 }
