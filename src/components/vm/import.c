@@ -228,6 +228,18 @@ t_object *vm_import(t_vm_codeblock *codeblock, char *class_path, char *class_nam
         // Only add to cache when something is there
         if (imported_stackframe) {
             ht_add_str(frame_import_cache, absolute_class_path, imported_stackframe);
+
+            t_hash_iter iter;
+            ht_iter_init(&iter, frame_import_cache);
+
+#ifdef __DEBUG
+            while (ht_iter_valid(&iter)) {
+                t_hash_key *key = ht_iter_key(&iter);
+                DEBUG_PRINT_CHAR("Frame Cache Entry: %s\n", key->val.s);
+                ht_iter_next(&iter);
+            }
+#endif
+
         } else {
             // Nothing found that actually matches a file inside the searchpaths
             if (! thread_exception_thrown()) {

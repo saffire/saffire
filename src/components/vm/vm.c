@@ -215,9 +215,9 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
 }
 
 /**
- * Creates an object that
+ * Creates a userload object, based on a parent class, with interfaces, attributes etc.
  */
-static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
+static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     // Allocate through the parent_class type, or use default base class (@TODO: why not use a default user class?)
     t_object *user_obj = object_alloca(parent_class, NULL);
 
@@ -237,7 +237,7 @@ static t_object *vm_create_user_object(t_vm_stackframe *frame, char *name, int f
 
     // Set flags
     user_obj->flags |= flags;
-    user_obj->flags |= OBJECT_TYPE_USER;
+    user_obj->flags |= OBJECT_TYPE_USERLAND;
 
     // Set interfaces
     user_obj->interfaces = interfaces;
@@ -1414,6 +1414,9 @@ So:
                         flags |= OBJECT_TYPE_INTERFACE;
                     }
 
+                    // As we are generated from opcodes, it's a userland object
+                    flags |= OBJECT_TYPE_USERLAND;
+
 
                     // Pop the number of interfaces
                     t_dll *interfaces = dll_init();
@@ -1495,7 +1498,7 @@ So:
                     }
 
                     // Actually create the object
-                    t_object *new_obj = vm_create_user_object(frame, name, flags, interfaces, parent_class, attributes);
+                    t_object *new_obj = vm_create_userland_object(frame, name, flags, interfaces, parent_class, attributes);
 
                     smm_free(name);
 
@@ -2068,7 +2071,7 @@ t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result)
 /**
  *
  */
-void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
+void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     // Implicit load the saffire module, without any debugging
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
@@ -2092,7 +2095,7 @@ int vm_execute(t_vm_stackframe *frame) {
 
     thread_set_current_frame(frame);
 
-    _vm_load_implicit_buildins(frame);
+    _vm_load_implicit_builtins(frame);
 
     // Execute the frame
     t_object *result = _vm_execute(frame);

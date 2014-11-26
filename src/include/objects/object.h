@@ -87,12 +87,13 @@
     #define OBJECT_TYPE_INSTANCE      8            /* Object is an instance */
     #define OBJECT_TYPE_MASK         15            /* Object type bitmask */
 
+    #define OBJECT_TYPE_USERLAND   4096            /* Object is a userland generated class */
+
     #define OBJECT_FLAG_IMMUTABLE     16           /* Object is immutable */
     #define OBJECT_FLAG_ALLOCATED     32           /* Object can be freed, as it is allocated through alloc() */
     #define OBJECT_FLAG_FINAL         64           /* Object is finalized */
     #define OBJECT_FLAG_MASK         112           /* Object flag bitmask */
 
-    #define OBJECT_TYPE_USER        4096           /* Object is user generated class */
 
 
     // Object type and flag checks
