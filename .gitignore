@@ -77,3 +77,8 @@ unittests/core/utmain
 html/
 /docs/spec/build
 test-driver
+
+# CMake build directorie
+build/*
+src/include/config.h
+

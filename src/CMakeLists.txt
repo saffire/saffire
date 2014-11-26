@@ -1,0 +1,294 @@
+include_directories(include)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -std=gnu99 -Wall -Wno-unused-function -Wunused-result")
+
+
+########################################################################
+# Generate custom files
+########################################################################
+
+# config.h
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h)
+
+# Generate gitversion.h
+execute_process(COMMAND git rev-parse HEAD  OUTPUT_VARIABLE GITREV_SHA1 OUTPUT_STRIP_TRAILING_WHITESPACE)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/gitversion.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/gitversion.h" @ONLY)
+
+
+########################################################################
+# additional 3rd party libraries
+########################################################################
+
+#
+# Packages (pkg-config)
+#
+find_package(LibXml2 REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${LibXml2_LIBRARIES})
+include_directories(${LibXml2_INCLUDE_DIRS})
+add_definitions(${LibXml2_CFLAGS})
+
+find_package(LibEdit REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${LibEdit_LIBRARIES})
+include_directories(${LibEdit_INCLUDE_DIRS})
+add_definitions(${LibEdit_CFLAGS})
+
+#
+# Libraries
+#
+find_library(m_LIB m REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${m_LIB_LIBRARIES})
+include_directories(${m_LIB_INCLUDE_DIRS})
+
+find_library(bz2_LIB bz2 REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIB_LIBRARIES})
+include_directories(${m_LIB_INCLUDE_DIRS})
+
+find_library(fcgi_LIB fcgi REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIB_LIBRARIES})
+include_directories(${fcgi_LIB_INCLUDE_DIRS})
+
+find_library(pthread_LIB pthread REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIB_LIBRARIES})
+include_directories(${pthread_LIB_INCLUDE_DIRS})
+
+########################################################################
+# components/compiler
+########################################################################
+
+# parser.tab.c
+find_package(BISON REQUIRED)
+set(BisonOutput ${saffire_SOURCE_DIR}/src/components/compiler/parser.tab.c)
+if (BISON_FOUND)
+    add_custom_command(
+        OUTPUT ${BisonOutput}
+        COMMAND ${BISON_EXECUTABLE}
+            -d
+            --defines=${CMAKE_SOURCE_DIR}/src/include/compiler/parser.tab.h
+            --output=${BisonOutput}
+            ${CMAKE_SOURCE_DIR}/src/components/compiler/saffire.y
+        COMMENT "Generating parser.tab.c"
+    )
+endif()
+
+# lex.yy.c
+find_package(FLEX REQUIRED)
+set(FlexOutput ${saffire_SOURCE_DIR}/src/components/compiler/lex.yy.c)
+set(FlexInput ${saffire_SOURCE_DIR}/src/components/compiler/saffire.l)
+if (FLEX_FOUND)
+    add_custom_command(
+        OUTPUT ${FlexOutput}
+        SOURCE ${FlexInput}
+        COMMAND ${FLEX_EXECUTABLE}
+            --outfile=${FlexOutput}
+            --header-file=${saffire_SOURCE_DIR}/src/include/compiler/lex.yy.h
+            ${FlexInput}
+        COMMENT "Generating lex.yy.c"
+    )
+endif()
+
+set(compiler_SRCS
+    components/compiler/parser.tab.c
+    components/compiler/lex.yy.c
+    components/compiler/parser_helpers.c
+    components/compiler/ast_nodes.c
+    components/compiler/bytecode/marshal.c
+    components/compiler/bytecode/io.c
+    components/compiler/ast_to_asm.c
+    components/compiler/output/dot.c
+    components/compiler/output/asm.c
+)
+add_library(compiler STATIC ${compiler_SRCS})
+
+
+########################################################################
+# components/fastcgi
+########################################################################
+
+set(fastcgi_SRCS
+    components/fastcgi/fastcgi_srv.c
+    components/fastcgi/scoreboard.c
+    components/fastcgi/daemonize.c
+)
+add_library(fastcgi STATIC ${fastcgi_SRCS})
+
+
+########################################################################
+# components/general
+########################################################################
+
+set(general_SRCS
+    components/general/hashtable.c
+    components/general/hash/chained.c
+    components/general/hash/hash_funcs.c
+    components/general/smm.c
+    components/general/smm/asprintf.c
+    components/general/md5.c
+    components/general/dll.c
+    components/general/stack.c
+    components/general/parse_options.c
+    components/general/popen2.c
+    components/general/gpg.c
+    components/general/path_handling.c
+    components/general/bzip2.c
+    components/general/config.c
+    components/general/output.c
+    components/general/mutex.c
+    components/general/printf/arg_printf.c
+    components/general/ini.c
+    components/general/base64.c
+    components/general/string.c
+    components/general/unicode.c
+)
+add_library(general STATIC ${general_SRCS})
+
+
+########################################################################
+# components/modules
+########################################################################
+
+set(modules_SRCS
+    components/modules/module_api.c
+    components/modules/io.c
+    components/modules/saffire.c
+    components/modules/sapi/fastcgi.c
+)
+add_library(modules STATIC ${modules_SRCS})
+
+
+########################################################################
+# components/debugger
+########################################################################
+
+set(debugger_SRCS
+    components/debugger/dbgp/dbgp.c
+    components/debugger/dbgp/xml.c
+    components/debugger/dbgp/sock.c
+    components/debugger/dbgp/args.c
+    components/debugger/dbgp/commands.c
+)
+add_library(debugger STATIC ${debugger_SRCS})
+
+
+########################################################################
+# components/objects
+########################################################################
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
+    COMMAND php
+        ../support/generators/generate_exceptions.php
+        ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
+        ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
+    COMMENT "Generating exception objects"
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
+    COMMAND php
+        ../support/generators/generate_interfaces.php
+        ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
+        ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
+    COMMENT "Generating interface objects"
+)
+
+set(objects_SRCS
+    components/objects/object.c
+    components/objects/base.c
+    components/objects/null.c
+    components/objects/boolean.c
+    components/objects/numerical.c
+    components/objects/string.c
+    components/objects/regex.c
+    components/objects/callable.c
+    components/objects/attrib.c
+    components/objects/hash.c
+    components/objects/tuple.c
+    components/objects/list.c
+    components/objects/user.c
+    components/objects/exception.c
+)
+add_library(objects STATIC ${objects_SRCS})
+
+
+
+########################################################################
+# components/repl
+########################################################################
+
+set(repl_SRCS
+    components/repl/repl.c
+    components/repl/prompt.c
+)
+add_library(repl STATIC ${repl_SRCS})
+
+
+########################################################################
+# components/vm
+########################################################################
+
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_opcodes.c
+    COMMAND php
+        ../support/generators/generate_vm_opcodes.php
+        ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
+        ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_opcodes.c
+        ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_opcodes.h
+    COMMENT "Generating vm opcodes source files"
+)
+
+set(vm_SRCS
+    components/vm/vm.c
+    components/vm/block.c
+    components/vm/stackframe.c
+    components/vm/codeblock.c
+    components/vm/context.c
+    components/vm/thread.c
+    components/vm/import.c
+    components/vm/_generated_vm_opcodes.c
+)
+add_library(vm STATIC ${vm_SRCS})
+
+
+########################################################################
+# components/gc
+########################################################################
+
+set(gc_SRCS
+    components/gc/gc.c
+)
+add_library(gc STATIC ${gc_SRCS})
+
+
+########################################################################
+# main/saffire
+########################################################################
+
+set(saffire_SRCS
+   main/saffire.c
+   main/commands/config.c
+   main/commands/fastcgi.c
+   main/commands/lint.c
+   main/commands/exec.c
+   main/commands/repl.c
+   main/commands/help.c
+   main/commands/version.c
+   main/commands/bytecode.c
+)
+
+set(saffire_LIBS
+    libobject.a
+    libgeneral.a
+    libcompiler.a
+    libfastcgi.a
+    librepl.a
+    libvm.a
+    libgc.a
+    libmodules.a
+    libdebugger.a
+)
+
+add_executable(saffire ${saffire_SRCS})
+
+target_link_libraries(saffire ${saffire_LIBS} ${3rdparty_LIBS})
+
+install(TARGETS saffire DESTINATION bin)
+

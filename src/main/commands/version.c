@@ -38,7 +38,7 @@ static int flag_long_version = 0;
 static int do_version(void) {
     // Output long version info
     if (flag_long_version) {
-        output_char("%s - %s\n%s\n%s\n", saffire_version, saffire_copyright, saffire_compiled, saffire_configured);
+        output_char("%s - %s\n%s\n", saffire_version, saffire_copyright, saffire_compiled);
         return 0;
     }
 
