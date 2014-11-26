@@ -175,8 +175,8 @@ static int fcgi_loop(void) {
         smm_free(bytecode_file);
 
         t_vm_context *ctx = vm_context_new("::", source_file);
-        t_vm_codeframe *codeframe = vm_codeframe_new(bc, ctx);
-        t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeframe);
+        t_vm_codeblock *codeblock = vm_codeblock_new(bc, ctx);
+        t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
 
         vm_execute(initial_frame);
 

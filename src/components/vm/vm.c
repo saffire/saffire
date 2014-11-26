@@ -319,7 +319,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
     // Create a new execution frame
     t_vm_stackframe *parent_frame = thread_get_current_frame();
-    t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->data.code.external.codeframe);
+    t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->data.code.external.codeblock);
     child_frame->trace_class = self_obj ? string_strdup0(self_obj->name) : string_strdup0("<anonymous>");
     child_frame->trace_method = string_strdup0(name);
 
@@ -471,7 +471,7 @@ void vm_init(SaffireParser *sp, int runmode) {
     object_init();
     module_init();
 
-    vm_codeframe_init();
+    vm_codeblock_init();
 
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
@@ -491,10 +491,10 @@ void vm_fini(void) {
         dbgp_fini(debug_info);
     }
 
-    // Free all imported codeframes
+    // Free all imported codeblocks
     vm_import_cache_fini();
 
-    vm_codeframe_fini();
+    vm_codeblock_fini();
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 //    DEBUG_PRINT_CHAR("\n\n\nDecreasing builtins\n");
@@ -519,17 +519,17 @@ int getlineno(t_vm_stackframe *frame) {
     int delta_line = 0;
 
     // @TODO: Check if lino_offset doesn't go out of bounds
-    if (frame->lineno_current_lino_offset >= frame->codeframe->bytecode->lino_length) {
+    if (frame->lineno_current_lino_offset >= frame->codeblock->bytecode->lino_length) {
         return frame->lineno_current_line;
     }
 
     int i;
     do {
-        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
     } while (i > 127);
     do {
-        i = (frame->codeframe->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
+        i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
     } while (i > 127);
 
@@ -574,9 +574,9 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
                 ANSI_BRIGHTGREEN "(<args>)"
                 ANSI_RESET "\n",
                 tb_depth,
-                tb_frame->codeframe->context->file.full ? tb_frame->codeframe->context->file.full : "<none>",
+                tb_frame->codeblock->context->file.full ? tb_frame->codeblock->context->file.full : "<none>",
                 getlineno(tb_frame),
-                tb_frame->codeframe->context->class.full ? tb_frame->codeframe->context->class.full : "",
+                tb_frame->codeblock->context->class.full ? tb_frame->codeblock->context->class.full : "",
                 tb_frame->trace_class ? tb_frame->trace_class : "",
                 tb_frame->trace_method ? tb_frame->trace_method : ""
             );
@@ -637,7 +637,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->codeframe->bytecode->source_filename,
+                        frame->codeblock->bytecode->source_filename,
                         ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
@@ -648,7 +648,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->codeframe->bytecode->source_filename,
+                        frame->codeblock->bytecode->source_filename,
                         ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
@@ -659,7 +659,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->codeframe->bytecode->source_filename,
+                        frame->codeblock->bytecode->source_filename,
                         ln
                     );
         } else {
@@ -669,7 +669,7 @@ dispatch:
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->codeframe->bytecode->source_filename,
+                        frame->codeblock->bytecode->source_filename,
                         ln
                     );
         }
@@ -1173,7 +1173,7 @@ So:
                         class_name = separator_pos + 1;
                     }
 
-                    dst = vm_import(frame->codeframe, module_name, class_name);
+                    dst = vm_import(frame->codeblock, module_name, class_name);
 
                     smm_free(module_name);
                     smm_free(orig_class_name);
@@ -2043,12 +2043,12 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
  * @param frame
  * @return
  */
-t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result) {
+t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result) {
     // Execute the frame
-    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeframe->context->class.full);
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeblock->context->class.full);
 
     t_vm_stackframe *current_frame = thread_get_current_frame();
-    t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeframe);
+    t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeblock);
     import_frame->trace_class = string_strdup0(current_frame->trace_class);
     import_frame->trace_method = string_strdup0("#import");
 
@@ -2059,7 +2059,7 @@ t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result)
         _vm_execute(import_frame);
     }
 
-    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeframe->context->class.full);
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeblock->context->class.full);
 
     return import_frame;
 }
@@ -2074,7 +2074,7 @@ void _vm_load_implicit_buildins(t_vm_stackframe *frame) {
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
     // Load mandatory saffire object
-    t_object *saffire_module_obj = vm_import(frame->codeframe, "::saffire", "saffire");
+    t_object *saffire_module_obj = vm_import(frame->codeblock, "::saffire", "saffire");
     if (!saffire_module_obj) {
         fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
     }
@@ -2101,7 +2101,7 @@ int vm_execute(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR("\n\n\n============================ TOTAL VM execution done ============================\n\n\n");
 #ifdef __DEBUG
     #if __DEBUG_STACKFRAME_DESTROY
-        DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeframe->context->class.path, frame->codeframe->context->class.name, (unsigned int)frame);
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeblock->context->class.path, frame->codeblock->context->class.name, (unsigned int)frame);
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
         if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");

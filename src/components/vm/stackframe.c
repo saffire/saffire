@@ -48,12 +48,12 @@
  */
 unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame) {
     // Sanity stop
-    if (frame->ip >= frame->codeframe->bytecode->code_len) {
+    if (frame->ip >= frame->codeblock->bytecode->code_len) {
         DEBUG_PRINT_CHAR("Running outside bytecode!\n\n\n");
         return VM_STOP;
     }
 
-    unsigned char op = frame->codeframe->bytecode->code[frame->ip];
+    unsigned char op = frame->codeblock->bytecode->code[frame->ip];
     frame->ip++;
 
     return op;
@@ -65,7 +65,7 @@ unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame) {
  */
 unsigned int vm_frame_get_operand(t_vm_stackframe *frame) {
     // Read operand
-    uint16_t *ptr = (uint16_t *)(frame->codeframe->bytecode->code + frame->ip);
+    uint16_t *ptr = (uint16_t *)(frame->codeblock->bytecode->code + frame->ip);
     unsigned int ret = (*ptr & 0xFFFF);
 
     frame->ip += sizeof(uint16_t);
@@ -90,7 +90,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
     #endif
 
-    if (frame->sp >= frame->codeframe->bytecode->stack_size) {
+    if (frame->sp >= frame->codeblock->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
     }
     t_object *ret = frame->stack[frame->sp];
@@ -135,7 +135,7 @@ t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame) {
  * Fetches a non-top element form the stack. Does not pop anything.
  */
 t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx) {
-    if (idx < 0 || idx >= frame->codeframe->bytecode->stack_size) {
+    if (idx < 0 || idx >= frame->codeblock->bytecode->stack_size) {
         fatal_error(1, "Trying to fetch from outside stack range");     /* LCOV_EXCL_LINE */
     }
 
@@ -147,11 +147,11 @@ t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx) {
  * Return a constant literal, without converting to an object
  */
 void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx) {
-    if (idx < 0 || idx >= frame->codeframe->bytecode->constants_len) {
+    if (idx < 0 || idx >= frame->codeblock->bytecode->constants_len) {
         fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
-    t_bytecode_constant *c = frame->codeframe->bytecode->constants[idx];
+    t_bytecode_constant *c = frame->codeblock->bytecode->constants[idx];
     return c->data.ptr;
 }
 
@@ -160,11 +160,11 @@ void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx) {
  * Returns an object from the constant table
  */
 t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
-    if (idx < 0 || idx >= frame->codeframe->bytecode->constants_len) {
+    if (idx < 0 || idx >= frame->codeblock->bytecode->constants_len) {
         fatal_error(1, "Trying to fetch from outside constant range");      /* LCOV_EXCL_LINE */
     }
 
-    return frame->codeframe->constants_objects[idx];
+    return frame->codeblock->constants_objects[idx];
 }
 
 
@@ -297,40 +297,40 @@ t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id) {
  * Returns an identifier name as string
  */
 char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
-    if (idx < 0 || idx >= frame->codeframe->bytecode->identifiers_len) {
+    if (idx < 0 || idx >= frame->codeblock->bytecode->identifiers_len) {
         fatal_error(1, "Trying to fetch from outside identifier range");        /* LCOV_EXCL_LINE */
     }
 
 //#ifdef __DEBUG
 //    DEBUG_PRINT_CHAR("---------------------\n");
 //    DEBUG_PRINT_CHAR("frame identifiers:\n");
-//    for (int i=0; i!=frame->codeframe->bytecode->identifiers_len; i++) {
-//        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeframe->bytecode->identifiers[i]->s);
+//    for (int i=0; i!=frame->codeblock->bytecode->identifiers_len; i++) {
+//        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeblock->bytecode->identifiers[i]->s);
 //    }
 //    print_debug_table(frame->local_identifiers->ht, "Locals");
 //#endif
 
-    return frame->codeframe->bytecode->identifiers[idx]->s;
+    return frame->codeblock->bytecode->identifiers[idx]->s;
 }
 
 
 /**
 * Creates and initializes a new frame
 */
-t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe *codeframe) {
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeframe->context->class.full, parent_frame ? parent_frame->codeframe->context->class.full : "<root>");
+t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock) {
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeblock->context->class.full, parent_frame ? parent_frame->codeblock->context->class.full : "<root>");
     t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
     bzero(frame, sizeof(t_vm_stackframe));
 
     frame->parent = parent_frame;
-    frame->codeframe = codeframe;
+    frame->codeblock = codeblock;
 
     frame->trace_class = NULL;
     frame->trace_method = NULL;
 
-    frame->sp = codeframe->bytecode->stack_size;
-    frame->stack = smm_malloc(codeframe->bytecode->stack_size * sizeof(t_object *));
-    bzero(frame->stack, codeframe->bytecode->stack_size * sizeof(t_object *));
+    frame->sp = codeblock->bytecode->stack_size;
+    frame->stack = smm_malloc(codeblock->bytecode->stack_size * sizeof(t_object *));
+    bzero(frame->stack, codeblock->bytecode->stack_size * sizeof(t_object *));
 
 
     frame->created_user_objects = dll_init();
@@ -372,10 +372,10 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe
 void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
 #ifdef __DEBUG
-    #if __DEBUG_STACKFRAME_DESTROY
-        DEBUG_PRINT_CHAR("STACKFRAME DESTROY: %s\n",
-            frame->codeframe->context ? frame->codeframe->context->class.full : "<root>");
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n\n\n\n",
+        frame->codeblock->context ? frame->codeblock->context->class.full : "<root>");
 
+    #if __DEBUG_STACKFRAME_DESTROY
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
         if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
@@ -384,8 +384,8 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 #endif
 
 
-    // Remove codeframe reference (don't mind cleanup, since we still have it on the codeframe stack)
-    frame->codeframe = NULL;
+    // Remove codeblock reference (don't mind cleanup, since we still have it on the codeblock stack)
+    frame->codeblock = NULL;
     if (frame->trace_class) smm_free(frame->trace_class);
     if (frame->trace_method) smm_free(frame->trace_method);
 
@@ -421,13 +421,8 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->frame_identifiers);
-    DEBUG_PRINT_CHAR("Releasing local ID table for frame %08x\n", frame);
-    if (((t_object *)frame->local_identifiers)->ref_count != 1) {
-        DEBUG_PRINT_CHAR("BOOBOO.. REFCOUNT FOR LOCAL ID TABLE IS %d\n", (t_object *)frame->local_identifiers->ref_count);
-    }
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
-
 
     smm_free(frame->stack);
 
@@ -465,13 +460,13 @@ void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
 #ifdef __DEBUG
 void vm_frame_stack_debug(t_vm_stackframe *frame) {
     // Nothing on the stack
-    if (frame->sp == frame->codeframe->bytecode->stack_size) {
+    if (frame->sp == frame->codeblock->bytecode->stack_size) {
         return;
     }
 
     DEBUG_PRINT_CHAR("\nFRAME STACK\n");
     DEBUG_PRINT_CHAR("=======================\n");
-    for (int i=frame->sp; i<=frame->codeframe->bytecode->stack_size-1; i++) {
+    for (int i=frame->sp; i<=frame->codeblock->bytecode->stack_size-1; i++) {
         DEBUG_PRINT_CHAR("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
     DEBUG_PRINT_CHAR("\n");

@@ -31,12 +31,12 @@
     #include "objects/hash.h"
     #include "compiler/bytecode.h"
     #include "vm/block.h"
-    #include "vm/codeframe.h"
+    #include "vm/codeblock.h"
     #include "vm/context.h"
 
 
     t_vm_stackframe *vm_stackframe_new_scoped(t_vm_stackframe *scope_frame, t_vm_stackframe *parent_frame, t_vm_context *context, t_bytecode *bytecode);
-    t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeframe *codeframe);
+    t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock);
     void vm_stackframe_destroy(t_vm_stackframe *frame);
 
     unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame);

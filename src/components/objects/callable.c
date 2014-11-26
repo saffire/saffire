@@ -181,7 +181,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         callable_obj->data.code.internal.native_func = (void *)e->data;
     } else {
         // external code is a bytecode structure
-        callable_obj->data.code.external.codeframe = (t_vm_codeframe *)e->data;
+        callable_obj->data.code.external.codeblock = (t_vm_codeblock *)e->data;
     }
     e = DLL_NEXT(e);
 

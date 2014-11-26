@@ -24,17 +24,16 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __VM_CODEFRAME_H__
-#define __VM_CODEFRAME_H__
+#ifndef __VM_CODEBLOCK_H__
+#define __VM_CODEBLOCK_H__
 
     #include "vm/vmtypes.h"
     #include "compiler/bytecode.h"
 
-    t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context);
-    t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent, t_bytecode *bytecode);
-    void vm_codeframe_destroy(t_vm_codeframe *codeframe);
+    t_vm_codeblock *vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context);
+    void vm_codeblock_destroy(t_vm_codeblock *codeblock);
 
-    void vm_codeframe_init(void);
-    void vm_codeframe_fini(void);
+    void vm_codeblock_init(void);
+    void vm_codeblock_fini(void);
 
 #endif

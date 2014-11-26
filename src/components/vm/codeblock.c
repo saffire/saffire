@@ -25,26 +25,27 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "vm/codeframe.h"
+#include "vm/codeblock.h"
 #include "vm/context.h"
 #include "general/smm.h"
 #include "debug.h"
 
-t_hash_table *codeframes;    // Hash table with all code frames
+t_hash_table *codeblocks;    // Hash table with all code frames
 
 
 /**
  *
  */
-static t_vm_codeframe *_vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
-    t_vm_codeframe *codeframe = smm_malloc(sizeof(t_vm_codeframe));
+static t_vm_codeblock *_vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context) {
+    printf("Adding codeblock to context %s (%s)\n", context->class.full, context->file.full);
+    t_vm_codeblock *codeblock = smm_malloc(sizeof(t_vm_codeblock));
 
-    // Add context and bytecode to codeframe
-    codeframe->bytecode = bytecode;
-    codeframe->context = context;
+    // Add context and bytecode to codeblock
+    codeblock->bytecode = bytecode;
+    codeblock->context = context;
 
-    // Create constants that are located in the bytecode and store inside the codeframe
-    codeframe->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
+    // Create constants that are located in the bytecode and store inside the codeblock
+    codeblock->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
     for (int i=0; i!=bytecode->constants_len; i++) {
         t_object *obj = NULL;
         t_bytecode_constant *c = bytecode->constants[i];
@@ -53,8 +54,8 @@ static t_vm_codeframe *_vm_codeframe_new(t_bytecode *bytecode, t_vm_context *con
             {
                 // We create a reference to the source filename of the original bytecode name.
                 //bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
-                t_vm_codeframe *child_codeframe = vm_codeframe_addchild(codeframe, bytecode->constants[i]->data.code);
-                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeframe, /* arguments */ NULL);
+                t_vm_codeblock *child_codeblock = _vm_codeblock_new(bytecode->constants[i]->data.code, codeblock->context);
+                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeblock, /* arguments */ NULL);
                 break;
             }
             case BYTECODE_CONST_STRING :
@@ -70,96 +71,85 @@ static t_vm_codeframe *_vm_codeframe_new(t_bytecode *bytecode, t_vm_context *con
                 fatal_error(1, "Cannot convert constant type into object!");        /* LCOV_EXCL_LINE */
         }
         object_inc_ref(obj);
-        codeframe->constants_objects[i] = obj;
+        codeblock->constants_objects[i] = obj;
     }
 
-    return codeframe;
+    return codeblock;
 }
 
 
 /**
- * Add a codeframe that is actually a child of another codeframe
+ * Add a new codeblock
  */
-t_vm_codeframe *vm_codeframe_addchild(t_vm_codeframe *parent_codeframe, t_bytecode *bytecode) {
-    t_vm_codeframe *codeframe = _vm_codeframe_new(bytecode, parent_codeframe->context);
+t_vm_codeblock *vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context) {
+    t_vm_codeblock *codeblock = _vm_codeblock_new(bytecode, context);
 
-    return codeframe;
+    ht_add_str(codeblocks, context->class.full, codeblock);
+
+    return codeblock;
 }
-
-/**
- * Add a new codeframe
- */
-t_vm_codeframe *vm_codeframe_new(t_bytecode *bytecode, t_vm_context *context) {
-    t_vm_codeframe *codeframe = _vm_codeframe_new(bytecode, context);
-
-    ht_add_str(codeframes, context->class.full, codeframe);
-
-    return codeframe;
-}
-
-
 
 /**
  *
  */
-t_vm_codeframe *vm_codeframe_find(char *class_path) {
-    t_vm_codeframe *codeframe = ht_find_str(codeframes, class_path);
-    DEBUG_PRINT_CHAR(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, codeframe ? "Found" : "Nothing found");
+t_vm_codeblock *vm_codeblock_find(char *class_path) {
+    t_vm_codeblock *codeblock = ht_find_str(codeblocks, class_path);
+    DEBUG_PRINT_CHAR(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, codeblock ? "Found" : "Nothing found");
 
-    return codeframe;
+    return codeblock;
 }
 
 
 /**
  *
  */
-void vm_codeframe_destroy(t_vm_codeframe *codeframe) {
-    if (! codeframe) return;
+void vm_codeblock_destroy(t_vm_codeblock *codeblock) {
+    if (! codeblock) return;
 
-    if (codeframe->bytecode) {
+    if (codeblock->bytecode) {
         // Free constants objects
-        for (int i=0; i!=codeframe->bytecode->constants_len; i++) {
+        for (int i=0; i!=codeblock->bytecode->constants_len; i++) {
 #if __DEBUG_FREE_OBJECT
-            DEBUG_PRINT_STRING_ARGS("Freeing %s\n", object_debug((t_object *)codeframe->constants_objects[i]));
+            DEBUG_PRINT_STRING_ARGS("Freeing %s\n", object_debug((t_object *)codeblock->constants_objects[i]));
 #endif
-            object_release((t_object *)codeframe->constants_objects[i]);
+            object_release((t_object *)codeblock->constants_objects[i]);
         }
-        smm_free(codeframe->constants_objects);
+        smm_free(codeblock->constants_objects);
 
         // Release bytecode
-        bytecode_free(codeframe->bytecode);
+        bytecode_free(codeblock->bytecode);
     }
 
     // Release context
-    vm_context_free_context(codeframe);
+    vm_context_free_context(codeblock);
 
-    // Release codeframe itself
-    smm_free(codeframe);
+    // Release codeblock itself
+    smm_free(codeblock);
 }
 
 /**
  *
  */
-void vm_codeframe_init(void) {
-    codeframes = ht_create();
+void vm_codeblock_init(void) {
+    codeblocks = ht_create();
 }
 
 /**
  *
  */
-void vm_codeframe_fini(void) {
+void vm_codeblock_fini(void) {
     // Release all code frames
     t_hash_iter iter;
-    ht_iter_init(&iter, codeframes);
+    ht_iter_init(&iter, codeblocks);
     while (ht_iter_valid(&iter)) {
-        t_vm_codeframe *codeframe = ht_iter_value(&iter);
+        t_vm_codeblock *codeblock = ht_iter_value(&iter);
 
-        DEBUG_PRINT_CHAR("DESTROYING CODEFRAME: %08lX (%s)\n", (unsigned long)codeframe, codeframe->context->file.path);
+        DEBUG_PRINT_CHAR("DESTROYING CODEBLOCK: %08lX (%s)\n", (unsigned long)codeblock, codeblock->context->file.path);
 
-        vm_codeframe_destroy(codeframe);
+        vm_codeblock_destroy(codeblock);
 
         ht_iter_next(&iter);
     }
 
-    ht_destroy(codeframes);
+    ht_destroy(codeblocks);
 }

@@ -262,13 +262,13 @@ DBGP_CMD_DEF(step_into) {
     di->state = DBGP_STATE_RUNNING;
     di->step_into = 1;
 
-    if (di->frame == NULL || di->frame->codeframe->bytecode == NULL || di->frame->codeframe->bytecode->source_filename == NULL) {
+    if (di->frame == NULL || di->frame->codeblock->bytecode == NULL || di->frame->codeblock->bytecode->source_filename == NULL) {
         di->step_data.frame = NULL;
         di->step_data.file = NULL;
         di->step_data.lineno = 0;
     } else {
         di->step_data.frame = di->frame;
-        di->step_data.file = di->frame->codeframe->bytecode->source_filename;
+        di->step_data.file = di->frame->codeblock->bytecode->source_filename;
         di->step_data.lineno = di->frame->lineno_current_line;
     }
 
@@ -284,7 +284,7 @@ DBGP_CMD_DEF(step_over) {
     di->step_over = 1;
 
     di->step_data.frame = di->frame;
-    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
+    di->step_data.file = di->frame->codeblock->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -299,7 +299,7 @@ DBGP_CMD_DEF(step_out) {
     di->step_out = 1;
 
     di->step_data.frame = di->frame->parent;
-    di->step_data.file = di->frame->codeframe->bytecode->source_filename;
+    di->step_data.file = di->frame->codeblock->bytecode->source_filename;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -328,9 +328,9 @@ DBGP_CMD_DEF(stack_get) {
         xmlSetProp(node, BAD_CAST "level", BAD_CAST xmlbuf);
         xmlSetProp(node, BAD_CAST "type", BAD_CAST "file");
 
-        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->codeframe->context);
+        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->codeblock->context);
 
-        snprintf(xmlbuf, 999, "file://%s", frame->codeframe->bytecode->source_filename);
+        snprintf(xmlbuf, 999, "file://%s", frame->codeblock->bytecode->source_filename);
         xmlSetProp(node, BAD_CAST "filename", BAD_CAST xmlbuf);
         snprintf(xmlbuf, 999, "%d", frame->lineno_current_line);
         xmlSetProp(node, BAD_CAST "lineno", BAD_CAST xmlbuf);

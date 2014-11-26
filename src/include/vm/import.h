@@ -31,7 +31,7 @@
     #include "vm/vmtypes.h"
     #include "vm/stackframe.h"
 
-    t_object *vm_import(t_vm_codeframe *codeframe, char *module, char *class);
+    t_object *vm_import(t_vm_codeblock *codeblock, char *module, char *class);
 
     void vm_import_cache_init(void);
     void vm_import_cache_fini(void);

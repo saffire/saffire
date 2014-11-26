@@ -27,7 +27,7 @@
 #include <string.h>
 #include <libgen.h>
 #include "general/output.h"
-#include "vm/codeframe.h"
+#include "vm/codeblock.h"
 #include "general/smm.h"
 #include "debug.h"
 
@@ -96,20 +96,20 @@ t_vm_context *vm_context_new(char *class_path, char *file_path) {
 }
 
 /**
- * Frees the context for this codeframe
+ * Frees the context for this codeblock
  */
-void vm_context_free_context(t_vm_codeframe *codeframe) {
-    if (! codeframe || ! codeframe->context) return;
+void vm_context_free_context(t_vm_codeblock *codeblock) {
+    if (! codeblock || ! codeblock->context) return;
 
-    smm_free(codeframe->context->class.path);
-    smm_free(codeframe->context->class.name);
-    smm_free(codeframe->context->class.full);
+    smm_free(codeblock->context->class.path);
+    smm_free(codeblock->context->class.name);
+    smm_free(codeblock->context->class.full);
 
-    smm_free(codeframe->context->file.path);
-    smm_free(codeframe->context->file.name);
-    smm_free(codeframe->context->file.full);
+    smm_free(codeblock->context->file.path);
+    smm_free(codeblock->context->file.name);
+    smm_free(codeblock->context->file.full);
 
-    smm_free(codeframe->context);
+    smm_free(codeblock->context);
 }
 
 
@@ -121,7 +121,7 @@ void vm_context_free_context(t_vm_codeframe *codeframe) {
  * @param classname
  * @return
  */
-char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *class_name) {
+char *vm_context_absolute_namespace(t_vm_codeblock *codeblock, char *class_name) {
     char *absolute_class_name = NULL;
 
     // It's already absolute
@@ -129,14 +129,14 @@ char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *class_name)
         return string_strdup0(class_name);
     }
 
-    // If we have a relative name, but we are actually without a codeframe. Only allowed when we import from
+    // If we have a relative name, but we are actually without a codeblock. Only allowed when we import from
     // our main file.
-    if (! codeframe) {
+    if (! codeblock) {
         smm_asprintf_char(&absolute_class_name, "::%s", class_name);
         return absolute_class_name;
     }
 
-    t_vm_context *ctx = codeframe->context;
+    t_vm_context *ctx = codeblock->context;
     if (! strcmp(ctx->class.full, "::")) {
         // :: main context, don't do double ::
         smm_asprintf_char(&absolute_class_name, "::%s", class_name);

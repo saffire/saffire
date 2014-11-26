@@ -50,12 +50,12 @@
     } t_vm_context;
 
 
-    typedef struct _vm_codeframe {
-        t_vm_context *context;          // Context of this codeframe
+    typedef struct _vm_codeblock {
+        t_vm_context *context;          // Context of this codeblock
 
         t_bytecode *bytecode;           // Frame's bytecode
         t_object **constants_objects;   // Constants taken from bytecode, converted to actual objects
-    } t_vm_codeframe;
+    } t_vm_codeblock;
 
 
     typedef struct _vm_frameblock {
@@ -81,7 +81,7 @@
     struct _vm_stackframe {
         t_vm_stackframe *parent;                    // Parent frame, or NULL when we reached the initial / global frame.
 
-        t_vm_codeframe *codeframe;                  // Actual codeframe
+        t_vm_codeblock *codeblock;                  // Actual codeblock
 
         int ip;                                     // Instruction pointer
 

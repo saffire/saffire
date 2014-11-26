@@ -81,15 +81,15 @@ void vm_import_cache_fini(void) {
  * @param module_frame
  * @return
  */
-static t_vm_codeframe *_create_import_codeframe(t_vm_context *ctx) {
+static t_vm_codeblock *_create_import_codeblock(t_vm_context *ctx) {
     t_ast_element *ast = ast_generate_from_file(ctx->file.full);
     t_hash_table *asm_code = ast_to_asm(ast, 1);
     ast_free_node(ast);
     t_bytecode *bc = assembler(asm_code, ctx->file.full);
     assembler_free(asm_code);
 
-    // Create codeframe
-    return vm_codeframe_new(bc, ctx);
+    // Create codeblock
+    return vm_codeblock_new(bc, ctx);
 }
 
 /**
@@ -170,21 +170,21 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
 
 
 
-static t_vm_stackframe *_vm_import(t_vm_codeframe *codeframe, char *absolute_class_path) {
+static t_vm_stackframe *_vm_import(t_vm_codeblock *codeblock, char *absolute_class_path) {
 
     // Iterate all module search paths
     char **ptr = (char **)&module_search_paths;
     while (*ptr) {
         // generate path based on the current search path
-        char *absolute_import_path = _construct_import_path(codeframe ? codeframe->context : NULL, *ptr, absolute_class_path);
+        char *absolute_import_path = _construct_import_path(codeblock ? codeblock->context : NULL, *ptr, absolute_class_path);
 
         if (absolute_import_path && is_file(absolute_import_path)) {
             // Do import
             t_vm_context *context = vm_context_new(absolute_class_path, absolute_import_path);
-            t_vm_codeframe *import_codeframe = _create_import_codeframe(context);
+            t_vm_codeblock *import_codeblock = _create_import_codeblock(context);
 
             t_object *result = NULL;
-            t_vm_stackframe *import_stackframe = vm_execute_import(import_codeframe, &result);
+            t_vm_stackframe *import_stackframe = vm_execute_import(import_codeblock, &result);
 
             // Exception is thrown, don't continue
             if (thread_exception_thrown()) {
@@ -215,15 +215,15 @@ static t_vm_stackframe *_vm_import(t_vm_codeframe *codeframe, char *absolute_cla
  * Import a classname from the namespace into the given frame.
  *
  */
-t_object *vm_import(t_vm_codeframe *codeframe, char *class_path, char *class_name) {
+t_object *vm_import(t_vm_codeblock *codeblock, char *class_path, char *class_name) {
     // Create absolute class path for this file
-    char *absolute_class_path = vm_context_absolute_namespace(codeframe, class_path);
+    char *absolute_class_path = vm_context_absolute_namespace(codeblock, class_path);
 
     // Check cache for this context
     t_vm_stackframe *imported_stackframe = ht_find_str(frame_import_cache, absolute_class_path);
     if (! imported_stackframe) {
         // Not found, import it
-        imported_stackframe = _vm_import(codeframe, absolute_class_path);
+        imported_stackframe = _vm_import(codeblock, absolute_class_path);
 
         // Only add to cache when something is there
         if (imported_stackframe) {

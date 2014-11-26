@@ -50,7 +50,7 @@
     int vm_execute(t_vm_stackframe *stackframe);
     void vm_populate_builtins(const char *name, t_object *obj);
 
-    t_vm_stackframe *vm_execute_import(t_vm_codeframe *codeframe, t_object **result);
+    t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result);
     t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
 
 #endif

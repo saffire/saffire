@@ -32,9 +32,9 @@
     char *vm_context_strip_path(char *full_namespace);
     char *vm_context_strip_class(char *full_namespace);
 
-    char *vm_context_absolute_namespace(t_vm_codeframe *codeframe, char *namespace);
+    char *vm_context_absolute_namespace(t_vm_codeblock *codeblock, char *namespace);
 
     t_vm_context *vm_context_new(char *class_path, char *file_path);
-    void vm_context_free_context(t_vm_codeframe *codeframe);
+    void vm_context_free_context(t_vm_codeblock *codeblock);
 
 #endif

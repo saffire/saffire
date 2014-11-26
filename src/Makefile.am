@@ -214,7 +214,7 @@ noinst_LIBRARIES += libvm.a
 libvm_a_SOURCES = components/vm/vm.c \
                   components/vm/block.c \
                   components/vm/stackframe.c \
-                  components/vm/codeframe.c \
+                  components/vm/codeblock.c \
                   components/vm/context.c \
                   components/vm/thread.c \
                   components/vm/import.c \
