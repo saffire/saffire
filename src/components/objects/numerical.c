@@ -337,7 +337,7 @@ void object_numerical_init(void) {
     int value = NUMERICAL_CACHED_MIN;
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
         numerical_cache[i] = (t_numerical_object *)object_alloc(Object_Numerical, 1, value);
-        object_inc_ref(numerical_cache[i]);
+        object_inc_ref((t_object *)numerical_cache[i]);
     }
 
     // Restore cache function for numericals, as we can use it now.

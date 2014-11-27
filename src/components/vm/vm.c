@@ -88,7 +88,7 @@ static t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
 
 
 /**
- * Calls an comparison function. Returns true or false
+ * Calls an comparison function. Returns true or false objects
  */
 static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     char *cmp_method = objectCmpMethods[cmp];
@@ -215,7 +215,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
 }
 
 /**
- * Creates a userload object, based on a parent class, with interfaces, attributes etc.
+ * Creates a userland object, based on a parent class, with interfaces, attributes etc.
  */
 static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
     // Allocate through the parent_class type, or use default base class (@TODO: why not use a default user class?)
@@ -237,7 +237,6 @@ static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, i
 
     // Set flags
     user_obj->flags |= flags;
-    user_obj->flags |= OBJECT_TYPE_USERLAND;
 
     // Set interfaces
     user_obj->interfaces = interfaces;
@@ -479,7 +478,7 @@ void vm_init(SaffireParser *sp, int runmode) {
 
     vm_import_cache_init();
 
-    // Initialize debugging if neededht
+    // Initialize debugging if needed
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
         debug_info = dbgp_init();
     }

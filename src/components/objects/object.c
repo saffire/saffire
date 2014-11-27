@@ -132,8 +132,8 @@ static void _object_free(t_object *obj) {
         obj->funcs->destroy(obj);
     }
 
-    if (obj->flags & OBJECT_TYPE_USER == OBJECT_TYPE_USER) {
-        string_free(obj->name);
+    if ((obj->flags & OBJECT_TYPE_USERLAND) == OBJECT_TYPE_USERLAND) {
+        smm_free(obj->name);
     }
 
     // Object is destroyed. We cannot use object anymore.
@@ -171,7 +171,7 @@ long object_dec_ref(t_object *obj) {
 
     if (obj->ref_count < 0) {
         DEBUG_PRINT_CHAR("ERROR: Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
-        fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", obj, obj->ref_count);
+        fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", (unsigned long)obj, obj->ref_count);
         abort();
     }
     obj->ref_count--;
