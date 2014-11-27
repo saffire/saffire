@@ -3,6 +3,5 @@
 #define __GITVERSION_H__
 
    #define __GIT_REVISION__ "@GITREV_SHA1@"
-   const char git_revision_str[] = __GIT_REVISION__;
 
 #endif

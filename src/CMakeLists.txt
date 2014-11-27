@@ -1,6 +1,9 @@
 include_directories(include)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -std=gnu99 -Wall -Wno-unused-function -Wunused-result")
+# @TODO: Only set this when not doing debug
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wunused-result")
+
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wunused-result")
 
 
 ########################################################################
@@ -20,36 +23,57 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/gitversion.h.cmake" "${CMAKE
 ########################################################################
 
 #
-# Packages (pkg-config)
+# Packages
 #
-find_package(LibXml2 REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${LibXml2_LIBRARIES})
-include_directories(${LibXml2_INCLUDE_DIRS})
-add_definitions(${LibXml2_CFLAGS})
 
-find_package(LibEdit REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${LibEdit_LIBRARIES})
-include_directories(${LibEdit_INCLUDE_DIRS})
-add_definitions(${LibEdit_CFLAGS})
+# Use pkg-config
+find_package(PkgConfig REQUIRED)
+
+# ICU
+pkg_check_modules(PC_ICUI18N REQUIRED icu-i18n)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_ICUI18N_LIBRARIES})
+include_directories(${PC_ICUI18N_INCLUDE_DIR})
+add_definitions(${PC_ICUI18N_CFLAGS})
+
+# LibXml2
+pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBXML2_LIBRARIES})
+include_directories(${PC_LIBXML2_INCLUDE_DIR})
+add_definitions(${PC_LIBXML2_CFLAGS})
+
+# LibEdit
+pkg_check_modules(PC_LIBEDIT REQUIRED libedit)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBEDIT_LIBRARIES})
+include_directories(${PC_LIBEDIT_INCLUDE_DIR})
+add_definitions(${PC_LIBEDIT_CFLAGS})
+
+## LibICU
+#find_package(ICU 4.4 REQUIRED)
+#include_directories(${ICU_INCLUDE_DIR})
+#set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
+
+# LibPCRE
+pkg_check_modules(PC_PCRE REQUIRED libpcre)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_PCRE_LIBRARIES})
+include_directories(${PC_PCRE_INCLUDE_DIR})
+add_definitions(${PC_PCRE_CFLAGS})
+
 
 #
 # Libraries
 #
-find_library(m_LIB m REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${m_LIB_LIBRARIES})
-include_directories(${m_LIB_INCLUDE_DIRS})
+find_library(m_LIBRARY m REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${m_LIBRARY})
 
-find_library(bz2_LIB bz2 REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIB_LIBRARIES})
-include_directories(${m_LIB_INCLUDE_DIRS})
+find_library(bz2_LIBRARY bz2 REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIBRARY})
 
-find_library(fcgi_LIB fcgi REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIB_LIBRARIES})
-include_directories(${fcgi_LIB_INCLUDE_DIRS})
+find_library(fcgi_LIBRARY fcgi REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
 
-find_library(pthread_LIB pthread REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIB_LIBRARIES})
-include_directories(${pthread_LIB_INCLUDE_DIRS})
+#find_library(pthread_LIBRARY pthread REQUIRED)
+#set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
+
 
 ########################################################################
 # components/compiler
@@ -139,7 +163,9 @@ set(general_SRCS
     components/general/string.c
     components/general/unicode.c
 )
-add_library(general STATIC ${general_SRCS})
+# Note that the "general" library is called libgeneric.a.
+# 'general' is a reserved keyword
+add_library(generic STATIC ${general_SRCS})
 
 
 ########################################################################
@@ -209,7 +235,6 @@ set(objects_SRCS
 add_library(objects STATIC ${objects_SRCS})
 
 
-
 ########################################################################
 # components/repl
 ########################################################################
@@ -275,20 +300,20 @@ set(saffire_SRCS
 )
 
 set(saffire_LIBS
-    libobject.a
-    libgeneral.a
-    libcompiler.a
-    libfastcgi.a
-    librepl.a
-    libvm.a
-    libgc.a
-    libmodules.a
-    libdebugger.a
+    objects
+    generic
+    compiler
+    fastcgi
+    repl
+    vm
+    gc
+    modules
+    debugger
 )
 
 add_executable(saffire ${saffire_SRCS})
 
-target_link_libraries(saffire ${saffire_LIBS} ${3rdparty_LIBS})
+target_link_libraries(saffire ${saffire_LIBS} ${saffire_LIBS} ${3rdparty_LIBS})
 
 install(TARGETS saffire DESTINATION bin)
 

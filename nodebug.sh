@@ -1,5 +1,4 @@
 #!/bin/sh
-./configure
-make clean
-make
-
+cd build
+build.sh -c -t release
+cd ..

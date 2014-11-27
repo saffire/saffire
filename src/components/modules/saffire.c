@@ -67,7 +67,7 @@ SAFFIRE_MODULE_METHOD(saffire, version) {
 }
 
 SAFFIRE_MODULE_METHOD(saffire, gitrev) {
-    RETURN_STRING(git_revision);
+    RETURN_STRING(__GIT_REVISION__);
 }
 
 SAFFIRE_MODULE_METHOD(saffire, sapi) {
