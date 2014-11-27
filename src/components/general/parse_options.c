@@ -146,16 +146,18 @@ void saffire_parse_options(int *argc, char **argv, struct saffire_option *option
     }
 
     // We must "clean" all empty slots
-    int i = 0;
-    for (i=0; i!=*argc-1; i++) {
-        // skip if it's already filled
-        if (argv[i]) continue;
 
-        // Fill with first non-empty we find
-        int j = i;
-        while (! argv[j] && j < *argc-1) j++;
-        argv[i] = argv[j];
-        argv[j] = NULL;
+    if (*argc) {
+        for (int i=0; i <= *argc-1; i++) {
+            // skip if it's already filled
+            if (argv[i]) continue;
+
+            // Fill with first non-empty we find
+            int j = i;
+            while (! argv[j] && j < *argc-1) j++;
+            argv[i] = argv[j];
+            argv[j] = NULL;
+        }
     }
 
     // Recalculate our argument count
