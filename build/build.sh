@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 build_target () {
     target_build=$1;
     target_dir=$2
@@ -61,3 +60,4 @@ fi
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "debug" ] ; then
     build_target Debug debug $CLEAN $VERBOSE
 fi
+

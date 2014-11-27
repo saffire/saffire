@@ -8,4 +8,4 @@ set (saffire_VERSION_MAJOR 0)
 set (saffire_VERSION_MINOR 1)
 
 add_subdirectory(./src)
-add_subdirectory(./unittests/core)
+#add_subdirectory(./unittests/core)

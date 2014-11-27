@@ -311,8 +311,10 @@ set(saffire_LIBS
     debugger
 )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_executable(saffire ${saffire_SRCS})
 
+# Link saffire_LIBS twice, as there are dependencies on libraries
 target_link_libraries(saffire ${saffire_LIBS} ${saffire_LIBS} ${3rdparty_LIBS})
 
 install(TARGETS saffire DESTINATION bin)
