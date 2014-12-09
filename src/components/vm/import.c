@@ -210,14 +210,27 @@ static t_vm_stackframe *_vm_import(t_vm_codeblock *codeblock, char *absolute_cla
 }
 
 
+/**
+ * Register something like ::foo::bar as tmp inside the codeblock
+ *
+ * @param codeblock
+ * @param class_path
+ * @param class_name
+ */
+void vm_register_namespace(t_vm_codeblock *codeblock, char *class_path, char *class_name)
+{
+}
 
 /**
  * Import a classname from the namespace into the given frame.
  *
  */
 t_object *vm_import(t_vm_codeblock *codeblock, char *class_path, char *class_name) {
+    DEBUG_PRINT_CHAR("IMPORT CLASS: %s %s\n", class_path, class_name);
+
     // Create absolute class path for this file
     char *absolute_class_path = vm_context_absolute_namespace(codeblock, class_path);
+    DEBUG_PRINT_CHAR("IMPORT PATH: %s\n", absolute_class_path);
 
     // Check cache for this context
     t_vm_stackframe *imported_stackframe = ht_find_str(frame_import_cache, absolute_class_path);

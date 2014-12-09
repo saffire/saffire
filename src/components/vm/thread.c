@@ -69,6 +69,10 @@ void thread_set_current_frame(t_vm_stackframe *frame) {
     current_thread->frame = frame;
 }
 
+t_vm_stackframe *thread_get_exception_frame(void) {
+    return current_thread->exception_frame;
+}
+
 /**
  * returns 1 when an exception has been thrown in this thread. 0 otherwise
  */
@@ -81,6 +85,7 @@ int thread_exception_thrown(void) {
  */
 void thread_create_exception(t_exception_object *exception, int code, const char *message) {
     current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 2, code, char0_to_string(message));
+    current_thread->exception_frame = thread_get_current_frame();
 }
 
 /**

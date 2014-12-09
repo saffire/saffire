@@ -30,6 +30,7 @@
 #include "objects/objects.h"
 #include "general/smm.h"
 #include "general/output.h"
+#include "vm/thread.h"
 
 /* ======================================================================
  *   Object methods
@@ -99,6 +100,24 @@ SAFFIRE_METHOD(exception, setcode) {
     RETURN_SELF;
 }
 
+SAFFIRE_METHOD(exception, getline) {
+    t_vm_stackframe *stackframe = thread_get_exception_frame();
+
+    RETURN_NUMERICAL(stackframe->lineno_current_line);
+}
+
+SAFFIRE_METHOD(exception, getfile) {
+    t_vm_stackframe *stackframe = thread_get_exception_frame();
+
+    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->file.full);
+}
+
+SAFFIRE_METHOD(exception, getclass) {
+    t_vm_stackframe *stackframe = thread_get_exception_frame();
+
+    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->class.full);
+}
+
 
 /* ======================================================================
  *   Standard operators
@@ -154,6 +173,10 @@ void object_exception_init(void) {
     object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
     object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
+
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getFile",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getfile);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getClass",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getclass);
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getLine",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getline);
 
     object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
     object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);

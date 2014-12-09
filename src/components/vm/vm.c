@@ -1172,7 +1172,8 @@ So:
                         class_name = separator_pos + 1;
                     }
 
-                    dst = vm_import(frame->codeblock, module_name, class_name);
+                    //dst = vm_import(frame->codeblock, module_name, class_name);
+                    vm_register_namespace(frame->codeblock, module_name, class_name);
 
                     smm_free(module_name);
                     smm_free(orig_class_name);
@@ -1180,14 +1181,13 @@ So:
                     object_dec_ref(module_obj);
                     object_dec_ref(class_obj);
 
-
-                    if (!dst) {
-                        reason = REASON_EXCEPTION;
-                        goto block_end;
-                    }
-
-                    vm_frame_stack_push(frame, dst);
-                    object_inc_ref(dst);
+//                    if (!dst) {
+//                        reason = REASON_EXCEPTION;
+//                        goto block_end;
+//                    }
+//
+//                    vm_frame_stack_push(frame, dst);
+//                    object_inc_ref(dst);
                 }
                 goto dispatch;
                 break;
@@ -1464,13 +1464,13 @@ So:
                         s = string_to_char(OBJ2STR(parent_class));
                         object_dec_ref(parent_class);
                         parent_class = vm_frame_find_identifier(frame, s);
-                        smm_free(s);
                         if (parent_class == NULL) {
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", parent_class);
+                            thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", s);
                             goto block_end;
                             break;
                         }
+                        smm_free(s);
 
                     }
 

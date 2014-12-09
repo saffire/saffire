@@ -36,5 +36,6 @@
 
     t_vm_context *vm_context_new(char *class_path, char *file_path);
     void vm_context_free_context(t_vm_codeblock *codeblock);
+    
 
 #endif

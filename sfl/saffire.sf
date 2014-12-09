@@ -23,7 +23,7 @@ class saffire {
      * Called when an exception has been thrown, but not handled
      */
     static public method uncaughtExceptionHandler(exception e) {
-        io.printf("Uncaught exception detected at file %s, line %d: %s\n", "<unknown>", 0, e.getMessage());
+        io.printf("Uncaught exception detected at file %s, line %d: %s (code: %d)\n", e.getFile(), e.getLine(), e.getMessage(), e.getCode());
         return e.getCode();
     }
 

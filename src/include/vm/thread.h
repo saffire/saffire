@@ -34,8 +34,9 @@
      * All data relevant to a single thread
      */
     typedef struct _thread {
-        t_vm_stackframe *frame;                  // Current frame
-        t_exception_object *exception;      // Current thrown exception
+        t_vm_stackframe *frame;                 // Current frame
+        t_exception_object *exception;          // Current thrown exception
+        t_vm_stackframe *exception_frame;       // Snapshot of the frame on when the exception was thrown
 
         char *locale;                       // Current global locale
     } t_thread;
@@ -47,10 +48,12 @@
 
     t_thread *thread_get_current(void);
     t_vm_stackframe *thread_get_current_frame(void);
+    t_vm_stackframe *thread_get_exception_frame(void);
     void thread_set_current_frame(t_vm_stackframe *frame);
 
     void thread_create_exception(t_exception_object *exception, int code, const char *message);
     void thread_create_exception_printf(t_exception_object *exception, int code, const char *format, ...);
+
 
     void thread_set_exception(t_exception_object *exception);
     t_exception_object *thread_get_exception(void);

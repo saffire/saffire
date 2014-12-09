@@ -164,6 +164,7 @@ t_ast_element *ast_node_string_context_class(int lineno, char *identifier) {
     p->lineno = lineno;
     p->type = typeAstString;
     p->string.value = vm_context_strip_class(identifier);
+    printf("STRING VALUE FROM ID: %s (was: %s)\n", p->string.value, identifier);
 
     return p;
 }
