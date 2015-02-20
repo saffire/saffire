@@ -14,7 +14,7 @@ $fp = fopen($argv[2], "w");
 
 $header = <<< EOH
 /*
- Copyright (c) 2012-2013, The Saffire Group
+ Copyright (c) 2012-2015, The Saffire Group
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -106,7 +106,7 @@ $fp = fopen($argv[3], "w");
 
 $header = <<< EOH
 /*
- Copyright (c) 2012-2013, The Saffire Group
+ Copyright (c) 2012-2015, The Saffire Group
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
