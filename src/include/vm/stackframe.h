@@ -53,13 +53,11 @@
     t_object *vm_frame_get_identifier(t_vm_stackframe *frame, char *id);
     t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id);
     t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id);
-    t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id);
-    t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id);
+    t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id);
 
+    void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *id, char *fqcn);
     void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
-    void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
-    void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
-
+    void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
     void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj);
 
     void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx);

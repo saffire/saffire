@@ -122,12 +122,6 @@ t_bytecode *bytecode_load(const char *filename, int verify_signature) {
 
     smm_free(bzip_buf);
 
-
-    // Set source filename
-    char *source_path = replace_extension(filename, ".sfc", ".sf");
-    bc->source_filename = realpath(source_path, NULL);
-    smm_free(source_path);
-
     // Return bytecode
     return bc;
 }

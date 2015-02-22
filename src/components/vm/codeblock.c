@@ -30,19 +30,19 @@
 #include "general/smm.h"
 #include "debug.h"
 
-t_hash_table *codeblocks;    // Hash table with all code frames
-
-
 /**
  *
  */
 static t_vm_codeblock *_vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context) {
-    printf("Adding codeblock to context %s (%s)\n", context->class.full, context->file.full);
+    DEBUG_PRINT_CHAR("Adding codeblock to context %s (%s)\n", context->module.full, context->file.full);
+
     t_vm_codeblock *codeblock = smm_malloc(sizeof(t_vm_codeblock));
 
     // Add context and bytecode to codeblock
     codeblock->bytecode = bytecode;
-    codeblock->context = context;
+
+    // duplicate context
+    codeblock->context = vm_context_duplicate(context);
 
     // Create constants that are located in the bytecode and store inside the codeblock
     codeblock->constants_objects = smm_malloc(bytecode->constants_len * sizeof(t_object *));
@@ -52,8 +52,6 @@ static t_vm_codeblock *_vm_codeblock_new(t_bytecode *bytecode, t_vm_context *con
         switch (c->type) {
             case BYTECODE_CONST_CODE :
             {
-                // We create a reference to the source filename of the original bytecode name.
-                //bytecode->constants[i]->data.code->source_filename = string_strdup0(bytecode->source_filename);
                 t_vm_codeblock *child_codeblock = _vm_codeblock_new(bytecode->constants[i]->data.code, codeblock->context);
                 obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeblock, /* arguments */ NULL);
                 break;
@@ -84,17 +82,7 @@ static t_vm_codeblock *_vm_codeblock_new(t_bytecode *bytecode, t_vm_context *con
 t_vm_codeblock *vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context) {
     t_vm_codeblock *codeblock = _vm_codeblock_new(bytecode, context);
 
-    ht_add_str(codeblocks, context->class.full, codeblock);
-
-    return codeblock;
-}
-
-/**
- *
- */
-t_vm_codeblock *vm_codeblock_find(char *class_path) {
-    t_vm_codeblock *codeblock = ht_find_str(codeblocks, class_path);
-    DEBUG_PRINT_CHAR(" * *** Looking for a frame in cache with key '%s': %s\n", class_path, codeblock ? "Found" : "Nothing found");
+    DEBUG_PRINT_CHAR("NEW CODEBLOCK: %08lX (%s)\n", (unsigned long)codeblock, context->file.full);
 
     return codeblock;
 }
@@ -125,31 +113,4 @@ void vm_codeblock_destroy(t_vm_codeblock *codeblock) {
 
     // Release codeblock itself
     smm_free(codeblock);
-}
-
-/**
- *
- */
-void vm_codeblock_init(void) {
-    codeblocks = ht_create();
-}
-
-/**
- *
- */
-void vm_codeblock_fini(void) {
-    // Release all code frames
-    t_hash_iter iter;
-    ht_iter_init(&iter, codeblocks);
-    while (ht_iter_valid(&iter)) {
-        t_vm_codeblock *codeblock = ht_iter_value(&iter);
-
-        DEBUG_PRINT_CHAR("DESTROYING CODEBLOCK: %08lX (%s)\n", (unsigned long)codeblock, codeblock->context->file.path);
-
-        vm_codeblock_destroy(codeblock);
-
-        ht_iter_next(&iter);
-    }
-
-    ht_destroy(codeblocks);
 }

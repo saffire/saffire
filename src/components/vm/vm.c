@@ -45,26 +45,25 @@
 #include "gc/gc.h"
 #include "debugger/dbgp/dbgp.h"
 
-t_hash_table *frame_import_cache;          // Cache for all imported stackframes
-
-
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
-t_hash_object *builtin_identifiers;         // Builtin identifiers - hashobject
+t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object
 
+// Flow termination reasons
 #define REASON_NONE         0       // No return status. Just end the execution
 #define REASON_RETURN       1       // Return statement given
-#define REASON_CONTINUE     2
-#define REASON_BREAK        3
-#define REASON_BREAKELSE    4
+#define REASON_CONTINUE     2       // Continue the current loop
+#define REASON_BREAK        3       // Break the current loop
+#define REASON_BREAKELSE    4       // Break the current loop, and jump to the else statement of the given loop
 #define REASON_EXCEPTION    5       // Exception occurred
 #define REASON_RERAISE      6       // Exception not handled. Reraised in finally clause
 #define REASON_FINALLY      7       // No exception raised after finally
 
 
+t_object *_vm_execute(t_vm_stackframe *frame);
+
+// Defines the object operator and comparison methods.
 extern char *objectOprMethods[];
 extern char *objectCmpMethods[];
-
-t_object *_vm_execute(t_vm_stackframe *frame);
 
 /**
  * This method is called when we need to call an operator method. Even though eventually
@@ -292,7 +291,6 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     // Call native code
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // @TODO: should internal code not have a frame as well?
-
         // Internal function call
         return callable_obj->data.code.internal.native_func(self_obj, arg_list);
     }
@@ -459,24 +457,24 @@ void vm_init(SaffireParser *sp, int runmode) {
     // Set run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
+    // Setup the initial thread
     t_thread *thread = thread_new();
     current_thread = thread;
 
     gc_init();
 
     // Initialize hash where everybody can add their builtins to. Since object_hash does not exist yet,
-    // we must use a generic hash for this. We will "convert" this to a hashobject later
+    // we must use a generic hash for this. We will "convert" this to an hash-hobject later
     builtin_identifiers_ht = ht_create();
+
     object_init();
     module_init();
 
-    vm_codeblock_init();
+    vm_namespace_cache_init();
 
     // Convert our builtin identifiers to an actual hash object
     builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
     object_inc_ref((t_object *)builtin_identifiers);
-
-    vm_import_cache_init();
 
     // Initialize debugging if needed
     if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
@@ -490,10 +488,9 @@ void vm_fini(void) {
         dbgp_fini(debug_info);
     }
 
-    // Free all imported codeblocks
-    vm_import_cache_fini();
+    // Free all namespaces
+    vm_namespace_cache_fini();
 
-    vm_codeblock_fini();
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 //    DEBUG_PRINT_CHAR("\n\n\nDecreasing builtins\n");
@@ -510,7 +507,7 @@ void vm_fini(void) {
 }
 
 int getlineno(t_vm_stackframe *frame) {
-    if (frame->ip && frame->lineno_lowerbound <= frame->ip && frame->ip <= frame->lineno_upperbound) {
+    if (frame->lineno_upperbound != 0 && frame->lineno_lowerbound <= frame->ip && frame->ip < frame->lineno_upperbound) {
         return frame->lineno_current_line;
     }
 
@@ -557,7 +554,6 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
 
 #ifdef __DEBUG
     if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
-    if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
     if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
 #endif
 
@@ -575,7 +571,7 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
                 tb_depth,
                 tb_frame->codeblock->context->file.full ? tb_frame->codeblock->context->file.full : "<none>",
                 getlineno(tb_frame),
-                tb_frame->codeblock->context->class.full ? tb_frame->codeblock->context->class.full : "",
+                tb_frame->codeblock->context->module.full ? tb_frame->codeblock->context->module.full : "",
                 tb_frame->trace_class ? tb_frame->trace_class : "",
                 tb_frame->trace_method ? tb_frame->trace_method : ""
             );
@@ -636,7 +632,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->codeblock->bytecode->source_filename,
+                        frame->codeblock->context->file.full,
                         ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
@@ -647,7 +643,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->codeblock->bytecode->source_filename,
+                        frame->codeblock->context->file.full,
                         ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
@@ -658,7 +654,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->codeblock->bytecode->source_filename,
+                        frame->codeblock->context->file.full,
                         ln
                     );
         } else {
@@ -668,7 +664,7 @@ dispatch:
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->codeblock->bytecode->source_filename,
+                        frame->codeblock->context->file.full,
                         ln
                     );
         }
@@ -689,7 +685,7 @@ dispatch:
             // Removes SP-0
             case VM_POP_TOP :
                 obj1 = vm_frame_stack_pop(frame);
-                object_dec_ref(obj1);
+                object_dec_ref(obj1);\
                 goto dispatch;
                 break;
 
@@ -854,17 +850,6 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // store SP+0 as a frame identifier
-            case VM_STORE_FRAME_ID :
-                // Refcount stays equal. So no inc/dec ref needed
-                dst = vm_frame_stack_pop(frame);
-                s = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_frame_identifier(frame, s, dst);
-
-                object_dec_ref(dst);
-                goto dispatch;
-                break;
-
 
 //            // Load a global identifier
 //            case VM_LOAD_GLOBAL :
@@ -898,12 +883,12 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Store SP+0 into identifier (either local or global)
+            // Store SP+0 into identifier
             case VM_STORE_ID :
                 // Refcount stays equal. So no inc/dec ref needed
                 dst = vm_frame_stack_pop(frame);
                 s = vm_frame_get_name(frame, oparg1);
-                vm_frame_set_identifier(frame, s, dst);
+                vm_frame_set_local_identifier(frame, s, dst);
 
                 object_dec_ref(dst);
                 goto dispatch;
@@ -912,6 +897,7 @@ dispatch:
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
                 s = vm_frame_get_name(frame, oparg1);
+
                 dst = vm_frame_find_identifier(frame, s);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
@@ -1139,7 +1125,6 @@ So:
                     object_dec_ref((t_object *)varargs);
 
 
-
                     if (ret_obj == NULL) {
                         // NULL returned means exception occurred.
                         reason = REASON_EXCEPTION;
@@ -1157,6 +1142,10 @@ So:
             // Import X as Y from Z
             case VM_IMPORT :
                 {
+                    // Fetch alias
+                    t_object *alias_obj = vm_frame_stack_pop(frame);
+                    char *alias_name = string_to_char(OBJ2STR(alias_obj));
+
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame);
                     char *module_name = string_to_char(OBJ2STR(module_obj));
@@ -1164,7 +1153,10 @@ So:
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
                     char *class_name = string_to_char(OBJ2STR(class_obj));
-                    char *orig_class_name = class_name;
+
+                    object_dec_ref(module_obj);
+                    object_dec_ref(class_obj);
+                    object_dec_ref(alias_obj);
 
                     // Check for namespace separator, and use only the class name, not the modules.
                     char *separator_pos = strrchr(class_name, ':');
@@ -1172,22 +1164,22 @@ So:
                         class_name = separator_pos + 1;
                     }
 
-                    //dst = vm_import(frame->codeblock, module_name, class_name);
-                    vm_register_namespace(frame->codeblock, module_name, class_name);
+                    // Create FQCN from module and class name
+                    char *target_pqcn = NULL;
+                    smm_asprintf_char(&target_pqcn, "%s::%s", module_name, class_name);
+                    char *target_fqcn = vm_context_fqcn(frame->codeblock, target_pqcn);
+
+                    char *alias_fqcn = vm_context_fqcn(frame->codeblock, alias_name);
+
+                    vm_frame_set_alias_identifier(frame, alias_fqcn, target_fqcn);
+
+                    smm_free(alias_fqcn);
+                    smm_free(target_pqcn);
+                    smm_free(target_fqcn);
 
                     smm_free(module_name);
-                    smm_free(orig_class_name);
-
-                    object_dec_ref(module_obj);
-                    object_dec_ref(class_obj);
-
-//                    if (!dst) {
-//                        reason = REASON_EXCEPTION;
-//                        goto block_end;
-//                    }
-//
-//                    vm_frame_stack_push(frame, dst);
-//                    object_inc_ref(dst);
+                    smm_free(class_name);
+                    smm_free(alias_name);
                 }
                 goto dispatch;
                 break;
@@ -1388,7 +1380,6 @@ So:
 
                     vm_frame_register_userobject(frame, (t_object *)dst);
 
-
                     object_dec_ref(access);
                     object_dec_ref(visibility);
                     object_dec_ref(value_obj);
@@ -1499,7 +1490,6 @@ So:
                     // Actually create the object
                     t_object *new_obj = vm_create_userland_object(frame, name, flags, interfaces, parent_class, attributes);
 
-                    smm_free(name);
 
                     // Check if the build class actually got all interfaces implemented
                     if (opcode == VM_BUILD_CLASS && ! object_check_interface_implementations((t_object *)new_obj)) {
@@ -1513,7 +1503,15 @@ So:
                     vm_frame_stack_push(frame, (t_object *)new_obj);
                     object_inc_ref((t_object *)new_obj);
 
+                    // Register in the frame for cleanup and gc protection
                     vm_frame_register_userobject(frame, (t_object *)new_obj);
+
+                    // Make the class known  (this does not happen with build attribute objects)
+                    char *fqcn = vm_context_fqcn(frame->codeblock, name);
+                    vm_frame_set_local_identifier(frame, fqcn, (t_object *)new_obj);
+                    smm_free(fqcn);
+
+                    smm_free(name);
                 }
 
                 goto dispatch;
@@ -2040,20 +2038,18 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 }
 
 /**
- * The same as a normal execute, but don't handle exceptions
-
- * @param frame
- * @return
- */
+* The same as a normal execute, but don't handle exceptions
+* @param frame
+* @return
+*/
 t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result) {
     // Execute the frame
-    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeblock->context->class.full);
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeblock->context->module.full);
 
     t_vm_stackframe *current_frame = thread_get_current_frame();
     t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeblock);
     import_frame->trace_class = string_strdup0(current_frame->trace_class);
     import_frame->trace_method = string_strdup0("#import");
-
 
     if (result) {
         *result = _vm_execute(import_frame);
@@ -2061,7 +2057,7 @@ t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result)
         _vm_execute(import_frame);
     }
 
-    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeblock->context->class.full);
+    DEBUG_PRINT_CHAR("\n       ============================ VM import execution fini (%s) ============================\n", codeblock->context->module.full);
 
     return import_frame;
 }
@@ -2075,12 +2071,10 @@ void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
-    // Load mandatory saffire object
-    t_object *saffire_module_obj = vm_import(frame->codeblock, "::saffire", "saffire");
-    if (!saffire_module_obj) {
-        fatal_error(1, "Cannot find the mandatory saffire module.");        /* LCOV_EXCL_LINE */
-    }
-    vm_populate_builtins("saffire", saffire_module_obj);
+    // Import mandatory saffire object
+    char *fqcn = vm_context_fqcn(frame->codeblock, "::saffire");
+    vm_frame_set_alias_identifier(frame, fqcn, "::saffire::saffire");
+    smm_free(fqcn);
 
     // Back to normal runmode again
     vm_runmode = runmode;
@@ -2102,12 +2096,14 @@ int vm_execute(t_vm_stackframe *frame) {
 
     DEBUG_PRINT_CHAR("\n\n\n============================ TOTAL VM execution done ============================\n\n\n");
 #ifdef __DEBUG
+    if (thread_exception_thrown()) {
+        DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "============================ EXCEPTION OCCURED. ============================\n\n\n" ANSI_RESET);
+    }
     #if __DEBUG_STACKFRAME_DESTROY
-        DEBUG_PRINT_CHAR("----- [END FRAME: %s::%s (%08X)] ----\n", frame->codeblock->context->class.path, frame->codeblock->context->class.name, (unsigned int)frame);
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s (%08X)] ----\n", frame->codeblock->context->module.full, (unsigned int)frame);
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
-        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
-//    if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
+        if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
     #endif
 #endif
 
@@ -2124,8 +2120,14 @@ int vm_execute(t_vm_stackframe *frame) {
             t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
             if (saffire_obj) {
                 t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
+
+                if (!exceptionhandler_obj) {
+                    // @TODO: Uh-oh. uncaughtExceptionHandler method not found :(
+                }
                 // We assume that finding our exception handler always work
                 result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
+            } else {
+                // @TODO: Uh-oh.. saffire wasn't found :(
             }
             if (result == NULL) {
                 result = object_alloc(Object_Numerical, 1, 0);
@@ -2160,7 +2162,7 @@ int vm_execute(t_vm_stackframe *frame) {
 }
 
 /**
- *
+ * Called to add a global class. Things like numeric, boolean, strings, saffire, etc etc.
  */
 void vm_populate_builtins(const char *name, t_object *obj) {
     object_inc_ref(obj);
@@ -2168,8 +2170,8 @@ void vm_populate_builtins(const char *name, t_object *obj) {
 }
 
 /**
-* Calls a method from specified object. Returns NULL when method is not found.
-*/
+ * Calls a method from specified object. Returns NULL when method is not found.
+ */
 t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...) {
     if (! self || ! attrib_obj) return NULL;
 

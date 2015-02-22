@@ -8,7 +8,7 @@
        notice, this list of conditions and the following disclaimer.
      * Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
+       documentation and/or other materials provided with the vm_frame_set_alias_identifierdistribution.
      * Neither the name of the Saffire Group the
        names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
@@ -31,9 +31,13 @@
     #include "vm/vmtypes.h"
     #include "vm/stackframe.h"
 
-    t_object *vm_import(t_vm_codeblock *codeblock, char *module, char *class);
+    // Returned when the object is known, but still needs resolving
+    #define OBJECT_NEEDS_RESOLVING ((t_object *)-1)
 
-    void vm_import_cache_init(void);
-    void vm_import_cache_fini(void);
+    //int vm_register_namespace(t_vm_codeblock *codeblock, char *class_path, char *class_name);
+    t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn);
+
+    void vm_namespace_cache_init(void);
+    void vm_namespace_cache_fini(void);
 
 #endif

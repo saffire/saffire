@@ -325,10 +325,6 @@ void bytecode_free(t_bytecode *bc) {
     }
     smm_free(bc->identifiers);
 
-    if (bc->source_filename) {
-        smm_free(bc->source_filename);
-    }
-
     smm_free(bc->lino);
 
     smm_free(bc);

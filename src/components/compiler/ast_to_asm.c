@@ -554,15 +554,16 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[0]);
                     stack_pop(state->context);
+
                     stack_push(state->context, st_ctx_load);
                     WALK_LEAF(leaf->opr.ops[2]);
                     stack_pop(state->context);
 
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_IMPORT, 0));
+                    stack_push(state->context, st_ctx_load);
+                    WALK_LEAF(leaf->opr.ops[1]);
+                    stack_pop(state->context);
 
-                    node = leaf->opr.ops[1];
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, node->string.value, 0);
-                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_STORE_FRAME_ID, 1, opr1));
+                    dll_append(frame, asm_create_codeline(leaf->lineno, VM_IMPORT, 0));
                     break;
 
                 case T_CALL_ARGUMENT_LIST :

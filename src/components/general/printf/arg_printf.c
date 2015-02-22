@@ -75,7 +75,7 @@ int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output) {
     unsigned flags, actual_wd, count, given_wd;
     unsigned char *where_char, buf[PR_BUFLEN];
     unsigned char state, radix;
-    t_string *where;
+    t_string *where = NULL;
     long num;
     t_dll_element *e = DLL_HEAD(args);
     char *fmt_char = fmt->val;

@@ -39,8 +39,8 @@
     #define VERSION_MINOR(v)    ((v >>  8) & 0x0004)
     #define VERSION_BUILD(v)    ((v >>  0) & 0x0008)
 
-    #define saffire_version       "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
-    #define saffire_copyright "Copyright (C) 2012-2014 The Saffire Group"
+    #define saffire_version   "Saffire v" saffire_version_major "." saffire_version_minor "." saffire_version_build
+    #define saffire_copyright "Copyright (C) 2012-2015 The Saffire Group"
     #define saffire_compiled  "Compiled on " __DATE__ " at " __TIME__ " from git revision " __GIT_REVISION__
 
 

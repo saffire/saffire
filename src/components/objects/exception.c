@@ -115,7 +115,7 @@ SAFFIRE_METHOD(exception, getfile) {
 SAFFIRE_METHOD(exception, getclass) {
     t_vm_stackframe *stackframe = thread_get_exception_frame();
 
-    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->class.full);
+    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->module.full);
 }
 
 

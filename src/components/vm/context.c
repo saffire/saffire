@@ -31,11 +31,10 @@
 #include "general/smm.h"
 #include "debug.h"
 
-
 /**
- * Returns the context path from a specified context
+ * Returns the context path from a specified context  (::foo::bar::baz)
  */
-char *vm_context_strip_path(char *class_path) {
+char *vm_context_get_path(char *class_path) {
     char *s = string_strdup0(class_path);
 
     // Seek last ':'
@@ -57,7 +56,7 @@ char *vm_context_strip_path(char *class_path) {
 /**
  * Returns the context path from a specified context.
  */
-char *vm_context_strip_class(char *class_path) {
+char *vm_context_get_class(char *class_path) {
     char *c = strrchr(class_path, ':');
     if (c == NULL) return string_strdup0(class_path);
     if ((class_path - c) == 0) return string_strdup0(class_path);
@@ -67,14 +66,23 @@ char *vm_context_strip_class(char *class_path) {
 }
 
 
-t_vm_context *vm_context_new(char *class_path, char *file_path) {
+t_vm_context *vm_context_duplicate(t_vm_context *src) {
+    t_vm_context *dst = smm_malloc(sizeof(t_vm_context));
+
+    dst->module.full = string_strdup0(src->module.full);
+    dst->file.path = string_strdup0(src->file.path);
+    dst->file.base = string_strdup0(src->file.base);
+    dst->file.full = string_strdup0(src->file.full);
+
+    return dst;
+}
+
+t_vm_context *vm_context_new(char *module_path, char *file_path) {
     t_vm_context *context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
     bzero(context, sizeof(t_vm_context));
 
-    if (class_path) {
-        context->class.path = vm_context_strip_path(class_path);
-        context->class.name = vm_context_strip_class(class_path);
-        context->class.full = string_strdup0(class_path);
+    if (module_path) {
+        context->module.full = string_strdup0(module_path);
     }
 
     if (file_path) {
@@ -88,7 +96,7 @@ t_vm_context *vm_context_new(char *class_path, char *file_path) {
         smm_free(duppath);
 
         duppath = string_strdup0(file_path);
-        context->file.name = string_strdup0(basename(duppath));
+        context->file.base = string_strdup0(basename(duppath));
         smm_free(duppath);
     }
 
@@ -101,12 +109,10 @@ t_vm_context *vm_context_new(char *class_path, char *file_path) {
 void vm_context_free_context(t_vm_codeblock *codeblock) {
     if (! codeblock || ! codeblock->context) return;
 
-    smm_free(codeblock->context->class.path);
-    smm_free(codeblock->context->class.name);
-    smm_free(codeblock->context->class.full);
+    smm_free(codeblock->context->module.full);
 
     smm_free(codeblock->context->file.path);
-    smm_free(codeblock->context->file.name);
+    smm_free(codeblock->context->file.base);
     smm_free(codeblock->context->file.full);
 
     smm_free(codeblock->context);
@@ -121,7 +127,7 @@ void vm_context_free_context(t_vm_codeblock *codeblock) {
  * @param classname
  * @return
  */
-char *vm_context_absolute_namespace(t_vm_codeblock *codeblock, char *class_name) {
+char *vm_context_fqcn(t_vm_codeblock *codeblock, char *class_name) {
     char *absolute_class_name = NULL;
 
     // It's already absolute
@@ -129,20 +135,20 @@ char *vm_context_absolute_namespace(t_vm_codeblock *codeblock, char *class_name)
         return string_strdup0(class_name);
     }
 
-    // If we have a relative name, but we are actually without a codeblock. Only allowed when we import from
-    // our main file.
+    // If we have a relative name, but we are actually without a code block. Only allowed when
+    // we import from our main file.
     if (! codeblock) {
         smm_asprintf_char(&absolute_class_name, "::%s", class_name);
         return absolute_class_name;
     }
 
     t_vm_context *ctx = codeblock->context;
-    if (! strcmp(ctx->class.full, "::")) {
+    if (!strcmp(ctx->module.full, "::")) {
         // :: main context, don't do double ::
         smm_asprintf_char(&absolute_class_name, "::%s", class_name);
     } else {
-        smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->class.path, class_name);
+        smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->module.full, class_name);
     }
-    return absolute_class_name;
 
+    return absolute_class_name;
 }

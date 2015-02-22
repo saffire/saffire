@@ -35,16 +35,17 @@
                                                     // This is the same depth as defined in python
 
 
+    /**
+     * A structure that keeps information about FQCN <-> filename mappings.
+     */
     typedef struct _vm_frame_context {
         struct {
-            char *path;      // absolute namespace (::foo in case of ::foo::bar)
-            char *name;      // Class name (bar in case of ::foo::bar)
             char *full;      // full namespace (::foo::bar)
-        } class;
+        } module;
 
         struct {
             char *path;      // Path with loaded bytecode
-            char *name;      // bytecode filename
+            char *base;      // bytecode filename
             char *full;      // Full path
         } file;
     } t_vm_context;
@@ -94,10 +95,10 @@
         unsigned int sp;                            // Stack pointer
 
         t_hash_object *local_identifiers;           // Local identifiers (local variables, method arguments etc)
-        t_hash_object *frame_identifiers;           // Frame identifiers (imports, classes etc)
         t_hash_object *global_identifiers;          // Global identifiers
         t_hash_object *builtin_identifiers;         // Builtin identifiers (String, Numerical, modules etc)
 
+        t_hash_table *object_aliases;               // Object aliases from imports
         t_dll *created_user_objects;                // Created objects by the bytecode
 
         int block_cnt;                              // Last used block number (0 = no blocks on the stack)

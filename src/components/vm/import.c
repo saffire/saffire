@@ -51,46 +51,64 @@ const char *module_search_paths[] = {
     NULL
 };
 
+// global FQMN : t_vm_module_mapping
+t_hash_table *global_module_mapping;
 
-void vm_import_cache_init(void) {
-    frame_import_cache = ht_create();
-}
+// global FQCN : t_vm_class_mapping
+t_hash_table *global_class_mapping;
 
-void vm_import_cache_fini(void) {
-    t_hash_iter iter;
-    ht_iter_init(&iter, frame_import_cache);
-    while (ht_iter_valid(&iter)) {
-        t_vm_stackframe *stackframe = ht_iter_value(&iter);
-        DEBUG_PRINT_CHAR("Freeing stackframe: %08X\n", stackframe);
 
-        vm_stackframe_destroy(stackframe);
+typedef struct _vm_module_mapping {
+    t_vm_stackframe *frame;     // or null when not resolved yet.
+} t_vm_module_mapping;
 
-        ht_iter_next(&iter);
-    }
+// class mapping
+typedef struct _vm_class_mapping {
+    t_vm_module_mapping *module;    // Module mapping
+    t_object *object;               // Actual object from module map (or NULL when not resolved yet)
+} t_vm_class_mapping;
 
-    ht_destroy(frame_import_cache);
-}
 
 
 /**
- * Executes a source-file inside a frame, and extracts the needed class from the frame
- *
- * @param frame
- * @param source_file
- * @param class
- * @param module_frame
- * @return
+ * Initialize import cache table.
  */
-static t_vm_codeblock *_create_import_codeblock(t_vm_context *ctx) {
-    t_ast_element *ast = ast_generate_from_file(ctx->file.full);
-    t_hash_table *asm_code = ast_to_asm(ast, 1);
-    ast_free_node(ast);
-    t_bytecode *bc = assembler(asm_code, ctx->file.full);
-    assembler_free(asm_code);
-
-    // Create codeblock
-    return vm_codeblock_new(bc, ctx);
+void vm_namespace_cache_init(void) {
+    global_module_mapping = ht_create();
+    global_class_mapping = ht_create();
 }
+
+/**
+ * Free import cache table.
+ */
+void vm_namespace_cache_fini(void) {
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, class_import_table);
+//    while (ht_iter_valid(&iter)) {
+//        t_vm_namespace_import *namespace_import = ht_iter_value(&iter);
+//
+//        char *fqcn = ht_iter_key_str(&iter);
+//        DEBUG_PRINT_CHAR("Fini namespace %s%s\n", fqcn);
+//
+//        if (namespace_import->codeblock) {
+//            DEBUG_PRINT_CHAR("Freeing codeblock: %08X\n", namespace_import->codeblock);
+//
+//            // Free codeblock
+//            vm_codeblock_destroy(namespace_import->codeblock);
+//        }
+//
+//        // How about the elements?
+//        ht_destroy(namespace_import->classes);
+//
+//        // Free fqcn key. (@TODO: is this needed??)
+//        free(fqcn);
+//
+//        ht_iter_next(&iter);
+//    }
+//
+//    ht_destroy(class_import_table);
+}
+
 
 /**
  * Build actual class-path from a module (Framework::Http::Request -> Framework/Http/Request)
@@ -111,6 +129,9 @@ static char *_build_class_path(char *module) {
 
     return class_path;
 }
+
+
+
 
 /**
  * Construct a absolute path from a root and sub path.
@@ -169,33 +190,24 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
 }
 
 
-
-static t_vm_stackframe *_vm_import(t_vm_codeblock *codeblock, char *absolute_class_path) {
+/**
+ * Creates a vm_context structure based on the *FQMN* by finding the actual module on the module search paths
+ */
+static t_vm_context *_vm_create_context_from_fqmn(char *fqmn) {
 
     // Iterate all module search paths
     char **ptr = (char **)&module_search_paths;
     while (*ptr) {
         // generate path based on the current search path
-        char *absolute_import_path = _construct_import_path(codeblock ? codeblock->context : NULL, *ptr, absolute_class_path);
+        char *absolute_import_path = _construct_import_path(NULL, *ptr, fqmn);
 
         if (absolute_import_path && is_file(absolute_import_path)) {
+
             // Do import
-            t_vm_context *context = vm_context_new(absolute_class_path, absolute_import_path);
-            t_vm_codeblock *import_codeblock = _create_import_codeblock(context);
-
-            t_object *result = NULL;
-            t_vm_stackframe *import_stackframe = vm_execute_import(import_codeblock, &result);
-
-            // Exception is thrown, don't continue
-            if (thread_exception_thrown()) {
-                vm_stackframe_destroy(import_stackframe);
-                smm_free(absolute_import_path);
-//                smm_free(absolute_class_path);
-                return NULL;
-            }
+            t_vm_context *context = vm_context_new(fqmn, absolute_import_path);
 
             smm_free(absolute_import_path);
-            return import_stackframe;
+            return context;
         }
 
         if (absolute_import_path) {
@@ -206,80 +218,117 @@ static t_vm_stackframe *_vm_import(t_vm_codeblock *codeblock, char *absolute_cla
         ptr++;
     }
 
+    // Nothing found
     return NULL;
 }
 
 
 /**
- * Register something like ::foo::bar as tmp inside the codeblock
+ * Create a codeblock by importing the source from the given context.
  *
- * @param codeblock
- * @param class_path
- * @param class_name
+ * @param frame
+ * @param source_file
+ * @param class
+ * @param module_frame
+ * @return
  */
-void vm_register_namespace(t_vm_codeblock *codeblock, char *class_path, char *class_name)
-{
+static t_vm_codeblock *_create_import_codeblock(t_vm_context *ctx) {
+    t_ast_element *ast = ast_generate_from_file(ctx->file.full);
+    t_hash_table *asm_code = ast_to_asm(ast, 1);
+    ast_free_node(ast);
+    t_bytecode *bc = assembler(asm_code, ctx->file.full);
+    assembler_free(asm_code);
+
+    // Create codeblock
+    return vm_codeblock_new(bc, ctx);
 }
 
-/**
- * Import a classname from the namespace into the given frame.
- *
- */
-t_object *vm_import(t_vm_codeblock *codeblock, char *class_path, char *class_name) {
-    DEBUG_PRINT_CHAR("IMPORT CLASS: %s %s\n", class_path, class_name);
 
-    // Create absolute class path for this file
-    char *absolute_class_path = vm_context_absolute_namespace(codeblock, class_path);
-    DEBUG_PRINT_CHAR("IMPORT PATH: %s\n", absolute_class_path);
+static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
+    t_vm_codeblock *codeblock = _create_import_codeblock(ctx);
 
-    // Check cache for this context
-    t_vm_stackframe *imported_stackframe = ht_find_str(frame_import_cache, absolute_class_path);
-    if (! imported_stackframe) {
-        // Not found, import it
-        imported_stackframe = _vm_import(codeblock, absolute_class_path);
+    t_object *result = NULL;
 
-        // Only add to cache when something is there
-        if (imported_stackframe) {
-            ht_add_str(frame_import_cache, absolute_class_path, imported_stackframe);
+    // Save original excption, if any, and clear exceptions so we can do import on the thread
+    t_exception_object *exception = thread_get_exception();
+    thread_set_exception(NULL);
 
-            t_hash_iter iter;
-            ht_iter_init(&iter, frame_import_cache);
+    t_vm_stackframe *import_stackframe = vm_execute_import(codeblock, &result);
 
-#ifdef __DEBUG
-            while (ht_iter_valid(&iter)) {
-                t_hash_key *key = ht_iter_key(&iter);
-                DEBUG_PRINT_CHAR("Frame Cache Entry: %s\n", key->val.s);
-                ht_iter_next(&iter);
-            }
-#endif
-
-        } else {
-            // Nothing found that actually matches a file inside the searchpaths
-            if (! thread_exception_thrown()) {
-                thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find any file matching '%s' in searchpath", class_path);
-            }
-        }
-    } else {
-        DEBUG_PRINT_CHAR("Using cached import class: '%s'\n", absolute_class_path);
-    }
-
-
-    // Exception is thrown, or nothing found, don't continue
+    // exception during import is thrown, don't continue
     if (thread_exception_thrown()) {
-        smm_free(absolute_class_path);
+        vm_stackframe_destroy(import_stackframe);
         return NULL;
     }
 
-    // Find actual object inside the
-    t_object *obj = vm_frame_local_identifier_exists(imported_stackframe, class_name);
+    // Restore original exception (if any)
+    thread_set_exception(exception);
+
+    return import_stackframe;
+}
+
+
+static t_object *_resolve_class_from_module(char *fqcn, t_vm_module_mapping *module_map) {
+    t_object *obj = vm_frame_identifier_exists(module_map->frame, fqcn);
     if (! obj) {
-        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s' inside imported file ", class_name, absolute_class_path);
-        smm_free(absolute_class_path);
+        thread_create_exception_printf((t_exception_object *)Object_ImportException, 1, "Cannot find class '%s' inside imported file %s", fqcn, module_map->frame->codeblock->context->file.full);
         return NULL;
     }
-
-    DEBUG_PRINT_CHAR("Import: found class %s::%s\n", absolute_class_path, class_name);
-    smm_free(absolute_class_path);
 
     return obj;
+}
+
+
+t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn) {
+
+    printf("!!! RESOL: %-20s\n", fqcn);
+    
+    // Find the actual class in the class_mapping
+
+    // Check if we already imported the class
+    t_vm_class_mapping *class_map = ht_find_str(global_class_mapping, fqcn);
+    if (! class_map) {
+        // No class map found. Add class map entry.
+
+
+        // Find module mapping
+        char *fqmn = vm_context_get_path(fqcn);
+        t_vm_module_mapping *module_map = ht_find_str(global_module_mapping, fqmn);
+
+        if (! module_map) {
+            // no module mapping found. Create one
+            t_vm_context *ctx = _vm_create_context_from_fqmn(fqmn);
+            if (!ctx) {
+                return NULL;
+            }
+            t_vm_stackframe *module_frame = _resolve_module(ctx);
+            smm_free(ctx);
+            if (! module_frame) {
+                // Cannot resolve module from context
+                //@ TODO: Throw exception here
+                smm_free(fqmn);
+                return NULL;
+            }
+
+            module_map = smm_malloc(sizeof(t_vm_module_mapping));
+            module_map->frame = module_frame;
+            ht_add_str(global_module_mapping, fqmn, module_frame);
+        }
+        smm_free(fqmn);
+
+        // We are sure we have a module_map now
+        class_map = smm_malloc(sizeof(t_vm_class_mapping));
+        class_map->module = module_map;
+        class_map->object = NULL;
+        ht_add_str(global_class_mapping, fqcn, class_map);
+    }
+
+
+    // Object not resolved yet, resolve it first
+    if (! class_map->object) {
+        t_object *obj = _resolve_class_from_module(fqcn, class_map->module);
+        class_map->object = obj;
+    }
+
+    return class_map->object;
 }

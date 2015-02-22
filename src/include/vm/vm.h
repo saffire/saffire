@@ -33,16 +33,16 @@
     #include "compiler/saffire_parser.h"
     #include "objects/attrib.h"
 
-    t_hash_table *builtin_identifiers_ht;
-    t_hash_object *builtin_identifiers;
-    t_hash_table *frame_import_cache;
+    t_hash_table *builtin_identifiers_ht;       // hash table with all builtin identifiers
+    t_hash_object *builtin_identifiers;         // hash object with all builtin identifiers
+    t_hash_table *class_import_table;           // hash object with all imported classes
 
     #define VM_RUNMODE_FASTCGI      1       // Virtual machine run as FastCGI
     #define VM_RUNMODE_CLI          2       // Virtual machine run as CLI
     #define VM_RUNMODE_REPL         4       // Virtual machine run as REPL
     #define VM_RUNMODE_DEBUG      128       // Debugging should be activated
 
-    // Actual runmode of the VM (fastcgi, cli, rep
+    // Actual runmode of the VM (fastcgi, cli, repl etc)
     int vm_runmode;
 
     void vm_init(SaffireParser *sp, int runmode);

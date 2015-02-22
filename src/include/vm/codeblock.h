@@ -33,7 +33,4 @@
     t_vm_codeblock *vm_codeblock_new(t_bytecode *bytecode, t_vm_context *context);
     void vm_codeblock_destroy(t_vm_codeblock *codeblock);
 
-    void vm_codeblock_init(void);
-    void vm_codeblock_fini(void);
-
 #endif

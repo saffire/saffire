@@ -32,7 +32,7 @@
 #include "general/smm.h"
 
 
-// Current running thread. Don't change directory, but only through thread_switch() methods.
+// Current running thread. Don't change directly, but only through thread_switch() methods.
 t_thread *current_thread;
 
 

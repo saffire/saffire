@@ -1,8 +1,16 @@
 // imports the io class into the current namespace
 import io;
+import io as bar from io;
+import notexisting as baz from io;
 
 // Call the print method from our (imported) io class with a single argument
 io.print("Hello world!\n");
+
+a = 1;
+b = 2 + 3;
+
+bar.print("Hi Bar!\n");
+baz.print("And Baz!\n");
 
 
 /*
@@ -10,7 +18,7 @@ io.print("Hello world!\n");
 class bar {
     public method foo(b) {
         return 1;
-    }
+    }result
 }
 
 class foo {

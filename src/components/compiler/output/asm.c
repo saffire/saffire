@@ -520,7 +520,6 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
     }
 
     t_bytecode *bc = convert_frames_to_bytecode(assembled_frames, "main", 1);
-    bc->source_filename = filename ? string_strdup0(filename) : NULL;
 
 
     // Cleanup our frames

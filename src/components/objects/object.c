@@ -159,7 +159,10 @@ void object_inc_ref(t_object *obj) {
 
     obj->ref_count++;
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
+
+#if __DEBUG_REFCOUNT
     DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+#endif
 }
 
 
@@ -170,14 +173,18 @@ long object_dec_ref(t_object *obj) {
     if (! obj) return 0;
 
     if (obj->ref_count < 0) {
+#if __DEBUG_REFCOUNT
         DEBUG_PRINT_CHAR("ERROR: Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+#endif
         fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", (unsigned long)obj, obj->ref_count);
         abort();
     }
     obj->ref_count--;
 
 //    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
+#if __DEBUG_REFCOUNT
         DEBUG_PRINT_CHAR("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+#endif
 //    }
 
     if (obj->ref_count != 0) return obj->ref_count;
@@ -194,7 +201,7 @@ long object_dec_ref(t_object *obj) {
         return 0;
     }
 
-    // Free object
+    // Free object->
     _object_free(obj);
     return 0;
 }
@@ -270,7 +277,7 @@ static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
 
 #ifdef __DEBUG
     // We really can't show anything here, since objects should have been gone now. Expect failures
-    DEBUG_PRINT_CHAR("object instantiate: (%d) \n", all_objects->size);
+//    DEBUG_PRINT_CHAR("object instantiate: (%d) \n", all_objects->size);
     t_dll_element *e = DLL_HEAD(all_objects);
     while (e) {
 //        t_object *obj = (t_object *)e->data;

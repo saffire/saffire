@@ -168,25 +168,6 @@ t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
 }
 
 
-/**
- * Store object into the frame identifier table. When obj == NULL, it will remove the actual reference (plus object)
- */
-void vm_frame_set_frame_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    if (obj == NULL) {
-        t_object *old = ht_remove_str(frame->frame_identifiers->data.ht, id);
-
-        if (old) object_release(old);
-        return;
-    }
-
-    if (! ht_exists_str(frame->frame_identifiers->data.ht, id)) {
-        ht_add_str(frame->frame_identifiers->data.ht, id, obj);
-        object_inc_ref(obj);
-    } else {
-        // @TODO: Overwrite, or throw error?
-    }
-}
-
 
 /**
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
@@ -220,19 +201,39 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
 
 
 /**
- * Store object into either the local or global identifier table
+ * Store object into the local identifier table
  */
-void vm_frame_set_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->data.ht, id, obj);
-    object_release(old_obj);
-    object_inc_ref(obj);
+void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object *obj) {
+    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->data.ht, fqcn, obj);
+    if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
+        object_release(old_obj);
+    }
+
+    if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
+        object_inc_ref(obj);
+    }
 }
 
-void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *id, t_object *obj) {
-    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->data.ht, id, obj);
+void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *fqcn, char *target_fqcn) {
+    // Store alias id under the FQCN id, and store that we still need to resolve the object
+    vm_frame_set_local_identifier(frame, fqcn, OBJECT_NEEDS_RESOLVING);
+
+    printf("+++ ALIAS: %-20s  --> %s\n", fqcn, target_fqcn);
+
+    // Add to the alias table so we know that  alias -> ::some::module::class
+    char *val = string_strdup0(target_fqcn);
+    ht_add_str(frame->object_aliases, fqcn, val);
+}
+
+
+void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *uqcn, t_object *obj) {
+    // Builtin objects do not have a FQCN. They are stored as "numeric", "false", "null" etc..
+    t_object *old_obj = ht_replace_str(frame->builtin_identifiers->data.ht, uqcn, obj);
 
     object_release(old_obj);
-    object_inc_ref(obj);
+    if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
+        object_inc_ref(obj);
+    }
 }
 
 
@@ -247,7 +248,15 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
         char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
         DEBUG_PRINT_STRING_ARGS("%-10s KEY: '%s' ", prefix, key);
-        DEBUG_PRINT_STRING_ARGS("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
+
+
+        if (val == NULL) {
+            DEBUG_PRINT_CHAR("=> [NULL]\n");        // @TODO: Why is this happening!? Who has released this!!!
+        } else if (val == OBJECT_NEEDS_RESOLVING) {
+            DEBUG_PRINT_CHAR("=> [UNRESOLVED]\n");
+        } else {
+            DEBUG_PRINT_STRING_ARGS("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
+        }
 
         ht_iter_next(&iter);
     }
@@ -256,24 +265,45 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 #endif
 
 
-t_object *vm_frame_resolve_identifier(t_vm_stackframe *frame, char *id) {
-    return vm_frame_local_identifier_exists(frame, id);
-}
+
+SEEMS THAT WHEN RUNNING AN IMPORTED FRAME, WE HAVE LOST THE LOCAL VARIABLES. SOMEHOW WE MUST
+MAKE SURE WE CREATE OUR STACKFRAME FROM THE IMPORTED FRAME, NOT FROM THE ACTUAL PARENT.
 
 
-t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
-    t_object *
+// @TODO: Will only fetch local or builtin. Does not search global identifiers!
+t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id){
+    t_object *obj;
 
-    // Check local identifiers
+    // Find local identifiers (without FQCN)
     obj = ht_find_str(frame->local_identifiers->data.ht, id);
     if (obj) return obj;
 
-    // Check frames
-    obj = ht_find_str(frame->frame_identifiers->data.ht, id);
+    // Check local identifiers, but on FQCN
+    char *fqcn = vm_context_fqcn(frame->codeblock, id);
+    obj = ht_find_str(frame->local_identifiers->data.ht, fqcn);
+    if (obj == OBJECT_NEEDS_RESOLVING) {
+
+        char *alias_fqcn = ht_find_str(frame->object_aliases, fqcn);
+        if (! alias_fqcn) {
+            // We need to resolve, but we don't know what.. Should not happen
+            // @TODO: Throw hard error
+        }
+
+        // Resolve and update the local identifiers
+        obj = vm_class_resolve(frame, alias_fqcn);
+        vm_frame_set_local_identifier(frame, fqcn, obj);
+    }
+    smm_free(fqcn);
     if (obj) return obj;
 
-    // Last, check builtins
+
+    // Check built-ins, but on UQCN
     obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
+    if (obj == OBJECT_NEEDS_RESOLVING) {
+        // Resolve and update the builtin identifiers
+        obj = vm_class_resolve(frame, id);
+        vm_frame_set_builtin_identifier(frame, id, obj);
+    }
     if (obj) return obj;
 
     return NULL;
@@ -281,12 +311,16 @@ t_object *vm_frame_local_identifier_exists(t_vm_stackframe *frame, char *id) {
 
 
 /**
- * Same as get, but does not halt on error (but returns NULL)
+ * Same as vm_frame_get_identifier, but does not halt on error (but returns NULL)
  */
 t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id) {
     if (! frame) return NULL;
 
-    t_object *obj = vm_frame_local_identifier_exists(frame, id);
+    char *fqcn = vm_context_fqcn(frame->codeblock, id);
+    printf("*** FIND : %-20s  (%s)\n", id, fqcn);
+    smm_free(fqcn);
+
+    t_object *obj = vm_frame_identifier_exists(frame, id);
     if (obj) return obj;
 
     return NULL;
@@ -318,12 +352,14 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
 * Creates and initializes a new frame
 */
 t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock) {
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeblock->context->class.full, parent_frame ? parent_frame->codeblock->context->class.full : "<root>");
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeblock->context->module.full, parent_frame ? parent_frame->codeblock->context->module.full : "<root>");
     t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
     bzero(frame, sizeof(t_vm_stackframe));
 
     frame->parent = parent_frame;
     frame->codeblock = codeblock;
+
+    frame->ip = 0;
 
     frame->trace_class = NULL;
     frame->trace_method = NULL;
@@ -344,13 +380,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
     object_inc_ref((t_object *)frame->local_identifiers);
 
-    // Copy all the parent identifiers into the new frame. This should take care of things like the imports
-    if (frame->parent == NULL) {
-        frame->frame_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
-    } else {
-        frame->frame_identifiers = frame->parent->frame_identifiers;
-    }
-    object_inc_ref((t_object *)frame->frame_identifiers);
+    frame->object_aliases = ht_create();
 
     // Set the variable hashes
     if (frame->parent == NULL) {
@@ -373,11 +403,10 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
 #ifdef __DEBUG
     DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n\n\n\n",
-        frame->codeblock->context ? frame->codeblock->context->class.full : "<root>");
+        frame->codeblock->context ? frame->codeblock->context->module.full : "<root>");
 
     #if __DEBUG_STACKFRAME_DESTROY
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
-        if (frame->frame_identifiers) print_debug_table(frame->frame_identifiers->data.ht, "Frame");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
         //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
     #endif
@@ -400,6 +429,8 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
         // the crapper.
         ht_iter_next(&iter);
 
+        if (val == OBJECT_NEEDS_RESOLVING) continue;
+
         DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (unsigned int)val);
 
         // Release value, as it's no longer needed.
@@ -420,7 +451,6 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
-    object_release((t_object *)frame->frame_identifiers);
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
 
@@ -429,31 +459,34 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     smm_free(frame);
 }
 
-/**
- * Register a user-created class. This way we always keep a reference onto the stack, until we actually remove it.
- *
- * WARNING:
- * What happens now is that we globally register our objects. As long as the object is registered here, we have at least
- * a refcount. So when we push/pop it from the stack, we cannot accidentally free it (because we pop it, and in the same
- * pass, we push it again).
- *
- * We should change the system so we don't really need this way of working. An object can have multiple states:
- *
- *  - born      An object has been generated, but not yet pushed onto the stack. This is basically the same state as
- *              "is use", but once an object gets born, it can never return to this state. Maybe possible for some
- *              initialization etc.
- *  - stacked   The object is not in use by the VM, but it has at least 1 reference on (a) stack.
- *  - in use    The object is currently in use by the VM. It *MIGHT* not have any references onto the stack (refcount = 0).�
- *
- *  - died      The object has died. There is no more refcounts AND the object is not in use. It might be possible to reanimate
- *              the object for other purposes. In that case, the state becomes stacked, or in-use again.
- *  - buried    The object has died, and the garbage collector has freed its memory. When the object needs to be generated
- *              again, it must be newly allocated. In this case, the object state because "born" again.
- *
- */
+///**
+// * Register a user-created class. This way we always keep a reference onto the stack, until we actually remove it.
+// *
+// * WARNING:
+// * What happens now is that we globally register our objects. As long as the object is registered here, we have at least
+// * a refcount. So when we push/pop it from the stack, we cannot accidentally free it (because we pop it, and in the same
+// * pass, we push it again).
+// *
+// * We should change the system so we don't really need this way of working. An object can have multiple states:
+// *
+// *  - born      An object has been generated, but not yet pushed onto the stack. This is basically the same state as
+// *              "is use", but once an object gets born, it can never return to this state. Maybe possible for some
+// *              initialization etc.
+// *  - stacked   The object is not in use by the VM, but it has at least 1 reference on (a) stack.
+// *  - in use    The object is currently in use by the VM. It *MIGHT* not have any references onto the stack (refcount = 0).�
+// *
+// *  - died      The object has died. There is no more refcounts AND the object is not in use. It might be possible to reanimate
+// *              the object for other purposes. In that case, the state becomes stacked, or in-use again.
+// *  - buried    The object has died, and the garbage collector has freed its memory. When the object needs to be generated
+// *              again, it must be newly allocated. In this case, the object state because "born" again.
+// *
+// */
+
+// register a user object. This way it is known in the stack frame, AND has a refcount of 1. This is to make sure
+// that we always have a reference to the user-object.
 void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
-    object_inc_ref(obj);
     dll_append(frame->created_user_objects, obj);
+    object_inc_ref(obj);
 }
 
 
