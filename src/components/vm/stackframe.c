@@ -23,7 +23,7 @@
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 #include <string.h>
 #include "vm/vm.h"
 #include "vm/stackframe.h"
@@ -42,6 +42,7 @@
 #include "debug.h"
 #include "general/output.h"
 
+#include "general/hashtable.h"
 
 /**
  * Returns the next opcode
@@ -58,7 +59,6 @@ unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame) {
 
     return op;
 }
-
 
 /**
  * Returns he next operand. Does not do any sanity checks if it actually is an operand.
@@ -86,9 +86,9 @@ t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
  * Pops an object from the stack. Errors when the stack is empty
  */
 t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
-    #if __DEBUG_STACK
+#if __DEBUG_STACK
     DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
-    #endif
+#endif
 
     if (frame->sp >= frame->codeblock->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
@@ -100,18 +100,17 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     return ret;
 }
 
-
 /**
  * Pushes an object onto the stack. Errors when the stack is full
  */
 void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
-    #if __DEBUG_STACK
+#if __DEBUG_STACK
         DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
-    #endif
+#endif
 
 
     if (frame->sp < 0) {
-        fatal_error(1, "Trying to push to a full stack");       /* LCOV_EXCL_LINE */
+        fatal_error(1, "Trying to push to a full stack"); /* LCOV_EXCL_LINE */
     }
     frame->sp--;
     frame->stack[frame->sp] = obj;
@@ -122,14 +121,12 @@ void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
     frame->stack[idx] = obj;
 }
 
-
 /**
  * Fetches the top of the stack. Does not pop anything.
  */
 t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame) {
     return frame->stack[frame->sp];
 }
-
 
 /**
  * Fetches a non-top element form the stack. Does not pop anything.
@@ -141,7 +138,6 @@ t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx) {
 
     return frame->stack[idx];
 }
-
 
 /**
  * Return a constant literal, without converting to an object
@@ -155,7 +151,6 @@ void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx) {
     return c->data.ptr;
 }
 
-
 /**
  * Returns an object from the constant table
  */
@@ -166,8 +161,6 @@ t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx) {
 
     return frame->codeblock->constants_objects[idx];
 }
-
-
 
 /**
  * Store object into the global identifier table. When obj == NULL, it will remove the actual reference (plus object)
@@ -188,10 +181,9 @@ void vm_frame_set_global_identifier(t_vm_stackframe *frame, char *id, t_object *
     }
 }
 
-
 /**
-* Return object from the global identifier table
-*/
+ * Return object from the global identifier table
+ */
 t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
     t_object *obj = (t_object *)ht_find_str(frame->global_identifiers->data.ht, id);
 
@@ -199,12 +191,11 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
     return obj;
 }
 
-
 /**
  * Store object into the local identifier table
  */
 void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object *obj) {
-    t_object *old_obj = (t_object *)ht_replace_str(frame->local_identifiers->data.ht, fqcn, obj);
+    t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, obj);
     if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
         object_release(old_obj);
     }
@@ -218,13 +209,10 @@ void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *fqcn, char *tar
     // Store alias id under the FQCN id, and store that we still need to resolve the object
     vm_frame_set_local_identifier(frame, fqcn, OBJECT_NEEDS_RESOLVING);
 
-    printf("+++ ALIAS: %-20s  --> %s\n", fqcn, target_fqcn);
-
     // Add to the alias table so we know that  alias -> ::some::module::class
     char *val = string_strdup0(target_fqcn);
     ht_add_str(frame->object_aliases, fqcn, val);
 }
-
 
 void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *uqcn, t_object *obj) {
     // Builtin objects do not have a FQCN. They are stored as "numeric", "false", "null" etc..
@@ -238,6 +226,7 @@ void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *uqcn, t_objec
 
 
 #ifdef __DEBUG
+
 void print_debug_table(t_hash_table *ht, char *prefix) {
     t_hash_iter iter;
 
@@ -264,51 +253,105 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 }
 #endif
 
+t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
+#ifdef __DEBUG
+    ht_debug_keys(frame->object_aliases);
+#endif
 
+    char *alias_fqcn = ht_find_str(frame->object_aliases, fqcn);
+    if (! alias_fqcn) {
+        // We need to resolve, but we don't know what.. Should not happen
+        // @TODO: Throw hard error
+        int i = 1;
 
-SEEMS THAT WHEN RUNNING AN IMPORTED FRAME, WE HAVE LOST THE LOCAL VARIABLES. SOMEHOW WE MUST
-MAKE SURE WE CREATE OUR STACKFRAME FROM THE IMPORTED FRAME, NOT FROM THE ACTUAL PARENT.
+    }
 
+    // Resolve and update the local identifiers
+    t_object *obj = vm_class_resolve(frame, alias_fqcn);
+    return obj;
+}
 
-// @TODO: Will only fetch local or builtin. Does not search global identifiers!
-t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id){
+t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
     t_object *obj;
 
     // Find local identifiers (without FQCN)
     obj = ht_find_str(frame->local_identifiers->data.ht, id);
+    if (obj == OBJECT_NEEDS_RESOLVING) {
+        obj = _vm_frame_object_resolve(frame, id);
+        if (obj) {
+            vm_frame_set_local_identifier(frame, id, obj);
+        }
+    }
     if (obj) return obj;
 
     // Check local identifiers, but on FQCN
-    char *fqcn = vm_context_fqcn(frame->codeblock, id);
+    char *fqcn;
+    fqcn = vm_context_fqcn(frame->codeblock->context, id);
+
     obj = ht_find_str(frame->local_identifiers->data.ht, fqcn);
     if (obj == OBJECT_NEEDS_RESOLVING) {
-
-        char *alias_fqcn = ht_find_str(frame->object_aliases, fqcn);
-        if (! alias_fqcn) {
-            // We need to resolve, but we don't know what.. Should not happen
-            // @TODO: Throw hard error
+        obj = _vm_frame_object_resolve(frame, fqcn);
+        if (obj) {
+            vm_frame_set_local_identifier(frame, fqcn, obj);
         }
-
-        // Resolve and update the local identifiers
-        obj = vm_class_resolve(frame, alias_fqcn);
-        vm_frame_set_local_identifier(frame, fqcn, obj);
     }
-    smm_free(fqcn);
-    if (obj) return obj;
+    if (obj) {
+
+        smm_free(fqcn);
+        return obj;
+    }
+
+
+
+    // @TODO: THIS SHOULD NOT BE... IMPORTS SHOULD BE ON LOCAL LIST!
+    obj = ht_find_str(frame->global_identifiers->data.ht, id);
+    if (obj == OBJECT_NEEDS_RESOLVING) {
+#ifdef __DEBUG
+        ht_debug_keys(frame->object_aliases);
+#endif
+        obj = _vm_frame_object_resolve(frame, id);
+        if (obj) {
+            vm_frame_set_global_identifier(frame, id, obj);
+        }
+    }
+    if (obj) {
+        smm_free(fqcn);
+        return obj;
+    }
+
+    obj = ht_find_str(frame->global_identifiers->data.ht, fqcn);
+    if (obj == OBJECT_NEEDS_RESOLVING) {
+#ifdef __DEBUG
+        ht_debug_keys(frame->object_aliases);
+#endif
+        obj = _vm_frame_object_resolve(frame, fqcn);
+        if (obj) {
+            vm_frame_set_global_identifier(frame, fqcn, obj);
+        }
+    }
+    if (obj) {
+        smm_free(fqcn);
+        return obj;
+    }
 
 
     // Check built-ins, but on UQCN
     obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
-        // Resolve and update the builtin identifiers
+        // Resolve and update the builtin identifiers (this should never happen?)
         obj = vm_class_resolve(frame, id);
-        vm_frame_set_builtin_identifier(frame, id, obj);
+        if (obj) {
+            vm_frame_set_builtin_identifier(frame, id, obj);
+        }
     }
-    if (obj) return obj;
+    if (obj) {
+        smm_free(fqcn);
+        return obj;
+    }
 
+    smm_free(fqcn);
     return NULL;
 }
-
 
 /**
  * Same as vm_frame_get_identifier, but does not halt on error (but returns NULL)
@@ -316,16 +359,15 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id){
 t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id) {
     if (! frame) return NULL;
 
-    char *fqcn = vm_context_fqcn(frame->codeblock, id);
-    printf("*** FIND : %-20s  (%s)\n", id, fqcn);
-    smm_free(fqcn);
+//    char *fqcn = vm_context_fqcn(frame->codeblock->context, id);
+//    printf("*** FIND : %-20s  (%s)\n", id, fqcn);
+//    smm_free(fqcn);
 
     t_object *obj = vm_frame_identifier_exists(frame, id);
     if (obj) return obj;
 
     return NULL;
 }
-
 
 /**
  * Returns an identifier name as string
@@ -335,26 +377,29 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
         fatal_error(1, "Trying to fetch from outside identifier range");        /* LCOV_EXCL_LINE */
     }
 
-//#ifdef __DEBUG
-//    DEBUG_PRINT_CHAR("---------------------\n");
-//    DEBUG_PRINT_CHAR("frame identifiers:\n");
-//    for (int i=0; i!=frame->codeblock->bytecode->identifiers_len; i++) {
-//        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeblock->bytecode->identifiers[i]->s);
-//    }
-//    print_debug_table(frame->local_identifiers->ht, "Locals");
-//#endif
+    //#ifdef __DEBUG
+    //    DEBUG_PRINT_CHAR("---------------------\n");
+    //    DEBUG_PRINT_CHAR("frame identifiers:\n");
+    //    for (int i=0; i!=frame->codeblock->bytecode->identifiers_len; i++) {
+    //        DEBUG_PRINT_CHAR("ID %d: %s\n", i, frame->codeblock->bytecode->identifiers[i]->s);
+    //    }
+    //    print_debug_table(frame->local_identifiers->ht, "Locals");
+    //#endif
 
     return frame->codeblock->bytecode->identifiers[idx]->s;
 }
 
-
 /**
-* Creates and initializes a new frame
-*/
+ * Creates and initializes a new frame
+ */
 t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock) {
     DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeblock->context->module.full, parent_frame ? parent_frame->codeblock->context->module.full : "<root>");
+    DEBUG_PRINT_CHAR("THIS FRAME IS BASED ON %08X\n", parent_frame);
+
     t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
-    bzero(frame, sizeof(t_vm_stackframe));
+
+    DEBUG_PRINT_CHAR("THIS FRAME IS %08X\n", frame);
+    bzero(frame, sizeof (t_vm_stackframe));
 
     frame->parent = parent_frame;
     frame->codeblock = codeblock;
@@ -371,7 +416,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
 
     frame->created_user_objects = dll_init();
 
-//    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
+    //    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
@@ -380,7 +425,11 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
     frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
     object_inc_ref((t_object *)frame->local_identifiers);
 
-    frame->object_aliases = ht_create();
+    if (frame->parent == NULL) {
+        frame->object_aliases = ht_create();
+    } else {
+        frame->object_aliases = parent_frame->object_aliases;
+    }
 
     // Set the variable hashes
     if (frame->parent == NULL) {
@@ -392,9 +441,11 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
     }
     object_inc_ref((t_object *)frame->global_identifiers);
 
+    DEBUG_PRINT_CHAR("INIT LOCAL  ADDR: %08X\n", frame->local_identifiers);
+    DEBUG_PRINT_CHAR("INIT GLOBAL ADDR: %08X\n", frame->global_identifiers);
+
     return frame;
 }
-
 
 /**
  *
@@ -402,14 +453,19 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
 void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
 #ifdef __DEBUG
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n\n\n\n",
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n",
         frame->codeblock->context ? frame->codeblock->context->module.full : "<root>");
 
-    #if __DEBUG_STACKFRAME_DESTROY
-        if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
-        if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
-        //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
-    #endif
+    DEBUG_PRINT_CHAR("FINI LOCAL  ADDR: %08X\n", frame->local_identifiers);
+    DEBUG_PRINT_CHAR("FINI GLOBAL ADDR: %08X\n", frame->global_identifiers);
+
+#if __DEBUG_STACKFRAME_DESTROY
+    if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
+    if (frame->global_identifiers && frame->global_identifiers != frame->local_identifiers) {
+        print_debug_table(frame->global_identifiers->data.ht, "Globals");
+    }
+    //if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
+#endif
 #endif
 
 

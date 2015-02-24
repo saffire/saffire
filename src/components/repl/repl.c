@@ -186,7 +186,7 @@ int repl(void) {
     // Initialize runner
     vm_init(sp, VM_RUNMODE_REPL);
 
-    t_vm_context *ctx = vm_context_new("::", NULL);
+    t_vm_context *ctx = vm_context_new("", NULL);
     t_vm_codeblock *codeblock = vm_codeblock_new(NULL, ctx);
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
 

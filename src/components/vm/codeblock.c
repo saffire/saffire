@@ -109,7 +109,7 @@ void vm_codeblock_destroy(t_vm_codeblock *codeblock) {
     }
 
     // Release context
-    vm_context_free_context(codeblock);
+    vm_context_free_context(codeblock->context);
 
     // Release codeblock itself
     smm_free(codeblock);

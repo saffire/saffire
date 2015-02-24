@@ -426,4 +426,28 @@ void ht_debug(t_hash_table *ht) {
     }
 }
 
+
+void ht_debug_keys(t_hash_table *ht) {
+    t_hash_iter iter;
+    ht_iter_init(&iter, ht);
+
+    while (ht_iter_valid(&iter)) {
+        t_hash_key *key = ht_iter_key(&iter);
+        t_string *s;
+        if (key->type == HASH_KEY_STR) {
+            s = char0_to_string(key->val.s);
+        } else if (key->type == HASH_KEY_NUM) {
+            smm_asprintf_string(&s, char0_to_string("%d"), key->val.n);
+        } else if (key->type == HASH_KEY_OBJ) {
+            smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
+        }
+
+        DEBUG_PRINT_STRING_ARGS("%-40s\n", s->val);
+
+        string_free(s);
+        ht_iter_next(&iter);
+    }
+}
+
+
 #endif

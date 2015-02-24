@@ -207,11 +207,11 @@ long object_dec_ref(t_object *obj) {
 }
 
 #ifdef __DEBUG
-char global_debug_info[256];
+char global_debug_info[1256];
 char *object_debug(t_object *obj) {
     if (! obj) return "(null)<0x0>";
 
-    snprintf(global_debug_info, 255, "%s [%c] (%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);
+    snprintf(global_debug_info, 1255, "%s [%c] (%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);
     return global_debug_info;
 
 
@@ -814,7 +814,7 @@ int object_has_interface(t_object *obj, const char *interface_name) {
 
 
 /**
- * Allocate / populate a new instance from the giben object
+ * Allocate / populate a new instance from the given object
  */
 t_object *object_alloc(t_object *obj, int arg_count, ...) {
     va_list arg_list;

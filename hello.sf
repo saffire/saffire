@@ -6,6 +6,7 @@ import notexisting as baz from io;
 // Call the print method from our (imported) io class with a single argument
 io.print("Hello world!\n");
 
+// These are global variables. Because they are created from the global namespace.
 a = 1;
 b = 2 + 3;
 

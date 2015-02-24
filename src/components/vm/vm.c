@@ -231,6 +231,9 @@ static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, i
 //        user_obj->type = parent_class->type;
 //    }
 
+    // Set the frame in which this frame is created
+    user_obj->frame = frame;
+
     // Set name
     user_obj->name = string_strdup0(name);
 
@@ -315,8 +318,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
 
     // Create a new execution frame
-    t_vm_stackframe *parent_frame = thread_get_current_frame();
-    t_vm_stackframe *child_frame = vm_stackframe_new(parent_frame, callable_obj->data.code.external.codeblock);
+    t_vm_stackframe *child_frame = vm_stackframe_new(scope_frame, callable_obj->data.code.external.codeblock);
     child_frame->trace_class = self_obj ? string_strdup0(self_obj->name) : string_strdup0("<anonymous>");
     child_frame->trace_method = string_strdup0(name);
 
@@ -415,7 +417,10 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
  * Check an attribute and if ok, chck
  */
 static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *attrib_obj, t_dll *arg_list) {
-    return _object_call_callable_with_args(self, thread_get_current_frame(), attrib_obj->data.bound_name, (t_callable_object *)attrib_obj->data.attribute, arg_list);
+    // Call on the frame stored in the object. If none is found, use the current frame as the base frame
+    t_vm_stackframe *frame = attrib_obj->frame ? attrib_obj->frame : thread_get_current_frame();
+
+    return _object_call_callable_with_args(self, frame, attrib_obj->data.bound_name, (t_callable_object *)attrib_obj->data.attribute, arg_list);
 }
 
 
@@ -565,14 +570,13 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     while (tb_frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
-                ANSI_BRIGHTGREEN "[%s] %s::%s"
+                ANSI_BRIGHTGREEN "%s.%s"
                 ANSI_BRIGHTGREEN "(<args>)"
                 ANSI_RESET "\n",
                 tb_depth,
                 tb_frame->codeblock->context->file.full ? tb_frame->codeblock->context->file.full : "<none>",
                 getlineno(tb_frame),
                 tb_frame->codeblock->context->module.full ? tb_frame->codeblock->context->module.full : "",
-                tb_frame->trace_class ? tb_frame->trace_class : "",
                 tb_frame->trace_method ? tb_frame->trace_method : ""
             );
         tb_frame = tb_frame->parent;
@@ -749,7 +753,7 @@ dispatch:
                     // Scope of the loading (start from self. or parent.)
                     int scope = oparg2;
 
-                    DEBUG_PRINT_CHAR("Loading attribute: '%s' from '%s' (scope: %s')\n", name, self_obj->name, scope == OBJECT_SCOPE_SELF ? "self" : "parent");
+                    DEBUG_PRINT_CHAR("Loading attribute: '%s' from '%s' (scope: %s)\n", name, self_obj->name, scope == OBJECT_SCOPE_SELF ? "self" : "parent");
 
                     // The object where we start looking for attributes (either self or parent)
                     t_object *offset_obj = self_obj;
@@ -1058,34 +1062,6 @@ dispatch:
                         self = ((t_attrib_object *)obj1)->data.bound_instance;
                     }
 
-/*
-WE NEED TO CALL AN OBJECT FROM THEIR OWN CONTEXT. FOR INSTANCE, WHEN WE CALL A METHOD THAT USES "IO", WE MUST
-MAKE SURE THAT THIS IO CLASS IS INSIDE THE CURRENT FRAME. PROBABLY THE BEST WAY TO DEAL WITH THIS IS TO STORE
-A REFERENCE TO THE FRAME INSIDE AN OBJECT (DO WE?), OR SOMEWAY TO FIGURE OUT NOT ONLY WHAT WE MEAN WITH "IO", BUT
-ALSO IN WHICH FRAME THIS IO CLASS RESIDES.
-
-So:
-    Frame 1:
-        import io;
-        io.print("foobar");
-    Frame 2:
-        import foobar;
-        class io {
-            public method print(s) {
-                foobar.print(s);
-            }
-        }
-        a = 1;
-
-        * uses io-object as located in the io class. We resolve io from the current frame (frame 1).
-        * when we call the print-method, we must make sure we call this from a new stack-frame. However, this stack-frame must
-        * contain the "foobar" reference, the actual io-class, and the variable "a". "a" in this case is a variable known in the
-        * current namespace only. We can reference it as "a", but we cannot reference this from another frame.
-
-*/
-
-
-
                     // Create argument list inside a DLL
                     t_dll *arg_list = dll_init();
 
@@ -1106,6 +1082,7 @@ So:
                         while (ht_iter_valid(&iter)) {
                             t_object *obj = ht_iter_value(&iter);
                             dll_append(arg_list, obj);
+                            object_inc_ref(obj);
                             ht_iter_next(&iter);
                         }
                     }
@@ -1152,30 +1129,25 @@ So:
 
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
-                    char *class_name = string_to_char(OBJ2STR(class_obj));
+                    char *tmp = string_to_char(OBJ2STR(class_obj));
+                    char *class_name = vm_context_get_class(tmp);
+                    smm_free(tmp);
 
                     object_dec_ref(module_obj);
                     object_dec_ref(class_obj);
                     object_dec_ref(alias_obj);
 
-                    // Check for namespace separator, and use only the class name, not the modules.
-                    char *separator_pos = strrchr(class_name, ':');
-                    if (separator_pos != NULL) {
-                        class_name = separator_pos + 1;
-                    }
 
                     // Create FQCN from module and class name
                     char *target_pqcn = NULL;
-                    smm_asprintf_char(&target_pqcn, "%s::%s", module_name, class_name);
-                    char *target_fqcn = vm_context_fqcn(frame->codeblock, target_pqcn);
+                    vm_context_create_fqcn(module_name, class_name, &target_pqcn);
 
-                    char *alias_fqcn = vm_context_fqcn(frame->codeblock, alias_name);
+                    char *alias_fqcn = vm_context_fqcn(frame->codeblock->context, alias_name);
 
-                    vm_frame_set_alias_identifier(frame, alias_fqcn, target_fqcn);
+                    vm_frame_set_alias_identifier(frame, alias_fqcn, target_pqcn);
 
                     smm_free(alias_fqcn);
                     smm_free(target_pqcn);
-                    smm_free(target_fqcn);
 
                     smm_free(module_name);
                     smm_free(class_name);
@@ -1374,6 +1346,9 @@ So:
                     // Create new attribute object
                     dst = object_alloc(Object_Attrib, 7, NULL, "", oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
 
+                    // Set the created frame for this attribute-object
+                    dst->frame = thread_get_current_frame();
+
                     // Push method object
                     vm_frame_stack_push(frame, dst);
                     object_inc_ref(dst);
@@ -1507,7 +1482,7 @@ So:
                     vm_frame_register_userobject(frame, (t_object *)new_obj);
 
                     // Make the class known  (this does not happen with build attribute objects)
-                    char *fqcn = vm_context_fqcn(frame->codeblock, name);
+                    char *fqcn = vm_context_fqcn(frame->codeblock->context, name);
                     vm_frame_set_local_identifier(frame, fqcn, (t_object *)new_obj);
                     smm_free(fqcn);
 
@@ -1753,6 +1728,7 @@ So:
 
                     // Create new object, because we know it's a data-structure, just add them to the list
                     t_object *ret_obj = (t_object *)object_alloc(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
+
                     vm_frame_stack_push(frame, ret_obj);
                     object_inc_ref(ret_obj);
 
@@ -2046,9 +2022,11 @@ t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result)
     // Execute the frame
     DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeblock->context->module.full);
 
-    t_vm_stackframe *current_frame = thread_get_current_frame();
-    t_vm_stackframe *import_frame = vm_stackframe_new(current_frame, codeblock);
-    import_frame->trace_class = string_strdup0(current_frame->trace_class);
+    //t_vm_stackframe *current_frame = thread_get_current_frame();
+    t_vm_stackframe *import_frame = vm_stackframe_new(NULL, codeblock);
+//    import_frame->trace_class = string_strdup0(current_frame->trace_class);
+//    import_frame->trace_method = string_strdup0("#import");
+    import_frame->trace_class = string_strdup0("##");
     import_frame->trace_method = string_strdup0("#import");
 
     if (result) {
@@ -2072,7 +2050,7 @@ void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
     // Import mandatory saffire object
-    char *fqcn = vm_context_fqcn(frame->codeblock, "::saffire");
+    char *fqcn = vm_context_fqcn(frame->codeblock->context, "saffire");
     vm_frame_set_alias_identifier(frame, fqcn, "::saffire::saffire");
     smm_free(fqcn);
 
@@ -2117,7 +2095,7 @@ int vm_execute(t_vm_stackframe *frame) {
 #endif
 
             // handle exceptions
-            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");
+            t_object *saffire_obj = vm_frame_find_identifier(frame, "::saffire");  // THis is an alias to ::saffire::saffire
             if (saffire_obj) {
                 t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
 

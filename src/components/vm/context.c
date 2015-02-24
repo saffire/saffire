@@ -28,8 +28,10 @@
 #include <libgen.h>
 #include "general/output.h"
 #include "vm/codeblock.h"
+#include "vm/context.h"
 #include "general/smm.h"
 #include "debug.h"
+#include "assert.h"
 
 /**
  * Returns the context path from a specified context  (::foo::bar::baz)
@@ -106,16 +108,16 @@ t_vm_context *vm_context_new(char *module_path, char *file_path) {
 /**
  * Frees the context for this codeblock
  */
-void vm_context_free_context(t_vm_codeblock *codeblock) {
-    if (! codeblock || ! codeblock->context) return;
+void vm_context_free_context(t_vm_context *ctx) {
+    if (! ctx) return;
 
-    smm_free(codeblock->context->module.full);
+    smm_free(ctx->module.full);
 
-    smm_free(codeblock->context->file.path);
-    smm_free(codeblock->context->file.base);
-    smm_free(codeblock->context->file.full);
+    smm_free(ctx->file.path);
+    smm_free(ctx->file.base);
+    smm_free(ctx->file.full);
 
-    smm_free(codeblock->context);
+    smm_free(ctx);
 }
 
 
@@ -127,28 +129,30 @@ void vm_context_free_context(t_vm_codeblock *codeblock) {
  * @param classname
  * @return
  */
-char *vm_context_fqcn(t_vm_codeblock *codeblock, char *class_name) {
+char *vm_context_fqcn(t_vm_context *ctx, char *class_name) {
     char *absolute_class_name = NULL;
 
-    // It's already absolute
-    if (strstr(class_name, "::") == class_name) {
-        return string_strdup0(class_name);
-    }
-
-    // If we have a relative name, but we are actually without a code block. Only allowed when
-    // we import from our main file.
-    if (! codeblock) {
-        smm_asprintf_char(&absolute_class_name, "::%s", class_name);
-        return absolute_class_name;
-    }
-
-    t_vm_context *ctx = codeblock->context;
-    if (!strcmp(ctx->module.full, "::")) {
-        // :: main context, don't do double ::
-        smm_asprintf_char(&absolute_class_name, "::%s", class_name);
+    if (vm_context_is_fqcn(class_name)) {
+        smm_asprintf_char(&absolute_class_name, "%s", class_name);
     } else {
-        smm_asprintf_char(&absolute_class_name, "%s::%s", ctx->module.full, class_name);
+        vm_context_create_fqcn(ctx->module.full, class_name, &absolute_class_name);
     }
 
     return absolute_class_name;
+}
+
+void vm_context_create_fqcn(char *pre, char *post, char **fqcn) {
+    if (vm_context_is_fqcn(post)) {
+        // ::foo  + ::bar ==> ::foo::bar
+        smm_asprintf_char(fqcn, "%s%s", pre, post);
+    } else {
+        // ::foo  + bar ==> ::foo::bar
+        smm_asprintf_char(fqcn, "%s::%s", pre, post);
+    }
+}
+
+
+int vm_context_is_fqcn(char *class_name) {
+    int i = (strstr(class_name, "::") == class_name);
+    return i;
 }

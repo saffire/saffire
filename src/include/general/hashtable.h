@@ -123,6 +123,7 @@
 
 #ifdef __DEBUG
     void ht_debug(t_hash_table *ht);
+    void ht_debug_keys(t_hash_table *ht);
 #endif
 
 

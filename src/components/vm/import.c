@@ -47,7 +47,11 @@ const char *module_search_paths[] = {
     ".",                                    // Should always be first
     "./modules",                            // Should always be second
     "/usr/share/saffire/modules",           // From here it should be customizable
-    "/usr/share/saffire/modules/sfl",
+    NULL
+};
+
+const char *module_searches[] = {
+    "::sfl",
     NULL
 };
 
@@ -59,13 +63,13 @@ t_hash_table *global_class_mapping;
 
 
 typedef struct _vm_module_mapping {
-    t_vm_stackframe *frame;     // or null when not resolved yet.
+    t_vm_stackframe *frame;             // or null when not resolved yet.
 } t_vm_module_mapping;
 
 // class mapping
 typedef struct _vm_class_mapping {
-    t_vm_module_mapping *module;    // Module mapping
-    t_object *object;               // Actual object from module map (or NULL when not resolved yet)
+    t_vm_module_mapping *module;        // Module mapping
+    t_object *object;                   // Actual object from module map (or NULL when not resolved yet)
 } t_vm_class_mapping;
 
 
@@ -279,10 +283,7 @@ static t_object *_resolve_class_from_module(char *fqcn, t_vm_module_mapping *mod
 }
 
 
-t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn) {
-
-    printf("!!! RESOL: %-20s\n", fqcn);
-    
+t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
     // Find the actual class in the class_mapping
 
     // Check if we already imported the class
@@ -312,7 +313,7 @@ t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn) {
 
             module_map = smm_malloc(sizeof(t_vm_module_mapping));
             module_map->frame = module_frame;
-            ht_add_str(global_module_mapping, fqmn, module_frame);
+            ht_add_str(global_module_mapping, fqmn, module_map);
         }
         smm_free(fqmn);
 
@@ -331,4 +332,35 @@ t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn) {
     }
 
     return class_map->object;
+}
+
+t_object *vm_class_resolve(t_vm_stackframe *frame, char *qcn) {
+    t_object *obj;
+
+    // Check FQCN
+    char *fqcn = vm_context_fqcn(frame->codeblock->context, qcn);
+    obj = _class_resolve(frame, fqcn);
+    smm_free(fqcn);
+    if (obj) {
+        return obj;
+    }
+
+    // Iterate all module search paths to see if those FQCN's fit
+    char **ptr = (char **)&module_searches;
+    while (*ptr) {
+        char *fqcn;
+        vm_context_create_fqcn(*ptr, qcn, &fqcn);
+
+        obj = _class_resolve(frame, fqcn);
+        smm_free(fqcn);
+        if (obj) {
+            return obj;
+        }
+
+        // Check next module
+        ptr++;
+    }
+
+    // Nothing more to search
+    return NULL;
 }

@@ -33,8 +33,6 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
-
-        t_vm_stackframe *frame;      // The frame in which the class is defined.
     } t_user_object;
 
     t_user_object Object_User_struct;

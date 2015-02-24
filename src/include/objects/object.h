@@ -35,6 +35,8 @@
 
     void vm_populate_builtins(const char *name, t_object *obj);
 
+
+
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
         void (*populate)(t_object *, t_dll *);      // Populates an object with new values
@@ -162,6 +164,8 @@
         t_object_funcs *funcs;          /* Functions for internal maintenance (new, free, clone etc) */ \
         \
         int data_size;                  /* Additional data size. If 0, no additional data is used in this object */ \
+        \
+        struct _vm_stackframe *frame;         /* The frame in which this object is born */
 
 
     // Actual "global" object. Every object is typed on this object.
@@ -181,7 +185,8 @@
                 interfaces,     /* implements */           \
                 NULL,           /* attribute */            \
                 funcs,          /* functions */            \
-                data_size       /* data lenght */          \
+                data_size,      /* data lenght */          \
+                NULL            /* frame */                \
 
     // Object header initialization without any functions or base
     #define OBJECT_HEAD_INIT(name, type, flags, funcs, data_size) \

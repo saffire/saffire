@@ -50,7 +50,8 @@
 
         union {
             struct {
-                struct _vm_codeblock *codeblock;                    // Internal codeblock
+                struct _vm_codeblock *codeblock;                    // External codeblock
+                struct _vm_stackframe *frame;                       // Running in this stackframe (with local vars etc)
             } external;
             struct {
                 t_object *(*native_func)(t_object *, t_dll *);      // internal function

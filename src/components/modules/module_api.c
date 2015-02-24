@@ -66,7 +66,7 @@ int register_module(t_module *mod) {
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
         char *key;
-        smm_asprintf_char(&key, "%s::%s", mod->name, obj->name);
+        vm_context_create_fqcn(mod->name, obj->name, &key);
         vm_populate_builtins(key, obj);
         smm_free(key);
 

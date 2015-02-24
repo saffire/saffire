@@ -32,11 +32,13 @@
     char *vm_context_get_path(char *full_namespace);
     char *vm_context_get_class(char *full_namespace);
 
-    t_vm_context *vm_context_duplicate(t_vm_context *src);
-    char *vm_context_fqcn(t_vm_codeblock *codeblock, char *class_name);
-
     t_vm_context *vm_context_new(char *module_path, char *file_path);
-    void vm_context_free_context(t_vm_codeblock *codeblock);
+    void vm_context_free_context(t_vm_context *ctx);
+    t_vm_context *vm_context_duplicate(t_vm_context *src);
+
+    char *vm_context_fqcn(t_vm_context *ctx, char *class_name);
+    void vm_context_create_fqcn(char *pre, char *post, char **fqcn);
+    int vm_context_is_fqcn(char *class_name);
 
 
 #endif

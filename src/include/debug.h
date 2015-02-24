@@ -49,7 +49,7 @@
 
     #ifndef __DEBUG_STACK
         // Display stack pushes and pops
-        #define __DEBUG_STACK        1
+        #define __DEBUG_STACK        0
     #endif
     #ifndef __DEBUG_VM_OPCODES
         // Display VM opcodes

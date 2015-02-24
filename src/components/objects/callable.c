@@ -31,6 +31,7 @@
 #include "objects/objects.h"
 #include "general/smm.h"
 #include "general/md5.h"
+#include "vm/thread.h"
 #include "debug.h"
 
 

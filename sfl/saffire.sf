@@ -25,11 +25,25 @@ class saffire {
      * Called when an exception has been thrown, but not handled
      */
     static public method uncaughtExceptionHandler(exception e) {
-        io.print("Uncaught exception detected!\n");
-        io.print("  File: ", e.getFile(), "(", e.getLine(),")\n");
+        io.print("                         _   _                 \n");
+        io.print("                        | | (_)                \n");
+        io.print("  _____  _____ ___ _ __ | |_ _  ___  _ __      \n");
+        io.print(" / _ \\ \\/ / __/ _ \\ `_ \\| __| |/ _ \\| `_ \\     \n");
+        io.print("|  __/>  < (_|  __/ |_) | |_| | (_) | | | |    \n");
+        io.print(" \\___/_/\\_\\___\\___| .__/ \\__|_|\\___/|_| |_|    \n");
+        io.print("                  | |                          \n");
+        io.print("                  |_|                          \n");
+        io.print("\n");
+        io.print("-------------------------------------------\n");
+        io.print("  File: ", e.getFile(), " (", e.getLine(), ")\n");
         io.print("  Code: ", e.getCode(), "\n");
         io.print("  Mesg: ", e.getMessage(), "\n");
-        //io.printf("Uncaught exception detected at file %s, line %d: %s (code: %d)\n", e.getFile(), e.getLine(), e.getMessage(), e.getCode());
+        io.print("-------------------------------------------\n");
+        io.print("\n");
+        io.print("-------------------------------------------\n");
+        io.print("Here will be a backtrace very soon...\n");
+        io.print("-------------------------------------------\n");
+
         return e.getCode();
     }
 
