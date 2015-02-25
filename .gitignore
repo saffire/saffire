@@ -20,6 +20,8 @@ nbproject/*
 .deps
 .dirstamp
 
+# modules
+modules/*
 
 # Saffire files
 .saffire_history

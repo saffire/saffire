@@ -156,6 +156,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         // If we have values on the calling arg list, use the next value, overriding any default values set.
         if (given_count) {
             obj = e ? e->data : NULL;
+            given_count--;
         }
 
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
@@ -192,7 +193,6 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         object_inc_ref(obj);
 
         need_count--;
-        given_count--;
 
         // Next needed element
         ht_iter_next(&iter);
@@ -321,7 +321,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
         if (e) strcat(args, ", ");
     }
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
-    printf("%s\n", context);
+    //    printf("%s\n", context);
 
     // Create a new execution frame
     t_vm_stackframe *child_frame = vm_stackframe_new(scope_frame, callable_obj->data.code.external.codeblock);

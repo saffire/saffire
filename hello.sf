@@ -1,5 +1,6 @@
-// imports the io class into the current namespace
+// imports the io class from the io module as "io" into the current namespace
 import io;
+// Import framework and http request
 import Noxlogic::Framework;
 import Noxlogic::Framework::Http::Request;
 
@@ -11,39 +12,12 @@ request = Request();
 request.setHttpMethod("get");
 request.setUrl("http://saffire-lang.org");
 
+// Request is automatically cast to string by the "print" method. (calls request.__string())
 io.print(request, "\n");
 
 // Run the framework
 app = Framework();
 response = app.run(request);
 
+// Response is automatically cased: response.__string()
 io.print("Response: ", response);
-
-/*
-
-class bar {
-    public method foo(b) {
-        return 1;
-    }result
-}
-
-class foo {
-    public property a = 2;
-
-    public method bar(numerical b) {
-        self.foo(b);
-        return self.a * b;
-    }
-
-    public method foo(b) {
-        tmp = bar();
-        tmp.foo(b);
-    }
-}
-
-io.print("Oh hai again!\n");
-f = foo();
-b = f.bar(5);
-io.print("The number is ",b," and ", f.bar(7),".\n");
-
-*/
