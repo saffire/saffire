@@ -651,7 +651,7 @@ class_property_definition:
 ;
 
 class_constant_definition:
-        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_PROPERTY, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
+        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_CONSTANT, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
 ;
 
 

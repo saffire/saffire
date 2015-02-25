@@ -3,7 +3,6 @@ import io;
 import Noxlogic::Framework;
 import Noxlogic::Framework::Http::Request;
 
-
 // Call the print method from our (imported) io class with a single argument
 io.print("Hello world!\n");
 
@@ -12,9 +11,13 @@ request = Request();
 request.setHttpMethod("get");
 request.setUrl("http://saffire-lang.org");
 
+io.print(request, "\n");
+
 // Run the framework
 app = Framework();
 response = app.run(request);
+
+io.print("Response: ", response);
 
 /*
 

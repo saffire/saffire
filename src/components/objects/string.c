@@ -64,6 +64,8 @@ static void string_change_locale(t_string_object *str_obj, char *locale) {
 
 static t_string_object *string_create_new_object(t_string *str, char *locale) {
     t_string_object *uc_obj = (t_string_object *)object_alloc(Object_String, 0);
+    object_inc_ref((t_object *)uc_obj);
+
     uc_obj->data.value = str;
     uc_obj->data.locale = string_strdup0(locale);
 

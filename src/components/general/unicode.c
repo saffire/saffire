@@ -129,7 +129,8 @@ int utf8_strcmp(t_string *s1, t_string *s2) {
     utf8_from_string(s1);
     utf8_from_string(s2);
 
-    if ((res = u_memcmp(s1->unicode, s2->unicode, len))) return res;
+    res = u_memcmp(s1->unicode, s2->unicode, len);
+    if (! res) return res;
     return s1->len > s2->len ? 1 : -1;
 }
 

@@ -124,6 +124,11 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
     t_hash_table *ht = callable->data.arguments;
     t_dll_element *e = DLL_HEAD(arg_list);
 
+#ifdef __DEBUG
+    printf(" DEBUGGING HT KEYS OF PARSE CALLING ARGUMENTS\n");
+    ht_debug_keys(ht);
+#endif
+
     int need_count = ht->element_count;
     int given_count = arg_list->size;
 
@@ -316,6 +321,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
         if (e) strcat(args, ", ");
     }
     snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
+    printf("%s\n", context);
 
     // Create a new execution frame
     t_vm_stackframe *child_frame = vm_stackframe_new(scope_frame, callable_obj->data.code.external.codeblock);
@@ -358,8 +364,13 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
  *
  */
 static int _check_attribute_for_static_call(t_object *self, t_attrib_object *attrib_obj) {
+    // Calls to constants are ok from both instance and class
+    if (ATTRIB_IS_CONSTANT(attrib_obj)) {
+        return 1;
+    }
+
     if (! OBJECT_TYPE_IS_CLASS(self)) {
-        // instance, so always ok
+        // calls from an instance are ok (@TODO: Really, should static calls from dynamic be not ok)
         return 1;
     }
 
@@ -1352,6 +1363,11 @@ dispatch:
                         // @TODO: this means we cannot re-use the same codeblock with different args (which makes sense). Make sure
                         // this works.
                         ((t_callable_object *)value_obj)->data.arguments = arg_list;
+
+#ifdef __DEBUG
+                        printf("\n\n\n\n\n\n\n\n *** ARG LIST ****\n\n\n\n\n\n\n");
+                        ht_debug_keys(arg_list);
+#endif
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
