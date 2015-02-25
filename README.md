@@ -27,12 +27,12 @@ Installing Saffire
 ------------------
 There are two ways to install Saffire. The easy way, and the hard way :) The easy way consists of setting up a
 virtualbox environment that will automatically install everything you need through the help of vagrant. The hard way,
-well, you do everything yourself. Please read the information in the documentation/Installation.md file on how to install
-Saffire.
+well, you do everything yourself. Please read the information in the [installation file](documentation/Installation.md)
+on how to install Saffire.
 
 
 Using Saffire
 -------------
 Saffire is under construction and experience heavy redesign on occasion for as long as we haven't hit a stable release.
 Obviously, the closer we get, the less things will change and the current base is getting pretty solid fortunately.
-Please checkout the documentation/Usage.md file in order to figure out how to start with Saffire.
+Please checkout the [usage documentation](documentation/Usage.md) file in order to figure out how to start with Saffire.
