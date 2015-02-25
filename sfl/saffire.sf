@@ -35,13 +35,14 @@ class saffire {
         io.print("                  |_|                          \n");
         io.print("\n");
         io.print("-------------------------------------------\n");
-        io.print("  File: ", e.getFile(), " (", e.getLine(), ")\n");
         io.print("  Code: ", e.getCode(), "\n");
         io.print("  Mesg: ", e.getMessage(), "\n");
         io.print("-------------------------------------------\n");
         io.print("\n");
         io.print("-------------------------------------------\n");
-        io.print("Here will be a backtrace very soon...\n");
+        foreach (e.getStackTrace() as v) {
+            io.print(v,"\n");
+        }
         io.print("-------------------------------------------\n");
 
         return e.getCode();

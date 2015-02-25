@@ -262,8 +262,6 @@ t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
     if (! alias_fqcn) {
         // We need to resolve, but we don't know what.. Should not happen
         // @TODO: Throw hard error
-        int i = 1;
-
     }
 
     // Resolve and update the local identifiers
@@ -452,7 +450,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
  */
 void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
-#ifdef __DEBUG
+#ifdef __DEBUG_STACKFRAME
     DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n",
         frame->codeblock->context ? frame->codeblock->context->module.full : "<root>");
 

@@ -49,7 +49,7 @@
 
     #ifndef __DEBUG_STACK
         // Display stack pushes and pops
-        #define __DEBUG_STACK        0
+        #define __DEBUG_STACK        1
     #endif
     #ifndef __DEBUG_VM_OPCODES
         // Display VM opcodes
@@ -61,7 +61,7 @@
     #endif
     #ifndef __DEBUG_STACKFRAME_DESTROY
         // Display variables when destroying stackframe
-        #define __DEBUG_STACKFRAME_DESTROY  1
+        #define __DEBUG_STACKFRAME_DESTROY  0
     #endif
     #ifndef __DEBUG_REFCOUNT
         // Display ref counts

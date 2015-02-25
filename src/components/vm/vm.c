@@ -822,6 +822,10 @@ dispatch:
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
                     t_object *search_obj = vm_frame_stack_pop(frame);
 
+#ifdef __DEBUG
+                    ht_debug(search_obj->attributes);
+#endif
+
                     s = string_to_char(OBJ2STR(name_obj));
                     t_attrib_object *attrib_obj = object_attrib_find(search_obj, s);
                     smm_free(s);
@@ -841,12 +845,25 @@ dispatch:
                         goto block_end;
                     }
 
-                    // @TODO: if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
                     // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
+
                     t_object *value = vm_frame_stack_pop(frame);
-                    s = string_to_char(OBJ2STR(name_obj));
-                    object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
-                    smm_free(s);
+                    if (attrib_obj) {
+                        // Decrease reference of original value
+                        if (attrib_obj->data.attribute) {
+                            object_dec_ref(attrib_obj->data.attribute);
+                        }
+
+                        // Set to new value
+                        attrib_obj->data.attribute = value;
+                        object_inc_ref(value);
+
+                    } else {
+                        // if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
+                        s = string_to_char(OBJ2STR(name_obj));
+                        object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
+                        smm_free(s);
+                    }
 
                     object_dec_ref(value);
                     object_dec_ref(search_obj);

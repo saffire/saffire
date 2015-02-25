@@ -30,8 +30,9 @@
     #include "objects/object.h"
 
     typedef struct {
-        t_string    *message;
-        long        code;
+        t_string        *message;       // Exception message
+        long            code;           // Exception code
+        t_hash_table    *stacktrace;    // Stacktrace list
     } t_exception_object_data;
 
     typedef struct _exeption_object {

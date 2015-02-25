@@ -30,6 +30,7 @@
 #include "general/config.h"
 #include "vm/thread.h"
 #include "general/smm.h"
+#include "vm/vm.h"
 
 
 // Current running thread. Don't change directly, but only through thread_switch() methods.
@@ -80,11 +81,36 @@ int thread_exception_thrown(void) {
     return (current_thread->exception != NULL);
 }
 
+int getlineno(t_vm_stackframe *frame);
+
 /**
  * Creates a new exception based on the base class, on the code and message given
  */
 void thread_create_exception(t_exception_object *exception, int code, const char *message) {
-    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 2, code, char0_to_string(message));
+
+    // Create stack trace array
+    t_hash_table *stacktrace = ht_create();
+
+    t_vm_stackframe *frame = thread_get_current_frame();
+    int depth = 0;
+    while (frame) {
+        char *s = NULL;
+        smm_asprintf_char(&s, "#%d %s:%d %s.%s (<args>)",
+            depth,
+            frame->codeblock->context->file.full ? frame->codeblock->context->file.full : "<none>",
+            getlineno(frame),
+            frame->codeblock->context->module.full ? frame->codeblock->context->module.full : "",
+            frame->trace_method ? frame->trace_method : ""
+        );
+
+        t_string_object *str = (t_string_object *)object_alloc(Object_String, 2, strlen(s), s);
+        ht_add_num(stacktrace, stacktrace->element_count, str);
+
+        frame = frame->parent;
+        depth++;
+    }
+
+    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 3, code, char0_to_string(message), stacktrace);
     current_thread->exception_frame = thread_get_current_frame();
 }
 

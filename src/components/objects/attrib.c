@@ -64,6 +64,9 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
     // Set refcount
     dup->ref_count = 1;
 
+    // As there are now two attributes referencing the same attribute-value, increase the value as well.
+    object_inc_ref(dup->data.attribute);
+
 //    // @TODO: So we keep a list of max 100 duplicated attributes. But we don't use it for caching, but just to make sure that our
 //    // attribute doesn't get eaten by the GC. Fix this into something a bit better...
 //

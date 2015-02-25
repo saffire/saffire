@@ -40,14 +40,22 @@
 SAFFIRE_METHOD(exception, ctor) {
     t_string_object *msg_obj;
     t_numerical_object *code_obj;
+    t_list_object *stacktrace_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj, (t_object *)&stacktrace_obj)) {
         return NULL;
     }
 
     self->data.message = string_strdup(msg_obj->data.value);
+    self->data.code = 0;
+    self->data.stacktrace = NULL;
+
     if (code_obj) {
         self->data.code = code_obj->data.value;
+    }
+
+    if (stacktrace_obj) {
+        self->data.stacktrace = stacktrace_obj->data.ht;
     }
 
     RETURN_SELF;
@@ -100,22 +108,31 @@ SAFFIRE_METHOD(exception, setcode) {
     RETURN_SELF;
 }
 
-SAFFIRE_METHOD(exception, getline) {
-    t_vm_stackframe *stackframe = thread_get_exception_frame();
+//SAFFIRE_METHOD(exception, getline) {
+//    t_vm_stackframe *stackframe = thread_get_exception_frame();
+//
+//    RETURN_NUMERICAL(stackframe->lineno_current_line);
+//}
+//
+//SAFFIRE_METHOD(exception, getfile) {
+//    t_vm_stackframe *stackframe = thread_get_exception_frame();
+//
+//    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->file.full);
+//}
+//
+//SAFFIRE_METHOD(exception, getclass) {
+//    t_vm_stackframe *stackframe = thread_get_exception_frame();
+//
+//    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->module.full);
+//}
 
-    RETURN_NUMERICAL(stackframe->lineno_current_line);
-}
+SAFFIRE_METHOD(exception, getstacktrace) {
+    if (self->data.stacktrace == NULL) {
+        // @TODO: Return empty hashtable?
+        RETURN_NULL;
+    }
 
-SAFFIRE_METHOD(exception, getfile) {
-    t_vm_stackframe *stackframe = thread_get_exception_frame();
-
-    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->file.full);
-}
-
-SAFFIRE_METHOD(exception, getclass) {
-    t_vm_stackframe *stackframe = thread_get_exception_frame();
-
-    RETURN_STRING_FROM_CHAR(stackframe->codeblock->context->module.full);
+    RETURN_LIST(self->data.stacktrace);
 }
 
 
@@ -174,9 +191,11 @@ void object_exception_init(void) {
     object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
     object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getFile",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getfile);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getClass",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getclass);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getLine",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getline);
+//    object_add_internal_method((t_object *)&Object_Exception_struct, "getFile",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getfile);
+//    object_add_internal_method((t_object *)&Object_Exception_struct, "getClass",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getclass);
+//    object_add_internal_method((t_object *)&Object_Exception_struct, "getLine",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getline);
+
+    object_add_internal_method((t_object *)&Object_Exception_struct, "getStackTrace", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getstacktrace);
 
     object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
     object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
@@ -198,7 +217,13 @@ void object_exception_fini(void) {
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_exception_object *exception_obj = (t_exception_object *)obj;
 
+    exception_obj->data.code = 0;
+    exception_obj->data.message = NULL;
+    exception_obj->data.stacktrace = NULL;
+
+
     t_dll_element *e = DLL_HEAD(arg_list);
+
     // Optional (numerical) code
     if (e != NULL) {
         exception_obj->data.code = (int)e->data;
@@ -207,6 +232,12 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (e != NULL) {
         exception_obj->data.message = (t_string *)e->data;
+        e = DLL_NEXT(e);
+    }
+
+    // Optional (stack) trace
+    if (e != NULL) {
+        exception_obj->data.stacktrace = (t_hash_table *)e->data;
         e = DLL_NEXT(e);
     }
 }
