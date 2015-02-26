@@ -78,19 +78,19 @@
 
 
     struct _bytecode {
-        unsigned int stack_size;                // Maximum stack size for this bytecode
+        unsigned long stack_size;                // Maximum stack size for this bytecode
 
-        unsigned int code_len;                  // Length of the code
+        unsigned long code_len;                  // Length of the code
         unsigned char *code;                    // Actual binary code
 
-        unsigned int constants_len;             // Number of constants
+        unsigned long constants_len;             // Number of constants
         t_bytecode_constant **constants;        // Pointer to constant array
 
-        unsigned int identifiers_len;           // Number of identifiers
+        unsigned long identifiers_len;           // Number of identifiers
         t_bytecode_identifier **identifiers;    // Pointer to identifier array
 
-        unsigned int lino_offset;               // Initial linenumber offset
-        unsigned int lino_length;               // Length of linenumbers offset block
+        unsigned long lino_offset;               // Initial linenumber offset
+        unsigned long lino_length;               // Length of linenumbers offset block
         unsigned char *lino;                    // Linenumber offsets
     };
 

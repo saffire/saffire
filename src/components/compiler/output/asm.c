@@ -304,8 +304,8 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
             _add_codebyte(frame, line->opcode);
 
             if (line->lineno != 0 && line->lineno != old_lineno) {
-                int delta_lineno = line->lineno - old_lineno;
-                int delta_codeoff = opcode_off - old_opcode_off;
+                long delta_lineno = line->lineno - old_lineno;
+                long delta_codeoff = opcode_off - old_opcode_off;
                 old_opcode_off = opcode_off;
                 old_lineno = line->lineno;
 
