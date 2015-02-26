@@ -334,7 +334,7 @@ void object_numerical_init(void) {
     Object_Numerical_struct.funcs->cache = NULL;
 
 
-    int value = NUMERICAL_CACHED_MIN;
+    long value = NUMERICAL_CACHED_MIN;
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
         numerical_cache[i] = (t_numerical_object *)object_alloc(Object_Numerical, 1, value);
         object_inc_ref((t_object *)numerical_cache[i]);
@@ -401,7 +401,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    long value = (long)e->data;
+    signed long value = (signed long)e->data;
 
     num_obj->data.value = value;
 }
