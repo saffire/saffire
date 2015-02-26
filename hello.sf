@@ -1,3 +1,15 @@
+import io;
+try {
+    i = 1;
+    throw exception("this is foobarred", 123);
+    io.print("Didn't throw anything :( \n");
+} catch(exception e) {
+    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+}
+
+
+/*
+
 // imports the io class from the io module as "io" into the current namespace
 import io;
 // Import framework and http request
@@ -21,3 +33,5 @@ response = app.run(request);
 
 // Response is automatically cased: response.__string()
 io.print("Response: ", response);
+
+*/

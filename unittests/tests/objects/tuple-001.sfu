@@ -8,9 +8,13 @@ t = tuple[["foo", "bar", "baz"]];
 io.print(t.get(0), "\n");
 io.print(t.get(2), "\n");
 io.print(t.get(1), "\n");
-io.print(t.get(3), "\n");
 ====
 foo
 baz
 bar
+@@@@
+import io;
+t = tuple[["foo", "bar", "baz"]];
+io.print(t.get(3), "\n");
+~~~~
 Index out of range

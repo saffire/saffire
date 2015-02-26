@@ -8,9 +8,9 @@ class myexception extends exception { }
 
 try {
     i = 1;
-    throw myexception("foobar", 100);
+    throw myexception("foobar", 100, null);
 } catch (exception e) {
-    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
+    io.print(e.__name(), ": ", e.getMessage(), "(", e.getCode(), ")\n");
 }
 =====
 myexception: foobar(100)

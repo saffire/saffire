@@ -20,5 +20,5 @@ import io;
 foreach (list.sequence(10,20,0) as v) {
     io.print(v);
 }
-=====
+~~~~~
 'skip' must be 1 or higher

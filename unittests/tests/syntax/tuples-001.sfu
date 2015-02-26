@@ -55,5 +55,5 @@ io.print(a,b,c,d);
 import io;
 (a, b, c, d) = (1);
 io.print(a,b,c,d);
-====
+~~~~
 Argument is not a tuple

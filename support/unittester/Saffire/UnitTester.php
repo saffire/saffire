@@ -278,8 +278,11 @@ class UnitTester {
         $outputExpected = false;
 
         // Split source and expected output
-        $pattern = "/^====+\n/m";
-        $tmp = preg_split($pattern, $test, 2);
+        $pattern = "/^(=+|~+)\n/m";
+        $tmp = preg_split($pattern, $test, 2, PREG_SPLIT_DELIM_CAPTURE);
+
+        // When it's split by =====, we want strict matching, ~~~~ fuzzy: as long as the text is somewhere in the output
+        $match_strict = ($tmp[1][1] == '=');
 
         // Generate temp file(name)
         $tmpFile = tempnam($tmpDir, "saffire_test");
@@ -289,8 +292,8 @@ class UnitTester {
         $tmp[1] = trim($tmp[1]);
         if (! empty($tmp[1])) {
             $outputExpected = true;
-            $tmp[1] = preg_replace("/\n$/", "", $tmp[1]);
-            file_put_contents($tmpFile.".exp", $tmp[1]);
+            $tmp[1] = preg_replace("/\n$/", "", $tmp[2]);
+            file_put_contents($tmpFile.".exp", $tmp[2]);
         }
 
 
@@ -319,7 +322,14 @@ class UnitTester {
 
         if ($outputExpected) {
             // We expect certain output. Let's try and diff it..
-            if (! diff_it($tmpFile.".out", $tmpFile.".exp", $output)) {
+
+            if ($match_strict) {
+                $error = ! diff_it($tmpFile . ".out", $tmpFile . ".exp", $output);
+            } else {
+                $error = ! find_lines($tmpFile . ".out", $tmpFile . ".exp", $output);
+            }
+
+            if ($error) {
                 $tmp = "";
                 $tmp .= "Error in ".$this->_current['filename']." (test $testno, line $lineno)\n";
                 $tmp .= join("\n", $output);
@@ -379,6 +389,19 @@ cleanup:
         return true;
     }
 
+}
+
+
+function find_lines($in_name, $exp_name, &$output) {
+    $output = array();
+
+    $f1 = @file_get_contents($in_name);
+    $f2 = @file_get_contents($exp_name);
+
+    $f1 = trim($f1);
+    $f2 = trim($f2);
+
+    return (strstr($f1, $f2) !== false);
 }
 
 

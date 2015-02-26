@@ -40,22 +40,16 @@
 SAFFIRE_METHOD(exception, ctor) {
     t_string_object *msg_obj;
     t_numerical_object *code_obj;
-    t_list_object *stacktrace_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj, (t_object *)&stacktrace_obj)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj)) {
         return NULL;
     }
 
     self->data.message = string_strdup(msg_obj->data.value);
     self->data.code = 0;
-    self->data.stacktrace = NULL;
 
     if (code_obj) {
         self->data.code = code_obj->data.value;
-    }
-
-    if (stacktrace_obj) {
-        self->data.stacktrace = stacktrace_obj->data.ht;
     }
 
     RETURN_SELF;
