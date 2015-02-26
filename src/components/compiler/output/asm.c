@@ -71,7 +71,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
             fatal_error(1, "Cannot find label '%s'\n", label);  /* LCOV_EXCL_LINE */
         }
         // Fetch the offset of the label so we can patch it
-        unsigned int label_offset = (int)ht_find_str(frame->label_offsets, bp->label);
+        unsigned int label_offset = (intptr_t)ht_find_str(frame->label_offsets, bp->label);
 
         // We need to add an offset to our patching. This is because relative items are calculated from the LAST
         // operand read. The current operand does not have to be the last one for this opcode.
@@ -389,7 +389,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
         e = DLL_HEAD(tc)->next;     // Skip first element.
         dll_append(tc, (void *)0);  // Add trailing marker
         while (e) {
-            int i = (int)e->data;
+            int i = (intptr_t)e->data;
             frame->lino[j++] = (unsigned char)(i & 0xFF);
             e = DLL_NEXT(e);
         }

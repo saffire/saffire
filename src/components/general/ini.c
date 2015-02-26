@@ -342,7 +342,7 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
 
         if (ht_exists_str(ini->_private.section_endings, section)) {
             // Section already exists. Find the offset of the last line in that section
-            offset = (int)ht_find_str(ini->_private.section_endings, section);
+            offset = (intptr_t)ht_find_str(ini->_private.section_endings, section);
         } else {
             // Append the new section at the end of the file
             dll_append(ini->_private.ini_lines, string_strdup0(""));

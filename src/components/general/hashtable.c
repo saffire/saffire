@@ -363,7 +363,7 @@ t_hash_key *ht_key_create(int type, void *val) {
             break;
         case HASH_KEY_NUM :
             hk->type = HASH_KEY_NUM;
-            hk->val.n = (int)val;
+            hk->val.n = (intptr_t)val;
             break;
         default:
         case HASH_KEY_OBJ :
