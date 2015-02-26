@@ -68,13 +68,13 @@
         t_hash_table *label_offsets;        // Declared labels
         t_dll *backpatch_offsets;           // Label references
 
-        int stack_size;                     // Maximum stack size needed for this frame
+        long stack_size;                     // Maximum stack size needed for this frame
 
-        int alloc_len;                      // Length currently allocated inside *bytecode
-        int code_len;                       // Length of the bytecode
+        long alloc_len;                      // Length currently allocated inside *bytecode
+        long code_len;                       // Length of the bytecode
         char *code;                         // Actual bytecode
 
-        int lino_len;                       // Line numbers length
+        long lino_len;                       // Line numbers length
         char *lino;                         // compacted line numbers
     } t_asm_frame;
 
