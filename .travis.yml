@@ -10,7 +10,6 @@ before_script:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev
-  - sudo apt-get install libicu-dev
   - sudo apt-get install -qq php5-cli php-pear
   - sudo apt-get install -qq libcunit1-dev
   - printf "\n" | sudo pecl install yaml
@@ -19,3 +18,5 @@ before_install:
 env:
     SAFFIRE_TEST_BIN=build/release/saffire
 script: ./build.sh && sh unittest.sh
+notifications:
+  irc: "irc.freenode.org#saffire"
