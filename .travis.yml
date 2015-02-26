@@ -13,7 +13,7 @@ before_install:
   - sudo sh -c 'echo "extension = yaml.so" >> /etc/php5/cli/php.ini'
 
 env:
-    SAFFIRE_TEST_BIN=src/saffire
-script: ./configure && make && make check && sh unittest.sh
+    SAFFIRE_TEST_BIN=build/release/saffire
+script: ./build.sh && sh unittest.sh
 notifications:
   irc: "irc.freenode.org#saffire"
