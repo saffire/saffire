@@ -220,8 +220,8 @@ SAFFIRE_METHOD(string, splice) {
         return NULL;
     }
 
-    long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
-    long max = OBJECT_IS_NULL(max_obj) ? self->data.value->len : OBJ2NUM(max_obj);
+    signed long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
+    signed long max = OBJECT_IS_NULL(max_obj) ? self->data.value->len : OBJ2NUM(max_obj);
 
     if (min == 0 && max == 0) RETURN_SELF;
 

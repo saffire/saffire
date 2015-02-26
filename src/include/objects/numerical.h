@@ -33,9 +33,9 @@
 
 
     typedef struct {
-        long value;     // Current value
+        signed long value;     // Current value
     } t_numerical_object_data;
-    
+
     typedef struct {
         SAFFIRE_OBJECT_HEADER
 

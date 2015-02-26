@@ -1646,13 +1646,13 @@ dispatch:
                         object_inc_ref(val);
                     }
 
-                    object_dec_ref((t_object *)obj);
-
                     // If we haven't got enough elements in our tuple, pad the result with NULLs first
                     while (oparg1-- > obj->data.ht->element_count) {
                         vm_frame_stack_push(frame, Object_Null);
                         object_inc_ref(Object_Null);
                     }
+
+                    object_dec_ref((t_object *)obj);
                 }
 
                 goto dispatch;
@@ -1812,6 +1812,8 @@ dispatch:
 
                             attr_obj = object_attrib_find(obj1, "__splice");
                             if (! attr_obj) {
+                                object_dec_ref(obj1);
+
                                 object_dec_ref(obj2);
                                 object_dec_ref(obj3);
 
