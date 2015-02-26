@@ -1063,12 +1063,12 @@ dispatch:
                 {
                     // Fetch methods to call
                     obj1 = vm_frame_stack_pop_attrib(frame);
+                    object_dec_ref(obj1);
                     if (
                          ! (OBJECT_IS_ATTRIBUTE(obj1) && ATTRIB_IS_METHOD(obj1)) &&
                          ! (OBJECT_TYPE_IS_CLASS(obj1))
                        ) {
 
-                        object_dec_ref(obj1);
                         reason = REASON_EXCEPTION;
                         thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR(obj1));
                         goto block_end;
@@ -1126,7 +1126,6 @@ dispatch:
                     }
                     dll_free(arg_list);
 
-                    object_dec_ref(obj1);
                     object_dec_ref((t_object *)varargs);
 
 
@@ -1594,6 +1593,8 @@ dispatch:
                     }
 
                     thread_set_exception((t_exception_object *)obj);
+                    object_inc_ref(obj);
+
 
                     object_dec_ref(obj);
                     reason = REASON_EXCEPTION;

@@ -83,11 +83,9 @@ int thread_exception_thrown(void) {
 
 int getlineno(t_vm_stackframe *frame);
 
-/**
- * Creates a new exception based on the base class, on the code and message given
- */
-void thread_create_exception(t_exception_object *exception, int code, const char *message) {
 
+
+t_hash_table *thread_create_stacktrace() {
     // Create stack trace array
     t_hash_table *stacktrace = ht_create();
 
@@ -110,8 +108,22 @@ void thread_create_exception(t_exception_object *exception, int code, const char
         depth++;
     }
 
+    return stacktrace;
+}
+
+/**
+ * Creates a new exception based on the base class, on the code and message given
+ */
+void thread_create_exception(t_exception_object *exception, int code, const char *message) {
+
+    t_hash_table *stacktrace = thread_create_stacktrace();
+
     current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 3, code, char0_to_string(message), stacktrace);
     current_thread->exception_frame = thread_get_current_frame();
+}
+
+void thread_clear_exception() {
+    current_thread->exception = NULL;
 }
 
 /**
@@ -119,6 +131,10 @@ void thread_create_exception(t_exception_object *exception, int code, const char
  */
 void thread_set_exception(t_exception_object *exception) {
     current_thread->exception = exception;
+
+    // Add stack trace
+    t_hash_table *stacktrace = thread_create_stacktrace();
+    exception->data.stacktrace = stacktrace;
 }
 
 

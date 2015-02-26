@@ -46,11 +46,14 @@ SAFFIRE_METHOD(exception, ctor) {
     }
 
     self->data.message = string_strdup(msg_obj->data.value);
-    self->data.code = 0;
 
     if (code_obj) {
         self->data.code = code_obj->data.value;
+    } else {
+        self->data.code = 0;
     }
+
+    self->data.stacktrace = NULL;
 
     RETURN_SELF;
 }

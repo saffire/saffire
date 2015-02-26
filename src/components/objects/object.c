@@ -209,6 +209,9 @@ long object_dec_ref(t_object *obj) {
 #ifdef __DEBUG
 char global_debug_info[1256];
 char *object_debug(t_object *obj) {
+    snprintf(global_debug_info, 1255, "[%08X]", (intptr_t)obj);
+    return global_debug_info;
+    return "nothing to see here";
     if (! obj) return "(null)<0x0>";
 
     snprintf(global_debug_info, 1255, "%s [%c] (%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);

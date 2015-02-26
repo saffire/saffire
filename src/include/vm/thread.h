@@ -54,7 +54,7 @@
     void thread_create_exception(t_exception_object *exception, int code, const char *message);
     void thread_create_exception_printf(t_exception_object *exception, int code, const char *format, ...);
 
-
+    void thread_clear_exception(void);
     void thread_set_exception(t_exception_object *exception);
     t_exception_object *thread_get_exception(void);
     int thread_exception_thrown(void);

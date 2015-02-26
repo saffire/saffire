@@ -255,7 +255,7 @@ static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
 
     // Save original excption, if any, and clear exceptions so we can do import on the thread
     t_exception_object *exception = thread_get_exception();
-    thread_set_exception(NULL);
+    thread_clear_exception();
 
     t_vm_stackframe *import_stackframe = vm_execute_import(codeblock, &result);
 
@@ -266,7 +266,9 @@ static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
     }
 
     // Restore original exception (if any)
-    thread_set_exception(exception);
+    if (exception) {
+        thread_set_exception(exception);
+    }
 
     return import_stackframe;
 }
