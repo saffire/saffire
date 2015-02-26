@@ -1,6 +1,8 @@
 language: c
 compiler: gcc
 before_script:
+  - wget http://saffire-lang.org/travis/libicu-dev_4.8.1.1-3_amd64.deb
+  - sudo dpkg -i libicu-dev_4.8.1.1-3_amd64.deb
   - sudo pkg-config --list-all
   - sudo pkg-config icu-i18n --libs
   - sudo mkdir -p /usr/share/saffire/modules
