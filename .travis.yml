@@ -1,19 +1,18 @@
 language: c
 compiler: gcc
 before_script:
-  - sh autogen.sh
+  - sudo pkg-config --list-all
+  - sudo pkg-config icu-i18n --libs
   - sudo mkdir -p /usr/share/saffire/modules
   - sudo ln -s `pwd`/sfl /usr/share/saffire/modules/sfl
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev libicu-dev
+  - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev libicu-dev libicu48
   - sudo apt-get install -qq php5-cli php-pear
   - sudo apt-get install -qq libcunit1-dev
   - printf "\n" | sudo pecl install yaml
   - sudo sh -c 'echo "extension = yaml.so" >> /etc/php5/cli/php.ini'
 
 env:
-    SAFFIRE_TEST_BIN=src/saffire
-script: ./configure && make && make check && sh unittest.sh
-notifications:
-  irc: "irc.freenode.org#saffire"
+    SAFFIRE_TEST_BIN=build/release/saffire
+script: ./build.sh && sh unittest.sh
