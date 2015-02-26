@@ -1,7 +1,7 @@
 include_directories(include)
 
 # @TODO: Only set this when not doing debug
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wunused-result")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wno-unused-result")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Wno-unused-function -ggdb  -O0 -D__DEBUG")
 
 
