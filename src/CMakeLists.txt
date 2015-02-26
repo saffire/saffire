@@ -78,6 +78,15 @@ set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
 # components/compiler
 ########################################################################
 
+#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/components/objects/_generated_interfaces.inc GENERATED)
+SET_SOURCE_FILES_PROPERTIES(include/objects/_generated_interfaces.h GENERATED)
+#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/components/objects/_generated_exceptions.inc GENERATED)
+#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h GENERATED)
+#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/include/vm/_generated_opcodes.h GENERATED)
+SET_SOURCE_FILES_PROPERTIES(components/vm/_generated_vm_opcodes.c GENERATED)
+
+
+
 # parser.tab.c
 find_package(BISON REQUIRED)
 set(BisonOutput ${saffire_SOURCE_DIR}/src/components/compiler/parser.tab.c)
@@ -89,6 +98,9 @@ if (BISON_FOUND)
             --defines=${CMAKE_SOURCE_DIR}/src/include/compiler/parser.tab.h
             --output=${BisonOutput}
             ${CMAKE_SOURCE_DIR}/src/components/compiler/saffire.y
+        IMPLICIT_DEPENDS C components/vm/_generated_vm_opcodes.c
+        IMPLICIT_DEPENDS C components/objects/_generated_exceptions.inc
+        IMPLICIT_DEPENDS C components/objects/_generated_interfaces.inc
         COMMENT "Generating parser.tab.c"
     )
 endif()
@@ -198,19 +210,21 @@ add_library(debugger STATIC ${debugger_SRCS})
 # components/objects
 ########################################################################
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
     COMMAND php
-        ../support/generators/generate_exceptions.php
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.php
         ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
+        ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc
         ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
     COMMENT "Generating exception objects"
 )
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
     COMMAND php
-        ../support/generators/generate_interfaces.php
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.php
         ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
+        ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc
         ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
     COMMENT "Generating interface objects"
 )
@@ -250,12 +264,12 @@ add_library(repl STATIC ${repl_SRCS})
 ########################################################################
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_opcodes.c
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_vm_opcodes.h
     COMMAND php
-        ../support/generators/generate_vm_opcodes.php
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.php
         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
-        ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_opcodes.c
-        ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_opcodes.h
+        ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c
+        ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_vm_opcodes.h
     COMMENT "Generating vm opcodes source files"
 )
 
