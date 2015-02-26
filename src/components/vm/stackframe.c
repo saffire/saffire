@@ -244,7 +244,7 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
         } else if (val == OBJECT_NEEDS_RESOLVING) {
             DEBUG_PRINT_CHAR("=> [UNRESOLVED]\n");
         } else {
-            DEBUG_PRINT_STRING_ARGS("=> [%08X] %s{%d}\n", (unsigned int)val, object_debug(val), val->ref_count);
+            DEBUG_PRINT_STRING_ARGS("=> [%08X] %s{%d}\n", (intptr_t)val, object_debug(val), val->ref_count);
         }
 
         ht_iter_next(&iter);
@@ -485,7 +485,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
         if (val == OBJECT_NEEDS_RESOLVING) continue;
 
-        DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (unsigned int)val);
+        DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (intptr_t)val);
 
         // Release value, as it's no longer needed.
         object_release(val);
@@ -554,7 +554,7 @@ void vm_frame_stack_debug(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR("\nFRAME STACK\n");
     DEBUG_PRINT_CHAR("=======================\n");
     for (int i=frame->sp; i<=frame->codeblock->bytecode->stack_size-1; i++) {
-        DEBUG_PRINT_CHAR("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (unsigned int)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
+        DEBUG_PRINT_CHAR("  %s%02d %08X %s\n", (i == frame->sp - 1) ? ">" : " ", i, (intptr_t)frame->stack[i], frame->stack[i] ? object_debug(frame->stack[i]) : "");
     }
     DEBUG_PRINT_CHAR("\n");
 }

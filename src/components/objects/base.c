@@ -237,7 +237,7 @@ static void obj_destroy(t_object *obj) {
 char global_buf[1024];
 static char *obj_debug(t_object *obj) {
 
-    snprintf(global_buf, 1023, objectTypeNames[obj->type]);
+    snprintf(global_buf, 1023, "%s", objectTypeNames[obj->type]);
     if (OBJECT_TYPE_IS_CLASS(obj)) {
         global_buf[0] = toupper(global_buf[0]);
     }
