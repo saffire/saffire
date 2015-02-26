@@ -88,7 +88,7 @@ static void ini_parse(t_ini *ini) {
     key_re = pcre_compile("^([a-z0-9_.\\[\\]-]+)\\s*=\\s*(.*)$", PCRE_CASELESS, &error, &error_offset, 0);
 
     // Iterate all lines
-    int lineno = 1;
+    long lineno = 1;
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
     while (e) {
         rc = pcre_exec(section_re, 0, e->data, strlen(e->data), 0, 0, offsets, 30);
@@ -137,9 +137,9 @@ static void ini_parse(t_ini *ini) {
         }
         if (! empty) {
             if (ht_exists_str(ini->_private.section_endings, section)) {
-                ht_replace_str(ini->_private.section_endings, section, (void *)lineno);
+                ht_replace_str(ini->_private.section_endings, section, (intptr_t *)lineno);
             } else {
-                ht_add_str(ini->_private.section_endings, section, (void *)lineno);
+                ht_add_str(ini->_private.section_endings, section, (intptr_t *)lineno);
             }
         }
 
