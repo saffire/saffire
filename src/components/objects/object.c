@@ -105,7 +105,7 @@ static void _object_free(t_object *obj) {
 
 //#ifdef __DEBUG
 //    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
-//        //DEBUG_PRINT_CHAR("Freeing object: %08lX (%d) %s\n", (unsigned long)obj, obj->flags, object_debug(obj));
+//        //DEBUG_PRINT_CHAR("Freeing object: %08lX (%d) %s\n", (intptr_t)obj, obj->flags, object_debug(obj));
 //    }
 //#endif
 
@@ -161,7 +161,7 @@ void object_inc_ref(t_object *obj) {
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
 
 #if __DEBUG_REFCOUNT
-    DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+    DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (intptr_t)obj, obj->ref_count);
 #endif
 }
 
@@ -174,23 +174,23 @@ long object_dec_ref(t_object *obj) {
 
     if (obj->ref_count < 0) {
 #if __DEBUG_REFCOUNT
-        DEBUG_PRINT_CHAR("ERROR: Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+        DEBUG_PRINT_CHAR("ERROR: Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (intptr_t)obj, obj->ref_count);
 #endif
-        fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", (unsigned long)obj, obj->ref_count);
+        fprintf(stderr, "sanity check failed: ref-count of object %08lX is %d\n", (intptr_t)obj, obj->ref_count);
         abort();
     }
     obj->ref_count--;
 
 //    if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
 #if __DEBUG_REFCOUNT
-        DEBUG_PRINT_CHAR("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (unsigned long)obj, obj->ref_count);
+        DEBUG_PRINT_CHAR("Decreased reference for: %s (%08lX) to %d\n", object_debug(obj), (intptr_t)obj, obj->ref_count);
 #endif
 //    }
 
     if (obj->ref_count != 0) return obj->ref_count;
 
 #if __DEBUG_FREE_OBJECT
-    DEBUG_PRINT_CHAR("*** Freeing object %s (%08lX)\n", object_debug(obj), (unsigned long)obj);
+    DEBUG_PRINT_CHAR("*** Freeing object %s (%08lX)\n", object_debug(obj), (intptr_t)obj);
 #endif
 
     // Don't free static objects
@@ -209,7 +209,7 @@ long object_dec_ref(t_object *obj) {
 #ifdef __DEBUG
 char global_debug_info[1256];
 char *object_debug(t_object *obj) {
-    snprintf(global_debug_info, 1255, "[%08X]", (intptr_t)obj);
+    snprintf(global_debug_info, 1255, "[%08lX]", (intptr_t)obj);
     return global_debug_info;
     return "nothing to see here";
     if (! obj) return "(null)<0x0>";
