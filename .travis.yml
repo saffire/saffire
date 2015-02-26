@@ -1,7 +1,7 @@
 language: c
 compiler: gcc
 before_script:
-  - sudo pkg-config --list icu-i18n
+  - sudo pkg-config --list-all
   - sudo pkg-config icu-i18n --libs
   - sudo mkdir -p /usr/share/saffire/modules
   - sudo ln -s `pwd`/sfl /usr/share/saffire/modules/sfl
