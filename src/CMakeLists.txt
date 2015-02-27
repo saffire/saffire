@@ -70,8 +70,8 @@ set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIBRARY})
 find_library(fcgi_LIBRARY fcgi REQUIRED)
 set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
 
-#find_library(pthread_LIBRARY pthread REQUIRED)
-#set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
+find_library(pthread_LIBRARY pthread REQUIRED)
+set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
 
 
 ########################################################################
