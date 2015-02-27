@@ -8,9 +8,10 @@ apt-get update
 
 # Install compile tools
 apt-get install -y git-core make automake gcc pkg-config bison flex colormake
+apt-get install -y cmake build-essential
 
 # Install mandatory libraries
-apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev libxml2-dev
+apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev libxml2-dev libicu-dev
 
 # Mandatory PHP scripts, needed for generating some files
 apt-get install -y php5-cli php5-dev libyaml-dev php-pear

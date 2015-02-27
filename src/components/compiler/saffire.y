@@ -47,7 +47,9 @@
     void saffire_pop_state();
 
     #ifdef __DEBUG
-        #define YYDEBUG 1
+        #ifndef YYDEBUG
+            #define YYDEBUG 1
+        #endif
     #endif
 
     #ifdef __PARSEDEBUG
@@ -70,7 +72,6 @@
 %lex-param      { yyscan_t scanner }
 %parse-param    { yyscan_t scanner }
 %parse-param    { SaffireParser *saffireParser }
-%error-verbose
 
 %locations
 
@@ -134,7 +135,7 @@
 
 
 /* Add token table, so we can convert a token(numerical) into it's name (330 => T_TOKEN for example) */
-%token_table
+%token-table
 
 /* Verbose errors */
 %error-verbose

@@ -27,6 +27,7 @@
 #ifndef __AST_TO_ASM_H__
 #define __AST_TO_ASM_H__
 
+    #include "saffire_parser.h"
     #include "compiler/ast_nodes.h"
     #include "general/hashtable.h"
 

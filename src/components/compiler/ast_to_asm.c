@@ -30,6 +30,7 @@
 #include "compiler/output/asm.h"
 #include "compiler/bytecode.h"
 #include "compiler/ast_nodes.h"
+#include "compiler/saffire_parser.h"
 #include "compiler/parser.tab.h"
 #include "general/output.h"
 #include "general/smm.h"
