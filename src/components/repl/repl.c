@@ -186,8 +186,21 @@ int repl(void) {
     // Initialize runner
     vm_init(sp, VM_RUNMODE_REPL);
 
-    t_vm_context *ctx = vm_context_new("", NULL);
-    t_vm_codeblock *codeblock = vm_codeblock_new(NULL, ctx);
+
+    t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));
+    bytecode->stack_size = 42;
+    bytecode->code_len = 0;
+    bytecode->code = NULL;
+    bytecode->constants_len = 0;
+    bytecode->constants = NULL;
+    bytecode->identifiers_len = 0;
+    bytecode->identifiers = NULL;
+    bytecode->lino_offset = 0;
+    bytecode->lino_length = 0;
+    bytecode->lino = NULL;
+
+    t_vm_context *ctx = vm_context_new("", "#repl");
+    t_vm_codeblock *codeblock = vm_codeblock_new(bytecode, ctx);
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
 
     // Main loop of the REPL
@@ -223,6 +236,8 @@ int repl(void) {
     free_parserinfo(sp->parserinfo);
 
     vm_stackframe_destroy(initial_frame);
+
+    bytecode_free(bytecode);
     vm_fini();
 
     // Destroy scanner structure
