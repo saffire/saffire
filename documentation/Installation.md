@@ -20,10 +20,7 @@ Saffire. Once the box has started, issue the following:
 
     vagrant ssh
     cd /vagrant
-    sh autogen.sh
-    ./configure [--enable-debug] [--enable-parsedebug]
-    make
-    sudo make install
+    sh build.sh
 
 This will compile and install Saffire in your vagrant box, where you can experiment all you like.
 
@@ -34,9 +31,9 @@ This will only work on Linux systems. We do not support Windows, OSX or any othe
 doing so will be there, we just haven't got the time to support them all right now.
 
 Make sure you have the following tools installed:
-- automake
+- build-essentials
+- cmake
 - pkg-config
-- make
 - flex
 - bison
 - gcc
@@ -47,11 +44,14 @@ Plus, you will need to following libraries and header files:
 - libbz2
 - libpcre3
 - libcunit11
+- libicu
+- libpthreads
+
 
 To install these packages on Ubuntu or Debian, please use the following commands:
 
-    sudo apt-get install automake make flex bison gcc pkg-config
-    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libpcre3-dev
+    sudo apt-get install flex bison gcc pkg-config cmake build-essentials
+    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libpcre3-dev libicu-dev
 
 On RedHat/CentOS systems, the library development packages are probably ends with -devel.
 
@@ -62,10 +62,7 @@ After installation of the packages, clone the github repository (either your own
 After this, you can compile and install Saffire:
 
     cd saffire
-    sh autogen.sh
-    ./configure [--enable-debug] [--enable-parsedebug]
-    make
-    sudo make install
+    sh build.sh
 
 One more thing: in the current development settings, we need to have Saffire modules located in a fixed path:
 
@@ -73,9 +70,9 @@ One more thing: in the current development settings, we need to have Saffire mod
     mkdir -p /usr/share/saffire/modules
     ln -s sfl /usr/share/saffire/modules/sfl
 
-If everything goes according to plan, you will have a /usr/local/bin/saffire binary up and running. You can test this
+If everything goes according to plan, you will have a `./build/release/saffire` binary up and running. You can test this
 with the following command:
 
-    saffire
+    ./build/release/saffire
 
-This should display an initial help file and have saffire configured.
+This should display an initial help file. 

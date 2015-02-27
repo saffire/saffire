@@ -1,37 +1,3 @@
 import io;
-try {
-    i = 1;
-    throw exception("this is foobarred", 123);
-    io.print("Didn't throw anything :( \n");
-} catch(exception e) {
-    io.print(e.__name(), ": ", e.getMessage(), "(",e.getCode(),")\n");
-}
 
-
-/*
-
-// imports the io class from the io module as "io" into the current namespace
-import io;
-// Import framework and http request
-import Noxlogic::Framework;
-import Noxlogic::Framework::Http::Request;
-
-// Call the print method from our (imported) io class with a single argument
-io.print("Hello world!\n");
-
-// Create request object
-request = Request();
-request.setHttpMethod("get");
-request.setUrl("http://saffire-lang.org");
-
-// Request is automatically cast to string by the "print" method. (calls request.__string())
-io.print(request, "\n");
-
-// Run the framework
-app = Framework();
-response = app.run(request);
-
-// Response is automatically cased: response.__string()
-io.print("Response: ", response);
-
-*/
+io.print("Hello world from Saffire!");
