@@ -33,6 +33,8 @@
 
     // @TODO: Add VM running mode into this structure
 
+    // Forward define. Newer versions of bison/flex do not add this somehow.
+    typedef void *  yyscan_t;
 
     struct _pi_switch {
         int has_default;                // 1: a default is present. 0: no default
