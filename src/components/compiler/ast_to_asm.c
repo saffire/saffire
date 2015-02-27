@@ -955,6 +955,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         }
                         if (element_count == 0 && ctx == st_ctx_load) {
                             // We cannot load on something like foo[]
+
                             fatal_error(1, "Cannot read from an empty [] subscription");    /* LCOV_EXCL_LINE */
                         }
 

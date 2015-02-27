@@ -1,56 +1,47 @@
 title: data structure tests - splicing
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-!skip
 import io;
 f = "foobarbaz";
 io.print(f[]);
-====
-foobarbaz
+~~~~~~
+Cannot read from an empty [] subscription
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[0..2]);
 ====
 foo
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[3..5]);
 ====
 bar
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[6..8]);
 ====
 baz
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[3..10]);
 ====
 barbaz
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[10..3]);
-====
-Error: max < min!
+~~~~
+max < min!
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[..5]);
 ====
 foobar
 @@@@
-!skip
 import io;
 io.print("foobarbaz"[4..]);
 ====
 arbaz
 @@@@
-!skip
 import io;
 io.print("X","foobarbaz"[20..]);
 ====

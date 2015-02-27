@@ -33,11 +33,11 @@ Duplicate label 'foo' found
 ====
 Cannot find label 'foo'
 @@@@
-!skip
+
 // incorrect label
 "blaat":
-====
-Error: Unknown token: '"'
+~~~~~
+Unknown token
 @@@@
 // incorrect label
 /regex/:

@@ -34,10 +34,10 @@ a=>1Null
 b=>2Null
 c=>3Null
 @@@@
-!skip
+!skip meta object is not yet available
 import io;
 foo = hash[["a":1,"b":2,"c":3]];
-foreach (blaat as k,v, meta)  {
+foreach (foo as k,v,meta)  {
     if (meta.first) io.print("first\n");
     if (meta.last) io.print("last\n");
     io.print(meta.count," ",meta.index," ",k," ",v,"\n");
