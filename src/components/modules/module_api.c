@@ -46,21 +46,8 @@
 int register_module(t_module *mod) {
     DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
 
-//    t_dll_element *e = DLL_HEAD(modules);
-//    while (e) {
-//        t_module *src_mod = (t_module *)e->data;
-//        if (strcmp(src_mod->name, mod->name) == 0) {
-//            // Already registered
-//            return 0;
-//        }
-//        e = DLL_NEXT(e);
-//    }
-
     // Initialize module
     mod->init();
-
-//    t_ns_context *ctx = si_create_context(mod->name);
-//    dll_append(modules, mod);
 
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
@@ -69,6 +56,8 @@ int register_module(t_module *mod) {
         vm_context_create_fqcn(mod->name, obj->name, &key);
         vm_populate_builtins(key, obj);
         smm_free(key);
+
+        object_inc_ref(obj);
 
         idx++;
         obj = (t_object *)mod->objects[idx];
@@ -99,7 +88,6 @@ int unregister_module(t_module *mod) {
  *
  */
 void module_init(void) {
-    modules = dll_init();
     register_module(&module_sapi_fastcgi);
     register_module(&module_saffire);
     register_module(&module_io);
@@ -112,5 +100,4 @@ void module_fini(void) {
     unregister_module(&module_saffire);
     unregister_module(&module_io);
     unregister_module(&module_sapi_fastcgi);
-    dll_free(modules);
 }

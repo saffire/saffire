@@ -86,46 +86,46 @@ static void test_dll_dll_push() {
     dll_free(dll);
 }
 
-static void test_dll_dll_pop() {
-    char *data;
-    t_dll *dll = dll_init();
+//static void test_dll_dll_pop() {
+//    char *data;
+//    t_dll *dll = dll_init();
+//
+//    dll_push(dll, "test1");
+//    dll_push(dll, "test2");
+//
+//    data = dll_pop(dll);
+//    CU_ASSERT_PTR_NOT_NULL(data);
+//    CU_ASSERT_STRING_EQUAL(data, "test2");
+//
+//    data = dll_pop(dll);
+//    CU_ASSERT_PTR_NOT_NULL(data);
+//    CU_ASSERT_STRING_EQUAL(data, "test1");
+//
+//    data = dll_pop(dll);
+//    CU_ASSERT_PTR_NULL(data);
+//
+//    dll_free(dll);
+//}
 
-    dll_push(dll, "test1");
-    dll_push(dll, "test2");
-
-    data = dll_pop(dll);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(data, "test2");
-
-    data = dll_pop(dll);
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_STRING_EQUAL(data, "test1");
-
-    data = dll_pop(dll);
-    CU_ASSERT_PTR_NULL(data);
-
-    dll_free(dll);
-}
-
-static void test_dll_dll_top() {
-    char *data;
-    t_dll *dll = dll_init();
-
-    dll_push(dll, "test1");
-    dll_push(dll, "test2");
-
-    data = dll_top(dll);
-    CU_ASSERT_STRING_EQUAL(data, "test2");
-
-    data = dll_top(dll);
-    CU_ASSERT_STRING_EQUAL(data, "test2");
-
-    dll_pop(dll);
-    data = dll_top(dll);
-    CU_ASSERT_STRING_EQUAL(data, "test1");
-
-    dll_free(dll);
-}
+//static void test_dll_dll_top() {
+//    char *data;
+//    t_dll *dll = dll_init();
+//
+//    dll_push(dll, "test1");
+//    dll_push(dll, "test2");
+//
+//    data = dll_top(dll);
+//    CU_ASSERT_STRING_EQUAL(data, "test2");
+//
+//    data = dll_top(dll);
+//    CU_ASSERT_STRING_EQUAL(data, "test2");
+//
+//    dll_pop(dll);
+//    data = dll_top(dll);
+//    CU_ASSERT_STRING_EQUAL(data, "test1");
+//
+//    dll_free(dll);
+//}
 
 static void test_dll_dll_remove() {
     t_dll *dll;
@@ -202,7 +202,7 @@ void test_dll_init() {
      CU_add_test(suite, "dll_remove", test_dll_dll_remove);
 
      CU_add_test(suite, "dll_push", test_dll_dll_push);
-     CU_add_test(suite, "dll_pop", test_dll_dll_pop);
-     CU_add_test(suite, "dll_top", test_dll_dll_top);
+//     CU_add_test(suite, "dll_pop", test_dll_dll_pop);
+//     CU_add_test(suite, "dll_top", test_dll_dll_top);
 
 }

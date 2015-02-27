@@ -87,7 +87,7 @@ t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
  */
 t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
 #if __DEBUG_STACK
-    DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX %s\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]));
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08lX '%s'{%d}\n" ANSI_RESET, frame->sp, (unsigned long)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]), (t_object *)(frame->stack[frame->sp])->ref_count);
 #endif
 
     if (frame->sp >= frame->codeblock->bytecode->stack_size) {
@@ -105,7 +105,7 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
  */
 void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj) {
 #if __DEBUG_STACK
-        DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX \n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj);
+        DEBUG_PRINT_STRING_ARGS(ANSI_BRIGHTYELLOW "STACK PUSH(%d): %s %08lX {%d}\n" ANSI_RESET, frame->sp-1, object_debug(obj), (unsigned long)obj, obj->ref_count);
 #endif
 
 
@@ -194,15 +194,19 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
 /**
  * Store object into the local identifier table
  */
-void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object *obj) {
-    t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, obj);
-    if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
+void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object *new_obj) {
+    t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, new_obj);
+
+    // Increase object before decreasing old object. Otherwise, the object might expire
+    // in the mean time when the object has ref-count 1 and old_obj == new_obj.
+    if (new_obj != NULL && new_obj != OBJECT_NEEDS_RESOLVING) {
+        object_inc_ref(new_obj);
+    }
+
+    if (old_obj != NULL && old_obj != OBJECT_NEEDS_RESOLVING) {
         object_release(old_obj);
     }
 
-    if (obj != NULL && obj != OBJECT_NEEDS_RESOLVING) {
-        object_inc_ref(obj);
-    }
 }
 
 void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *fqcn, char *target_fqcn) {
@@ -357,10 +361,6 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
 t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id) {
     if (! frame) return NULL;
 
-//    char *fqcn = vm_context_fqcn(frame->codeblock->context, id);
-//    printf("*** FIND : %-20s  (%s)\n", id, fqcn);
-//    smm_free(fqcn);
-
     t_object *obj = vm_frame_identifier_exists(frame, id);
     if (obj) return obj;
 
@@ -466,28 +466,25 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 #endif
 #endif
 
-
-    // Remove codeblock reference (don't mind cleanup, since we still have it on the codeblock stack)
-    frame->codeblock = NULL;
+//    // Remove codeblock reference (don't mind cleanup, since we still have it on the codeblock stack)
+//    frame->codeblock = NULL;
     if (frame->trace_class) smm_free(frame->trace_class);
     if (frame->trace_method) smm_free(frame->trace_method);
 
     t_hash_iter iter;
-    ht_iter_init(&iter, frame->local_identifiers->data.ht);
+    ht_iter_init_tail(&iter, frame->local_identifiers->data.ht);
     while (ht_iter_valid(&iter)) {
         char *key = ht_iter_key_str(&iter);
         t_object *val = ht_iter_value(&iter);
 
-        // Because we MIGHT change the hash-table, we need to fetch the next
-        // element PRIOR to changing the table. Otherwise we might end up in
-        // the crapper.
-        ht_iter_next(&iter);
+        // Fetch previous item before removing key from the hashtable
+        ht_iter_prev(&iter);
 
         if (val == OBJECT_NEEDS_RESOLVING) continue;
 
         DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (intptr_t)val);
 
-        // Release value, as it's no longer needed.
+        // Release values, as it's no longer needed.
         object_release(val);
 
         ht_remove_str(frame->local_identifiers->data.ht, key);
@@ -496,7 +493,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     // Free created user objects
     t_dll_element *e = DLL_HEAD(frame->created_user_objects);
     while (e) {
-        t_object *obj = (t_object *)e->data;
+        t_object *obj = (t_object *)e->data.p;
 
         object_release(obj);
         e = DLL_NEXT(e);
@@ -507,6 +504,18 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     object_release((t_object *)frame->global_identifiers);
     object_release((t_object *)frame->local_identifiers);
     object_release((t_object *)frame->builtin_identifiers);
+
+
+    if (frame->parent == NULL) {
+        // If we are the lowest frame, remove object aliases
+        ht_iter_init(&iter, frame->object_aliases);
+        while (ht_iter_valid(&iter)) {
+            char *val = ht_iter_value(&iter);
+            smm_free(val);
+            ht_iter_next(&iter);
+        }
+        ht_destroy(frame->object_aliases);
+    }
 
     smm_free(frame->stack);
 
@@ -537,7 +546,7 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 // */
 
 // register a user object. This way it is known in the stack frame, AND has a refcount of 1. This is to make sure
-// that we always have a reference to the user-object.
+// that we always have a reference to the user-object   @TODO: Do we really need this???
 void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
     dll_append(frame->created_user_objects, obj);
     object_inc_ref(obj);

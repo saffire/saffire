@@ -147,7 +147,7 @@ void *ht_find_str(t_hash_table *ht, char *key) {
     ht_key_free(hkey);
     return ret;
 }
-void *ht_find_num(t_hash_table *ht, unsigned long key) {
+void *ht_find_num(t_hash_table *ht, long key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
     void *ret = ht_find(ht, hkey);
     ht_key_free(hkey);
@@ -155,6 +155,13 @@ void *ht_find_num(t_hash_table *ht, unsigned long key) {
 }
 void *ht_find_obj(t_hash_table *ht, t_object *key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
+    void *ret = ht_find(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
+}
+
+void *ht_find_ptr(t_hash_table *ht, void *key) {
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
     void *ret = ht_find(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -172,7 +179,7 @@ int ht_exists_str(t_hash_table *ht, char *key) {
     ht_key_free(hkey);
     return ret;
 }
-int ht_exists_num(t_hash_table *ht, unsigned long key) {
+int ht_exists_num(t_hash_table *ht, long key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
     int ret = ht_exists(ht, hkey);
     ht_key_free(hkey);
@@ -180,6 +187,12 @@ int ht_exists_num(t_hash_table *ht, unsigned long key) {
 }
 int ht_exists_obj(t_hash_table *ht, t_object *key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
+    int ret = ht_exists(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
+}
+int ht_exists_ptr(t_hash_table *ht, void *key) {
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
     int ret = ht_exists(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -203,11 +216,14 @@ int ht_add(t_hash_table *ht, t_hash_key *key, void *value) {
 int ht_add_str(t_hash_table *ht, char *key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_STR, (void *)key), value);
 }
-int ht_add_num(t_hash_table *ht, unsigned long key, void *value) {
+int ht_add_num(t_hash_table *ht, long key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_NUM, (void *)key), value);
 }
 int ht_add_obj(t_hash_table *ht, t_object *key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_OBJ, key), value);
+}
+int ht_add_ptr(t_hash_table *ht, void *key, void *value) {
+    return ht_add(ht, ht_key_create(HASH_KEY_PTR, key), value);
 }
 
 /**
@@ -220,11 +236,12 @@ void *ht_replace(t_hash_table *ht, t_hash_key *key, void *value) {
 
     /* Check if the key exists, if so, remove and add new value. We do this because even though the
      * key by itself is equal, it could be on a different address. It would mean that if we do
-     * key comparision the wrong way (by address, instead of their actual value), things can go wrong. */
+     * key comparison the wrong way (by address, instead of their actual value), things can go wrong. */
     if (ht->hashfuncs->exists(ht, key)) {
+        void *data = ht->hashfuncs->find(ht, key);
         ht->hashfuncs->remove(ht, key);
         ht->hashfuncs->add(ht, key, value);
-        return NULL;
+        return data;
     }
 
     return ht->hashfuncs->replace(ht, key, value);
@@ -233,13 +250,17 @@ void *ht_replace_str(t_hash_table *ht, char *key, void *value) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_STR, key);
     return ht_replace(ht, hkey, value);
 }
-void *ht_replace_num(t_hash_table *ht, unsigned long key, void *value) {
+void *ht_replace_num(t_hash_table *ht, long key, void *value) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
     return ht_replace(ht, hkey, value);
 
 }
 void *ht_replace_obj(t_hash_table *ht, t_object *key, void *value) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
+    return ht_replace(ht, hkey, value);
+}
+void *ht_replace_ptr(t_hash_table *ht, void *key, void *value) {
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
     return ht_replace(ht, hkey, value);
 }
 
@@ -258,7 +279,7 @@ void *ht_remove_str(t_hash_table *ht, char *key) {
     ht_key_free(hkey);
     return ret;
 }
-void *ht_remove_num(t_hash_table *ht, unsigned long key) {
+void *ht_remove_num(t_hash_table *ht, long key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_NUM, (void *)key);
     void *ret = ht_remove(ht, hkey);
     ht_key_free(hkey);
@@ -266,6 +287,12 @@ void *ht_remove_num(t_hash_table *ht, unsigned long key) {
 }
 void *ht_remove_obj(t_hash_table *ht, t_object *key) {
     t_hash_key *hkey = ht_key_create(HASH_KEY_OBJ, key);
+    void *ret = ht_remove(ht, hkey);
+    ht_key_free(hkey);
+    return ret;
+}
+void *ht_remove_ptr(t_hash_table *ht, void *key) {
+    t_hash_key *hkey = ht_key_create(HASH_KEY_PTR, key);
     void *ret = ht_remove(ht, hkey);
     ht_key_free(hkey);
     return ret;
@@ -280,6 +307,13 @@ int ht_iter_init(t_hash_iter *iter, t_hash_table *ht) {
     iter->ht = ht;
     iter->bucket_idx = 0;
     iter->bucket = ht ? ht->head : NULL;
+    return 1;
+}
+
+int ht_iter_init_tail(t_hash_iter *iter, t_hash_table *ht) {
+    iter->ht = ht;
+    iter->bucket_idx = 0;
+    iter->bucket = ht ? ht->tail : NULL;
     return 1;
 }
 
@@ -319,6 +353,15 @@ int ht_iter_next(t_hash_iter *iter) {
     return (iter->bucket != NULL);
 }
 
+int ht_iter_prev(t_hash_iter *iter) {
+    // Nothing found (or no more items)
+    if (iter->bucket == NULL) return 0;
+
+    iter->bucket = iter->bucket->prev_element;
+    return (iter->bucket != NULL);
+}
+
+
 /**
  * Fetch key from current element
  */
@@ -332,7 +375,7 @@ char *ht_iter_key_str(t_hash_iter *iter) {
     return iter->bucket->key->val.s;
 }
 
-unsigned long ht_iter_key_num(t_hash_iter *iter) {
+long ht_iter_key_num(t_hash_iter *iter) {
     if (iter->bucket == NULL) return 0;
     return iter->bucket->key->val.n;
 }
@@ -341,6 +384,12 @@ t_object *ht_iter_key_obj(t_hash_iter *iter) {
     if (iter->bucket == NULL) return NULL;
     return iter->bucket->key->val.o;
 }
+
+void *ht_iter_key_ptr(t_hash_iter *iter) {
+    if (iter->bucket == NULL) return NULL;
+    return (void *)iter->bucket->key->val.p;
+}
+
 
 /**
  * Fetch value from current element
@@ -363,7 +412,11 @@ t_hash_key *ht_key_create(int type, void *val) {
             break;
         case HASH_KEY_NUM :
             hk->type = HASH_KEY_NUM;
-            hk->val.n = (intptr_t)val;
+            hk->val.n = (uintptr_t)val;
+            break;
+        case HASH_KEY_PTR :
+            hk->type = HASH_KEY_PTR;
+            hk->val.p = (uintptr_t)val;
             break;
         default:
         case HASH_KEY_OBJ :
@@ -414,12 +467,14 @@ void ht_debug(t_hash_table *ht) {
             s = char0_to_string(key->val.s);
         } else if (key->type == HASH_KEY_NUM) {
             smm_asprintf_string(&s, char0_to_string("%d"), key->val.n);
+        } else if (key->type == HASH_KEY_PTR) {
+            smm_asprintf_string(&s, char0_to_string("%p"), key->val.p);
         } else if (key->type == HASH_KEY_OBJ) {
             smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
         }
         t_object *obj = ht_iter_value(&iter);
 
-        DEBUG_PRINT_STRING_ARGS("%-40s => %s{%d}\n", s->val, object_debug(obj), obj->ref_count);
+        DEBUG_PRINT_STRING_ARGS("%-40s => %s{%d}[%08X]\n", s->val, object_debug(obj), obj->ref_count, (intptr_t)obj);
 
         string_free(s);
         ht_iter_next(&iter);
@@ -438,6 +493,8 @@ void ht_debug_keys(t_hash_table *ht) {
             s = char0_to_string(key->val.s);
         } else if (key->type == HASH_KEY_NUM) {
             smm_asprintf_string(&s, char0_to_string("%d"), key->val.n);
+        } else if (key->type == HASH_KEY_NUM) {
+            smm_asprintf_string(&s, char0_to_string("%p"), key->val.p);
         } else if (key->type == HASH_KEY_OBJ) {
             smm_asprintf_string(&s, char0_to_string("%s{%d}"), object_debug(key->val.o), ((t_object *)key->val.o)->ref_count);
         }

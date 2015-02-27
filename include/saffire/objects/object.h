@@ -107,6 +107,7 @@
     #define OBJECT_TYPE_IS_IMMUTABLE(obj)   ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
     #define OBJECT_TYPE_IS_FINAL(obj)       ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
     #define OBJECT_IS_ALLOCATED(obj)        ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
+    #define OBJECT_IS_USERLAND(obj)         ((obj->flags & OBJECT_TYPE_USERLAND) == OBJECT_TYPE_USERLAND)
 
 
     // Simple macro's for object type checks
@@ -165,7 +166,19 @@
         \
         int data_size;                  /* Additional data size. If 0, no additional data is used in this object */ \
         \
-        struct _vm_stackframe *frame;         /* The frame in which this object is born */
+        struct _vm_stackframe *frame;         /* The frame in which this object is born */ \
+        \
+        SAFFIRE_OBJECT_DEBUG_HEADER
+
+
+#ifdef __DEBUG
+    #define SAFFIRE_OBJECT_DEBUG_HEADER char __debug_info[200];
+    #define OBJECT_HEAD_DEBUG  ,""
+#else
+    #define SAFFIRE_OBJECT_DEBUG_HEADER
+    #define OBJECT_HEAD_DEBUG
+#endif
+
 
 
     // Actual "global" object. Every object is typed on this object.
@@ -174,10 +187,11 @@
     }; // forward define has defined this as a t_object.
 
     extern t_object Object_Base_struct;
+    extern t_object Object_User_struct;
 
     #define OBJECT_HEAD_INIT_WITH_BASECLASS(name, type, flags, funcs, base, interfaces, data_size) \
                 0,              /* initial refcount */     \
-                type,           /* scalar type */          \
+                type,           /* base object type */     \
                 name,           /* name */                 \
                 flags,          /* flags */                \
                 NULL,           /* class */                \
@@ -187,6 +201,8 @@
                 funcs,          /* functions */            \
                 data_size,      /* data lenght */          \
                 NULL            /* frame */                \
+                OBJECT_HEAD_DEBUG
+
 
     // Object header initialization without any functions or base
     #define OBJECT_HEAD_INIT(name, type, flags, funcs, data_size) \
@@ -205,7 +221,7 @@
 
 
     // Returns custom object 'obj'
-    #define RETURN_OBJECT(obj) return (t_object*)obj
+    #define RETURN_OBJECT(obj)   { return (t_object*)obj; }
 
     // Returns self
     #define RETURN_SELF { return (t_object *)self; }
@@ -220,17 +236,18 @@
     t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
     char *object_get_hash(t_object *obj);
+    t_object *object_alloca_class(t_object *obj, t_dll *arguments);
     t_object *object_alloca(t_object *obj, t_dll *arguments);
     t_object *object_alloc(t_object *obj, int arg_count, ...);
     void object_inc_ref(t_object *obj);
-    long object_dec_ref(t_object *obj);
 
     t_object *object_allocate(t_object *obj, int arg_count, ...);
     long object_release(t_object *obj);
 
     void object_add_interface(t_object *class, t_object *interface);
-    void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
-    void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
+    void object_add_property(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *property);
+    void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *name, int flags, int visibility, void *func);
+    void object_patchup(t_object *dup, t_object *org);
     void object_free_internal_object(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);

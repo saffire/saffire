@@ -181,7 +181,9 @@ static int fcgi_loop(void) {
         vm_execute(initial_frame);
 
         vm_stackframe_destroy(initial_frame);
-        bytecode_free(bc);
+        bytecode_free(codeblock->bytecode);
+        vm_codeblock_destroy(codeblock);
+//        bytecode_free(bc);
     }
 
 
@@ -197,7 +199,6 @@ static int fcgi_loop(void) {
  */
 static void sighandler_child(int sig) {
     pid_t pid = wait(NULL);
-    printf("CHILD signal %d found for pid: %d\n", sig, pid);
 
     // We need to spawn a new child, since this one has ended
     scoreboard_lock();
@@ -223,7 +224,6 @@ static void sighandler_term(int sig) {
     // Send TERM signal to all workers
     for (int i=0; i!=scoreboard->num_workers; i++) {
         if (scoreboard->workers[i].status == SB_ST_INUSE && scoreboard->workers[i].pid) {
-            printf("Sending TERM signal to pid: %d\n", scoreboard->workers[i].pid);
             kill(SIGTERM, scoreboard->workers[i].pid);
         }
     }

@@ -49,6 +49,9 @@ static hash_t ht_hash(t_hash_table *ht, t_hash_key *key) {
         case HASH_KEY_OBJ :
             hash_value = ht->hashfuncs->hash(ht, (const char *)object_get_hash((t_object *)(key->val.o)));
             break;
+        case HASH_KEY_PTR :
+            hash_value = (uintptr_t)key->val.p;
+            break;
     }
 
     return hash_value;
@@ -114,7 +117,6 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
         key_hash_val = object_get_hash((t_object *)(key->val.o));
     }
 
-
     while (htb) {
         switch (key->type) {
             case HASH_KEY_STR :
@@ -125,6 +127,9 @@ static t_hash_table_bucket *find_bucket(t_hash_table *ht, t_hash_key *key) {
                 break;
             case HASH_KEY_OBJ :
                 if (strcmp(object_get_hash((t_object *)(htb->key->val.o)), key_hash_val) == 0) found = 1;
+                break;
+            case HASH_KEY_PTR :
+                if (htb->key->val.p == key->val.p) found = 1;
                 break;
         }
         if (found) return htb;
@@ -174,6 +179,7 @@ static int chf_add(t_hash_table *ht, t_hash_key *key, void *value) {
     t_hash_table_bucket *htb = (t_hash_table_bucket *)smm_malloc(sizeof(t_hash_table_bucket));
     htb->hash = hash_value;         // Store original hash value (for quick rehashing)
     htb->key = key;
+
     htb->value = value;
     htb->next_in_bucket = NULL;
 
@@ -264,6 +270,9 @@ static void *chf_remove(t_hash_table *ht, t_hash_key *key) {
                 break;
             case HASH_KEY_OBJ :
                 found = strcmp(object_get_hash((t_object *)(htb->key->val.o)), object_get_hash((t_object *)(key->val.o)));
+                break;
+            case HASH_KEY_PTR :
+                found = htb->key->val.p == key->val.p;
                 break;
         }
         if (found) break;

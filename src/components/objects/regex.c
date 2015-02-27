@@ -159,16 +159,16 @@ SAFFIRE_METHOD(regex, conv_string) {
  */
 void object_regex_init(void) {
     Object_Regex_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_ctor);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__boolean",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__null",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__numerical",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "__string",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__boolean",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_boolean);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__null",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_null);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__numerical",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_numerical);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "__string",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Regex_struct, "match",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
-    object_add_internal_method((t_object *)&Object_Regex_struct, "regex",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "match",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_match);
+    object_add_internal_method(Object_Regex_struct.attributes, (t_object *)&Object_Regex_struct, "regex",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_regex_method_regex);
 
     vm_populate_builtins("regex", (t_object *)&Object_Regex_struct);
 }
@@ -191,17 +191,17 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        regex = ((t_string *)e->data)->val;
+        regex = ((t_string *)e->data.p)->val;
     } else {
         // 2 (or more) elements: it's a size + char0 string
 
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
-        int value_len = (intptr_t)e->data;
+        int value_len = (int)e->data.l;
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);
-        char *value = (char *)e->data;
+        char *value = (char *)e->data.p;
 
         t_string *str = char_to_string(value, value_len);
 
@@ -281,14 +281,15 @@ static void obj_destroy(t_object *obj) {
 }
 
 #ifdef __DEBUG
-char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    if (OBJECT_TYPE_IS_CLASS(obj)) {
-        strcpy(global_buf, "Regex");
+    t_regex_object *re_obj = (t_regex_object *)obj;
+
+    if (! re_obj->data.regex_string) {
+        snprintf(re_obj->__debug_info, 199, "no regex data defined");
     } else {
-        sprintf(global_buf, "regex(%s)", ((t_regex_object *)obj)->data.regex_string);
+        snprintf(re_obj->__debug_info, 199, "regex:\"%s\"", re_obj->data.regex_string);
     }
-    return global_buf;
+    return re_obj->__debug_info;
 }
 #endif
 

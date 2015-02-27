@@ -67,7 +67,7 @@ t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeBase, OBJECT_T
 static void _init(void) {
     fastcgi_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&fastcgi_struct, "environment",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
+    object_add_internal_method(fastcgi_struct.attributes, (t_object *)&fastcgi_struct, "environment",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
 }
 
 static void _fini(void) {

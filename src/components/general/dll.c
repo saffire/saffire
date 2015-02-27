@@ -63,7 +63,7 @@ t_dll_element *dll_prepend(t_dll *dll, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
     // Set head element data
-    e->data = data;
+    e->data.p = data;
     e->prev = NULL;
     e->next = dll->head;
 
@@ -93,7 +93,7 @@ t_dll_element *dll_append(t_dll *dll, void *data) {
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
     // Set tail element data
-    e->data = data;
+    e->data.p = data;
     e->prev = dll->tail;
     e->next = NULL;
 
@@ -129,7 +129,7 @@ t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *before_element, void
 
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    e->data = data;
+    e->data.p = data;
     e->prev = before_element->prev;
     e->next = before_element;
 
@@ -160,7 +160,7 @@ t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *after_element, void *
 
     t_dll_element *e = (t_dll_element *)smm_malloc(sizeof(t_dll_element));
 
-    e->data = data;
+    e->data.p = data;
     e->prev = after_element;
     e->next = after_element->next;
 
@@ -213,27 +213,27 @@ void dll_push(t_dll *dll, void *data) {
     dll_insert_after(dll, NULL, data);
 }
 
-/**
- * Pops data at the tail of the DLL
- */
-void *dll_pop(t_dll *dll) {
-    t_dll_element *e = DLL_TAIL(dll);
-    if (!e) return NULL;
+///**
+// * Pops data at the tail of the DLL
+// */
+//void *dll_pop(t_dll *dll) {
+//    t_dll_element *e = DLL_TAIL(dll);
+//    if (!e) return NULL;
+//
+//    void *ret = e->data;
+//    dll_remove(dll, e);
+//    return ret;
+//}
 
-    void *ret = e->data;
-    dll_remove(dll, e);
-    return ret;
-}
-
-/*
- * Peeks at data at the tail of the DLL
- */
-void *dll_top(t_dll *dll) {
-    t_dll_element *e = DLL_TAIL(dll);
-    if (!e) return NULL;
-
-    return e->data;
-}
+///*
+// * Peeks at data at the tail of the DLL
+// */
+//void *dll_top(t_dll *dll) {
+//    t_dll_element *e = DLL_TAIL(dll);
+//    if (!e) return NULL;
+//
+//    return e->data;
+//}
 
 /**
  * Searches for specific offset

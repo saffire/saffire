@@ -501,56 +501,56 @@ SAFFIRE_METHOD(string, __has) {
  */
 void object_string_init(void) {
     Object_String_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_String_struct, "__ctor",           ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
-    object_add_internal_method((t_object *)&Object_String_struct, "__dtor",           ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__ctor",           ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ctor);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__dtor",           ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_string_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__boolean",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_String_struct, "__null",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
-    object_add_internal_method((t_object *)&Object_String_struct, "__numerical",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_String_struct, "__string",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__boolean",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_boolean);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__null",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_null);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__numerical",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_numerical);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__string",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_conv_string);
 
 //    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_lengthx);
-    object_add_internal_method((t_object *)&Object_String_struct, "length",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
-    object_add_internal_method((t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
-    object_add_internal_method((t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "length",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "toLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_to_locale);
-    object_add_internal_method((t_object *)&Object_String_struct, "getLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_get_locale);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "toLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_to_locale);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "getLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_get_locale);
 
 
-    object_add_internal_method((t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
-//    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sr",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__opr_add",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
+//    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__opr_sl",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
+//    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__opr_sr",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sr);
 
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_eq",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ne",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_lt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_gt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_le",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ge",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_in",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
-    object_add_internal_method((t_object *)&Object_String_struct, "__cmp_ni",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_eq",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_eq);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_ne",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ne);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_lt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_lt);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_gt",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_gt);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_le",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_le);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_ge",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ge);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_in",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_in);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__cmp_ni",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_cmp_ni);
 
 
     // Iterator interface
-    object_add_internal_method((t_object *)&Object_String_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___iterator);
-    object_add_internal_method((t_object *)&Object_String_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___key);
-    object_add_internal_method((t_object *)&Object_String_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___value);
-    object_add_internal_method((t_object *)&Object_String_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___rewind);
-    object_add_internal_method((t_object *)&Object_String_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___next);
-    object_add_internal_method((t_object *)&Object_String_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___hasNext);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___iterator);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___key);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___value);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___rewind);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___next);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___hasNext);
     object_add_interface((t_object *)&Object_String_struct, Object_Iterator);
 
     // Subscription interface
-    object_add_internal_method((t_object *)&Object_String_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___add);
-    object_add_internal_method((t_object *)&Object_String_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___remove);
-    object_add_internal_method((t_object *)&Object_String_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___get);
-    object_add_internal_method((t_object *)&Object_String_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___has);
-    object_add_internal_method((t_object *)&Object_String_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___add);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___remove);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___get);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___has);
+    object_add_internal_method(Object_String_struct.attributes, (t_object *)&Object_String_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
     object_add_interface((t_object *)&Object_String_struct, Object_Subscription);
 
     vm_populate_builtins("string", (t_object *)&Object_String_struct);
@@ -572,17 +572,17 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        str_obj->data.value = (t_string *)e->data;
+        str_obj->data.value = (t_string *)e->data.p;
     } else if (arg_list->size > 1) {
         // 2 (or more) elements: it's a size + char0 string
 
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
-        int value_len = (intptr_t)e->data;
+        int value_len = (int)e->data.l;
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);
-        char *value = (char *)e->data;
+        char *value = (char *)e->data.p;
 
         // Convert our stream to UTF8
         str_obj->data.value = char_to_string(value, value_len);
@@ -594,7 +594,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
 static void obj_free(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
-    if (str_obj->data.value) smm_free(str_obj->data.value);
+    if (str_obj->data.value) string_free(str_obj->data.value);
     if (str_obj->data.locale) smm_free(str_obj->data.locale);
 }
 
@@ -609,16 +609,15 @@ static void obj_destroy(t_object *obj) {
 /**
  * Object debug doesn't output binary safe strings
  */
-char global_buf[1024];
 static char *obj_debug(t_object *obj) {
+    t_string_object *str_obj = (t_string_object *)obj;
 
-    if (OBJECT_TYPE_IS_CLASS(obj)) {
-        snprintf(global_buf, 1023, "String");
+    if (! str_obj->data.value) {
+        snprintf(str_obj->__debug_info, 199, "no string data defined");
     } else {
-        snprintf(global_buf, 1023, "string(\"%s\")", STROBJ2CHAR0(obj));
+        snprintf(str_obj->__debug_info, 199, "string(%d):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
     }
-
-    return global_buf;
+    return str_obj->__debug_info;
 }
 #endif
 
@@ -657,7 +656,6 @@ t_object_funcs string_funcs = {
 // Intial object
 t_string_object Object_String_struct = {
     OBJECT_HEAD_INIT("string", objectTypeString, OBJECT_TYPE_CLASS, &string_funcs, sizeof(t_string_object_data)),
-
     {
         NULL,       // Value
         "",         // Hash value

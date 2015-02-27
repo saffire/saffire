@@ -176,26 +176,26 @@ void object_exception_add_generated_exceptions(void);
 void object_exception_init(void) {
     Object_Exception_struct.attributes = ht_create();
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__ctor",   ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_ctor);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__ctor",   ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_ctor);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__boolean",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__null",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__numerical", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__string",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__boolean",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_boolean);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__null",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_null);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__numerical", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_numerical);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__string",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "setMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "setCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getmessage);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "setMessage", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setmessage);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getcode);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "setCode",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_setcode);
 
-//    object_add_internal_method((t_object *)&Object_Exception_struct, "getFile",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getfile);
-//    object_add_internal_method((t_object *)&Object_Exception_struct, "getClass",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getclass);
-//    object_add_internal_method((t_object *)&Object_Exception_struct, "getLine",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getline);
+//    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getFile",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getfile);
+//    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getClass",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getclass);
+//    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getLine",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getline);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "getStackTrace", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getstacktrace);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "getStackTrace", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_getstacktrace);
 
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_eq", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_Exception_struct, "__cmp_ne", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__cmp_eq", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_eq);
+    object_add_internal_method(Object_Exception_struct.attributes, (t_object *)&Object_Exception_struct, "__cmp_ne", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_exception_method_cmp_ne);
 
     vm_populate_builtins("exception", Object_Exception);
 
@@ -223,24 +223,24 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Optional (numerical) code
     if (e != NULL) {
-        exception_obj->data.code = (intptr_t)e->data;
+        exception_obj->data.code = (long)e->data.l;
         e = DLL_NEXT(e);
     }
 
     if (e != NULL) {
-        exception_obj->data.message = (t_string *)e->data;
+        exception_obj->data.message = (t_string *)e->data.p;
         e = DLL_NEXT(e);
     }
 
     // Optional (stack) trace
     if (e != NULL) {
-        exception_obj->data.stacktrace = (t_hash_table *)e->data;
+        exception_obj->data.stacktrace = (t_hash_table *)e->data.p;
         e = DLL_NEXT(e);
     }
 }
 
 static void obj_free(t_object *obj) {
-    // TODO: We have static and dynamic allocation of message. Make this more generic.
+    // TODO: We have static and dynamic allocation of message. Make this  more generic.
 //   t_string_object *str_obj = (t_string_object *)obj;
 //
 //   if (str_obj->value) {
@@ -253,15 +253,10 @@ static void obj_destroy(t_object *obj) {
 }
 
 #ifdef __DEBUG
-char global_buf[1024];
 static char *obj_debug(t_object *obj) {
-    if (OBJECT_TYPE_IS_CLASS(obj)) {
-        snprintf(global_buf, 1023, "%s", obj->name);
-    } else {
-        t_exception_object *exception = (t_exception_object *)obj;
-        snprintf(global_buf, 1023, "%s(%ld)[%s]", exception->name, exception->data.code, exception->data.message ? exception->data.message->val : "");
-    }
-    return global_buf;
+    t_exception_object *exception_obj = (t_exception_object *)obj;
+    snprintf(exception_obj->__debug_info, 199, "%s(%ld)[%s]", exception_obj->name, exception_obj->data.code, exception_obj->data.message ? exception_obj->data.message->val : "");
+    return exception_obj->__debug_info;
 }
 #endif
 

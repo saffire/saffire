@@ -86,31 +86,45 @@ void vm_namespace_cache_init(void) {
  * Free import cache table.
  */
 void vm_namespace_cache_fini(void) {
-//    t_hash_iter iter;
-//    ht_iter_init(&iter, class_import_table);
-//    while (ht_iter_valid(&iter)) {
-//        t_vm_namespace_import *namespace_import = ht_iter_value(&iter);
-//
-//        char *fqcn = ht_iter_key_str(&iter);
-//        DEBUG_PRINT_CHAR("Fini namespace %s%s\n", fqcn);
-//
-//        if (namespace_import->codeblock) {
-//            DEBUG_PRINT_CHAR("Freeing codeblock: %08X\n", namespace_import->codeblock);
-//
-//            // Free codeblock
-//            vm_codeblock_destroy(namespace_import->codeblock);
-//        }
-//
-//        // How about the elements?
-//        ht_destroy(namespace_import->classes);
-//
-//        // Free fqcn key. (@TODO: is this needed??)
-//        free(fqcn);
-//
-//        ht_iter_next(&iter);
-//    }
-//
-//    ht_destroy(class_import_table);
+    t_hash_iter iter;
+
+    // Destroy module mapping
+    ht_iter_init(&iter, global_module_mapping);
+    while (ht_iter_valid(&iter)) {
+        t_vm_module_mapping *module_map = ht_iter_value(&iter);
+
+        // Save codeblock reference
+        t_vm_codeblock *codeblock = module_map->frame->codeblock;
+
+        // Destroy actual frame
+        vm_stackframe_destroy(module_map->frame);
+
+        // Destroy codeblock of frame
+        bytecode_free(codeblock->bytecode);
+        vm_codeblock_destroy(codeblock);
+
+        smm_free(module_map);
+        ht_iter_next(&iter);
+    }
+
+    ht_destroy(global_module_mapping);
+
+
+    // Destroy class mapping
+    ht_iter_init(&iter, global_class_mapping);
+    while (ht_iter_valid(&iter)) {
+        t_vm_class_mapping *class_map = ht_iter_value(&iter);
+
+        // Note: we don't release class_map->module, as they point to global_module_mapping entries, which we already cleaned up.
+
+        if (class_map->object) {
+            object_release(class_map->object);
+        }
+        smm_free(class_map);
+        ht_iter_next(&iter);
+    }
+
+    ht_destroy(global_class_mapping);
 }
 
 
@@ -243,25 +257,24 @@ static t_vm_codeblock *_create_import_codeblock(t_vm_context *ctx) {
     t_bytecode *bc = assembler(asm_code, ctx->file.full);
     assembler_free(asm_code);
 
-    // Create codeblock
-    return vm_codeblock_new(bc, ctx);
+    // Create codeblock with duplicated context
+    return vm_codeblock_new(bc, vm_context_duplicate(ctx));
 }
 
 
 static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
     t_vm_codeblock *codeblock = _create_import_codeblock(ctx);
 
-    t_object *result = NULL;
-
     // Save original excption, if any, and clear exceptions so we can do import on the thread
     t_exception_object *exception = thread_get_exception();
     thread_clear_exception();
 
-    t_vm_stackframe *import_stackframe = vm_execute_import(codeblock, &result);
+    t_vm_stackframe *import_stackframe = vm_execute_import(codeblock, NULL);
 
     // exception during import is thrown, don't continue
     if (thread_exception_thrown()) {
         vm_stackframe_destroy(import_stackframe);
+        vm_codeblock_destroy(codeblock);
         return NULL;
     }
 
@@ -302,10 +315,12 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
             // no module mapping found. Create one
             t_vm_context *ctx = _vm_create_context_from_fqmn(fqmn);
             if (!ctx) {
+                smm_free(fqmn);
                 return NULL;
             }
             t_vm_stackframe *module_frame = _resolve_module(ctx);
-            smm_free(ctx);
+            vm_context_free_context(ctx);
+
             if (! module_frame) {
                 // Cannot resolve module from context
                 //@ TODO: Throw exception here
@@ -331,6 +346,7 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
     if (! class_map->object) {
         t_object *obj = _resolve_class_from_module(fqcn, class_map->module);
         class_map->object = obj;
+        object_inc_ref(obj);
     }
 
     return class_map->object;

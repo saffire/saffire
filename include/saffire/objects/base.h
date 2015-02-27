@@ -32,6 +32,7 @@
     #define t_base_object t_object
 
     #define Object_Base   (t_object *)&Object_Base_struct
+    #define Object_User   (t_object *)&Object_User_struct
 
     void object_base_init(void);
     void object_base_fini(void);

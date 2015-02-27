@@ -75,7 +75,7 @@ for name, methods in interfaces.iteritems() :
     fp.write("static void object_%s_init(void) {\n" % name)
     fp.write("    Object_%s_struct.attributes = ht_create();\n" % name.title())
     for method in methods :
-        fp.write("    object_add_internal_method((t_object *)&Object_%s_struct, \"%s\", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);\n" % (name.title(), method))
+        fp.write("    object_add_internal_method(Object_%s_struct.attributes, (t_object *)&Object_%s_struct, \"%s\", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);\n" % (name.title(), name.title(), method))
     fp.write("    vm_populate_builtins(\"%s\", (t_object *)&Object_%s_struct);\n" % (name, name.title()))
     fp.write("}\n")
     fp.write("\n")

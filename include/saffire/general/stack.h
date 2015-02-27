@@ -34,9 +34,9 @@
     } t_stack;
 
     t_stack *stack_init(void);
-    void stack_push(t_stack *stack, void *data);
-    void *stack_pop(t_stack *stack);
-    void *stack_peek(t_stack *stack);
+    void stack_push(t_stack *stack, char data);
+    char stack_pop(t_stack *stack);
+    char stack_peek(t_stack *stack);
     int stack_size(t_stack *stack);
     void stack_free(t_stack *stack);
 

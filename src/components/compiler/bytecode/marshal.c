@@ -312,13 +312,13 @@ int bytecode_marshal(t_bytecode *bytecode, int *bincode_off, char **bincode) {
 void bytecode_free(t_bytecode *bc) {
     smm_free(bc->code);
 
-    for (int i=0; i!=bc->constants_len; i++) {
+    for (long i=bc->constants_len-1; i>=0; i--) {
         _free_constant(bc->constants[i]);
         smm_free(bc->constants[i]);
     }
     smm_free(bc->constants);
 
-    for (int i=0; i!=bc->identifiers_len; i++) {
+    for (long i=bc->identifiers_len-1; i>=0; i--) {
         t_bytecode_identifier *id = bc->identifiers[i];
         smm_free(id->s);
         smm_free(bc->identifiers[i]);
@@ -360,7 +360,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     // Add constants (order matter!)
     e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data;
+        t_asm_constant *c = (t_asm_constant *)e->data.p;
         switch (c->type) {
             case const_code :
                 _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s, 1));
@@ -382,7 +382,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     // Add identifiers (order matter!)
     e = DLL_HEAD(frame->identifiers);
     while (e) {
-        _new_name(bc, (char *)e->data);
+        _new_name(bc, (char *)e->data.p);
         e = DLL_NEXT(e);
     }
 

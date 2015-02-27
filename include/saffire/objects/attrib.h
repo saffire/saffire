@@ -83,8 +83,8 @@
         t_object *attribute;                // Actual attribute (callback, or data value)
 
         t_object *bound_instance;           // Instance to which the attribute is bound. NULL when not bound (ie; when defined in a class)
-        t_object *bound_class;              // Class to which the attribute is bound. This is always a class.
-        char *bound_name;                   // Name on which the attribute is known in the class.
+        t_object *bound_class;              // Class to which the attribute is bound. This is always a class, NULL when not yet bound into a class.
+        char *bound_name;                   // Name under which the attribute is known in the class. (ie: "bar" in "foo.bar")
 
     } t_attrib_object_data;
 
@@ -101,6 +101,7 @@
     void object_attrib_init(void);
     void object_attrib_fini(void);
 
+    void object_attrib_bind(t_attrib_object *attrib_obj, t_object *bound_obj, char *name);
     t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *bound_obj);
     t_attrib_object *object_attrib_find(t_object *self, char *name);
 
