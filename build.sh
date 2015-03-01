@@ -27,7 +27,7 @@ build_target () {
 
     cd $target_dir
 
-    cmake -DCMAKE_BUILD_TYPE=$target_build ../..
+    cmake -DCMAKE_BUILD_TYPE=$target_build $SRC_ROOT_DIR
 
     if [ $verbose -eq 1 ] ; then
       VERBOSE=1 make
