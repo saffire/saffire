@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SRC_ROOT_DIR=`pwd`
 BUILD_ROOT_DIR="build"
 BUILDTYPE="all"
 CLEAN=0
