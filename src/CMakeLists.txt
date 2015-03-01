@@ -1,21 +1,7 @@
-include_directories(include)
 
 # @TODO: Only set this when not doing debug
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wno-unused-result")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Wno-unused-function -ggdb  -O0 -D__DEBUG")
-
-
-########################################################################
-# Generate custom files
-########################################################################
-
-# config.h
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake ${CMAKE_CURRENT_SOURCE_DIR}/include/config.h)
-
-# Generate gitversion.h
-execute_process(COMMAND git rev-parse HEAD  OUTPUT_VARIABLE GITREV_SHA1 OUTPUT_STRIP_TRAILING_WHITESPACE)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/gitversion.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/gitversion.h" @ONLY)
-
 
 ########################################################################
 # additional 3rd party libraries
@@ -95,7 +81,7 @@ if (BISON_FOUND)
         OUTPUT ${BisonOutput}
         COMMAND ${BISON_EXECUTABLE}
             -d
-            --defines=${CMAKE_SOURCE_DIR}/src/include/compiler/parser.tab.h
+            --defines=${CMAKE_SOURCE_DIR}/include/compiler/parser.tab.h
             --output=${BisonOutput}
             ${CMAKE_SOURCE_DIR}/src/components/compiler/saffire.y
         IMPLICIT_DEPENDS C components/vm/_generated_vm_opcodes.c
@@ -115,7 +101,7 @@ if (FLEX_FOUND)
         SOURCE ${FlexInput}
         COMMAND ${FLEX_EXECUTABLE}
             --outfile=${FlexOutput}
-            --header-file=${saffire_SOURCE_DIR}/src/include/compiler/lex.yy.h
+            --header-file=${saffire_SOURCE_DIR}/include/compiler/lex.yy.h
             ${FlexInput}
         COMMENT "Generating lex.yy.c"
     )
@@ -210,22 +196,22 @@ add_library(debugger STATIC ${debugger_SRCS})
 # components/objects
 ########################################################################
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h
     COMMAND php
         ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.php
         ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc
-        ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_exceptions.h
+        ${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h
     COMMENT "Generating exception objects"
 )
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_interfaces.h
     COMMAND php
         ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.php
         ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc
-        ${CMAKE_SOURCE_DIR}/src/include/objects/_generated_interfaces.h
+        ${CMAKE_SOURCE_DIR}/include/objects/_generated_interfaces.h
     COMMENT "Generating interface objects"
 )
 
@@ -264,12 +250,12 @@ add_library(repl STATIC ${repl_SRCS})
 ########################################################################
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_vm_opcodes.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/vm/_generated_vm_opcodes.h
     COMMAND php
         ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.php
         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
         ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c
-        ${CMAKE_SOURCE_DIR}/src/include/vm/_generated_vm_opcodes.h
+        ${CMAKE_SOURCE_DIR}/include/vm/_generated_vm_opcodes.h
     COMMENT "Generating vm opcodes source files"
 )
 

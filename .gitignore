@@ -37,8 +37,8 @@ lex.yy.*
 parser.tab.*
 parser.output
 _generated_*
-src/include/config.h
-src/include/gitversion.h
+include/config.h
+include/gitversion.h
 
 # Misc files
 html/
