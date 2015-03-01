@@ -1,10 +1,10 @@
 #!/bin/bash
 
-SRC_ROOT_DIR=`pwd`          # full path to the src directory
-BUILD_ROOT_DIR="build"      # relative path to the build directory. See `-b' option
-BUILDTYPE="all"             # determines which target(s) has to be built. See `-t' option
-CLEAN=0                     # clean the target build directory before build it. See `-c' option
-VERBOSE=0                   # make the build process verbose if 1. See `-v' option
+SRC_ROOT_DIR=`pwd`            # full path to the src directory
+BUILD_ROOT_DIR="`pwd`/build"  # path to the build directory. See `-b' option
+BUILDTYPE="all"               # determines which target(s) has to be built. See `-t' option
+CLEAN=0                       # clean the target build directory before build it. See `-c' option
+VERBOSE=0                     # make the build process verbose if 1. See `-v' option
 
 build_target () {
 
