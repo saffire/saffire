@@ -58,7 +58,7 @@ while getopts "hvct:b:" opt ; do
             echo "-h             Display usage info"
             echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
-            echo "-t <target>    Target to build (release|debug)."
+            echo "-t <target>    Target to build (release|debug|all)"
             echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo
             echo "When no target is specified, debug will be build."
