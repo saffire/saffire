@@ -40,9 +40,10 @@ while getopts "hvct:" opt ; do
             BUILDTYPE=${OPTARG}
             ;;
         h)
-            echo "Usage: build.sh [-h] [-c] [-t <target>]"
+            echo "Usage: build.sh [-h] [-v] [-c] [-t <target>]"
             echo
             echo "-h             Display usage info"
+            echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
             echo "-t <target>    Target to build (release|debug)."
             echo
