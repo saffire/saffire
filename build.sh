@@ -1,5 +1,10 @@
 #!/bin/bash
 
+BUILD_ROOT_DIR="build"
+BUILDTYPE="all"
+CLEAN=0
+VERBOSE=0
+
 build_target () {
 
     target_build=$1;
@@ -25,13 +30,6 @@ build_target () {
 
     popd
 }
-
-
-
-BUILD_ROOT_DIR="build"
-BUILDTYPE="all"
-CLEAN=0
-VERBOSE=0
 
 while getopts "hvct:b:" opt ; do
     case "${opt}" in
