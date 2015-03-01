@@ -69,7 +69,7 @@ while getopts "hvct:b:" opt ; do
 done
 
 if [ ! -d $BUILD_ROOT_DIR ] ; then
-    mkdir $BUILD_ROOT_DIR
+    mkdir -p $BUILD_ROOT_DIR
 fi
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
