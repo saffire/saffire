@@ -1,10 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
 build_target () {
+
     target_build=$1;
     target_dir=$2
     clean_dir=$3;
     verbose=$4
+
+    pushd .
+
+    cd $BUILD_ROOT_DIR
 
     if [ $clean_dir -eq 1 -a -d $target_dir ] ; then rm -rf $target_dir; fi
     if [ ! -d $target_dir ] ; then mkdir $target_dir ; fi
@@ -18,7 +23,7 @@ build_target () {
       make
     fi
 
-    cd ..
+    popd
 }
 
 
@@ -61,8 +66,6 @@ done
 if [ ! -d $BUILD_ROOT_DIR ] ; then
     mkdir $BUILD_ROOT_DIR
 fi
-
-cd $BUILD_ROOT_DIR
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
     build_target Release release $CLEAN $VERBOSE
