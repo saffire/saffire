@@ -1,5 +1,3 @@
-#!/bin/sh
-./configure --enable-debug
-make clean
-make
+#!/bin/bash
 
+./build.sh $@ -c -t debug
