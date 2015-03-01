@@ -21,7 +21,9 @@ build_target () {
         rm -rf $target_dir
     fi
 
-    if [ ! -d $target_dir ] ; then mkdir $target_dir ; fi
+    if [ ! -d $target_dir ] ; then
+        mkdir $target_dir
+    fi
 
     cd $target_dir
     cmake -B.  -D CMAKE_BUILD_TYPE=$target_build ../..
