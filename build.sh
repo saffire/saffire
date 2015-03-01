@@ -2,7 +2,7 @@
 
 SRC_ROOT_DIR=`pwd`            # full path to the src directory
 BUILD_ROOT_DIR="`pwd`/build"  # path to the build directory. See `-b' option
-BUILDTYPE="debug"             # determines which target(s) has to be built. See `-t' option
+BUILDTYPE="release"           # determines which target(s) has to be built. See `-t' option
 CLEAN=0                       # clean the target build directory before build it. See `-c' option
 VERBOSE=0                     # make the build process verbose if 1. See `-v' option
 
@@ -61,7 +61,7 @@ while getopts "hvct:b:" opt ; do
             echo "-t <target>    Target to build (release|debug|all)"
             echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo
-            echo "When no target is specified, debug will be build."
+            echo "When no target is specified, release will be build."
             echo
             exit 1
             ;;
