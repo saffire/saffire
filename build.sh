@@ -23,12 +23,12 @@ build_target () {
 
 
 
-
+BUILD_ROOT_DIR="build"
 BUILDTYPE="all"
 CLEAN=0
 VERBOSE=0
 
-while getopts "hvct:" opt ; do
+while getopts "hvct:b:" opt ; do
     case "${opt}" in
         v)
             VERBOSE=1
@@ -39,6 +39,9 @@ while getopts "hvct:" opt ; do
         t)
             BUILDTYPE=${OPTARG}
             ;;
+        b)
+            BUILD_ROOT_DIR=${OPTARG}
+            ;;
         h)
             echo "Usage: build.sh [-h] [-v] [-c] [-t <target>]"
             echo
@@ -46,6 +49,7 @@ while getopts "hvct:" opt ; do
             echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
             echo "-t <target>    Target to build (release|debug)."
+            echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo
             echo "When no target is specified, all targets will be build."
             echo
@@ -54,11 +58,11 @@ while getopts "hvct:" opt ; do
     esac
 done
 
-if [ ! -d build ] ; then
-    mkdir build
+if [ ! -d $BUILD_ROOT_DIR ] ; then
+    mkdir $BUILD_ROOT_DIR
 fi
 
-cd build
+cd $BUILD_ROOT_DIR
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
     build_target Release release $CLEAN $VERBOSE
