@@ -30,10 +30,10 @@ build_target () {
     cmake -DCMAKE_BUILD_TYPE=$target_build $SRC_ROOT_DIR
 
     if [ $verbose -eq 1 ] ; then
-      VERBOSE=1 make
-    else
-      make
+        export VERBOSE=1
     fi
+
+    make
 
     popd
 }
