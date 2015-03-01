@@ -17,7 +17,10 @@ build_target () {
 
     cd $BUILD_ROOT_DIR
 
-    if [ $clean_dir -eq 1 -a -d $target_dir ] ; then rm -rf $target_dir; fi
+    if [ $clean_dir -eq 1 ] ; then
+        rm -rf $target_dir
+    fi
+
     if [ ! -d $target_dir ] ; then mkdir $target_dir ; fi
 
     cd $target_dir
