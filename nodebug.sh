@@ -1,2 +1,3 @@
-#!/bin/sh
+#!/bin/bash
+
 build.sh -c -t release
