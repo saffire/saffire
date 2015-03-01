@@ -27,7 +27,7 @@ build_target () {
 
     cd $target_dir
 
-    cmake -D CMAKE_BUILD_TYPE=$target_build ../..
+    cmake -DCMAKE_BUILD_TYPE=$target_build ../..
 
     if [ $verbose -eq 1 ] ; then
       VERBOSE=1 make
