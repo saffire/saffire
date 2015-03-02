@@ -27,10 +27,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "general/string.h"
-#include "objects/objects.h"
-#include "general/smm.h"
-#include "general/output.h"
+#include <general/string.h>
+#include <objects/objects.h>
+#include <general/smm.h>
+#include <general/output.h>
 
 // Our default converter (@TODO: what about reading from other converters like utf16 etc??)
 UConverter *converter;

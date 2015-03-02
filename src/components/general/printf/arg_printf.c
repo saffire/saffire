@@ -28,11 +28,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "general/printf.h"
-#include "general/output.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "vm/vm.h"
+#include <general/printf.h>
+#include <general/output.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <vm/vm.h>
 
 /**
  *

@@ -28,15 +28,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "general/output.h"
-#include "compiler/parser_helpers.h"
-#include "compiler/saffire_parser.h"
-#include "compiler/parser.tab.h"
-#include "objects/callable.h"
+#include <general/output.h>
+#include <compiler/parser_helpers.h>
+#include <compiler/saffire_parser.h>
+#include <compiler/parser.tab.h>
+#include <objects/callable.h>
 
-#include "compiler/ast_nodes.h"
-#include "general/smm.h"
-#include "objects/attrib.h"
+#include <compiler/ast_nodes.h>
+#include <general/smm.h>
+#include <objects/attrib.h>
 
 
 /**

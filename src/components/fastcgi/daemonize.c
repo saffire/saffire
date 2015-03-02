@@ -39,11 +39,11 @@
 #include <sys/socket.h>
 #include <pwd.h>
 #include <grp.h>
-#include "general/output.h"
-#include "general/config.h"
-#include "fastcgi/scoreboard.h"
-#include "fastcgi/daemonize.h"
-#include "debug.h"
+#include <general/output.h>
+#include <general/config.h>
+#include <fastcgi/scoreboard.h>
+#include <fastcgi/daemonize.h>
+#include <debug.h>
 
 
 int sock_fd = -1;       // Socket file descriptor

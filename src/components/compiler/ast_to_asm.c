@@ -26,20 +26,20 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "compiler/ast_to_asm.h"
-#include "compiler/output/asm.h"
-#include "compiler/bytecode.h"
-#include "compiler/ast_nodes.h"
-#include "compiler/saffire_parser.h"
-#include "compiler/parser.tab.h"
-#include "general/output.h"
-#include "general/smm.h"
-#include "general/stack.h"
-#include "general/dll.h"
-#include "debug.h"
-#include "vm/vm_opcodes.h"
-#include "vm/stackframe.h"
-#include "objects/attrib.h"
+#include <compiler/ast_to_asm.h>
+#include <compiler/output/asm.h>
+#include <compiler/bytecode.h>
+#include <compiler/ast_nodes.h>
+#include <compiler/saffire_parser.h>
+#include <compiler/parser.tab.h>
+#include <general/output.h>
+#include <general/smm.h>
+#include <general/stack.h>
+#include <general/dll.h>
+#include <debug.h>
+#include <vm/vm_opcodes.h>
+#include <vm/stackframe.h>
+#include <objects/attrib.h>
 
 #define MAX_LABEL_LEN       100
 

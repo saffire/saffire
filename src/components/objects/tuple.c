@@ -28,13 +28,13 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/hashtable.h"
-#include "general/smm.h"
-#include "general/md5.h"
-#include "debug.h"
-#include "general/output.h"
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/hashtable.h>
+#include <general/smm.h>
+#include <general/md5.h>
+#include <debug.h>
+#include <general/output.h>
 
 /* ======================================================================
  *   Supporting functions

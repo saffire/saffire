@@ -26,14 +26,14 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "general/output.h"
-#include "modules/module_api.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/dll.h"
-#include "general/smm.h"
-#include "vm/vm.h"
-#include "debug.h"
+#include <general/output.h>
+#include <modules/module_api.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/dll.h>
+#include <general/smm.h>
+#include <vm/vm.h>
+#include <debug.h>
 
 /**
  *

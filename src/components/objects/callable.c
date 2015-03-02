@@ -27,12 +27,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
-#include "general/md5.h"
-#include "vm/thread.h"
-#include "debug.h"
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
+#include <general/md5.h>
+#include <vm/thread.h>
+#include <debug.h>
 
 
 /* ======================================================================

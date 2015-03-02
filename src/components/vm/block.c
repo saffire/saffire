@@ -25,9 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "vm/vmtypes.h"
-#include "debug.h"
-#include "general/output.h"
+#include <vm/vmtypes.h>
+#include <debug.h>
+#include <general/output.h>
 
 
 #ifdef __DEBUG

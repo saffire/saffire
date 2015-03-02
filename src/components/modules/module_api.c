@@ -25,16 +25,16 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "general/output.h"
-#include "modules/module_api.h"
-#include "general/dll.h"
-#include "debug.h"
-#include "general/hashtable.h"
-#include "vm/vm.h"
-#include "general/smm.h"
-#include "modules/io.h"
-#include "modules/saffire.h"
-#include "modules/sapi/fastcgi.h"
+#include <general/output.h>
+#include <modules/module_api.h>
+#include <general/dll.h>
+#include <debug.h>
+#include <general/hashtable.h>
+#include <vm/vm.h>
+#include <general/smm.h>
+#include <modules/io.h>
+#include <modules/saffire.h>
+#include <modules/sapi/fastcgi.h>
 
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))

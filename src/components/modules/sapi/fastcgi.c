@@ -26,17 +26,17 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include "general/output.h"
-#include "modules/module_api.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/dll.h"
-#include "version.h"
-#include "vm/vm.h"
-#include "general/smm.h"
+#include <general/output.h>
+#include <modules/module_api.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/dll.h>
+#include <version.h>
+#include <vm/vm.h>
+#include <general/smm.h>
 
 #define NO_FCGI_DEFINES
-#include "fcgi_stdio.h"
+#include <fcgi_stdio.h>
 
 FCGX_ParamArray fcgi_env;
 

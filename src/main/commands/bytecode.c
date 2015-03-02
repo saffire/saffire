@@ -33,21 +33,21 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fnmatch.h>
-#include "general/output.h"
-#include "vm/vm.h"
-#include "vm/stackframe.h"
-#include "commands/command.h"
-#include "general/smm.h"
-#include "general/parse_options.h"
-#include "general/path_handling.h"
-#include "compiler/bytecode.h"
-#include "objects/numerical.h"
-#include "debug.h"
-#include "general/config.h"
-#include "dot/dot.h"
-#include "compiler/ast_nodes.h"
-#include "compiler/ast_to_asm.h"
-#include "compiler/output/asm.h"
+#include <general/output.h>
+#include <vm/vm.h>
+#include <vm/stackframe.h>
+#include <commands/command.h>
+#include <general/smm.h>
+#include <general/parse_options.h>
+#include <general/path_handling.h>
+#include <compiler/bytecode.h>
+#include <objects/numerical.h>
+#include <debug.h>
+#include <general/config.h>
+#include <dot/dot.h>
+#include <compiler/ast_nodes.h>
+#include <compiler/ast_to_asm.h>
+#include <compiler/output/asm.h>
 
 extern char *vm_code_names[];
 extern int vm_codes_index[];

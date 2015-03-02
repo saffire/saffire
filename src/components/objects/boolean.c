@@ -25,9 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
 
 
 

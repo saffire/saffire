@@ -27,9 +27,9 @@
 
 #include <string.h>
 #include <ctype.h>
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
 
 
 /*

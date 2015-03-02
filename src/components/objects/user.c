@@ -26,12 +26,12 @@
 */
 
 #include <string.h>
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
 
-#include "general/output.h"
-#include "debug.h"
+#include <general/output.h>
+#include <debug.h>
 
 
 /* ======================================================================

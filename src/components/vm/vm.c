@@ -26,24 +26,24 @@
 */
 #include <string.h>
 #include <limits.h>
-#include "compiler/bytecode.h"
-#include "vm/vm.h"
-#include "vm/stackframe.h"
-#include "vm/context.h"
-#include "vm/vm_opcodes.h"
-#include "vm/block.h"
-#include "vm/thread.h"
-#include "vm/import.h"
-#include "general/dll.h"
-#include "general/smm.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "modules/module_api.h"
-#include "debug.h"
-#include "general/output.h"
-#include "vm/import.h"
-#include "gc/gc.h"
-#include "debugger/dbgp/dbgp.h"
+#include <compiler/bytecode.h>
+#include <vm/vm.h>
+#include <vm/stackframe.h>
+#include <vm/context.h>
+#include <vm/vm_opcodes.h>
+#include <vm/block.h>
+#include <vm/thread.h>
+#include <vm/import.h>
+#include <general/dll.h>
+#include <general/smm.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <modules/module_api.h>
+#include <debug.h>
+#include <general/output.h>
+#include <vm/import.h>
+#include <gc/gc.h>
+#include <debugger/dbgp/dbgp.h>
 
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object

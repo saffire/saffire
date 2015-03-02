@@ -26,10 +26,10 @@
 */
 #include <string.h>
 #include <math.h>
-#include "objects/object.h"
-#include "general/hashtable.h"
-#include "general/hash/hash_funcs.h"
-#include "general/smm.h"
+#include <objects/object.h>
+#include <general/hashtable.h>
+#include <general/hash/hash_funcs.h>
+#include <general/smm.h>
 
 /**
  * These hash tables are not reentrant, nor threadsafe!

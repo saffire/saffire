@@ -30,14 +30,14 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "general/string.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
-#include "general/md5.h"
-#include "general/output.h"
-#include "debug.h"
-#include "vm/thread.h"
+#include <general/string.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
+#include <general/md5.h>
+#include <general/output.h>
+#include <debug.h>
+#include <vm/thread.h>
 
 /* ======================================================================
  *   Supporting functions

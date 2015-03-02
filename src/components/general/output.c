@@ -29,9 +29,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
-#include "general/printf.h"
-#include "general/output.h"
-#include "general/smm.h"
+#include <general/printf.h>
+#include <general/output.h>
+#include <general/smm.h>
 
 
 /**

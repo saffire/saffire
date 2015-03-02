@@ -31,16 +31,16 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include "objects/object.h"
-#include "modules/module_api.h"
-#include "compiler/ast_nodes.h"
-#include "general/smm.h"
-#include "commands/command.h"
-#include "general/parse_options.h"
-#include "general/path_handling.h"
-#include "vm/vm.h"
-#include "general/output.h"
-#include "debug.h"
+#include <objects/object.h>
+#include <modules/module_api.h>
+#include <compiler/ast_nodes.h>
+#include <general/smm.h>
+#include <commands/command.h>
+#include <general/parse_options.h>
+#include <general/path_handling.h>
+#include <vm/vm.h>
+#include <general/output.h>
+#include <debug.h>
 
 static int flag_debug = 0;
 static int flag_no_verify = 0;
