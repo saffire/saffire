@@ -1,6 +1,6 @@
 #include <CUnit/CUnit.h>
 #include "dll.h"
-#include "../../src/include/general/dll.h"
+#include "../../include/general/dll.h"
 
 
 static void test_dll_dll_init() {
