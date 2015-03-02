@@ -27,11 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "general/hashtable.h"
-#include "general/smm.h"
-#include "general/string.h"
-#include "objects/object.h"
-#include "debug.h"
+#include <general/hashtable.h>
+#include <general/smm.h>
+#include <general/string.h>
+#include <objects/object.h>
+#include <debug.h>
 
 extern t_hashfuncs chained_hf;
 

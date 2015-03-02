@@ -26,12 +26,12 @@
 */
 #include <string.h>
 #include <libgen.h>
-#include "general/output.h"
-#include "vm/codeblock.h"
-#include "vm/context.h"
-#include "general/smm.h"
-#include "debug.h"
-#include "assert.h"
+#include <general/output.h>
+#include <vm/codeblock.h>
+#include <vm/context.h>
+#include <general/smm.h>
+#include <debug.h>
+#include <assert.h>
 
 /**
  * Returns the context path from a specified context  (::foo::bar::baz)

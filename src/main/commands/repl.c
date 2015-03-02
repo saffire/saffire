@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include "commands/command.h"
-#include "repl/repl.h"
+#include <commands/command.h>
+#include <repl/repl.h>
 
 static int do_repl(void) {
     return (repl());

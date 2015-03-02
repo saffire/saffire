@@ -25,7 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <semaphore.h>
-#include "general/mutex.h"
+#include <general/mutex.h>
 
 int mutex_create(t_mutex *mutex) {
     return sem_init(mutex, 0, 1);

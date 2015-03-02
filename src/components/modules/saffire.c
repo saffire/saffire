@@ -25,18 +25,18 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include "general/output.h"
-#include "modules/module_api.h"
-#include "general/string.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/config.h"
-#include "general/dll.h"
-#include "version.h"
-#include "vm/vm.h"
-#include "vm/thread.h"
-#include "general/smm.h"
-#include "string.h"
+#include <general/output.h>
+#include <modules/module_api.h>
+#include <general/string.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/config.h>
+#include <general/dll.h>
+#include <version.h>
+#include <vm/vm.h>
+#include <vm/thread.h>
+#include <general/smm.h>
+#include <string.h>
 
 SAFFIRE_MODULE_METHOD(saffire, get_locale) {
     t_thread *thread = thread_get_current();

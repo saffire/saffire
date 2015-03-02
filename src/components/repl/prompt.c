@@ -29,10 +29,10 @@
 #include <string.h>
 #include <time.h>
 #include <histedit.h>
-#include "repl/repl.h"
-#include "compiler/saffire_parser.h"
-#include "compiler/parser.tab.h"
-#include "compiler/lex.yy.h"
+#include <repl/repl.h>
+#include <compiler/saffire_parser.h>
+#include <compiler/parser.tab.h>
+#include <compiler/lex.yy.h>
 
 // Maximum size of the prompt that will be displayed
 #define MAX_PROMPT_SIZE 100

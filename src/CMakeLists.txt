@@ -3,6 +3,9 @@
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wno-unused-result")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Wno-unused-function -ggdb  -O0 -D__DEBUG")
 
+# Add include directory so include files are found
+include_directories(${saffire_SOURCE_DIR}/include)
+
 ########################################################################
 # additional 3rd party libraries
 ########################################################################
@@ -64,13 +67,8 @@ set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
 # components/compiler
 ########################################################################
 
-#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/components/objects/_generated_interfaces.inc GENERATED)
-SET_SOURCE_FILES_PROPERTIES(include/objects/_generated_interfaces.h GENERATED)
-#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/components/objects/_generated_exceptions.inc GENERATED)
-#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h GENERATED)
-#SET_SOURCE_FILES_PROPERTIES(${CMAKE_SOURCE_DIR}/include/vm/_generated_opcodes.h GENERATED)
-SET_SOURCE_FILES_PROPERTIES(components/vm/_generated_vm_opcodes.c GENERATED)
-
+#SET_SOURCE_FILES_PROPERTIES({CMAKE_SOURCE_DIR}/include/objects/_generated_interfaces.h GENERATED)
+#SET_SOURCE_FILES_PROPERTIES(components/vm/_generated_vm_opcodes.c GENERATED)
 
 
 # parser.tab.c

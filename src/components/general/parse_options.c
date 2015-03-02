@@ -27,9 +27,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "general/output.h"
-#include "general/parse_options.h"
-#include "general/smm.h"
+#include <general/output.h>
+#include <general/parse_options.h>
+#include <general/smm.h>
 
 /* Parameters known to saffire commands. Similar to argc & argv */
 char **saffire_params;

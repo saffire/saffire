@@ -25,12 +25,12 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include "general/string.h"
-#include "objects/object.h"
-#include "objects/objects.h"
-#include "general/smm.h"
-#include "general/output.h"
-#include "vm/thread.h"
+#include <general/string.h>
+#include <objects/object.h>
+#include <objects/objects.h>
+#include <general/smm.h>
+#include <general/output.h>
+#include <vm/thread.h>
 
 /* ======================================================================
  *   Object methods

@@ -35,23 +35,23 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include "general/output.h"
-#include "general/config.h"
-#include "fastcgi/scoreboard.h"
-#include "fastcgi/daemonize.h"
-#include "fastcgi/fastcgi_srv.h"
-#include "general/smm.h"
-#include "general/path_handling.h"
-#include "vm/vm.h"
-#include "compiler/ast_to_asm.h"
-#include "compiler/output/asm.h"
+#include <general/output.h>
+#include <general/config.h>
+#include <fastcgi/scoreboard.h>
+#include <fastcgi/daemonize.h>
+#include <fastcgi/fastcgi_srv.h>
+#include <general/smm.h>
+#include <general/path_handling.h>
+#include <vm/vm.h>
+#include <compiler/ast_to_asm.h>
+#include <compiler/output/asm.h>
 
 /**
  * Heavily based on the spawn-fcgi, http://cgit.stbuehler.de/gitosis/spawn-fcgi/
  */
 
 #define NO_FCGI_DEFINES
-#include "fcgi_stdio.h"
+#include <fcgi_stdio.h>
 
 // This file descriptor has to be connected to a socket, otherwise
 // FastCGI does not recognize this as a FastCGI program

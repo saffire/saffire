@@ -25,8 +25,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include "general/dll.h"
-#include "general/smm.h"
+#include <general/dll.h>
+#include <general/smm.h>
 
 
 /**

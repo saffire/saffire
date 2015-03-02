@@ -27,9 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-#include "general/output.h"
-#include "general/hashtable.h"
-#include "general/smm.h"
+#include <general/output.h>
+#include <general/hashtable.h>
+#include <general/smm.h>
 
 
 // @TODO: Fix this into a better/faster memory manager (slab allocator)

@@ -27,17 +27,17 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include "general/config.h"
-#include "general/string.h"
-#include "debugger/dbgp/xml.h"
-#include "debugger/dbgp/args.h"
-#include "debugger/dbgp/sock.h"
-#include "debugger/dbgp/commands.h"
-#include "debug.h"
-#include "general/smm.h"
-#include "objects/objects.h"
-#include "general/base64.h"
-#include "version.h"
+#include <general/config.h>
+#include <general/string.h>
+#include <debugger/dbgp/xml.h>
+#include <debugger/dbgp/args.h>
+#include <debugger/dbgp/sock.h>
+#include <debugger/dbgp/commands.h>
+#include <debug.h>
+#include <general/smm.h>
+#include <objects/objects.h>
+#include <general/base64.h>
+#include <version.h>
 
 #define OPTION_MAX_CHILDREN     101
 #define OPTION_MAX_DATA         102

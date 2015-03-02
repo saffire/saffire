@@ -29,15 +29,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "general/output.h"
-#include "compiler/parser_helpers.h"
-#include "compiler/saffire_parser.h"
-#include "compiler/parser.tab.h"
-#include "general/smm.h"
-#include "compiler/ast_nodes.h"
-#include "compiler/lex.yy.h"
-#include "vm/context.h"
-#include "debug.h"
+#include <general/output.h>
+#include <compiler/parser_helpers.h>
+#include <compiler/saffire_parser.h>
+#include <compiler/parser.tab.h>
+#include <general/smm.h>
+#include <compiler/ast_nodes.h>
+#include <compiler/lex.yy.h>
+#include <vm/context.h>
+#include <debug.h>
 
 
 /**
