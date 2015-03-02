@@ -26,7 +26,7 @@ env:
   - TARGET=debug
   - TARGET=release
 
-script: ./build.sh $TARGET && SAFFIRE_TEST_BIN=build/release/saffire sh unittest.sh
+script: ./build.sh -t $TARGET -t && SAFFIRE_TEST_BIN=build/release/saffire sh unittest.sh
 
 #notifications:
 #  irc: "irc.freenode.org#saffire"
