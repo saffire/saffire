@@ -1,9 +1,5 @@
 language: c
 
-compiler:
-  - clang
-  - gcc
-
 before_script:
   - wget http://saffire-lang.org/travis/libicu-dev_4.8.1.1-3_amd64.deb
   - wget http://saffire-lang.org/travis/libicu48_4.8.1.1-3_amd64.deb
@@ -20,10 +16,17 @@ before_install:
   - printf "\n" | sudo pecl install yaml
   - sudo sh -c 'echo "extension = yaml.so" >> /etc/php5/cli/php.ini'
 
+# Compile on gcc and clan
+compiler:
+  - clang
+  - gcc
+  
+# Separate debug and release targets
 env:
-    SAFFIRE_TEST_BIN=build/release/saffire
+  - TARGET=debug
+  - TARGET=release
 
-script: ./build.sh && sh unittest.sh
+script: ./build.sh $TARGET && SAFFIRE_TEST_BIN=build/release/saffire sh unittest.sh
 
-notifications:
-  irc: "irc.freenode.org#saffire"
+#notifications:
+#  irc: "irc.freenode.org#saffire"
