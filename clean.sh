@@ -11,3 +11,8 @@ rm src/components/objects/_generated_exceptions.inc
 rm src/include/objects/_generated_exceptions.h
 rm src/components/objects/_generated_interfaces.inc
 rm src/include/objects/_generated_interfaces.h
+rm src/include/config.h
+rm src/include/gitversion.h
+rm src/include/compiler/parser.tab.h
+
+true
