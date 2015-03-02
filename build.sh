@@ -13,8 +13,6 @@ build_target () {
     clean_dir=$3;
     verbose=$4
 
-    pushd .
-
     cd $BUILD_ROOT_DIR
 
     if [ $clean_dir -eq 1 ] ; then
@@ -35,7 +33,7 @@ build_target () {
 
     make
 
-    popd
+    cd $SRC_ROOT_DIR
 }
 
 while getopts "hvct:b:" opt ; do
@@ -75,6 +73,7 @@ fi
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
     build_target Release release $CLEAN $VERBOSE
 fi
+
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "debug" ] ; then
     build_target Debug debug $CLEAN $VERBOSE
 fi
