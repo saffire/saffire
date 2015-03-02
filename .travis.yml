@@ -1,5 +1,9 @@
 language: c
-compiler: gcc
+
+compiler:
+  - clang
+  - gcc
+
 before_script:
   - wget http://saffire-lang.org/travis/libicu-dev_4.8.1.1-3_amd64.deb
   - wget http://saffire-lang.org/travis/libicu48_4.8.1.1-3_amd64.deb
@@ -7,6 +11,7 @@ before_script:
   - sudo dpkg -i libicu-dev_4.8.1.1-3_amd64.deb
   - sudo mkdir -p /usr/share/saffire/modules
   - sudo ln -s `pwd`/sfl /usr/share/saffire/modules/sfl
+
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libxml2-dev
@@ -17,6 +22,8 @@ before_install:
 
 env:
     SAFFIRE_TEST_BIN=build/release/saffire
+
 script: ./build.sh && sh unittest.sh
+
 notifications:
   irc: "irc.freenode.org#saffire"
