@@ -1,4 +1,4 @@
-include_directories(../../src/include)
+include_directories(../../include)
 link_directories(../../src)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function")
