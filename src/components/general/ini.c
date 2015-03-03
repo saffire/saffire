@@ -29,7 +29,11 @@
 #include <pcre.h>
 #include <fnmatch.h>
 #include <ctype.h>
+#ifdef __LINUX__
 #include <linux/limits.h>
+#else
+#include <limits.h>
+#endif
 #include <general/ini.h>
 #include <general/smm.h>
 #include <general/dll.h>

@@ -29,9 +29,9 @@
 
     #define U_CHARSET_IS_UTF8 1
 
-    #include "unicode/uchar.h"
-    #include "unicode/ucnv.h"
-    #include "unicode/ustring.h"
+    #include <unicode/uchar.h>
+    #include <unicode/ucnv.h>
+    #include <unicode/ustring.h>
 
     typedef struct _string t_string;
 

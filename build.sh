@@ -6,6 +6,10 @@ BUILDTYPE="release"           # determines which target(s) has to be built. See 
 CLEAN=0                       # clean the target build directory before build it. See `-c' option
 VERBOSE=0                     # make the build process verbose if 1. See `-v' option
 
+if [[ `uname` == 'Darwin' ]]; then
+    export ICU_ROOT=$(brew --prefix icu4c)
+fi
+
 build_target () {
 
     target_build=$1;
