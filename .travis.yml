@@ -14,7 +14,7 @@ before_install:
   - sudo apt-get install -qq php5-cli
   - sudo apt-get install -qq libcunit1-dev
 
-# Compile on gcc and clan
+# Compile on gcc and clang
 compiler:
   - clang
   - gcc
