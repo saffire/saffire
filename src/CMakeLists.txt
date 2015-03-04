@@ -247,15 +247,9 @@ add_library(repl STATIC ${repl_SRCS})
 ########################################################################
 
 add_custom_command(
-<<<<<<< HEAD
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h
-    COMMAND php
-        ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.php
-=======
     OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/vm/_generated_vm_opcodes.h
     COMMAND python
         ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.py
->>>>>>> upstream/develop
         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
         ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c
         ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h
