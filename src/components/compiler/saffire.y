@@ -39,8 +39,8 @@
     #include <debug.h>
     #include <vm/context.h>
     #include <compiler/saffire_parser.h>
-    #include <compiler/parser.tab.h>
-    #include <compiler/lex.yy.h>
+    #include "parser.tab.h"
+    //#include <compiler/lex.yy.h>
 
     // Push and pop for parser states
     void saffire_push_state(int state);

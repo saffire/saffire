@@ -30,8 +30,7 @@
 #include <histedit.h>
 #include <signal.h>
 #include <compiler/saffire_parser.h>
-#include <compiler/parser.tab.h>
-#include <compiler/lex.yy.h>
+#include "../compiler/parser.tab.h"
 #include <general/config.h>
 #include <repl/repl.h>
 #include <general/output.h>

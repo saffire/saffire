@@ -37,7 +37,7 @@
     #include <general/smm.h>
     #include <compiler/ast_nodes.h>
     #include <compiler/saffire_parser.h>
-    #include <compiler/parser.tab.h>
+    #include "parser.tab.h"
 
     // Forward defines
     size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno);

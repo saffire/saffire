@@ -1,0 +1,10 @@
+
+add_subdirectory(compiler)
+add_subdirectory(debugger)
+add_subdirectory(fastcgi)
+add_subdirectory(gc)
+add_subdirectory(general)
+add_subdirectory(modules)
+add_subdirectory(objects)
+add_subdirectory(repl)
+add_subdirectory(vm)

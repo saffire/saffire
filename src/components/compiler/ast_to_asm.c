@@ -31,7 +31,7 @@
 #include <compiler/bytecode.h>
 #include <compiler/ast_nodes.h>
 #include <compiler/saffire_parser.h>
-#include <compiler/parser.tab.h>
+#include "parser.tab.h"
 #include <general/output.h>
 #include <general/smm.h>
 #include <general/stack.h>
