@@ -46,7 +46,7 @@ $header = <<< EOH
 
 
 #include <stdio.h>
-#include "objects/object.h"
+#include <saffire/objects/object.h>
 
 
 EOH;

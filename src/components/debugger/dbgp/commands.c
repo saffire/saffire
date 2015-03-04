@@ -27,17 +27,17 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <general/config.h>
-#include <general/string.h>
-#include <debugger/dbgp/xml.h>
-#include <debugger/dbgp/args.h>
-#include <debugger/dbgp/sock.h>
-#include <debugger/dbgp/commands.h>
-#include <debug.h>
-#include <general/smm.h>
-#include <objects/objects.h>
-#include <general/base64.h>
-#include <version.h>
+#include <saffire/general/config.h>
+#include <saffire/general/string.h>
+#include <saffire/debugger/dbgp/xml.h>
+#include <saffire/debugger/dbgp/args.h>
+#include <saffire/debugger/dbgp/sock.h>
+#include <saffire/debugger/dbgp/commands.h>
+#include <saffire/debug.h>
+#include <saffire/general/smm.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/base64.h>
+#include <saffire/version.h>
 
 #define OPTION_MAX_CHILDREN     101
 #define OPTION_MAX_DATA         102

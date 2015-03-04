@@ -27,17 +27,17 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
-#include <vm/vm.h>
-#include <vm/stackframe.h>
-#include <vm/thread.h>
-#include <vm/import.h>
-#include <objects/objects.h>
-#include <compiler/ast_nodes.h>
-#include <compiler/ast_to_asm.h>
-#include <compiler/output/asm.h>
-#include <general/path_handling.h>
-#include <general/output.h>
-#include <debug.h>
+#include <saffire/vm/vm.h>
+#include <saffire/vm/stackframe.h>
+#include <saffire/vm/thread.h>
+#include <saffire/vm/import.h>
+#include <saffire/objects/objects.h>
+#include <saffire/compiler/ast_nodes.h>
+#include <saffire/compiler/ast_to_asm.h>
+#include <saffire/compiler/output/asm.h>
+#include <saffire/general/path_handling.h>
+#include <saffire/general/output.h>
+#include <saffire/debug.h>
 
 
 /*

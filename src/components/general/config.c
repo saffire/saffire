@@ -30,13 +30,13 @@
 #include <fnmatch.h>
 #include <libgen.h>
 #include <linux/limits.h>
-#include <general/config.h>
-#include <general/output.h>
-#include <general/smm.h>
-#include <general/parse_options.h>
-#include <general/path_handling.h>
-#include <general/ini.h>
-#include <debug.h>
+#include <saffire/general/config.h>
+#include <saffire/general/output.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/parse_options.h>
+#include <saffire/general/path_handling.h>
+#include <saffire/general/ini.h>
+#include <saffire/debug.h>
 
 
 #define SAFFIRE_INI_FILENAME "saffire.ini"

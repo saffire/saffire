@@ -30,9 +30,9 @@
 #include <fnmatch.h>
 #include <ctype.h>
 #include <linux/limits.h>
-#include <general/ini.h>
-#include <general/smm.h>
-#include <general/dll.h>
+#include <saffire/general/ini.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/dll.h>
 
 
 static void ini_destroy_keys(t_ini *ini) {

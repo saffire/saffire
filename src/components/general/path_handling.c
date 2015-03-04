@@ -24,9 +24,9 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <general/path_handling.h>
-#include <general/definitions.h>
-#include <general/smm.h>
+#include <saffire/general/path_handling.h>
+#include <saffire/general/definitions.h>
+#include <saffire/general/smm.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>

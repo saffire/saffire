@@ -32,8 +32,8 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <general/output.h>
-#include <fastcgi/scoreboard.h>
+#include <saffire/general/output.h>
+#include <saffire/fastcgi/scoreboard.h>
 
 static  int shm_id;     // ID of shared memory
 static int sem_id;     // ID of semaphore (for locking shared memory)

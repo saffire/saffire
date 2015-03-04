@@ -25,24 +25,24 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <string.h>
-#include <vm/vm.h>
-#include <vm/stackframe.h>
-#include <vm/thread.h>
-#include <vm/context.h>
-#include <vm/import.h>
-#include <compiler/bytecode.h>
-#include <vm/vm_opcodes.h>
-#include <general/smm.h>
-#include <objects/string.h>
-#include <objects/numerical.h>
-#include <objects/hash.h>
-#include <objects/null.h>
-#include <objects/boolean.h>
-#include <objects/callable.h>
-#include <debug.h>
-#include <general/output.h>
+#include <saffire/vm/vm.h>
+#include <saffire/vm/stackframe.h>
+#include <saffire/vm/thread.h>
+#include <saffire/vm/context.h>
+#include <saffire/vm/import.h>
+#include <saffire/compiler/bytecode.h>
+#include <saffire/vm/vm_opcodes.h>
+#include <saffire/general/smm.h>
+#include <saffire/objects/string.h>
+#include <saffire/objects/numerical.h>
+#include <saffire/objects/hash.h>
+#include <saffire/objects/null.h>
+#include <saffire/objects/boolean.h>
+#include <saffire/objects/callable.h>
+#include <saffire/debug.h>
+#include <saffire/general/output.h>
 
-#include <general/hashtable.h>
+#include <saffire/general/hashtable.h>
 
 /**
  * Returns the next opcode

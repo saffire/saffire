@@ -24,7 +24,7 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <general/popen2.h>
+#include <saffire/general/popen2.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <wait.h>

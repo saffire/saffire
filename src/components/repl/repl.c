@@ -29,16 +29,16 @@
 #include <string.h>
 #include <histedit.h>
 #include <signal.h>
-#include <compiler/saffire_parser.h>
-#include <compiler/parser.tab.h>
-#include <compiler/lex.yy.h>
-#include <general/config.h>
-#include <repl/repl.h>
-#include <general/output.h>
-#include <version.h>
-#include <compiler/output/asm.h>
-#include <compiler/ast_to_asm.h>
-#include <vm/vm.h>
+#include <saffire/compiler/saffire_parser.h>
+#include <saffire/compiler/parser.tab.h>
+#include <saffire/compiler/lex.yy.h>
+#include <saffire/general/config.h>
+#include <saffire/repl/repl.h>
+#include <saffire/general/output.h>
+#include <saffire/version.h>
+#include <saffire/compiler/output/asm.h>
+#include <saffire/compiler/ast_to_asm.h>
+#include <saffire/vm/vm.h>
 
 const char *repl_logo = "   _____        ,__  ,__                \n"
                         "  (        ___  /  ` /  ` ` .___    ___ \n"

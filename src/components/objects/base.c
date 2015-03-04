@@ -27,9 +27,9 @@
 
 #include <string.h>
 #include <ctype.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/smm.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/smm.h>
 
 
 /*

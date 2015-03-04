@@ -28,12 +28,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <compiler/output/asm.h>
-#include <general/output.h>
-#include <general/smm.h>
-#include <general/dll.h>
-#include <vm/vm_opcodes.h>
-#include <debug.h>
+#include <saffire/compiler/output/asm.h>
+#include <saffire/general/output.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/dll.h>
+#include <saffire/vm/vm_opcodes.h>
+#include <saffire/debug.h>
 
 /**
  * Converts assembler codes into bytecode

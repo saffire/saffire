@@ -25,12 +25,12 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include <general/string.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/smm.h>
-#include <general/output.h>
-#include <vm/thread.h>
+#include <saffire/general/string.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/output.h>
+#include <saffire/vm/thread.h>
 
 /* ======================================================================
  *   Object methods
