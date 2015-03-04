@@ -30,6 +30,7 @@
 #include <fnmatch.h>
 #include <ctype.h>
 #ifdef __LINUX__
+#include <linux/limits.h>
 #else
 #include <limits.h>
 #endif
