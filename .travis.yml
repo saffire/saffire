@@ -25,7 +25,9 @@ env:
   - TARGET=release
 
 # Build target. But only on release target, we can run our unit-tests
-script: ./build.sh -t $TARGET -t && (SAFFIRE_TEST_BIN=build/release/saffire sh unittest.sh || true)
+script:
+  - ./build.sh -t $TARGET
+  - if [ "$TARGET" = "release" ]; then ./unittest.sh; fi
 
 notifications:
   irc: "irc.freenode.org#saffire"
