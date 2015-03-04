@@ -4,7 +4,7 @@
 # Every line is an exception. The indentation decides which is the baseclass of the exception. Exceptions with no
 # indentations are based on the generic "exception" class.
 #
-# Rebuild the _exceptions.h and _exception.inc file after modifying this file by running the ./create_exceptions.php
+# Rebuild the _exceptions.h and _exception.inc file after modifying this file by running the create_exceptions.py
 # script.
 #
 

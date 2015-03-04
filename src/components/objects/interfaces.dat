@@ -4,29 +4,23 @@
 # Every line not starting with a # or space is an interface.
 # All lines below with space identation is a
 
-# Rebuild the _interfaces.h and _interfaces.inc file after modifying this file by running the ./create_interfaces.php
+# Rebuild the _interfaces.h and _interfaces.inc file after modifying this file by running the ./create_interfaces.py
 # script.
 #
 
-interfaces:
-    -   name: iterator
-        methods:
-            - __iterator
-            - __key
-            - __value
-            - __rewind
-            - __hasNext
-            - __next
-
-    -   name: datastructure
-        methods:
-            - __populate
-
-    -   name: subscription
-        methods:
-            - __length
-            - __add
-            - __remove
-            - __get
-            - __has
-            - __splice
+iterator
+    __iterator
+    __key
+    __value
+    __rewind
+    __hasNext
+    __next
+datastructure
+    __populate
+subscription
+    __length
+    __add
+    __remove
+    __get
+    __has
+    __splice
