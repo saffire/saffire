@@ -18,10 +18,9 @@ include_directories(${saffire_SOURCE_DIR}/include)
 find_package(PkgConfig REQUIRED)
 
 # ICU
-pkg_check_modules(PC_ICUI18N REQUIRED icu-i18n)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_ICUI18N_LIBRARIES})
-include_directories(${PC_ICUI18N_INCLUDE_DIR})
-add_definitions(${PC_ICUI18N_CFLAGS})
+find_package(ICU 4.4 REQUIRED)
+include_directories(${ICU_INCLUDE_DIRS})
+set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
 
 # LibXml2
 pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)

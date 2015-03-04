@@ -26,7 +26,11 @@
 */
 #include <stdio.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <general/output.h>
 #include <general/hashtable.h>
 #include <general/smm.h>

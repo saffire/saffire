@@ -29,7 +29,11 @@
 #include <stdlib.h>
 #include <fnmatch.h>
 #include <libgen.h>
+#ifdef __LINUX__
 #include <linux/limits.h>
+#else
+#include <limits.h>
+#endif
 #include <general/config.h>
 #include <general/output.h>
 #include <general/smm.h>

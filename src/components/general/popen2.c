@@ -27,7 +27,7 @@
 #include <general/popen2.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
 
