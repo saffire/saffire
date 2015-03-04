@@ -26,11 +26,14 @@
 */
 #include <stdio.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <saffire/general/output.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/general/smm.h>
-
 
 // @TODO: Fix this into a better/faster memory manager (slab allocator)
 

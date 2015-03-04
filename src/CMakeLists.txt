@@ -18,10 +18,9 @@ include_directories(${saffire_SOURCE_DIR}/include)
 find_package(PkgConfig REQUIRED)
 
 # ICU
-pkg_check_modules(PC_ICUI18N REQUIRED icu-i18n)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_ICUI18N_LIBRARIES})
-include_directories(${PC_ICUI18N_INCLUDE_DIR})
-add_definitions(${PC_ICUI18N_CFLAGS})
+find_package(ICU 4.4 REQUIRED)
+include_directories(${ICU_INCLUDE_DIRS})
+set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
 
 # LibXml2
 pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)
@@ -194,9 +193,9 @@ add_library(debugger STATIC ${debugger_SRCS})
 # components/objects
 ########################################################################
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_exceptions.h
-    COMMAND php
-        ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.php
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h
+    COMMAND python
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.py
         ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc
         ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_exceptions.h
@@ -204,9 +203,9 @@ add_custom_command(
 )
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_interfaces.h
-    COMMAND php
-        ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.php
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_interfaces.h
+    COMMAND python
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.py
         ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc
         ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_interfaces.h
@@ -248,9 +247,15 @@ add_library(repl STATIC ${repl_SRCS})
 ########################################################################
 
 add_custom_command(
+<<<<<<< HEAD
     OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h
     COMMAND php
         ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.php
+=======
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/vm/_generated_vm_opcodes.h
+    COMMAND python
+        ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.py
+>>>>>>> upstream/develop
         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
         ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c
         ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h

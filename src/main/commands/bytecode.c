@@ -31,6 +31,9 @@
 #include <locale.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef __APPLE__
+#include <sys/syslimits.h>
+#endif
 #include <dirent.h>
 #include <fnmatch.h>
 #include <saffire/general/output.h>

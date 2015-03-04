@@ -29,7 +29,11 @@
 #include <stdlib.h>
 #include <fnmatch.h>
 #include <libgen.h>
+#ifdef __LINUX__
 #include <linux/limits.h>
+#else
+#include <limits.h>
+#endif
 #include <saffire/general/config.h>
 #include <saffire/general/output.h>
 #include <saffire/general/smm.h>
@@ -37,7 +41,6 @@
 #include <saffire/general/path_handling.h>
 #include <saffire/general/ini.h>
 #include <saffire/debug.h>
-
 
 #define SAFFIRE_INI_FILENAME "saffire.ini"
 

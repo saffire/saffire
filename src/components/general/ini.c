@@ -29,11 +29,13 @@
 #include <pcre.h>
 #include <fnmatch.h>
 #include <ctype.h>
-#include <linux/limits.h>
+#ifdef __LINUX__
+#else
+#include <limits.h>
+#endif
 #include <saffire/general/ini.h>
 #include <saffire/general/smm.h>
 #include <saffire/general/dll.h>
-
 
 static void ini_destroy_keys(t_ini *ini) {
     t_hash_iter iter;
