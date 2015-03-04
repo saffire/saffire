@@ -170,8 +170,8 @@ fp.write("\n\n")
 for exception in exceptions :
     (exception, parent) = exception
 
-    if parent is "" :
-        parent = "_"
-    fp.write("t_exception_object Object_Exception_{$exception}_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"%s\", objectTypeException, OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_%sstruct, NULL, sizeof(t_exception_object_data)), { NULL, 0 } };\n" % (ucfirst(exception), parent))
+    if parent is not "" :
+        parent += "_"
+    fp.write("t_exception_object Object_Exception_%s_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"%s\", objectTypeException, OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_%sstruct, NULL, sizeof(t_exception_object_data)), { NULL, 0 } };\n" % (exception, ucfirst(exception), parent))
 
 fp.close()
