@@ -1,10 +1,10 @@
 language: c
 
 before_script:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./ci/travis/linux/before_script.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./support/travis/linux/before_script.sh; fi
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./ci/travis/linux/before_install.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./support/travis/linux/before_install.sh; fi
 
 # Compile on gcc and clang
 compiler:
