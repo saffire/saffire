@@ -13,5 +13,4 @@ if [ -n "$DEBUG" ] ; then
 	exit 1;
 fi
 
-export PHP_IDE_CONFIG=serverName=Symfony
-/usr/bin/php -dxdebug.remote_host=192.168.56.1 -dxdebug.remote_autostart=1 support/unittester/run-saffire-tests.php ${1:-"unittests/tests/"}
+/usr/bin/php support/unittester/run-saffire-tests.php ${1:-"unittests/tests/"}
