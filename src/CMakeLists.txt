@@ -193,7 +193,7 @@ add_library(debugger STATIC ${debugger_SRCS})
 # components/objects
 ########################################################################
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_exceptions.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_exceptions.h
     COMMAND python
         ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.py
         ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
@@ -203,7 +203,7 @@ add_custom_command(
 )
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/include/objects/_generated_interfaces.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc ${CMAKE_SOURCE_DIR}/include/saffire/objects/_generated_interfaces.h
     COMMAND python
         ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.py
         ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
@@ -247,7 +247,7 @@ add_library(repl STATIC ${repl_SRCS})
 ########################################################################
 
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/vm/_generated_vm_opcodes.h
+    OUTPUT ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h
     COMMAND python
         ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.py
         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat

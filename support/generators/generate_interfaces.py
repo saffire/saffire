@@ -64,7 +64,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <stdio.h>
-#include "objects/object.h"
+#include <saffire/objects/object.h>
 
 
 '''
