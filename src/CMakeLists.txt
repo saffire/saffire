@@ -61,38 +61,6 @@ set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
 find_library(pthread_LIBRARY pthread REQUIRED)
 set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
 
-
-# parser.tab.c
-find_package(BISON REQUIRED)
-#set(BisonOutput ${saffire_SOURCE_DIR}/src/components/compiler/parser.tab.c)
-#if (BISON_FOUND)
-#    add_custom_target(
-#        run_bison
-#        COMMAND ${BISON_EXECUTABLE}
-#            -d
-#            --defines=${CMAKE_SOURCE_DIR}/include/compiler/parser.tab.h
-#            --output=${BisonOutput}
-#            ${CMAKE_SOURCE_DIR}/src/components/compiler/saffire.y
-#        COMMENT "Generating parser.tab.c"
-#    )
-#endif()
-
-# lex.yy.c
-find_package(FLEX REQUIRED)
-#set(FlexOutput ${saffire_SOURCE_DIR}/src/components/compiler/lex.yy.c)
-#set(FlexInput ${saffire_SOURCE_DIR}/src/components/compiler/saffire.l)
-#if (FLEX_FOUND)
-#
-#    add_custom_target(
-#        run_flex
-#        COMMAND ${FLEX_EXECUTABLE}
-#            --outfile=${FlexOutput}
-#            --header-file=${saffire_SOURCE_DIR}/include/compiler/lex.yy.h
-#            ${FlexInput}
-#        COMMENT "Generating lex.yy.c")
-#
-#endif()
-
 add_subdirectory(components)
 
 ########################################################################
@@ -120,14 +88,12 @@ set(saffire_LIBS
     vm
     gc
     modules
-    debugger
-)
+    debugger)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 add_executable(saffire ${saffire_SRCS})
 
-# Link saffire_LIBS twice, as there are dependencies on libraries
-target_link_libraries(saffire ${saffire_LIBS} ${saffire_LIBS} ${3rdparty_LIBS})
+target_link_libraries(saffire ${saffire_LIBS} ${3rdparty_LIBS})
 
 install(TARGETS saffire DESTINATION bin)
-

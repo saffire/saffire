@@ -1,4 +1,5 @@
-
+find_package(FLEX REQUIRED)
+find_package(BISON REQUIRED)
 
 flex_target(
     run_flex
@@ -37,4 +38,4 @@ set_source_files_properties(
 
 add_library(compiler STATIC ${sources})
 
-add_dependencies(compiler parser)
+add_dependencies(compiler generate_interfaces generate_exceptions parser)

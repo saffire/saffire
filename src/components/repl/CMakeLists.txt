@@ -5,4 +5,4 @@ set(sources
 
 add_library(repl STATIC ${sources})
 
-add_dependencies(compiler parser)
+add_dependencies(repl parser)
