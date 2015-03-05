@@ -31,15 +31,15 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
-#include <general/string.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/dll.h>
-#include <debug.h>
-#include <gc/gc.h>
-#include <general/output.h>
-#include <general/smm.h>
-#include <vm/thread.h>
+#include <saffire/general/string.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/dll.h>
+#include <saffire/debug.h>
+#include <saffire/gc/gc.h>
+#include <saffire/general/output.h>
+#include <saffire/general/smm.h>
+#include <saffire/vm/thread.h>
 
 t_dll *all_objects;
 

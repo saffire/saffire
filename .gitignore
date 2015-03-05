@@ -37,8 +37,8 @@ lex.yy.*
 parser.tab.*
 parser.output
 _generated_*
-include/config.h
-include/gitversion.h
+include/saffire/config.h
+include/saffire/gitversion.h
 
 # Misc files
 html/

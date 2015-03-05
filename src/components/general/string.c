@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <general/string.h>
-#include <general/smm.h>
+#include <saffire/general/string.h>
+#include <saffire/general/smm.h>
 
 
 /**

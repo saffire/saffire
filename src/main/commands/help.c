@@ -26,8 +26,8 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <general/output.h>
-#include <commands/command.h>
+#include <saffire/general/output.h>
+#include <saffire/commands/command.h>
 
 extern int original_argc;
 extern char **original_argv;

@@ -27,12 +27,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/smm.h>
-#include <general/md5.h>
-#include <vm/thread.h>
-#include <debug.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/md5.h>
+#include <saffire/vm/thread.h>
+#include <saffire/debug.h>
 
 
 /* ======================================================================

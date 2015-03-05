@@ -27,14 +27,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <general/output.h>
-#include <compiler/saffire_parser.h>
-#include <compiler/parser.tab.h>
-#include <objects/attrib.h>
-#include <objects/callable.h>
-#include <compiler/ast_nodes.h>
-#include <general/smm.h>
-#include <general/path_handling.h>
+#include <saffire/general/output.h>
+#include <saffire/compiler/saffire_parser.h>
+#include <saffire/compiler/parser.tab.h>
+#include <saffire/objects/attrib.h>
+#include <saffire/objects/callable.h>
+#include <saffire/compiler/ast_nodes.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/path_handling.h>
 
 extern char *get_token_string(int token);
 

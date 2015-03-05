@@ -31,7 +31,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <string.h>
-#include <general/config.h>
+#include <saffire/general/config.h>
 
 
 int dbgp_sock_init(void) {

@@ -29,12 +29,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <general/output.h>
-#include <commands/command.h>
-#include <compiler/ast_nodes.h>
-#include <general/parse_options.h>
-#include <general/path_handling.h>
-#include <general/smm.h>
+#include <saffire/general/output.h>
+#include <saffire/commands/command.h>
+#include <saffire/compiler/ast_nodes.h>
+#include <saffire/general/parse_options.h>
+#include <saffire/general/path_handling.h>
+#include <saffire/general/smm.h>
 
 void process_file(const char *filename);
 void process_directory(const char *directory);

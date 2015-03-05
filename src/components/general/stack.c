@@ -25,10 +25,10 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <general/stack.h>
-#include <general/dll.h>
-#include <general/smm.h>
-#include <general/output.h>
+#include <saffire/general/stack.h>
+#include <saffire/general/dll.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/output.h>
 
 /**
  *

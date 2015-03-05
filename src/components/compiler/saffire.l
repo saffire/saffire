@@ -30,14 +30,14 @@
     #include <string.h>
     #include <unistd.h>
     #include <ctype.h>
-    #include <repl/repl.h>
+    #include <saffire/repl/repl.h>
 
-    #include <general/output.h>
-    #include <compiler/parser_helpers.h>
-    #include <general/smm.h>
-    #include <compiler/ast_nodes.h>
-    #include <compiler/saffire_parser.h>
-    #include <compiler/parser.tab.h>
+    #include <saffire/general/output.h>
+    #include <saffire/compiler/parser_helpers.h>
+    #include <saffire/general/smm.h>
+    #include <saffire/compiler/ast_nodes.h>
+    #include <saffire/compiler/saffire_parser.h>
+    #include <saffire/compiler/parser.tab.h>
 
     // Forward defines
     size_t yyread(FILE *f, char *buf, size_t max, SaffireParser *sp, int lineno);

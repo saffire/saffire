@@ -27,11 +27,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <general/output.h>
-#include <commands/command.h>
-#include <general/config.h>
-#include <general/smm.h>
-#include <general/parse_options.h>
+#include <saffire/general/output.h>
+#include <saffire/commands/command.h>
+#include <saffire/general/config.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/parse_options.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 

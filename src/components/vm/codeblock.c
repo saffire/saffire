@@ -25,10 +25,10 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
-#include <vm/codeblock.h>
-#include <vm/context.h>
-#include <general/smm.h>
-#include <debug.h>
+#include <saffire/vm/codeblock.h>
+#include <saffire/vm/context.h>
+#include <saffire/general/smm.h>
+#include <saffire/debug.h>
 
 /**
  *

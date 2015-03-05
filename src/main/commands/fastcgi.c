@@ -25,9 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <general/output.h>
-#include <commands/command.h>
-#include <fastcgi/fastcgi_srv.h>
+#include <saffire/general/output.h>
+#include <saffire/commands/command.h>
+#include <saffire/fastcgi/fastcgi_srv.h>
 
 /**
  *
