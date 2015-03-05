@@ -27,10 +27,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <debug.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/smm.h>
+#include <saffire/debug.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/smm.h>
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
 #define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */

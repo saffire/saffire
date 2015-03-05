@@ -26,14 +26,14 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <general/output.h>
-#include <modules/module_api.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/dll.h>
-#include <version.h>
-#include <vm/vm.h>
-#include <general/smm.h>
+#include <saffire/general/output.h>
+#include <saffire/modules/module_api.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/dll.h>
+#include <saffire/version.h>
+#include <saffire/vm/vm.h>
+#include <saffire/general/smm.h>
 
 #define NO_FCGI_DEFINES
 #include <fcgi_stdio.h>

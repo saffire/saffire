@@ -26,24 +26,24 @@
 */
 #include <string.h>
 #include <limits.h>
-#include <compiler/bytecode.h>
-#include <vm/vm.h>
-#include <vm/stackframe.h>
-#include <vm/context.h>
-#include <vm/vm_opcodes.h>
-#include <vm/block.h>
-#include <vm/thread.h>
-#include <vm/import.h>
-#include <general/dll.h>
-#include <general/smm.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <modules/module_api.h>
-#include <debug.h>
-#include <general/output.h>
-#include <vm/import.h>
-#include <gc/gc.h>
-#include <debugger/dbgp/dbgp.h>
+#include <saffire/compiler/bytecode.h>
+#include <saffire/vm/vm.h>
+#include <saffire/vm/stackframe.h>
+#include <saffire/vm/context.h>
+#include <saffire/vm/vm_opcodes.h>
+#include <saffire/vm/block.h>
+#include <saffire/vm/thread.h>
+#include <saffire/vm/import.h>
+#include <saffire/general/dll.h>
+#include <saffire/general/smm.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/modules/module_api.h>
+#include <saffire/debug.h>
+#include <saffire/general/output.h>
+#include <saffire/vm/import.h>
+#include <saffire/gc/gc.h>
+#include <saffire/debugger/dbgp/dbgp.h>
 
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object

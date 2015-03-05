@@ -29,8 +29,8 @@
 #include <string.h>
 #include <time.h>
 #include <histedit.h>
-#include <repl/repl.h>
-#include <compiler/saffire_parser.h>
+#include <saffire/repl/repl.h>
+#include <saffire/compiler/saffire_parser.h>
 #include "../compiler/parser.tab.h"
 
 // Maximum size of the prompt that will be displayed

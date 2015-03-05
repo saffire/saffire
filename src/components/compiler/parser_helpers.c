@@ -28,16 +28,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <general/output.h>
-#include <compiler/parser_helpers.h>
-#include <compiler/saffire_parser.h>
-#include "parser.tab.h"
-#include <objects/callable.h>
-
-#include <compiler/ast_nodes.h>
-#include <general/smm.h>
-#include <objects/attrib.h>
-
+#include <saffire/general/output.h>
+#include <saffire/compiler/parser_helpers.h>
+#include <saffire/compiler/saffire_parser.h>
+#include <saffire/compiler/parser.tab.h>
+#include <saffire/objects/callable.h>
+#include <saffire/compiler/ast_nodes.h>
+#include <saffire/general/smm.h>
+#include <saffire/objects/attrib.h>
 
 /**
  * Convert modifier list to visibility flags for astAttribute nodes.

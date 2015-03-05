@@ -27,15 +27,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <general/config.h>
-#include <debugger/dbgp/xml.h>
-#include <debugger/dbgp/args.h>
-#include <debugger/dbgp/sock.h>
-#include <debugger/dbgp/dbgp.h>
-#include <debugger/dbgp/commands.h>
-#include <general/output.h>
-#include <debug.h>
-#include <general/smm.h>
+#include <saffire/general/config.h>
+#include <saffire/debugger/dbgp/xml.h>
+#include <saffire/debugger/dbgp/args.h>
+#include <saffire/debugger/dbgp/sock.h>
+#include <saffire/debugger/dbgp/dbgp.h>
+#include <saffire/debugger/dbgp/commands.h>
+#include <saffire/general/output.h>
+#include <saffire/debug.h>
+#include <saffire/general/smm.h>
 
 extern struct dbgp_command dbgp_commands[];
 extern char *dbgp_status_names[5];

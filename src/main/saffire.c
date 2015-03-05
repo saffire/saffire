@@ -28,12 +28,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <general/output.h>
-#include <general/parse_options.h>
-#include <commands/command.h>
-#include <general/smm.h>
-#include <general/hashtable.h>
-#include <general/config.h>
+#include <saffire/general/output.h>
+#include <saffire/general/parse_options.h>
+#include <saffire/commands/command.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/hashtable.h>
+#include <saffire/general/config.h>
 
 /*
  * Info structures for the Saffire commands

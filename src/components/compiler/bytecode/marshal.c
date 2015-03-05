@@ -30,13 +30,13 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <limits.h>
-#include <general/output.h>
-#include <compiler/bytecode.h>
-#include <general/smm.h>
-#include <general/config.h>
-#include <general/hashtable.h>
-#include <compiler/output/asm.h>
-#include <compiler/ast_to_asm.h>
+#include <saffire/general/output.h>
+#include <saffire/compiler/bytecode.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/config.h>
+#include <saffire/general/hashtable.h>
+#include <saffire/compiler/output/asm.h>
+#include <saffire/compiler/ast_to_asm.h>
 
 
 

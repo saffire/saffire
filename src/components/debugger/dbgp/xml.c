@@ -29,8 +29,8 @@
 #include <libxml/tree.h>
 #include <unistd.h>
 #include <string.h>
-#include <debugger/dbgp/args.h>
-#include <debugger/dbgp/xml.h>
+#include <saffire/debugger/dbgp/args.h>
+#include <saffire/debugger/dbgp/xml.h>
 
 /**
  *

@@ -26,11 +26,11 @@
 */
 #include <string.h>
 #include <libgen.h>
-#include <general/output.h>
-#include <vm/codeblock.h>
-#include <vm/context.h>
-#include <general/smm.h>
-#include <debug.h>
+#include <saffire/general/output.h>
+#include <saffire/vm/codeblock.h>
+#include <saffire/vm/context.h>
+#include <saffire/general/smm.h>
+#include <saffire/debug.h>
 #include <assert.h>
 
 /**

@@ -25,9 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <commands/command.h>
-#include <general/output.h>
-#include <version.h>
+#include <saffire/commands/command.h>
+#include <saffire/general/output.h>
+#include <saffire/version.h>
 
 static int flag_long_version = 0;
 

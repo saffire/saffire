@@ -31,10 +31,9 @@
 #else
 #include <malloc.h>
 #endif
-#include <general/output.h>
-#include <general/hashtable.h>
-#include <general/smm.h>
-
+#include <saffire/general/output.h>
+#include <saffire/general/hashtable.h>
+#include <saffire/general/smm.h>
 
 // @TODO: Fix this into a better/faster memory manager (slab allocator)
 

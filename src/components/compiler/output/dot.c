@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+<<<<<<< HEAD
 #include <general/output.h>
 #include <compiler/saffire_parser.h>
 #include "../parser.tab.h"
@@ -35,6 +36,16 @@
 #include <compiler/ast_nodes.h>
 #include <general/smm.h>
 #include <general/path_handling.h>
+=======
+#include <saffire/general/output.h>
+#include <saffire/compiler/saffire_parser.h>
+#include <saffire/compiler/parser.tab.h>
+#include <saffire/objects/attrib.h>
+#include <saffire/objects/callable.h>
+#include <saffire/compiler/ast_nodes.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/path_handling.h>
+>>>>>>> develop
 
 extern char *get_token_string(int token);
 

@@ -27,10 +27,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <general/config.h>
-#include <vm/thread.h>
-#include <general/smm.h>
-#include <vm/vm.h>
+#include <saffire/general/config.h>
+#include <saffire/vm/thread.h>
+#include <saffire/general/smm.h>
+#include <saffire/vm/vm.h>
 
 
 // Current running thread. Don't change directly, but only through thread_switch() methods.

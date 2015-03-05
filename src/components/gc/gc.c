@@ -25,13 +25,13 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <gc/gc.h>
-#include <general/mutex.h>
-#include <general/smm.h>
-#include <debug.h>
-#include <general/output.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/gc/gc.h>
+#include <saffire/general/mutex.h>
+#include <saffire/general/smm.h>
+#include <saffire/debug.h>
+#include <saffire/general/output.h>
 
 #define GC_OBJECT_QUEUE_SIZE        100;
 

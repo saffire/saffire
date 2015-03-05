@@ -25,17 +25,17 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <general/output.h>
-#include <modules/module_api.h>
-#include <general/string.h>
-#include <objects/object.h>
-#include <objects/objects.h>
-#include <general/config.h>
-#include <general/dll.h>
-#include <version.h>
-#include <vm/vm.h>
-#include <vm/thread.h>
-#include <general/smm.h>
+#include <saffire/general/output.h>
+#include <saffire/modules/module_api.h>
+#include <saffire/general/string.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/config.h>
+#include <saffire/general/dll.h>
+#include <saffire/version.h>
+#include <saffire/vm/vm.h>
+#include <saffire/vm/thread.h>
+#include <saffire/general/smm.h>
 #include <string.h>
 
 SAFFIRE_MODULE_METHOD(saffire, get_locale) {

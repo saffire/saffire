@@ -30,11 +30,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <general/output.h>
-#include <general/smm.h>
-#include <general/gpg.h>
-#include <general/popen2.h>
-#include <general/config.h>
+#include <saffire/general/output.h>
+#include <saffire/general/smm.h>
+#include <saffire/general/gpg.h>
+#include <saffire/general/popen2.h>
+#include <saffire/general/config.h>
 
 #define TEMP_SAFFIRE_SIGN_PATH "/tmp/.sf_gpg_XXXXXX"
 
