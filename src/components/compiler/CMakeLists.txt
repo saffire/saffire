@@ -38,4 +38,10 @@ set_source_files_properties(
 
 add_library(compiler STATIC ${sources})
 
-add_dependencies(compiler generate_interfaces generate_exceptions parser)
+add_dependencies(compiler generate_interfaces generate_exceptions generate_vm_opcodes parser)
+
+target_link_libraries(
+    compiler
+    generic
+    vm
+    ${3rdparty_libs})

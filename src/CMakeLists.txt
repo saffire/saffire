@@ -20,28 +20,23 @@ find_package(PkgConfig REQUIRED)
 # ICU
 find_package(ICU 4.4 REQUIRED)
 include_directories(${ICU_INCLUDE_DIRS})
-set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
+list(APPEND 3rdparty_libs ${ICU_LIBRARIES})
 
 # LibXml2
 pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBXML2_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_LIBXML2_LIBRARIES})
 include_directories(${PC_LIBXML2_INCLUDE_DIR})
 add_definitions(${PC_LIBXML2_CFLAGS})
 
 # LibEdit
 pkg_check_modules(PC_LIBEDIT REQUIRED libedit)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBEDIT_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_LIBEDIT_LIBRARIES})
 include_directories(${PC_LIBEDIT_INCLUDE_DIR})
 add_definitions(${PC_LIBEDIT_CFLAGS})
 
-## LibICU
-#find_package(ICU 4.4 REQUIRED)
-#include_directories(${ICU_INCLUDE_DIR})
-#set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
-
 # LibPCRE
 pkg_check_modules(PC_PCRE REQUIRED libpcre)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_PCRE_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_PCRE_LIBRARIES})
 include_directories(${PC_PCRE_INCLUDE_DIR})
 add_definitions(${PC_PCRE_CFLAGS})
 
@@ -49,51 +44,30 @@ add_definitions(${PC_PCRE_CFLAGS})
 #
 # Libraries
 #
-find_library(m_LIBRARY m REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${m_LIBRARY})
+find_library(M_LIBRARY m REQUIRED)
+list(APPEND 3rdparty_libs ${M_LIBRARY})
 
-find_library(bz2_LIBRARY bz2 REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIBRARY})
+find_library(BZ2_LIBRARY bz2 REQUIRED)
+list(APPEND 3rdparty_libs ${BZ2_LIBRARY})
 
-find_library(fcgi_LIBRARY fcgi REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
+find_library(FCGI_LIBRARY fcgi REQUIRED)
+list(APPEND 3rdparty_libs ${FCGI_LIBRARY})
 
-find_library(pthread_LIBRARY pthread REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
+find_library(PTHREAD_LIBRARY pthread REQUIRED)
+list(APPEND 3rdparty_libs ${PTHREAD_LIBRARY})
 
 add_subdirectory(components)
+add_subdirectory(main)
 
 ########################################################################
 # main/saffire
 ########################################################################
 
-set(saffire_SRCS
-   main/saffire.c
-   main/commands/config.c
-   main/commands/fastcgi.c
-   main/commands/lint.c
-   main/commands/exec.c
-   main/commands/repl.c
-   main/commands/help.c
-   main/commands/version.c
-   main/commands/bytecode.c
-)
+set(sources
+    main/saffire.c)
 
-set(saffire_LIBS
-    objects
-    generic
-    compiler
-    fastcgi
-    repl
-    vm
-    gc
-    modules
-    debugger)
+add_executable(saffire ${sources})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-add_executable(saffire ${saffire_SRCS})
-
-target_link_libraries(saffire ${saffire_LIBS} ${3rdparty_LIBS})
+target_link_libraries(saffire commands ${3rdparty_libs})
 
 install(TARGETS saffire DESTINATION bin)

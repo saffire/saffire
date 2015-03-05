@@ -21,5 +21,9 @@ script:
   - ./build.sh -t $TARGET
   - if [ "$TARGET" = "release" ]; then ./unittest.sh; fi
 
+matrix:
+  fast_finish: true
+
 notifications:
   irc: "irc.freenode.org#saffire"
+

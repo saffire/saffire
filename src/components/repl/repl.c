@@ -30,7 +30,6 @@
 #include <histedit.h>
 #include <signal.h>
 #include <saffire/compiler/saffire_parser.h>
-#include "../compiler/parser.tab.h"
 #include <saffire/general/config.h>
 #include <saffire/repl/repl.h>
 #include <saffire/general/output.h>
@@ -38,6 +37,7 @@
 #include <saffire/compiler/output/asm.h>
 #include <saffire/compiler/ast_to_asm.h>
 #include <saffire/vm/vm.h>
+#include "../compiler/parser.tab.h"
 
 const char *repl_logo = "   _____        ,__  ,__                \n"
                         "  (        ___  /  ` /  ` ` .___    ___ \n"
