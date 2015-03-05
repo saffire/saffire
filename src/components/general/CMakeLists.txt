@@ -25,3 +25,5 @@ set(sources
     unicode.c)
 
 add_library(generic STATIC ${sources})
+
+add_dependencies(generic generate_interfaces generate_exceptions)
