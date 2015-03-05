@@ -37,7 +37,7 @@ build_target () {
 
     if [ $? -ne 0 ] ; then
         echo
-        echo "Something went wrong duing the configuration process."
+        echo "Something went wrong during the configuration process."
         echo
         exit 1
     fi
@@ -46,7 +46,7 @@ build_target () {
 
     if [ $? -ne 0 ] ; then
         echo
-        echo "Something went wrong duing the build process."
+        echo "Something went wrong during the build process."
         echo
         exit 1
     fi
