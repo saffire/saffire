@@ -29,13 +29,27 @@ build_target () {
 
     cd $target_dir
 
-    cmake -DCMAKE_BUILD_TYPE=$target_build $SRC_ROOT_DIR
-
     if [ $verbose -eq 1 ] ; then
         export VERBOSE=1
     fi
 
+    cmake -DCMAKE_BUILD_TYPE=$target_build $SRC_ROOT_DIR
+
+    if [ $? -ne 0 ] ; then
+        echo
+        echo "Something went wrong duing the configuration process."
+        echo
+        exit 1
+    fi
+
     make
+
+    if [ $? -ne 0 ] ; then
+        echo
+        echo "Something went wrong duing the build process."
+        echo
+        exit 1
+    fi
 
     cd $SRC_ROOT_DIR
 }
