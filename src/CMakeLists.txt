@@ -20,28 +20,28 @@ find_package(PkgConfig REQUIRED)
 # ICU
 find_package(ICU 4.4 REQUIRED)
 include_directories(${ICU_INCLUDE_DIRS})
-set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
+set(3rdparty_libs ${3rdparty_libs} ${ICU_LIBRARIES})
 
 # LibXml2
 pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBXML2_LIBRARIES})
+set(3rdparty_libs ${3rdparty_libs} ${PC_LIBXML2_LIBRARIES})
 include_directories(${PC_LIBXML2_INCLUDE_DIR})
 add_definitions(${PC_LIBXML2_CFLAGS})
 
 # LibEdit
 pkg_check_modules(PC_LIBEDIT REQUIRED libedit)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_LIBEDIT_LIBRARIES})
+set(3rdparty_libs ${3rdparty_libs} ${PC_LIBEDIT_LIBRARIES})
 include_directories(${PC_LIBEDIT_INCLUDE_DIR})
 add_definitions(${PC_LIBEDIT_CFLAGS})
 
 ## LibICU
 #find_package(ICU 4.4 REQUIRED)
 #include_directories(${ICU_INCLUDE_DIR})
-#set(3rdparty_LIBS ${3rdparty_LIBS} ${ICU_LIBRARIES})
+#set(3rdparty_libs ${3rdparty_libs} ${ICU_LIBRARIES})
 
 # LibPCRE
 pkg_check_modules(PC_PCRE REQUIRED libpcre)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${PC_PCRE_LIBRARIES})
+set(3rdparty_libs ${3rdparty_libs} ${PC_PCRE_LIBRARIES})
 include_directories(${PC_PCRE_INCLUDE_DIR})
 add_definitions(${PC_PCRE_CFLAGS})
 
@@ -50,16 +50,16 @@ add_definitions(${PC_PCRE_CFLAGS})
 # Libraries
 #
 find_library(m_LIBRARY m REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${m_LIBRARY})
+set(3rdparty_libs ${3rdparty_libs} ${m_LIBRARY})
 
 find_library(bz2_LIBRARY bz2 REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${bz2_LIBRARY})
+set(3rdparty_libs ${3rdparty_libs} ${bz2_LIBRARY})
 
 find_library(fcgi_LIBRARY fcgi REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${fcgi_LIBRARY})
+set(3rdparty_libs ${3rdparty_libs} ${fcgi_LIBRARY})
 
 find_library(pthread_LIBRARY pthread REQUIRED)
-set(3rdparty_LIBS ${3rdparty_LIBS} ${pthread_LIBRARY})
+set(3rdparty_libs ${3rdparty_libs} ${pthread_LIBRARY})
 
 add_subdirectory(components)
 
@@ -67,7 +67,7 @@ add_subdirectory(components)
 # main/saffire
 ########################################################################
 
-set(saffire_SRCS
+set(sources
    main/saffire.c
    main/commands/config.c
    main/commands/fastcgi.c
@@ -76,10 +76,9 @@ set(saffire_SRCS
    main/commands/repl.c
    main/commands/help.c
    main/commands/version.c
-   main/commands/bytecode.c
-)
+   main/commands/bytecode.c)
 
-set(saffire_LIBS
+set(libs
     objects
     generic
     compiler
@@ -92,13 +91,13 @@ set(saffire_LIBS
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_executable(saffire ${saffire_SRCS})
+add_executable(saffire ${sources})
 
-target_link_libraries(saffire ${saffire_LIBS})
+target_link_libraries(saffire ${libs})
 
 ## !! need to re-link `generic' due recursive refs !! ##
 target_link_libraries(saffire generic)
 
-target_link_libraries(saffire ${3rdparty_LIBS})
+target_link_libraries(saffire ${3rdparty_libs})
 
 install(TARGETS saffire DESTINATION bin)
