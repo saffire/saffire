@@ -44,17 +44,17 @@ add_definitions(${PC_PCRE_CFLAGS})
 #
 # Libraries
 #
-find_library(m_LIBRARY m REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${m_LIBRARY})
+find_library(M_LIBRARY m REQUIRED)
+set(3rdparty_libs ${3rdparty_libs} ${M_LIBRARY})
 
-find_library(bz2_LIBRARY bz2 REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${bz2_LIBRARY})
+find_library(BZ2_LIBRARY bz2 REQUIRED)
+set(3rdparty_libs ${3rdparty_libs} ${BZ2_LIBRARY})
 
-find_library(fcgi_LIBRARY fcgi REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${fcgi_LIBRARY})
+find_library(FCGI_LIBRARY fcgi REQUIRED)
+set(3rdparty_libs ${3rdparty_libs} ${FCGI_LIBRARY})
 
-find_library(pthread_LIBRARY pthread REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${pthread_LIBRARY})
+find_library(PTHREAD_LIBRARY pthread REQUIRED)
+set(3rdparty_libs ${3rdparty_libs} ${PTHREAD_LIBRARY})
 
 add_subdirectory(components)
 
