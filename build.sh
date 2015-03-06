@@ -20,7 +20,26 @@ build_target () {
     cd $BUILD_ROOT_DIR
 
     if [ $clean_dir -eq 1 ] ; then
+
         rm -rf $target_dir
+
+        # temporary fix to issue #214
+        # remove generated files from the `src' dir
+
+        rm -f $SRC_ROOT_DIR/include/saffire/config.h
+        rm -f $SRC_ROOT_DIR/include/saffire/gitversion.h
+        rm -f $SRC_ROOT_DIR/include/saffire/compiler/lex.yy.h
+        rm -f $SRC_ROOT_DIR/include/saffire/compiler/parser.tab.h
+        rm -f $SRC_ROOT_DIR/include/saffire/objects/_generated_interfaces.h
+        rm -f $SRC_ROOT_DIR/include/saffire/objects/_generated_exceptions.h
+        rm -f $SRC_ROOT_DIR/include/saffire/vm/_generated_vm_opcodes.h
+
+        rm -f $SRC_ROOT_DIR/src/components/compiler/lex.yy.c
+        rm -f $SRC_ROOT_DIR/src/components/compiler/parser.tab.c
+        rm -f $SRC_ROOT_DIR/src/components/vm/_generated_vm_opcodes.c
+        rm -f $SRC_ROOT_DIR/src/components/objects/_generated_exceptions.inc
+        rm -f $SRC_ROOT_DIR/src/components/objects/_generated_interfaces.inc
+
     fi
 
     if [ ! -d $target_dir ] ; then
