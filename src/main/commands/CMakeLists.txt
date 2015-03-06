@@ -15,7 +15,6 @@ add_dependencies(commands generate_interfaces generate_exceptions)
 
 target_link_libraries(
     commands
-    gc
     fastcgi
     debugger
     compiler

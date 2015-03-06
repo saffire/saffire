@@ -12,10 +12,6 @@ target_link_libraries(
     fastcgi
     debugger
     compiler
-    objects
-    gc
     generic
-    modules
-    repl
     vm
     ${3rdparty_libs})

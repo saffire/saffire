@@ -12,12 +12,5 @@ add_dependencies(debugger generate_interfaces generate_exceptions)
 
 target_link_libraries(
     debugger
-    compiler
-    objects
-    fastcgi
-    gc
     generic
-    modules
-    repl
-    vm
     ${3rdparty_libs})
