@@ -27,7 +27,7 @@
 #ifndef __OBJECT_INTERFACES_H__
 #define __OBJECT_INTERFACES_H__
 
-    #include <saffire/objects/_generated_interfaces.h>
+    #include "_generated_interfaces.h"
 
     void object_interfaces_init(void);
     void object_interfaces_fini(void);

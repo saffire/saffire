@@ -26,3 +26,4 @@ matrix:
 
 notifications:
   irc: "irc.freenode.org#saffire"
+

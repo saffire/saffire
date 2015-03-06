@@ -31,8 +31,7 @@
 #include <histedit.h>
 #include <saffire/repl/repl.h>
 #include <saffire/compiler/saffire_parser.h>
-#include <saffire/compiler/parser.tab.h>
-#include <saffire/compiler/lex.yy.h>
+#include "../compiler/parser.tab.h"
 
 // Maximum size of the prompt that will be displayed
 #define MAX_PROMPT_SIZE 100
