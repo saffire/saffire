@@ -27,3 +27,15 @@ set(sources
 add_library(generic STATIC ${sources})
 
 add_dependencies(generic generate_interfaces generate_exceptions)
+
+target_link_libraries(
+    generic
+    gc
+    fastcgi
+    debugger
+    compiler
+    objects
+    modules
+    repl
+    vm
+    ${3rdparty_libs})

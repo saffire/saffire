@@ -28,3 +28,15 @@ set(sources
 add_library(vm STATIC ${sources})
 
 add_dependencies(vm generate_interfaces generate_exceptions generate_vm_opcodes)
+
+target_link_libraries(
+    vm
+    repl
+    objects
+    modules
+    gc
+    fastcgi
+    debugger
+    compiler
+    generic
+    ${3rdparty_libs})

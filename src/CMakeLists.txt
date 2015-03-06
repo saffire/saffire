@@ -84,9 +84,6 @@ add_executable(saffire ${sources})
 
 target_link_libraries(saffire ${libs})
 
-## !! need to re-link `generic' due recursive refs !! ##
-target_link_libraries(saffire generic)
-
 target_link_libraries(saffire ${3rdparty_libs})
 
 install(TARGETS saffire DESTINATION bin)

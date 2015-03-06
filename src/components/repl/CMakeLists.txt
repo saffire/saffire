@@ -5,6 +5,16 @@ set(sources
 
 add_library(repl STATIC ${sources})
 
-add_dependencies(repl parser)
+add_dependencies(repl generate_interfaces generate_exceptions parser)
 
-add_dependencies(repl generate_interfaces generate_exceptions)
+target_link_libraries(
+    repl
+    objects
+    modules
+    gc
+    fastcgi
+    debugger
+    compiler
+    generic
+    vm
+    ${3rdparty_libs})
