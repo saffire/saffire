@@ -57,21 +57,14 @@ find_library(PTHREAD_LIBRARY pthread REQUIRED)
 list(APPEND 3rdparty_libs ${PTHREAD_LIBRARY})
 
 add_subdirectory(components)
+add_subdirectory(main)
 
 ########################################################################
 # main/saffire
 ########################################################################
 
 set(sources
-   main/saffire.c
-   main/commands/config.c
-   main/commands/fastcgi.c
-   main/commands/lint.c
-   main/commands/exec.c
-   main/commands/repl.c
-   main/commands/help.c
-   main/commands/version.c
-   main/commands/bytecode.c)
+   main/saffire.c)
 
 set(libs
     objects
@@ -82,7 +75,8 @@ set(libs
     vm
     gc
     modules
-    debugger)
+    debugger
+    commands)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
