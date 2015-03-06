@@ -24,7 +24,7 @@ build_target () {
         rm -rf $target_dir
 
         # temporary fix to issue #214
-        # remove generated files from the `src' dir
+        # remove generated files from the `include' and `src' dir
 
         rm -f $SRC_ROOT_DIR/include/saffire/config.h
         rm -f $SRC_ROOT_DIR/include/saffire/gitversion.h
