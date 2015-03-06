@@ -66,15 +66,10 @@ add_subdirectory(main)
 set(sources
     main/saffire.c)
 
-set(libs
-    commands)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_executable(saffire ${sources})
 
-target_link_libraries(saffire ${libs})
-
-target_link_libraries(saffire ${3rdparty_libs})
+target_link_libraries(saffire commands ${3rdparty_libs})
 
 install(TARGETS saffire DESTINATION bin)
