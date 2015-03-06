@@ -70,6 +70,4 @@ add_executable(saffire ${sources})
 
 target_link_libraries(saffire commands ${3rdparty_libs})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
 install(TARGETS saffire DESTINATION bin)
