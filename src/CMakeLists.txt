@@ -94,6 +94,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_executable(saffire ${saffire_SRCS})
 
-target_link_libraries(saffire ${saffire_LIBS} ${3rdparty_LIBS})
+target_link_libraries(saffire ${saffire_LIBS})
+target_link_libraries(saffire ${3rdparty_LIBS})
+
+## !! need to re-link `generic' due recursive refs !! ##
+target_link_libraries(saffire generic)
 
 install(TARGETS saffire DESTINATION bin)
