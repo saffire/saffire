@@ -34,11 +34,6 @@ set(3rdparty_libs ${3rdparty_libs} ${PC_LIBEDIT_LIBRARIES})
 include_directories(${PC_LIBEDIT_INCLUDE_DIR})
 add_definitions(${PC_LIBEDIT_CFLAGS})
 
-## LibICU
-#find_package(ICU 4.4 REQUIRED)
-#include_directories(${ICU_INCLUDE_DIR})
-#set(3rdparty_libs ${3rdparty_libs} ${ICU_LIBRARIES})
-
 # LibPCRE
 pkg_check_modules(PC_PCRE REQUIRED libpcre)
 set(3rdparty_libs ${3rdparty_libs} ${PC_PCRE_LIBRARIES})
