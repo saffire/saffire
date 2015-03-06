@@ -20,23 +20,23 @@ find_package(PkgConfig REQUIRED)
 # ICU
 find_package(ICU 4.4 REQUIRED)
 include_directories(${ICU_INCLUDE_DIRS})
-set(3rdparty_libs ${3rdparty_libs} ${ICU_LIBRARIES})
+list(APPEND 3rdparty_libs ${ICU_LIBRARIES})
 
 # LibXml2
 pkg_check_modules(PC_LIBXML2 REQUIRED libxml-2.0)
-set(3rdparty_libs ${3rdparty_libs} ${PC_LIBXML2_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_LIBXML2_LIBRARIES})
 include_directories(${PC_LIBXML2_INCLUDE_DIR})
 add_definitions(${PC_LIBXML2_CFLAGS})
 
 # LibEdit
 pkg_check_modules(PC_LIBEDIT REQUIRED libedit)
-set(3rdparty_libs ${3rdparty_libs} ${PC_LIBEDIT_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_LIBEDIT_LIBRARIES})
 include_directories(${PC_LIBEDIT_INCLUDE_DIR})
 add_definitions(${PC_LIBEDIT_CFLAGS})
 
 # LibPCRE
 pkg_check_modules(PC_PCRE REQUIRED libpcre)
-set(3rdparty_libs ${3rdparty_libs} ${PC_PCRE_LIBRARIES})
+list(APPEND 3rdparty_libs ${PC_PCRE_LIBRARIES})
 include_directories(${PC_PCRE_INCLUDE_DIR})
 add_definitions(${PC_PCRE_CFLAGS})
 
@@ -45,16 +45,16 @@ add_definitions(${PC_PCRE_CFLAGS})
 # Libraries
 #
 find_library(M_LIBRARY m REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${M_LIBRARY})
+list(APPEND 3rdparty_libs ${M_LIBRARY})
 
 find_library(BZ2_LIBRARY bz2 REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${BZ2_LIBRARY})
+list(APPEND 3rdparty_libs ${BZ2_LIBRARY})
 
 find_library(FCGI_LIBRARY fcgi REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${FCGI_LIBRARY})
+list(APPEND 3rdparty_libs ${FCGI_LIBRARY})
 
 find_library(PTHREAD_LIBRARY pthread REQUIRED)
-set(3rdparty_libs ${3rdparty_libs} ${PTHREAD_LIBRARY})
+list(APPEND 3rdparty_libs ${PTHREAD_LIBRARY})
 
 add_subdirectory(components)
 
