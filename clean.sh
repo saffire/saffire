@@ -1,7 +1,6 @@
 #!/bin/sh
 # Cleans up the builds
-rm -rf build/debug
-rm -rf build/release
+rm -rf build
 
 rm -f src/components/compiler/lex.yy.c
 rm -f src/components/compiler/parser.tab.c
