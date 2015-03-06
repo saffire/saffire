@@ -18,12 +18,11 @@ env:
 
 # Build target. But only on release target, we can run our unit-tests
 script:
-  - cmake --version
   - ./build.sh -t $TARGET
   - if [ "$TARGET" = "release" ]; then ./unittest.sh; fi
 
 matrix:
   fast_finish: true
 
-#notifications:
-#  irc: "irc.freenode.org#saffire"
+notifications:
+  irc: "irc.freenode.org#saffire"
