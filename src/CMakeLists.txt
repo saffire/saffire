@@ -64,7 +64,7 @@ add_subdirectory(main)
 ########################################################################
 
 set(sources
-   main/saffire.c)
+    main/saffire.c)
 
 set(libs
     commands)
