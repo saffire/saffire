@@ -16,11 +16,5 @@ add_dependencies(commands generate_interfaces generate_exceptions)
 target_link_libraries(
     commands
     fastcgi
-    debugger
-    compiler
-    objects
-    generic
-    modules
     repl
-    vm
     ${3rdparty_libs})

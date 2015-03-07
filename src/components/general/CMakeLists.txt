@@ -31,6 +31,4 @@ add_dependencies(generic generate_interfaces generate_exceptions)
 target_link_libraries(
     generic
     debugger
-    objects
-    vm
     ${3rdparty_libs})

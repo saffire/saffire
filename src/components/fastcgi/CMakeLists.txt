@@ -10,8 +10,5 @@ add_dependencies(fastcgi generate_interfaces generate_exceptions)
 
 target_link_libraries(
     fastcgi
-    debugger
-    compiler
-    generic
     vm
     ${3rdparty_libs})

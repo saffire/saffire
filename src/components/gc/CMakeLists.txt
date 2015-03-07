@@ -8,7 +8,5 @@ add_dependencies(gc generate_interfaces generate_exceptions)
 
 target_link_libraries(
     gc
-    debugger
-    objects
     generic
     ${3rdparty_libs})
