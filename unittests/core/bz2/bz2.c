@@ -1,5 +1,5 @@
 #include <CUnit/CUnit.h>
-#include "../../include/general/bzip2.h"
+#include <saffire/general/bzip2.h>
 
 #define BZ2_MAXBUFLEN 1024
 
