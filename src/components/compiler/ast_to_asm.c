@@ -31,7 +31,6 @@
 #include <saffire/compiler/bytecode.h>
 #include <saffire/compiler/ast_nodes.h>
 #include <saffire/compiler/saffire_parser.h>
-#include <saffire/compiler/parser.tab.h>
 #include <saffire/general/output.h>
 #include <saffire/general/smm.h>
 #include <saffire/general/stack.h>
@@ -40,6 +39,7 @@
 #include <saffire/vm/vm_opcodes.h>
 #include <saffire/vm/stackframe.h>
 #include <saffire/objects/attrib.h>
+#include "parser.tab.h"
 
 #define MAX_LABEL_LEN       100
 

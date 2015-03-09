@@ -31,10 +31,6 @@
     #include <saffire/compiler/class.h>
     #include <saffire/general/hashtable.h>
 
-//    #include "compiler/saffire_parser.h"
-//    #include "compiler/parser.tab.h"
-//    #include "compiler/lex.yy.h"
-
     /* @TODO: These should not be here */
     #define MODIFIER_PUBLIC              1
     #define MODIFIER_PROTECTED           2

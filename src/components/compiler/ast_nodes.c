@@ -32,13 +32,11 @@
 #include <saffire/general/output.h>
 #include <saffire/compiler/parser_helpers.h>
 #include <saffire/compiler/saffire_parser.h>
-#include <saffire/compiler/parser.tab.h>
 #include <saffire/general/smm.h>
 #include <saffire/compiler/ast_nodes.h>
-#include <saffire/compiler/lex.yy.h>
 #include <saffire/vm/context.h>
 #include <saffire/debug.h>
-
+#include "parser.tab.h"
 
 /**
  * Allocate a new element (untyped) ast_node element

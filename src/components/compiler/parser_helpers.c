@@ -31,13 +31,11 @@
 #include <saffire/general/output.h>
 #include <saffire/compiler/parser_helpers.h>
 #include <saffire/compiler/saffire_parser.h>
-#include <saffire/compiler/parser.tab.h>
 #include <saffire/objects/callable.h>
-
 #include <saffire/compiler/ast_nodes.h>
 #include <saffire/general/smm.h>
 #include <saffire/objects/attrib.h>
-
+#include "parser.tab.h"
 
 /**
  * Convert modifier list to visibility flags for astAttribute nodes.
