@@ -14,3 +14,4 @@ if [ -n "$DEBUG" ] ; then
 fi
 
 /usr/bin/php support/unittester/run-saffire-tests.php ${1:-"unittests/tests/"}
+./build/release/utmain
