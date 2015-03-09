@@ -144,16 +144,26 @@ SAFFIRE_METHOD(callable, conv_null) {
  * Initializes methods and properties, these are used
  */
 void object_callable_init(void) {
-    Object_Callable_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+    /* Create callable attributes away from the actual callable structure. This is because callables are actually
+     * copying the callables internally. This will mean that the __ctor callable has no attributes, the __dtor callable only the __ctor callable etc
+     * We create the attributes away from the callable structure itself, and add them at the end of this function instead.
+     *
+     * @TODO: This will probably make us run into other problems i'm not 100% forseeing right now.. :(
+     */
+    t_hash_table *attributes = ht_create();
+    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
-//    object_add_internal_method((t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
-//    object_add_internal_method((t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
+    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+
+    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+
+//    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+//    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
+
+    Object_Callable_struct.attributes = attributes;
 }
 
 /**
@@ -174,20 +184,20 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->data.routing = (intptr_t)e->data;
+    callable_obj->data.routing = (int)e->data.l;
     e = DLL_NEXT(e);
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // internal code is just a pointer to the code
-        callable_obj->data.code.internal.native_func = (void *)e->data;
+        callable_obj->data.code.internal.native_func = (void *)e->data.p;
     } else {
         // external code is a bytecode structure
-        callable_obj->data.code.external.codeblock = (t_vm_codeblock *)e->data;
+        callable_obj->data.code.external.codeblock = (t_vm_codeblock *)e->data.p;
     }
     e = DLL_NEXT(e);
 
     // Add arguments for the callable
-    callable_obj->data.arguments = (t_hash_table *)e->data;
+    callable_obj->data.arguments = (t_hash_table *)e->data.p;
     e = DLL_NEXT(e);
 }
 
@@ -202,6 +212,10 @@ static void obj_free(t_object *obj) {
         object_release(callable_obj->data.binding);
     }
 
+    if (CALLABLE_IS_CODE_EXTERNAL(callable_obj)) {
+        vm_codeblock_destroy(callable_obj->data.code.external.codeblock);
+    }
+
     if (callable_obj->data.arguments) {
         t_hash_iter iter;
         ht_iter_init(&iter, callable_obj->data.arguments);
@@ -209,6 +223,9 @@ static void obj_free(t_object *obj) {
             t_method_arg *arg = ht_iter_value(&iter);
 
             // Keys are destroyed through ht_destroy
+
+            DEBUG_PRINT_CHAR("Freeing arg value: %s [%08X]\n", object_debug((t_object *)arg->value), (intptr_t)arg->value);
+            DEBUG_PRINT_CHAR("Freeing arg hint: %s [%08X]\n", object_debug((t_object *)arg->typehint), (intptr_t)arg->typehint);
 
             object_release((t_object *)arg->value);
             object_release((t_object *)arg->typehint);
@@ -223,15 +240,14 @@ static void obj_free(t_object *obj) {
 
 
 #ifdef __DEBUG
-char global_buf[1024];
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    sprintf(global_buf, "%s callable(%d parameters)",
+    snprintf(self->__debug_info, 199, "%s callable(%d parameters)",
         CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
         self->data.arguments ? self->data.arguments->element_count : 0
     );
 
-    return global_buf;
+    return self->__debug_info;
 }
 
 #endif

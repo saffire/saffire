@@ -1,5 +1,3 @@
-io_var = 1;
-
 /**
  * This is the IO class.
  */
@@ -17,5 +15,3 @@ class io {
     }
 
 }
-
-io_2_var = true;

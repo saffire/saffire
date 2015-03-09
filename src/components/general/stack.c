@@ -44,33 +44,34 @@ t_stack *stack_init(void) {
 /**
  *
  */
-void stack_push(t_stack *stack, void *data) {
-    dll_append(stack->dll, data);
+void stack_push(t_stack *stack, char data) {
+    // @TODO: We should not cast char data directly to (void *),..
+    dll_append(stack->dll, (void *)(long)data);
 }
 
 
 /**
  *
  */
-void *stack_pop(t_stack *stack) {
+char stack_pop(t_stack *stack) {
     if (stack->dll->size <= 0) {
         fatal_error(1, "cannot pop from an empty stack!\n");        /* LCOV_EXCL_LINE */
     }
     t_dll_element *e = DLL_TAIL(stack->dll);
 
     // As dll_remove will throw away 'e', we must save data first..
-    void *ret = e->data;
+    long ret = e->data.l;
     dll_remove(stack->dll, e);
-    return ret;
+    return (char)ret;
 }
 
 /**
  *
  */
-void *stack_peek(t_stack *stack) {
+char stack_peek(t_stack *stack) {
     t_dll_element *e = DLL_TAIL(stack->dll);
-    if (! e) return NULL;
-    return e->data;
+    if (! e) return 0;
+    return (char)e->data.l;
 }
 
 /**

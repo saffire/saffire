@@ -30,13 +30,16 @@
     typedef struct _dll_element {
         struct _dll_element *prev;  // Pointer to previous element (or NULL)
         struct _dll_element *next;  // Pointer to next element (or NULL)
-        void *data;                 // data container
+        union {                     // data container
+            long l;                 // Pointer to data (in case element <= sizeof(long))
+            void *p;                // Pointer to data (in case element is > sizeof(long))
+        } data;
     } t_dll_element;
 
     typedef struct _dll {
-        long size;                  // Size of the DLL
-        t_dll_element *head;        // Start "head" element
-        t_dll_element *tail;        // End "tail" element
+        long            size;           // Number of elements allocated in the DLL
+        t_dll_element   *head;          // Start "head" element
+        t_dll_element   *tail;          // End "tail" element
     } t_dll;
 
     #define DLL_HEAD(dll) dll->head
@@ -53,8 +56,8 @@
     t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *, void *data);
     int dll_remove(t_dll *dll, t_dll_element *element);
     void dll_push(t_dll *dll, void *data);
-    void *dll_pop(t_dll *dll);
-    void *dll_top(t_dll *dll);
+//    void *dll_pop(t_dll *dll);
+//    void *dll_top(t_dll *dll);
     t_dll_element *dll_seek_offset(t_dll *dll, int offset);
 
 #endif

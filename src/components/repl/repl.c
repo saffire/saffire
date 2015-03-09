@@ -235,8 +235,10 @@ int repl(void) {
     free_parserinfo(sp->parserinfo);
 
     vm_stackframe_destroy(initial_frame);
+    bytecode_free(codeblock->bytecode);
+    vm_codeblock_destroy(codeblock);
 
-    bytecode_free(bytecode);
+//    bytecode_free(bytecode);
     vm_fini();
 
     // Destroy scanner structure

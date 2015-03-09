@@ -131,6 +131,7 @@ void thread_clear_exception() {
  */
 void thread_set_exception(t_exception_object *exception) {
     current_thread->exception = exception;
+    object_inc_ref((t_object *)exception);
 
     // Add stack trace
     t_hash_table *stacktrace = thread_create_stacktrace();

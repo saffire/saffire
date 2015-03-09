@@ -27,6 +27,8 @@
 #ifndef __HASHTABLE_H__
 #define __HASHTABLE_H__
 
+    #include <stdint.h>
+
     // Hashd value
     typedef unsigned long hash_t;
 
@@ -35,12 +37,14 @@
     #define HASH_KEY_STR         0
     #define HASH_KEY_NUM         1
     #define HASH_KEY_OBJ         2
+    #define HASH_KEY_PTR         3
 
     typedef struct _hash_key {
         char type;                          // One of the HASH_KEY_* defines
         union {
             char *s;                        // String value
             int n;                          // Numerical value
+            uintptr_t p;                        // Pointers
             t_object *o;                    // Objects
         } val;
     } t_hash_key;
@@ -98,28 +102,33 @@
 
     int ht_exists(t_hash_table *ht, t_hash_key *key);
     int ht_exists_str(t_hash_table *ht, char *key);
-    int ht_exists_num(t_hash_table *ht, unsigned long key);
+    int ht_exists_num(t_hash_table *ht, long key);
     int ht_exists_obj(t_hash_table *ht, t_object *key);
+    int ht_exists_ptr(t_hash_table *ht, void *key);
 
     void *ht_find(t_hash_table *ht, t_hash_key *key);
     void *ht_find_str(t_hash_table *ht, char *key);
-    void *ht_find_num(t_hash_table *ht, unsigned long key);
+    void *ht_find_num(t_hash_table *ht, long key);
     void *ht_find_obj(t_hash_table *ht, t_object *key);
+    void *ht_find_ptr(t_hash_table *ht, void *key);
 
     int ht_add(t_hash_table *ht, t_hash_key *key, void *value);
     int ht_add_str(t_hash_table *ht, char *key, void *value);
-    int ht_add_num(t_hash_table *ht, unsigned long key, void *value);
+    int ht_add_num(t_hash_table *ht, long key, void *value);
     int ht_add_obj(t_hash_table *ht, t_object *key, void *value);
+    int ht_add_ptr(t_hash_table *ht, void *key, void *value);
 
     void *ht_replace(t_hash_table *ht, t_hash_key *key, void *value);
     void *ht_replace_str(t_hash_table *ht, char *key, void *value);
-    void *ht_replace_num(t_hash_table *ht, unsigned long key, void *value);
+    void *ht_replace_num(t_hash_table *ht, long key, void *value);
     void *ht_replace_obj(t_hash_table *ht, t_object *key, void *value);
+    void *ht_replace_ptr(t_hash_table *ht, void *key, void *value);
 
     void *ht_remove(t_hash_table *ht, t_hash_key *key);
     void *ht_remove_str(t_hash_table *ht, char *key);
-    void *ht_remove_num(t_hash_table *ht, unsigned long key);
+    void *ht_remove_num(t_hash_table *ht, long key);
     void *ht_remove_obj(t_hash_table *ht, t_object *key);
+    void *ht_remove_ptr(t_hash_table *ht, void *key);
 
 #ifdef __DEBUG
     void ht_debug(t_hash_table *ht);
@@ -135,12 +144,14 @@
     } t_hash_iter;
 
     int ht_iter_init(t_hash_iter *iter, t_hash_table *ht);
+    int ht_iter_init_tail(t_hash_iter *iter, t_hash_table *ht);
     int ht_iter_rewind(t_hash_iter *iter, t_hash_table *ht);
     int ht_iter_valid(t_hash_iter *iter);
+    int ht_iter_prev(t_hash_iter *iter);
     int ht_iter_next(t_hash_iter *iter);
     t_hash_key *ht_iter_key(t_hash_iter *iter);
     char *ht_iter_key_str(t_hash_iter *iter);
-    unsigned long ht_iter_key_num(t_hash_iter *iter);
+    long ht_iter_key_num(t_hash_iter *iter);
     t_object *ht_iter_key_obj(t_hash_iter *iter);
     void *ht_iter_value(t_hash_iter *iter);
 

@@ -34,8 +34,8 @@
 
     // A method-argument hash consists of name => structure
     typedef struct _method_arg {
-        t_object *value;
-        t_string_object *typehint;
+        t_object *value;                // Value of the method (or NULL when it doesn't have a default value)
+        t_string_object *typehint;      // Typehint of the class (as a string)
     } t_method_arg;
 
     /* Callable code types */
@@ -46,7 +46,7 @@
     #define CALLABLE_IS_CODE_EXTERNAL(callable) ((((t_callable_object *)callable)->data.routing & CALLABLE_CODE_EXTERNAL) == CALLABLE_CODE_EXTERNAL)
 
     typedef struct {
-        int routing;     // CALLABLE_CODE_*
+        int routing;     // A CALLABLE_CODE_*, to distinguish between external (userland saffire) and internal (C code)
 
         union {
             struct {

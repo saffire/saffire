@@ -75,9 +75,10 @@ static int do_exec(void) {
         bc = bytecode_load(bytecode_filepath, flag_no_verify);
     }
 
+    smm_free(bytecode_filepath);
+
     // Something went wrong with the bytecode loading or generating
     if (!bc) {
-        smm_free(bytecode_filepath);
         error("Cannot load bytecode\n");
         return 1;
     }
@@ -91,6 +92,7 @@ static int do_exec(void) {
     // Create initial code & stackframe
     t_vm_context *ctx = vm_context_new("", full_source_path);
     t_vm_codeblock *codeblock = vm_codeblock_new(bc, ctx);
+
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
     initial_frame->trace_class = string_strdup0("");
     initial_frame->trace_method = string_strdup0("");
@@ -99,10 +101,12 @@ static int do_exec(void) {
     int exitcode = vm_execute(initial_frame);
 
     vm_stackframe_destroy(initial_frame);
+    bytecode_free(codeblock->bytecode);
+    vm_codeblock_destroy(codeblock);
     vm_fini();
-    smm_free(bytecode_filepath);
 
-    DEBUG_PRINT_CHAR("VM ended with exitcode: %d\n", exitcode);
+
+    DEBUG_PRINT_CHAR("Saffire ended with exitcode: %d\n", exitcode);
 
     return exitcode;
 }

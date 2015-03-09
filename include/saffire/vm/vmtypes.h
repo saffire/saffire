@@ -55,6 +55,7 @@
         t_vm_context *context;          // Context of this codeblock
 
         t_bytecode *bytecode;           // Frame's bytecode
+        long constants_objects_len;     // Length of the constants
         t_object **constants_objects;   // Constants taken from bytecode, converted to actual objects
     } t_vm_codeblock;
 

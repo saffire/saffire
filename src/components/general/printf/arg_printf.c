@@ -38,7 +38,7 @@
  *
  */
 static long _get_long(t_dll_element **e) {
-    t_object *obj = (t_object *)(*e)->data;
+    t_object *obj = (t_object *)(*e)->data.p;
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
         t_attrib_object *numerical_method = object_attrib_find(obj, "__numerical");
@@ -55,7 +55,7 @@ static long _get_long(t_dll_element **e) {
  *
  */
 static t_string *_get_string(t_dll_element **e) {
-    t_object *obj = (*e)->data;
+    t_object *obj = (*e)->data.p;
 
     if (! OBJECT_IS_STRING(obj)) {
         t_attrib_object *string_method = object_attrib_find(obj, "__string");

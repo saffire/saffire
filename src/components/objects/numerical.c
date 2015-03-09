@@ -292,34 +292,34 @@ SAFFIRE_COMPARISON_METHOD(numerical, ge) {
  */
 void object_numerical_init(void) {
     Object_Numerical_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_ctor);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dtor);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__boolean",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__null",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__boolean",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_boolean);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__null",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_null);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_numerical);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_conv_string);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "neg",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "abs",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_add);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sub",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sub);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_mul",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mul);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_div",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_div);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_mod",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mod);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_and",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_and);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_or",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_or);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_xor",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_xor);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sl",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sl);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sr",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sr);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_add);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_sub",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sub);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_mul",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mul);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_div",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_div);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_mod",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_mod);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_and",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_and);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_or",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_or);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_xor",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_xor);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_sl",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sl);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__opr_sr",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sr);
 
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_eq",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_eq);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ne);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_lt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_lt);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_gt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_gt);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_le",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_le);
-    object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ge",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ge);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_eq",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_eq);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ne);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_lt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_lt);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_gt",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_gt);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_le",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_le);
+    object_add_internal_method(Object_Numerical_struct.attributes, (t_object *)&Object_Numerical_struct, "__cmp_ge",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ge);
 
     vm_populate_builtins("numerical", (t_object *)&Object_Numerical_struct);
 
@@ -379,7 +379,7 @@ static t_object *obj_clone(t_object *obj) {
 
 static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
-    long value = (long)e->data;
+    long value = (long)e->data.l;
 
     // Return cached object if it's already present.
     if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {
@@ -401,7 +401,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
 
     t_dll_element *e = DLL_HEAD(arg_list);
-    signed long value = (signed long)e->data;
+    signed long value = (signed long)e->data.l;
 
     num_obj->data.value = value;
 }
@@ -411,14 +411,11 @@ static void obj_destroy(t_object *obj) {
 }
 
 #ifdef __DEBUG
-char tmp[100];
 static char *obj_debug(t_object *obj) {
-    if (OBJECT_TYPE_IS_CLASS(obj)) {
-        sprintf(tmp, "Numerical");
-    } else {
-        sprintf(tmp, "numerical(%ld)", ((t_numerical_object *)obj)->data.value);
-    }
-    return tmp;
+    t_numerical_object *num_obj = (t_numerical_object *)obj;
+
+    snprintf(num_obj->__debug_info, 199, "num:%ld", num_obj->data.value);
+    return num_obj->__debug_info;
 }
 #endif
 

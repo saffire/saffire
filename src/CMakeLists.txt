@@ -56,6 +56,7 @@ list(APPEND 3rdparty_libs ${FCGI_LIBRARY})
 find_library(PTHREAD_LIBRARY pthread REQUIRED)
 list(APPEND 3rdparty_libs ${PTHREAD_LIBRARY})
 
+
 add_subdirectory(components)
 add_subdirectory(main)
 

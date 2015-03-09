@@ -1,7 +1,5 @@
 import io;
 
-defined_in_saffire = 1;
-
 /**
  * This is the saffire class.
  */

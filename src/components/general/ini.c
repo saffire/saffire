@@ -94,19 +94,19 @@ static void ini_parse(t_ini *ini) {
     long lineno = 1;
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
     while (e) {
-        rc = pcre_exec(section_re, 0, e->data, strlen(e->data), 0, 0, offsets, 30);
+        rc = pcre_exec(section_re, 0, e->data.p, strlen(e->data.p), 0, 0, offsets, 30);
         if (rc >= 1) {
             // Found a [section] line
-            pcre_get_substring(e->data, offsets, rc, 1, (const char **)&match1);
+            pcre_get_substring(e->data.p, offsets, rc, 1, (const char **)&match1);
             smm_free(section);
             section = string_strdup0(match1);
             pcre_free_substring(match1);
         } else {
-            rc = pcre_exec(key_re, 0, e->data, strlen(e->data), 0, 0, offsets, 30);
+            rc = pcre_exec(key_re, 0, e->data.p, strlen(e->data.p), 0, 0, offsets, 30);
             if (rc == 3) {
                 // Found a "key = val" line
-                pcre_get_substring(e->data, offsets, rc, 1, (const char **)&match1);
-                pcre_get_substring(e->data, offsets, rc, 2, (const char **)&match2);
+                pcre_get_substring(e->data.p, offsets, rc, 1, (const char **)&match1);
+                pcre_get_substring(e->data.p, offsets, rc, 2, (const char **)&match2);
 
                 // Create full section.key
                 int len = strlen(section) + strlen(match1) + 2;
@@ -131,7 +131,7 @@ static void ini_parse(t_ini *ini) {
 
         // Assume that this line is the last line of the section.
         int empty = 1;
-        char *p = (char *)e->data;
+        char *p = (char *)e->data.p;
         for (int i=0; i!=strlen(p); i++) {
             if (! isspace(p[i])) {
                 empty = 0;
@@ -219,7 +219,7 @@ void ini_free(t_ini *ini) {
         // Free ini lines
         t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
         while (e) {
-            smm_free(e->data);
+            smm_free(e->data.p);
             e = DLL_NEXT(e);
         }
         dll_free(ini->_private.ini_lines);
@@ -338,8 +338,8 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
        ie->value = string_strdup0(val);
 
         t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
-        smm_free(e->data);
-        e->data = string_strdup0(line);
+        smm_free(e->data.p);
+        e->data.p = string_strdup0(line);
     } else {
         char *section = ini_get_section(key);
 
@@ -381,7 +381,7 @@ int ini_remove(t_ini *ini, const char *key) {
 
     t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
     t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
-    smm_free(e->data);
+    smm_free(e->data.p);
     dll_remove(ini->_private.ini_lines, e);
 
     // free ini key
@@ -411,7 +411,7 @@ int ini_save(t_ini *ini, const char *path, const char *filename) {
 
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
     while (e) {
-        fprintf(f, "%s\n", (char *)e->data);
+        fprintf(f, "%p\n", e->data.p);
         e = DLL_NEXT(e);
     }
 
