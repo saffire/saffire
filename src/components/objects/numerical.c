@@ -68,7 +68,7 @@ SAFFIRE_METHOD(numerical, dtor) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, abs) {
-    t_object *obj = object_alloc(Object_Numerical, 1, abs(self->data.value));
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, abs(self->data.value));
     RETURN_OBJECT(obj);
 }
 
@@ -77,7 +77,7 @@ SAFFIRE_METHOD(numerical, abs) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(numerical, neg) {
-    t_object *obj = object_alloc(Object_Numerical, 1, 0 - self->data.value);
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, 0 - self->data.value);
     RETURN_OBJECT(obj);
 }
 
@@ -116,7 +116,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->data.value + other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value + other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
@@ -126,7 +126,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->data.value - other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value - other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
@@ -136,7 +136,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->data.value * other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value * other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
@@ -151,7 +151,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->data.value / other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value / other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
@@ -161,7 +161,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, self->data.value % other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value % other->data.value);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
@@ -171,7 +171,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->data.value & other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value & other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
@@ -181,7 +181,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->data.value | other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value | other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
@@ -191,7 +191,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->data.value ^ other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value ^ other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
@@ -201,7 +201,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->data.value << other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value << other->data.value));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
@@ -211,7 +211,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
         return NULL;
     }
 
-    return object_alloc(Object_Numerical, 1, (self->data.value >> other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value >> other->data.value));
 }
 
 
@@ -327,16 +327,14 @@ void object_numerical_init(void) {
     // Create a numerical cache of numerical instances
     numerical_cache = (t_numerical_object **)smm_malloc(sizeof(t_numerical_object *) * (NUMERICAL_CACHED_CNT + 1));
 
-    // Save numerical cache function and set it to NULL, as we don't want the allocation of the cache
-    // numericals,  actually use the cache
-
+    // Disable the numerical cache, as we are creating numericals for the cache
     void *temp_cache_func = Object_Numerical_struct.funcs->cache;
     Object_Numerical_struct.funcs->cache = NULL;
 
 
     long value = NUMERICAL_CACHED_MIN;
     for (int i=0; i!=NUMERICAL_CACHED_CNT; i++, value++) {
-        numerical_cache[i] = (t_numerical_object *)object_alloc(Object_Numerical, 1, value);
+        numerical_cache[i] = (t_numerical_object *)object_alloc_instance(Object_Numerical, 1, value);
         object_inc_ref((t_object *)numerical_cache[i]);
     }
 

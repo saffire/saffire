@@ -134,14 +134,14 @@
 
 
     // Number of different object types (also needed for GC queues)
-    #define OBJECT_TYPE_LEN     13
+    #define OBJECT_TYPE_LEN     14
 
     // Object types, the objectTypeAny is a wildcard type. Matches any other type.
     const char *objectTypeNames[OBJECT_TYPE_LEN];
     typedef enum {
                    objectTypeAny, objectTypeCallable, objectTypeAttribute, objectTypeBase, objectTypeBoolean,
                    objectTypeNull, objectTypeNumerical, objectTypeRegex, objectTypeString, objectTypeHash,
-                   objectTypeTuple, objectTypeList, objectTypeException,
+                   objectTypeTuple, objectTypeList, objectTypeException, objectTypeUser
                  } t_objectype_enum;
 
 
@@ -232,22 +232,21 @@
 
     char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
-    t_object *object_new(t_object *obj, int arg_count, ...);
-    t_object *object_new_with_dll_args(t_object *obj, t_dll *arguments);
     t_object *object_clone(t_object *obj);
     char *object_get_hash(t_object *obj);
-    t_object *object_alloca_class(t_object *obj, t_dll *arguments);
-    t_object *object_alloca(t_object *obj, t_dll *arguments);
-    t_object *object_alloc(t_object *obj, int arg_count, ...);
+    t_object *object_alloc_instance(t_object *obj, int arg_count, ...);
+    t_object *object_alloc_class(t_object *obj, int arg_count, ...);
+    t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached);
+    void object_instantiate(t_object *instance_obj, t_object *class_obj);
     void object_inc_ref(t_object *obj);
-
-    t_object *object_allocate(t_object *obj, int arg_count, ...);
     long object_release(t_object *obj);
+
+
+    t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instance_obj);
 
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *property);
     void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *name, int flags, int visibility, void *func);
-    void object_patchup(t_object *dup, t_object *org);
     void object_free_internal_object(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
@@ -255,7 +254,5 @@
     int object_has_interface(t_object *obj, const char *interface);
 
     void object_raise_exception(t_object *exception, int code, char *format, ...);
-
-    //void object_bind_callable(t_object *callable_obj, t_object *attrib_obj, char *name);
 
 #endif

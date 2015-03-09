@@ -101,7 +101,7 @@ t_hash_table *thread_create_stacktrace() {
             frame->trace_method ? frame->trace_method : ""
         );
 
-        t_string_object *str = (t_string_object *)object_alloc(Object_String, 2, strlen(s), s);
+        t_string_object *str = (t_string_object *)object_alloc_instance(Object_String, 2, strlen(s), s);
         ht_add_num(stacktrace, stacktrace->element_count, str);
 
         frame = frame->parent;
@@ -115,14 +115,18 @@ t_hash_table *thread_create_stacktrace() {
  * Creates a new exception based on the base class, on the code and message given
  */
 void thread_create_exception(t_exception_object *exception, int code, const char *message) {
-
     t_hash_table *stacktrace = thread_create_stacktrace();
 
-    current_thread->exception = (t_exception_object *)object_alloc((t_object *)exception, 3, code, char0_to_string(message), stacktrace);
+    current_thread->exception = (t_exception_object *)object_alloc_instance((t_object *)exception, 3, code, char0_to_string(message), stacktrace);
     current_thread->exception_frame = thread_get_current_frame();
+
+    object_inc_ref((t_object *)current_thread->exception);
 }
 
 void thread_clear_exception() {
+    if (current_thread->exception) {
+        object_release((t_object *)current_thread->exception);
+    }
     current_thread->exception = NULL;
 }
 

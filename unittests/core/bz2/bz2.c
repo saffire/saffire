@@ -1,4 +1,5 @@
 #include <CUnit/CUnit.h>
+#include <malloc.h>
 #include <saffire/general/bzip2.h>
 
 #define BZ2_MAXBUFLEN 1024
@@ -27,8 +28,8 @@ void test_comp_decomp(void) {
     CU_ASSERT_EQUAL(ret, 1);
     CU_ASSERT_EQUAL(buf2_len, strlen(str));
 
-    smm_free(buf);
-    smm_free(buf2);
+    free(buf);
+    free(buf2);
 }
 
 void test_bz2_init() {

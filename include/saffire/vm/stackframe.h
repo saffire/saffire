@@ -65,8 +65,6 @@
 
     char *vm_frame_get_context_path(char *path);
 
-    void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj);
-
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_stackframe *frame);
     void print_debug_table(t_hash_table *ht, char *prefix);

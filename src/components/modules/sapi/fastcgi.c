@@ -52,7 +52,7 @@ SAFFIRE_MODULE_METHOD(fastcgi, environment) {
             c = strchr(*p, '=') + 1;
             char *k = smm_zalloc((c-*p));
             strncpy(k, *p, (c-*p)-1);
-            ht_add_obj(ht, object_alloc(Object_String, 2, strlen(k), k),  (void *)object_alloc(Object_String, 2, strlen(c), c));
+            ht_add_obj(ht, object_alloc_instance(Object_String, 2, strlen(k), k),  (void *)object_alloc_instance(Object_String, 2, strlen(c), c));
             smm_free(k);
         }
     }

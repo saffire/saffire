@@ -246,7 +246,8 @@ static char *obj_debug(t_object *obj) {
     t_attrib_object *self = (t_attrib_object *) obj;
 
     char attrbuf[1024];
-    snprintf(attrbuf, 1024, "%s", self->data.attribute ? object_debug(self->data.attribute) : "unlinked");
+    //snprintf(attrbuf, 1024, "%s", self->data.attribute ? object_debug(self->data.attribute) : "unlinked");
+    snprintf(attrbuf, 1024, "%s", self->data.bound_name);
 
     snprintf(self->__debug_info, 199, "%s [%s%s%s] Attached: %s", self->name,
         self->data.attr_type == 0 ? "M" : self->data.attr_type == 1 ? "C" : self->data.attr_type == 2 ? "P" : "?",

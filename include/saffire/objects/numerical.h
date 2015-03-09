@@ -29,7 +29,7 @@
 
     #include <saffire/objects/object.h>
 
-    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_alloc(Object_Numerical, 1, n));
+    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(object_alloc_instance(Object_Numerical, 1, n));
 
 
     typedef struct {

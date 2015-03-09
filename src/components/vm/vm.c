@@ -170,7 +170,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
 
             if (is_vararg) {
                 // the '...' typehint found.
-                vararg_obj = (t_list_object *)object_alloc(Object_List, 0);
+                vararg_obj = (t_list_object *)object_alloc_instance(Object_List, 0);
 
                 // Add first argument
                 if (obj) {
@@ -229,25 +229,20 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
  * Creates a userland object, based on a parent class, with interfaces, attributes etc.
  */
 static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, int flags, t_dll *interfaces, t_object *parent_class, t_hash_table *attributes) {
-    // Allocate through the parent_class type, or use default base class (@TODO: why not use a default user class?)
-    t_object *user_obj = object_alloca_class(parent_class, NULL);
+    // Allocate a new user object (doesn't contain any attributes)
+    t_object *user_obj = object_alloc_class(parent_class, 0);
 
-    DEBUG_PRINT_CHAR("User object created %08X\n", user_obj);
-
-    // Make sure we use the allocation functionality of the PARENT class. In most cases, the base-class, but some cases,
-    //user_obj->type = objectTypeUser;
-    //user_obj->funcs = parent_class->funcs;
-
-//    // Set the correct type
-//    if (! OBJECT_IS_BASE(parent_class)) {
-//        user_obj->type = parent_class->type;
-//    }
+    DEBUG_PRINT_CHAR("User object created %08X based on %s\n", user_obj, parent_class->name);
 
     // Set the frame in which this frame is created
     user_obj->frame = frame;
 
     // Set name
+    smm_free(user_obj->name);
     user_obj->name = string_strdup0(name);
+
+    // Set to user object
+    user_obj->type = objectTypeUser;
 
     // Set flags
     user_obj->flags |= flags;
@@ -268,21 +263,35 @@ static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, i
     // created statically? (is that possible?).
     //object_inc_ref(parent_class);
 
-    // Set attributes
     user_obj->attributes = attributes;
 
-    // Iterate attributes and bind them into the new user class
-    t_hash_iter iter;
-    ht_iter_init(&iter, user_obj->attributes);
-    while (ht_iter_valid(&iter)) {
-        char *name = ht_iter_key_str(&iter);
-        t_attrib_object *attrib = ht_iter_value(&iter);
 
-        // We "bind" the attribute to this class
-        object_attrib_bind(attrib, user_obj, name);
-
-        ht_iter_next(&iter);
-    }
+//    // Remove "old" attributes if present
+//    if (user_obj->attributes) {
+//        t_hash_iter iter;
+//        ht_iter_init(&iter, user_obj->attributes);
+//        while (ht_iter_valid(&iter)) {
+//            t_attrib_object *attrib = ht_iter_value(&iter);
+//            object_release(attrib);
+//
+//            ht_iter_next(&iter);
+//        }
+//        ht_destroy(user_obj->attributes);
+//        user_obj->attributes = NULL;
+//    }
+//
+//    user_obj->attributes = attributes;
+//    t_hash_iter iter;
+//    ht_iter_init(&iter, user_obj->attributes);
+//    while (ht_iter_valid(&iter)) {
+//        char *name = ht_iter_key_str(&iter);
+//        t_attrib_object *attrib = ht_iter_value(&iter);
+//
+//        // We "bind" the attribute to this class
+//        object_attrib_bind(attrib, user_obj, name);
+//
+//        ht_iter_next(&iter);
+//    }
 
     return user_obj;
 }
@@ -494,7 +503,7 @@ void vm_init(SaffireParser *sp, int runmode) {
     vm_namespace_cache_init();
 
     // Convert our builtin identifiers to an actual hash object
-    builtin_identifiers = (t_hash_object *)object_alloc(Object_Hash, 1, builtin_identifiers_ht);
+    builtin_identifiers = (t_hash_object *)object_alloc_instance(Object_Hash, 1, builtin_identifiers_ht);
     object_inc_ref((t_object *)builtin_identifiers);
 
     // Initialize debugging if needed
@@ -547,7 +556,7 @@ void vm_fini(void) {
         t_object *addr = (t_object *)key->val.p;
         long refcount = (long) ht_iter_value(&iter);
         if (refcount != 0) {
-            DEBUG_PRINT_CHAR("REFCOUNT %08X => %ld\n", (intptr_t)addr, refcount);
+            DEBUG_PRINT_CHAR("REFCOUNT %08X => %ld %s\n", (intptr_t)addr, refcount, object_debug((t_object *)addr));
         }
         ht_iter_next(&iter);
     }
@@ -851,6 +860,7 @@ dispatch:
 
                     // We don't actually use the original attribute, but a duplicated one. Here we add our reference to the
                     // current object so we can do correct calls to the attributes method.
+                    // @TODO: is this still needed?
                     attrib_obj = object_attrib_duplicate(attrib_obj, self_obj);
                     DEBUG_PRINT_CHAR("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->data.bound_name);
 
@@ -1114,10 +1124,7 @@ dispatch:
 
                     // Check if we are a calling a class, if so, we are actually instantiating it
                     if (OBJECT_TYPE_IS_CLASS(obj1)) {
-                        // Do actual instantiation (pass nothing)
-                        t_attrib_object *new_method = object_attrib_find(obj1, "__new");
-                        self = vm_object_call(obj1, new_method, 0);
-
+                        self = object_alloc_instance(obj1, 0);
                         object_inc_ref(self);
 
                         object_release(obj1);
@@ -1251,7 +1258,7 @@ dispatch:
 
             // Continue the most inner loop-block
             case VM_CONTINUE_LOOP :
-                ret = object_alloc(Object_Numerical, 1, oparg1);
+                ret = object_alloc_instance(Object_Numerical, 1, oparg1);
                 reason = REASON_CONTINUE;
                 goto block_end;
                 break;
@@ -1435,6 +1442,9 @@ dispatch:
                         // this works.
                         ((t_callable_object *)value_obj)->data.arguments = arg_list;
 
+#ifdef __DEBUG
+                        ht_debug_keys(arg_list);
+#endif
                     }
                     if (oparg1 == ATTRIB_TYPE_CONSTANT) {
                         // Nothing additional to do for constants
@@ -1444,7 +1454,7 @@ dispatch:
                     }
 
                     // Create new attribute object
-                    dst = object_alloc(Object_Attrib, 7, NULL, "", oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
+                    dst = object_alloc_instance(Object_Attrib, 7, NULL, "", oparg1, OBJ2NUM(visibility), OBJ2NUM(access), value_obj, method_flags);
 
                     // @TODO: Do we still need this?
                     // Set the created frame for this attribute-object
@@ -1453,8 +1463,6 @@ dispatch:
                     // Push method object
                     vm_frame_stack_push(frame, dst);
                     object_inc_ref(dst);
-
-//                    vm_frame_register_userobject(frame, (t_object *)dst);
 
                     object_release(access);
                     object_release(visibility);
@@ -1625,7 +1633,7 @@ dispatch:
             case VM_SETUP_EXCEPT :
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
 
-                t_object *obj = object_alloc(Object_Numerical, 1, REASON_FINALLY);
+                t_object *obj = object_alloc_instance(Object_Numerical, 1, REASON_FINALLY);
                 vm_frame_stack_push(frame, obj);
                 object_inc_ref(obj);
 
@@ -1693,7 +1701,7 @@ dispatch:
             case VM_PACK_TUPLE :
                 {
                     // Create an empty tuple
-                    t_tuple_object *obj = (t_tuple_object *)object_alloc(Object_Tuple, 0);
+                    t_tuple_object *obj = (t_tuple_object *)object_alloc_instance(Object_Tuple, 0);
 
                     // Add elements from the stack into the tuple, sort in reverse order!
                     for (int i=0; i!=oparg1; i++) {
@@ -1846,7 +1854,7 @@ dispatch:
                     }
 
                     // Create new object, because we know it's a data-structure, just add them to the list
-                    t_object *ret_obj = (t_object *)object_alloc(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
+                    t_object *ret_obj = (t_object *)object_alloc_instance(obj, 2, NULL, dll);  // arg 1 is hashtable, arg2 is dll
 
                     vm_frame_stack_push(frame, ret_obj);
                     object_inc_ref(ret_obj);
@@ -2027,7 +2035,7 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             vm_frame_stack_push(frame, ret);
             object_inc_ref(ret);
 
-            t_object *obj = object_alloc(Object_Numerical, 1, *reason);
+            t_object *obj = object_alloc_instance(Object_Numerical, 1, *reason);
             vm_frame_stack_push(frame, obj);
             object_inc_ref(obj);
 
@@ -2235,11 +2243,11 @@ int vm_execute(t_vm_stackframe *frame) {
                 // @TODO: Uh-oh.. saffire wasn't found :(
             }
             if (result == NULL) {
-                result = object_alloc(Object_Numerical, 1, 0);
+                result = object_alloc_instance(Object_Numerical, 1, 0);
             }
         } else {
             // result was NULL, but no exception found, just threat like regular 0
-            result = object_alloc(Object_Numerical, 1, 0);
+            result = object_alloc_instance(Object_Numerical, 1, 0);
         }
     }
 
@@ -2260,6 +2268,12 @@ int vm_execute(t_vm_stackframe *frame) {
             object_release(result);
             ret_val = 1;
         }
+    }
+
+
+    // If there is an exception thrown, remove the refcount of the exception
+    if (thread_exception_thrown()) {
+        thread_clear_exception();
     }
 
 //    vm_frame_destroy(frame);

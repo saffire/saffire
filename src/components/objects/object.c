@@ -46,7 +46,7 @@
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "callable", "attribute", "base", "boolean",
                                                  "null", "numerical", "regex", "string",
-                                                 "hash", "tuple", "list", "exception" };
+                                                 "hash", "tuple", "list", "exception", "user" };
 
 // Object comparison methods. These should map on the COMPARISON_* defines
 const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_gt", "__cmp_le", "__cmp_ge",
@@ -188,7 +188,7 @@ void object_inc_ref(t_object *obj) {
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
 
 #if __DEBUG_REFCOUNT
-    DEBUG_PRINT_CHAR("Increased reference for: %s (%08lX) to %d\n", object_debug(obj), (intptr_t)obj, obj->ref_count);
+    DEBUG_PRINT_CHAR("Increased reference for: %s (%p) to %d\n", object_debug(obj), obj, obj->ref_count);
 #endif
 }
 
@@ -229,7 +229,7 @@ static long object_dec_ref(t_object *obj) {
         return 0;
     }
 
-    // Free object->
+    // Free object
     _object_free(obj);
     return 0;
 }
@@ -266,27 +266,11 @@ t_object *object_clone(t_object *obj) {
 
 
 /**
- * Actually returns a new object. Note that it must NOT populate anything through the
- * arguments. This should be done in the populate() callback. The arguments presented
- * here can be used to decide if we have a cached version of the object laying around.
+ *
+ * @param class_obj
+ * @return
  */
-static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
-
-    // Create new object
-    t_object *instance_obj = smm_malloc(sizeof(t_object) + class_obj->data_size);
-
-    // @TODO: How about objects with some additional internal values (like strings, regex, numericals etc)
-    // @TODO: I think that's taken care of by the ->populate() method (maybe we should change the name?)
-    memcpy(instance_obj, class_obj, sizeof(t_object) + class_obj->data_size);
-
-    // Since we just allocated the object, it can always be destroyed
-    instance_obj->flags |= OBJECT_FLAG_ALLOCATED;
-
-    instance_obj->ref_count = 0;
-    instance_obj->class = class_obj;
-
-
-    // Duplicate all attributes into new ones
+t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instance_obj) {
     t_hash_table *duplicated_attributes = ht_create();
 
     t_hash_iter iter;
@@ -307,29 +291,12 @@ static t_object *_object_instantiate(t_object *class_obj, t_dll *arguments) {
         // Increase reference to the duplicated attribute
         object_inc_ref((t_object *)dup_attrib);
 
-//        // Must be done after increasing the dup_attrib
-//        object_release((t_object *)attrib);
-
         ht_iter_next(&iter);
     }
-    instance_obj->attributes = duplicated_attributes;
 
-
-    if (class_obj->interfaces) {
-        instance_obj->interfaces = dll_init();
-        t_dll_element *e = DLL_HEAD(class_obj->interfaces);
-        while (e) {
-            t_object *obj = (t_object *)e->data.p;
-            dll_append(instance_obj->interfaces, obj);
-            object_inc_ref(obj);
-            e = DLL_NEXT(e);
-        }
-    }
-
-    instance_obj->name = string_strdup0(class_obj->name);
-
-    return instance_obj;
+    return duplicated_attributes;
 }
+
 
 char *object_get_hash(t_object *obj) {
     // When there is no hash function, we just use the address of the object
@@ -345,9 +312,16 @@ char *object_get_hash(t_object *obj) {
 
 
 
-
-static t_object *_object_alloca(t_object *obj, t_dll *arguments, int instantiate) {
+/**
+ * Creates a new object with specific values, with a already created
+ * argument DLL list.
+ */
+t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached) {
     t_object *res = NULL;
+
+    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+        fatal_error(1, "Can only object_alloc_args() from a class object.\n");
+    }
 
     // Nothing found to new, just return NULL object
     if (! obj || ! obj->funcs) {
@@ -358,16 +332,26 @@ static t_object *_object_alloca(t_object *obj, t_dll *arguments, int instantiate
     if (obj->funcs->cache) {
         res = obj->funcs->cache(obj, arguments);
         if (res) {
+            // Set cached flag when the caller wants it
+            if (cached) {
+                *cached = 1;
+            }
             return res;
         }
     }
 
-    res = _object_instantiate(obj, arguments);
-    if (instantiate) {
-        // Object is an instance, not a class
-        res->flags &= ~OBJECT_TYPE_CLASS;
-        res->flags |= OBJECT_TYPE_INSTANCE;
-    }
+    // Nothing found in cache, create new object
+
+    // Create new object
+    res = smm_malloc(sizeof(t_object) + obj->data_size);
+    memcpy(res, obj, sizeof(t_object) + obj->data_size);
+
+    // Since we just allocated the object, it can always be destroyed
+    res->flags |= OBJECT_FLAG_ALLOCATED;
+
+    res->ref_count = 0;
+    res->class = obj;
+    res->name = string_strdup0(obj->name);
 
     // Populate values, if needed
     if (res->funcs->populate && arguments) {
@@ -375,45 +359,6 @@ static t_object *_object_alloca(t_object *obj, t_dll *arguments, int instantiate
     }
 
     return res;
-}
-
-
-/**
- * Creates a new object with specific values, with a already created
- * argument DLL list.
- */
-t_object *object_alloca(t_object *obj, t_dll *arguments) {
-    return _object_alloca(obj, arguments, 1);
-}
-
-t_object *object_alloca_class(t_object *obj, t_dll *arguments) {
-    return _object_alloca(obj, arguments, 0);
-}
-
-
-
-
-/**
- * Creates a new object with specific values
- */
-t_object *object_new(t_object *obj, int arg_count, ...) {
-    va_list arg_list;
-
-    // Create argument DLL
-    t_dll *arguments = dll_init();
-    va_start(arg_list, arg_count);
-    for (int i=0; i!=arg_count; i++) {
-        dll_append(arguments, va_arg(arg_list, void *));
-    }
-    va_end(arg_list);
-
-    // Create new object
-    t_object *new_obj = object_alloca(obj, arguments);
-
-    // Free argument DLL
-    dll_free(arguments);
-
-    return new_obj;
 }
 
 
@@ -427,13 +372,13 @@ void object_init() {
     object_callable_init();
     object_base_init();
     object_interfaces_init();
+    object_hash_init();
 
     object_string_init();
     object_boolean_init();
     object_null_init();
     object_numerical_init();
     object_regex_init();
-    object_hash_init();
     object_tuple_init();
     object_list_init();
     object_exception_init();
@@ -453,9 +398,9 @@ void object_fini() {
     object_numerical_fini();
     object_null_fini();
     object_boolean_fini();
-    object_hash_fini();
     object_string_fini();
 
+    object_hash_fini();
     object_interfaces_fini();
     object_base_fini();
     object_callable_fini();
@@ -585,9 +530,9 @@ void object_add_interface(t_object *class, t_object *interface) {
  */
 void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal with internal and external functions.
-    t_callable_object *callable_obj = (t_callable_object *)object_alloc(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
+    t_callable_object *callable_obj = (t_callable_object *)object_alloc_instance(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
 
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 7, obj, name, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, method_flags);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc_instance(Object_Attrib, 7, obj, name, ATTRIB_TYPE_METHOD, visibility, ATTRIB_ACCESS_RO, callable_obj, method_flags);
 
     /* We don't add the attributes directly to the obj, but we store them inside attributes. Otherwise we run into trouble bootstrapping the callable and attrib objects
      * (as we need to create callables during the creation of callables in callable_init, for instance). By storing them separately inside an attribute hash, and adding the
@@ -601,7 +546,7 @@ void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *n
  *
  */
 void object_add_property(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *property) {
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 7, obj, name, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc_instance(Object_Attrib, 7, obj, name, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
 
     /* We don't add the attributes directly to the obj, but we store them inside attributes. Otherwise we run into trouble bootstrapping the callable and attrib objects
      * (as we need to create callables during the creation of callables in callable_init, for instance). By storing them separately inside an attribute hash, and adding the
@@ -615,7 +560,7 @@ void object_add_property(t_hash_table *attributes, t_object *obj, char *name, in
  *
  */
 void object_add_constant(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *constant) {
-    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc(Object_Attrib, 7, obj, name, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
+    t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc_instance(Object_Attrib, 7, obj, name, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
 
     /* We don't add the attributes directly to the obj, but we store them inside attributes. Otherwise we run into trouble bootstrapping the callable and attrib objects
      * (as we need to create callables during the creation of callables in callable_init, for instance). By storing them separately inside an attribute hash, and adding the
@@ -818,10 +763,11 @@ int object_has_interface(t_object *obj, const char *interface_name) {
 
 
 
+
 /**
- * Allocate / populate a new instance from the given object
+ * Allocates a class from the given object
  */
-t_object *object_alloc(t_object *obj, int arg_count, ...) {
+t_object *object_alloc_class(t_object *obj, int arg_count, ...) {
     va_list arg_list;
 
     // Create argument DLL
@@ -833,7 +779,8 @@ t_object *object_alloc(t_object *obj, int arg_count, ...) {
     va_end(arg_list);
 
     // Create new object
-    t_object *new_obj = object_alloca(obj, arguments);
+    int cached = 0;
+    t_object *new_obj = object_alloc_args(obj, arguments, &cached);
 
     // Free argument DLL
     dll_free(arguments);
@@ -842,6 +789,64 @@ t_object *object_alloc(t_object *obj, int arg_count, ...) {
 }
 
 
+t_dll *object_duplicate_interfaces(t_object *instance_obj) {
+    if (! instance_obj->interfaces) return NULL;
+
+    t_dll *interfaces = dll_init();
+    t_dll_element *e = DLL_HEAD(instance_obj->interfaces);
+    while (e) {
+        dll_append(interfaces, e->data.p);
+        object_inc_ref((t_object *)e->data.p);
+        e = DLL_NEXT(e);
+    }
+
+    return interfaces;
+}
+
+t_object *object_alloc_instance(t_object *obj, int arg_count, ...) {
+    va_list arg_list;
+
+    // Create argument DLL
+    t_dll *arguments = dll_init();
+    va_start(arg_list, arg_count);
+    for (int i=0; i!=arg_count; i++) {
+        dll_append(arguments, (void *)va_arg(arg_list, void *));
+    }
+    va_end(arg_list);
+
+    // Create new object
+    int cached = 0;
+    t_object *new_obj = object_alloc_args(obj, arguments, &cached);
+
+    // Free argument DLL
+    dll_free(arguments);
+
+    // It might be possible that object_alloc_args() returned a cached instance.
+    if (cached) return new_obj;
+
+    // Instantiate the new object
+    object_instantiate(new_obj, obj);
+
+    return new_obj;
+}
+
+
+void object_instantiate(t_object *instance_obj, t_object *class_obj) {
+    // Object is an instance, not a class
+    instance_obj->flags &= ~OBJECT_TYPE_CLASS;
+    instance_obj->flags |= OBJECT_TYPE_INSTANCE;
+
+    // Bind all attributes to the instance
+    if (class_obj->attributes) {
+        t_hash_table *duplicated_attributes = object_duplicate_attributes(class_obj, instance_obj);
+        instance_obj->attributes = duplicated_attributes;
+    }
+
+    if (class_obj->interfaces) {
+        t_dll *duplicated_interfaces = object_duplicate_interfaces(instance_obj);
+        instance_obj->interfaces = duplicated_interfaces;
+    }
+}
 
 
 /**

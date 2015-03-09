@@ -267,12 +267,19 @@ static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
 
     // Save original excption, if any, and clear exceptions so we can do import on the thread
     t_exception_object *exception = thread_get_exception();
+    if (exception) {
+        // save guard exception for releasing
+        object_inc_ref((t_object *)exception);
+    }
     thread_clear_exception();
 
     t_vm_stackframe *import_stackframe = vm_execute_import(codeblock, NULL);
 
     // exception during import is thrown, don't continue
     if (thread_exception_thrown()) {
+        // Release original exception
+        object_release((t_object *)exception);
+
         vm_stackframe_destroy(import_stackframe);
         vm_codeblock_destroy(codeblock);
         return NULL;
@@ -281,6 +288,8 @@ static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
     // Restore original exception (if any)
     if (exception) {
         thread_set_exception(exception);
+        // Release the lock from our temporary stored exception
+        object_release((t_object *)exception);
     }
 
     return import_stackframe;

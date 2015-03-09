@@ -63,7 +63,7 @@ static void string_change_locale(t_string_object *str_obj, char *locale) {
 }
 
 static t_string_object *string_create_new_object(t_string *str, char *locale) {
-    t_string_object *uc_obj = (t_string_object *)object_alloc(Object_String, 0);
+    t_string_object *uc_obj = (t_string_object *)object_alloc_instance(Object_String, 0);
     object_inc_ref((t_object *)uc_obj);
 
     uc_obj->data.value = str;
@@ -613,7 +613,7 @@ static char *obj_debug(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
 
     if (! str_obj->data.value) {
-        snprintf(str_obj->__debug_info, 199, "no string data defined");
+        snprintf(str_obj->__debug_info, 199, "string()");
     } else {
         snprintf(str_obj->__debug_info, 199, "string(%d):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
     }

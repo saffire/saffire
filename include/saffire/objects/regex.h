@@ -33,7 +33,7 @@
 
     #define OVECCOUNT 30
 
-    #define RETURN_REGEX(s)   RETURN_OBJECT(object_alloc(Object_Regex, 1, s));
+    #define RETURN_REGEX(s)   RETURN_OBJECT(object_alloc_instance(Object_Regex, 1, s));
 
     typedef struct {
         pcre *regex;

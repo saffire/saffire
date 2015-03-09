@@ -412,15 +412,13 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
     bzero(frame->stack, codeblock->bytecode->stack_size * sizeof(t_object *));
 
 
-    frame->created_user_objects = dll_init();
-
     //    DEBUG_PRINT_CHAR("Increasing builtin_identifiers refcount\n");
     frame->builtin_identifiers = builtin_identifiers;
     object_inc_ref((t_object *)builtin_identifiers);
 
     // Create new empty local identifier hash
     DEBUG_PRINT_CHAR("Creating local ID table for frame %08x\n", frame);
-    frame->local_identifiers = (t_hash_object *)object_alloc(Object_Hash, 0);
+    frame->local_identifiers = (t_hash_object *)object_alloc_instance(Object_Hash, 0);
     object_inc_ref((t_object *)frame->local_identifiers);
 
     if (frame->parent == NULL) {
@@ -482,23 +480,13 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
         if (val == OBJECT_NEEDS_RESOLVING) continue;
 
-        DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%08X]\n", key, object_debug(val), (intptr_t)val);
+        DEBUG_PRINT_STRING_ARGS("Frame destroy: Releasing => %s => %s [%p]\n", key, object_debug(val), val);
 
         // Release values, as it's no longer needed.
         object_release(val);
 
         ht_remove_str(frame->local_identifiers->data.ht, key);
     }
-
-    // Free created user objects
-    t_dll_element *e = DLL_HEAD(frame->created_user_objects);
-    while (e) {
-        t_object *obj = (t_object *)e->data.p;
-
-        object_release(obj);
-        e = DLL_NEXT(e);
-    }
-    dll_free(frame->created_user_objects);
 
     // Free identifiers
     object_release((t_object *)frame->global_identifiers);
@@ -520,36 +508,6 @@ void vm_stackframe_destroy(t_vm_stackframe *frame) {
     smm_free(frame->stack);
 
     smm_free(frame);
-}
-
-///**
-// * Register a user-created class. This way we always keep a reference onto the stack, until we actually remove it.
-// *
-// * WARNING:
-// * What happens now is that we globally register our objects. As long as the object is registered here, we have at least
-// * a refcount. So when we push/pop it from the stack, we cannot accidentally free it (because we pop it, and in the same
-// * pass, we push it again).
-// *
-// * We should change the system so we don't really need this way of working. An object can have multiple states:
-// *
-// *  - born      An object has been generated, but not yet pushed onto the stack. This is basically the same state as
-// *              "is use", but once an object gets born, it can never return to this state. Maybe possible for some
-// *              initialization etc.
-// *  - stacked   The object is not in use by the VM, but it has at least 1 reference on (a) stack.
-// *  - in use    The object is currently in use by the VM. It *MIGHT* not have any references onto the stack (refcount = 0).�
-// *
-// *  - died      The object has died. There is no more refcounts AND the object is not in use. It might be possible to reanimate
-// *              the object for other purposes. In that case, the state becomes stacked, or in-use again.
-// *  - buried    The object has died, and the garbage collector has freed its memory. When the object needs to be generated
-// *              again, it must be newly allocated. In this case, the object state because "born" again.
-// *
-// */
-
-// register a user object. This way it is known in the stack frame, AND has a refcount of 1. This is to make sure
-// that we always have a reference to the user-object   @TODO: Do we really need this???
-void vm_frame_register_userobject(t_vm_stackframe *frame, t_object *obj) {
-    dll_append(frame->created_user_objects, obj);
-    object_inc_ref(obj);
 }
 
 

@@ -55,17 +55,17 @@ static t_vm_codeblock *_vm_codeblock_new(t_bytecode *bytecode, t_vm_context *con
             {
                 // We duplicate the context, so we can free them separately. @TODO: All should point to the same context!
                 t_vm_codeblock *child_codeblock = _vm_codeblock_new(bytecode->constants[i]->data.code, vm_context_duplicate(codeblock->context));
-                obj = object_alloc(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeblock, /* arguments */ NULL);
+                obj = object_alloc_instance(Object_Callable, 3, CALLABLE_CODE_EXTERNAL, child_codeblock, /* arguments */ NULL);
                 break;
             }
             case BYTECODE_CONST_STRING :
-                obj = object_alloc(Object_String, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
+                obj = object_alloc_instance(Object_String, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_REGEX :
-                obj = object_alloc(Object_Regex, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
+                obj = object_alloc_instance(Object_Regex, 2, bytecode->constants[i]->len, bytecode->constants[i]->data.s);
                 break;
             case BYTECODE_CONST_NUMERICAL :
-                obj = object_alloc(Object_Numerical, 1, bytecode->constants[i]->data.l);
+                obj = object_alloc_instance(Object_Numerical, 1, bytecode->constants[i]->data.l);
                 break;
             default :
                 fatal_error(1, "Cannot convert constant type into object!");        /* LCOV_EXCL_LINE */

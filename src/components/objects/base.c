@@ -34,7 +34,6 @@
 
 /*
  class base {
-	public method new();
     public method ctor();
     public method dtor();
     public method properties();
@@ -59,14 +58,6 @@
  *   Object methods
  * ======================================================================
  */
-
-/**
- * Instantiation
- */
-SAFFIRE_METHOD(base, new) {
-    t_object *obj = object_alloca((t_object *)self, arguments);
-    RETURN_OBJECT(obj);
-}
 
 /**
  * Constructor
@@ -196,7 +187,6 @@ SAFFIRE_METHOD(base, id) {
 void object_base_init() {
     Object_Base_struct.attributes = ht_create();
 
-    object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__new",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_new);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__properties",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
@@ -272,5 +262,5 @@ t_object_funcs user_funcs = {
 
 // Initial object
 t_object Object_User_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("user", objectTypeBase, OBJECT_TYPE_CLASS, &user_funcs, NULL, NULL, 0)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, NULL, NULL, 0)
 };

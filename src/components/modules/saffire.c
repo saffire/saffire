@@ -105,9 +105,9 @@ static void _init(void) {
     object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
     object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
 
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, object_alloc(Object_Null, 0));
+    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, Object_Null);
 }
 
 static void _fini(void) {
