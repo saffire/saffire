@@ -25,4 +25,8 @@ matrix:
   fast_finish: true
 
 notifications:
-  irc: "irc.freenode.org#saffire"
+  irc:
+    channels:
+      - "irc.freenode.org#saffire"
+    on_success: never
+    on_failure: always
