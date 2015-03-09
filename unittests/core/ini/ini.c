@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <libgen.h>
 #include "ini.h"
-#include "../../include/general/ini.h"
+#include <saffire/general/ini.h>
 
 char tmpfilename[] = "/tmp/cunit_ini_XXXXXX";
 

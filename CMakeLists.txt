@@ -11,3 +11,4 @@ set(saffire_VERSION_MINOR 1)
 
 add_subdirectory(include/saffire)
 add_subdirectory(src)
+add_subdirectory(unittests/core)

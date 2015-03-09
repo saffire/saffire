@@ -1,7 +1,7 @@
 #include <CUnit/CUnit.h>
 #include <stdio.h>
 #include "hashtable.h"
-#include "../../include/general/hashtable.h"
+#include <saffire/general/hashtable.h>
 
 void test_hashtable_replace_does_not_affect_original_after_shallow_copy() {
     t_hash_table *original = ht_create();
