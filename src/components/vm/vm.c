@@ -258,40 +258,9 @@ static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, i
     // Set parent class
     user_obj->parent = parent_class;
 
-    // @TODO: We should increase parent class as well, but how about internal classes? Will they
-    // have correct refcounts to begin with? Or should we increase refcount on classes that are not
-    // created statically? (is that possible?).
-    //object_inc_ref(parent_class);
-
+    // Set attributes. Since we have allocated a parent CLASS, the attributes in the user_obj are not duplicated.
+    // Therefor we can safely overwrite them with our own attributes.
     user_obj->attributes = attributes;
-
-
-//    // Remove "old" attributes if present
-//    if (user_obj->attributes) {
-//        t_hash_iter iter;
-//        ht_iter_init(&iter, user_obj->attributes);
-//        while (ht_iter_valid(&iter)) {
-//            t_attrib_object *attrib = ht_iter_value(&iter);
-//            object_release(attrib);
-//
-//            ht_iter_next(&iter);
-//        }
-//        ht_destroy(user_obj->attributes);
-//        user_obj->attributes = NULL;
-//    }
-//
-//    user_obj->attributes = attributes;
-//    t_hash_iter iter;
-//    ht_iter_init(&iter, user_obj->attributes);
-//    while (ht_iter_valid(&iter)) {
-//        char *name = ht_iter_key_str(&iter);
-//        t_attrib_object *attrib = ht_iter_value(&iter);
-//
-//        // We "bind" the attribute to this class
-//        object_attrib_bind(attrib, user_obj, name);
-//
-//        ht_iter_next(&iter);
-//    }
 
     return user_obj;
 }
@@ -1428,10 +1397,6 @@ dispatch:
                             object_release(name_obj);
 
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
-
-//                            // @TODO: Why the inc-refs here?? Where are the object_releases??
-//                            object_inc_ref((t_object *)arg->value);
-//                            object_inc_ref((t_object *)arg->typehint);
 
                             ht_add_str(arg_list, s, arg);
                             smm_free(s);

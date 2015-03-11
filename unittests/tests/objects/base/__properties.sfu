@@ -1,0 +1,41 @@
+title: base __properties tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+a = "hello1";
+foreach (a.__properties() as k,v) {
+    io.print(v, "\n");
+}
+========
+@@@@@@@
+import io;
+
+class myclass {
+    public method foo() {}
+    public method bar() {}
+    public property baz;
+}
+
+a = myclass();
+foreach (a.__properties() as k,v) {
+    io.print(v, "\n");
+}
+========
+baz
+@@@@@@
+import io;
+
+class myclass extends string {
+    public method foo() {}
+    public method bar() {}
+    public property baz;
+}
+
+a = myclass("a string");
+foreach (a.__properties() as k,v) {
+    io.print(v, "\n");
+}
+========
+baz

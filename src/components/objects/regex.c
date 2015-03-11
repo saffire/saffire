@@ -256,7 +256,6 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
                 re_obj->data.regex_flags |= PCRE_UTF8;
                 break;
             default :
-                // @TODO: unknown chars are found in the flags.
                 object_raise_exception(Object_ArgumentException, 1, "Incorrect regex flag found '%c'", *flags);
         }
         flags++;

@@ -1,0 +1,18 @@
+title: base __destroy tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+a = "hello1";
+id1 = a.__id();
+b = a;
+id2 = b.__id();
+c = "hello2";
+id3 = c.__id();
+
+io.print((id1 == id2) ? "ok" : "nok");
+
+io.print((id1 != id3) ? "ok" : "nok");
+=======
+okok
