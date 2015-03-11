@@ -624,7 +624,7 @@ void object_free_internal_object(t_object *obj) {
 
 
 /**
- * @TODO: t_object instead of t_exception_object. We run into some forward typedef issues when we use t_exception_object
+ *
  */
 void object_raise_exception(t_object *exception, int code, char *format, ...) {
     va_list args;

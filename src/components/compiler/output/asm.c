@@ -39,6 +39,9 @@
  * Converts assembler codes into bytecode
  */
 
+
+// Backpatch structure to temporarily store information for backpatching data. Needed when we need
+// to jump to other positions, but we still don't know which position it will be.
 struct _backpatch {
     long opcode_offset;             // Points to the opcode that we are actually patching
     long operand_offset;            // Points to the operand that we need to patch
@@ -134,6 +137,11 @@ static int _convert_constant_string(t_asm_frame *frame, char *s) {
 
     return frame->constants->size - 1;
 }
+
+/**
+ * Find the constant in our constant table and return its constant offset. When
+ * not found, add it and return its offset.
+ */
 static int _convert_constant_regex(t_asm_frame *frame, char *r) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
@@ -153,6 +161,11 @@ static int _convert_constant_regex(t_asm_frame *frame, char *r) {
 
     return frame->constants->size - 1;
 }
+
+/**
+ * Find the constant in our constant table and return its constant offset. When
+ * not found, add it and return its offset.
+ */
 static int _convert_constant_code(t_asm_frame *frame, char *s) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
@@ -173,6 +186,10 @@ static int _convert_constant_code(t_asm_frame *frame, char *s) {
     return frame->constants->size - 1;
 }
 
+/**
+ * Find the constant in our constant table and return its constant offset. When
+ * not found, add it and return its offset.
+ */
 static int _convert_constant_numerical(t_asm_frame *frame, int i) {
     int pos = 0;
 
@@ -192,6 +209,10 @@ static int _convert_constant_numerical(t_asm_frame *frame, int i) {
     dll_append(frame->constants, c);
     return frame->constants->size - 1;
 }
+
+/**
+ * Add an identifier to the frame if it does not exist yet, and returns the position of the identifier
+ */
 static int _convert_identifier(t_asm_frame *frame, char *s) {
     int pos = 0;
 
@@ -543,7 +564,7 @@ t_bytecode *assembler(t_hash_table *asm_code, const char *filename) {
 static int last_lineno = 0;
 
 /**
- * Ouput a complete frame
+ * Output a complete frame
  */
 static void _assembler_output_frame(t_dll *frame, FILE *f) {
     int oprcnt = 0;

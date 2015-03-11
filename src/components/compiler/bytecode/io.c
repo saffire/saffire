@@ -36,7 +36,6 @@
 #include <saffire/general/gpg.h>
 #include <saffire/general/bzip2.h>
 #include <saffire/general/config.h>
-//#include <saffire/general/hashtable.h>
 #include <saffire/compiler/output/asm.h>
 #include <saffire/compiler/ast_to_asm.h>
 #include <saffire/general/path_handling.h>
@@ -208,7 +207,7 @@ int bytecode_save(const char *dest_filename, const char *source_filename, t_byte
 
 
 /**
- *
+ * Return timestamp as located in the header of the file.
  */
 int bytecode_get_timestamp(const char *path) {
     t_bytecode_binary_header header;
@@ -223,7 +222,7 @@ int bytecode_get_timestamp(const char *path) {
 }
 
 /**
- *
+ * Checks if a file is a valid saffire bytecode file
  */
 int bytecode_is_valid_file(const char *path) {
     t_bytecode_binary_header header;
@@ -239,7 +238,7 @@ int bytecode_is_valid_file(const char *path) {
 
 
 /**
- *
+ * Checks if the bytecode has been signed
  */
 int bytecode_is_signed(const char *path) {
     t_bytecode_binary_header header;
@@ -255,7 +254,7 @@ int bytecode_is_signed(const char *path) {
 
 
 /**
- *
+ * Removed the signature from a bytecode file
  */
 int bytecode_remove_signature(const char *path) {
     t_bytecode_binary_header header;
@@ -285,7 +284,7 @@ int bytecode_remove_signature(const char *path) {
 
 
 /**
- * Add a new signature to the
+ * Adds a new signature to the bytecode file with the given gpg_key
  */
 int bytecode_add_signature(const char *path, char *gpg_key) {
     t_bytecode_binary_header header;

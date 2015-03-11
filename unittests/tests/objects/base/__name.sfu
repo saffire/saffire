@@ -1,0 +1,37 @@
+title: base __name tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+a = "hello1";
+io.print(a.__name(),"\n");
+io.print(0.__name(),"\n");
+io.print(true.__name(),"\n");
+io.print(null.__name(),"\n");
+========
+string
+numerical
+boolean
+null
+@@@@@@@@
+import io;
+
+class myclass {
+}
+
+a = myclass();
+io.print(a.__name(), "\n");
+========
+myclass
+@@@@@@@@
+import io;
+
+class myclass extends string {
+}
+
+a = myclass("foo");
+io.print(a.__name(), "\n");
+========
+myclass
+

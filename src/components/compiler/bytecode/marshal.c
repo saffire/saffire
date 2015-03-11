@@ -40,7 +40,9 @@
 
 
 
-
+/**
+ * Frees up an allocated bytecode constant
+ */
 static void _free_constant(t_bytecode_constant *c) {
      switch (c->type) {
          case BYTECODE_CONST_STRING :
@@ -333,7 +335,7 @@ void bytecode_free(t_bytecode *bc) {
 
 
 /**
- *
+ * Convert frame to bytecode. Uses startline as the position of the frame in the source code.
  */
 t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int startline) {
     t_dll_element *e;

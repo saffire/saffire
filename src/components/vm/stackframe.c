@@ -265,7 +265,7 @@ t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
     char *alias_fqcn = ht_find_str(frame->object_aliases, fqcn);
     if (! alias_fqcn) {
         // We need to resolve, but we don't know what.. Should not happen
-        // @TODO: Throw hard error
+        fatal_error(1, "Cannot find alias FQCN '%s'\n", fqcn);
     }
 
     // Resolve and update the local identifiers

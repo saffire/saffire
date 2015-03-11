@@ -46,8 +46,8 @@
     #define Object_True     ((t_object *)&Object_Boolean_True_struct)
     #define Object_False    ((t_object *)&Object_Boolean_False_struct)
 
-    #define IS_BOOLEAN_TRUE(obj)    (obj == Object_True)
-    #define IS_BOOLEAN_FALSE(obj)   (obj == Object_False)
+    #define IS_BOOLEAN_TRUE(obj)    ((t_object *)obj == Object_True)
+    #define IS_BOOLEAN_FALSE(obj)   ((t_object *)obj == Object_False)
 
     // Simple macro to return either TRUE or FALSE objects from a function
     #define RETURN_TRUE   { /*object_inc_ref(Object_True);*/ return Object_True; }

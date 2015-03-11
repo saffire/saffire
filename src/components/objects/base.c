@@ -53,6 +53,102 @@
 
  */
 
+/**
+ * @TODO: Not a pretty O(n) operation. Change so we don't have to iterate the whole methods hash to check if we already
+ * added data.
+ */
+static t_hash_table *find_properties(t_object *self, int attrib_type, int check_parents) {
+    // Store found methods
+    t_hash_table *methods = ht_create();
+
+    t_object *obj = self;
+    while (obj) {
+        // Iterate attributes form object
+        t_hash_iter iter;
+        ht_iter_init(&iter, obj->attributes);
+        while (ht_iter_valid(&iter)) {
+            t_attrib_object *attrib_obj = (t_attrib_object *)ht_iter_value(&iter);
+            ht_iter_next(&iter);
+
+            // Next item when this is attribute is not a method
+            switch (attrib_type) {
+                case ATTRIB_TYPE_METHOD:
+                    if (! ATTRIB_IS_METHOD(attrib_obj)) continue;
+                    break;
+                case ATTRIB_TYPE_CONSTANT:
+                    if (! ATTRIB_IS_CONSTANT(attrib_obj)) continue;
+                    break;
+                case ATTRIB_TYPE_PROPERTY:
+                    if (! ATTRIB_IS_PROPERTY(attrib_obj)) continue;
+                    break;
+            }
+
+            // Check if element has already been added.
+            int found = 0;
+            t_hash_iter iter2;
+            ht_iter_init(&iter2, methods);
+            while (ht_iter_valid(&iter2)) {
+                t_string_object *str = ht_iter_value(&iter2);
+                ht_iter_next(&iter2);
+                char *s = OBJ2STR0(str);
+                if (strcmp(s, attrib_obj->data.bound_name) == 0) {
+                    found = 1;
+                    break;
+                }
+            }
+
+            if (! found) {
+                t_object *str = object_alloc_instance(Object_String, 2, strlen(attrib_obj->data.bound_name), attrib_obj->data.bound_name);
+               ht_add_num(methods, methods->element_count, str);
+            }
+        }
+
+        // If we need parent methods as well, goto parent, otherwise we're done
+        obj = check_parents ? obj->parent : NULL;
+    }
+
+    return methods;
+}
+
+
+static t_hash_table *find_interfaces(t_object *self, int check_parents) {
+    // Store found interfaces
+    t_hash_table *interfaces = ht_create();
+
+    t_object *obj = self;
+    while (obj) {
+        t_dll_element *e = DLL_HEAD(obj->interfaces);
+        while (e) {
+            t_object *interface_obj = (t_object *)e->data.p;
+            e = DLL_NEXT(e);
+
+            // Check if element has already been added.
+            int found = 0;
+            t_hash_iter iter2;
+            ht_iter_init(&iter2, interfaces);
+            while (ht_iter_valid(&iter2)) {
+                t_string_object *str = ht_iter_value(&iter2);
+                ht_iter_next(&iter2);
+                char *s = OBJ2STR0(str);
+                if (strcmp(s, interface_obj->name) == 0) {
+                    found = 1;
+                    break;
+                }
+            }
+
+            if (! found) {
+                t_object *str = object_alloc_instance(Object_String, 2, strlen(interface_obj->name), interface_obj->name);
+               ht_add_num(interfaces, interfaces->element_count, str);
+            }
+        }
+
+        // If we need parent methods as well, goto parent, otherwise we're done
+        obj = check_parents ? obj->parent : NULL;
+    }
+
+    return interfaces;
+}
+
 
 /* ======================================================================
  *   Object methods
@@ -73,27 +169,68 @@ SAFFIRE_METHOD(base, dtor) {
     RETURN_SELF;
 }
 
+
 /**
- * Returns a list of all properties in this class (but not the parents)
+ * Returns a list of all properties in this class
  */
-SAFFIRE_METHOD(base, properties) {
-    RETURN_SELF;
+SAFFIRE_METHOD(base, constants) {
+    // Check arguments
+    t_boolean_object *parents_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+        return NULL;
+    }
+
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_CONSTANT, IS_BOOLEAN_TRUE(parents_obj));
+    RETURN_LIST(methods);
 }
 
 /**
- * Return a list of all methods in this class (but not from the parents)
+ * Returns a list of all properties in this class
+ */
+SAFFIRE_METHOD(base, properties) {
+    // Check arguments
+    t_boolean_object *parents_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+        return NULL;
+    }
+
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_PROPERTY, IS_BOOLEAN_TRUE(parents_obj));
+    RETURN_LIST(methods);
+}
+
+/**
+ * Return a list of all methods in this class
+ *
  */
 SAFFIRE_METHOD(base, methods) {
-    // @TODO: return list of methods
-    RETURN_STRING_FROM_CHAR("methods");
+    // Check arguments
+    t_boolean_object *parents_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+        return NULL;
+    }
+
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_METHOD, IS_BOOLEAN_TRUE(parents_obj));
+    RETURN_LIST(methods);
 }
 
 /**
  * Returns a list of all the parent classes this class extends
  */
 SAFFIRE_METHOD(base, parents) {
-    // @TODO: return list of parents
-    RETURN_STRING_FROM_CHAR("parents");
+    // Store found parents
+    t_hash_table *parents = ht_create();
+
+    t_object *obj = self;
+    while (obj) {
+        if (obj->parent) {
+            t_object *str = object_alloc_instance(Object_String, 2, strlen(obj->parent->name), obj->parent->name);
+            ht_add_num(parents, parents->element_count, str);
+        }
+
+        obj = obj->parent;
+    }
+
+    RETURN_LIST(parents);
 }
 
 /**
@@ -107,8 +244,14 @@ SAFFIRE_METHOD(base, name) {
  * Returns a list of interfaces this object implements
  */
 SAFFIRE_METHOD(base, implements) {
-    // @TODO: return list of implementations
-    RETURN_STRING_FROM_CHAR("implementations");
+    // Check arguments
+    t_boolean_object *parents_obj;
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+        return NULL;
+    }
+
+    t_hash_table *interfaces = find_interfaces(self, IS_BOOLEAN_TRUE(parents_obj));
+    RETURN_LIST(interfaces);
 }
 
 /**
@@ -155,14 +298,6 @@ SAFFIRE_METHOD(base, is_immutable) {
 }
 
 /**
- * Destroys the object.
- */
-SAFFIRE_METHOD(base, destroy) {
-    // @TODO: destroy the object
-    RETURN_NULL;
-}
-
-/**
  * Returns reference count for this object
  */
 SAFFIRE_METHOD(base, refcount) {
@@ -189,6 +324,7 @@ void object_base_init() {
 
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
+    object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__constants",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_constants);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__properties",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__methods",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__parents",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
@@ -199,7 +335,6 @@ void object_base_init() {
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__clone",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__immutable?",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__immutable",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
-    object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__destroy",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_destroy);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__refcount",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
     object_add_internal_method(Object_Base_struct.attributes, (t_object *)&Object_Base_struct, "__id",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
 }
@@ -259,6 +394,8 @@ t_object_funcs user_funcs = {
 #endif
 };
 
+
+// @TODO: Remove the user structure to user.c
 
 // Initial object
 t_object Object_User_struct = {

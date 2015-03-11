@@ -1,0 +1,92 @@
+title: base __implements tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+a = "hello1";
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+Iterator
+Subscription
+@@@@@@@@
+import io;
+
+a = list[[ "hello1" ]];
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+Iterator
+Datastructure
+@@@@@@@@
+import io;
+
+a = hash[[ 0:"hello1" ]];
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+Iterator
+Datastructure
+Subscription
+@@@@@@@@
+!skip
+import io;
+
+foreach (123.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+@@@@@@@@
+!skip
+import io;
+
+class myclass extends string {
+}
+
+a = myclass("foo");
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+Iterator
+Subscription
+@@@@@@@
+!skip
+import io;
+
+interface foo { }
+interface bar { }
+
+class myclass implements foo, bar {
+}
+
+a = myclass("foo");
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+foo
+bar
+@@@@@@@
+!skip
+import io;
+
+interface foo { }
+interface bar { }
+
+class myclass extends string implements foo, bar {
+}
+
+a = myclass("foo");
+foreach (a.__implements() as k,v) {
+    io.print(v, "\n");
+}
+=======
+Iterator
+Subscription
+foo
+bar
