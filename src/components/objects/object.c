@@ -200,7 +200,7 @@ static long object_dec_ref(t_object *obj) {
     if (! obj) return 0;
 
     if (obj->ref_count == 0) {
-        fprintf(stderr, "sanity check failed: ref-count of object %08X\n", (intptr_t)obj);
+        fprintf(stderr, "sanity check failed: ref-count of object %p\n", obj);
         abort();
     }
     obj->ref_count--;

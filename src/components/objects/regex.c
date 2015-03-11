@@ -319,5 +319,6 @@ t_regex_object Object_Regex_struct = {
     {
         NULL,
         '\0',
+        0
     }
 };
