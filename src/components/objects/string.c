@@ -615,7 +615,7 @@ static char *obj_debug(t_object *obj) {
     if (! str_obj->data.value) {
         snprintf(str_obj->__debug_info, 199, "string()");
     } else {
-        snprintf(str_obj->__debug_info, 199, "string(%d):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
+        snprintf(str_obj->__debug_info, 199, "string(%zd):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
     }
     return str_obj->__debug_info;
 }

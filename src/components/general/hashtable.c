@@ -462,7 +462,7 @@ void ht_debug(t_hash_table *ht) {
 
     while (ht_iter_valid(&iter)) {
         t_hash_key *key = ht_iter_key(&iter);
-        t_string *s;
+        t_string *s = NULL;
         if (key->type == HASH_KEY_STR) {
             s = char0_to_string(key->val.s);
         } else if (key->type == HASH_KEY_NUM) {
