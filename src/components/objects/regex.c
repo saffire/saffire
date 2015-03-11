@@ -285,9 +285,9 @@ static char *obj_debug(t_object *obj) {
     t_regex_object *re_obj = (t_regex_object *)obj;
 
     if (! re_obj->data.regex_string) {
-        snprintf(re_obj->__debug_info, 199, "no regex data defined");
+        snprintf(re_obj->__debug_info, 199, "regex://");
     } else {
-        snprintf(re_obj->__debug_info, 199, "regex:\"%s\"", re_obj->data.regex_string);
+        snprintf(re_obj->__debug_info, 199, "regex:/%s/", re_obj->data.regex_string);
     }
     return re_obj->__debug_info;
 }

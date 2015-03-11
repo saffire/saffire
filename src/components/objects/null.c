@@ -118,6 +118,6 @@ t_object_funcs null_funcs = {
 };
 
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_FLAG_FINAL | OBJECT_FLAG_IMMUTABLE, &null_funcs, 0) };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_FINAL | OBJECT_FLAG_IMMUTABLE, &null_funcs, 0) };
 
 

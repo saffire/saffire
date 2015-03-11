@@ -172,6 +172,6 @@ for exception in exceptions :
 
     if parent is not "" :
         parent += "_"
-    fp.write("t_exception_object Object_Exception_%s_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"%s\", objectTypeException, OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_%sstruct, NULL, sizeof(t_exception_object_data)), { NULL, 0 } };\n" % (exception, ucfirst(exception), parent))
+    fp.write("t_exception_object Object_Exception_%s_struct = { OBJECT_HEAD_INIT_WITH_BASECLASS(\"%s\", objectTypeException, OBJECT_TYPE_CLASS | OBJECT_FLAG_IMMUTABLE, &exception_funcs, (t_object *)&Object_Exception_%sstruct, NULL, sizeof(t_exception_object_data)), { NULL, 0 } };\n" % (exception, ucfirst(exception), parent))
 
 fp.close()

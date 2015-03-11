@@ -154,7 +154,6 @@ void object_callable_init(void) {
     object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
 
     object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
-
     object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
     object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 

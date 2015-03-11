@@ -30,7 +30,7 @@
     #include <saffire/objects/object.h>
     #include <saffire/general/hashtable.h>
 
-    #define RETURN_TUPLE(t)   RETURN_OBJECT(object_alloc(Object_Tuple, 1, t));
+    #define RETURN_TUPLE(t)   RETURN_OBJECT(object_alloc_instance(Object_Tuple, 1, t));
 
     typedef struct {
         t_hash_table *ht;

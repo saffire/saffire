@@ -1,5 +1,0 @@
-These are the saffire unittests, based on PHP's phpt testing suite.
-
-In order to run these tests, please run the following command from the root directory of the source repository
-
-    # sh unittest.sh
