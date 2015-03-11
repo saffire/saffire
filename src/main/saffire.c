@@ -134,7 +134,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             }
 
             // Parse options clears the options as soon as they are processed
-            if (action->options) {
+            if (action->options && argc) {
                 saffire_parse_options(&argc, argv, &action->options, 1);
             }
 
@@ -185,7 +185,9 @@ static int has_filename_extension(const char *filename, const char *extension) {
 static char *parse_command_line(int *argc, char **argv[]) {
     // Turn "./saffire" into "./saffire help"
     if (*argc == 1) {
-        *argc = 0;
+        (*argv) += 1;
+        *argc -= 1;
+
         return "help";
     }
 
@@ -194,11 +196,20 @@ static char *parse_command_line(int *argc, char **argv[]) {
         strcmp((*argv)[1], "--help") == 0 ||
         strcmp((*argv)[1], "-?") == 0) {
         // Since "" is not a command, it will fall through commands and display usage
-        return "";
+
+        // assume it's the only argument given
+        (*argv) += 2;
+        *argc -= 2;
+
+        return "help";
     }
 
     // Special case for -v
     if (strcmp((*argv)[1], "-v") == 0) {
+        // assume it's the only argument given
+        (*argv) += 2;
+        *argc -= 2;
+
         return "version";
     }
 
