@@ -317,7 +317,7 @@ t_regex_object Object_Regex_struct = {
     OBJECT_HEAD_INIT("regex", objectTypeRegex, OBJECT_TYPE_CLASS, &regex_funcs, sizeof(t_regex_object_data)),
     {
         NULL,
-        '\0',
+        0,
         0
     }
 };
