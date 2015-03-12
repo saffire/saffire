@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# This is a simple provisioning script that will create a proper saffire compilation setup
+# This is a simple provisioning script that will create a proper Saffire compilation environment
 #
 
 apt-get update
@@ -16,11 +16,18 @@ apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev
 # Mandatory PHP scripts, needed for running unittests
 apt-get install -y php5-cli
 
+
+# Install nginx
+apt-get install -y nginx
+ln -s /vagrant/support/nginx/config/saffire /etc/nginx/sites-enabled/saffire
+/etc/init.d/nginx reload
+
 # Symlink SFL library
 mkdir -p /usr/share/saffire/modules
 ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
 
-# Create new MOTD
+
+# Create new MOTD partial
 cat << 'EOST' > /etc/update-motd.d/99-saffire-welcome
 #!/bin/sh
 
