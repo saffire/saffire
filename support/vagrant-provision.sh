@@ -21,26 +21,42 @@ mkdir -p /usr/share/saffire/modules
 ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
 
 # Create new MOTD
-cat << 'EOF' > /etc/motd.tail
-Vagrant Development Box. This box runs on ubuntu64 bit server edition. 
+cat << 'EOST' > /etc/update-motd.d/99-saffire-welcome
+#!/bin/sh
 
-All necessary tools and libraries are installed to compile Saffire. Please run the following:
+echo "\033[1;33m"
 
-  $ cd /vagrant
-  $ ./autogen.sh
-  $ ./configure [--enable-debug]
-  $ colormake
-  $ sudo make install
+cat << "EOT"
+                    __  __ _
+         ___  __ _ / _|/ _(_)_ __ ___
+        / __|/ _` | |_| |_| | '__/ _ \
+        \__ \ (_| |  _|  _| | | |  __/
+        |___/\__,_|_| |_| |_|_|  \___|
+EOT
 
-This will compile and install a Saffire binary in /usr/local/bin/saffire. From this point you can use 
-saffire by issuing:
+echo "\033[0m"
 
-  $ saffire help
+echo "
+ All necessary tools and libraries are installed to compile Saffire. Please run the following:
+\033[1;37m
+   $ cd /vagrant
+   $ sh build.sh
+\033[0m
 
-Or start executing your first saffire file with:
+ This will compile and install a Saffire binary in /usr/local/bin/saffire. From this point you
+ can use saffire by issuing:
+\033[1;37m
+   $ saffire help
+\033[0m
 
-  $ saffire ./hello.sf
+ Or start executing your first saffire file with:
+\033[1;37m
+   $ saffire ./hello.sf
+\033[0m
 
-Have fun!
-The Saffire Group
-EOF
+ Have fun!
+ The Saffire Group
+";
+EOST
+
+chmod 755 /etc/update-motd.d/99-saffire-welcome
