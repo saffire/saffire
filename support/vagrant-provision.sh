@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# This is a simple provisioning script that will create a proper saffire compilation setup
+# This is a simple provisioning script that will create a proper Saffire compilation environment
 #
 
 apt-get update
@@ -16,31 +16,54 @@ apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev
 # Mandatory PHP scripts, needed for running unittests
 apt-get install -y php5-cli
 
+
+# Install nginx
+apt-get install -y nginx
+ln -s /vagrant/support/nginx/config/saffire /etc/nginx/sites-enabled/saffire
+/etc/init.d/nginx reload
+
 # Symlink SFL library
 mkdir -p /usr/share/saffire/modules
 ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
 
-# Create new MOTD
-cat << 'EOF' > /etc/motd.tail
-Vagrant Development Box. This box runs on ubuntu64 bit server edition. 
 
-All necessary tools and libraries are installed to compile Saffire. Please run the following:
+# Create new MOTD partial
+cat << 'EOST' > /etc/update-motd.d/99-saffire-welcome
+#!/bin/sh
 
-  $ cd /vagrant
-  $ ./autogen.sh
-  $ ./configure [--enable-debug]
-  $ colormake
-  $ sudo make install
+echo "\033[1;33m"
 
-This will compile and install a Saffire binary in /usr/local/bin/saffire. From this point you can use 
-saffire by issuing:
+cat << "EOT"
+                    __  __ _
+         ___  __ _ / _|/ _(_)_ __ ___
+        / __|/ _` | |_| |_| | '__/ _ \
+        \__ \ (_| |  _|  _| | | |  __/
+        |___/\__,_|_| |_| |_|_|  \___|
+EOT
 
-  $ saffire help
+echo "\033[0m"
 
-Or start executing your first saffire file with:
+echo "
+ All necessary tools and libraries are installed to compile Saffire. Please run the following:
+\033[1;37m
+   $ cd /vagrant
+   $ sh build.sh
+\033[0m
 
-  $ saffire ./hello.sf
+ This will compile and install a Saffire binary in /usr/local/bin/saffire. From this point you
+ can use saffire by issuing:
+\033[1;37m
+   $ saffire help
+\033[0m
 
-Have fun!
-The Saffire Group
-EOF
+ Or start executing your first saffire file with:
+\033[1;37m
+   $ saffire ./hello.sf
+\033[0m
+
+ Have fun!
+ The Saffire Group
+";
+EOST
+
+chmod 755 /etc/update-motd.d/99-saffire-welcome

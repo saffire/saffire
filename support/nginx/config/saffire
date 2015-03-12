@@ -1,0 +1,27 @@
+server {
+    # Listen to connections on port 8080
+    listen   8080;
+
+    # Setup docroot. Assumes we are running with vagrant
+    root /vagrant/support/nginx/docroot;
+    index index.html index.htm index.sf;
+
+    # Make site accessible from http://localhost/
+    server_name localhost;
+
+    # Enable fastCGI whenever we try and connect to a .sf file
+    location ~ [^/]\.sf(/|$) {
+        fastcgi_split_path_info ^(.+?\.sf)(/.*)$;
+        if (!-f $document_root$fastcgi_script_name) {
+            return 404;
+        }
+
+        # Connect via IPv4
+        #fastcgi_pass   127.0.0.1:8123;
+        # Connect via unix sockets
+        fastcgi_pass    unix:/var/run/saffire.socket;
+
+        fastcgi_index   index.sf;
+        include         fastcgi_params;
+    }
+}
