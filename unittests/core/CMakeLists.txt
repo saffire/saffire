@@ -7,11 +7,15 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unused-function")
 find_package(PkgConfig REQUIRED)
 
 # Cunit
-pkg_check_modules(PC_CUNIT REQUIRED cunit)
-list(APPEND 3rdparty_libs ${PC_CUNIT_LIBRARIES})
-include_directories(${PC_CUNIT_INCLUDE_DIR})
-link_directories(${PC_CUNIT_LIBRARY_DIRS})
-add_definitions(${PC_CUNIT_CFLAGS})
+pkg_check_modules(PC_CUNIT cunit)
+if (PC_CUNIT_FOUND)
+    list(APPEND 3rdparty_libs ${PC_CUNIT_LIBRARIES})
+    include_directories(${PC_CUNIT_INCLUDE_DIR})
+    link_directories(${PC_CUNIT_LIBRARY_DIRS})
+    add_definitions(${PC_CUNIT_CFLAGS})
+else ()
+    list(APPEND 3rdparty_libs ${PC_CUNIT_LIBRARIES} cunit)
+endif ()
 
 
 
