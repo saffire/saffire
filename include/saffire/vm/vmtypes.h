@@ -93,7 +93,7 @@
         int lineno_current_lino_offset;             // Current offset in the bytecode lineno table
 
         t_object **stack;                           // Local variable stack
-        unsigned int sp;                            // Stack pointer
+        int sp;                                     // Stack pointer (signed so we can detect -1 for overflow)
 
         t_hash_object *local_identifiers;           // Local identifiers (local variables, method arguments etc)
         t_hash_object *global_identifiers;          // Global identifiers
