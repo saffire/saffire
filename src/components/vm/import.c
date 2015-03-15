@@ -51,6 +51,7 @@ const char *module_search_paths[] = {
 };
 
 const char *module_searches[] = {
+    "::saffire",
     "::sfl",
     NULL
 };
@@ -309,6 +310,16 @@ static t_object *_resolve_class_from_module(char *fqcn, t_vm_module_mapping *mod
 
 t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
     // Find the actual class in the class_mapping
+
+
+    // Check if this one is registered in the builtins
+    t_object *builtin_obj = ht_find_str(frame->builtin_identifiers->data.ht, fqcn);
+    if (builtin_obj) {
+        if (builtin_obj == OBJECT_NEEDS_RESOLVING) {
+            fatal_error(1, "Cannot resolve builtin object");
+        }
+        return builtin_obj;
+    }
 
     // Check if we already imported the class
     t_vm_class_mapping *class_map = ht_find_str(global_class_mapping, fqcn);
