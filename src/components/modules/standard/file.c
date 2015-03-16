@@ -235,6 +235,30 @@ SAFFIRE_MODULE_METHOD(file, write) {
     RETURN_NUMERICAL(bytes_written);
 }
 
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(file, lines) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    t_hash_table *ht = ht_create();
+
+    char *line = NULL;
+    size_t len = 0;
+    long bytes_read = 1;
+    while (bytes_read > 0) {
+        bytes_read = getline(&line, &len, file_obj->data.fp);
+        file_obj->data.bytes_out += bytes_read;
+
+        if (bytes_read > 0) {
+            ht_add_num(ht, ht->element_count, STR02OBJ(line));
+        }
+    }
+
+    RETURN_LIST(ht);
+}
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -249,7 +273,9 @@ static void _init(void) {
     object_add_internal_method((t_object *)&Object_File_struct, "tell",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_tell);
     object_add_internal_method((t_object *)&Object_File_struct, "seek",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_seek);
     object_add_internal_method((t_object *)&Object_File_struct, "read",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_read);
-    object_add_internal_method((t_object *)&Object_File_struct, "write",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_write);
+    object_add_internal_method((t_object *)&Object_File_struct, "write",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_write);
+
+    object_add_internal_method((t_object *)&Object_File_struct, "lines",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_lines);
 
     object_add_internal_method((t_object *)&Object_File_struct, "path",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_path);
     object_add_internal_method((t_object *)&Object_File_struct, "stat",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_stat);
