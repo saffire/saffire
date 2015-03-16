@@ -65,7 +65,7 @@ SAFFIRE_MODULE_METHOD(file, open) {
     file_obj->data.fp = fopen(OBJ2STR0(name_obj), OBJ2STR0(mode_obj));
 
     if (file_obj->data.fp == NULL) {
-        thread_create_exception_printf((t_exception_object *)Object_FileNotFoundException, 1, "Cannot open file '%s'", OBJ2STR0(name_obj));
+        object_raise_exception(Object_FileNotFoundException, 1, "Cannot open file '%s'", OBJ2STR0(name_obj));
         return NULL;
     }
 
@@ -137,7 +137,7 @@ SAFFIRE_MODULE_METHOD(file, stat) {
         int ret = fstat(fileno(file_obj->data.fp), &filestat);
 
         if (ret < 0) {
-            thread_create_exception_printf((t_exception_object *)Object_FileNotFoundException, 1, "Cannot stat file '%s'", file_obj->data.path);
+            object_raise_exception(Object_FileNotFoundException, 1, "Cannot stat file '%s'", file_obj->data.path);
             return NULL;
         }
 
