@@ -163,18 +163,18 @@ SAFFIRE_MODULE_METHOD(io, dump) {
 
         if (! OBJECT_IS_STRING(key)) {
             t_attrib_object *string_method = object_attrib_find(key, "__string");
-            key_str = (t_object *)vm_object_call(key, string_method, 0);
+            key_str = (t_string_object *)vm_object_call(key, string_method, 0);
             object_release((t_object *)key);
         } else {
-            key_str = key;
+            key_str = (t_string_object *)key;
         }
 
         if (! OBJECT_IS_STRING(val)) {
             t_attrib_object *string_method = object_attrib_find(val, "__string");
-            val_str = (t_object *)vm_object_call(val, string_method, 0);
+            val_str = (t_string_object *)vm_object_call(val, string_method, 0);
             object_release((t_object *)val);
         } else {
-            val_str = val;
+            val_str = (t_string_object *)val;
         }
 
         module_io_print("Key: %s   Val: %s\n", OBJ2STR0(key_str), OBJ2STR0(val_str));
