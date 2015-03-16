@@ -195,7 +195,26 @@ SAFFIRE_MODULE_METHOD(file, seek) {
 SAFFIRE_MODULE_METHOD(file, read) {
     t_file_object *file_obj = (t_file_object *)self;
 
-    RETURN_SELF;
+    t_numerical_object *size_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &size_obj)) {
+        return NULL;
+    }
+
+    // Allocate buffer to hold maximum number of bytes
+    long buflen = OBJ2NUM(size_obj);
+    char *buf = (char *)smm_malloc(buflen);
+
+    // Read bytes
+    long bytes_read = fread(buf, 1, buflen, file_obj->data.fp);
+    file_obj->data.bytes_in += bytes_read;
+
+    // Resize buffer back when we have read less bytes than requested
+    if (bytes_read < buflen) {
+        buf = smm_realloc(buf, bytes_read);
+    }
+
+    RETURN_STRING_FROM_BINSAFE_CHAR(bytes_read, buf);
 }
 
 /**
