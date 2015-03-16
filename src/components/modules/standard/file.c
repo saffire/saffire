@@ -61,7 +61,7 @@ SAFFIRE_MODULE_METHOD(file, open) {
 
     // Instantiate new file object
 
-    t_file_object *file_obj = (t_file_object *)object_alloc_instance(Object_File, 0);
+    t_file_object *file_obj = (t_file_object *)object_alloc_instance(self, 0);
     file_obj->data.fp = fopen(OBJ2STR0(name_obj), OBJ2STR0(mode_obj));
 
     if (file_obj->data.fp == NULL) {
