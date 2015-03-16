@@ -63,11 +63,11 @@ SAFFIRE_MODULE_METHOD(saffire, set_locale) {
  *
  */
 SAFFIRE_MODULE_METHOD(saffire, version) {
-    RETURN_STRING(saffire_version);
+    RETURN_STRING_FROM_CHAR(saffire_version);
 }
 
 SAFFIRE_MODULE_METHOD(saffire, gitrev) {
-    RETURN_STRING(__GIT_REVISION__);
+    RETURN_STRING_FROM_CHAR(__GIT_REVISION__);
 }
 
 SAFFIRE_MODULE_METHOD(saffire, sapi) {
