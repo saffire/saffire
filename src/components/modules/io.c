@@ -35,10 +35,11 @@
 #include <saffire/vm/vm.h>
 #include <saffire/debug.h>
 
+
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(io, print) {
+static t_object *_saffire_print(char *format, t_object *self, t_dll *arguments) {
     t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
@@ -51,7 +52,7 @@ SAFFIRE_MODULE_METHOD(io, print) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output_char("%s", OBJ2STR0(obj));
+        output_char(format, OBJ2STR0(obj));
 
         e = DLL_NEXT(e);
     }
@@ -59,6 +60,20 @@ SAFFIRE_MODULE_METHOD(io, print) {
     output_flush();
 
     RETURN_SELF;
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(io, print) {
+    return _saffire_print("%s", self, arguments);
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(io, println) {
+    return _saffire_print("%s\n", self, arguments);
 }
 
 /**
@@ -207,6 +222,7 @@ t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeBase, OBJECT_
 static void _init(void) {
     io_struct.attributes = ht_create();
     object_add_internal_method((t_object *)&io_struct, "print",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
+    object_add_internal_method((t_object *)&io_struct, "println",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_println);
     object_add_internal_method((t_object *)&io_struct, "printf",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
     object_add_internal_method((t_object *)&io_struct, "sprintf",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
     object_add_internal_method((t_object *)&io_struct, "dump",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_dump);
