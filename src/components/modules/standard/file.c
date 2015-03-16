@@ -162,6 +162,60 @@ SAFFIRE_MODULE_METHOD(file, stat) {
 }
 
 
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(file, tell) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    RETURN_NUMERICAL(ftell(file_obj->data.fp));
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(file, seek) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    t_numerical_object *offset_obj;
+    t_numerical_object *origin_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &offset_obj, &origin_obj)) {
+        return NULL;
+    }
+
+    long ret = fseek(file_obj->data.fp, OBJ2NUM(offset_obj), OBJ2NUM(origin_obj));
+
+    RETURN_NUMERICAL(ret);
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(file, read) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    RETURN_SELF;
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(file, write) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    t_string_object *str_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj)) {
+        return NULL;
+    }
+
+    long bytes_written = fwrite(str_obj->data.value->val, 1, str_obj->data.value->len, file_obj->data.fp);
+    file_obj->data.bytes_out += bytes_written;
+
+    RETURN_NUMERICAL(bytes_written);
+}
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -173,11 +227,20 @@ static void _init(void) {
     object_add_internal_method((t_object *)&Object_File_struct, "fileNo",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_fileno);
     object_add_internal_method((t_object *)&Object_File_struct, "close",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_close);
 
+    object_add_internal_method((t_object *)&Object_File_struct, "tell",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_tell);
+    object_add_internal_method((t_object *)&Object_File_struct, "seek",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_seek);
+    object_add_internal_method((t_object *)&Object_File_struct, "read",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_read);
+    object_add_internal_method((t_object *)&Object_File_struct, "write",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_write);
+
     object_add_internal_method((t_object *)&Object_File_struct, "path",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_path);
     object_add_internal_method((t_object *)&Object_File_struct, "stat",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_stat);
 
     object_add_internal_method((t_object *)&Object_File_struct, "bytesIn",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_bytes_in);
     object_add_internal_method((t_object *)&Object_File_struct, "bytesOut",  ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_bytes_out);
+
+    object_add_constant((t_object *)&Object_File_struct, "SEEK_SET",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SEEK_SET));
+    object_add_constant((t_object *)&Object_File_struct, "SEEK_CUR",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SEEK_CUR));
+    object_add_constant((t_object *)&Object_File_struct, "SEEK_END",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SEEK_END));
 }
 
 static void _fini(void) {
