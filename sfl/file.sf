@@ -7,6 +7,11 @@ class file {
     const SEEK_CUR = 1;
     const SEEK_END = 2;
 
+    static public method open(string filename, string filemode) {
+        return ::_sfl::file::file.open(filename, filemode);
+    }
+
+    protected method __ctor() { }
 
     /**
      * Closes an open file pointer
@@ -209,20 +214,25 @@ class file {
      * Sets modification time of file
      */
     public method touch() {
+        return ::_sfl::file::file.touch();
     }
-    public method touch(Numerical $timestamp) {
+    public method touch(numerical timestamp) {
+        return ::_sfl::file::file.touch(timestamp);
     }
 
     /**
      * Sets access time of file
      */
     public method atouch() {
+        return ::_sfl::file::file.atouch();
     }
     public method atouch(Numerical $timestamp) {
+        return ::_sfl::file::file.atouch(timestamp);
     }
 
 
     public method unlink() {
+        return ::_sfl::file::file.unlink();
     }
 
 
