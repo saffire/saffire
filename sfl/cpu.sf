@@ -1,21 +1,40 @@
 /**
- * This is the OS class.
+ * This is the CPU class.
  */
 class cpu {
 
-    // @get getcpu()
-    public property cpu;
+    public method all() {
+        return ::_sfl::cpu::all();
+    }
 
+    public method model() {
+        info = self.all();
+        return info['model'];
+    }
 
-    protected method getcpu() {
-        ret = base();
-        ret.model = "Intel";
-        ret.id = 0x12345;
-        ret.arch = self.INTEL;
-        ret.bits = 64;
-        ret.virtualized = True;
+    public method id() {
+        info = self.all();
+        return info['id'];
+    }
 
-        return list[ret];
+    public method cores() {
+        info = self.all();
+        return info['cores'];
+    }
+
+    public method arch() {
+        info = self.all();
+        return info['arch'];
+    }
+
+    public method bits() {
+        info = self.all();
+        return info['bits'];
+    }
+
+    public method isVirtualized() {
+        info = self.all();
+        return info['virtualized'];
     }
 
 }

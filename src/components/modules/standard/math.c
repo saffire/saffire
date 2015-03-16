@@ -25,65 +25,100 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
-#include <string.h>
-#include <saffire/general/output.h>
+#include <stdlib.h>
+#include <time.h>
 #include <saffire/modules/module_api.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
 #include <saffire/general/dll.h>
-#include <saffire/version.h>
-#include <saffire/vm/vm.h>
 #include <saffire/general/smm.h>
+#include <saffire/vm/vm.h>
 
-#define NO_FCGI_DEFINES
-#include <fcgi_stdio.h>
 
-FCGX_ParamArray fcgi_env;
+// Is the randomizer seeded or not
+static char randomizer_initialized = 0;
+
+
+// @TODO: cannot use 0 for seeding
+static void _seed_randomizer(unsigned long seed) {
+    if (seed == 0) {
+        struct timespec ct;
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ct);
+        seed = ct.tv_nsec;
+    }
+
+    srand(seed);
+
+    randomizer_initialized = 1;
+}
+
 
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(fastcgi, environment) {
-    t_hash_table *ht = ht_create();
+SAFFIRE_MODULE_METHOD(math, random) {
+    t_numerical_object *from_obj;
+    t_numerical_object *to_obj;
 
-    if (fcgi_env != NULL) {
-        char **p, *c;
-        for (p = fcgi_env; *p != NULL; ++p) {
-            c = strchr(*p, '=') + 1;
-            char *k = smm_zalloc((c-*p));
-            strncpy(k, *p, (c-*p)-1);
-            ht_add_obj(ht, object_alloc_instance(Object_String, 2, strlen(k), k),  (void *)object_alloc_instance(Object_String, 2, strlen(c), c));
-            smm_free(k);
-        }
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &from_obj, &to_obj)) {
+        return NULL;
     }
 
-    RETURN_HASH(ht);
+    long from = OBJ2NUM(from_obj);
+    long to = OBJ2NUM(to_obj);
+
+    if (from >= to) {
+        // Throw exception thatn to > from
+    }
+
+    if (randomizer_initialized == 0) {
+        _seed_randomizer(0);
+    }
+
+    long r = rand() % to + from;
+
+    RETURN_NUMERICAL(r);
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(math, seed) {
+    t_numerical_object *seed_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &seed_obj)) {
+        return NULL;
+    }
+
+    long seed = OBJ2NUM(seed_obj);
+    _seed_randomizer(seed);
+
+    RETURN_SELF;
 }
 
 
-
-t_object fastcgi_struct = { OBJECT_HEAD_INIT("fastcgi", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
+t_object math_struct       = { OBJECT_HEAD_INIT("math", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
 
 static void _init(void) {
-    fastcgi_struct.attributes = ht_create();
-
-    object_add_internal_method(fastcgi_struct.attributes, (t_object *)&fastcgi_struct, "environment",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_fastcgi_method_environment);
+    math_struct.attributes = ht_create();
+    object_add_internal_method(math_struct.attributes, (t_object *)&math_struct, "random",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_random);
+    object_add_internal_method(math_struct.attributes, (t_object *)&math_struct, "seed",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_seed);
 }
 
 static void _fini(void) {
-    // Destroy methods and properties
-    object_free_internal_object(&fastcgi_struct);
+    object_free_internal_object(&math_struct);
 }
 
+
 static t_object *_objects[] = {
-    &fastcgi_struct,
+    &math_struct,
     NULL
 };
 
-t_module module_sapi_fastcgi = {
-    "::saffire::sapi::fastcgi",
-    "FastCGI sapi module",
+t_module module_math = {
+    "::saffire::math",
+    "Math module",
     _objects,
     _init,
-    _fini
+    _fini,
 };

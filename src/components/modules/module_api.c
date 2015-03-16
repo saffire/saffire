@@ -35,7 +35,7 @@
 #include <saffire/modules/io.h>
 #include <saffire/modules/saffire.h>
 #include <saffire/modules/sapi/fastcgi.h>
-
+#include <saffire/modules/standard/math.h>
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
@@ -54,6 +54,7 @@ int register_module(t_module *mod) {
     while (obj != NULL) {
         char *key;
         vm_context_create_fqcn(mod->name, obj->name, &key);
+        DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
         vm_populate_builtins(key, obj);
         smm_free(key);
 
@@ -91,12 +92,14 @@ void module_init(void) {
     register_module(&module_sapi_fastcgi);
     register_module(&module_saffire);
     register_module(&module_io);
+    register_module(&module_math);
 }
 
 /**
  *
  */
 void module_fini(void) {
+    unregister_module(&module_math);
     unregister_module(&module_saffire);
     unregister_module(&module_io);
     unregister_module(&module_sapi_fastcgi);

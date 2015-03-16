@@ -337,7 +337,7 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
     }
 
 
-    // Check built-ins, but on UQCN
+    // Check built-ins, but on UQCN, or on the '::saffire'
     obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
         // Resolve and update the builtin identifiers (this should never happen?)
