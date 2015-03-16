@@ -39,7 +39,7 @@
 /**
  *
  */
-static t_object *_saffire_print(char *format, t_object *self, t_dll *arguments) {
+static t_object *_saffire_print(int newline, t_object *self, t_dll *arguments) {
     t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
@@ -52,11 +52,14 @@ static t_object *_saffire_print(char *format, t_object *self, t_dll *arguments) 
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output_char(format, OBJ2STR0(obj));
+        output_char("%s", OBJ2STR0(obj));
 
         e = DLL_NEXT(e);
     }
 
+    if (newline) {
+        output_char("\n");
+    }
     output_flush();
 
     RETURN_SELF;
@@ -66,14 +69,14 @@ static t_object *_saffire_print(char *format, t_object *self, t_dll *arguments) 
  *
  */
 SAFFIRE_MODULE_METHOD(io, print) {
-    return _saffire_print("%s", self, arguments);
+    return _saffire_print(0, self, arguments);
 }
 
 /**
  *
  */
 SAFFIRE_MODULE_METHOD(io, println) {
-    return _saffire_print("%s\n", self, arguments);
+    return _saffire_print(1, self, arguments);
 }
 
 /**
