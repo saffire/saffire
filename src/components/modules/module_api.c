@@ -32,10 +32,7 @@
 #include <saffire/general/hashtable.h>
 #include <saffire/vm/vm.h>
 #include <saffire/general/smm.h>
-#include <saffire/modules/io.h>
-#include <saffire/modules/saffire.h>
-#include <saffire/modules/sapi/fastcgi.h>
-#include <saffire/modules/standard/math.h>
+#include <saffire/modules/modules.h>
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
@@ -93,12 +90,14 @@ void module_init(void) {
     register_module(&module_saffire);
     register_module(&module_io);
     register_module(&module_math);
+    register_module(&module_file);
 }
 
 /**
  *
  */
 void module_fini(void) {
+    unregister_module(&module_file);
     unregister_module(&module_math);
     unregister_module(&module_saffire);
     unregister_module(&module_io);

@@ -5,6 +5,7 @@ set(sources
     io.c
     saffire.c
     standard/math.c
+    standard/file.c
     sapi/fastcgi.c)
 
 add_library(modules STATIC ${sources})
