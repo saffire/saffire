@@ -119,13 +119,22 @@ volatile int rdtscll() {
          :"=a"(a), "=d"(d));
     return a;
 }
+
+
+int randomized = 0;
+
+
 /**
   * Shuffle all elements in the linked list
   *
   * This uses Fisher-Yates. For new allocated shuffles (for instance: shuffle!(), use inside-out)
   */
 SAFFIRE_METHOD(list, shuffle) {
-    srand(rdtscll());
+    if (! randomized) {
+        randomized = 1;
+        srand(rdtscll());
+    }
+
 
     // The hashtable has a linked list, we shuffle this one as it is used during iteration
     for (int i = self->data.ht->element_count-1; i >= 1; i--) {
@@ -145,6 +154,11 @@ SAFFIRE_METHOD(list, shuffle) {
   * Pick random element
   */
 SAFFIRE_METHOD(list, random) {
+    if (! randomized) {
+        randomized = 1;
+        srand(rdtscll());
+    }
+
     t_object *obj = ht_find_num(self->data.ht, (rand () % self->data.ht->element_count));
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
