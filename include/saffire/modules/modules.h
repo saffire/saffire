@@ -24,32 +24,15 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __OBJECT_NUMERICAL_H__
-#define __OBJECT_NUMERICAL_H__
+#ifndef __MODULE_MODULES_H__
+#define __MODULE_MODULES_H__
 
-    #include <saffire/objects/object.h>
+    #include <saffire/modules/saffire.h>
+    #include <saffire/modules/io.h>
 
-    #define RETURN_NUMERICAL(n)   RETURN_OBJECT(NUM2OBJ(n))
+    #include <saffire/modules/standard/math.h>
+    #include <saffire/modules/standard/file.h>
 
-    #define NUM2OBJ(num)   (t_object *)object_alloc_instance(Object_Numerical, 1, num)
-
-
-    typedef struct {
-        signed long value;     // Current value
-    } t_numerical_object_data;
-
-    typedef struct {
-        SAFFIRE_OBJECT_HEADER
-
-        t_numerical_object_data data;
-    } t_numerical_object;
-
-    t_numerical_object Object_Numerical_struct;
-
-    #define Object_Numerical   (t_object *)&Object_Numerical_struct
-
-
-    void object_numerical_init(void);
-    void object_numerical_fini(void);
+    #include <saffire/modules/sapi/fastcgi.h>
 
 #endif

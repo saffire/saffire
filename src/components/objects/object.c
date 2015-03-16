@@ -528,7 +528,7 @@ void object_add_interface(t_object *class, t_object *interface) {
 /**
  * Create method- attribute that points to an INTERNAL (C) function
  */
-void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *name, int method_flags, int visibility, void *func) {
+void object_add_internal_method_attributes(t_hash_table *attributes, t_object *obj, char *name, int method_flags, int visibility, void *func) {
     // @TODO: Instead of NULL, we should be able to add our parameters. This way, we have a more generic way to deal with internal and external functions.
     t_callable_object *callable_obj = (t_callable_object *)object_alloc_instance(Object_Callable, 3, CALLABLE_CODE_INTERNAL, func, /* arguments */ NULL);
 
@@ -541,17 +541,20 @@ void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *n
     object_inc_ref((t_object *)attrib_obj);
 }
 
+/**
+ * Create method- attribute that points to an INTERNAL (C) function
+ */
+void object_add_internal_method(t_object *obj, char *name, int method_flags, int visibility, void *func) {
+    object_add_internal_method_attributes(obj->attributes, obj, name, method_flags, visibility, func);
+}
 
 /**
  *
  */
-void object_add_property(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *property) {
+void object_add_property(t_object *obj, char *name, int visibility, t_object *property) {
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc_instance(Object_Attrib, 7, obj, name, ATTRIB_TYPE_PROPERTY, visibility, ATTRIB_ACCESS_RW, property, 0);
 
-    /* We don't add the attributes directly to the obj, but we store them inside attributes. Otherwise we run into trouble bootstrapping the callable and attrib objects
-     * (as we need to create callables during the creation of callables in callable_init, for instance). By storing them separately inside an attribute hash, and adding the
-     * hash when we are finished with the object, it works (we can't do any calls to the callables in between, but we are not allowed to anyway). */
-    ht_add_str(attributes, name, attrib_obj);
+    ht_add_str(obj->attributes, name, attrib_obj);
     object_inc_ref((t_object *)attrib_obj);
 }
 
@@ -559,19 +562,15 @@ void object_add_property(t_hash_table *attributes, t_object *obj, char *name, in
 /**
  *
  */
-void object_add_constant(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *constant) {
+void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant) {
     t_attrib_object *attrib_obj = (t_attrib_object *)object_alloc_instance(Object_Attrib, 7, obj, name, ATTRIB_TYPE_CONSTANT, visibility, ATTRIB_ACCESS_RO, constant, 0);
 
-    /* We don't add the attributes directly to the obj, but we store them inside attributes. Otherwise we run into trouble bootstrapping the callable and attrib objects
-     * (as we need to create callables during the creation of callables in callable_init, for instance). By storing them separately inside an attribute hash, and adding the
-     * hash when we are finished with the object, it works (we can't do any calls to the callables in between, but we are not allowed to anyway). */
-
-    if (ht_exists_str(attributes, name)) {
+    if (ht_exists_str(obj->attributes, name)) {
         object_release((t_object *)attrib_obj);
         fatal_error(1, "Attribute '%s' already exists in object '%s'\n", name, obj->name);      /* LCOV_EXCL_LINE */
     }
 
-    ht_add_str(attributes, name, attrib_obj);
+    ht_add_str(obj->attributes, name, attrib_obj);
     object_inc_ref((t_object *)attrib_obj);
 }
 

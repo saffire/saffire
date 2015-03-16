@@ -142,17 +142,17 @@ t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_T
 static void _init(void) {
     saffire_struct.attributes = ht_create();
 
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "version",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "git_revision", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "sapi",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "debug",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
-    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "uncaughtExceptionHandler",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_exception_handler);
+    object_add_internal_method((t_object *)&saffire_struct, "version",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_version);
+    object_add_internal_method((t_object *)&saffire_struct, "git_revision", ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_gitrev);
+    object_add_internal_method((t_object *)&saffire_struct, "sapi",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_sapi);
+    object_add_internal_method((t_object *)&saffire_struct, "debug",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
+    object_add_internal_method((t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
+    object_add_internal_method((t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
+    object_add_internal_method((t_object *)&saffire_struct, "uncaughtExceptionHandler",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_exception_handler);
 
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
-    object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
+    object_add_property((t_object *)&saffire_struct, "repl",       ATTRIB_VISIBILITY_PUBLIC, Object_Null);
 }
 
 static void _fini(void) {

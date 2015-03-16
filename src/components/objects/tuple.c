@@ -206,21 +206,21 @@ SAFFIRE_METHOD(tuple, conv_string) {
  */
 void object_tuple_init(void) {
     Object_Tuple_struct.attributes = ht_create();
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__ctor",        ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_ctor);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__dtor",        ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_dtor);
 
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__boolean",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__null",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__boolean",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__null",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__numerical",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__string",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_conv_string);
 
     // Datastructure interface
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_populate);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_populate);
 
 
 //    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method(Object_Tuple_struct.attributes, (t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
     object_add_interface((t_object *)&Object_Tuple_struct, Object_Datastructure);
 

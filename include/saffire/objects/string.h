@@ -30,13 +30,17 @@
     #include <saffire/objects/object.h>
     #include <saffire/general/string.h>
 
+    // Allocate string objects
+    #define STR02OBJ(mystr)          object_alloc_instance(Object_String, 2, strlen(mystr), mystr)
+    #define STR2OBJ(mystr)           object_alloc_instance(Object_String, 1, mystr)
+
     // Return a zero-terminated string
-    #define RETURN_STRING_FROM_CHAR(s)                  RETURN_OBJECT(object_alloc_instance(Object_String, 2, strlen(s), s))
+    #define RETURN_STRING_FROM_CHAR(s)                  RETURN_OBJECT(STR02OBJ(s))
 
     // Return binary safe string
     #define RETURN_STRING_FROM_BINSAFE_CHAR(l, s)       RETURN_OBJECT(object_alloc_instance(Object_String, 2, l, s))
 
-    #define RETURN_STRING(s)                            RETURN_OBJECT(object_alloc_instance(Object_String, 1, s))
+    #define RETURN_STRING(s)                            RETURN_OBJECT(STR2OBJ(s))
 
     // Returns value inside the string object's t_string
     #define STROBJ2CHAR0(obj)                           ((((t_string_object *)obj)->data.value)->val)

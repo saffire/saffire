@@ -75,12 +75,12 @@ SAFFIRE_COMPARISON_METHOD(null, ne) {
 void object_null_init(void) {
     Object_Null_struct.attributes = ht_create();
 
-    object_add_internal_method(Object_Null_struct.attributes, (t_object *)&Object_Null_struct, "__boolean",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
-    object_add_internal_method(Object_Null_struct.attributes, (t_object *)&Object_Null_struct, "__null",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
-    object_add_internal_method(Object_Null_struct.attributes, (t_object *)&Object_Null_struct, "__numerical", ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
-    object_add_internal_method(Object_Null_struct.attributes, (t_object *)&Object_Null_struct, "__string",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__boolean",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__null",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_null);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__numerical", ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__string",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
 
-    object_add_internal_method(Object_Null_struct.attributes, (t_object *)&Object_Null_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
+    object_add_internal_method((t_object *)&Object_Null_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
 
     vm_populate_builtins("null", Object_Null);
 }

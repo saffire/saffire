@@ -887,7 +887,7 @@ dispatch:
                     } else {
                         // if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
                         s = string_to_char(OBJ2STR(name_obj));
-                        object_add_property(search_obj->attributes, search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
+                        object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
                         smm_free(s);
                     }
 

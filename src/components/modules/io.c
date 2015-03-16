@@ -35,10 +35,11 @@
 #include <saffire/vm/vm.h>
 #include <saffire/debug.h>
 
+
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(io, print) {
+static t_object *_saffire_print(int newline, t_object *self, t_dll *arguments) {
     t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
@@ -56,9 +57,26 @@ SAFFIRE_MODULE_METHOD(io, print) {
         e = DLL_NEXT(e);
     }
 
+    if (newline) {
+        output_char("\n");
+    }
     output_flush();
 
     RETURN_SELF;
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(io, print) {
+    return _saffire_print(0, self, arguments);
+}
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(io, println) {
+    return _saffire_print(1, self, arguments);
 }
 
 /**
@@ -101,6 +119,83 @@ SAFFIRE_MODULE_METHOD(io, sprintf) {
 /**
  *
  */
+SAFFIRE_MODULE_METHOD(io, dump) {
+    t_object *iter_obj, *ret;
+    t_attrib_object *method;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &iter_obj)) {
+        return NULL;
+    }
+
+    if (! object_has_interface(iter_obj, "Iterator")) {
+        object_raise_exception(Object_InterfaceException, 1, "io.dump() can only dump objects with an __iterable interface");
+        return NULL;
+    }
+
+    // fetch iterator
+    method = object_attrib_find(iter_obj, "__iterator");
+    iter_obj = vm_object_call(iter_obj, method, 0);
+
+    // We don't know how the iterator is implemented internally, so we just call the iterator functionality through vm_object_call
+
+    method = object_attrib_find(iter_obj, "__rewind");
+    ret = vm_object_call(iter_obj, method, 0);
+    object_release(ret);
+
+    module_io_print("Dump:\n");
+    do {
+        method = object_attrib_find(iter_obj, "__hasNext");
+        ret = vm_object_call(iter_obj, method, 0);
+        if (IS_BOOLEAN_FALSE(ret)) {
+            object_release(ret);
+            break;
+        } else {
+            object_release(ret);
+        }
+
+        method = object_attrib_find(iter_obj, "__key");
+        t_object *key = vm_object_call(iter_obj, method, 0);
+
+        method = object_attrib_find(iter_obj, "__value");
+        t_object *val = vm_object_call(iter_obj, method, 0);
+
+        //
+
+        t_string_object *key_str;
+        t_string_object *val_str;
+
+        if (! OBJECT_IS_STRING(key)) {
+            t_attrib_object *string_method = object_attrib_find(key, "__string");
+            key_str = (t_string_object *)vm_object_call(key, string_method, 0);
+            object_release((t_object *)key);
+        } else {
+            key_str = (t_string_object *)key;
+        }
+
+        if (! OBJECT_IS_STRING(val)) {
+            t_attrib_object *string_method = object_attrib_find(val, "__string");
+            val_str = (t_string_object *)vm_object_call(val, string_method, 0);
+            object_release((t_object *)val);
+        } else {
+            val_str = (t_string_object *)val;
+        }
+
+        module_io_print("Key: %s   Val: %s\n", OBJ2STR0(key_str), OBJ2STR0(val_str));
+
+        object_release((t_object *)val_str);
+        object_release((t_object *)key_str);
+
+        method = object_attrib_find(iter_obj, "__next");
+        ret = vm_object_call(iter_obj, method, 0);
+        object_release(ret);
+    } while (1);
+
+    RETURN_SELF;
+}
+
+/**
+ *
+ */
 SAFFIRE_MODULE_METHOD(console, print) {
     output_char("console.print: %ld arguments\n", SAFFIRE_METHOD_ARGS->size);
     RETURN_SELF;
@@ -129,14 +224,16 @@ t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeBase, OBJECT_
 
 static void _init(void) {
     io_struct.attributes = ht_create();
-    object_add_internal_method(io_struct.attributes, (t_object *)&io_struct, "print",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
-    object_add_internal_method(io_struct.attributes, (t_object *)&io_struct, "printf",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
-    object_add_internal_method(io_struct.attributes, (t_object *)&io_struct, "sprintf",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
+    object_add_internal_method((t_object *)&io_struct, "print",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_print);
+    object_add_internal_method((t_object *)&io_struct, "println",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_println);
+    object_add_internal_method((t_object *)&io_struct, "printf",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_printf);
+    object_add_internal_method((t_object *)&io_struct, "sprintf",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_sprintf);
+    object_add_internal_method((t_object *)&io_struct, "dump",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_method_dump);
 
     console_struct.attributes = ht_create();
-    object_add_internal_method(console_struct.attributes, (t_object *)&console_struct, "print",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_print);
-    object_add_internal_method(console_struct.attributes, (t_object *)&console_struct, "printf",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_printf);
-    object_add_internal_method(console_struct.attributes, (t_object *)&console_struct, "sprintf",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_sprintf);
+    object_add_internal_method((t_object *)&console_struct, "print",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_print);
+    object_add_internal_method((t_object *)&console_struct, "printf",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_printf);
+    object_add_internal_method((t_object *)&console_struct, "sprintf",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_console_method_sprintf);
 }
 
 static void _fini(void) {

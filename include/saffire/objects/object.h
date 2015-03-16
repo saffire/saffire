@@ -245,8 +245,10 @@
     t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instance_obj);
 
     void object_add_interface(t_object *class, t_object *interface);
-    void object_add_property(t_hash_table *attributes, t_object *obj, char *name, int visibility, t_object *property);
-    void object_add_internal_method(t_hash_table *attributes, t_object *obj, char *name, int flags, int visibility, void *func);
+    void object_add_property(t_object *obj, char *name, int visibility, t_object *property);
+    void object_add_constant(t_object *obj, char *name, int visibility, t_object *constant);
+    void object_add_internal_method(t_object *obj, char *name, int flags, int visibility, void *func);
+    void object_add_internal_method_attributes(t_hash_table *attributes, t_object *obj, char *name, int flags, int visibility, void *func);
     void object_free_internal_object(t_object *obj);
 
     int object_instance_of(t_object *obj, const char *instance);
