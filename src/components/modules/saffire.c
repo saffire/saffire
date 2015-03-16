@@ -93,6 +93,50 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 }
 
 
+SAFFIRE_MODULE_METHOD(saffire, exception_handler) {
+    t_exception_object *exception_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &exception_obj)) {
+        RETURN_SELF;
+    }
+
+    if (! OBJECT_IS_EXCEPTION(exception_obj)) {
+        RETURN_SELF;
+    }
+
+    module_io_print("%s",
+                   "                          _   _\n" \
+                   "                         | | (_)\n" \
+                   "   _____  _____ ___ _ __ | |_ _  ___  _ __\n" \
+                   "  / _ \\ \\/ / __/ _ \\ '_ \\| __| |/ _ \\| '_ \\\n" \
+                   " |  __/>  < (_|  __/ |_) | |_| | (_) | | | |\n" \
+                   "  \\___/_/\\_\\___\\___| .__/ \\__|_|\\___/|_| |_|\n" \
+                   "                   | |\n" \
+                   "                   |_|\n" \
+                   "\n");
+
+    module_io_print("%s", "-------------------------------------------\n");
+
+    module_io_print("  Code: %d\n", exception_obj->data.code);
+    module_io_print("  Mesg: %s\n", exception_obj->data.message->val);
+    module_io_print("%s", "-------------------------------------------\n");
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, exception_obj->data.stacktrace);
+    while (ht_iter_valid(&iter)) {
+        t_string_object *v = (t_string_object *)(ht_iter_value(&iter));
+        module_io_print("%s\n", OBJ2STR0(v));
+
+        ht_iter_next(&iter);
+    }
+
+    module_io_print("%s", "-------------------------------------------\n");
+
+    RETURN_SELF;
+}
+
+
+
 t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
 
 static void _init(void) {
@@ -104,6 +148,7 @@ static void _init(void) {
     object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "debug",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_debug);
     object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
     object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
+    object_add_internal_method(saffire_struct.attributes, (t_object *)&saffire_struct, "uncaughtExceptionHandler",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_exception_handler);
 
     object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
     object_add_property(saffire_struct.attributes, (t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);
@@ -121,7 +166,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_saffire = {
-    "::_sfl::saffire",
+    "::saffire::saffire",
     "Saffire configuration module",
     _objects,
     _init,

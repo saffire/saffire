@@ -152,9 +152,44 @@ static t_object *_objects[] = {
 };
 
 t_module module_io = {
-    "::_sfl::io",
+    "::saffire::io",
     "Standard I/O module",
     _objects,
     _init,
     _fini,
 };
+
+
+
+/**
+ * Additional method to be called from internal modules
+ *
+ * @param format
+ * @param ...
+ * @return
+ */
+t_object *module_io_print(char *format, ...) {
+    t_dll *dll_args = dll_init();
+
+    va_list args;
+    va_start(args, format);
+
+    char *s = NULL;
+    if (args == NULL) {
+        smm_asprintf_char(&s, format, NULL);
+    } else {
+        smm_vasprintf_char(&s, format, args);
+    }
+    va_end(args);
+
+    t_string_object *str_obj = (t_string_object *)object_alloc_instance(Object_String, 2, strlen(s), s);
+    dll_append(dll_args, str_obj);
+    object_inc_ref((t_object *)str_obj);
+
+    module_io_method_print(&io_struct, dll_args);
+
+    object_release((t_object *)str_obj);
+    smm_free(s);
+
+    return &io_struct;
+}

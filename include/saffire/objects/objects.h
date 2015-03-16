@@ -43,4 +43,7 @@
     #include "interfaces.h"
     #include "exception.h"
 
+    // Explicit io print callback
+    t_object *module_io_print(char *format, ...);
+
 #endif
