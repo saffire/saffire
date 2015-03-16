@@ -101,8 +101,8 @@ t_object math_struct       = { OBJECT_HEAD_INIT("math", objectTypeBase, OBJECT_T
 
 static void _init(void) {
     math_struct.attributes = ht_create();
-    object_add_internal_method(math_struct.attributes, (t_object *)&math_struct, "random",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_random);
-    object_add_internal_method(math_struct.attributes, (t_object *)&math_struct, "seed",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_seed);
+    object_add_internal_method((t_object *)&math_struct, "random",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_random);
+    object_add_internal_method((t_object *)&math_struct, "seed",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_math_method_seed);
 }
 
 static void _fini(void) {

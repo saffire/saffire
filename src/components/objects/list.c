@@ -297,32 +297,32 @@ SAFFIRE_METHOD(list, conv_string) {
 void object_list_init(void) {
     Object_List_struct.attributes = ht_create();
 
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_list_method_ctor);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_list_method_dtor);
+    object_add_internal_method((t_object *)&Object_List_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_list_method_ctor);
+    object_add_internal_method((t_object *)&Object_List_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_list_method_dtor);
 
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__boolean",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_boolean);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__null",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_null);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__numerical",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__string",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
+    object_add_internal_method((t_object *)&Object_List_struct, "__boolean",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_boolean);
+    object_add_internal_method((t_object *)&Object_List_struct, "__null",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_null);
+    object_add_internal_method((t_object *)&Object_List_struct, "__numerical",    ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_numerical);
+    object_add_internal_method((t_object *)&Object_List_struct, "__string",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_conv_string);
 
     // Datastructure interface
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_populate);
+    object_add_internal_method((t_object *)&Object_List_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_populate);
 
     // Iterator interface
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___iterator);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___key);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___value);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___rewind);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___next);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___hasNext);
+    object_add_internal_method((t_object *)&Object_List_struct, "__iterator",     ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___iterator);
+    object_add_internal_method((t_object *)&Object_List_struct, "__key",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___key);
+    object_add_internal_method((t_object *)&Object_List_struct, "__value",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___value);
+    object_add_internal_method((t_object *)&Object_List_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___rewind);
+    object_add_internal_method((t_object *)&Object_List_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___next);
+    object_add_internal_method((t_object *)&Object_List_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___hasNext);
 
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "length",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "add",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "get",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "shuffle",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_shuffle);
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "random",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_random);
+    object_add_internal_method((t_object *)&Object_List_struct, "length",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
+    object_add_internal_method((t_object *)&Object_List_struct, "add",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
+    object_add_internal_method((t_object *)&Object_List_struct, "get",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_get);
+    object_add_internal_method((t_object *)&Object_List_struct, "shuffle",        ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_shuffle);
+    object_add_internal_method((t_object *)&Object_List_struct, "random",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_random);
 
-    object_add_internal_method(Object_List_struct.attributes, (t_object *)&Object_List_struct, "sequence",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_sequence);
+    object_add_internal_method((t_object *)&Object_List_struct, "sequence",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_sequence);
 
 //    // list + element
 //    object_add_internal_method((t_object *)&Object_List_struct, "__opr_add",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_opr_add);

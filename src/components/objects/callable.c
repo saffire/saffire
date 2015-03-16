@@ -151,16 +151,16 @@ void object_callable_init(void) {
      * @TODO: This will probably make us run into other problems i'm not 100% forseeing right now.. :(
      */
     t_hash_table *attributes = ht_create();
-    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_ctor);
 
-    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
-    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
-    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
 
-    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
 
-//    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
-//    object_add_internal_method(attributes, (t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
+//    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "bind",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_bind);
+//    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "unbind",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_unbind);
 
     Object_Callable_struct.attributes = attributes;
 }
