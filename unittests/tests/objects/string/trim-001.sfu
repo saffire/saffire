@@ -1,0 +1,39 @@
+title: string reverse
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+io.println("X", "  foobar  ".trim(), "X");
+io.println("X", "  foobar  ".rtrim(), "X");
+io.println("X", "  foobar  ".ltrim(), "X");
+=======
+XfoobarX
+X  foobarX
+Xfoobar  X
+@@@@@@@
+import io;
+io.println("X", "foobar".trim(), "X");
+io.println("X", "foobar".rtrim(), "X");
+io.println("X", "foobar".ltrim(), "X");
+=======
+XfoobarX
+XfoobarX
+XfoobarX
+@@@@@@@
+import io;
+io.println("X", "   ".trim(), "X");
+io.println("X", "   ".rtrim(), "X");
+io.println("X", "   ".ltrim(), "X");
+=======
+XX
+XX
+XX
+@@@@@@@
+import io;
+io.println("X", "".trim(), "X");
+io.println("X", "".rtrim(), "X");
+io.println("X", "".ltrim(), "X");
+=======
+XX
+XX
+XX
