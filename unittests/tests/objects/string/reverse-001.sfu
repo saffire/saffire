@@ -1,0 +1,13 @@
+title: string reverse
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+io.print("foobar".reverse());
+=====
+raboof
+@@@@@@
+import io;
+io.print("foobar".reverse().reverse());
+=====
+foobar
