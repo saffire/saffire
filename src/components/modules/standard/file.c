@@ -244,16 +244,19 @@ SAFFIRE_MODULE_METHOD(file, lines) {
 
     t_hash_table *ht = ht_create();
 
-    char *line = NULL;
-    size_t len = 0;
-    long bytes_read = 1;
+    char *line;
+    size_t len;
+    ssize_t bytes_read = 1;
     while (bytes_read > 0) {
+        line = NULL;
+        len = 0;
         bytes_read = getline(&line, &len, file_obj->data.fp);
         file_obj->data.bytes_out += bytes_read;
 
         if (bytes_read > 0) {
             ht_add_num(ht, ht->element_count, STR02OBJ(line));
         }
+        free(line);
     }
 
     RETURN_LIST(ht);
