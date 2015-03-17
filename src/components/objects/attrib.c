@@ -93,7 +93,7 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
 
     // Self object is used in this attribute as bound instance
     dup->data.bound_instance = self;
-//    object_inc_ref(self);
+    object_inc_ref(self);
 
     // Duplicate class name
     dup->name = string_strdup0(attrib->name);
@@ -221,7 +221,7 @@ static void obj_free(t_object *obj) {
 
     //   data.bound_instance     : the instance of the class where this attribute is attached to
     if (attr_obj->data.bound_instance) {
-//        object_release(attr_obj->data.bound_instance);
+        object_release(attr_obj->data.bound_instance);
     }
 
     // @TODO: Should the bound_class not be found directly from the bound_instance??
