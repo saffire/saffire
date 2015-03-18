@@ -164,9 +164,9 @@ SAFFIRE_METHOD(string, lower) {
 SAFFIRE_METHOD(string, reverse) {
     t_string *dst = string_strdup(self->data.value);
 
-    // Reverse all chars
+    // Reverse all chars, except the last \0
     for (int i=0; i!=dst->len; i++) {
-        dst->val[i] = self->data.value->val[dst->len - i];
+        dst->val[i] = self->data.value->val[dst->len - 1 - i];
     }
     utf8_free_unicode(dst);
 
@@ -174,6 +174,77 @@ SAFFIRE_METHOD(string, reverse) {
     RETURN_OBJECT(obj);
 }
 
+
+/**
+ * Saffire method: Trims whitespaces left and right
+ */
+SAFFIRE_METHOD(string, trim) {
+    if (self->data.value->len == 0) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    // Trim left
+    char *str = self->data.value->val;
+    while(isspace(*str)) str++;
+
+    // Hit a \0 char? return empty string (breaks binsafe strings)
+    if (*str == 0) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    // Trim right
+    char *end = self->data.value->val + self->data.value->len - 1;
+    while(end >= str && isspace(*end)) end--;
+    end++;
+
+    RETURN_STRING_FROM_BINSAFE_CHAR((end-str), str);
+}
+
+
+/**
+ * Saffire method: Trims whitespaces left
+ */
+SAFFIRE_METHOD(string, ltrim) {
+    if (self->data.value->len == 0) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    // Trim left
+    long len = self->data.value->len;
+    char *str = self->data.value->val;
+    while(isspace(*str)) {
+        str++;
+        len--;
+    }
+
+    // Hit a \0 char? return empty string (breaks binsafe strings)
+    if (*str == 0) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    RETURN_STRING_FROM_BINSAFE_CHAR(len, str);
+}
+
+/**
+ * Saffire method: Trims whitespaces right
+ */
+SAFFIRE_METHOD(string, rtrim) {
+    if (self->data.value->len == 0) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    // Trim right
+    char *str = self->data.value->val;
+    char *end = str + self->data.value->len - 1;
+    while(end >= str && isspace(*end)) end--;
+    end++;
+
+    if (end == str) {
+        RETURN_STRING_FROM_CHAR("");
+    }
+
+    RETURN_STRING_FROM_BINSAFE_CHAR((end-str), str);
+}
 
 /**
  *
@@ -514,6 +585,9 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
     object_add_internal_method((t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
     object_add_internal_method((t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
+    object_add_internal_method((t_object *)&Object_String_struct, "trim",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_trim);
+    object_add_internal_method((t_object *)&Object_String_struct, "ltrim",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ltrim);
+    object_add_internal_method((t_object *)&Object_String_struct, "rtrim",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_rtrim);
 
     object_add_internal_method((t_object *)&Object_String_struct, "toLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_to_locale);
     object_add_internal_method((t_object *)&Object_String_struct, "getLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_get_locale);

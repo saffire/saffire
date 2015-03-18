@@ -828,10 +828,15 @@ dispatch:
                     }
 
                     // We don't actually use the original attribute, but a duplicated one. Here we add our reference to the
-                    // current object so we can do correct calls to the attributes method.
-                    // @TODO: is this still needed?
+                    // current object so we can do correct calls to the attributes method found in parent classes with the correct "self".
                     attrib_obj = object_attrib_duplicate(attrib_obj, self_obj);
                     DEBUG_PRINT_CHAR("Loaded attribute: %s.%s\n", self_obj->name, attrib_obj->data.bound_name);
+
+                    /* increase ref count to the bound_instance, and make sure we release it on attribute destroy. This is needed to make sure
+                     * that f.foo().bar().baz() works correctly as it might release objects prematurely. We don't ALWAYS increase refcounts because
+                     * it would mean that every instance have like 30-40 refcounts by just their attributes */
+                    attrib_obj->data.bound_instance_decref = 1;
+                    object_inc_ref(attrib_obj->data.bound_instance);
 
                     vm_frame_stack_push(frame, (t_object *)attrib_obj);
                     object_inc_ref((t_object *)attrib_obj);
@@ -1105,7 +1110,7 @@ dispatch:
                         obj1 = (t_object *)object_attrib_duplicate((t_attrib_object *)obj1, self);
                         object_inc_ref(obj1);
                     } else {
-                        // Otherwise, we are just calling an attribute from an instance.
+                        // Otherwise, we are just calling an attribute from an instance / class
                         self = ((t_attrib_object *)obj1)->data.bound_instance;
                     }
 

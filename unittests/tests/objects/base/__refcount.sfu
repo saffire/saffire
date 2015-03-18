@@ -11,6 +11,6 @@ io.print(a.__refcount(),"\n");
 b = "something else";
 io.print(a.__refcount(),"\n");
 ========
-2
 3
-2
+4
+3

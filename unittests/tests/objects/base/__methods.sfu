@@ -19,6 +19,9 @@ length
 upper
 lower
 reverse
+trim
+ltrim
+rtrim
 toLocale
 getLocale
 splice
@@ -61,6 +64,9 @@ length
 upper
 lower
 reverse
+trim
+ltrim
+rtrim
 toLocale
 getLocale
 splice

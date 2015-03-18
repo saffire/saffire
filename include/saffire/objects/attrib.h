@@ -83,6 +83,7 @@
         t_object *attribute;                // Actual attribute (callback, or data value)
 
         t_object *bound_instance;           // Instance to which the attribute is bound. NULL when not bound (ie; when defined in a class)
+        int bound_instance_decref;          // This tells if the bound_instance should be released or not.
         t_object *bound_class;              // Class to which the attribute is bound. This is always a class, NULL when not yet bound into a class.
         char *bound_name;                   // Name under which the attribute is known in the class. (ie: "bar" in "foo.bar")
 
