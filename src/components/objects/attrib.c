@@ -93,7 +93,7 @@ t_attrib_object *object_attrib_duplicate(t_attrib_object *attrib, t_object *self
 
     // Self object is used in this attribute as bound instance
     dup->data.bound_instance = self;
-    object_inc_ref(self);
+    dup->data.bound_instance_decref = 0;
 
     // Duplicate class name
     dup->name = string_strdup0(attrib->name);
@@ -220,7 +220,7 @@ static void obj_free(t_object *obj) {
     object_release(attr_obj->data.attribute);
 
     //   data.bound_instance     : the instance of the class where this attribute is attached to
-    if (attr_obj->data.bound_instance) {
+    if (attr_obj->data.bound_instance && attr_obj->data.bound_instance_decref) {
         object_release(attr_obj->data.bound_instance);
     }
 
@@ -277,12 +277,14 @@ t_object_funcs attrib_funcs = {
 
 t_attrib_object Object_Attrib_struct = {
     OBJECT_HEAD_INIT("attrib", objectTypeAttribute, OBJECT_TYPE_CLASS, &attrib_funcs, sizeof (t_attrib_object_data)), {
-        0,
-        0,
-        0,
-        0,
-        NULL,
-        NULL,
-        NULL
+        .attr_type              = 0,
+        .attr_visibility        = 0,
+        .attr_access            = 0,
+        .attr_method_flags      = 0,
+        .attribute              = NULL,
+        .bound_instance         = NULL,
+        .bound_instance_decref  = 0,
+        .bound_class            = NULL,
+        .bound_name             = NULL,
     }
 };
