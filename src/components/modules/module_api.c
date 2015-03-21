@@ -38,8 +38,6 @@
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
 
-t_dll *registered_modules;
-
 void register_external_module(char *path) {
     void *handle = dlopen(path, RTLD_LAZY);
     if (! handle) return;
@@ -52,17 +50,21 @@ void register_external_module(char *path) {
         return;
     }
 
-    register_module(module_info);
+    register_module(module_info, path);
 }
+
 
 /**
  * Register an module
  */
-int register_module(t_module *mod) {
+int register_module(t_module *mod, const char *path) {
     DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
 
     // Add to registered modules list
-    dll_append(registered_modules, mod);
+    t_module_info *module_info = smm_malloc(sizeof(t_module_info));
+    module_info->mod = mod;
+    module_info->path = string_strdup0(path);
+    dll_append(registered_modules, module_info);
 
     // Initialize module
     mod->init();
@@ -103,18 +105,21 @@ int unregister_module(t_module *mod) {
     return 0;
 }
 
+static char *core_path = "<core>";
 /**
  *
  */
 void module_init(void) {
     registered_modules = dll_init();
 
-    register_module(&module_sapi_fastcgi);
-    register_module(&module_saffire);
-    register_module(&module_io);
-    register_module(&module_math);
-    register_module(&module_file);
+    // Register core modules
+    register_module(&module_sapi_fastcgi, core_path);
+    register_module(&module_saffire, core_path);
+    register_module(&module_io, core_path);
+    register_module(&module_math, core_path);
+    register_module(&module_file, core_path);
 
+    // Register external modules
     register_external_module("./modules/exif/exif.so");
 }
 
@@ -125,8 +130,10 @@ void module_fini(void) {
     // Unregister in the reversed order
     t_dll_element *e = DLL_TAIL(registered_modules);
     while (e) {
-        t_module *mod = (t_module *)e->data.p;
-        unregister_module(mod);
+        t_module_info *module_info = (t_module_info *)e->data.p;
+        unregister_module(module_info->mod);
+        smm_free(module_info->path);
+        smm_free(module_info);
         e = DLL_PREV(e);
     }
 }

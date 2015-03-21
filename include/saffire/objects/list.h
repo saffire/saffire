@@ -30,7 +30,11 @@
     #include <saffire/objects/object.h>
     #include <saffire/general/hashtable.h>
 
-    #define RETURN_LIST(h)   RETURN_OBJECT(object_alloc_instance(Object_List, 1, h));
+
+    #define LIST2OBJ(h)         object_alloc_instance(Object_List, 1, h)
+    #define RETURN_LIST(h)      RETURN_OBJECT(LIST2OBJ(h))
+
+
 
     typedef struct {
         t_hash_table *ht;
