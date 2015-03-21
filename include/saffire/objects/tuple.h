@@ -39,6 +39,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_tuple_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_tuple_object;
 
     t_tuple_object Object_Tuple_struct;

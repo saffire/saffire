@@ -354,7 +354,7 @@ static void obj_destroy(t_object *obj) {
 
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
-    snprintf(obj->__debug_info, 199, "%s[%s]", objectTypeNames[obj->type], obj->name);
+    snprintf(obj->__debug_info, DEBUG_INFO_SIZE-1, "%s[%s]", objectTypeNames[obj->type], obj->name);
     return obj->__debug_info;
 }
 #endif
@@ -370,13 +370,16 @@ t_object_funcs base_funcs = {
         NULL,             // Hash
 #ifdef __DEBUG
         obj_debug,
+#else
+        NULL,
 #endif
 };
 
 
 // Initial object
 t_object Object_Base_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, &base_funcs, NULL, NULL, 0)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("base", objectTypeBase, OBJECT_TYPE_CLASS, &base_funcs, NULL, NULL, 0),
+    OBJECT_FOOTER
 };
 
 
@@ -389,9 +392,7 @@ t_object_funcs user_funcs = {
         NULL,             // Clone
         NULL,             // Object cache
         NULL,             // Hash
-#ifdef __DEBUG
         NULL,             // Debug
-#endif
 };
 
 
@@ -399,5 +400,6 @@ t_object_funcs user_funcs = {
 
 // Initial object
 t_object Object_User_struct = {
-    OBJECT_HEAD_INIT_WITH_BASECLASS("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, NULL, NULL, 0)
+    OBJECT_HEAD_INIT_WITH_BASECLASS("user", objectTypeUser, OBJECT_TYPE_CLASS, &user_funcs, NULL, NULL, 0),
+    OBJECT_FOOTER
 };

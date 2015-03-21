@@ -38,6 +38,7 @@
     typedef struct _exeption_object {
         SAFFIRE_OBJECT_HEADER
         t_exception_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_exception_object;
 
     t_exception_object Object_Exception_struct;

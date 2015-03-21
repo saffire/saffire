@@ -36,6 +36,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_boolean_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_boolean_object;
 
     t_boolean_object Object_Boolean_struct;

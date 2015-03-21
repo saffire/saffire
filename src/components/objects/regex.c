@@ -284,9 +284,9 @@ static char *obj_debug(t_object *obj) {
     t_regex_object *re_obj = (t_regex_object *)obj;
 
     if (! re_obj->data.regex_string) {
-        snprintf(re_obj->__debug_info, 199, "regex://");
+        snprintf(re_obj->__debug_info, DEBUG_INFO_SIZE-1, "regex://");
     } else {
-        snprintf(re_obj->__debug_info, 199, "regex:/%s/", re_obj->data.regex_string);
+        snprintf(re_obj->__debug_info, DEBUG_INFO_SIZE-1, "regex:/%s/", re_obj->data.regex_string);
     }
     return re_obj->__debug_info;
 }
@@ -308,7 +308,9 @@ t_object_funcs regex_funcs = {
         NULL,                 // Cache
         obj_hash,             // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -319,5 +321,6 @@ t_regex_object Object_Regex_struct = {
         NULL,
         0,
         0
-    }
+    },
+    OBJECT_FOOTER
 };

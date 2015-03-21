@@ -42,6 +42,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_list_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_list_object;
 
     t_list_object Object_List_struct;

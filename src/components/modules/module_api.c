@@ -25,6 +25,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <string.h>
+#include <dlfcn.h>
 #include <saffire/general/output.h>
 #include <saffire/modules/module_api.h>
 #include <saffire/general/dll.h>
@@ -37,11 +38,31 @@
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
 
+t_dll *registered_modules;
+
+void register_external_module(char *path) {
+    void *handle = dlopen(path, RTLD_LAZY);
+    if (! handle) return;
+
+    dlerror();
+    t_module *module_info = dlsym(handle, "_saffire_module");
+
+    if (! module_info) {
+        dlclose(handle);
+        return;
+    }
+
+    register_module(module_info);
+}
+
 /**
  * Register an module
  */
 int register_module(t_module *mod) {
     DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
+
+    // Add to registered modules list
+    dll_append(registered_modules, mod);
 
     // Initialize module
     mod->init();
@@ -86,20 +107,26 @@ int unregister_module(t_module *mod) {
  *
  */
 void module_init(void) {
+    registered_modules = dll_init();
+
     register_module(&module_sapi_fastcgi);
     register_module(&module_saffire);
     register_module(&module_io);
     register_module(&module_math);
     register_module(&module_file);
+
+    register_external_module("./modules/exif/exif.so");
 }
 
 /**
  *
  */
 void module_fini(void) {
-    unregister_module(&module_file);
-    unregister_module(&module_math);
-    unregister_module(&module_saffire);
-    unregister_module(&module_io);
-    unregister_module(&module_sapi_fastcgi);
+    // Unregister in the reversed order
+    t_dll_element *e = DLL_TAIL(registered_modules);
+    while (e) {
+        t_module *mod = (t_module *)e->data.p;
+        unregister_module(mod);
+        e = DLL_PREV(e);
+    }
 }

@@ -249,7 +249,7 @@ static char *obj_debug(t_object *obj) {
     //snprintf(attrbuf, 1024, "%s", self->data.attribute ? object_debug(self->data.attribute) : "unlinked");
     snprintf(attrbuf, 1024, "%s", self->data.bound_name);
 
-    snprintf(self->__debug_info, 199, "%s [%s%s%s] Attached: %s", self->name,
+    snprintf(self->__debug_info, DEBUG_INFO_SIZE-1, "%s [%s%s%s] Attached: %s", self->name,
         self->data.attr_type == 0 ? "M" : self->data.attr_type == 1 ? "C" : self->data.attr_type == 2 ? "P" : "?",
         self->data.attr_visibility == 0 ? "P" : self->data.attr_visibility == 1 ? "R" : self->data.attr_visibility == 2 ? "V" : "?",
         self->data.attr_access == 0 ? "W" : "R",
@@ -270,6 +270,8 @@ t_object_funcs attrib_funcs = {
     NULL, // Hash
 #ifdef __DEBUG
     obj_debug,
+#else
+    NULL,
 #endif
 };
 
@@ -286,5 +288,6 @@ t_attrib_object Object_Attrib_struct = {
         .bound_instance_decref  = 0,
         .bound_class            = NULL,
         .bound_name             = NULL,
-    }
+    },
+    OBJECT_FOOTER
 };

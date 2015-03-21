@@ -40,6 +40,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_hash_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_hash_object;
 
     t_hash_object Object_Hash_struct;

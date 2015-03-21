@@ -44,6 +44,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_regex_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_regex_object;
 
     t_regex_object Object_Regex_struct;

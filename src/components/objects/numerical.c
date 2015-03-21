@@ -412,7 +412,7 @@ static void obj_destroy(t_object *obj) {
 static char *obj_debug(t_object *obj) {
     t_numerical_object *num_obj = (t_numerical_object *)obj;
 
-    snprintf(num_obj->__debug_info, 199, "num:%ld", num_obj->data.value);
+    snprintf(num_obj->__debug_info, DEBUG_INFO_SIZE-1, "num:%ld", num_obj->data.value);
     return num_obj->__debug_info;
 }
 #endif
@@ -427,7 +427,9 @@ t_object_funcs numerical_funcs = {
         obj_cache,          // cache
         obj_hash,           // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -437,5 +439,6 @@ t_numerical_object Object_Numerical_struct = {
     OBJECT_HEAD_INIT("numerical", objectTypeNumerical, OBJECT_TYPE_CLASS, &numerical_funcs, sizeof(t_numerical_object_data)),
     {
         0   // value
-    }
+    },
+    OBJECT_FOOTER
 };

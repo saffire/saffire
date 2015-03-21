@@ -97,7 +97,7 @@ SAFFIRE_MODULE_METHOD(math, seed) {
 }
 
 
-t_object math_struct       = { OBJECT_HEAD_INIT("math", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
+t_object math_struct       = { OBJECT_HEAD_INIT("math", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
 
 static void _init(void) {
     math_struct.attributes = ht_create();

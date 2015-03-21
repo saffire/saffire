@@ -113,11 +113,13 @@ t_object_funcs null_funcs = {
         obj_cache,          // Cache
         NULL,               // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
 
-t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_FINAL | OBJECT_FLAG_IMMUTABLE, &null_funcs, 0) };
+t_null_object Object_Null_struct = { OBJECT_HEAD_INIT("null", objectTypeNull, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_FINAL | OBJECT_FLAG_IMMUTABLE, &null_funcs, 0), OBJECT_FOOTER };
 
 

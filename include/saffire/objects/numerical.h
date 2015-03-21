@@ -40,8 +40,8 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
-
         t_numerical_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_numerical_object;
 
     t_numerical_object Object_Numerical_struct;

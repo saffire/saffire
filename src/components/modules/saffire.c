@@ -137,7 +137,7 @@ SAFFIRE_MODULE_METHOD(saffire, exception_handler) {
 
 
 
-t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
+t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
 
 static void _init(void) {
     saffire_struct.attributes = ht_create();

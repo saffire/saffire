@@ -241,7 +241,7 @@ static void obj_free(t_object *obj) {
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
-    snprintf(self->__debug_info, 199, "%s callable(%d parameters)",
+    snprintf(self->__debug_info, DEBUG_INFO_SIZE-1, "%s callable(%d parameters)",
         CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
         self->data.arguments ? self->data.arguments->element_count : 0
     );
@@ -261,7 +261,9 @@ t_object_funcs callable_funcs = {
         NULL,                 // Cache
         NULL,                 // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -273,5 +275,6 @@ t_callable_object Object_Callable_struct = {
         { { NULL } },
         NULL,
         NULL
-    }
+    },
+    OBJECT_FOOTER
 };

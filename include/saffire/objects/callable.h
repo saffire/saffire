@@ -65,6 +65,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_callable_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_callable_object;
 
     t_callable_object Object_Callable_struct;
