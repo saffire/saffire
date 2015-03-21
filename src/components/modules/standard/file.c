@@ -324,8 +324,11 @@ static char *obj_debug(t_object *obj) {
 
     int fn = file_obj->data.fp ? fileno(file_obj->data.fp) : -1;
 
-    snprintf(file_obj->__debug_info, 199, "file[%d]", fn);
-    return file_obj->__debug_info;
+    // If we CAN print debug info, we HAVE space for debug info. At the end of an object.
+
+    // Store debug info at the end of an object. There is space allocated for this purpose in debug mode
+    snprintf(obj->__debug_info, DEBUG_INFO_SIZE-1, "file[%d]", fn);
+    return obj->__debug_info;
 }
 #endif
 
@@ -353,7 +356,8 @@ t_file_object Object_File_struct = {
         0,      /* bytes in */
         0,      /* bytes out */
         NULL,   /* stat info */
-    }
+    },
+    OBJECT_FOOTER
 };
 
 /* ======================================================================

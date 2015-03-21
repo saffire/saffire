@@ -30,7 +30,8 @@
     #include <saffire/objects/object.h>
     #include <saffire/general/hashtable.h>
 
-    #define RETURN_HASH(h)   RETURN_OBJECT(object_alloc_instance(Object_Hash, 1, h));
+    #define HASH2OBJ(h)         object_alloc_instance(Object_Hash, 1, h)
+    #define RETURN_HASH(h)      RETURN_OBJECT(HASH2OBJ(h))
 
     typedef struct {
         t_hash_table *ht;
@@ -40,6 +41,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_hash_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_hash_object;
 
     t_hash_object Object_Hash_struct;

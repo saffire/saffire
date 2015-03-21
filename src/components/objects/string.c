@@ -687,9 +687,9 @@ static char *obj_debug(t_object *obj) {
     t_string_object *str_obj = (t_string_object *)obj;
 
     if (! str_obj->data.value) {
-        snprintf(str_obj->__debug_info, 199, "string()");
+        snprintf(str_obj->__debug_info, DEBUG_INFO_SIZE-1, "string()");
     } else {
-        snprintf(str_obj->__debug_info, 199, "string(%zd):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
+        snprintf(str_obj->__debug_info, DEBUG_INFO_SIZE-1, "string(%zd):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
     }
     return str_obj->__debug_info;
 }
@@ -723,6 +723,8 @@ t_object_funcs string_funcs = {
         obj_hash,             // Hash
 #ifdef __DEBUG
         obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -736,5 +738,6 @@ t_string_object Object_String_struct = {
         1,          // Needs hashing
         0,          // Internal iteration index
         NULL,       // Locale
-    }
+    },
+    OBJECT_FOOTER
 };

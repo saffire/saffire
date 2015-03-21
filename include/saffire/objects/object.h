@@ -36,6 +36,11 @@
     void vm_populate_builtins(const char *name, t_object *obj);
 
 
+#ifdef __DEBUG
+    #define DEBUG_INFO_SIZE     200
+#endif
+
+
 
     // These functions must be present to deal with object administration (cloning, allocating and free-ing info)
     typedef struct _object_funcs {
@@ -45,9 +50,7 @@
         t_object *(*clone)(t_object *);             // Clone this object to a new object
         t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
         char *(*hash)(t_object *);                  // Returns a string hash (prob md5) of the object
-#ifdef __DEBUG
         char *(*debug)(t_object *);                 // Return debug string (value and info)
-#endif
     } t_object_funcs;
 
 
@@ -166,17 +169,26 @@
         \
         int data_size;                  /* Additional data size. If 0, no additional data is used in this object */ \
         \
-        struct _vm_stackframe *frame;         /* The frame in which this object is born */ \
-        \
-        SAFFIRE_OBJECT_DEBUG_HEADER
+        struct _vm_stackframe *frame;   /* The frame in which this object is born */
 
 
 #ifdef __DEBUG
-    #define SAFFIRE_OBJECT_DEBUG_HEADER char __debug_info[200];
-    #define OBJECT_HEAD_DEBUG  ,""
+    #define SAFFIRE_OBJECT_FOOTER \
+        char __debug_info_available; \
+        char __debug_info[DEBUG_INFO_SIZE];
+
+    #define OBJECT_FOOTER \
+        1, \
+        "" \
+
 #else
-    #define SAFFIRE_OBJECT_DEBUG_HEADER
-    #define OBJECT_HEAD_DEBUG
+
+    #define SAFFIRE_OBJECT_FOOTER \
+        char __debug_info_available;
+
+    #define OBJECT_FOOTER \
+        0
+
 #endif
 
 
@@ -184,6 +196,7 @@
     // Actual "global" object. Every object is typed on this object.
     struct _object {
         SAFFIRE_OBJECT_HEADER
+        SAFFIRE_OBJECT_FOOTER
     }; // forward define has defined this as a t_object.
 
     extern t_object Object_Base_struct;
@@ -199,9 +212,8 @@
                 interfaces,     /* implements */           \
                 NULL,           /* attribute */            \
                 funcs,          /* functions */            \
-                data_size,      /* data lenght */          \
-                NULL            /* frame */                \
-                OBJECT_HEAD_DEBUG
+                data_size,      /* data length */          \
+                NULL            /* frame */
 
 
     // Object header initialization without any functions or base

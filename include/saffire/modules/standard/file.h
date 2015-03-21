@@ -19,6 +19,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_file_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_file_object;
 
     t_file_object Object_File_struct;

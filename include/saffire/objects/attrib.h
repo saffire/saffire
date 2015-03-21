@@ -91,8 +91,8 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER
-
         t_attrib_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_attrib_object;
 
     t_attrib_object Object_Attrib_struct;

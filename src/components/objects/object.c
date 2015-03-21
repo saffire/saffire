@@ -240,8 +240,12 @@ char *object_debug(t_object *obj) {
         return "no object";
     }
 
+    if (obj->__debug_info_available == 0) {
+        return "no object info available";
+    }
+
     if (! obj->funcs || ! obj->funcs->debug) {
-        snprintf(obj->__debug_info, 199, "%s[%c](%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);
+        snprintf(obj->__debug_info, DEBUG_INFO_SIZE-1, "%s[%c](%s)", objectTypeNames[obj->type], OBJECT_TYPE_IS_CLASS(obj) ? 'C' : 'I', obj->name);
         return obj->__debug_info;
     }
 
@@ -343,8 +347,14 @@ t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached) {
     // Nothing found in cache, create new object
 
     // Create new object
+#ifdef __DEBUG
+    // In debug mode, allocate 200 bytes extra for __debug_info
+    res = smm_malloc(sizeof(t_object) + obj->data_size + DEBUG_INFO_SIZE);
+    memcpy(res, obj, sizeof(t_object) + obj->data_size + DEBUG_INFO_SIZE);
+#else
     res = smm_malloc(sizeof(t_object) + obj->data_size);
     memcpy(res, obj, sizeof(t_object) + obj->data_size);
+#endif
 
     // Since we just allocated the object, it can always be destroyed
     res->flags |= OBJECT_FLAG_ALLOCATED;

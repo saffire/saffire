@@ -65,6 +65,91 @@ static t_object *_saffire_print(int newline, t_object *self, t_dll *arguments) {
     RETURN_SELF;
 }
 
+static void _io_dump(t_object *obj, int depth) {
+    t_attrib_object *method;
+    t_object *iter_obj;
+    t_object *ret;
+
+    char *padding_depth = smm_malloc(depth * 4);
+    memset(padding_depth, ' ', depth * 4);
+    padding_depth[depth * 4] = 0;
+
+    // fetch iterator
+    method = object_attrib_find(obj, "__iterator");
+    iter_obj = vm_object_call(obj, method, 0);
+
+    // We don't know how the iterator is implemented internally, so we just call the iterator functionality through vm_object_call
+
+    method = object_attrib_find(iter_obj, "__rewind");
+    ret = vm_object_call(iter_obj, method, 0);
+    object_release(ret);
+
+    do {
+        method = object_attrib_find(iter_obj, "__hasNext");
+        ret = vm_object_call(iter_obj, method, 0);
+        if (IS_BOOLEAN_FALSE(ret)) {
+            object_release(ret);
+            break;
+        } else {
+            object_release(ret);
+        }
+
+        method = object_attrib_find(iter_obj, "__key");
+        t_object *key = vm_object_call(iter_obj, method, 0);
+
+        method = object_attrib_find(iter_obj, "__value");
+        t_object *val = vm_object_call(iter_obj, method, 0);
+
+        //
+
+        t_string_object *key_str;
+        t_string_object *val_str;
+
+        if (! OBJECT_IS_STRING(key)) {
+            t_attrib_object *string_method = object_attrib_find(key, "__string");
+            key_str = (t_string_object *)vm_object_call(key, string_method, 0);
+            object_release((t_object *)key);
+        } else {
+            key_str = (t_string_object *)key;
+        }
+
+        if (object_has_interface(val, "Iterator") && ! OBJECT_IS_STRING(val)) {
+            module_io_print("%s [%s] => \n", padding_depth, OBJ2STR0(key_str));
+
+            // Level down
+            _io_dump(val, depth + 1);
+
+            // Don't display something on this level
+            val_str = NULL;
+        } else if (! OBJECT_IS_STRING(val)) {
+            // Convert to string
+            t_attrib_object *string_method = object_attrib_find(val, "__string");
+            val_str = (t_string_object *)vm_object_call(val, string_method, 0);
+            object_release((t_object *)val);
+        } else {
+            // Otherwise, just print string
+            val_str = (t_string_object *)val;
+        }
+
+        if (val_str) {
+            module_io_print("%s [%s] => %s\n", padding_depth, OBJ2STR0(key_str), OBJ2STR0(val_str));
+        }
+
+        if (val_str) {
+            object_release((t_object *)val_str);
+        }
+        object_release((t_object *)key_str);
+
+        method = object_attrib_find(iter_obj, "__next");
+        ret = vm_object_call(iter_obj, method, 0);
+        object_release(ret);
+    } while (1);
+
+    smm_free(padding_depth);
+}
+
+
+
 /**
  *
  */
@@ -116,12 +201,12 @@ SAFFIRE_MODULE_METHOD(io, sprintf) {
     RETURN_STRING_FROM_CHAR("IO.sprintf\n");
 }
 
+
 /**
  *
  */
 SAFFIRE_MODULE_METHOD(io, dump) {
-    t_object *iter_obj, *ret;
-    t_attrib_object *method;
+    t_object *iter_obj;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &iter_obj)) {
         return NULL;
@@ -132,63 +217,7 @@ SAFFIRE_MODULE_METHOD(io, dump) {
         return NULL;
     }
 
-    // fetch iterator
-    method = object_attrib_find(iter_obj, "__iterator");
-    iter_obj = vm_object_call(iter_obj, method, 0);
-
-    // We don't know how the iterator is implemented internally, so we just call the iterator functionality through vm_object_call
-
-    method = object_attrib_find(iter_obj, "__rewind");
-    ret = vm_object_call(iter_obj, method, 0);
-    object_release(ret);
-
-    module_io_print("Dump:\n");
-    do {
-        method = object_attrib_find(iter_obj, "__hasNext");
-        ret = vm_object_call(iter_obj, method, 0);
-        if (IS_BOOLEAN_FALSE(ret)) {
-            object_release(ret);
-            break;
-        } else {
-            object_release(ret);
-        }
-
-        method = object_attrib_find(iter_obj, "__key");
-        t_object *key = vm_object_call(iter_obj, method, 0);
-
-        method = object_attrib_find(iter_obj, "__value");
-        t_object *val = vm_object_call(iter_obj, method, 0);
-
-        //
-
-        t_string_object *key_str;
-        t_string_object *val_str;
-
-        if (! OBJECT_IS_STRING(key)) {
-            t_attrib_object *string_method = object_attrib_find(key, "__string");
-            key_str = (t_string_object *)vm_object_call(key, string_method, 0);
-            object_release((t_object *)key);
-        } else {
-            key_str = (t_string_object *)key;
-        }
-
-        if (! OBJECT_IS_STRING(val)) {
-            t_attrib_object *string_method = object_attrib_find(val, "__string");
-            val_str = (t_string_object *)vm_object_call(val, string_method, 0);
-            object_release((t_object *)val);
-        } else {
-            val_str = (t_string_object *)val;
-        }
-
-        module_io_print("Key: %s   Val: %s\n", OBJ2STR0(key_str), OBJ2STR0(val_str));
-
-        object_release((t_object *)val_str);
-        object_release((t_object *)key_str);
-
-        method = object_attrib_find(iter_obj, "__next");
-        ret = vm_object_call(iter_obj, method, 0);
-        object_release(ret);
-    } while (1);
+    _io_dump(iter_obj, 0);
 
     RETURN_SELF;
 }
@@ -218,8 +247,8 @@ SAFFIRE_MODULE_METHOD(console, sprintf) {
 
 
 
-t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
-t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
+t_object io_struct       = { OBJECT_HEAD_INIT("io", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
+t_object console_struct  = { OBJECT_HEAD_INIT("console", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
 
 
 static void _init(void) {

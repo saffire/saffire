@@ -281,9 +281,9 @@ static char *obj_debug(t_object *obj) {
     t_tuple_object *tuple_obj = (t_tuple_object *)obj;
 
     if (tuple_obj->data.ht) {
-        snprintf(tuple_obj->__debug_info, 199, "tuple[%d]", tuple_obj->data.ht->element_count);
+        snprintf(tuple_obj->__debug_info, DEBUG_INFO_SIZE-1, "tuple[%d]", tuple_obj->data.ht->element_count);
     } else {
-        snprintf(tuple_obj->__debug_info, 199, "tuple[]");
+        snprintf(tuple_obj->__debug_info, DEBUG_INFO_SIZE-1, "tuple[]");
     }
     return tuple_obj->__debug_info;
 
@@ -300,7 +300,9 @@ t_object_funcs tuple_funcs = {
         NULL,                 // Cache
         NULL,                 // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -311,5 +313,6 @@ t_tuple_object Object_Tuple_struct = {
     OBJECT_HEAD_INIT("tuple", objectTypeTuple, OBJECT_TYPE_CLASS, &tuple_funcs, sizeof(t_tuple_object_data)),
     {
         NULL
-    }
+    },
+    OBJECT_FOOTER
 };

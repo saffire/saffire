@@ -408,9 +408,9 @@ static char *obj_debug(t_object *obj) {
     t_list_object *list_obj = (t_list_object *)obj;
 
     if (list_obj->data.ht) {
-        snprintf(list_obj->__debug_info, 199, "list[%d]", list_obj->data.ht->element_count);
+        snprintf(list_obj->__debug_info, DEBUG_INFO_SIZE-1, "list[%d]", list_obj->data.ht->element_count);
     } else {
-        snprintf(list_obj->__debug_info, 199, "list[]");
+        snprintf(list_obj->__debug_info, DEBUG_INFO_SIZE-1, "list[]");
     }
     return list_obj->__debug_info;
 }
@@ -426,7 +426,9 @@ t_object_funcs list_funcs = {
         NULL,                 // Cache
         NULL,                 // Hash
 #ifdef __DEBUG
-        obj_debug
+        obj_debug,
+#else
+        NULL,
 #endif
 };
 
@@ -440,6 +442,7 @@ t_list_object Object_List_struct = {
         {
             0,
         }
-    }
+    },
+    OBJECT_FOOTER
 };
 

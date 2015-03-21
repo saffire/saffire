@@ -320,9 +320,11 @@ t_object_funcs bool_funcs = {
         NULL,               // Hash
 #ifdef __DEBUG
         obj_debug,
+#else
+        NULL,
 #endif
 };
 
-t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_CLASS | OBJECT_FLAG_FINAL, &bool_funcs, sizeof(t_boolean_object_data)), { 0 } };
-t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 0 } };
-t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 1 } };
+t_boolean_object Object_Boolean_struct       = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_CLASS | OBJECT_FLAG_FINAL, &bool_funcs, sizeof(t_boolean_object_data)), { 0 }, OBJECT_FOOTER };
+t_boolean_object Object_Boolean_False_struct = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 0 }, OBJECT_FOOTER };
+t_boolean_object Object_Boolean_True_struct  = { OBJECT_HEAD_INIT("boolean", objectTypeBoolean, OBJECT_TYPE_INSTANCE | OBJECT_FLAG_IMMUTABLE, &bool_funcs, sizeof(t_boolean_object_data)), { 1 }, OBJECT_FOOTER };

@@ -84,7 +84,7 @@ for name, methods in interfaces.iteritems() :
     fp.write("}\n")
     fp.write("\n")
     fp.write("t_interface_object Object_%s_struct = {\n" % name.title())
-    fp.write("    OBJECT_HEAD_INIT(\"%s\", objectTypeBase, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL, 0),\n" % name.title())
+    fp.write("    OBJECT_HEAD_INIT(\"%s\", objectTypeBase, OBJECT_TYPE_INTERFACE|OBJECT_FLAG_IMMUTABLE, NULL, 0), OBJECT_FOOTER\n" % name.title())
     fp.write("};\n")
     fp.write("\n")
     fp.write("\n")
@@ -153,7 +153,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      */
 
     typedef struct {
-        SAFFIRE_OBJECT_HEADER;
+        SAFFIRE_OBJECT_HEADER
+        SAFFIRE_OBJECT_FOOTER
     } t_interface_object;
 
 

@@ -136,8 +136,41 @@ SAFFIRE_MODULE_METHOD(saffire, exception_handler) {
 }
 
 
+SAFFIRE_MODULE_METHOD(saffire, modules) {
+    t_hash_table *modules_ht = ht_create();
 
-t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0) };
+    t_dll_element *e = DLL_HEAD(registered_modules);
+    while (e) {
+        t_module_info *module_info = (t_module_info *)(e->data.p);
+
+        t_hash_table *module_ht = ht_create();
+
+        // Add all objects
+        t_hash_table *objects_ht = ht_create();
+        int idx = 0;
+        t_object *obj = (t_object *)module_info->mod->objects[idx];
+        while (obj != NULL) {
+            ht_append_num(objects_ht, STR02OBJ(obj->name));
+
+            idx++;
+            obj = (t_object *)module_info->mod->objects[idx];
+        }
+        ht_add_obj(module_ht, STR02OBJ("objects"), LIST2OBJ(objects_ht));
+
+        // Add module path and description
+        ht_add_obj(module_ht, STR02OBJ("path"), STR02OBJ(module_info->path));
+        ht_add_obj(module_ht, STR02OBJ("description"), STR02OBJ(module_info->mod->description));
+
+        // Add element to modules hash
+        ht_add_obj(modules_ht, STR02OBJ(module_info->mod->name), HASH2OBJ(module_ht));
+
+        e = DLL_NEXT(e);
+    }
+
+    RETURN_HASH(modules_ht);
+}
+
+t_object saffire_struct = { OBJECT_HEAD_INIT("saffire", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
 
 static void _init(void) {
     saffire_struct.attributes = ht_create();
@@ -149,6 +182,8 @@ static void _init(void) {
     object_add_internal_method((t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
     object_add_internal_method((t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
     object_add_internal_method((t_object *)&saffire_struct, "uncaughtExceptionHandler",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_exception_handler);
+
+    object_add_internal_method((t_object *)&saffire_struct, "modules",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_modules);
 
     object_add_property((t_object *)&saffire_struct, "fastcgi",    ATTRIB_VISIBILITY_PUBLIC, Object_Null);
     object_add_property((t_object *)&saffire_struct, "cli",        ATTRIB_VISIBILITY_PUBLIC, Object_Null);

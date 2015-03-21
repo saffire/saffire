@@ -226,6 +226,10 @@ int ht_add_ptr(t_hash_table *ht, void *key, void *value) {
     return ht_add(ht, ht_key_create(HASH_KEY_PTR, key), value);
 }
 
+int ht_append_num(t_hash_table *ht, void *value) {
+    return ht_add_num(ht, ht->element_count, value);
+}
+
 /**
  * Replace key/value into hashtable
  */

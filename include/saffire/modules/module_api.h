@@ -29,6 +29,8 @@
 
     #include <saffire/objects/object.h>
 
+    t_dll *registered_modules;
+
     // Module structure
     typedef struct _module {
         char *name;
@@ -40,10 +42,16 @@
         // Fini import          // Called when module is unimported (end of app)
     } t_module;
 
+    // Module info structure
+    typedef struct _module_info {
+        t_module *mod;          // Pointer to module
+        char *path;             // Path where this module is loaded from (or <core> when it's a core module)
+    } t_module_info;
+
     // All loaded modules
     t_dll *modules;
 
-    int register_module(t_module *ext);
+    int register_module(t_module *ext, const char *path);
     int unregister_module(t_module *ext);
 
     void module_init(void);

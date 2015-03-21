@@ -60,6 +60,7 @@
     typedef struct {
         SAFFIRE_OBJECT_HEADER
         t_string_object_data data;
+        SAFFIRE_OBJECT_FOOTER
     } t_string_object;
 
     t_string_object Object_String_struct;

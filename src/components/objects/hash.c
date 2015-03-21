@@ -426,9 +426,9 @@ static char *obj_debug(t_object *obj) {
     t_hash_object *hash_obj = (t_hash_object *)obj;
 
     if (hash_obj->data.ht) {
-        snprintf(hash_obj->__debug_info, 199, "hash[%d]", hash_obj->data.ht->element_count);
+        snprintf(hash_obj->__debug_info, DEBUG_INFO_SIZE-1, "hash[%d]", hash_obj->data.ht->element_count);
     } else {
-        snprintf(hash_obj->__debug_info, 199, "hash[]");
+        snprintf(hash_obj->__debug_info, DEBUG_INFO_SIZE-1, "hash[]");
     }
     return hash_obj->__debug_info;
 }
@@ -445,6 +445,8 @@ t_object_funcs hash_funcs = {
         NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug
+#else
+        NULL,
 #endif
 };
 
@@ -456,6 +458,7 @@ t_hash_object Object_Hash_struct = {
     {
         NULL,
         /* t_hash_iter */
-    }
+    },
+    OBJECT_FOOTER
 };
 

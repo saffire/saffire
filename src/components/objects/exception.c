@@ -233,7 +233,7 @@ static void obj_destroy(t_object *obj) {
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
     t_exception_object *exception_obj = (t_exception_object *)obj;
-    snprintf(exception_obj->__debug_info, 199, "%s(%ld)[%s]", exception_obj->name, exception_obj->data.code, exception_obj->data.message ? exception_obj->data.message->val : "");
+    snprintf(exception_obj->__debug_info, DEBUG_INFO_SIZE-1, "%s(%ld)[%s]", exception_obj->name, exception_obj->data.code, exception_obj->data.message ? exception_obj->data.message->val : "");
     return exception_obj->__debug_info;
 }
 #endif
@@ -247,6 +247,8 @@ t_object_funcs exception_funcs = {
         NULL,               // Hash
 #ifdef __DEBUG
         obj_debug
+#else
+        NULL,
 #endif
 };
 
@@ -255,7 +257,8 @@ t_exception_object Object_Exception_struct = {
     OBJECT_HEAD_INIT("exception", objectTypeException, OBJECT_TYPE_CLASS, &exception_funcs, sizeof(t_exception_object_data)),
     {
         NULL, 0
-    }
+    },
+    OBJECT_FOOTER
 };
 
 // Include generated exceptions

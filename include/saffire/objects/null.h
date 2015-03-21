@@ -31,6 +31,7 @@
 
     typedef struct {
         SAFFIRE_OBJECT_HEADER;
+        SAFFIRE_OBJECT_FOOTER
     } t_null_object;
 
     t_null_object Object_Null_struct;

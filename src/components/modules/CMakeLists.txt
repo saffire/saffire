@@ -15,4 +15,5 @@ add_dependencies(modules generate_interfaces generate_exceptions)
 target_link_libraries(
     modules
     generic
+    dl
     ${3rdparty_libs})

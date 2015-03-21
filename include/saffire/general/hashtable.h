@@ -118,6 +118,8 @@
     int ht_add_obj(t_hash_table *ht, t_object *key, void *value);
     int ht_add_ptr(t_hash_table *ht, void *key, void *value);
 
+    int ht_append_num(t_hash_table *ht, void *value);
+
     void *ht_replace(t_hash_table *ht, t_hash_key *key, void *value);
     void *ht_replace_str(t_hash_table *ht, char *key, void *value);
     void *ht_replace_num(t_hash_table *ht, long key, void *value);
