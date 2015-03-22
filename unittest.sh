@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export SAFFIRE_TEST_BIN=./build/release/saffire
+export SAFFIRE_TEST_BIN=./build/release/bin/saffire
 
 if [ ! -e $SAFFIRE_TEST_BIN ] ; then
 	echo "Please build saffire before running this test script";
