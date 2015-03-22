@@ -1,4 +1,7 @@
-list(APPEND 3rdparty_libs rt)
+
+if (UNIX AND NOT APPLE)
+    list(APPEND 3rdparty_libs rt)
+endif()
 
 set(sources
     module_api.c
