@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#ifdef __APPLE__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
 #include <saffire/modules/module_api.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
@@ -42,9 +46,18 @@ static char randomizer_initialized = 0;
 // @TODO: cannot use 0 for seeding
 static void _seed_randomizer(unsigned long seed) {
     if (seed == 0) {
+#ifdef __APPLE__
+        clock_serv_t cclock;
+        mach_timespec_t mts;
+        host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+        clock_get_time(cclock, &mts);
+        mach_port_deallocate(mach_task_self(), cclock);
+        seed = mts.tv_nsec;
+#else
         struct timespec ct;
         clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ct);
         seed = ct.tv_nsec;
+#endif
     }
 
     srand(seed);
