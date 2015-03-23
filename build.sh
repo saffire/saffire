@@ -5,6 +5,7 @@ BUILD_ROOT_DIR="`pwd`/build"  # path to the build directory. See `-b' option
 BUILDTYPE="release"           # determines which target(s) has to be built. See `-t' option
 CLEAN=0                       # clean the target build directory before build it. See `-c' option
 VERBOSE=0                     # make the build process verbose if 1. See `-v' option
+INSTALL=0                     # install saffire if 1. See `-i' option
 
 if [[ `uname` == 'Darwin' ]]; then
     export ICU_ROOT=$(brew --prefix icu4c)
@@ -16,6 +17,7 @@ build_target () {
     target_dir=$2
     clean_dir=$3;
     verbose=$4
+    install=$5
 
     cd $BUILD_ROOT_DIR
 
@@ -70,10 +72,14 @@ build_target () {
         exit 1
     fi
 
+    if [ $install -eq 1 ] ; then
+        make install
+    fi
+
     cd $SRC_ROOT_DIR
 }
 
-while getopts "hvct:b:" opt ; do
+while getopts "hvcit:b:" opt ; do
     case "${opt}" in
         v)
             VERBOSE=1
@@ -87,12 +93,16 @@ while getopts "hvct:b:" opt ; do
         b)
             BUILD_ROOT_DIR=${OPTARG}
             ;;
+        i)
+            INSTALL=1
+            ;;
         h)
-            echo "Usage: build.sh [-h] [-v] [-c] [-t <target>]"
+            echo "Usage: build.sh [-h] [-v] [-c] [-i] [-t <target>]"
             echo
             echo "-h             Display usage info"
             echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
+            echo "-i             Install saffire after build"
             echo "-t <target>    Target to build (release|debug|all)"
             echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo
@@ -108,9 +118,9 @@ if [ ! -d $BUILD_ROOT_DIR ] ; then
 fi
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
-    build_target Release release $CLEAN $VERBOSE
+    build_target Release release $CLEAN $VERBOSE $INSTALL
 fi
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "debug" ] ; then
-    build_target Debug debug $CLEAN $VERBOSE
+    build_target Debug debug $CLEAN $VERBOSE $INSTALL
 fi
