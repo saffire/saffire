@@ -38,7 +38,7 @@
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
 
 
-void register_external_module(char *path) {
+void register_external_module(char *path, t_vm_stackframe *frame) {
     void *handle = dlopen(path, RTLD_LAZY);
     if (! handle) return;
 
@@ -50,7 +50,25 @@ void register_external_module(char *path) {
         return;
     }
 
+    // Register module
     register_module(module_info, path);
+
+    // Register objects inside new frame
+    int idx = 0;
+    t_object *obj = (t_object *)module_info->objects[idx];
+    while (obj != NULL) {
+        char *key;
+        vm_context_create_fqcn("", obj->name, &key);
+        DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
+
+        ht_add_str(frame->local_identifiers->data.ht, key, obj);
+        object_inc_ref(obj);
+
+        smm_free(key);
+
+        idx++;
+        obj = (t_object *)module_info->objects[idx];
+    }
 }
 
 
@@ -118,9 +136,6 @@ void module_init(void) {
     register_module(&module_io, core_path);
     register_module(&module_math, core_path);
     register_module(&module_file, core_path);
-
-    // Register external modules
-    register_external_module("./modules/exif/exif.so");
 }
 
 /**

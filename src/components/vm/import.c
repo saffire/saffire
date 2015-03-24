@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <saffire/vm/vm.h>
 #include <saffire/vm/stackframe.h>
+#include <saffire/modules/module_api.h>
 #include <saffire/vm/thread.h>
 #include <saffire/vm/import.h>
 #include <saffire/objects/objects.h>
@@ -50,6 +51,8 @@ const char *module_search_paths[] = {
     NULL
 };
 
+
+// Modules are normally FQCN. If not, we use these default ones.
 const char *module_searches[] = {
     "::saffire",
     "::sfl",
@@ -150,34 +153,10 @@ static char *_build_class_path(char *module) {
 }
 
 
-
-
-/**
- * Construct a absolute path from a root and sub path.
- *
- * @param root_path
- * @param sub_path
- * @return
- */
-static char *_construct_import_path(t_vm_context *context, char *root_path, char *module_path) {
-    // We must make sure that things like . are actually resolved to the path of the CURRENT frame source.
-//    char *old_cwd = NULL;
+static char *_construct_import_path_with_extension(t_vm_context *context, char *root_path, char *module_path, char *extension) {
     char *path = NULL;
 
-//    if (frame && frame->context) {
-//        // Change to context path
-//        long size = pathconf(".", _PC_PATH_MAX);
-//        old_cwd = (char *)smm_malloc((size_t)size);
-//        getcwd(old_cwd, (size_t)size);
-//        printf("newpath: %s\n", frame->context->file.path);
-//        chdir(frame->context->file.path);
-//    }
     path = realpath(root_path, NULL);
-//    if (frame && frame->context) {
-//        // Change back from context path
-//        chdir(old_cwd);
-//        smm_free(old_cwd);
-//    }
     if (! path) return NULL;
 
     // Strip trailing /
@@ -185,7 +164,7 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
         path[strlen(path)-1] = '\0';
     }
 
-    // If path is just .  we need to use the current frame's filepath
+    // If path is just .  we need to use the current frame's file path
     if (strcmp(path, ".") == 0) {
         path = string_strdup0(context->file.path);
     }
@@ -194,13 +173,14 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
 
     char *final_path = NULL;
     if (strstr(module_path, "::") == module_path) {
-        smm_asprintf_char(&final_path, "%s%s.sf", path, class_path);
+        smm_asprintf_char(&final_path, "%s%s.%s", path, class_path, extension);
     } else {
-        smm_asprintf_char(&final_path, "%s%s%s.sf", path, context, class_path);
+        smm_asprintf_char(&final_path, "%s%s%s.%s", path, context, class_path, extension);
     }
     smm_free(class_path);
     smm_free(path); // free realpath()
 
+    //printf("    * Checking absolute path: '%s'\n", final_path);
 
     char *real_final_path = realpath(final_path, NULL);
     smm_free(final_path);
@@ -208,36 +188,37 @@ static char *_construct_import_path(t_vm_context *context, char *root_path, char
     return real_final_path;
 }
 
-
 /**
- * Creates a vm_context structure based on the *FQMN* by finding the actual module on the module search paths
+ * Construct a absolute path from a root and sub path.
+ *
+ * @param root_path
+ * @param sub_path
+ * @return
  */
-static t_vm_context *_vm_create_context_from_fqmn(char *fqmn) {
+static char *_construct_import_path(t_vm_context *context, char *root_path, char *module_path, int *extension_type) {
+    char *real_final_path;
 
-    // Iterate all module search paths
-    char **ptr = (char **)&module_search_paths;
-    while (*ptr) {
-        // generate path based on the current search path
-        char *absolute_import_path = _construct_import_path(NULL, *ptr, fqmn);
-
-        if (absolute_import_path && is_file(absolute_import_path)) {
-
-            // Do import
-            t_vm_context *context = vm_context_new(fqmn, absolute_import_path);
-
-            smm_free(absolute_import_path);
-            return context;
-        }
-
-        if (absolute_import_path) {
-            smm_free(absolute_import_path);
-        }
-
-        // Check next path
-        ptr++;
+    // Find source file
+    real_final_path = _construct_import_path_with_extension(context, root_path, module_path, "sf");
+    if (real_final_path) {
+        *extension_type = module_type_source;
+        return real_final_path;
     }
 
-    // Nothing found
+    // Find bytecode file
+    real_final_path = _construct_import_path_with_extension(context, root_path, module_path, "sfc");
+    if (real_final_path) {
+        *extension_type = module_type_bytecode;
+        return real_final_path;
+    }
+
+    // Find extension shared object
+    real_final_path = _construct_import_path_with_extension(context, root_path, module_path, "so");
+    if (real_final_path) {
+        *extension_type = module_type_shared_object;
+        return real_final_path;
+    }
+
     return NULL;
 }
 
@@ -263,7 +244,7 @@ static t_vm_codeblock *_create_import_codeblock(t_vm_context *ctx) {
 }
 
 
-static t_vm_stackframe *_resolve_module(t_vm_context *ctx) {
+static t_vm_stackframe *_load_module_from_context(t_vm_context *ctx) {
     t_vm_codeblock *codeblock = _create_import_codeblock(ctx);
 
     // Save original excption, if any, and clear exceptions so we can do import on the thread
@@ -307,12 +288,105 @@ static t_object *_resolve_class_from_module(char *fqcn, t_vm_module_mapping *mod
     return obj;
 }
 
+t_vm_stackframe *_load_module_from_sharedobject(char *fqmn, char *path) {
+    t_vm_stackframe *frame = vm_create_empty_stackframe();
+
+    // Load the objects from this module inside this frame
+    register_external_module(path, frame);
+
+    return frame;
+}
+
+
+t_vm_stackframe *_load_module_from_bytecode(char *fqmn, char *path) {
+    fatal_error(1, "Cannot load saffire bytecode yet as module");
+    return NULL;
+}
+
+t_vm_stackframe *_load_module_from_source(char *fqmn, char *path) {
+    // Create a context in which the module will be run
+    t_vm_context *ctx = vm_context_new(fqmn, path);
+    if (!ctx) {
+        smm_free(fqmn);
+        return NULL;
+    }
+
+    // Resolve the module
+    t_vm_stackframe *module_frame = _load_module_from_context(ctx);
+    vm_context_free_context(ctx);
+
+    return module_frame;
+}
+
+
+static t_vm_stackframe *_create_module_frame_from_fqmn(char *root_path, char *module_path) {
+    t_vm_stackframe *module_frame = NULL;
+    int detected_extension_type = 0;
+
+
+    char *fqmn = "::foo::bar";
+
+    // Construct actual path by
+    char *absolute_import_path = _construct_import_path(NULL, root_path, module_path, &detected_extension_type);
+
+    // Found a real file?
+    if (absolute_import_path && is_file(absolute_import_path)) {
+        //printf("* Loading absolute path: '%s'\n", absolute_import_path);
+        switch (detected_extension_type) {
+            case module_type_source:
+                // Saffire source
+                module_frame = _load_module_from_source(fqmn, absolute_import_path);
+                break;
+            case module_type_bytecode :
+                // Saffire bytecode
+                module_frame = _load_module_from_bytecode(fqmn, absolute_import_path);
+                break;
+            case module_type_shared_object :
+                // Saffire shared object
+                module_frame = _load_module_from_sharedobject(fqmn, absolute_import_path);
+                break;
+        }
+
+        // Free file path
+        if (absolute_import_path) {
+            smm_free(absolute_import_path);
+        }
+        return module_frame;
+    }
+
+    // Free file path
+    if (absolute_import_path) {
+        smm_free(absolute_import_path);
+    }
+    return NULL;
+}
+
+static t_vm_stackframe *_create_module_frame_from_module_path(char *module_path) {
+    t_vm_stackframe *module_frame;
+
+    // Iterate all module search paths
+    char **root_path = (char **)&module_search_paths;
+    while (*root_path) {
+        //printf("  * Checking for modules on search path: %s\n", *root_path);
+
+        // Check path based on the available search paths
+        module_frame = _create_module_frame_from_fqmn(*root_path, module_path);
+        if (module_frame) return module_frame;
+
+        // Check next path
+        root_path++;
+    }
+
+    // Nothing found
+    return NULL;
+}
+
+
 
 t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
-    // Find the actual class in the class_mapping
+    //printf("CLASS_RESOLVE: '%s'\n", fqcn);
 
-
-    // Check if this one is registered in the builtins
+    // Check if the FQCN is registered in the built-ins
     t_object *builtin_obj = ht_find_str(frame->builtin_identifiers->data.ht, fqcn);
     if (builtin_obj) {
         if (builtin_obj == OBJECT_NEEDS_RESOLVING) {
@@ -321,38 +395,31 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
         return builtin_obj;
     }
 
-    // Check if we already imported the class
+    // Check if we already imported the module which contains this class
     t_vm_class_mapping *class_map = ht_find_str(global_class_mapping, fqcn);
     if (! class_map) {
         // No class map found. Add class map entry.
 
-
         // Find module mapping
-        char *fqmn = vm_context_get_path(fqcn);
-        t_vm_module_mapping *module_map = ht_find_str(global_module_mapping, fqmn);
+        char *module_path = vm_context_get_path(fqcn);
+        t_vm_module_mapping *module_map = ht_find_str(global_module_mapping, module_path);
 
         if (! module_map) {
-            // no module mapping found. Create one
-            t_vm_context *ctx = _vm_create_context_from_fqmn(fqmn);
-            if (!ctx) {
-                smm_free(fqmn);
-                return NULL;
-            }
-            t_vm_stackframe *module_frame = _resolve_module(ctx);
-            vm_context_free_context(ctx);
+            t_vm_stackframe *module_frame = _create_module_frame_from_module_path(module_path);
 
             if (! module_frame) {
                 // Cannot resolve module from context
-                //@ TODO: Throw exception here
-                smm_free(fqmn);
+                object_raise_exception(Object_ImportException, 1, "Cannot resolve module %s", module_path);
+
+                smm_free(module_path);
                 return NULL;
             }
 
             module_map = smm_malloc(sizeof(t_vm_module_mapping));
             module_map->frame = module_frame;
-            ht_add_str(global_module_mapping, fqmn, module_map);
+            ht_add_str(global_module_mapping, module_path, module_map);
         }
-        smm_free(fqmn);
+        smm_free(module_path);
 
         // We are sure we have a module_map now
         class_map = smm_malloc(sizeof(t_vm_class_mapping));
@@ -364,7 +431,8 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
 
     // Object not resolved yet, resolve it first
     if (! class_map->object) {
-        t_object *obj = _resolve_class_from_module(fqcn, class_map->module);
+        char *class_name = vm_context_get_class(fqcn);
+        t_object *obj = _resolve_class_from_module(class_name, class_map->module);
         class_map->object = obj;
         object_inc_ref(obj);
     }
@@ -375,7 +443,7 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
 t_object *vm_class_resolve(t_vm_stackframe *frame, char *qcn) {
     t_object *obj;
 
-    // Check FQCN
+    // Try and resolve complete FQCN
     char *fqcn = vm_context_fqcn(frame->codeblock->context, qcn);
     obj = _class_resolve(frame, fqcn);
     smm_free(fqcn);
