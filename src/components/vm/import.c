@@ -408,9 +408,7 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
             t_vm_stackframe *module_frame = _create_module_frame_from_module_path(module_path);
 
             if (! module_frame) {
-                // Cannot resolve module from context
-                object_raise_exception(Object_ImportException, 1, "Cannot resolve module %s", module_path);
-
+                // Cannot resolve module from context.
                 smm_free(module_path);
                 return NULL;
             }
@@ -431,8 +429,17 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
 
     // Object not resolved yet, resolve it first
     if (! class_map->object) {
-        char *class_name = vm_context_get_class(fqcn);
-        t_object *obj = _resolve_class_from_module(class_name, class_map->module);
+        char *class_name = NULL;
+
+        // Check fully qualified class name first
+        t_object *obj = _resolve_class_from_module(fqcn, class_map->module);
+        if (! obj) {
+            // check direct class name (@TODO: Why is this happening? In order to make sure they get loaded directly from new frames, so it seems)
+            class_name = vm_context_get_class(fqcn);
+            obj = _resolve_class_from_module(class_name, class_map->module);
+            smm_free(class_name);
+        }
+
         class_map->object = obj;
         object_inc_ref(obj);
     }
@@ -443,7 +450,7 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
 t_object *vm_class_resolve(t_vm_stackframe *frame, char *qcn) {
     t_object *obj;
 
-    // Try and resolve complete FQCN
+    // Try and resolve a complete FQCN
     char *fqcn = vm_context_fqcn(frame->codeblock->context, qcn);
     obj = _class_resolve(frame, fqcn);
     smm_free(fqcn);
@@ -468,5 +475,6 @@ t_object *vm_class_resolve(t_vm_stackframe *frame, char *qcn) {
     }
 
     // Nothing more to search
+    object_raise_exception(Object_ImportException, 1, "Cannot resolve module %s", qcn);
     return NULL;
 }

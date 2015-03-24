@@ -305,15 +305,13 @@ SAFFIRE_METHOD(string, splice) {
 
     // Sanity check
     if (max < min) {
-        object_raise_exception(Object_SystemException, 1, "max < min!");
+        object_raise_exception(Object_SystemException, 1, "start of a subscription must be less or equal than its end");
         return NULL;
     }
 
     long new_size = (max - min) + 1;
-
     if (new_size == 0) {
-        object_raise_exception(Object_SystemException, 1, "lenght == 0");
-        return NULL;
+        RETURN_STRING_FROM_CHAR("");
     }
 
 

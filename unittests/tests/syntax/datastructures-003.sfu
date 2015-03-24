@@ -30,7 +30,7 @@ barbaz
 import io;
 io.print("foobarbaz"[10..3]);
 ~~~~
-max < min!
+start of a subscription must be less or equal than its end
 @@@@
 import io;
 io.print("foobarbaz"[..5]);

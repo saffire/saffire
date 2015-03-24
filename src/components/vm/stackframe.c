@@ -194,8 +194,10 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
 /**
  * Store object into the local identifier table
  */
-void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object *new_obj) {
+void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *class, t_object *new_obj) {
+    char *fqcn = vm_context_fqcn(frame->codeblock->context, class);
     t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, new_obj);
+    smm_free(fqcn);
 
     // Increase object before decreasing old object. Otherwise, the object might expire
     // in the mean time when the object has ref-count 1 and old_obj == new_obj.
@@ -209,13 +211,17 @@ void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *fqcn, t_object 
 
 }
 
-void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *fqcn, char *target_fqcn) {
+void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *class, char *target_fqcn) {
+    char *fqcn = vm_context_fqcn(frame->codeblock->context, class);
+
     // Store alias id under the FQCN id, and store that we still need to resolve the object
     vm_frame_set_local_identifier(frame, fqcn, OBJECT_NEEDS_RESOLVING);
 
     // Add to the alias table so we know that  alias -> ::some::module::class
     char *val = string_strdup0(target_fqcn);
     ht_add_str(frame->object_aliases, fqcn, val);
+
+    smm_free(fqcn);
 }
 
 void vm_frame_set_builtin_identifier(t_vm_stackframe *frame, char *uqcn, t_object *obj) {
@@ -260,16 +266,20 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
 #ifdef __DEBUG
     ht_debug_keys(frame->object_aliases);
+    ht_debug_keys(frame->local_identifiers->data.ht);
+    ht_debug_keys(frame->global_identifiers->data.ht);
+    ht_debug_keys(frame->builtin_identifiers->data.ht);
 #endif
 
-    char *alias_fqcn = ht_find_str(frame->object_aliases, fqcn);
-    if (! alias_fqcn) {
+
+    char *alias_qcn = ht_find_str(frame->object_aliases, fqcn);
+    if (! alias_qcn) {
         // We need to resolve, but we don't know what.. Should not happen
-        fatal_error(1, "Cannot find alias FQCN '%s'\n", fqcn);
+        fatal_error(1, "Cannot find alias for '%s'\n", fqcn);
     }
 
     // Resolve and update the local identifiers
-    t_object *obj = vm_class_resolve(frame, alias_fqcn);
+    t_object *obj = vm_class_resolve(frame, alias_qcn);
     return obj;
 }
 
@@ -298,7 +308,6 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
         }
     }
     if (obj) {
-
         smm_free(fqcn);
         return obj;
     }
