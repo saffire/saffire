@@ -38,6 +38,7 @@
 #include <saffire/compiler/ast_to_asm.h>
 #include <saffire/vm/vm.h>
 #include "../compiler/parser.tab.h"
+#include <saffire/compiler/lexx_defines.h>
 
 const char *repl_logo = "   _____        ,__  ,__                \n"
                         "  (        ___  /  ` /  ` ` .___    ___ \n"

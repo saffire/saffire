@@ -40,6 +40,7 @@
     #include <saffire/vm/context.h>
     #include <saffire/compiler/saffire_parser.h>
     #include "parser.tab.h"
+    #include <saffire/compiler/lexx_defines.h>
 
     // Push and pop for parser states
     void saffire_push_state(int state);
@@ -57,8 +58,6 @@
 
     // Defined so we can access yytoknum, but we don't need to print anything
     #define YYPRINT(yyoutput, char, yyvaluep)
-
-//    extern int yylex(union YYSTYPE * yylval, YYLTYPE *yylloc, yyscan_t scanner);
 
     int yyerror(YYLTYPE *, yyscan_t scanner, SaffireParser *, const char *);
 

@@ -32,6 +32,7 @@
 #include <saffire/repl/repl.h>
 #include <saffire/compiler/saffire_parser.h>
 #include "../compiler/parser.tab.h"
+#include <saffire/compiler/lexx_defines.h>
 
 // Maximum size of the prompt that will be displayed
 #define MAX_PROMPT_SIZE 100

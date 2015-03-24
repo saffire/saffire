@@ -37,6 +37,7 @@
 #include <saffire/vm/context.h>
 #include <saffire/debug.h>
 #include "parser.tab.h"
+#include <saffire/compiler/lexx_defines.h>
 
 /**
  * Allocate a new element (untyped) ast_node element
