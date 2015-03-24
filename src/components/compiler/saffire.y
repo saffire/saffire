@@ -369,17 +369,17 @@ conditional_and_expression:
 
 inclusive_or_expression:
         exclusive_or_expression { $$ = $1; }
-    |   inclusive_or_expression '|' exclusive_or_expression { $$ = ast_node_opr(@1.first_line, '|', 2, $1, $3);}
+    |   inclusive_or_expression '|' exclusive_or_expression { $$ = ast_node_operator(@2.first_line, '|', $1, $3);}
 ;
 
 exclusive_or_expression:
         and_expression { $$ = $1; }
-    |   exclusive_or_expression '^' and_expression { $$ = ast_node_opr(@1.first_line, '^', 2, $1, $3); }
+    |   exclusive_or_expression '^' and_expression { $$ = ast_node_operator(@2.first_line, '^', $1, $3); }
 ;
 
 and_expression:
         equality_expression { $$ = $1; }
-    |   and_expression '&' equality_expression { $$ = ast_node_opr(@1.first_line, '&', 2, $1, $3); }
+    |   and_expression '&' equality_expression { $$ = ast_node_operator(@2.first_line, '&', $1, $3); }
 ;
 
 equality_expression:
