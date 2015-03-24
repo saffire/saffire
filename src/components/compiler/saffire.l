@@ -154,7 +154,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|]    { do_yylloc; saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|\&]    { do_yylloc; saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */

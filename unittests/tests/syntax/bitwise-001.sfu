@@ -1,0 +1,24 @@
+title: bitwise tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+a = 1 + 2;
+io.println(a);
+a = 3 - 4;
+io.println(a);
+a = 3 & 4;
+io.println(a);
+a = 3 ^ 4;
+io.println(a);
+a = 3 | 4;
+io.println(a);
+io.println(1 ^ 8);
+
+====
+3
+-1
+0
+7
+7
+9
