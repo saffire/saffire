@@ -1198,11 +1198,8 @@ dispatch:
                     char *target_pqcn = NULL;
                     vm_context_create_fqcn(module_name, class_name, &target_pqcn);
 
-                    char *alias_fqcn = vm_context_fqcn(frame->codeblock->context, alias_name);
+                    vm_frame_set_alias_identifier(frame, alias_name, target_pqcn);
 
-                    vm_frame_set_alias_identifier(frame, alias_fqcn, target_pqcn);
-
-                    smm_free(alias_fqcn);
                     smm_free(target_pqcn);
 
                     smm_free(module_name);
@@ -2155,9 +2152,7 @@ void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
     //  Import mandatory saffire object (make '::saffire::saffire' known as "saffire" in the current namespace)
-    char *fqcn = vm_context_fqcn(frame->codeblock->context, "saffire");
-    vm_frame_set_alias_identifier(frame, fqcn, "::saffire::saffire");
-    smm_free(fqcn);
+    vm_frame_set_alias_identifier(frame, "saffire", "::saffire::saffire");
 
     // Back to normal runmode again
     vm_runmode = runmode;
@@ -2200,18 +2195,18 @@ int vm_execute(t_vm_stackframe *frame) {
 #endif
 
             // handle exceptions
-            t_object *saffire_obj = vm_frame_find_identifier(frame, "::saffire");  // THis is an alias to ::saffire::saffire
-            if (saffire_obj) {
-                t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
-
-                if (!exceptionhandler_obj) {
-                    // @TODO: Uh-oh. uncaughtExceptionHandler method not found :(
-                }
-                // We assume that finding our exception handler always work
-                result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
-            } else {
-                // @TODO: Uh-oh.. saffire wasn't found :(
+            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");  // This is an alias to ::saffire::saffire
+            if (! saffire_obj) {
+                fatal_error(1, "The ::saffire module was not found");
             }
+
+            t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
+            if (!exceptionhandler_obj) {
+                // Uh-oh. uncaughtExceptionHandler method not found :(
+                fatal_error(1, "The saffire.uncaughtExceptionHandler() method was not found");
+            }
+            // We assume that finding our exception handler always work
+            result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
             if (result == NULL) {
                 result = object_alloc_instance(Object_Numerical, 1, 0);
             }
