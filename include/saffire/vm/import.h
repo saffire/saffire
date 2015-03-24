@@ -34,6 +34,13 @@
     // Returned when the object is known, but still needs resolving
     #define OBJECT_NEEDS_RESOLVING ((t_object *)-1)
 
+
+    enum {
+        module_type_source,
+        module_type_bytecode,
+        module_type_shared_object
+    };
+
     //int vm_register_namespace(t_vm_codeblock *codeblock, char *class_path, char *class_name);
     t_object *vm_class_resolve(t_vm_stackframe *frame, char *fqcn);
 

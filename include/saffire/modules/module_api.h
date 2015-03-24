@@ -28,6 +28,7 @@
 #define __MODULE_H__
 
     #include <saffire/objects/object.h>
+    #include <saffire/vm/stackframe.h>
 
     t_dll *registered_modules;
 
@@ -51,6 +52,7 @@
     // All loaded modules
     t_dll *modules;
 
+    void register_external_module(char *path, t_vm_stackframe *frame);
     int register_module(t_module *ext, const char *path);
     int unregister_module(t_module *ext);
 

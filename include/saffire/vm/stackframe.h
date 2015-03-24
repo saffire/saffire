@@ -35,6 +35,7 @@
     #include <saffire/vm/context.h>
 
 
+    t_vm_stackframe *vm_create_empty_stackframe(void);
     t_vm_stackframe *vm_stackframe_new_scoped(t_vm_stackframe *scope_frame, t_vm_stackframe *parent_frame, t_vm_context *context, t_bytecode *bytecode);
     t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock);
     void vm_stackframe_destroy(t_vm_stackframe *frame);

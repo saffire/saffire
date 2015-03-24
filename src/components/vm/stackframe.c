@@ -526,3 +526,22 @@ void vm_frame_stack_debug(t_vm_stackframe *frame) {
     DEBUG_PRINT_CHAR("\n");
 }
 #endif
+
+
+t_vm_stackframe *vm_create_empty_stackframe(void) {
+    t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));
+    bytecode->stack_size = 42;
+    bytecode->code_len = 0;
+    bytecode->code = NULL;
+    bytecode->constants_len = 0;
+    bytecode->constants = NULL;
+    bytecode->identifiers_len = 0;
+    bytecode->identifiers = NULL;
+    bytecode->lino_offset = 0;
+    bytecode->lino_length = 0;
+    bytecode->lino = NULL;
+
+    t_vm_context *ctx = vm_context_new("", "");
+    t_vm_codeblock *codeblock = vm_codeblock_new(bytecode, ctx);
+    return vm_stackframe_new(NULL, codeblock);
+}
