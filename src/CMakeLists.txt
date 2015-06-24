@@ -18,7 +18,7 @@ include_directories(${saffire_SOURCE_DIR}/include)
 find_package(PkgConfig REQUIRED)
 
 # ICU
-find_package(ICU 4.4 REQUIRED)
+find_package(ICU 4.2 REQUIRED)
 include_directories(${ICU_INCLUDE_DIRS})
 list(APPEND 3rdparty_libs ${ICU_LIBRARIES})
 
