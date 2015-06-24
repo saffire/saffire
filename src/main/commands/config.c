@@ -43,6 +43,8 @@ static const char *default_ini[] = {
     "# Values for log.level: debug, notice, warning, error",
     "log.level = debug",
     "",
+    "saffire.command.path = /usr/lib/saffire/commands"
+    "",
     "",
     "[gpg]",
     "# Path to the GPG application",

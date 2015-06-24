@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <saffire/general/output.h>
 #include <saffire/general/parse_options.h>
@@ -34,6 +35,8 @@
 #include <saffire/general/smm.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/general/config.h>
+
+char DEFAULT_EXTERNAL_COMMAND_PATH[] = "/usr/lib/saffire/commands";
 
 /*
  * Info structures for the Saffire commands
@@ -155,7 +158,7 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
         action++;
     }
 
-    // Nothing was found. Display help if available.
+    // Not even an external command was found. Display help if available.
     if (cmd->info->help) {
         output_char("%s", cmd->info->help);
         output_char("\n");
@@ -258,6 +261,22 @@ int main(int argc, char *argv[]) {
             exit(_exec_command(p, argc, argv));
         }
         p++;
+    }
+
+
+    // Nothing was found, try external commands
+    char *path = config_get_string("global.saffire.command.path", DEFAULT_EXTERNAL_COMMAND_PATH);
+
+    char *fullpath;
+    smm_asprintf_char(&fullpath, "%s/saffire-%s", path, command);
+
+    if( access(fullpath, F_OK) != -1 ) {
+        char *environ[] = { NULL };
+        execve(fullpath, argv, environ);
+
+        output_char("execve() errored on %s\n", fullpath);
+        smm_free(fullpath);
+        return 1;
     }
 
 

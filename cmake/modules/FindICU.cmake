@@ -30,8 +30,8 @@
 #     set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 #   3. Finally call find_package() once, here are some examples to pick from
 #
-#   Require ICU 4.4 or later
-#     find_package(ICU 4.4 REQUIRED)
+#   Require ICU 4.2 or later
+#     find_package(ICU 4.2 REQUIRED)
 #
 #   if(ICU_FOUND)
 #      include_directories(${ICU_INCLUDE_DIRS})
