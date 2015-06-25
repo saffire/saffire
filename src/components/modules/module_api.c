@@ -136,6 +136,7 @@ void module_init(void) {
     register_module(&module_io, core_path);
     register_module(&module_math, core_path);
     register_module(&module_file, core_path);
+    register_module(&module_os, core_path);
 }
 
 /**

@@ -7,6 +7,7 @@ set(sources
     module_api.c
     io.c
     saffire.c
+    standard/os.c
     standard/math.c
     standard/file.c
     sapi/fastcgi.c)

@@ -24,17 +24,55 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MODULE_MODULES_H__
-#define __MODULE_MODULES_H__
-
-    #include <saffire/modules/saffire.h>
-    #include <saffire/modules/io.h>
-
-    #include <saffire/modules/standard/math.h>
-    #include <saffire/modules/standard/file.h>
-
-    #include <saffire/modules/standard/os.h>
-
-    #include <saffire/modules/sapi/fastcgi.h>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#ifdef __LINUX__
+#include <linux/limits.h>
+#else
+#include <limits.h>
 #endif
+#include <saffire/modules/module_api.h>
+#include <saffire/objects/object.h>
+#include <saffire/objects/objects.h>
+#include <saffire/general/dll.h>
+#include <saffire/general/smm.h>
+#include <saffire/vm/vm.h>
+
+/**
+ *
+ */
+SAFFIRE_MODULE_METHOD(os, cwd) {
+    char *path = smm_malloc(PATH_MAX);
+    t_string_object *str_obj = (t_string_object *)STR02OBJ(path);
+    smm_free(path);
+
+    RETURN_OBJECT(str_obj);
+}
+
+
+t_object os_struct       = { OBJECT_HEAD_INIT("os", objectTypeBase, OBJECT_TYPE_CLASS, NULL, 0), OBJECT_FOOTER };
+
+static void _init(void) {
+    os_struct.attributes = ht_create();
+    object_add_internal_method((t_object *)&os_struct, "cwd",  ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_os_method_cwd);
+}
+
+static void _fini(void) {
+    object_free_internal_object(&os_struct);
+}
+
+
+static t_object *_objects[] = {
+    &os_struct,
+    NULL
+};
+
+t_module module_os = {
+    "::saffire::os",
+    "OS module",
+    _objects,
+    _init,
+    _fini,
+};
