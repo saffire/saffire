@@ -102,9 +102,11 @@ static void _object_free(t_object *obj) {
     if (obj->ref_count > 0) return;
 
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
         DEBUG_PRINT_CHAR("Freeing object: %p\n", obj);
     }
+#endif
 #endif
 
     // Free attributes

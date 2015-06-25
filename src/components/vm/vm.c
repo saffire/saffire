@@ -496,8 +496,10 @@ void vm_fini(void) {
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     DEBUG_PRINT_CHAR("\n\n\n--- CURRENT builtins\n");
     ht_debug(builtin_identifiers->data.ht);
+#endif
 #endif
 
     thread_free(current_thread);
@@ -507,7 +509,9 @@ void vm_fini(void) {
     ht_iter_init(&iter, builtin_identifiers->data.ht);
     while (ht_iter_valid(&iter)) {
         t_object *val = ht_iter_value(&iter);
+#if __DEBUG_FREE_OBJECT
         DEBUG_PRINT_CHAR("\n\n\nBUILTIN DECREASE reference: %08X from %d %s\n", (intptr_t)val, val->ref_count, object_debug(val));
+#endif
         object_release(val);
         ht_iter_next(&iter);
     }
@@ -517,6 +521,7 @@ void vm_fini(void) {
     object_fini();
 
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     // We really can't show anything here, since objects should have been gone now. Expect failures
     DEBUG_PRINT_CHAR("At object_fini(), we still have %ld objects left on the stack\n", refcount_objects->element_count);
     ht_iter_init(&iter, refcount_objects);
@@ -525,11 +530,14 @@ void vm_fini(void) {
         t_object *addr = (t_object *)key->val.p;
         long refcount = (long) ht_iter_value(&iter);
         if (refcount != 0) {
+#if __DEBUG_REFCOUNT
             DEBUG_PRINT_CHAR("REFCOUNT %08X => %ld %s\n", (intptr_t)addr, refcount, object_debug((t_object *)addr));
+#endif
         }
         ht_iter_next(&iter);
     }
     ht_destroy(refcount_objects);
+#endif
 #endif
 
 
