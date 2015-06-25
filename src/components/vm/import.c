@@ -323,8 +323,8 @@ static t_vm_stackframe *_create_module_frame_from_fqmn(char *root_path, char *mo
     t_vm_stackframe *module_frame = NULL;
     int detected_extension_type = 0;
 
-
-    char *fqmn = "::foo::bar";
+//    char *fqmn = "::foo::bar";
+    char *fqmn = module_path;
 
     // Construct actual path by
     char *absolute_import_path = _construct_import_path(NULL, root_path, module_path, &detected_extension_type);
