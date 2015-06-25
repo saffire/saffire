@@ -536,6 +536,7 @@ calling_method_argument_list:
 
 datastructure:
         '[' '[' ds_elements ']' ']'                          { $$ = ast_node_group(1, $3); }
+    |   '[' '[' ds_elements ',' ']' ']'                          { $$ = ast_node_group(1, $3); }
     |   '[' '[' /* empty */ ']' ']'                          { $$ = ast_node_group(0); }
 ;
 
