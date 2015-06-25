@@ -2178,7 +2178,7 @@ int vm_execute(t_vm_stackframe *frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "============================ EXCEPTION OCCURED. ============================\n\n\n" ANSI_RESET);
     }
     #if __DEBUG_STACKFRAME_DESTROY
-        DEBUG_PRINT_CHAR("----- [END FRAME: %s (%08X)] ----\n", frame->codeblock->context->module.full, (unsigned int)frame);
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s (%08X)] ----\n", frame->codeblock->context->module.full, (uintptr_t)frame);
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
         if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
