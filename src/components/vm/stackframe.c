@@ -87,7 +87,7 @@ t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
  */
 t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
 #if __DEBUG_STACK
-    DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08X '%s'{%d}\n" ANSI_RESET, frame->sp, (uintptr_t)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]), (t_object *)(frame->stack[frame->sp])->ref_count);
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08X '%s'{%d}\n" ANSI_RESET, frame->sp, (uintptr_t)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]), ((t_object *)(frame->stack[frame->sp]))->ref_count);
 #endif
 
     if (frame->sp >= frame->codeblock->bytecode->stack_size) {

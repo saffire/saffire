@@ -151,7 +151,7 @@
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
-        int ref_count;                  /* Reference count. When 0, it is targeted for garbage collection */ \
+        long ref_count;                  /* Reference count. When 0, it is targeted for garbage collection */ \
         \
         t_objectype_enum type;          /* Type of the (scalar) object */ \
         char *name;                     /* Name of the class */ \
