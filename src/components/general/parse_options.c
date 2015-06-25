@@ -195,28 +195,26 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     // We can "shrink" the argument count, since there are no open slots in between.
     argc = open_slot;
 
-
-    if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        *error = string_strdup0("Not enough arguments found");
+    if (argc == 0 && strlen(signature) > 0 && (signature[0] != '|' || signature[0] != '*')) {
+        *error = string_strdup0("Not enough arguments found 1");
         return 0;
     }
 
     // Start with optional items
     if (signature[0] == '|') optional = 1;
 
-    int wildcard = 0;
+    int wildcard = (signature[strlen(signature)-1] == '*');
 
     // Process each character in the signature
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
-        if (argp >= argc && ! optional) {
+        if (argp >= argc && ! optional && ! wildcard) {
             *error = string_strdup0("Not enough arguments found");
             return 0;
         }
 
         switch (signature[idx]) {
             case '*' :
-                wildcard = 1;
                 break;
             case '|' :
                 // Use the same argument for next signature char.
