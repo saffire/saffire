@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <saffire/general/output.h>
 #include <saffire/modules/module_api.h>
+#include <saffire/general/parse_options.h>
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
@@ -90,6 +91,29 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
     } else {
         RETURN_FALSE;
     }
+}
+
+SAFFIRE_MODULE_METHOD(saffire, args) {
+    t_numerical_object *num_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|n", &num_obj)) {
+        RETURN_SELF;
+    }
+
+    if (num_obj == NULL) {
+        t_hash_table *ht = ht_create();
+
+        for (int idx=0; idx!=saffire_getopt_count(); idx++) {
+            ht_add_num(ht, ht->element_count, STR02OBJ(saffire_getopt_string(idx)));
+        }
+        RETURN_LIST(ht);
+    }
+
+    int idx = OBJ2NUM(num_obj);
+    if (idx >= saffire_getopt_count() || idx < 0) {
+        RETURN_NULL;
+    }
+    RETURN_STRING_FROM_CHAR(saffire_getopt_string(idx));
 }
 
 
@@ -182,6 +206,8 @@ static void _init(void) {
     object_add_internal_method((t_object *)&saffire_struct, "set_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_set_locale);
     object_add_internal_method((t_object *)&saffire_struct, "get_locale",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_get_locale);
     object_add_internal_method((t_object *)&saffire_struct, "uncaughtExceptionHandler",   ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_exception_handler);
+
+    object_add_internal_method((t_object *)&saffire_struct, "args",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_args);
 
     object_add_internal_method((t_object *)&saffire_struct, "modules",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_saffire_method_modules);
 

@@ -150,7 +150,7 @@ static struct saffire_option exec_options[] = {
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_exec, exec_options },
+    { "", "s*", do_exec, exec_options },
     { 0, 0, 0, 0 }
 };
 
