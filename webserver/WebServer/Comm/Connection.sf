@@ -1,0 +1,42 @@
+class Connection {
+    public method __ctor(Socket s)
+    {
+        self.socket = s;
+    }
+
+    public method close()
+    {
+        self.socket.close(conn)
+    }
+
+    public method write(string s)
+    {
+        io.print "I> ", s;
+        self.socket.write(s);
+    }
+
+    public method readLine()
+    {
+        s = "";
+        do {
+            c = self.socket.read(1);
+            s += c;
+        } while (c != '\n');
+
+        s = s.rtrim(s);
+        io.print("O> ", s, "\n");
+
+        return s;
+    }
+
+    public method getHost()
+    {
+        return self.socket.host;
+    }
+
+    public method getPort()
+    {
+        return self.socket.port;
+    }
+
+}

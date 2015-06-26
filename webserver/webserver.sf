@@ -1,0 +1,11 @@
+import WebServer;
+import io;
+
+host = saffire.args(1) ?? "127.0.0.1";
+port = saffire.args(2) ?? 4000;
+docroot = saffire.args(3) ?? "docroot";
+index = saffire.args(4) ?? "index.html";
+
+ws = WebServer(host, port, docroot, index);
+ws.run();
+

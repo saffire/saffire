@@ -1,0 +1,36 @@
+import Http from Protocol;
+import Socket from Comm;
+import os;
+
+class WebServer {
+    public method __ctor(host = "127.0.0.1", port = 4000, doc_root = "docroot", index_file = "index.html") {
+        if (doc_root[0] != '/') {
+            doc_root = os.cwd() + '/' + doc_root;
+        }
+
+        self.config = hash[[
+            'host' : host,
+            'port' : port,
+            'doc_root' : doc_root,
+            'index_file' : index_file,
+        ]];
+
+        self.processor = Http(self.config);
+    }
+
+    public method run()
+    {
+        socket = Socket(self.config['host'], self.config['port']);
+
+        io.print("> Serving Saffire on ", self.config['host'], ":", self.config['port'], ".\n");
+        io.print("> Press CTRL-C to quit.\n");
+
+
+        while (true) {
+            connection = socket.listen();
+            self.processor.handle(connection);
+
+            connection.close();
+        }
+    }
+}

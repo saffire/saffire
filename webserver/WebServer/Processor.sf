@@ -1,0 +1,5 @@
+use Comm\Connection;
+
+interface Processor {
+    public method handle(Connection connection);
+}

@@ -1,0 +1,25 @@
+class Kernel {
+    protected property config;
+
+    public method setConfiguration(hash config)
+    {
+        self.config = config;
+    }
+
+    public method process(Request request)
+    {
+        io.print("PATH: ", request.getPath(), "\n");
+
+        target = os.realpath(self.config['doc_root'] . request.getPath());
+        if (target.strpos(self.config['doc_root'] != 0)) {
+            return Response(ResponseCode::STATUS_NOT_FOUND);
+        }
+
+        response = Response(ResponseCode::STATUS_OK);
+        response.setBody(file(target).getContents());
+
+        response.headers['Content-Type'] = 'text/html';
+
+        return response;
+    }
+}
