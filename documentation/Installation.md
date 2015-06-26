@@ -43,7 +43,7 @@ Plus, you will need to following libraries and header files:
 - libfcgi
 - libbz2
 - libpcre3
-- libcunit11
+- libcunit1
 - libicu
 - libpthreads
 
@@ -51,7 +51,7 @@ Plus, you will need to following libraries and header files:
 To install these packages on Ubuntu or Debian, please use the following commands:
 
     sudo apt-get install flex bison gcc pkg-config cmake build-essentials
-    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libpcre3-dev libicu-dev
+    sudo apt-get install libedit-dev libfcgi-dev libbz2-dev libpcre3-dev libicu-dev libcunit1-dev
 
 On RedHat/CentOS systems, the library development packages are probably ends with -devel.
 
