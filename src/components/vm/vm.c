@@ -1186,28 +1186,19 @@ dispatch:
                     // Fetch alias
                     t_object *alias_obj = vm_frame_stack_pop(frame);
                     char *alias_name = string_to_char(OBJ2STR(alias_obj));
-                    printf("Import alias: %s\n", alias_name);
 
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame);
                     char *module_name = string_to_char(OBJ2STR(module_obj));
-                    printf("Import module: %s\n", module_name);
 
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
                     char *class_name = string_to_char(OBJ2STR(class_obj));
-//                    char *class_name = vm_context_get_classname_from_fqcn(tmp);
-                    printf("Import class: %s\n", class_name);
-                    //smm_free(tmp);
 
                     char *target_name = vm_context_create_fqcn_from_name(module_name, class_name);
 
                     smm_free(module_name);
                     smm_free(class_name);
-
-                    printf("Total: Import alias: %s\n", alias_name);
-                    printf("Total: Import module: %s\n", target_name);
-                    printf("\n");
 
                     object_release(module_obj);
                     object_release(class_obj);

@@ -163,11 +163,8 @@ static char *_construct_import_path_with_extension(char *root_path, char *module
 static char *_construct_import_path(char *root_path, char *module_path, int *extension_type) {
     char *real_final_path;
 
-    printf("Constructing path: %s %s\n", root_path, module_path);
-
     // Find source file
     real_final_path = _construct_import_path_with_extension(root_path, module_path, "sf");
-    printf("* Final path: %s\n", real_final_path);
     if (real_final_path) {
         *extension_type = module_type_source;
         return real_final_path;
@@ -175,7 +172,6 @@ static char *_construct_import_path(char *root_path, char *module_path, int *ext
 
     // Find bytecode file
     real_final_path = _construct_import_path_with_extension(root_path, module_path, "sfc");
-    printf("* Final path: %s\n", real_final_path);
     if (real_final_path) {
         *extension_type = module_type_bytecode;
         return real_final_path;
@@ -183,7 +179,6 @@ static char *_construct_import_path(char *root_path, char *module_path, int *ext
 
     // Find extension shared object
     real_final_path = _construct_import_path_with_extension(root_path, module_path, "so");
-    printf("* Final path: %s\n", real_final_path);
     if (real_final_path) {
         *extension_type = module_type_shared_object;
         return real_final_path;
@@ -342,8 +337,6 @@ static t_vm_stackframe *_create_module_frame_from_module_path(char *module_path)
 
 
 t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
-    printf("CLASS_RESOLVE: '%s'\n", fqcn);
-
     // Check if the FQCN is registered in the built-ins
     t_object *builtin_obj = ht_find_str(frame->builtin_identifiers->data.ht, fqcn);
     if (builtin_obj) {
@@ -388,21 +381,6 @@ t_object *_class_resolve(t_vm_stackframe *frame, char *fqcn) {
     // Object not resolved yet, resolve it first
     if (! class_map->object) {
         char *class_name = NULL;
-
-        printf("Looking for FQCN: %s\n", fqcn);
-
-    #ifdef __DEBUG
-        DEBUG_PRINT_CHAR("* Aliases:\n");
-        ht_debug_keys(class_map->module->frame->object_aliases);
-        DEBUG_PRINT_CHAR("* Locals:\n");
-        ht_debug_keys(class_map->module->frame->local_identifiers->data.ht);
-        DEBUG_PRINT_CHAR("* Globals:\n");
-        ht_debug_keys(class_map->module->frame->global_identifiers->data.ht);
-        DEBUG_PRINT_CHAR("* Builtins:\n");
-        ht_debug_keys(class_map->module->frame->builtin_identifiers->data.ht);
-    #endif
-
-
 
         // Check fully qualified class name first
         t_object *obj = vm_frame_identifier_exists(class_map->module->frame, fqcn);
