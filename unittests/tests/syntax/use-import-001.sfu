@@ -2,13 +2,13 @@ title: Use and import tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io from io;
+import io;
 
 io.print("hello\n");
 ====
 hello
 @@@@
-import io as foo from io;
+import io as foo;
 
 foo.print("hello\n");
 ====
@@ -19,8 +19,46 @@ import io as foo;
 @@@@
 import io from io as bar;
 ====
-Error: line 1: syntax error, unexpected as, expecting :: or ';'
+Error: line 1: syntax error, unexpected as, expecting \ or ';'
 @@@@
-import io as bar::io from io;
+import io as bar\io from io;
 ====
-syntax error, unexpected ::, expecting from or ';'
+syntax error, unexpected \, expecting from or ';'
+@@@@
+import foo\bar as foo;
+====
+@@@@
+import foo\bar as foo from baz;
+====
+@@@@
+import foo\bar as foo from baz\dir;
+====
+@@@@
+import bar as foo from baz\dir;
+====
+@@@@
+import dir\bar as foo\bar from baz\dir;
+====
+syntax error, unexpected \, expecting from or ';'
+@@@@
+import io;
+import io        from blaat;
+import io as foo from blaat;
+import io as foo;
+
+import io;
+import io        from bar\blaat;
+import io as foo from bar\blaat;
+import io as foo;
+
+
+import foo\io;
+import foo\io        from blaat;
+import foo\io as foo from blaat;
+import foo\io as foo;
+
+import foo\io;
+import foo\io        from bar\blaat;
+import foo\io as foo from bar\blaat;
+import foo\io as foo;
+====

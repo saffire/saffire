@@ -1695,28 +1695,32 @@ dispatch:
                     t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
 
                     if (! OBJECT_IS_TUPLE(obj)) {
+                        // Not a tuple, but it's ok: "pad" with NULLs and use the object itself
+                        vm_frame_stack_push(frame, (t_object *)obj);
+
+                        for (int i=0; i < oparg1-1; i++) {
+                            vm_frame_stack_push(frame, Object_Null);
+                            object_inc_ref(Object_Null);
+                        }
+
+                    } else {
+
+                        // Push the tuple vars. Make sure we start from the correct position
+                        int offset = oparg1 < obj->data.ht->element_count ? oparg1 : obj->data.ht->element_count;
+                        for (int i=0; i < offset; i++) {
+                            t_object *val = ht_find_num(obj->data.ht, i);
+                            vm_frame_stack_push(frame, val);
+                            object_inc_ref(val);
+                        }
+
+                        // If we haven't got enough elements in our tuple, pad the result with NULLs first
+                        while (oparg1-- > obj->data.ht->element_count) {
+                            vm_frame_stack_push(frame, Object_Null);
+                            object_inc_ref(Object_Null);
+                        }
+
                         object_release((t_object *)obj);
-
-                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "Argument is not a tuple");
-                        reason = REASON_EXCEPTION;
-                        goto block_end;
                     }
-
-                    // Push the tuple vars. Make sure we start from the correct position
-                    int offset = oparg1 < obj->data.ht->element_count ? oparg1 : obj->data.ht->element_count;
-                    for (int i=0; i < offset; i++) {
-                        t_object *val = ht_find_num(obj->data.ht, i);
-                        vm_frame_stack_push(frame, val);
-                        object_inc_ref(val);
-                    }
-
-                    // If we haven't got enough elements in our tuple, pad the result with NULLs first
-                    while (oparg1-- > obj->data.ht->element_count) {
-                        vm_frame_stack_push(frame, Object_Null);
-                        object_inc_ref(Object_Null);
-                    }
-
-                    object_release((t_object *)obj);
                 }
 
                 goto dispatch;
@@ -1839,10 +1843,10 @@ dispatch:
                 {
                     // Fetch actual data structure
                     obj1 = vm_frame_stack_pop(frame);
-                    if (! object_has_interface(obj1, "iterator")) {
+                    if (! object_has_interface(obj1, "subscription")) {
                         object_release(obj1);
 
-                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'iterator' interface");
+                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'subscription' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }

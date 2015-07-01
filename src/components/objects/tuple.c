@@ -216,13 +216,20 @@ void object_tuple_init(void) {
 
     // Datastructure interface
     object_add_internal_method((t_object *)&Object_Tuple_struct, "populate",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_populate);
-
+    object_add_interface((t_object *)&Object_Tuple_struct, Object_Datastructure);
 
 //    object_add_internal_method((t_object *)&Object_Tuple_struct, "add",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_add);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+//    object_add_internal_method((t_object *)&Object_Tuple_struct, "get",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+//    object_add_internal_method((t_object *)&Object_Tuple_struct, "length",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
 
-    object_add_interface((t_object *)&Object_Tuple_struct, Object_Datastructure);
+    // Subscription interface
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_interface((t_object *)&Object_Tuple_struct, Object_Subscription);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
 }

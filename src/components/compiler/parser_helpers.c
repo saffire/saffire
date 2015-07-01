@@ -415,20 +415,42 @@ void parser_validate_breakelse(SaffireParser *sp, int lineno) {
     }
 }
 
-void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
-    // Everything not being a opr, is ok
-    if (e->type != typeAstOpr) {
+
+void _parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
+    if (e->opr.oper == T_DATASTRUCT && e->opr.nops <= 1) {
+        // foo[] and foo[1] are ok
         return;
     }
 
-    if (e->opr.oper == T_DATASTRUCT && e->opr.nops <= 1) {
-        // foo[] and foo[1] are ok
+    // Identifiers are ok
+    if (e->type == typeAstIdentifier) {
+        return;
+    }
+
+    if (e->type == typeAstAssignment) {
+        _parser_write_check(sp, lineno, e->assignment.l);
+        return;
+    }
+
+    // Properties are ok
+    if (e->type == typeAstProperty) {
         return;
     }
 
 
     // Everything else, not so much
     parser_error(sp, lineno, "Variable is not writable");
+}
+
+void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
+    if (! e->grouping) {
+        _parser_write_check(sp, lineno, e);
+        return;
+    }
+
+    for (int i=0; i!=e->group.len; i++) {
+        _parser_write_check(sp, lineno, e->group.items[i]);
+    }
 }
 
 

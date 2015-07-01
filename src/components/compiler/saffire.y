@@ -89,7 +89,6 @@
 /* These must be sorted and used properly */
 %token T_WHILE "while" T_IF "if" T_AS "as" T_DO "do"
 %token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
-%nonassoc T_ELSE
 %token T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
@@ -108,6 +107,8 @@
 %token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure" T_SUBSCRIPT "subscription"
 
 %token T_NS_SEP "\\"
+
+%right "then" T_ELSE
 
 /* reserved for later use */
 %token T_YIELD
@@ -179,13 +180,13 @@ non_empty_import_statement_list:
 
 import_statement:
         /* import <foo> */
-        T_IMPORT qualified_name                                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string(@2.first_line, "")); ast_free_node($2); }
+        T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string(@2.first_line, "")); ast_free_node($2); }
         /* import <foo> from <baz> */
-    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_id_to_string($4)); smm_free($2); ast_free_node($4); }
+    |   T_IMPORT qualified_name                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_id_to_string($4)); ast_free_node($2); ast_free_node($4); }
         /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                     ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, "")); ast_free_node($2); smm_free($4); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, "")); ast_free_node($2); smm_free($4); }
         /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); smm_free($2); smm_free($4); ast_free_node($6); }
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); ast_free_node($2); smm_free($4); ast_free_node($6); }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -239,7 +240,7 @@ compound_statement:
 
 /* if if/else statements */
 if_statement:
-        T_IF '(' expression ')' statement                  { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
+        T_IF '(' expression ')' statement %prec "then"                 { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
     |   T_IF '(' expression ')' statement T_ELSE statement { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
 ;
 
@@ -263,9 +264,9 @@ case_statement:
 
 /* while, while else, do/while, for and foreach */
 iteration_statement:
-        while_iteration_statement                  { $$ = $1; }
+        while_iteration_statement %prec "then"                 { $$ = $1; }
     |   while_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
-    |   foreach_iteration_statement                  { $$ = $1; }
+    |   foreach_iteration_statement %prec "then"               { $$ = $1; }
     |   foreach_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
     |   T_FOR '(' expression_statement expression_statement                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
@@ -710,14 +711,16 @@ class_list:
  ************************************************************
  */
 
+/* comma separated list of elements */
 ds_elements:
         ds_element                  { $$ = ast_node_group(1, $1); }
     |   ds_elements ',' ds_element  { $$ = ast_node_add($$, $3);  }
 ;
 
+/* ':' separated list ('a', 'a:b', 'a:b:c' */
 ds_element:
-        assignment_expression                 { $$ = ast_node_group(1, $1); }
-    |   ds_element ':' assignment_expression  { $$ = ast_node_add($$, $3);  }
+        expression                 { $$ = ast_node_group(1, $1); }
+    |   ds_element ':' expression  { $$ = ast_node_add($$, $3);  }
 ;
 
 

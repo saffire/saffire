@@ -35,7 +35,7 @@ class Http implements Processor {
         // Check initial header line
         initial = self.connection.readLine();
 
-        ret, matches = regex.match('|^(.+)\s+(.+)\s+HTTP/(\d\.\d)$|', initial);
+        (ret, matches) = regex.match('|^(.+)\s+(.+)\s+HTTP/(\d\.\d)$|', initial);
         if (! ret) {
             response = Response(ResponseCode::STATUS_BAD_REQUEST);
             self.returnResponse(response);

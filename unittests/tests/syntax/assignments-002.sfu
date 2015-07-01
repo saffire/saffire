@@ -1,0 +1,73 @@
+title: multi assigments tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+a = 1;
+io.println("A1: ", a);
+
+(a,b) = (1,2);
+io.println("A2: ", a);
+io.println("B2: ", b);
+
+(a,b) = 12;
+io.println("A3: ", a);
+io.println("B3: ", b);
+
+b = (1,2);
+io.println("B04: ", b[0]);
+io.println("B14: ", b[1]);
+
+a = 4;
+b = 9;
+io.println("A4: ", a);
+io.println("B4: ", b);
+
+(a,b) = (b,a);
+io.println("A5: ", a);
+io.println("B5: ", b);
+
+(a,b) = (a,a);
+io.println("A6: ", 9);
+io.println("B6: ", 9);
+
+====
+A1: 1
+A2: 1
+B2: 2
+A3: 12
+B3: null
+B04: 1
+B14: 2
+A4: 4
+B4: 9
+A5: 9
+B5: 4
+A6: 9
+B6: 9
+@@@@
+import io;
+a = true;
+b = a;
+io.print(b);
+====
+true
+@@@@
+import io;
+a = b = c = 42;
+io.print(a);
+io.print(b);
+io.print(c);
+====
+424242
+@@@@
+import io;
+a = b = c = 42;
+
+b = true;
+io.print(a);
+io.print(b);
+io.print(c);
+====
+42true42
