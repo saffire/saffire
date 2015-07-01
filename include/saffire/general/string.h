@@ -49,6 +49,8 @@
     int string_strcmp(t_string *s1, t_string *s2);
     int string_strcmp0(t_string *s1, const char *c_str);
 
+    char *string_strncpy0(char *s, int len);
+
     char *string_strdup0(const char *s);
     t_string *string_strdup(t_string *s);
 

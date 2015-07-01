@@ -227,7 +227,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_saffire = {
-    "::saffire::saffire",
+    "\\",
     "Saffire configuration module",
     _objects,
     _init,

@@ -163,7 +163,7 @@ t_ast_element *ast_node_string_context_class(int lineno, char *identifier) {
 
     p->lineno = lineno;
     p->type = typeAstString;
-    p->string.value = vm_context_get_class(identifier);
+    p->string.value = vm_context_get_classname_from_fqcn(identifier);
 
     return p;
 }

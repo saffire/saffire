@@ -1,5 +1,5 @@
-import Http from Protocol;
 import Socket from Comm;
+import Http from Protocol;
 import os;
 
 class WebServer {

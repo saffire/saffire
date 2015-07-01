@@ -145,3 +145,13 @@ t_string *string_copy_partial(t_string *src, int offset, int count) {
 
     return dst;
 }
+
+
+char *string_strncpy0(char *s, int len) {
+    char *dst = smm_malloc(len + 1);
+
+    strncpy(dst, s, len);
+    dst[len] = '\0';
+
+    return dst;
+}

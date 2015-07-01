@@ -57,8 +57,7 @@ void register_external_module(char *path, t_vm_stackframe *frame) {
     int idx = 0;
     t_object *obj = (t_object *)module_info->objects[idx];
     while (obj != NULL) {
-        char *key;
-        vm_context_create_fqcn("", obj->name, &key);
+        char *key = vm_context_create_fqcn_from_name("", obj->name);
         DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
 
         ht_add_str(frame->local_identifiers->data.ht, key, obj);
@@ -76,7 +75,9 @@ void register_external_module(char *path, t_vm_stackframe *frame) {
  * Register an module
  */
 int register_module(t_module *mod, const char *path) {
+#ifdef __DEBUG
     DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
+#endif
 
     // Add to registered modules list
     t_module_info *module_info = smm_malloc(sizeof(t_module_info));
@@ -90,9 +91,10 @@ int register_module(t_module *mod, const char *path) {
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        char *key;
-        vm_context_create_fqcn(mod->name, obj->name, &key);
+        char *key = vm_context_create_fqcn_from_name(mod->name, obj->name);
+#ifdef __DEBUG
         DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
+#endif
         vm_populate_builtins(key, obj);
         smm_free(key);
 

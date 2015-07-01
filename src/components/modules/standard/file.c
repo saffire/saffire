@@ -371,7 +371,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_file = {
-    "::saffire::file",
+    "\\saffire\\file",
     "File module",
     _objects,
     _init,

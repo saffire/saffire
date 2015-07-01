@@ -95,7 +95,7 @@
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
 %token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
-%token T_SELF "self" T_PARENT "parent" T_NS_SEP "::"
+%token T_SELF "self" T_PARENT "parent"
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_NRE T_REGEX
 %left '+' '-'
 %left '*' '/'
@@ -107,10 +107,12 @@
 %token T_MODIFIERS T_CONSTANTS T_METHOD_ARGUMENT
 %token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure" T_SUBSCRIPT "subscription"
 
+%token T_NS_SEP "\\"
+
 /* reserved for later use */
 %token T_YIELD
 
-%type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
+%type <nPtr> program import_statement_list non_empty_import_statement_list import_statement top_statement_list
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement iteration_statement foreach_iteration_statement class_list while_iteration_statement
@@ -161,29 +163,29 @@ saffire:
 
 program:
         /* A program consists of use-statements and a list of top-statements */
-        use_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
+        import_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
 ;
 
-use_statement_list:
-        non_empty_use_statement_list { $$ = $1; }
+import_statement_list:
+        non_empty_import_statement_list { $$ = $1; }
     |   /* empty */                  { $$ = ast_node_group(0); }
 ;
 
 /* A use-statement list with at least one use statement */
-non_empty_use_statement_list:
-        use_statement { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
-    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
+non_empty_import_statement_list:
+        import_statement { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
+    |   non_empty_import_statement_list import_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
 ;
 
-use_statement:
-        /* import <foo> from <bar> */
-        T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_id_to_string($4)); smm_free($2); ast_free_node($4); }
-        /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); smm_free($4); ast_free_node($2); ast_free_node($6); }
-        /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); smm_free($4); ast_free_node($2); }
+import_statement:
         /* import <foo> */
-    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string_dup(@2.first_line, $2)); ast_free_node($2); }
+        T_IMPORT qualified_name                                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string(@2.first_line, "")); ast_free_node($2); }
+        /* import <foo> from <baz> */
+    |   T_IMPORT T_IDENTIFIER                   T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@2.first_line, $2), ast_node_id_to_string($4)); smm_free($2); ast_free_node($4); }
+        /* import <foo> as <bar> */
+    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                     ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string(@2.first_line, "")); ast_free_node($2); smm_free($4); }
+        /* import <foo> as <bar> from <baz> */
+    |   T_IMPORT T_IDENTIFIER T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); smm_free($2); smm_free($4); ast_free_node($6); }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -503,12 +505,13 @@ primary_expression_first_part:
 /* A name that is namespaced (or not). */
 qualified_name:
         qualified_name_first_part               { $$ = $1; }
-    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_identifier_concat($$, "::"); $$ = ast_node_identifier_concat($$, $3); smm_free($3); }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_identifier_concat($$, "\\"); $$ = ast_node_identifier_concat($$, $3); smm_free($3); }
 ;
 
+/* first part can be either 'foo' or '\foo', while second parts are always '\bar' (in '\foo\bar' or 'foo\bar') */
 qualified_name_first_part:
         T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "::"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "\\"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
 ;
 
 

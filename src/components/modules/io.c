@@ -278,7 +278,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_io = {
-    "::saffire::io",
+    "\\saffire",
     "Standard I/O module",
     _objects,
     _init,

@@ -199,7 +199,7 @@ int repl(void) {
     bytecode->lino_length = 0;
     bytecode->lino = NULL;
 
-    t_vm_context *ctx = vm_context_new("", "#repl");
+    t_vm_context *ctx = vm_context_new("\\", "#repl");
     t_vm_codeblock *codeblock = vm_codeblock_new(bytecode, ctx);
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
 

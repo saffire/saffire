@@ -1,3 +1,6 @@
+import Response from Http;
+import ResponseCode from Http;
+
 class Http implements Processor {
     protected property connection;
     protected property config;
@@ -21,7 +24,7 @@ class Http implements Processor {
         response = kernel.process(request);
 
         if (! response) {
-            response = Response(ResponseCode::STATUS_INTERNAL_SERVER_ERROR);
+            response = Response(ResponseCode.STATUS_INTERNAL_SERVER_ERROR);
         }
 
         self.returnResponse(response);

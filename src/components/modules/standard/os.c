@@ -45,6 +45,8 @@
  */
 SAFFIRE_MODULE_METHOD(os, cwd) {
     char *path = smm_malloc(PATH_MAX);
+    getcwd(path, PATH_MAX);
+
     t_string_object *str_obj = (t_string_object *)STR02OBJ(path);
     smm_free(path);
 
@@ -70,7 +72,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_os = {
-    "::saffire::os",
+    "\\saffire",
     "OS module",
     _objects,
     _init,

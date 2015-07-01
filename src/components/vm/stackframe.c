@@ -195,7 +195,7 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
  * Store object into the local identifier table
  */
 void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *class, t_object *new_obj) {
-    char *fqcn = vm_context_fqcn(frame->codeblock->context, class);
+    char *fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, class);
     t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, new_obj);
     smm_free(fqcn);
 
@@ -212,12 +212,12 @@ void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *class, t_object
 }
 
 void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *class, char *target_fqcn) {
-    char *fqcn = vm_context_fqcn(frame->codeblock->context, class);
+    char *fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, class);
 
     // Store alias id under the FQCN id, and store that we still need to resolve the object
     vm_frame_set_local_identifier(frame, fqcn, OBJECT_NEEDS_RESOLVING);
 
-    // Add to the alias table so we know that  alias -> ::some::module::class
+    // Add to the alias table so we know that  alias -> \some\module\class
     char *val = string_strdup0(target_fqcn);
     ht_add_str(frame->object_aliases, fqcn, val);
 
@@ -264,14 +264,6 @@ void print_debug_table(t_hash_table *ht, char *prefix) {
 #endif
 
 t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
-#ifdef __DEBUG
-    ht_debug_keys(frame->object_aliases);
-    ht_debug_keys(frame->local_identifiers->data.ht);
-    ht_debug_keys(frame->global_identifiers->data.ht);
-    ht_debug_keys(frame->builtin_identifiers->data.ht);
-#endif
-
-
     char *alias_qcn = ht_find_str(frame->object_aliases, fqcn);
     if (! alias_qcn) {
         // We need to resolve, but we don't know what.. Should not happen
@@ -298,7 +290,7 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
 
     // Check local identifiers, but on FQCN
     char *fqcn;
-    fqcn = vm_context_fqcn(frame->codeblock->context, id);
+    fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, id);
 
     obj = ht_find_str(frame->local_identifiers->data.ht, fqcn);
     if (obj == OBJECT_NEEDS_RESOLVING) {
@@ -346,7 +338,7 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
     }
 
 
-    // Check built-ins, but on UQCN, or on the '::saffire'
+    // Check built-ins, but on UQCN, or on the '\saffire'
     obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
         // Resolve and update the builtin identifiers (this should never happen?)
@@ -550,7 +542,7 @@ t_vm_stackframe *vm_create_empty_stackframe(void) {
     bytecode->lino_length = 0;
     bytecode->lino = NULL;
 
-    t_vm_context *ctx = vm_context_new("", "");
+    t_vm_context *ctx = vm_context_new("\\", "");
     t_vm_codeblock *codeblock = vm_codeblock_new(bytecode, ctx);
     return vm_stackframe_new(NULL, codeblock);
 }

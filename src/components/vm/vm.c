@@ -1186,32 +1186,36 @@ dispatch:
                     // Fetch alias
                     t_object *alias_obj = vm_frame_stack_pop(frame);
                     char *alias_name = string_to_char(OBJ2STR(alias_obj));
+                    printf("Import alias: %s\n", alias_name);
 
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame);
                     char *module_name = string_to_char(OBJ2STR(module_obj));
+                    printf("Import module: %s\n", module_name);
 
                     // Fetch class
                     t_object *class_obj = vm_frame_stack_pop(frame);
-                    char *tmp = string_to_char(OBJ2STR(class_obj));
-                    char *class_name = vm_context_get_class(tmp);
-                    smm_free(tmp);
+                    char *class_name = string_to_char(OBJ2STR(class_obj));
+//                    char *class_name = vm_context_get_classname_from_fqcn(tmp);
+                    printf("Import class: %s\n", class_name);
+                    //smm_free(tmp);
+
+                    char *target_name = vm_context_create_fqcn_from_name(module_name, class_name);
+
+                    smm_free(module_name);
+                    smm_free(class_name);
+
+                    printf("Total: Import alias: %s\n", alias_name);
+                    printf("Total: Import module: %s\n", target_name);
+                    printf("\n");
 
                     object_release(module_obj);
                     object_release(class_obj);
                     object_release(alias_obj);
 
+                    vm_frame_set_alias_identifier(frame, alias_name, target_name);
 
-                    // Create FQCN from module and class name
-                    char *target_pqcn = NULL;
-                    vm_context_create_fqcn(module_name, class_name, &target_pqcn);
-
-                    vm_frame_set_alias_identifier(frame, alias_name, target_pqcn);
-
-                    smm_free(target_pqcn);
-
-                    smm_free(module_name);
-                    smm_free(class_name);
+                    smm_free(target_name);
                     smm_free(alias_name);
                 }
                 goto dispatch;
@@ -1575,7 +1579,7 @@ dispatch:
                 s = vm_frame_get_name(frame, oparg1);
 
                 // Make the class known in the local identifiers
-                char *fqcn = vm_context_fqcn(frame->codeblock->context, s);
+                char *fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, s);
                 vm_frame_set_local_identifier(frame, fqcn, (t_object *)obj1);
                 smm_free(fqcn);
 
@@ -2159,8 +2163,8 @@ void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
-    //  Import mandatory saffire object (make '::saffire::saffire' known as "saffire" in the current namespace)
-    vm_frame_set_alias_identifier(frame, "saffire", "::saffire::saffire");
+    //  Import mandatory saffire object (make '\saffire\saffire' known as "saffire" in the current namespace)
+    vm_frame_set_alias_identifier(frame, "saffire", "\\saffire");
 
     // Back to normal runmode again
     vm_runmode = runmode;
@@ -2203,9 +2207,9 @@ int vm_execute(t_vm_stackframe *frame) {
 #endif
 
             // handle exceptions
-            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");  // This is an alias to ::saffire::saffire
+            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");  // This is an alias to \saffire\saffire
             if (! saffire_obj) {
-                fatal_error(1, "The ::saffire module was not found");
+                fatal_error(1, "The \\saffire module was not found");
             }
 
             t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");
