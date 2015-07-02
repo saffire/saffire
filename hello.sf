@@ -1,3 +1,0 @@
-import io;
-
-io.print("Hello world from Saffire!\n");

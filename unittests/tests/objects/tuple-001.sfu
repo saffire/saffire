@@ -2,7 +2,7 @@ title: tuple tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 t = tuple[["foo", "bar", "baz"]];
 io.print(t[0], "\n");
@@ -13,7 +13,7 @@ foo
 baz
 bar
 @@@@
-import io;
+import \saffire\io;
 t = tuple[["foo", "bar", "baz"]];
 io.print(t[3], "\n");
 ~~~~

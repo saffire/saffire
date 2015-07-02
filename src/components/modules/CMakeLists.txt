@@ -5,11 +5,13 @@ endif()
 
 set(sources
     module_api.c
-    io.c
     saffire.c
+    standard/io.c
+    standard/io/file.c
+    standard/io/socket.c
     standard/os.c
     standard/math.c
-    standard/file.c
+    standard/datetime.c
     sapi/fastcgi.c)
 
 add_library(modules STATIC ${sources})

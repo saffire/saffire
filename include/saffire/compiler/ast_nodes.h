@@ -39,7 +39,7 @@
                    typeAstOpr, typeAstNop, typeAstGroup,
                    typeAstClass, typeAstInterface, typeAstAttribute, typeAstProperty,
                    typeAstAssignment, typeAstComparison, typeAstBool, typeAstOperator,
-                   typeAstTuple, typeAstRegex,
+                   typeAstTuple, typeAstRegex, typeAstUnaryOperator
                  } nodeEnum;
 
     typedef struct {
@@ -97,6 +97,11 @@
 
     typedef struct {
         int op;
+        struct _ast_element *e;
+    } unaryOperatorNode;
+
+    typedef struct {
+        int op;
         struct _ast_element *l;
         struct _ast_element *r;
     } boolopNode;
@@ -146,12 +151,13 @@
             comparisonNode comparison;  // comparison
             boolopNode boolop;          // booleans (|| &&)
             operatorNode operator;      // operators (+ - * / etc)
+            unaryOperatorNode unaryOperator;    // Unary operators (~ and !)
         };
     } t_ast_element;
 
     t_ast_element *ast_node_regex(int lineno, char *value);
     t_ast_element *ast_node_string(int lineno, char *value);
-    t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src);
+    t_ast_element *ast_node_string_dup(t_ast_element *src);
     t_ast_element *ast_node_string_context_class(int lineno, char *element);
     t_ast_element *ast_node_id_to_string(t_ast_element *src);
     t_ast_element *ast_node_numerical(int lineno, int value);
@@ -171,8 +177,10 @@
     t_ast_element *ast_node_assignment(int lineno, int op, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_comparison(int lineno, int cmp, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_element *right);
+    t_ast_element *ast_node_unary_operator(int lineno, int op, t_ast_element *e);
     t_ast_element *ast_node_boolop(int lineno, int boolop, t_ast_element *left, t_ast_element *right);
     t_ast_element *ast_node_attribute(int lineno, char *name, char attrib_type, char visibility, char access, t_ast_element *value, char method_flags, t_ast_element *arguments);
+    t_ast_element *ast_update_import_nodes(t_ast_element *imports, char *module);
 
     void ast_free_node(t_ast_element *p);
 

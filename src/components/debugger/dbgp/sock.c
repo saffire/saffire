@@ -32,16 +32,21 @@
 #include <libxml/tree.h>
 #include <string.h>
 #include <saffire/general/config.h>
+#include <saffire/debug.h>
 
 
 int dbgp_sock_init(void) {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
+    long port = config_get_long("debug.connect.port", 9000);
+    char *host = config_get_string("debug.connect.ip", "127.0.0.1");
+    DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "Connecting to %s:%d" ANSI_RESET "\n", host, port);
+
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(struct sockaddr_in));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(9000);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = inet_addr(host);
 
     int ret = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (ret == -1) return -1;

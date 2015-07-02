@@ -59,6 +59,8 @@
 
     t_string *string_copy_partial(t_string *src, int offset, int count);
 
+    int string_strpos(t_string *haystack, t_string *needle, long offset);
+
     void string_free(t_string *str);
 
 #endif

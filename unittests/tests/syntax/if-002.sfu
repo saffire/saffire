@@ -2,7 +2,7 @@ title: if/else control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 foo = true;
 bar = false;
@@ -20,7 +20,7 @@ io.print(a,b,c);
 ======
 100
 @@@@@@
-import io;
+import \saffire\io;
 
 foo = false;
 bar = true;
@@ -38,7 +38,7 @@ io.print(a,b,c);
 ======
 010
 @@@@@@
-import io;
+import \saffire\io;
 
 foo = false;
 bar = false;
@@ -56,7 +56,7 @@ io.print(a,b,c);
 ======
 001
 @@@@@@
-import io;
+import \saffire\io;
 
 foo = true;
 bar = false;

@@ -1,15 +1,15 @@
 title: Hash table key tests
 author: Freek Lijten <freeklijten@gmail.com>, Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import io;
+import \saffire\io;
 hashTable = hash();
-hashTable.add("a", "foo");
-hashTable.add("b", "bar");
+hashTable.set("a", "foo");
+hashTable.set("b", "bar");
 io.print(hashTable.has("a"), "\n");
 io.print(hashTable.has("b"), "\n");
 io.print(hashTable.has("c"), "\n");
 io.print(hashTable.length(), "\n");
-hashTable.add("c", "baz");
+hashTable.set("c", "baz");
 io.print(hashTable.length(), "\n");
 io.print(hashTable.has("c"), "\n");
 io.print(hashTable.get("a"), "\n");

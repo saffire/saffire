@@ -117,6 +117,16 @@ t_string *string_strcat(t_string *dst, const t_string *src) {
 
 }
 
+int string_strpos(t_string *haystack, t_string *needle, long offset) {
+    if (offset > haystack->len) {
+        return -1;
+    }
+
+    char *str = haystack->val + offset;
+    char *p = strstr(str, needle->val);
+
+    return (str - p);
+}
 
 int string_strcmp(t_string *s1, t_string *s2) {
     int res, len = s1->len;

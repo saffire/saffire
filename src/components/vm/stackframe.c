@@ -44,6 +44,15 @@
 
 #include <saffire/general/hashtable.h>
 
+
+/**
+ * Returns the current context of the given frame
+ */
+t_vm_context *vm_frame_get_context(t_vm_stackframe *frame)
+{
+    return frame->codeblock->context;
+}
+
 /**
  * Returns the next opcode
  */
@@ -195,7 +204,8 @@ t_object *vm_frame_get_global_identifier(t_vm_stackframe *frame, char *id) {
  * Store object into the local identifier table
  */
 void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *class, t_object *new_obj) {
-    char *fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, class);
+    t_vm_context *ctx = vm_frame_get_context(frame);
+    char *fqcn = vm_context_create_fqcn_from_context(ctx, class);
     t_object *old_obj = (t_object *) ht_replace_str(frame->local_identifiers->data.ht, fqcn, new_obj);
     smm_free(fqcn);
 
@@ -208,11 +218,15 @@ void vm_frame_set_local_identifier(t_vm_stackframe *frame, char *class, t_object
     if (old_obj != NULL && old_obj != OBJECT_NEEDS_RESOLVING) {
         object_release(old_obj);
     }
-
 }
 
 void vm_frame_set_alias_identifier(t_vm_stackframe *frame, char *class, char *target_fqcn) {
-    char *fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, class);
+    if (vm_frame_find_identifier(frame, class)) {
+        fatal_error(1, "Alias %s already imported", class);
+    }
+
+    t_vm_context *ctx = vm_frame_get_context(frame);
+    char *fqcn = vm_context_create_fqcn_from_context(ctx, class);
 
     // Store alias id under the FQCN id, and store that we still need to resolve the object
     vm_frame_set_local_identifier(frame, fqcn, OBJECT_NEEDS_RESOLVING);
@@ -277,8 +291,12 @@ t_object *_vm_frame_object_resolve(t_vm_stackframe *frame, char *fqcn) {
 
 t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
     t_object *obj;
+    char *fqcn = NULL;
+    t_exception_object *exception = thread_save_exception();
 
-    // Find local identifiers (without FQCN)
+    /*
+     *  Find in local identifiers (without FQCN)
+     */
     obj = ht_find_str(frame->local_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
         obj = _vm_frame_object_resolve(frame, id);
@@ -286,12 +304,13 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
             vm_frame_set_local_identifier(frame, id, obj);
         }
     }
-    if (obj) return obj;
+    if (obj || thread_exception_thrown()) goto done;
 
-    // Check local identifiers, but on FQCN
-    char *fqcn;
-    fqcn = vm_context_create_fqcn_from_context(frame->codeblock->context, id);
+    fqcn = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), id);
 
+    /*
+     *  Check local identifiers, but on FQCN
+     */
     obj = ht_find_str(frame->local_identifiers->data.ht, fqcn);
     if (obj == OBJECT_NEEDS_RESOLVING) {
         obj = _vm_frame_object_resolve(frame, fqcn);
@@ -299,13 +318,12 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
             vm_frame_set_local_identifier(frame, fqcn, obj);
         }
     }
-    if (obj) {
-        smm_free(fqcn);
-        return obj;
-    }
+    if (obj || thread_exception_thrown()) goto done;
 
 
-
+    /*
+     * Check global identifiers
+     */
     // @TODO: THIS SHOULD NOT BE... IMPORTS SHOULD BE ON LOCAL LIST!
     obj = ht_find_str(frame->global_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
@@ -317,11 +335,12 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
             vm_frame_set_global_identifier(frame, id, obj);
         }
     }
-    if (obj) {
-        smm_free(fqcn);
-        return obj;
-    }
+    if (obj || thread_exception_thrown()) goto done;
 
+
+    /*
+     * Check global identifiers on FQCN
+     */
     obj = ht_find_str(frame->global_identifiers->data.ht, fqcn);
     if (obj == OBJECT_NEEDS_RESOLVING) {
 #ifdef __DEBUG
@@ -332,28 +351,33 @@ t_object *vm_frame_identifier_exists(t_vm_stackframe *frame, char *id) {
             vm_frame_set_global_identifier(frame, fqcn, obj);
         }
     }
-    if (obj) {
-        smm_free(fqcn);
-        return obj;
-    }
+    if (obj || thread_exception_thrown()) goto done;
 
 
-    // Check built-ins, but on UQCN, or on the '\saffire'
+    /*
+     * Check built-ins, only on UQCN!
+     */
     obj = ht_find_str(frame->builtin_identifiers->data.ht, id);
     if (obj == OBJECT_NEEDS_RESOLVING) {
-        // Resolve and update the builtin identifiers (this should never happen?)
-        obj = vm_class_resolve(frame, id);
-        if (obj) {
-            vm_frame_set_builtin_identifier(frame, id, obj);
-        }
+        fatal_error(1, "A built-in object should always be resolved!");
     }
-    if (obj) {
-        smm_free(fqcn);
-        return obj;
+    if (obj || thread_exception_thrown()) goto done;
+
+    // Nothing found :(
+    obj = NULL;
+
+done:
+    //If an exception has been thrown during resolving, use that one
+    if (thread_exception_thrown()) {
+        thread_dump_exception(exception);
+        obj = NULL;
+    } else {
+        // Otherwise restore any current exception
+        thread_restore_exception(exception);
     }
 
-    smm_free(fqcn);
-    return NULL;
+    if (fqcn) smm_free(fqcn);
+    return obj;
 }
 
 /**
@@ -392,6 +416,7 @@ char *vm_frame_get_name(t_vm_stackframe *frame, int idx) {
  * Creates and initializes a new frame
  */
 t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock *codeblock) {
+
     DEBUG_PRINT_CHAR("\n\n\n\n\n============================ VM frame new ('%s' -> parent: '%s') ============================\n", codeblock->context->module.full, parent_frame ? parent_frame->codeblock->context->module.full : "<root>");
     DEBUG_PRINT_CHAR("THIS FRAME IS BASED ON %08X\n", parent_frame);
 
@@ -450,8 +475,8 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
 void vm_stackframe_destroy(t_vm_stackframe *frame) {
 
 #ifdef __DEBUG_STACKFRAME
-    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n",
-        frame->codeblock->context ? frame->codeblock->context->module.full : "<root>");
+    t_vm_context *ctx = vm_frame_get_context(frame);
+    DEBUG_PRINT_CHAR("\n\n\n\n\n============================ STACKFRAME DESTROY: %s ================================\n", ctx ? ctx->module.full : "<root>");
 
     DEBUG_PRINT_CHAR("FINI LOCAL  ADDR: %08X\n", frame->local_identifiers);
     DEBUG_PRINT_CHAR("FINI GLOBAL ADDR: %08X\n", frame->global_identifiers);
@@ -531,7 +556,7 @@ void vm_frame_stack_debug(t_vm_stackframe *frame) {
 
 t_vm_stackframe *vm_create_empty_stackframe(void) {
     t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));
-    bytecode->stack_size = 42;
+    bytecode->stack_size = 142;
     bytecode->code_len = 0;
     bytecode->code = NULL;
     bytecode->constants_len = 0;

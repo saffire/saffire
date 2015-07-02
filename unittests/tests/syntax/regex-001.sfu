@@ -2,7 +2,7 @@ title: regex tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 if ("FOOBAR" ~= /^f/) {
     io.print("match");
@@ -12,7 +12,7 @@ if ("FOOBAR" ~= /^f/) {
 ====
 nomatch
 @@@@@
-import io;
+import \saffire\io;
 
 if ("FOOBAR" ~= /^f/i) {
     io.print("match");
@@ -22,7 +22,7 @@ if ("FOOBAR" ~= /^f/i) {
 ====
 match
 @@@@@
-import io;
+import \saffire\io;
 
 if ("info@example.org" ~= /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/) {
     io.print("match");

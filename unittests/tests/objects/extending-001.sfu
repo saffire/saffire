@@ -2,7 +2,7 @@ title: extending core objects
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 class myexception extends exception { }
 
@@ -15,7 +15,7 @@ try {
 =====
 myexception: foobar(100)
 @@@@@
-import io;
+import \saffire\io;
 
 class mystring extends string { }
 

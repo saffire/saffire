@@ -2,7 +2,7 @@ title: base __methods tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 a = "hello1";
 foreach (a.__methods() as k,v) {
@@ -17,6 +17,7 @@ __numerical
 __string
 length
 upper
+ucfirst
 lower
 reverse
 trim
@@ -24,7 +25,7 @@ ltrim
 rtrim
 toLocale
 getLocale
-splice
+index
 __opr_add
 __cmp_eq
 __cmp_ne
@@ -41,13 +42,13 @@ __rewind
 __next
 __hasNext
 __length
-__add
+__set
 __remove
 __get
 __has
 __splice
 @@@@@
-import io;
+import \saffire\io;
 
 a = "hello1";
 foreach (a.__methods(true) as k,v) {
@@ -62,6 +63,7 @@ __numerical
 __string
 length
 upper
+ucfirst
 lower
 reverse
 trim
@@ -69,7 +71,7 @@ ltrim
 rtrim
 toLocale
 getLocale
-splice
+index
 __opr_add
 __cmp_eq
 __cmp_ne
@@ -86,7 +88,7 @@ __rewind
 __next
 __hasNext
 __length
-__add
+__set
 __remove
 __get
 __has
@@ -104,8 +106,9 @@ __immutable?
 __immutable
 __refcount
 __id
+__opr_not
 @@@@@@
-import io;
+import \saffire\io;
 
 class myclass {
     public method foo() {}
@@ -121,7 +124,7 @@ foreach (a.__methods() as k,v) {
 bar
 foo
 @@@@@@
-import io;
+import \saffire\io;
 
 class myclass extends string {
     public method foo() {}

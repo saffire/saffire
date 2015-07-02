@@ -162,6 +162,11 @@ static void dot_node_iterate(FILE *fp, t_ast_element *p, int link_node_nr) {
             dot_node_iterate(fp, p->operator.r, cur_node_nr);
             break;
 
+        case typeAstUnaryOperator:
+            fprintf(fp, "fillcolor=burlywood1,style=\"filled\",label=\"{%d (#%ld)|Type=UnaryOperator|Operator=%s (%d)} \"]\n", cur_node_nr, p->lineno, get_token_string(p->operator.op), p->operator.op);
+            dot_node_iterate(fp, p->unaryOperator.e, cur_node_nr);
+            break;
+
         case typeAstGroup :
             fprintf(fp, "label=\"{%d (#%ld)|Type=Group|Length=%d} \"]\n", cur_node_nr, p->lineno, p->group.len);
 

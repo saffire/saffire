@@ -1,5 +1,0 @@
-import Connection from Comm;
-
-interface Processor {
-    public method handle(Connection connection);
-}

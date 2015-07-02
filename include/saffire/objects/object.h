@@ -68,7 +68,14 @@
     #define OPERATOR_XOR    7
     #define OPERATOR_SHL    8
     #define OPERATOR_SHR    9
-    #define OPERATOR_COA    10
+
+    // Unary operators
+    #define OPERATOR_UNARY_INV    10
+    #define OPERATOR_UNARY_NOT    11
+    #define OPERATOR_UNARY_POS    12
+    #define OPERATOR_UNARY_NEG    13
+
+
 
 
     // Comparisson defines

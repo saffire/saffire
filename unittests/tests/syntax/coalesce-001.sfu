@@ -3,7 +3,7 @@ author: Kevin Daudt <ikke@ikke.info>
 
 **********
 // Null test
-import io;
+import \saffire\io;
 a = null;
 b = a ?? "default";
 io.print(b);
@@ -11,7 +11,7 @@ io.print(b);
 default
 @@@@
 // Non-null test
-import io;
+import \saffire\io;
 a = "value";
 b = a ?? "default";
 io.print(b);

@@ -39,6 +39,7 @@
     #define ANSI_RESET        "\33[0m"
 
     void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s));
+    void output_get_helpers(int (**char_helper)(FILE *f, char c), int (**string_helper)(FILE *f, t_string *s));
 
     void output_flush(void);
 

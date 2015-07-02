@@ -2,7 +2,7 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 foo = list[[1,"A",3]];
 foreach (foo as k,v)  {
     io.print(k,v,"\n");
@@ -12,7 +12,7 @@ foreach (foo as k,v)  {
 A
 3
 @@@@
-import io;
+import \saffire\io;
 foo = hash[["a":1,"b":2,"c":3]];
 foreach (foo as k)  {
     io.print(k,"\n");
@@ -35,7 +35,7 @@ b=>2Null
 c=>3Null
 @@@@
 !skip meta object is not yet available
-import io;
+import \saffire\io;
 foo = hash[["a":1,"b":2,"c":3]];
 foreach (foo as k,v,meta)  {
     if (meta.first) io.print("first\n");

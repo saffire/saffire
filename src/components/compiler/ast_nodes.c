@@ -112,6 +112,20 @@ t_ast_element *ast_node_operator(int lineno, int op, t_ast_element *left, t_ast_
 }
 
 /**
+ * Unary Operator node: "! ~"
+ */
+t_ast_element *ast_node_unary_operator(int lineno, int op, t_ast_element *e) {
+    t_ast_element *p = ast_node_alloc_element();
+
+    p->lineno = lineno;
+    p->type = typeAstUnaryOperator;
+    p->unaryOperator.op = op;
+    p->unaryOperator.e = e;
+
+    return p;
+}
+
+/**
  * String node
  */
 t_ast_element *ast_node_string(int lineno, char *value) {
@@ -148,10 +162,10 @@ t_ast_element *ast_node_id_to_string(t_ast_element *src) {
 /**
  * Duplicate AST string node
  */
-t_ast_element *ast_node_string_dup(int lineno, t_ast_element *src) {
+t_ast_element *ast_node_string_dup(t_ast_element *src) {
     t_ast_element *p = ast_node_alloc_element();
 
-    p->lineno = lineno;
+    p->lineno = src->lineno;
     p->type = typeAstString;
     p->string.value = string_strdup0(src->string.value);
 
@@ -490,6 +504,9 @@ void ast_free_node(t_ast_element *p) {
         case typeAstOperator :
             ast_free_node(p->operator.r);
             ast_free_node(p->operator.l);
+            break;
+        case typeAstUnaryOperator :
+            ast_free_node(p->unaryOperator.e);
             break;
         case typeAstBool :
             ast_free_node(p->boolop.r);

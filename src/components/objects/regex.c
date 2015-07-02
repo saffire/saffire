@@ -44,6 +44,74 @@
  * ======================================================================
  */
 
+static int _compile_regex(t_regex_object *re_obj, char *regex) {
+    const char *error;
+    int erroffset;
+
+    char *re = string_strdup0(regex);
+
+    char sep = *re;
+
+    // Fetch optional flags
+    char *flags = strrchr(re, sep);
+
+    // Zero-terminate the regex
+    *flags = '\0';
+    flags++;
+
+    // Now we can safely store regex-string and flags
+    re_obj->data.regex_string = string_strdup0(re+1);
+    re_obj->data.regex_flags = 0;
+
+    smm_free(re);
+
+    while (*flags) {
+        switch (*flags) {
+            case 'i' :
+                re_obj->data.regex_flags |= PCRE_CASELESS;
+                break;
+            case 'm' :
+                re_obj->data.regex_flags |= PCRE_MULTILINE;
+                break;
+            case 's' :
+                re_obj->data.regex_flags |= PCRE_DOTALL;
+                break;
+            case 'x' :
+                re_obj->data.regex_flags |= PCRE_EXTENDED;
+                break;
+            case 'A' :
+                re_obj->data.regex_flags |= PCRE_ANCHORED;
+                break;
+            case 'D' :
+                re_obj->data.regex_flags |= PCRE_DOLLAR_ENDONLY;
+                break;
+            case 'U' :
+                re_obj->data.regex_flags |= PCRE_UNGREEDY;
+                break;
+            case 'X' :
+                re_obj->data.regex_flags |= PCRE_EXTRA;
+                break;
+            case 'J' :
+                re_obj->data.regex_flags |= PCRE_DUPNAMES;
+                break;
+            case 'u' :
+                re_obj->data.regex_flags |= PCRE_UTF8;
+                break;
+            default :
+                object_raise_exception(Object_ArgumentException, 1, "Incorrect regex flag found '%c'", *flags);
+                return -1;
+        }
+        flags++;
+    }
+
+    re_obj->data.regex = pcre_compile(re_obj->data.regex_string, re_obj->data.regex_flags, &error, &erroffset, 0);
+    if (! re_obj->data.regex) {
+        object_raise_exception(Object_ArgumentException, 1, "Error while compiling regular expression at offset %d: %s", erroffset, error);
+        return -1;
+    }
+
+    return 0;
+}
 
 /* ======================================================================
  *   Object methods
@@ -79,17 +147,29 @@ SAFFIRE_METHOD(regex, regex) {
  * Saffire method: match a string against (compiled) regex
  */
 SAFFIRE_METHOD(regex, match) {
-    t_string_object *str;
+    t_string_object *regex_str, *subject_str;
     int ovector[OVECCOUNT];
     int rc;
 
     // Parse the arguments
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str)) {
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &regex_str, &subject_str)) {
         return NULL;
     }
 
+    // Compile regex
+    if (_compile_regex(self, STROBJ2CHAR0(regex_str)) == -1) {
+        return NULL;
+    }
+
+    int options = 0;
+    struct pcre_extra *extra = NULL;
+    int start_offset = 0;
+
+    char *subject = STROBJ2CHAR0(subject_str);
+    long subject_len = STROBJ2CHAR0LEN(subject_str);
+
     // Convert to utf8 and execute regex
-    rc = pcre_exec(self->data.regex, 0, STROBJ2CHAR0(str), STROBJ2CHAR0LEN(str), 0, 0, ovector, OVECCOUNT);
+    rc = pcre_exec(self->data.regex, extra, subject, subject_len, start_offset, options, ovector, OVECCOUNT);
 
     // Check result
     if (rc < 0) {
@@ -104,13 +184,65 @@ SAFFIRE_METHOD(regex, match) {
         }
     }
 
-    // Display result
-    for (int i=0; i<rc; i++) {
-        DEBUG_PRINT_CHAR("%2d: %.*s\n", i, ovector[2*i+1] - ovector[2*i], str->data.value + ovector[2*i]);
+    // Create hash
+    t_hash_table *ht = ht_create();
+
+    // Add numerical indices first
+    for (int idx=0; idx < rc; idx++) {
+        char *c = subject_str->data.value->val;
+        int len = ovector[2 * idx + 1] - ovector[2 * idx + 0];
+//        printf("%2d: '%.*s'\n", idx, len, (char *) c + ovector[2 * idx + 0]);
+
+        ht_add_obj(
+            ht,
+            object_alloc_instance(Object_Numerical, 1, idx),
+            (void *)object_alloc_instance(Object_String, 2, len, (char *) c + ovector[2 * idx + 0])
+        );
     }
 
+    // Add any potential match groups
+    int name_cnt;
+    rc = pcre_fullinfo(self->data.regex, NULL, PCRE_INFO_NAMECOUNT, &name_cnt);
+    char *name_table;
+    rc = pcre_fullinfo(self->data.regex, NULL, PCRE_INFO_NAMETABLE, &name_table);
+    int name_size;
+    rc = pcre_fullinfo(self->data.regex, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_size);
+
+    char *ptr = name_table;
+    for (int idx=0; idx < name_cnt; idx++) {
+        int n = (ptr[0] << 8) | ptr[1];
+        char *c = subject_str->data.value->val;
+
+//        printf("Entry %d: %*s: %.*s\n", n, name_size - 3, (char *)(ptr + 2), ovector[2 * n + 1] - ovector[2 * n], c + ovector[2 * n]);
+
+        int len = ovector[2 * n + 1] - ovector[2 * n];
+        char *str = (char *) c + ovector[2 * n + 0];
+
+        ht_add_obj(
+            ht,
+            object_alloc_instance(Object_String, 2, strlen((char *)(ptr + 2)), (char *)(ptr + 2)),
+            (void *)object_alloc_instance(Object_String, 2, len, str)
+        );
+
+        ptr += name_size;
+    }
+
+    t_hash_object *matches_obj = (t_hash_object *)HASH2OBJ(ht);
+
+#ifdef __DEBUG
+    ht_debug(ht);
+#endif
+
     // Return number of matches
-    RETURN_NUMERICAL(rc);
+    t_object *ret_obj = (rc >= 0) ? Object_True : Object_False;
+
+
+    // Create tuple with ret_obj and matches_obj
+    t_tuple_object *obj = (t_tuple_object *)object_alloc_instance(Object_Tuple, 0);
+    ht_append_num(obj->data.ht, ret_obj);
+    ht_append_num(obj->data.ht, matches_obj);
+
+    RETURN_OBJECT(obj);
 }
 
 
@@ -184,8 +316,6 @@ void object_regex_fini(void) {
 
 static void obj_populate(t_object *obj, t_dll *arg_list) {
     t_regex_object *re_obj = (t_regex_object *)obj;
-    const char *error;
-    int erroffset;
 
     char *regex;
     if (arg_list->size == 1) {
@@ -209,62 +339,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         regex = string_to_char(str);
     }
 
-    char sep = *regex;
-    regex++;   // Skip initial separator (only / is supported)
-
-    // Fetch optional flags
-    char *flags = strrchr(regex, sep);
-
-    // Zero-terminate the regex
-    *flags = '\0';
-    flags++;
-
-    // Now we can safely store regex-string and flags
-    re_obj->data.regex_string = string_strdup0(regex);
-    re_obj->data.regex_flags = 0;
-
-    while (*flags) {
-        switch (*flags) {
-            case 'i' :
-                re_obj->data.regex_flags |= PCRE_CASELESS;
-                break;
-            case 'm' :
-                re_obj->data.regex_flags |= PCRE_MULTILINE;
-                break;
-            case 's' :
-                re_obj->data.regex_flags |= PCRE_DOTALL;
-                break;
-            case 'x' :
-                re_obj->data.regex_flags |= PCRE_EXTENDED;
-                break;
-            case 'A' :
-                re_obj->data.regex_flags |= PCRE_ANCHORED;
-                break;
-            case 'D' :
-                re_obj->data.regex_flags |= PCRE_DOLLAR_ENDONLY;
-                break;
-            case 'U' :
-                re_obj->data.regex_flags |= PCRE_UNGREEDY;
-                break;
-            case 'X' :
-                re_obj->data.regex_flags |= PCRE_EXTRA;
-                break;
-            case 'J' :
-                re_obj->data.regex_flags |= PCRE_DUPNAMES;
-                break;
-            case 'u' :
-                re_obj->data.regex_flags |= PCRE_UTF8;
-                break;
-            default :
-                object_raise_exception(Object_ArgumentException, 1, "Incorrect regex flag found '%c'", *flags);
-        }
-        flags++;
-    }
-
-    re_obj->data.regex = pcre_compile(re_obj->data.regex_string, re_obj->data.regex_flags, &error, &erroffset, 0);
-    if (! re_obj->data.regex) {
-        object_raise_exception(Object_ArgumentException, 1, "Error while compiling regular expression at offset %d: %s", erroffset, error);
-    }
+    _compile_regex(re_obj, regex);
 }
 
 static void obj_free(t_object *obj) {

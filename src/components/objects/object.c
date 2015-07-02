@@ -42,6 +42,7 @@
 #include <saffire/vm/thread.h>
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
+// @TODO: a++ seems like an unary operator instead?
 
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "callable", "attribute", "base", "boolean",
@@ -53,8 +54,9 @@ const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_g
                                     "__cmp_in", "__cmp_ni", "__cmp_ex" };
 
 // Object operator methods. These should map on the OPERATOR_* defines
-const char *objectOprMethods[10] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
-                                     "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr" };
+const char *objectOprMethods[14] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
+                                     "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr",
+                                     "__opr_inv", "__opr_not", "__opr_pos", "__opr_neg" };
 
 
 
@@ -326,7 +328,7 @@ t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached) {
     t_object *res = NULL;
 
     if (! OBJECT_TYPE_IS_CLASS(obj)) {
-        fatal_error(1, "Can only object_alloc_args() from a class object.\n");
+        fatal_error(1, "Can only object_alloc_args() from a class or interface objects.\n");
     }
 
     // Nothing found to new, just return NULL object

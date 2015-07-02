@@ -191,15 +191,12 @@ SAFFIRE_METHOD(hash, has) {
 /**
  * Saffire method:
  */
-SAFFIRE_METHOD(hash, add) {
+SAFFIRE_METHOD(hash, set) {
     t_object *key, *val;
 
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &key, &val)) {
         return NULL;
     }
-
-    DEBUG_PRINT_CHAR("KEY Hash increasing reference: %08X from %d to %d\n", (intptr_t)key, key->ref_count, key->ref_count+1);
-    DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (intptr_t)val, val->ref_count, val->ref_count+1);
 
     object_inc_ref(key);
     object_inc_ref(val);
@@ -313,14 +310,14 @@ void object_hash_init(void) {
 
     // Subscription interface
     object_add_internal_method((t_object *)&Object_Hash_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "__set",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_set);
     object_add_internal_method((t_object *)&Object_Hash_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
     object_add_internal_method((t_object *)&Object_Hash_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
     object_add_internal_method((t_object *)&Object_Hash_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);
     object_add_internal_method((t_object *)&Object_Hash_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_splice);
 
     object_add_internal_method((t_object *)&Object_Hash_struct, "length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_length);
-    object_add_internal_method((t_object *)&Object_Hash_struct, "add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_add);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "set",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_set);
     object_add_internal_method((t_object *)&Object_Hash_struct, "remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_remove);
     object_add_internal_method((t_object *)&Object_Hash_struct, "get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_get);
     object_add_internal_method((t_object *)&Object_Hash_struct, "has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_has);

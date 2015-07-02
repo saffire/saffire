@@ -417,11 +417,6 @@ void parser_validate_breakelse(SaffireParser *sp, int lineno) {
 
 
 void _parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
-    if (e->opr.oper == T_DATASTRUCT && e->opr.nops <= 1) {
-        // foo[] and foo[1] are ok
-        return;
-    }
-
     // Identifiers are ok
     if (e->type == typeAstIdentifier) {
         return;
@@ -443,11 +438,19 @@ void _parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
 }
 
 void parser_write_check(SaffireParser *sp, int lineno, t_ast_element *e) {
+    // Just check a non-grouping element
     if (! e->grouping) {
         _parser_write_check(sp, lineno, e);
         return;
     }
 
+    // Subscripts are ok
+    if (e->opr.oper == T_SUBSCRIPT) {
+        return;
+    }
+
+
+    // It's a group, just check each element separately
     for (int i=0; i!=e->group.len; i++) {
         _parser_write_check(sp, lineno, e->group.items[i]);
     }

@@ -6,7 +6,7 @@ breakelse;
 ====
 Error in line 2: We can only breakelse inside a loop
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 do {
     a = a + 1;
@@ -15,7 +15,7 @@ io.print(a);
 ====
 10
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 do {
     a = a + 1;
@@ -31,7 +31,7 @@ io.print(a);
 ====
 5
 @@@@
-import io;
+import \saffire\io;
 foreach (list[[1,2]] as b) {
     io.print("breakelse\n");
     breakelse;
@@ -43,7 +43,7 @@ foreach (list[[1,2]] as b) {
 breakelse
 else
 @@@@
-import io;
+import \saffire\io;
 foreach (list[[1,2]] as b) {
     io.print("break\n");
     break;
@@ -54,7 +54,7 @@ foreach (list[[1,2]] as b) {
 ====
 break
 @@@@
-import io;
+import \saffire\io;
 foreach (list[[1,2]] as b) {
     io.print("breakelse\n");
     breakelse;

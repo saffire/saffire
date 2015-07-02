@@ -6,7 +6,7 @@ continue;
 ====
 Error in line 2: We can only continue inside a loop
 @@@@
-import io;
+import \saffire\io;
 a = 0;
 b = 0;
 do {
@@ -19,7 +19,7 @@ io.print(a, " ", b);
 ====
 10 0
 @@@@
-import io;
+import \saffire\io;
 b = 0;
 do {
     a = 0;
@@ -34,7 +34,7 @@ io.print(a, " ", b);
 ====
 10 10
 @@@@
-import io;
+import \saffire\io;
 foreach (list[[1,2,3]] as b) {
     io.print(b);
     continue;

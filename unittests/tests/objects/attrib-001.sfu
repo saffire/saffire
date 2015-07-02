@@ -2,7 +2,7 @@ title: attribute tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 class foo {
     protected property a;
@@ -38,7 +38,7 @@ io.print("A: ", f.geta(), "\n");
 [FOO OBJECT WITH foo1 AND bar2 AND baz3]
 A: baz3
 @@@@@@@
-import io;
+import \saffire\io;
 
 class foo {
     public method f1() {

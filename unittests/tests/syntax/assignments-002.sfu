@@ -2,7 +2,7 @@ title: multi assigments tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 a = 1;
 io.println("A1: ", a);
@@ -47,14 +47,14 @@ B5: 4
 A6: 9
 B6: 9
 @@@@
-import io;
+import \saffire\io;
 a = true;
 b = a;
 io.print(b);
 ====
 true
 @@@@
-import io;
+import \saffire\io;
 a = b = c = 42;
 io.print(a);
 io.print(b);
@@ -62,7 +62,7 @@ io.print(c);
 ====
 424242
 @@@@
-import io;
+import \saffire\io;
 a = b = c = 42;
 
 b = true;

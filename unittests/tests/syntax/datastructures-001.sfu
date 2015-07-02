@@ -1,7 +1,7 @@
 title: data structure tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import io;
+import \saffire\io;
 a = list[[1, 2, 3, 4]];
 io.print(a,"\n");
 
@@ -20,7 +20,7 @@ list[3]
 list[0]
 @@@@
 // Normal hashes
-import io;
+import \saffire\io;
 
 a = hash[["a":1, "b":2, "c":3, "d":4]];
 io.print(a,"\n");
@@ -40,7 +40,7 @@ hash[3]
 hash[0]
 @@@@
 // Return item of the data structure
-import io;
+import \saffire\io;
 foo = hash[["a" : "b", 1 : 2, 3 : "a"]];
 a = foo["a"];
 io.print(a,"\n");

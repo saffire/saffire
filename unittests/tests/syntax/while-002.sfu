@@ -2,7 +2,7 @@ title: While Loop Functional Tests
 author: Chris Tankersley <chris@ctankersley.com>
 
 **********
-import io;
+import \saffire\io;
 a = 0;
 while (a < 10) {
     a = a + 1;
@@ -11,7 +11,7 @@ while (a < 10) {
 ====
 12345678910
 @@@@
-import io;
+import \saffire\io;
 a = 11;
 while(a < 5) {
     a = a + 1;
@@ -21,14 +21,14 @@ io.print(a);
 ====
 11
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 4) a = a + 1;
 io.print(a);
 ====
 4
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 5) {
     a = a + 1;
@@ -39,7 +39,7 @@ while (a < 5) {
 ====
 2345
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) {
     a = a + 1;
@@ -50,7 +50,7 @@ while (a < 1) {
 ====
 else
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while(a < 6) a = a + 1;
 else {
@@ -60,7 +60,7 @@ io.print(a);
 ====
 6
 @@@@
-import io;
+import \saffire\io;
 a = 12;
 while (a < 1) a = a + 5;
 else {
@@ -72,7 +72,7 @@ io.print(a);
 else
 12
 @@@@
-import io;
+import \saffire\io;
 a = 0;
 while (a < 1) {
     a = 1;
@@ -81,7 +81,7 @@ io.print(a);
 ====
 1
 @@@@
-import io;
+import \saffire\io;
 a = 10;
 while (a < 1) {
     a = 1;
@@ -90,14 +90,14 @@ io.print(a);
 ====
 5
 @@@@
-import io;
+import \saffire\io;
 a = 0;
 while (a < 1) a = 1; else a = 100;
 io.print(a);
 ====
 1
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) a = 10; else a = 50;
 io.print(a);

@@ -1,0 +1,36 @@
+title: Use and import tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import \saffire\io;
+
+io.print("hello\n");
+====
+hello
+@@@@
+import \saffire\io as foo;
+
+foo.print("hello\n");
+====
+hello
+@@@@
+import \saffire\io as foo;
+====
+@@@@
+import \saffire\io from io as bar;
+====
+syntax error, unexpected identifier, expecting ';' or ','
+@@@@
+import \saffire\io as bar\io from io;
+====
+syntax error, unexpected \, expecting ';' or ','
+@@@@
+import foo\bar as foo;
+====
+@@@@
+import \saffire\io1;
+import \saffire\io4 as foo2;
+
+import foo\io9;
+import foo\io12 as foo6;
+====

@@ -188,7 +188,7 @@ int repl(void) {
 
 
     t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));
-    bytecode->stack_size = 42;
+    bytecode->stack_size = 142;
     bytecode->code_len = 0;
     bytecode->code = NULL;
     bytecode->constants_len = 0;

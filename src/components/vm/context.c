@@ -143,9 +143,22 @@ char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
     }
 
     char *absolute_class_name = NULL;
-    absolute_class_name = vm_context_create_fqcn_from_name(ctx->module.full, class_name);
+    absolute_class_name = vm_context_concat_path(ctx->module.full, class_name);
 
     return absolute_class_name;
+}
+
+
+/**
+ *  returns '\bar' from '\foo\bar' when context is '\foo'
+ */
+char *vm_context_strip_context(t_vm_context *ctx, char *class_name)
+{
+    if (strstr(ctx->module.full, class_name) == 0) {
+        return string_strdup0(class_name + strlen(ctx->module.full) + strlen("\\"));
+    }
+
+    return string_strdup0(class_name);
 }
 
 /**
@@ -154,23 +167,24 @@ char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
  * @param post
  * @param fqcn
  */
-char *vm_context_create_fqcn_from_name(char *module, char *class) {
+char *vm_context_concat_path(char *prefix, char *class) {
     char *fqcn = NULL;
 
     if (vm_context_is_fqcn(class)) {
         // \foo  + \bar ==> \foo\bar
-        smm_asprintf_char(&fqcn, "%s%s", module, class);
+        smm_asprintf_char(&fqcn, "%s%s", prefix, class);
         return fqcn;
     }
 
-    if (strcmp(module, "\\") == 0) {
+    // Special case when dealing with just the root context
+    if (strcmp(prefix, "\\") == 0) {
         // \ + bar ==> \bar,  not \\bar
-        smm_asprintf_char(&fqcn, "%s%s", module, class);
+        smm_asprintf_char(&fqcn, "%s%s", prefix, class);
         return fqcn;
     }
 
     // \foo  + bar ==> \foo\bar
-    smm_asprintf_char(&fqcn, "%s\\%s", module, class);
+    smm_asprintf_char(&fqcn, "%s\\%s", prefix, class);
     return fqcn;
 }
 

@@ -224,11 +224,11 @@ void object_tuple_init(void) {
 
     // Subscription interface
     object_add_internal_method((t_object *)&Object_Tuple_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_length);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__set",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);
     object_add_internal_method((t_object *)&Object_Tuple_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
-    object_add_internal_method((t_object *)&Object_Tuple_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_tuple_method_get);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);
+    object_add_internal_method((t_object *)&Object_Tuple_struct, "__splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, NULL);
     object_add_interface((t_object *)&Object_Tuple_struct, Object_Subscription);
 
     vm_populate_builtins("tuple", (t_object *)&Object_Tuple_struct);
@@ -258,7 +258,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     e = DLL_NEXT(e);
 
     t_dll *dll = (t_dll *)e->data.p;
-    e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
+    e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
         t_object *arg_obj = (t_object *)e->data.p;
 

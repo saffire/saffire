@@ -36,8 +36,10 @@
     void vm_context_free(t_vm_context *ctx);
     t_vm_context *vm_context_duplicate(t_vm_context *src);
 
+    char *vm_context_strip_context(t_vm_context *ctx, char *class_name);
+
     char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name);
-    char *vm_context_create_fqcn_from_name(char *module, char *class);
+    char *vm_context_concat_path(char *prefix, char *class);
     int vm_context_is_fqcn(char *class_name);
 
 

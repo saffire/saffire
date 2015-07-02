@@ -218,3 +218,9 @@ void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper
     output_char_helper = char_helper;
     output_string_helper = string_helper;
 }
+
+void output_get_helpers(int (**char_helper)(FILE *f, char c), int (**string_helper)(FILE *f, t_string *s)) {
+    *char_helper = output_char_helper;
+    *string_helper = output_string_helper;
+}
+

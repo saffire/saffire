@@ -53,7 +53,7 @@ struct _backpatch {
  */
 static int _calculate_maximum_stack_size(t_asm_frame *frame) {
     // @TODO: Fixed now, must be calculated!
-    return 42;
+    return 142;
 }
 
 
@@ -343,6 +343,12 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
                 } while (delta_codeoff != 0);
 
                 do {
+                    // If we have a negative line number, use 0 as a prepend for it to indicate this.
+                    if (delta_lineno < 0) {
+                        dll_append(tc, (void *)0);
+                        delta_lineno = abs(delta_lineno);
+                    }
+
                     // When offset > 127, we must use multiple bytes. The high bit (128) tells offset is spread out
                     // over multiple bytes.
                     if (delta_lineno > 127) {
@@ -620,7 +626,10 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
                             case OPERATOR_XOR : fprintf(f, "XOR"); break;
                             case OPERATOR_SHL : fprintf(f, "SHL"); break;
                             case OPERATOR_SHR : fprintf(f, "SHR"); break;
-                            case OPERATOR_COA : fprintf(f, "COA"); break;
+                            case OPERATOR_UNARY_INV : fprintf(f, "INV"); break;
+                            case OPERATOR_UNARY_NOT : fprintf(f, "NOT"); break;
+                            case OPERATOR_UNARY_POS : fprintf(f, "+"); break;
+                            case OPERATOR_UNARY_NEG : fprintf(f, "-"); break;
                         }
                         break;
                     case ASM_LINE_TYPE_OP_COMPARE :

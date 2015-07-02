@@ -13,5 +13,5 @@ if [ -n "$DEBUG" ] ; then
 	exit 1;
 fi
 
-./build/release/utmain
+./build/release/bin/utmain
 /usr/bin/php support/unittester/run-saffire-tests.php ${1:-"unittests/tests/"}
