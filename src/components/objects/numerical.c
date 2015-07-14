@@ -83,11 +83,8 @@ SAFFIRE_METHOD(numerical, neg) {
 
 
 SAFFIRE_METHOD(numerical, conv_boolean) {
-    if (self->data.value == 0) {
-        RETURN_FALSE;
-    } else {
-        RETURN_TRUE;
-    }
+    if (self->data.value == 0) RETURN_FALSE;
+    RETURN_TRUE;
 }
 
 SAFFIRE_METHOD(numerical, conv_null) {
@@ -214,6 +211,26 @@ SAFFIRE_OPERATOR_METHOD(numerical, sr) {
     return object_alloc_instance(Object_Numerical, 1, (self->data.value >> other->data.value));
 }
 
+SAFFIRE_OPERATOR_METHOD(numerical, inv) {
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, ~self->data.value);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, not) {
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, !self->data.value);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, neg) {
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, -self->data.value);
+    RETURN_OBJECT(obj);
+}
+
+SAFFIRE_OPERATOR_METHOD(numerical, pos) {
+    t_object *obj = object_alloc_instance(Object_Numerical, 1, +self->data.value);
+    RETURN_OBJECT(obj);
+}
+
 
 /* ======================================================================
  *   Standard comparisons
@@ -313,6 +330,12 @@ void object_numerical_init(void) {
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_xor",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_xor);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sl",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sl);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sr",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sr);
+
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_inv",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_inv);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_not",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_not);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_pos",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_pos);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_neg",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_neg);
+
 
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_eq",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_eq);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_cmp_ne);

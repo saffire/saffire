@@ -39,7 +39,7 @@
 /**
  *
  */
-static t_object *_saffire_print(int newline, t_object *self, t_dll *arguments) {
+static t_object *_saffire_print(t_object *self, t_dll *arguments, int newline) {
     t_object *obj;
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
@@ -154,14 +154,14 @@ static void _io_dump(t_object *obj, int depth) {
  *
  */
 SAFFIRE_MODULE_METHOD(io, print) {
-    return _saffire_print(0, self, arguments);
+    return _saffire_print(self, arguments, 0);
 }
 
 /**
  *
  */
 SAFFIRE_MODULE_METHOD(io, println) {
-    return _saffire_print(1, self, arguments);
+    return _saffire_print(self, arguments, 1);
 }
 
 /**
@@ -278,7 +278,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_io = {
-    "::saffire::io",
+    "\\saffire",
     "Standard I/O module",
     _objects,
     _init,

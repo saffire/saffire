@@ -2,12 +2,12 @@ title: string reverse
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 io.print("foobar".reverse());
 =====
 raboof
 @@@@@@
-import io;
+import \saffire\io;
 io.print("foobar".reverse().reverse());
 =====
 foobar

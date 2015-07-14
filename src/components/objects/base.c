@@ -311,6 +311,11 @@ SAFFIRE_METHOD(base, id) {
     RETURN_NUMERICAL((long)self);
 }
 
+SAFFIRE_OPERATOR_METHOD(base, not) {
+    RETURN_FALSE;
+}
+
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -324,19 +329,21 @@ void object_base_init() {
 
     object_add_internal_method((t_object *)&Object_Base_struct, "__ctor",         ATTRIB_METHOD_CTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_ctor);
     object_add_internal_method((t_object *)&Object_Base_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_base_method_dtor);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__constants",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_constants);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__properties",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__methods",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__name",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__annotations",  ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__clone",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable?",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__refcount",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
-    object_add_internal_method((t_object *)&Object_Base_struct, "__id",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__constants",    ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_constants);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__properties",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_properties);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__methods",      ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__name",         ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__annotations",  ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__clone",        ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable?",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_is_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__immutable",    ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_immutable);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__refcount",     ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_refcount);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__id",           ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_id);
+
+    object_add_internal_method((t_object *)&Object_Base_struct, "__opr_not",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_base_method_opr_not);
 }
 
 

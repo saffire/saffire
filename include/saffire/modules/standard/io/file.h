@@ -1,11 +1,11 @@
-#ifndef __MODULE_STANDARD_FILE_H__
-#define __MODULE_STANDARD_FILE_H__
+#ifndef __MODULE_STANDARD_IO_FILE_H__
+#define __MODULE_STANDARD_IO_FILE_H__
 
     #include <unistd.h>
     #include <sys/stat.h>
     #include <sys/types.h>
 
-    t_module module_file;
+    t_module module_io_file;
 
 
     typedef struct {

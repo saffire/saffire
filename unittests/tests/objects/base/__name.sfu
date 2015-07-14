@@ -2,7 +2,7 @@ title: base __name tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 a = "hello1";
 io.print(a.__name(),"\n");
@@ -15,7 +15,7 @@ numerical
 boolean
 null
 @@@@@@@@
-import io;
+import \saffire\io;
 
 class myclass {
 }
@@ -25,7 +25,7 @@ io.print(a.__name(), "\n");
 ========
 myclass
 @@@@@@@@
-import io;
+import \saffire\io;
 
 class myclass extends string {
 }

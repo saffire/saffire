@@ -57,17 +57,20 @@
     #endif
     #ifndef __DEBUG_FREE_OBJECT
         // Display when free'ing objects
-        #define __DEBUG_FREE_OBJECT  1
+        #define __DEBUG_FREE_OBJECT  0
     #endif
     #ifndef __DEBUG_STACKFRAME_DESTROY
         // Display variables when destroying stackframe
-        #define __DEBUG_STACKFRAME_DESTROY  1
+        #define __DEBUG_STACKFRAME_DESTROY  0
     #endif
     #ifndef __DEBUG_REFCOUNT
         // Display ref counts
-        #define __DEBUG_REFCOUNT  1
+        #define __DEBUG_REFCOUNT  0
     #endif
 
+
+    // Parse flex/bison debugging
+    //#define __PARSEDEBUG 1
 
 #endif
 

@@ -2,21 +2,21 @@ title: numerical sequences
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 foreach (list.sequence(1,4) as v) {
     io.print(v);
 }
 =====
 1234
 @@@@@@
-import io;
+import \saffire\io;
 foreach (list.sequence(10,30,3) as v) {
     io.print(v);
 }
 =====
 10131619222528
 @@@@@@
-import io;
+import \saffire\io;
 foreach (list.sequence(10,20,0) as v) {
     io.print(v);
 }

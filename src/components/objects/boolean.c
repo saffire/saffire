@@ -164,6 +164,14 @@ SAFFIRE_OPERATOR_METHOD(boolean, sr) {
     ((self->data.value >> other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
+SAFFIRE_OPERATOR_METHOD(boolean, not) {
+    (! self->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+}
+
+SAFFIRE_OPERATOR_METHOD(boolean, inv) {
+    (~ self->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+}
+
 
 /* ======================================================================
  *   Standard comparisons
@@ -259,6 +267,8 @@ void object_boolean_init(void) {
         xor:    F^F=F  F^T=T  T^F=T  T^T=F
         shl:    F<F=F  F<T=F  T<F=T  T<T=F
         shr:    F>F=F  F>T=T  T>F=T  T>T=T
+
+        not:    !F=T   !T=F
     */
     // @TODO: ATTRIB_VISIBILITY_PROTECTED???
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_add);
@@ -271,6 +281,9 @@ void object_boolean_init(void) {
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_xor",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_xor);
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sl",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sl);
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sr",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sr);
+
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_not",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_not);
+    object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_inv",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_inv);
 
 
     /*
@@ -306,7 +319,9 @@ void object_boolean_fini(void) {
 
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
-    if (((t_boolean_object *)obj)->data.value == 0) return "boolean(False)";
+    if (((t_boolean_object *)obj)->data.value == 0) {
+        return "boolean(False)";
+    }
     return "boolean(True)";
 }
 #endif

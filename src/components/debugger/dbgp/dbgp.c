@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <saffire/general/config.h>
+#include <saffire/general/base64.h>
 #include <saffire/debugger/dbgp/xml.h>
 #include <saffire/debugger/dbgp/args.h>
 #include <saffire/debugger/dbgp/sock.h>
@@ -40,6 +41,13 @@
 extern struct dbgp_command dbgp_commands[];
 extern char *dbgp_status_names[5];
 
+
+// Here we store the original helpers so we can call them later on in our new helpers
+int (*original_output_char_helper)(FILE *f, char c);
+int (*original_output_string_helper)(FILE *f, t_string *s);
+
+// Link to debug info for our output helpers
+extern t_debuginfo *debug_info;
 
 /**
  * Read actual command line
@@ -116,6 +124,59 @@ static void dbgp_parse_incoming_command(t_debuginfo *di, int argc, char *argv[])
 }
 
 
+static int _debug_output_char_helper(FILE *f, char c) {
+    t_debuginfo *di = debug_info;
+
+    int idx = f == stdout ? 0 : 1;
+
+    if (di->channel[idx] == 0 || di->channel[idx] == 1) {
+        original_output_char_helper(f, c);
+    }
+    if (di->channel[idx] == 1 || di->channel[idx] == 2) {
+        // Output on debug stream only
+
+        xmlNodePtr stream_node = xmlNewNode(NULL, BAD_CAST "stream");
+        xmlNewProp(stream_node, BAD_CAST "type", BAD_CAST (f == stdout ? "stdout" : "stderr"));
+
+        size_t basebuflen;
+        char *basebuf = base64_encode((unsigned char *)&c, 1, &basebuflen);
+        xmlNodeSetContent(stream_node, BAD_CAST basebuf);
+        free(basebuf);
+
+        dbgp_xml_send(di->sock_fd, stream_node);
+    }
+
+    return 1;
+}
+
+
+static int _debug_output_string_helper(FILE *f, t_string *s) {
+    t_debuginfo *di = debug_info;
+
+    int idx = f == stdout ? 0 : 1;
+
+    if (di->channel[idx] == 0 || di->channel[idx] == 1) {
+        original_output_string_helper(f, s);
+    }
+    if (di->channel[idx] == 1 || di->channel[idx] == 2) {
+        // Output on debug stream
+
+        xmlNodePtr stream_node = xmlNewNode(NULL, BAD_CAST "stream");
+        xmlNewProp(stream_node, BAD_CAST "type", BAD_CAST (f == stdout ? "stdout" : "stderr"));
+
+        size_t basebuflen;
+        char *basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
+        xmlNodeSetContent(stream_node, BAD_CAST basebuf);
+        free(basebuf);
+
+        dbgp_xml_send(di->sock_fd, stream_node);
+    }
+
+    return s->len;
+}
+
+
+
 /**
  *
  */
@@ -139,6 +200,9 @@ t_debuginfo *dbgp_init(void) {
 
     di->frame = NULL;
 
+    di->channel[0] = 0;
+    di->channel[1] = 0;
+
 
     // Create a connection to the IDE.
     // @TODO: We should have a --wait flag, so when there is no connection, at least it will wait and retry every
@@ -161,6 +225,10 @@ t_debuginfo *dbgp_init(void) {
     dbgp_parse_incoming_commands(di);
 
     printf("\n\n\n**** END OF INIT ****\n\n\n");
+
+
+    output_get_helpers(&original_output_char_helper, &original_output_string_helper);
+    output_set_helpers(_debug_output_char_helper, _debug_output_string_helper);
 
     return di;
 }
@@ -186,6 +254,10 @@ void dbgp_fini(t_debuginfo *di) {
     ht_destroy(di->breakpoints);
     dbgp_xml_fini();
     dbgp_sock_fini(di->sock_fd);
+
+
+    // Restore original helpers
+    output_set_helpers(original_output_char_helper, original_output_string_helper);
 }
 
 
@@ -199,7 +271,7 @@ void dbgp_parse_incoming_commands(t_debuginfo *di) {
 
     printf("dbgp_parse_incoming_commands() init\n");
 
-    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->codeblock->bytecode) ? di->frame->codeblock->context->file.full : "<none>", di->frame->lineno_current_line);
+//    printf("Frame: %s (%d)\n", (di && di->frame && di->frame->codeblock && di->frame->codeblock->bytecode) ? di->frame->codeblock->context->file.full : "<none>", di->frame->lineno_current_line);
 
     // Repeat fetching commands until certain states
     while (di->state != DBGP_STATE_RUNNING && di->state != DBGP_STATE_STOPPED && di->state != DBGP_STATE_STOPPING) {
@@ -267,7 +339,8 @@ void dbgp_debug(t_debuginfo *di, t_vm_stackframe *frame) {
         }
     }
 
-    printf("Frame sourcefile: '%s'\n", frame->codeblock->context->file.full);
+    t_vm_context *ctx = vm_frame_get_context(frame);
+    printf("Frame sourcefile: '%s'\n", ctx->file.full);
     printf("LOC.FILE: '%s'\n", di->step_data.file);
 
 
@@ -353,9 +426,10 @@ void dbgp_debug(t_debuginfo *di, t_vm_stackframe *frame) {
         if (bp->state == 0) continue;
 
         if (strcmp(bp->type, DBGP_BREAKPOINT_TYPE_LINE) == 0) {
+            t_vm_context *ctx = vm_frame_get_context(frame);
             // Check line number first, easier match
             if (bp->lineno == frame->lineno_current_line &&
-                strcmp(bp->filename+7, frame->codeblock->context->file.full) == 0 &&
+                strcmp(bp->filename+7, ctx->file.full) == 0 &&
                 strncmp(bp->filename, "file://", 7) == 0) {
 
                 // Matched line breakpoint!

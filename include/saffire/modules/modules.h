@@ -28,10 +28,15 @@
 #define __MODULE_MODULES_H__
 
     #include <saffire/modules/saffire.h>
-    #include <saffire/modules/io.h>
+
+    #include <saffire/modules/standard/io.h>
+    #include <saffire/modules/standard/io/file.h>
+    #include <saffire/modules/standard/io/socket.h>
 
     #include <saffire/modules/standard/math.h>
-    #include <saffire/modules/standard/file.h>
+    #include <saffire/modules/standard/datetime.h>
+
+    #include <saffire/modules/standard/os.h>
 
     #include <saffire/modules/sapi/fastcgi.h>
 

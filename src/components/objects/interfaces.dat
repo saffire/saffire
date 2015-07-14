@@ -19,7 +19,7 @@ datastructure
     __populate
 subscription
     __length
-    __add
+    __set
     __remove
     __get
     __has

@@ -49,6 +49,8 @@
     int string_strcmp(t_string *s1, t_string *s2);
     int string_strcmp0(t_string *s1, const char *c_str);
 
+    char *string_strncpy0(char *s, int len);
+
     char *string_strdup0(const char *s);
     t_string *string_strdup(t_string *s);
 
@@ -56,6 +58,8 @@
     t_string *string_strcat(t_string *dst, const t_string *src);
 
     t_string *string_copy_partial(t_string *src, int offset, int count);
+
+    int string_strpos(t_string *haystack, t_string *needle, long offset);
 
     void string_free(t_string *str);
 

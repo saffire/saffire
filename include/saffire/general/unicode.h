@@ -61,10 +61,12 @@
 //    void utf8_strcpy(t_string *dst, t_string *src);
 //    void utf8_strcat(t_string *dst, t_string *src);
 
-    int utf8_strstr(t_string *haystack, t_string *needle);
+    //int utf8_strstr(t_string *haystack, t_string *needle);
+    int utf8_strstr(t_string *haystack, t_string *needle, long offset);
 
     t_string *utf8_toupper(t_string *src, char *locale);
     t_string *utf8_tolower(t_string *src, char *locale);
+    t_string *utf8_ucfirst(t_string *src, char *locale);
 
 //    int utf8_strstr(t_string *haystack, t_string *needle);
 

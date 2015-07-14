@@ -1,48 +1,48 @@
 title: data structure tests - splicing
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import io;
+import \saffire\io;
 f = "foobarbaz";
 io.print(f[]);
 ~~~~~~
 Cannot read from an empty [] subscription
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[0..2]);
 ====
 foo
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[3..5]);
 ====
 bar
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[6..8]);
 ====
 baz
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[3..10]);
 ====
 barbaz
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[10..3]);
 ~~~~
 start of a subscription must be less or equal than its end
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[..5]);
 ====
 foobar
 @@@@
-import io;
+import \saffire\io;
 io.print("foobarbaz"[4..]);
 ====
 arbaz
 @@@@
-import io;
+import \saffire\io;
 io.print("X","foobarbaz"[20..]);
 ====
 X

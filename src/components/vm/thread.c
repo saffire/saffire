@@ -93,11 +93,12 @@ t_hash_table *thread_create_stacktrace() {
     int depth = 0;
     while (frame) {
         char *s = NULL;
+        t_vm_context *ctx = vm_frame_get_context(frame);
         smm_asprintf_char(&s, "#%d %s:%d %s.%s (<args>)",
             depth,
-            frame->codeblock->context->file.full ? frame->codeblock->context->file.full : "<none>",
+            ctx->file.full ? ctx->file.full : "<none>",
             getlineno(frame),
-            frame->codeblock->context->module.full ? frame->codeblock->context->module.full : "",
+            ctx->module.full ? ctx->module.full : "",
             frame->trace_method ? frame->trace_method : ""
         );
 
@@ -164,4 +165,32 @@ void thread_create_exception_printf(t_exception_object *exception, int code, con
  */
 t_exception_object *thread_get_exception(void) {
     return (t_exception_object *)current_thread->exception;
+}
+
+t_exception_object *thread_save_exception(void) {
+    t_exception_object *exception_obj = (t_exception_object *)current_thread->exception;
+
+    if (! exception_obj) return exception_obj;
+
+    // save guard exception for releasing
+    object_inc_ref((t_object *)exception_obj);
+
+    thread_clear_exception();
+
+    return exception_obj;
+}
+
+void thread_restore_exception(t_exception_object *exception) {
+    if (! exception) return;
+
+    thread_set_exception(exception);
+
+    // Release the lock from our temporary stored exception
+    object_release((t_object *)exception);
+}
+
+void thread_dump_exception(t_exception_object *exception) {
+    if (! exception) return;
+
+    object_release((t_object *)exception);
 }

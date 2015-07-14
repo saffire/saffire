@@ -42,6 +42,7 @@
 #include <saffire/vm/thread.h>
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
+// @TODO: a++ seems like an unary operator instead?
 
 // Object type string constants
 const char *objectTypeNames[OBJECT_TYPE_LEN] = { "object", "callable", "attribute", "base", "boolean",
@@ -53,8 +54,9 @@ const char *objectCmpMethods[9] = { "__cmp_eq", "__cmp_ne", "__cmp_lt", "__cmp_g
                                     "__cmp_in", "__cmp_ni", "__cmp_ex" };
 
 // Object operator methods. These should map on the OPERATOR_* defines
-const char *objectOprMethods[10] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
-                                     "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr" };
+const char *objectOprMethods[14] = { "__opr_add", "__opr_sub", "__opr_mul", "__opr_div", "__opr_mod",
+                                     "__opr_and", "__opr_or", "__opr_xor", "__opr_shl", "__opr_shr",
+                                     "__opr_inv", "__opr_not", "__opr_pos", "__opr_neg" };
 
 
 
@@ -102,9 +104,11 @@ static void _object_free(t_object *obj) {
     if (obj->ref_count > 0) return;
 
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
         DEBUG_PRINT_CHAR("Freeing object: %p\n", obj);
     }
+#endif
 #endif
 
     // Free attributes
@@ -182,7 +186,7 @@ void object_inc_ref(t_object *obj) {
         refcount_objects = ht_create();
     }
 
-    ht_replace_ptr(refcount_objects, (void *)obj, (void *)obj->ref_count);
+    ht_replace_ptr(refcount_objects, (void *)obj, (intptr_t *)obj->ref_count);
 
 
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
@@ -205,7 +209,7 @@ static long object_dec_ref(t_object *obj) {
     }
     obj->ref_count--;
 
-    ht_replace_ptr(refcount_objects, obj, (void *)obj->ref_count);
+    ht_replace_ptr(refcount_objects, (void *)obj, (intptr_t *)obj->ref_count);
 
 #if __DEBUG_REFCOUNT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
@@ -324,7 +328,7 @@ t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached) {
     t_object *res = NULL;
 
     if (! OBJECT_TYPE_IS_CLASS(obj)) {
-        fatal_error(1, "Can only object_alloc_args() from a class object.\n");
+        fatal_error(1, "Can only object_alloc_args() from a class or interface objects.\n");
     }
 
     // Nothing found to new, just return NULL object

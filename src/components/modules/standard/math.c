@@ -129,7 +129,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_math = {
-    "::saffire::math",
+    "\\saffire",
     "Math module",
     _objects,
     _init,

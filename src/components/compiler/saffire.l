@@ -139,8 +139,8 @@
 
 /* Our actual lexemes */
 lnum            -?[0-9]+
-/* identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
-identifier      (::[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
+/* identifier      (\\[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
+identifier      ([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
 whitespace      [ \t\r]+
 newline         "\n"
 sl_comment      "//".+
@@ -154,7 +154,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
 <st_div>\/ { return '/'; }
 
-[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|\&]    { do_yylloc; saffire_push_state(st_regex); return yytext[0]; }
+[-+\%\/<>\(\)\{\}:;,\.\[\]\?!\*^\|\&\~]    { do_yylloc; saffire_push_state(st_regex); return yytext[0]; }
 
 
     /* Only match regex when we are in the regex state */
@@ -164,10 +164,10 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_REGEX;
 }
 
+"\\"        { do_yylloc; saffire_push_state(st_regex); return T_NS_SEP; }
 "??"        { do_yylloc; saffire_push_state(st_regex); return T_COALESCE; }
 "..."       { do_yylloc; saffire_push_state(st_regex); return T_ELLIPSIS; }
 ".."        { do_yylloc; saffire_push_state(st_regex); return T_SUBSCRIPT; }
-"::"        { do_yylloc; saffire_push_state(st_regex); return T_NS_SEP; }
 "~="        { do_yylloc; saffire_push_state(st_regex); return T_RE; }
 "!~="       { do_yylloc; saffire_push_state(st_regex); return T_RE; }
 ">="        { do_yylloc; saffire_push_state(st_regex); return T_GE; }
@@ -199,7 +199,6 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "else"      { do_yylloc; saffire_push_state(st_regex); return T_ELSE; }
 "as"        { do_yylloc; saffire_push_state(st_regex); return T_AS; }
 "import"    { do_yylloc; saffire_push_state(st_regex); return T_IMPORT; }
-"from"      { do_yylloc; saffire_push_state(st_regex); return T_FROM; }
 "do"        { do_yylloc; saffire_push_state(st_regex); return T_DO; }
 "for"       { do_yylloc; saffire_push_state(st_regex); return T_FOR; }
 "foreach"   { do_yylloc; saffire_push_state(st_regex); return T_FOREACH; }
@@ -212,7 +211,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "abstract"      { do_yylloc; saffire_push_state(st_regex); return T_ABSTRACT; }
 "final"         { do_yylloc; saffire_push_state(st_regex); return T_FINAL; }
 "interface"     { do_yylloc; saffire_push_state(st_regex); return T_INTERFACE; }
-"const"         { do_yylloc; saffire_push_state(st_regex); return T_CONST; }
+"constant"      { do_yylloc; saffire_push_state(st_regex); return T_CONST; }
 "static"        { do_yylloc; saffire_push_state(st_regex); return T_STATIC; }
 
 "public"        { do_yylloc; saffire_push_state(st_regex); return T_PUBLIC; }
@@ -237,6 +236,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 "parent"        { do_yylloc; saffire_push_state(st_regex); return T_PARENT; }
 
 "yield"         { do_yylloc; saffire_push_state(st_regex); return T_YIELD; }
+"void"          { do_yylloc; saffire_push_state(st_regex); return T_VOID; }
+"unset"         { do_yylloc; saffire_push_state(st_regex); return T_UNSET; }
 
 
 
@@ -273,7 +274,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_string_sgl>\"           {
                                 do_yylloc;
                                 /* Double quote is just a double quote in single quoted string */
-                                strbuf = add_strbuf_char(strbuf, '\\'); }
+                                strbuf = add_strbuf_char(strbuf, '"'); }
 <st_string_dbl>\'           {
                                 do_yylloc;
                                 /* Single quote is just a single quote in double quoted string */
@@ -285,18 +286,16 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 /* Real newlines inside strings are not allowed */
                                 parser_error((SaffireParser *)yyextra, yylloc->first_line, "newline found in string\n");
                                 yyterminate();
-                            }
-<st_string_sgl,
- st_string_dbl>\\\\         { strbuf = add_strbuf_char(strbuf, '\\'); }
-<st_string_sgl,
- st_string_dbl>\\\"         { strbuf = add_strbuf_char(strbuf, '\"'); }
+                           }
 <st_string_sgl,
  st_string_dbl>\\\'         { do_yylloc; strbuf = add_strbuf_char(strbuf, '\''); }
 
-<st_string_sgl,
- st_string_dbl>\\0          { do_yylloc; strbuf = add_strbuf_char(strbuf, '\0'); }
-<st_string_sgl,
- st_string_dbl>\\[0-7]{1,3} {
+<st_string_dbl>\\\"         { strbuf = add_strbuf_char(strbuf, '\"'); }
+
+<st_string_sgl>\\           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\\'); }
+
+<st_string_dbl>\\0          { do_yylloc; strbuf = add_strbuf_char(strbuf, '\0'); }
+<st_string_dbl>\\[0-7]{1,3} {
                                 do_yylloc;
 
                                 /* Octal number */
@@ -308,8 +307,7 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
                                 }
                                 strbuf = add_strbuf_char(strbuf, (char)result);
                             }
-<st_string_sgl,
- st_string_dbl>\\[xX][0-9A-Fa-f]{1,2} {
+<st_string_dbl>\\[xX][0-9A-Fa-f]{1,2} {
                                 do_yylloc;
 
                                 /* Hexidecimal number */
@@ -323,20 +321,13 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 
                             }
 
-<st_string_sgl,
- st_string_dbl>\\[nN]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\n'); }
-<st_string_sgl,
- st_string_dbl>\\[tT]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\t'); }
-<st_string_sgl,
- st_string_dbl>\\[bB]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\b'); }
-<st_string_sgl,
- st_string_dbl>\\[rR]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\r'); }
-<st_string_sgl,
- st_string_dbl>\\[fF]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\f'); }
-<st_string_sgl,
-  st_string_dbl>\\[vV]          { do_yylloc; strbuf = add_strbuf_char(strbuf, '\v'); }
-<st_string_sgl,
- st_string_dbl>\\.              {
+<st_string_dbl>\\[nN]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\n'); }
+<st_string_dbl>\\[tT]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\t'); }
+<st_string_dbl>\\[bB]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\b'); }
+<st_string_dbl>\\[rR]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\r'); }
+<st_string_dbl>\\[fF]           { do_yylloc; strbuf = add_strbuf_char(strbuf, '\f'); }
+<st_string_dbl>\\[vV]          { do_yylloc; strbuf = add_strbuf_char(strbuf, '\v'); }
+<st_string_dbl>\\.              {
                                 do_yylloc;
                                 /* Everything else is an unknown escape string */
                                 parser_error((SaffireParser *)yyextra, yylloc->first_line, "unknown escape '%s' in string\n", yytext);

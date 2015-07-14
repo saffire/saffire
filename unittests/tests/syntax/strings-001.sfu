@@ -2,45 +2,36 @@ title: String and escape tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 a = "hello1";
 io.print(a);
 ====
 hello1
 @@@@
-import io;
+import \saffire\io;
 a = 'hello2';
 io.print(a);
 ====
 hello2
 @@@@
-import io;
+import \saffire\io;
 a = "hello\n3";
 io.print(a);
 ====
 hello
 3
 @@@@
-import io;
+import \saffire\io;
 a = 'abc\t1234';
-io.print(a);
+io.println(a);
+a = "abc\t1234";
+io.println(a);
 ====
+abc\t1234
 abc	1234
 @@@@
-import io;
+import \saffire\io;
 a = "abc\t1235";
 io.print(a);
 ====
 abc	1235
-@@@@
-import io;
-a = "abcdef\r123\n";
-io.print(a);
-====
-abcdef123
-@@@@
-import io;
-a = '1abcdef\f123';
-io.print(a);
-====
-1abcdef123

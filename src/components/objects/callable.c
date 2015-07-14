@@ -241,6 +241,7 @@ static void obj_free(t_object *obj) {
 #ifdef __DEBUG
 static char *obj_debug(t_object *obj) {
     t_callable_object *self = (t_callable_object *)obj;
+
     snprintf(self->__debug_info, DEBUG_INFO_SIZE-1, "%s callable(%d parameters)",
         CALLABLE_IS_CODE_INTERNAL(self) ? "internal" : "external",
         self->data.arguments ? self->data.arguments->element_count : 0

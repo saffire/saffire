@@ -39,6 +39,8 @@
         int step_over;
         int step_out;
 
+        int channel[2];         // channel for stdout/stderr, (0, 1 or 2)
+
         struct _step_data {
             char *file;
             int lineno;

@@ -2,31 +2,31 @@ title: tuples
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 (a,b) = (1,2);
 io.print(a, b);
 ====
 12
 @@@@
-import io;
+import \saffire\io;
 (a, b, c, d) = (1,2);
 io.print(a, b, c, d);
 ====
 12nullnull
 @@@@
-import io;
+import \saffire\io;
 (a) = (1);
 io.print(a);
 ====
 1
 @@@@
-import io;
+import \saffire\io;
 (a,b) = (1,2,3,4);
 io.print(a,b);
 ====
 12
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 b = 2;
 (a,b) = (b,a);
@@ -34,26 +34,26 @@ io.print(a,b);
 ====
 21
 @@@@
-import io;
+import \saffire\io;
 a = (2 * (3 + 4));
 io.print(a);
 ====
 14
 @@@@
-import io;
+import \saffire\io;
 a = (2) + (3);
 io.print(a);
 ====
 5
 @@@@
-import io;
+import \saffire\io;
 (a, b, c, d) = (1,);
 io.print(a,b,c,d);
 ====
 1nullnullnull
 @@@@
-import io;
+import \saffire\io;
 (a, b, c, d) = (1);
 io.print(a,b,c,d);
 ~~~~
-Argument is not a tuple
+1nullnullnull

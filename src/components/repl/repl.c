@@ -188,7 +188,7 @@ int repl(void) {
 
 
     t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));
-    bytecode->stack_size = 42;
+    bytecode->stack_size = 142;
     bytecode->code_len = 0;
     bytecode->code = NULL;
     bytecode->constants_len = 0;
@@ -199,7 +199,7 @@ int repl(void) {
     bytecode->lino_length = 0;
     bytecode->lino = NULL;
 
-    t_vm_context *ctx = vm_context_new("", "#repl");
+    t_vm_context *ctx = vm_context_new("\\", "#repl");
     t_vm_codeblock *codeblock = vm_codeblock_new(bytecode, ctx);
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
 

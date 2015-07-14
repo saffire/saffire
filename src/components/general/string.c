@@ -117,6 +117,16 @@ t_string *string_strcat(t_string *dst, const t_string *src) {
 
 }
 
+int string_strpos(t_string *haystack, t_string *needle, long offset) {
+    if (offset > haystack->len) {
+        return -1;
+    }
+
+    char *str = haystack->val + offset;
+    char *p = strstr(str, needle->val);
+
+    return (str - p);
+}
 
 int string_strcmp(t_string *s1, t_string *s2) {
     int res, len = s1->len;
@@ -142,6 +152,16 @@ t_string *string_copy_partial(t_string *src, int offset, int count) {
     dst->val = smm_malloc(count+1);
     memcpy(dst->val, (char *)(src->val + offset), count);
     dst->val[count] = '\0';
+
+    return dst;
+}
+
+
+char *string_strncpy0(char *s, int len) {
+    char *dst = smm_malloc(len + 1);
+
+    strncpy(dst, s, len);
+    dst[len] = '\0';
 
     return dst;
 }

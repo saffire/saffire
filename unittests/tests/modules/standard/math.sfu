@@ -2,7 +2,7 @@ title: math module tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
 !skip
-import io;
+import \saffire\io;
 import math;
 
 math.seed(1234);

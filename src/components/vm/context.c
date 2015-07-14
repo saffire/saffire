@@ -34,37 +34,45 @@
 #include <assert.h>
 
 /**
- * Returns the context path from a specified context  (::foo::bar::baz)
+ * Converts a FQCN to a path
  */
-char *vm_context_get_path(char *class_path) {
-    char *s = string_strdup0(class_path);
+char *vm_context_convert_fqcn_to_path(char *fqcn) {
+    char *s = string_strdup0(fqcn);
 
-    // Seek last ':'
-    char *c = strrchr(s, ':');
-    if (c == NULL) {
-        fatal_error(1, "context does not have any ::");     /* LCOV_EXCL_LINE */
+    // Convert backward slashes to forward slashes
+    for (int i=0; i!=strlen(s); i++) {
+        if (s[i] == '\\') {
+            s[i] = '/';
+        }
     }
 
-    c--;
-    if (c == s) {
-        // if we stripped everything, we should just return the :: part. this is an edge-case for top-level class paths
-        c+=2;
-    }
-    *c = '\0';
     return s;
 }
-
 
 /**
  * Returns the context path from a specified context.
  */
-char *vm_context_get_class(char *class_path) {
-    char *c = strrchr(class_path, ':');
-    if (c == NULL) return string_strdup0(class_path);
-    if ((class_path - c) == 0) return string_strdup0(class_path);
+char *vm_context_get_classname_from_fqcn(char *fqcn) {
+    char *c = strrchr(fqcn, '\\');
+    if (c == NULL) return string_strdup0(fqcn);
+    if ((fqcn - c) == 0) return string_strdup0(fqcn);
 
     c++;
     return string_strdup0(c);
+}
+
+char *vm_context_get_modulepath_from_fqcn(char *fqcn) {
+    // Special case for root, use root as module_path
+    if (strcmp(fqcn, "\\") == 0) {
+        return string_strdup0(fqcn);
+    }
+
+    // Find last \ and return "" when not found
+    char *c = strrchr(fqcn, '\\');
+    if (c == NULL) return string_strdup0("");
+
+    // Cut off point and return initial part
+    return string_strncpy0(fqcn, (c-fqcn));
 }
 
 
@@ -79,11 +87,12 @@ t_vm_context *vm_context_duplicate(t_vm_context *src) {
     return dst;
 }
 
-t_vm_context *vm_context_new(char *module_path, char *file_path) {
+t_vm_context *vm_context_new(char *module_fqcn, char *file_path) {
     t_vm_context *context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
     bzero(context, sizeof(t_vm_context));
 
-    if (module_path) {
+    if (module_fqcn) {
+        char *module_path = vm_context_get_modulepath_from_fqcn(module_fqcn);
         context->module.full = string_strdup0(module_path);
     }
 
@@ -106,9 +115,9 @@ t_vm_context *vm_context_new(char *module_path, char *file_path) {
 }
 
 /**
- * Frees the context for this codeblock
+ * Frees up the context
  */
-void vm_context_free_context(t_vm_context *ctx) {
+void vm_context_free(t_vm_context *ctx) {
     if (! ctx) return;
 
     smm_free(ctx->module.full);
@@ -121,38 +130,70 @@ void vm_context_free_context(t_vm_context *ctx) {
 }
 
 
-
-
 /**
- * Returns the absolute fqcp based
+ * Returns the fully qualified class name from a class in the given context
+ *
  * @param frame
  * @param classname
  * @return
  */
-char *vm_context_fqcn(t_vm_context *ctx, char *class_name) {
-    char *absolute_class_name = NULL;
-
+char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
     if (vm_context_is_fqcn(class_name)) {
-        smm_asprintf_char(&absolute_class_name, "%s", class_name);
-    } else {
-        vm_context_create_fqcn(ctx->module.full, class_name, &absolute_class_name);
+        return string_strdup0(class_name);
     }
+
+    char *absolute_class_name = NULL;
+    absolute_class_name = vm_context_concat_path(ctx->module.full, class_name);
 
     return absolute_class_name;
 }
 
-void vm_context_create_fqcn(char *pre, char *post, char **fqcn) {
-    if (vm_context_is_fqcn(post)) {
-        // ::foo  + ::bar ==> ::foo::bar
-        smm_asprintf_char(fqcn, "%s%s", pre, post);
-    } else {
-        // ::foo  + bar ==> ::foo::bar
-        smm_asprintf_char(fqcn, "%s::%s", pre, post);
+
+/**
+ *  returns '\bar' from '\foo\bar' when context is '\foo'
+ */
+char *vm_context_strip_context(t_vm_context *ctx, char *class_name)
+{
+    if (strstr(ctx->module.full, class_name) == 0) {
+        return string_strdup0(class_name + strlen(ctx->module.full) + strlen("\\"));
     }
+
+    return string_strdup0(class_name);
 }
 
+/**
+ * Creates a fully qualified class name based on the pre/post
+ * @param pre
+ * @param post
+ * @param fqcn
+ */
+char *vm_context_concat_path(char *prefix, char *class) {
+    char *fqcn = NULL;
 
+    if (vm_context_is_fqcn(class)) {
+        // \foo  + \bar ==> \foo\bar
+        smm_asprintf_char(&fqcn, "%s%s", prefix, class);
+        return fqcn;
+    }
+
+    // Special case when dealing with just the root context
+    if (strcmp(prefix, "\\") == 0) {
+        // \ + bar ==> \bar,  not \\bar
+        smm_asprintf_char(&fqcn, "%s%s", prefix, class);
+        return fqcn;
+    }
+
+    // \foo  + bar ==> \foo\bar
+    smm_asprintf_char(&fqcn, "%s\\%s", prefix, class);
+    return fqcn;
+}
+
+/**
+ * Returns 1 when the class_name is a FQCN, 0 otherwise
+ *
+ * @param class_name
+ * @return
+ */
 int vm_context_is_fqcn(char *class_name) {
-    int i = (strstr(class_name, "::") == class_name);
-    return i;
+    return class_name[0] == '\\';
 }

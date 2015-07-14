@@ -200,6 +200,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
         case typeAstNop :
             // Nop does not emit any asmlines
             break;
+
         case typeAstOperator :
             stack_push(state->type, ST_TYPE_ID);
             stack_push(state->side, ST_SIDE_LEFT);
@@ -225,6 +226,28 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case '^' : op = OPERATOR_XOR; break;
                 case T_SHIFT_LEFT : op = OPERATOR_SHL; break;
                 case T_SHIFT_RIGHT : op = OPERATOR_SHR; break;
+            }
+
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, op);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_OPERATOR, 1, opr1));
+            break;
+
+        case typeAstUnaryOperator:
+            stack_push(state->type, ST_TYPE_ID);
+            stack_push(state->side, ST_SIDE_LEFT);
+            WALK_LEAF(leaf->unaryOperator.e);
+            stack_pop(state->side);
+            stack_pop(state->type);
+
+            // We just duplicate the item. Unary operators only work on the first one.
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_DUP_TOP, 0));
+
+            op = 0;
+            switch (leaf->unaryOperator.op) {
+                case '~' : op = OPERATOR_UNARY_INV; break;
+                case '!' : op = OPERATOR_UNARY_NOT; break;
+                case '+' : op = OPERATOR_UNARY_POS; break;
+                case '-' : op = OPERATOR_UNARY_NEG; break;
             }
 
             opr1 = asm_create_opr(ASM_LINE_TYPE_OP_OPERATOR, NULL, op);
@@ -408,8 +431,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
 
             // Push parent class as NULL
             stack_push(state->context, ST_CTX_LOAD);
-            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_STRING, "null", 0);
-            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_CONST, 1, opr1));
+            opr1 = asm_create_opr(ASM_LINE_TYPE_OP_ID, "null", 0);
+            dll_append(frame, asm_create_codeline(leaf->lineno, VM_LOAD_ID, 1, opr1));
             stack_pop(state->context);
 
             // Push implements
@@ -562,10 +585,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_IMPORT :
                     stack_push(state->context, ST_CTX_LOAD);
                     WALK_LEAF(leaf->opr.ops[0]);
-                    stack_pop(state->context);
-
-                    stack_push(state->context, ST_CTX_LOAD);
-                    WALK_LEAF(leaf->opr.ops[2]);
                     stack_pop(state->context);
 
                     stack_push(state->context, ST_CTX_LOAD);
@@ -1414,6 +1433,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_labelline(label2));
 
                     break;
+
                 case '?' :
                     // @TODO: This is the same code as if-else.
                     state->loop_cnt++;

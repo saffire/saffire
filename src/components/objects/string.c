@@ -146,6 +146,18 @@ SAFFIRE_METHOD(string, upper) {
     RETURN_OBJECT(obj);
 }
 
+/**
+ * Saffire method: Returns ucfirst string object
+ */
+SAFFIRE_METHOD(string, ucfirst) {
+    t_string *dst = utf8_ucfirst(self->data.value, self->data.locale);
+
+    // Create new object
+    t_string_object *obj = string_create_new_object(dst, self->data.locale);
+    RETURN_OBJECT(obj);
+}
+
+
 
 /**
  * Saffire method: Returns lowercased string object
@@ -279,6 +291,17 @@ SAFFIRE_METHOD(string, conv_string) {
     RETURN_SELF;
 }
 
+SAFFIRE_METHOD(string, split) {
+    t_string_object *token_obj;
+    t_numerical_object *max_obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &token_obj, &max_obj)) {
+        return NULL;
+    }
+
+    RETURN_FALSE;
+}
+
 /**
  *
  */
@@ -349,6 +372,28 @@ SAFFIRE_METHOD(string, get_locale) {
     RETURN_STRING_FROM_CHAR(self->data.locale);
 }
 
+
+/**
+ *
+ */
+SAFFIRE_METHOD(string, index) {
+    t_string_object *needle_obj;
+    t_numerical_object *offset_obj = NULL;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", (t_object *)&needle_obj, &offset_obj)) {
+        return NULL;
+    }
+
+    long offset = offset_obj == NULL ? 0 : OBJ2NUM(offset_obj);
+
+    int pos = utf8_strstr(self->data.value, needle_obj->data.value, offset);
+
+    if (pos == -1) {
+        RETURN_FALSE;
+    }
+
+    RETURN_NUMERICAL(pos);
+}
 
 
 /* ======================================================================
@@ -473,7 +518,7 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
         return NULL;
     }
 
-    utf8_strstr(self->data.value, other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ni) {
@@ -483,7 +528,7 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
         return NULL;
     }
 
-    utf8_strstr(self->data.value, other->data.value) ? (RETURN_FALSE) : (RETURN_TRUE);
+    utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_FALSE) : (RETURN_TRUE);
 }
 
 
@@ -520,7 +565,7 @@ SAFFIRE_METHOD(string, __hasNext) {
     RETURN_FALSE;
 }
 
-SAFFIRE_METHOD(string, __add) {
+SAFFIRE_METHOD(string, __set) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(string, __remove) {
@@ -581,6 +626,7 @@ void object_string_init(void) {
 //    object_add_internal_method((t_object *)&Object_String_struct, "byte_length",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_byte_lengthx);
     object_add_internal_method((t_object *)&Object_String_struct, "length",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
     object_add_internal_method((t_object *)&Object_String_struct, "upper",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_upper);
+    object_add_internal_method((t_object *)&Object_String_struct, "ucfirst",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_ucfirst);
     object_add_internal_method((t_object *)&Object_String_struct, "lower",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_lower);
     object_add_internal_method((t_object *)&Object_String_struct, "reverse",        ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_reverse);
     object_add_internal_method((t_object *)&Object_String_struct, "trim",           ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_trim);
@@ -590,8 +636,8 @@ void object_string_init(void) {
     object_add_internal_method((t_object *)&Object_String_struct, "toLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_to_locale);
     object_add_internal_method((t_object *)&Object_String_struct, "getLocale",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_get_locale);
 
-
-    object_add_internal_method((t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
+    object_add_internal_method((t_object *)&Object_String_struct, "index",          ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_index);
+//    object_add_internal_method((t_object *)&Object_String_struct, "splice",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_splice);
 
     object_add_internal_method((t_object *)&Object_String_struct, "__opr_add",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_add);
 //    object_add_internal_method((t_object *)&Object_String_struct, "__opr_sl",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_string_method_opr_sl);
@@ -618,7 +664,7 @@ void object_string_init(void) {
 
     // Subscription interface
     object_add_internal_method((t_object *)&Object_String_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method_length);
-    object_add_internal_method((t_object *)&Object_String_struct, "__add",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___add);
+    object_add_internal_method((t_object *)&Object_String_struct, "__set",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___set);
     object_add_internal_method((t_object *)&Object_String_struct, "__remove",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___remove);
     object_add_internal_method((t_object *)&Object_String_struct, "__get",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___get);
     object_add_internal_method((t_object *)&Object_String_struct, "__has",          ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_string_method___has);

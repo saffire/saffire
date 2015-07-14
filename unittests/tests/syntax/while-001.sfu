@@ -2,7 +2,7 @@ title: while control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 a = 0;
 while (a < 10) {
   a = a + 1;
@@ -25,14 +25,14 @@ while a {
 ====
 Error: line 2: syntax error, unexpected identifier, expecting '('
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 4) a = a + 1;
 io.print(a);
 ====
 4
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) {
     a = 1;
@@ -43,7 +43,7 @@ io.print(a);
 ====
 2
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) {
     a = 1;
@@ -52,14 +52,14 @@ io.print(a);
 ====
 2
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) a = 1; else a = 1;
 io.print(a);
 ====
 1
 @@@@
-import io;
+import \saffire\io;
 a = 1;
 while (a < 1) { break; } else { io.print("F"); }
 ====

@@ -89,28 +89,31 @@
 /* These must be sorted and used properly */
 %token T_WHILE "while" T_IF "if" T_AS "as" T_DO "do"
 %token T_SWITCH "switch" T_FOR "for" T_FOREACH "foreach" T_CASE "case"
-%nonassoc T_ELSE
 %token T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT
 %token T_MOD_ASSIGNMENT T_AND_ASSIGNMENT T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT
 %token T_CATCH "catch" T_BREAK "break" T_GOTO "goto" T_BREAKELSE "breakelse"
 %token T_CONTINUE "continue" T_THROW "throw" T_RETURN "return" T_FINALLY "finally"
 %token T_TRY "try" T_DEFAULT "default" T_METHOD "method"
-%token T_SELF "self" T_PARENT "parent" T_NS_SEP "::"
+%token T_SELF "self" T_PARENT "parent"
+%left '!'
 %left T_ASSIGNMENT T_GE T_LE T_EQ T_NE '>' '<' '^' T_IN T_RE T_NRE T_REGEX
 %left '+' '-'
 %left '*' '/'
 %token T_AND "and" T_OR "or" T_SHIFT_LEFT "shift left" T_SHIFT_RIGHT "shift right" T_COALESCE "coalesce (??)"
 %token T_CLASS T_EXTENDS T_ABSTRACT T_FINAL T_IMPLEMENTS T_INHERITS T_INTERFACE
 %token T_PUBLIC T_PRIVATE T_PROTECTED T_CONST T_STATIC T_PROPERTY
-%token T_LABEL T_CALL T_ARITHMIC T_LOGICAL T_PROGRAM
-%token T_FQN T_ARGUMENT_LIST T_ASSIGNMENT T_CALL_ARGUMENT_LIST
-%token T_MODIFIERS T_CONSTANTS T_METHOD_ARGUMENT
-%token T_IMPORT "import" T_FROM "from" T_ELLIPSIS "..." T_DATASTRUCT "datastructure" T_SUBSCRIPT "subscription"
+%token T_IMPORT "import" T_ELLIPSIS "..." T_SUBSCRIPT "subscription"
+%token T_YIELD "yield" T_VOID "void" T_UNSET "unset"
+%token T_ASSIGNMENT T_PROGRAM T_LABEL "label" T_CALL "call" T_DATASTRUCT "datastruct" T_METHOD_ARGUMENT T_ARGUMENT_LIST
+%token T_CALL_ARGUMENT_LIST
 
-/* reserved for later use */
-%token T_YIELD
+%token T_NS_SEP "\\"
 
-%type <nPtr> program use_statement_list non_empty_use_statement_list use_statement top_statement_list
+/* Takes care of dangling elses */
+%right "then" T_ELSE
+
+%type <nPtr> program import_statement_list non_empty_import_statement_list top_statement_list non_empty_import_statement_line
+%type <nPtr> import_statement_line import_statement_element
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
 %type <nPtr> statement_list compound_statement statement expression_statement jump_statement
 %type <nPtr> label_statement iteration_statement foreach_iteration_statement class_list while_iteration_statement
@@ -119,7 +122,7 @@
 %type <nPtr> non_empty_method_argument_list interface_inner_statement_list class_inner_statement class_inner_statement_list
 %type <nPtr> if_statement switch_statement class_constant_definition
 %type <nPtr> unary_expression primary_expression pe_no_parenthesis
-%type <nPtr> logical_unary_operator multiplicative_expression additive_expression shift_expression
+%type <nPtr> multiplicative_expression additive_expression shift_expression
 %type <nPtr> catch_header conditional_expression coalesce_expression assignment_expression real_scalar_value
 %type <nPtr> method_argument interface_inner_statement interface_method_declaration interface_property_declaration
 %type <nPtr> class_method_definition class_property_definition qualified_name calling_method_argument_list
@@ -129,7 +132,7 @@
 %type <nPtr> tuple_list non_empty_tuple_list datastructure subscription
 
 %type <sVal> T_ASSIGNMENT T_ADD_ASSIGNMENT T_SUB_ASSIGNMENT T_MUL_ASSIGNMENT T_DIV_ASSIGNMENT T_MOD_ASSIGNMENT T_AND_ASSIGNMENT
-%type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '!' '+' '-' T_SELF T_PARENT
+%type <sVal> T_OR_ASSIGNMENT T_XOR_ASSIGNMENT T_SL_ASSIGNMENT T_SR_ASSIGNMENT '~' '+' '-' T_SELF T_PARENT
 
 
 /* Add token table, so we can convert a token(numerical) into it's name (330 => T_TOKEN for example) */
@@ -161,29 +164,56 @@ saffire:
 
 program:
         /* A program consists of use-statements and a list of top-statements */
-        use_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
+        import_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
 ;
 
-use_statement_list:
-        non_empty_use_statement_list { $$ = $1; }
-    |   /* empty */                  { $$ = ast_node_group(0); }
+
+
+/*
+   Import statements are a bit complex, as there are different variations on how to import:
+
+   import foo;
+   import foo as bar;
+   import foo as bar from baz;
+   import foo,bar;
+   import foo as foo1, bar as bar1;
+   import foo as foo1 from baz1, bar as bar1 from baz2;
+
+   Lot's of shuffling around with groups and add_multi, but this is just to make sure all imports will ultimately end up
+   inside one group instead of (possibly) larger tree. This keeps all the imports A) flat and B) tupled with class, alias and module.
+ */
+
+
+/* Import list could be empty or a list of import statements */
+import_statement_list:
+        non_empty_import_statement_list { $$ = ast_node_group(0); ast_node_add_multi($$, $1); }
+    |   /* empty */                     { $$ = ast_node_group(0); }
 ;
 
-/* A use-statement list with at least one use statement */
-non_empty_use_statement_list:
-        use_statement { $$ = ast_node_group(1, $1); saffireParser->ast = $1; yy_exec(saffireParser); }
-    |   non_empty_use_statement_list use_statement { $$ = ast_node_add($$, $2); saffireParser->ast = $2; yy_exec(saffireParser); }
+/* List could be a single a statement line, or a group of statement lines */
+non_empty_import_statement_list:
+        import_statement_line                                   { $$ = ast_node_group(1, $1); }
+    |   non_empty_import_statement_list import_statement_line   { $$ = ast_node_group(0); ast_node_add_multi($$, $1); ast_node_add($$, $2); }
 ;
 
-use_statement:
-        /* import <foo> from <bar> */
-        T_IMPORT T_IDENTIFIER                     T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2), ast_node_id_to_string($4)); smm_free($2); ast_free_node($4); }
-        /* import <foo> as <bar> from <baz> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER T_FROM qualified_name ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_id_to_string($6)); smm_free($4); ast_free_node($2); ast_free_node($6); }
-        /* import <foo> as <bar> */
-    |   T_IMPORT qualified_name T_AS T_IDENTIFIER                       ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string(@4.first_line, $4), ast_node_string_dup(@2.first_line, $2)); smm_free($4); ast_free_node($2); }
+/* Statement line is IMPORT <whatever> ; */
+import_statement_line:
+    T_IMPORT non_empty_import_statement_line ';'   { $$ = $2; saffireParser->ast = $2; yy_exec(saffireParser); }
+;
+
+/* Non-empty statement line is a comma separated list of statements, either with or without the FROM clause */
+non_empty_import_statement_line:
+        import_statement_element                                     { $$ = ast_node_group(1, $1); }
+    |   non_empty_import_statement_line ',' import_statement_element { $$ = ast_node_group(0); ast_node_add_multi($$, $1); ast_node_add($$, $3); }
+;
+
+/* Statement element is the "what" and optional "as" part of the import. */
+import_statement_element:
         /* import <foo> */
-    |   T_IMPORT qualified_name                                         ';' { $$ = ast_node_opr(@1.first_line, T_IMPORT, 3, ast_node_string_dup(@2.first_line, $2), ast_node_string_context_class(@2.first_line, $2->string.value), ast_node_string_dup(@2.first_line, $2)); ast_free_node($2); }
+        qualified_name                   { $$ = ast_node_opr(@1.first_line, T_IMPORT, 2, ast_node_string_dup($1), ast_node_string_context_class(@1.first_line, $1->string.value)); ast_free_node($1);  /* Converted an identifier to string, so remove identifier node */ }
+        /* import <foo> from <baz> */
+        /* import <foo> as <bar> */
+    |   qualified_name T_AS T_IDENTIFIER { $$ = ast_node_opr(@1.first_line, T_IMPORT, 2, ast_node_string_dup($1), ast_node_string(@3.first_line, $3)); smm_free($3); ast_free_node($1);  /* Converted an identifier to string, so remove identifier node */ }
 ;
 
 /* Top statements are single (global) statements and/or class/interface/constant */
@@ -202,7 +232,6 @@ non_empty_top_statement_list:
 top_statement:
         class_definition        { $$ = $1; }
     |   interface_definition    { $$ = $1; }
-/*    |   constant                { $$ = $1; } */
     |   statement               { $$ = $1; }  /* statement, not statementlist, since top_statement is a list already! */
 ;
 
@@ -237,8 +266,8 @@ compound_statement:
 
 /* if if/else statements */
 if_statement:
-        T_IF '(' expression ')' statement                  { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
-    |   T_IF '(' expression ')' statement T_ELSE statement { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
+        T_IF '(' expression ')' statement %prec "then"      { $$ = ast_node_opr(@1.first_line, T_IF, 2, $3, $5); }
+    |   T_IF '(' expression ')' statement T_ELSE statement  { $$ = ast_node_opr(@1.first_line, T_IF, 3, $3, $5, $7); }
 ;
 
 /* Switch statement */
@@ -261,9 +290,9 @@ case_statement:
 
 /* while, while else, do/while, for and foreach */
 iteration_statement:
-        while_iteration_statement                  { $$ = $1; }
+        while_iteration_statement %prec "then"                 { $$ = $1; }
     |   while_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
-    |   foreach_iteration_statement                  { $$ = $1; }
+    |   foreach_iteration_statement %prec "then"               { $$ = $1; }
     |   foreach_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
     |   T_FOR '(' expression_statement expression_statement                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
@@ -285,7 +314,6 @@ while_iteration_statement:
 expression_statement:
         ';'                         { $$ = ast_node_nop(); }
     |   assignment_expression ';'   { $$ = $1; }
-    |   expression ';'              { $$ = $1; }
 ;
 
 
@@ -425,12 +453,10 @@ unary_expression:
 
 logical_unary_expression:
         primary_expression                      { $$ = $1; }
-    |   logical_unary_operator unary_expression { $$ = ast_node_opr(@1.first_line, T_LOGICAL, 2, $1, $2); }
-;
-
-logical_unary_operator:
-        '~' { $$ = ast_node_string(@1.first_line, "~"); }
-    |   '!' { $$ = ast_node_string(@1.first_line, "!"); }
+    |   '~' unary_expression { $$ = ast_node_unary_operator(@2.first_line, '~', $2);}
+    |   '!' unary_expression { $$ = ast_node_unary_operator(@2.first_line, '!', $2);}
+    |   '+' unary_expression { $$ = ast_node_unary_operator(@2.first_line, '+', $2);}
+    |   '-' unary_expression { $$ = ast_node_unary_operator(@2.first_line, '-', $2);}
 ;
 
 /* Things that can be used as assignment '=', '+=' etc.. */
@@ -503,12 +529,13 @@ primary_expression_first_part:
 /* A name that is namespaced (or not). */
 qualified_name:
         qualified_name_first_part               { $$ = $1; }
-    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_identifier_concat($$, "::"); $$ = ast_node_identifier_concat($$, $3); smm_free($3); }
+    |   qualified_name T_NS_SEP T_IDENTIFIER    { $$ = ast_node_identifier_concat($$, "\\"); $$ = ast_node_identifier_concat($$, $3); smm_free($3); }
 ;
 
+/* first part can be either 'foo' or '\foo', while second parts are always '\bar' (in '\foo\bar' or 'foo\bar') */
 qualified_name_first_part:
         T_IDENTIFIER            { $$ = ast_node_identifier(@1.first_line, $1); smm_free($1); }
-    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "::"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
+    |   T_NS_SEP T_IDENTIFIER   { $$ = ast_node_identifier(@1.first_line, "\\"); $$ = ast_node_identifier_concat($$, $2); smm_free($2); }
 ;
 
 
@@ -536,6 +563,7 @@ calling_method_argument_list:
 
 datastructure:
         '[' '[' ds_elements ']' ']'                          { $$ = ast_node_group(1, $3); }
+    |   '[' '[' ds_elements ',' ']' ']'                      { $$ = ast_node_group(1, $3); }
     |   '[' '[' /* empty */ ']' ']'                          { $$ = ast_node_group(0); }
 ;
 
@@ -578,7 +606,7 @@ interface_inner_statement:
 ;
 
 interface_method_declaration:
-        T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_init_method(saffireParser, @1.first_line, $2); parser_fini_method(saffireParser, @1.first_line);  $$ = ast_node_attribute(@1.first_line, $2, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, 0), $4); smm_free($2); }
+        modifier_list T_METHOD T_IDENTIFIER '(' method_argument_list ')' ';'   { parser_init_method(saffireParser, @1.first_line, $3); parser_fini_method(saffireParser, @1.first_line);  $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_METHOD, 0, ATTRIB_ACCESS_RO, ast_node_nop(), parser_mod_to_methodflags(saffireParser, @1.first_line, 0), $5); smm_free($3); }
 ;
 
 class_method_definition:
@@ -650,7 +678,7 @@ class_property_definition:
 ;
 
 class_constant_definition:
-        modifier_list T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { parser_validate_property_modifiers(saffireParser, @1.first_line, $1); $$ = ast_node_attribute(@1.first_line, $3, ATTRIB_TYPE_CONSTANT, parser_mod_to_visibility(saffireParser, @1.first_line, $1), ATTRIB_ACCESS_RO, $5, 0, ast_node_nop()); smm_free($3); }
+        T_CONST T_IDENTIFIER T_ASSIGNMENT scalar_value ';' { $$ = ast_node_attribute(@1.first_line, $2, ATTRIB_TYPE_CONSTANT, ATTRIB_VISIBILITY_PUBLIC, ATTRIB_ACCESS_RO, $4, 0, ast_node_nop()); smm_free($2); }
 ;
 
 
@@ -706,14 +734,16 @@ class_list:
  ************************************************************
  */
 
+/* comma separated list of elements */
 ds_elements:
         ds_element                  { $$ = ast_node_group(1, $1); }
     |   ds_elements ',' ds_element  { $$ = ast_node_add($$, $3);  }
 ;
 
+/* ':' separated list ('a', 'a:b', 'a:b:c' */
 ds_element:
-        assignment_expression                 { $$ = ast_node_group(1, $1); }
-    |   ds_element ':' assignment_expression  { $$ = ast_node_add($$, $3);  }
+        expression                 { $$ = ast_node_group(1, $1); }
+    |   ds_element ':' expression  { $$ = ast_node_add($$, $3);  }
 ;
 
 

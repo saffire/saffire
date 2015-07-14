@@ -2,7 +2,7 @@ title: Subscriptions
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 
 f = "foobarbaz";
 
@@ -57,4 +57,4 @@ Cannot read from an empty [] subscription
 @@@@
 a[1..4] = "foobar";
 ====
-Variable is not writable
+Cannot write to a [n..m] subscription

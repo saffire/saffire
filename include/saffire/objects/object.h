@@ -68,7 +68,14 @@
     #define OPERATOR_XOR    7
     #define OPERATOR_SHL    8
     #define OPERATOR_SHR    9
-    #define OPERATOR_COA    10
+
+    // Unary operators
+    #define OPERATOR_UNARY_INV    10
+    #define OPERATOR_UNARY_NOT    11
+    #define OPERATOR_UNARY_POS    12
+    #define OPERATOR_UNARY_NEG    13
+
+
 
 
     // Comparisson defines
@@ -151,7 +158,7 @@
 
     // Actual header that needs to be present in each object (as the first entry)
     #define SAFFIRE_OBJECT_HEADER \
-        int ref_count;                  /* Reference count. When 0, it is targeted for garbage collection */ \
+        long ref_count;                  /* Reference count. When 0, it is targeted for garbage collection */ \
         \
         t_objectype_enum type;          /* Type of the (scalar) object */ \
         char *name;                     /* Name of the class */ \

@@ -2,7 +2,7 @@ title: goto control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
     goto label2;
     io.print("noLabel\n");
 label1:
@@ -45,7 +45,7 @@ Unknown token
 Error in line 3: syntax error, unexpected '/'
 @@@@
 // Correct scope
-import io;
+import \saffire\io;
 i = 0;
 while(true) {
     io.print("1");
@@ -63,7 +63,7 @@ io.print(i);
 @@@@
 !skip
 // Allowed to jump out of a loop
-import io;
+import \saffire\io;
 
 goto label2;
 label:
@@ -83,7 +83,7 @@ label3
 @@@@
 !skip
 // Allowed to jump out of a loop
-import io;
+import \saffire\io;
 while(true) {
     io.print("1");
     goto label;

@@ -62,6 +62,10 @@ SAFFIRE_COMPARISON_METHOD(null, ne) {
     }
 }
 
+SAFFIRE_OPERATOR_METHOD(null, not) {
+    RETURN_TRUE;
+}
+
 
 /* ======================================================================
  *   Global object management functions and data
@@ -81,6 +85,8 @@ void object_null_init(void) {
     object_add_internal_method((t_object *)&Object_Null_struct, "__string",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_conv_string);
 
     object_add_internal_method((t_object *)&Object_Null_struct, "__cmp_ne",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_cmp_ne);
+
+    object_add_internal_method((t_object *)&Object_Null_struct, "__opr_not",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_null_method_opr_not);
 
     vm_populate_builtins("null", Object_Null);
 }

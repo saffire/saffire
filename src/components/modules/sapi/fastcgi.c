@@ -81,7 +81,7 @@ static t_object *_objects[] = {
 };
 
 t_module module_sapi_fastcgi = {
-    "::saffire::sapi::fastcgi",
+    "\\saffire\\sapi",
     "FastCGI sapi module",
     _objects,
     _init,

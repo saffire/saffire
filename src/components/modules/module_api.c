@@ -57,9 +57,8 @@ void register_external_module(char *path, t_vm_stackframe *frame) {
     int idx = 0;
     t_object *obj = (t_object *)module_info->objects[idx];
     while (obj != NULL) {
-        char *key;
-        vm_context_create_fqcn("", obj->name, &key);
-        DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
+        char *key = obj->name;
+        DEBUG_PRINT_CHAR("     Registering object: %s\n", obj->name);
 
         ht_add_str(frame->local_identifiers->data.ht, key, obj);
         object_inc_ref(obj);
@@ -76,7 +75,9 @@ void register_external_module(char *path, t_vm_stackframe *frame) {
  * Register an module
  */
 int register_module(t_module *mod, const char *path) {
+#ifdef __DEBUG
     DEBUG_PRINT_CHAR("   Registering module: %s\n", mod->name);
+#endif
 
     // Add to registered modules list
     t_module_info *module_info = smm_malloc(sizeof(t_module_info));
@@ -90,9 +91,10 @@ int register_module(t_module *mod, const char *path) {
     int idx = 0;
     t_object *obj = (t_object *)mod->objects[idx];
     while (obj != NULL) {
-        char *key;
-        vm_context_create_fqcn(mod->name, obj->name, &key);
-        DEBUG_PRINT_CHAR("   Registering object: %s\n", key);
+        char *key = vm_context_concat_path(mod->name, obj->name);
+#ifdef __DEBUG
+        DEBUG_PRINT_CHAR("     Registering object: %s\n", key);
+#endif
         vm_populate_builtins(key, obj);
         smm_free(key);
 
@@ -134,8 +136,11 @@ void module_init(void) {
     register_module(&module_sapi_fastcgi, core_path);
     register_module(&module_saffire, core_path);
     register_module(&module_io, core_path);
+    register_module(&module_io_file, core_path);
+    register_module(&module_io_socket, core_path);
     register_module(&module_math, core_path);
-    register_module(&module_file, core_path);
+    register_module(&module_datetime, core_path);
+    register_module(&module_os, core_path);
 }
 
 /**

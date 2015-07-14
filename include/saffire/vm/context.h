@@ -29,15 +29,17 @@
 
     #include <saffire/vm/vmtypes.h>
 
-    char *vm_context_get_path(char *full_namespace);
-    char *vm_context_get_class(char *full_namespace);
+    char *vm_context_convert_fqcn_to_path(char *fqcn);
+    char *vm_context_get_classname_from_fqcn(char *fqcn);
 
     t_vm_context *vm_context_new(char *module_path, char *file_path);
-    void vm_context_free_context(t_vm_context *ctx);
+    void vm_context_free(t_vm_context *ctx);
     t_vm_context *vm_context_duplicate(t_vm_context *src);
 
-    char *vm_context_fqcn(t_vm_context *ctx, char *class_name);
-    void vm_context_create_fqcn(char *pre, char *post, char **fqcn);
+    char *vm_context_strip_context(t_vm_context *ctx, char *class_name);
+
+    char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name);
+    char *vm_context_concat_path(char *prefix, char *class);
     int vm_context_is_fqcn(char *class_name);
 
 

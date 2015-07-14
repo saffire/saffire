@@ -112,11 +112,15 @@ t_string *utf8_to_string(UChar *str, size_t len) {
 //    return bytes;
 //}
 
-int utf8_strstr(t_string *haystack, t_string *needle) {
+int utf8_strstr(t_string *haystack, t_string *needle, long offset) {
     utf8_from_string(haystack);
     utf8_from_string(needle);
 
-    return (u_strstr(haystack->unicode, needle->unicode) != NULL);
+    UChar *pos = u_strstr(haystack->unicode + offset, needle->unicode);
+
+    if (pos == NULL) return -1;
+
+    return (pos - (haystack->unicode + offset));
 }
 
 /**
@@ -188,20 +192,38 @@ t_string *utf8_toupper(t_string *src, char *locale) {
 
 
 /**
- *
- */
-t_string *utf8_tolower(t_string *src, char *locale) {
-    UErrorCode status = U_ZERO_ERROR;
+  *
+  */
+ t_string *utf8_tolower(t_string *src, char *locale) {
+     UErrorCode status = U_ZERO_ERROR;
 
-    utf8_from_string(src);
+     utf8_from_string(src);
 
-    // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-    u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+     // Convert the unicode string
+     UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
+     u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
 
-    t_string *dst = utf8_to_string(u_str, src->len);
-    return dst;
-}
+     t_string *dst = utf8_to_string(u_str, src->len);
+     return dst;
+ }
+
+ /**
+  *
+  */
+ t_string *utf8_ucfirst(t_string *src, char *locale) {
+     UErrorCode status = U_ZERO_ERROR;
+
+     utf8_from_string(src);
+
+     // Convert the unicode string
+     UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
+     u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+
+     u_strToUpper(u_str, 1, src->unicode, src->len, locale, &status);
+
+     t_string *dst = utf8_to_string(u_str, src->len);
+     return dst;
+ }
 
 
 

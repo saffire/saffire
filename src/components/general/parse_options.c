@@ -172,6 +172,7 @@ void saffire_parse_options(int *argc, char **argv, struct saffire_option *option
  *  "l"  needs (long) integer
  *  "b"  needs boolean (true, false, yes, no, 0, 1)
  *  "|"  all items behind are optional
+ *  "*"  any additional argument is ok
  */
 int saffire_parse_signature(int argc, char **argv, char *signature, char **error) {
     int argp, idx;
@@ -194,24 +195,27 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     // We can "shrink" the argument count, since there are no open slots in between.
     argc = open_slot;
 
-
-    if (argc == 0 && strlen(signature) > 0 && signature[0] != '|') {
-        *error = string_strdup0("Not enough arguments found");
+    if (argc == 0 && strlen(signature) > 0 && (signature[0] != '|' || signature[0] != '*')) {
+        *error = string_strdup0("Not enough arguments found 1");
         return 0;
     }
 
     // Start with optional items
     if (signature[0] == '|') optional = 1;
 
+    int wildcard = (signature[strlen(signature)-1] == '*');
+
     // Process each character in the signature
     for (argp=0,idx=0; idx!=strlen(signature); idx++, argp++) {
         // The argument pointer exceeds the number of arguments but we are still parsing mandatory arguments.
-        if (argp >= argc && ! optional) {
+        if (argp >= argc && ! optional && ! wildcard) {
             *error = string_strdup0("Not enough arguments found");
             return 0;
         }
 
         switch (signature[idx]) {
+            case '*' :
+                break;
             case '|' :
                 // Use the same argument for next signature char.
                 argp--;
@@ -244,7 +248,7 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     }
 
     // Not enough arguments!
-    if (argc > argp) {
+    if (argc > argp && ! wildcard) {
         *error = string_strdup0("Too many arguments found");
         return 0;
     }
@@ -257,7 +261,12 @@ int saffire_parse_signature(int argc, char **argv, char *signature, char **error
     return 1;
 }
 
-
+/**
+ * Returns number of arguments on list
+ */
+int saffire_getopt_count(void) {
+    return saffire_params_count;
+}
 
 /**
  * Returns string from the argument list.

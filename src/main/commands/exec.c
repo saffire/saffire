@@ -90,7 +90,7 @@ static int do_exec(void) {
 
 
     // Create initial code & stackframe
-    t_vm_context *ctx = vm_context_new("", full_source_path);
+    t_vm_context *ctx = vm_context_new("\\", full_source_path);
     t_vm_codeblock *codeblock = vm_codeblock_new(bc, ctx);
 
     t_vm_stackframe *initial_frame = vm_stackframe_new(NULL, codeblock);
@@ -150,7 +150,7 @@ static struct saffire_option exec_options[] = {
 
 /* Config actions */
 static struct command_action command_actions[] = {
-    { "", "s", do_exec, exec_options },
+    { "", "s*", do_exec, exec_options },
     { 0, 0, 0, 0 }
 };
 

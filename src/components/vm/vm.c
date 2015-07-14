@@ -196,8 +196,8 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         }
 
         // Everything is ok, add the new value onto the local identifiers
-        ht_add_str(frame->local_identifiers->data.ht, name, obj);
-        object_inc_ref(obj);
+
+        vm_frame_set_local_identifier(frame, name, obj);
 
         need_count--;
 
@@ -312,9 +312,10 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     child_frame->trace_method = string_strdup0(name);
 
     // Create self inside the new frame
-    t_object *old_self_obj = ht_replace_str(child_frame->local_identifiers->data.ht, "self", self_obj);
-    if (old_self_obj) object_release(old_self_obj);
-    object_inc_ref(self_obj);
+    vm_frame_set_local_identifier(child_frame, "self", self_obj);
+//    t_object *old_self_obj = ht_replace_str(child_frame->local_identifiers->data.ht, "self", self_obj);
+//    if (old_self_obj) object_release(old_self_obj);
+//    object_inc_ref(self_obj);
 
     // Parse calling arguments to see if they match our signatures
     if (! _parse_calling_arguments(child_frame, callable_obj, arg_list)) {
@@ -496,8 +497,10 @@ void vm_fini(void) {
 
     // Decrease builtin reference count. Should be 0 now, and will cleanup the hash used inside
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     DEBUG_PRINT_CHAR("\n\n\n--- CURRENT builtins\n");
     ht_debug(builtin_identifiers->data.ht);
+#endif
 #endif
 
     thread_free(current_thread);
@@ -507,7 +510,9 @@ void vm_fini(void) {
     ht_iter_init(&iter, builtin_identifiers->data.ht);
     while (ht_iter_valid(&iter)) {
         t_object *val = ht_iter_value(&iter);
+#if __DEBUG_FREE_OBJECT
         DEBUG_PRINT_CHAR("\n\n\nBUILTIN DECREASE reference: %08X from %d %s\n", (intptr_t)val, val->ref_count, object_debug(val));
+#endif
         object_release(val);
         ht_iter_next(&iter);
     }
@@ -517,6 +522,7 @@ void vm_fini(void) {
     object_fini();
 
 #ifdef __DEBUG
+#if __DEBUG_FREE_OBJECT
     // We really can't show anything here, since objects should have been gone now. Expect failures
     DEBUG_PRINT_CHAR("At object_fini(), we still have %ld objects left on the stack\n", refcount_objects->element_count);
     ht_iter_init(&iter, refcount_objects);
@@ -525,11 +531,14 @@ void vm_fini(void) {
         t_object *addr = (t_object *)key->val.p;
         long refcount = (long) ht_iter_value(&iter);
         if (refcount != 0) {
+#if __DEBUG_REFCOUNT
             DEBUG_PRINT_CHAR("REFCOUNT %08X => %ld %s\n", (intptr_t)addr, refcount, object_debug((t_object *)addr));
+#endif
         }
         ht_iter_next(&iter);
     }
     ht_destroy(refcount_objects);
+#endif
 #endif
 
 
@@ -550,6 +559,14 @@ int getlineno(t_vm_stackframe *frame) {
     }
 
     int i;
+
+    // Peek if the first entry is a 0, if so, this number is actually negative
+    int negate = 0;
+    if (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset] == 0) {
+        frame->lineno_current_lino_offset++;
+        negate = 1;
+    }
+
     do {
         i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
@@ -558,6 +575,10 @@ int getlineno(t_vm_stackframe *frame) {
         i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
     } while (i > 127);
+
+    if (negate) {
+        delta_line = 0 - delta_line;
+    }
 
     frame->lineno_lowerbound = frame->lineno_upperbound;
     frame->lineno_upperbound += delta_lino;
@@ -593,15 +614,16 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     t_vm_stackframe *tb_frame = frame;
     int tb_depth = 0;
     while (tb_frame) {
+        t_vm_context *ctx = vm_frame_get_context(tb_frame);
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "#%d "
                 ANSI_BRIGHTYELLOW "%s:%d "
                 ANSI_BRIGHTGREEN "%s.%s"
                 ANSI_BRIGHTGREEN "(<args>)"
                 ANSI_RESET "\n",
                 tb_depth,
-                tb_frame->codeblock->context->file.full ? tb_frame->codeblock->context->file.full : "<none>",
+                ctx->file.full ? ctx->file.full : "<none>",
                 getlineno(tb_frame),
-                tb_frame->codeblock->context->module.full ? tb_frame->codeblock->context->module.full : "",
+                ctx->module.full ? ctx->module.full : "",
                 tb_frame->trace_method ? tb_frame->trace_method : ""
             );
         tb_frame = tb_frame->parent;
@@ -653,6 +675,7 @@ dispatch:
 
 #ifdef __DEBUG
     #if __DEBUG_VM_OPCODES
+        t_vm_context *ctx = vm_frame_get_context(frame);
         if ((opcode & 0xE0) == 0xE0) {
             DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "%08lX "
                         ANSI_BRIGHTGREEN "%-20s (0x%02X, 0x%02X, 0x%02X)     "
@@ -661,7 +684,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2, oparg3,
-                        frame->codeblock->context->file.full,
+                        ctx->file.full,
                         ln
                     );
             } else if ((opcode & 0xC0) == 0xC0) {
@@ -672,7 +695,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1, oparg2,
-                        frame->codeblock->context->file.full,
+                        ctx->file.full,
                         ln
                     );
         } else if ((opcode & 0x80) == 0x80) {
@@ -683,7 +706,7 @@ dispatch:
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
                         oparg1,
-                        frame->codeblock->context->file.full,
+                        ctx->file.full,
                         ln
                     );
         } else {
@@ -693,7 +716,7 @@ dispatch:
                         "\n" ANSI_RESET,
                         cip,
                         vm_code_names[vm_codes_offset[opcode]],
-                        frame->codeblock->context->file.full,
+                        ctx->file.full,
                         ln
                     );
         }
@@ -808,7 +831,7 @@ dispatch:
                     }
 
                     // Make sure we are not loading a non-static attribute from a static context
-                    if (! _check_attribute_for_static_call(self_obj, attrib_obj)) {
+                    if (ATTRIB_IS_METHOD(attrib_obj) && ! _check_attribute_for_static_call(self_obj, attrib_obj)) {
                         object_release(self_obj);
 
                         thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", attrib_obj->data.bound_name, self_obj->name);
@@ -954,7 +977,6 @@ dispatch:
                     reason = REASON_EXCEPTION;
                     thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", s, dst);
                     goto block_end;
-                    break;
                 }
 
                 vm_frame_stack_push(frame, dst);
@@ -967,9 +989,10 @@ dispatch:
                 right_obj = vm_frame_stack_pop(frame);
                 left_obj = vm_frame_stack_pop(frame);
 
-                if (left_obj->type != right_obj->type) {
+                if (left_obj != NULL && left_obj->type != right_obj->type) {
                     fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");      /* LCOV_EXCL_LINE */
                 }
+
                 dst = vm_object_operator(left_obj, oparg1, right_obj);
                 if (! dst) {
                     object_release(right_obj);
@@ -1154,7 +1177,6 @@ dispatch:
 
                     object_release((t_object *)varargs);
 
-
                     if (ret_obj == NULL) {
                         // NULL returned means exception occurred.
                         reason = REASON_EXCEPTION;
@@ -1172,39 +1194,29 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Import X as Y from Z
+            // Import X as Y
             case VM_IMPORT :
                 {
                     // Fetch alias
                     t_object *alias_obj = vm_frame_stack_pop(frame);
                     char *alias_name = string_to_char(OBJ2STR(alias_obj));
+                    object_release(alias_obj);
 
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame);
                     char *module_name = string_to_char(OBJ2STR(module_obj));
-
-                    // Fetch class
-                    t_object *class_obj = vm_frame_stack_pop(frame);
-                    char *tmp = string_to_char(OBJ2STR(class_obj));
-                    char *class_name = vm_context_get_class(tmp);
-                    smm_free(tmp);
-
                     object_release(module_obj);
-                    object_release(class_obj);
-                    object_release(alias_obj);
 
+                    // Create FQCN from module name (if needed)
+                    char *fqcn_module = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), module_name);
+                    char *fqcn_alias = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), alias_name);
 
-                    // Create FQCN from module and class name
-                    char *target_pqcn = NULL;
-                    vm_context_create_fqcn(module_name, class_name, &target_pqcn);
+                    vm_frame_set_alias_identifier(frame, fqcn_alias, fqcn_module);
 
-                    vm_frame_set_alias_identifier(frame, alias_name, target_pqcn);
-
-                    smm_free(target_pqcn);
-
-                    smm_free(module_name);
-                    smm_free(class_name);
+                    smm_free(fqcn_module);
+                    smm_free(fqcn_alias);
                     smm_free(alias_name);
+                    smm_free(module_name);
                 }
                 goto dispatch;
                 break;
@@ -1499,13 +1511,13 @@ dispatch:
                     t_object *parent_class = vm_frame_stack_pop(frame);
                     if (OBJECT_IS_NULL(parent_class)) {
                         object_release(parent_class);
-
                         parent_class = Object_Base;
                     } else {
-                        // Find the object of this string
                         s = string_to_char(OBJ2STR(parent_class));
                         object_release(parent_class);
                         parent_class = vm_frame_find_identifier(frame, s);
+
+                        // Find the object of this string
                         if (parent_class == NULL) {
                             reason = REASON_EXCEPTION;
                             thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", s);
@@ -1567,7 +1579,7 @@ dispatch:
                 s = vm_frame_get_name(frame, oparg1);
 
                 // Make the class known in the local identifiers
-                char *fqcn = vm_context_fqcn(frame->codeblock->context, s);
+                char *fqcn = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), s);
                 vm_frame_set_local_identifier(frame, fqcn, (t_object *)obj1);
                 smm_free(fqcn);
 
@@ -1692,28 +1704,32 @@ dispatch:
                     t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
 
                     if (! OBJECT_IS_TUPLE(obj)) {
+                        // Not a tuple, but it's ok: "pad" with NULLs and use the object itself
+                        vm_frame_stack_push(frame, (t_object *)obj);
+
+                        for (int i=0; i < oparg1-1; i++) {
+                            vm_frame_stack_push(frame, Object_Null);
+                            object_inc_ref(Object_Null);
+                        }
+
+                    } else {
+
+                        // Push the tuple vars. Make sure we start from the correct position
+                        int offset = oparg1 < obj->data.ht->element_count ? oparg1 : obj->data.ht->element_count;
+                        for (int i=0; i < offset; i++) {
+                            t_object *val = ht_find_num(obj->data.ht, i);
+                            vm_frame_stack_push(frame, val);
+                            object_inc_ref(val);
+                        }
+
+                        // If we haven't got enough elements in our tuple, pad the result with NULLs first
+                        while (oparg1-- > obj->data.ht->element_count) {
+                            vm_frame_stack_push(frame, Object_Null);
+                            object_inc_ref(Object_Null);
+                        }
+
                         object_release((t_object *)obj);
-
-                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "Argument is not a tuple");
-                        reason = REASON_EXCEPTION;
-                        goto block_end;
                     }
-
-                    // Push the tuple vars. Make sure we start from the correct position
-                    int offset = oparg1 < obj->data.ht->element_count ? oparg1 : obj->data.ht->element_count;
-                    for (int i=0; i < offset; i++) {
-                        t_object *val = ht_find_num(obj->data.ht, i);
-                        vm_frame_stack_push(frame, val);
-                        object_inc_ref(val);
-                    }
-
-                    // If we haven't got enough elements in our tuple, pad the result with NULLs first
-                    while (oparg1-- > obj->data.ht->element_count) {
-                        vm_frame_stack_push(frame, Object_Null);
-                        object_inc_ref(Object_Null);
-                    }
-
-                    object_release((t_object *)obj);
                 }
 
                 goto dispatch;
@@ -1836,10 +1852,10 @@ dispatch:
                 {
                     // Fetch actual data structure
                     obj1 = vm_frame_stack_pop(frame);
-                    if (! object_has_interface(obj1, "iterator")) {
+                    if (! object_has_interface(obj1, "subscription")) {
                         object_release(obj1);
 
-                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'iterator' interface");
+                        thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "Class must inherit the 'subscription' interface");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1902,11 +1918,16 @@ dispatch:
 
             // Store a value into a datastructure
             case VM_STORE_SUBSCRIPT :
-                obj1 = vm_frame_stack_pop(frame);       // datastructure
+                obj1 = vm_frame_stack_pop(frame);       // subscription
                 obj2 = vm_frame_stack_pop(frame);       // key
+                obj3 = vm_frame_stack_pop(frame);       // val
 
                 attr_obj = object_attrib_find(obj1, "__set");
-                t_object *ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+                t_object *ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
+                if (! ret_obj) {
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+                }
                 vm_frame_stack_push(frame, ret_obj);
                 object_inc_ref(ret_obj);
 
@@ -2151,8 +2172,8 @@ void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
     int runmode = vm_runmode;
     vm_runmode &= ~VM_RUNMODE_DEBUG;
 
-    //  Import mandatory saffire object (make '::saffire::saffire' known as "saffire" in the current namespace)
-    vm_frame_set_alias_identifier(frame, "saffire", "::saffire::saffire");
+    //  Import mandatory saffire object (make '\saffire\saffire' known as "saffire" in the current namespace)
+    vm_frame_set_alias_identifier(frame, "\\saffire", "\\saffire\\saffire");
 
     // Back to normal runmode again
     vm_runmode = runmode;
@@ -2178,7 +2199,8 @@ int vm_execute(t_vm_stackframe *frame) {
         DEBUG_PRINT_CHAR(ANSI_BRIGHTRED "============================ EXCEPTION OCCURED. ============================\n\n\n" ANSI_RESET);
     }
     #if __DEBUG_STACKFRAME_DESTROY
-        DEBUG_PRINT_CHAR("----- [END FRAME: %s (%08X)] ----\n", frame->codeblock->context->module.full, (unsigned int)frame);
+        t_vm_context *ctx = vm_frame_get_context(frame);
+        DEBUG_PRINT_CHAR("----- [END FRAME: %s (%08X)] ----\n", ctx->module.full, (uintptr_t)frame);
         if (frame->local_identifiers) print_debug_table(frame->local_identifiers->data.ht, "Locals");
         if (frame->global_identifiers) print_debug_table(frame->global_identifiers->data.ht, "Globals");
         if (frame->builtin_identifiers) print_debug_table(frame->builtin_identifiers->data.ht, "Builtins");
@@ -2195,9 +2217,9 @@ int vm_execute(t_vm_stackframe *frame) {
 #endif
 
             // handle exceptions
-            t_object *saffire_obj = vm_frame_find_identifier(frame, "saffire");  // This is an alias to ::saffire::saffire
+            t_object *saffire_obj = vm_frame_find_identifier(frame, "\\saffire");  // This is an alias to \saffire\saffire
             if (! saffire_obj) {
-                fatal_error(1, "The ::saffire module was not found");
+                fatal_error(1, "The \\saffire module was not found");
             }
 
             t_attrib_object *exceptionhandler_obj = object_attrib_find(saffire_obj, "uncaughtExceptionHandler");

@@ -2,7 +2,7 @@ title: bitwise tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import io;
+import \saffire\io;
 a = 1 + 2;
 io.println(a);
 a = 3 - 4;

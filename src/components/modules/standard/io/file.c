@@ -51,7 +51,7 @@
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, open) {
+SAFFIRE_MODULE_METHOD(io_file, open) {
     t_string_object *name_obj;
     t_string_object *mode_obj;
 
@@ -80,7 +80,7 @@ SAFFIRE_MODULE_METHOD(file, open) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, fileno) {
+SAFFIRE_MODULE_METHOD(io_file, fileno) {
     t_file_object *file_obj = (t_file_object *)self;
     RETURN_NUMERICAL(fileno(file_obj->data.fp));
 }
@@ -88,7 +88,7 @@ SAFFIRE_MODULE_METHOD(file, fileno) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, close) {
+SAFFIRE_MODULE_METHOD(io_file, close) {
     t_file_object *file_obj = (t_file_object *)self;
 
     if (file_obj->data.fp) {
@@ -102,7 +102,7 @@ SAFFIRE_MODULE_METHOD(file, close) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, bytes_in) {
+SAFFIRE_MODULE_METHOD(io_file, bytes_in) {
     t_file_object *file_obj = (t_file_object *)self;
 
     RETURN_NUMERICAL(file_obj->data.bytes_in);
@@ -111,7 +111,7 @@ SAFFIRE_MODULE_METHOD(file, bytes_in) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, bytes_out) {
+SAFFIRE_MODULE_METHOD(io_file, bytes_out) {
     t_file_object *file_obj = (t_file_object *)self;
 
     RETURN_NUMERICAL(file_obj->data.bytes_out);
@@ -120,7 +120,7 @@ SAFFIRE_MODULE_METHOD(file, bytes_out) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, path) {
+SAFFIRE_MODULE_METHOD(io_file, path) {
     t_file_object *file_obj = (t_file_object *)self;
 
     RETURN_STRING_FROM_CHAR(file_obj->data.path);
@@ -129,7 +129,7 @@ SAFFIRE_MODULE_METHOD(file, path) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, stat) {
+SAFFIRE_MODULE_METHOD(io_file, stat) {
     t_file_object *file_obj = (t_file_object *)self;
 
     if (! file_obj->data.stat) {
@@ -165,7 +165,7 @@ SAFFIRE_MODULE_METHOD(file, stat) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, tell) {
+SAFFIRE_MODULE_METHOD(io_file, tell) {
     t_file_object *file_obj = (t_file_object *)self;
 
     RETURN_NUMERICAL(ftell(file_obj->data.fp));
@@ -174,7 +174,7 @@ SAFFIRE_MODULE_METHOD(file, tell) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, seek) {
+SAFFIRE_MODULE_METHOD(io_file, seek) {
     t_file_object *file_obj = (t_file_object *)self;
 
     t_numerical_object *offset_obj;
@@ -192,7 +192,7 @@ SAFFIRE_MODULE_METHOD(file, seek) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, read) {
+SAFFIRE_MODULE_METHOD(io_file, read) {
     t_file_object *file_obj = (t_file_object *)self;
 
     t_numerical_object *size_obj;
@@ -220,7 +220,7 @@ SAFFIRE_MODULE_METHOD(file, read) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, write) {
+SAFFIRE_MODULE_METHOD(io_file, write) {
     t_file_object *file_obj = (t_file_object *)self;
 
     t_string_object *str_obj;
@@ -239,7 +239,7 @@ SAFFIRE_MODULE_METHOD(file, write) {
 /**
  *
  */
-SAFFIRE_MODULE_METHOD(file, lines) {
+SAFFIRE_MODULE_METHOD(io_file, lines) {
     t_file_object *file_obj = (t_file_object *)self;
 
     t_hash_table *ht = ht_create();
@@ -262,6 +262,27 @@ SAFFIRE_MODULE_METHOD(file, lines) {
     RETURN_LIST(ht);
 }
 
+SAFFIRE_MODULE_METHOD(io_file, contents) {
+    t_file_object *file_obj = (t_file_object *)self;
+
+    struct stat filestat;
+    fstat(fileno(file_obj->data.fp), &filestat);
+    int size = filestat.st_size;
+
+    long old_pos = fseek(file_obj->data.fp, 0L, SEEK_CUR);
+
+    char *buf = smm_malloc(size);
+    rewind(file_obj->data.fp);
+    fread(buf, size, 1, file_obj->data.fp);
+
+    fseek(file_obj->data.fp, old_pos, SEEK_SET);
+
+    // TODO: Duplicates buffer. Use string_create_new_object() instead!
+    t_string_object *s = (t_string_object *)object_alloc_instance(Object_String, 2, size, buf);
+    smm_free(buf);
+    RETURN_OBJECT(s);
+}
+
 /* ======================================================================
  *   Global object management functions and data
  * ======================================================================
@@ -269,22 +290,23 @@ SAFFIRE_MODULE_METHOD(file, lines) {
 
 static void _init(void) {
     Object_File_struct.attributes = ht_create();
-    object_add_internal_method((t_object *)&Object_File_struct, "open",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_file_method_open);
-    object_add_internal_method((t_object *)&Object_File_struct, "fileNo",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_fileno);
-    object_add_internal_method((t_object *)&Object_File_struct, "close",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_close);
+    object_add_internal_method((t_object *)&Object_File_struct, "open",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_open);
+    object_add_internal_method((t_object *)&Object_File_struct, "fileNo",    ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_fileno);
+    object_add_internal_method((t_object *)&Object_File_struct, "close",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_close);
 
-    object_add_internal_method((t_object *)&Object_File_struct, "tell",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_tell);
-    object_add_internal_method((t_object *)&Object_File_struct, "seek",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_seek);
-    object_add_internal_method((t_object *)&Object_File_struct, "read",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_read);
-    object_add_internal_method((t_object *)&Object_File_struct, "write",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_write);
+    object_add_internal_method((t_object *)&Object_File_struct, "tell",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_tell);
+    object_add_internal_method((t_object *)&Object_File_struct, "seek",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_seek);
+    object_add_internal_method((t_object *)&Object_File_struct, "read",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_read);
+    object_add_internal_method((t_object *)&Object_File_struct, "write",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_write);
 
-    object_add_internal_method((t_object *)&Object_File_struct, "lines",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_lines);
+    object_add_internal_method((t_object *)&Object_File_struct, "lines",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_lines);
+    object_add_internal_method((t_object *)&Object_File_struct, "contents",  ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_contents);
 
-    object_add_internal_method((t_object *)&Object_File_struct, "path",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_path);
-    object_add_internal_method((t_object *)&Object_File_struct, "stat",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_stat);
+    object_add_internal_method((t_object *)&Object_File_struct, "path",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_path);
+    object_add_internal_method((t_object *)&Object_File_struct, "stat",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_stat);
 
-    object_add_internal_method((t_object *)&Object_File_struct, "bytesIn",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_bytes_in);
-    object_add_internal_method((t_object *)&Object_File_struct, "bytesOut",  ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_file_method_bytes_out);
+    object_add_internal_method((t_object *)&Object_File_struct, "bytesIn",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_bytes_in);
+    object_add_internal_method((t_object *)&Object_File_struct, "bytesOut",  ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, module_io_file_method_bytes_out);
 
     object_add_constant((t_object *)&Object_File_struct, "SEEK_SET",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SEEK_SET));
     object_add_constant((t_object *)&Object_File_struct, "SEEK_CUR",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SEEK_CUR));
@@ -327,8 +349,8 @@ static char *obj_debug(t_object *obj) {
     // If we CAN print debug info, we HAVE space for debug info. At the end of an object.
 
     // Store debug info at the end of an object. There is space allocated for this purpose in debug mode
-    snprintf(obj->__debug_info, DEBUG_INFO_SIZE-1, "file[%d]", fn);
-    return obj->__debug_info;
+    snprintf(file_obj->__debug_info, DEBUG_INFO_SIZE-1, "file[%d]", fn);
+    return file_obj->__debug_info;
 }
 #endif
 
@@ -370,8 +392,8 @@ static t_object *_objects[] = {
     NULL
 };
 
-t_module module_file = {
-    "::saffire::file",
+t_module module_io_file = {
+    "\\saffire\\io",
     "File module",
     _objects,
     _init,

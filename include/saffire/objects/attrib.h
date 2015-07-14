@@ -66,7 +66,9 @@
     #define ATTRIB_METHOD_FINAL                4        // Finalized method
     #define ATTRIB_METHOD_CTOR                 8        // Constructor method
     #define ATTRIB_METHOD_DTOR                16        // Descructor method
+    #define ATTRIB_METHOD_MIXED               33        // Can be called both dynamically (also sets STATIC FLAG)
 
+    #define ATTRIB_METHOD_IS_MIXED(attrib)      ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_MIXED) == ATTRIB_METHOD_MIXED)
     #define ATTRIB_METHOD_IS_STATIC(attrib)     ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_STATIC) == ATTRIB_METHOD_STATIC)
     #define ATTRIB_METHOD_IS_ABSTRACT(attrib)   ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_ABSTRACT) == ATTRIB_METHOD_ABSTRACT)
     #define ATTRIB_METHOD_IS_FINAL(attrib)      ((((t_attrib_object *)attrib)->data.attr_method_flags & ATTRIB_METHOD_FINAL) == ATTRIB_METHOD_FINAL)

@@ -267,8 +267,9 @@ DBGP_CMD_DEF(step_into) {
         di->step_data.file = NULL;
         di->step_data.lineno = 0;
     } else {
+        t_vm_context *ctx = vm_frame_get_context(di->frame);
         di->step_data.frame = di->frame;
-        di->step_data.file = di->frame->codeblock->context->file.full;
+        di->step_data.file = ctx->file.full;
         di->step_data.lineno = di->frame->lineno_current_line;
     }
 
@@ -283,8 +284,9 @@ DBGP_CMD_DEF(step_over) {
     di->state = DBGP_STATE_RUNNING;
     di->step_over = 1;
 
+    t_vm_context *ctx = vm_frame_get_context(di->frame);
     di->step_data.frame = di->frame;
-    di->step_data.file = di->frame->codeblock->context->file.full;
+    di->step_data.file = ctx->file.full;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -298,8 +300,9 @@ DBGP_CMD_DEF(step_out) {
     di->state = DBGP_STATE_RUNNING;
     di->step_out = 1;
 
+    t_vm_context *ctx = vm_frame_get_context(di->frame);
     di->step_data.frame = di->frame->parent;
-    di->step_data.file = di->frame->codeblock->context->file.full;
+    di->step_data.file = ctx->file.full;
     di->step_data.lineno = di->frame->lineno_current_line;
 
     return NULL;
@@ -328,9 +331,10 @@ DBGP_CMD_DEF(stack_get) {
         xmlSetProp(node, BAD_CAST "level", BAD_CAST xmlbuf);
         xmlSetProp(node, BAD_CAST "type", BAD_CAST "file");
 
-        xmlSetProp(node, BAD_CAST "where", BAD_CAST frame->codeblock->context);
+        t_vm_context *ctx = vm_frame_get_context(frame);
+        xmlSetProp(node, BAD_CAST "where", BAD_CAST ctx->module.full);
 
-        snprintf(xmlbuf, 999, "file://%s", frame->codeblock->context->file.full);
+        snprintf(xmlbuf, 999, "file://%s", ctx->file.full);
         xmlSetProp(node, BAD_CAST "filename", BAD_CAST xmlbuf);
         snprintf(xmlbuf, 999, "%d", frame->lineno_current_line);
         xmlSetProp(node, BAD_CAST "lineno", BAD_CAST xmlbuf);
@@ -390,20 +394,34 @@ DBGP_CMD_DEF(context_get) {
         char *key = ht_iter_key_str(&iter);
         t_object *obj = ht_iter_value(&iter);
 
-        if (OBJECT_TYPE_IS_INSTANCE(obj)) {
+        if (obj == (t_object *)-1) {
+            node = xmlNewChild(root_node, NULL, BAD_CAST "property", NULL);
+            xmlSetProp(node, BAD_CAST "type", BAD_CAST "unresolved");
+            xmlNodeSetContent(node, BAD_CAST "unresolved");
+
+            xmlSetProp(node, BAD_CAST "name", BAD_CAST key);
+            xmlSetProp(node, BAD_CAST "fullname", BAD_CAST key);
+            xmlSetProp(node, BAD_CAST "classname", BAD_CAST "unresolved");
+
+        } else if (OBJECT_TYPE_IS_INSTANCE(obj)) {
 
             node = xmlNewChild(root_node, NULL, BAD_CAST "property", NULL);
 
             if (OBJECT_IS_NUMERICAL(obj)) {
-                xmlSetProp(node, BAD_CAST "type", BAD_CAST "int");
+                xmlSetProp(node, BAD_CAST "type", BAD_CAST "numerical");
 
                 snprintf(xmlbuf, 999, "%ld", ((t_numerical_object *)obj)->data.value);
                 xmlNodeSetContent(node, BAD_CAST xmlbuf);
 
-            } else if (OBJECT_IS_BOOLEAN(obj)) {
-                xmlSetProp(node, BAD_CAST "type", BAD_CAST "bool");
+            } else if (OBJECT_IS_NULL(obj)) {
+                xmlSetProp(node, BAD_CAST "type", BAD_CAST "null");
 
-                snprintf(xmlbuf, 999, "%ld", ((t_boolean_object *)obj)->data.value);
+                xmlNodeSetContent(node, BAD_CAST "null");
+
+            } else if (OBJECT_IS_BOOLEAN(obj)) {
+                xmlSetProp(node, BAD_CAST "type", BAD_CAST "boolean");
+
+                snprintf(xmlbuf, 999, "%s", ((t_boolean_object *)obj)->data.value ? "true" : "false");
                 xmlNodeSetContent(node, BAD_CAST xmlbuf);
 
             } else if (OBJECT_IS_STRING(obj)) {
@@ -413,7 +431,7 @@ DBGP_CMD_DEF(context_get) {
 
                 // @TODO: We have to convert
                 basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
-                printf("basebuf: '%s'\n", basebuf);
+//                printf("basebuf: '%s'\n", basebuf);
                 xmlNodeSetContent(node, BAD_CAST basebuf);
                 free(basebuf);
                 xmlSetProp(node, BAD_CAST "encoding", BAD_CAST "base64");
@@ -723,6 +741,16 @@ DBGP_CMD_DEF(set_stdout) {
     xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     // Check for 0 (disable) 1 (copy) or 2 (redirect)
+
+    int i = dbgp_args_find("-c", argc, argv);
+    int channel = atoi(argv[i+1]);
+    if (channel < 0 || channel > 2) {
+        xmlSetProp(root_node, BAD_CAST "success", BAD_CAST "0");
+        return root_node;
+    }
+
+    di->channel[0] = channel;
+
     xmlSetProp(root_node, BAD_CAST "success", BAD_CAST "1");
     return root_node;
 }
@@ -734,6 +762,15 @@ DBGP_CMD_DEF(set_stderr) {
     xmlNodePtr root_node = dbgp_xml_create_response(di);
 
     // Check for 0 (disable) 1 (copy) or 2 (redirect)
+    int i = dbgp_args_find("-c", argc, argv);
+    int channel = atoi(argv[i+1]);
+    if (channel < 0 || channel > 2) {
+        xmlSetProp(root_node, BAD_CAST "success", BAD_CAST "0");
+        return root_node;
+    }
+
+    di->channel[1] = channel;
+
     xmlSetProp(root_node, BAD_CAST "success", BAD_CAST "1");
     return root_node;
 }

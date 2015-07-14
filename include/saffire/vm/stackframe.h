@@ -64,7 +64,7 @@
     void *vm_frame_get_constant_literal(t_vm_stackframe *frame, int idx);
     char *vm_frame_get_name(t_vm_stackframe *frame, int idx);
 
-    char *vm_frame_get_context_path(char *path);
+    t_vm_context *vm_frame_get_context(t_vm_stackframe *frame);
 
 #ifdef __DEBUG
     void vm_frame_stack_debug(t_vm_stackframe *frame);

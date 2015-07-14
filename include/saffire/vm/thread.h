@@ -59,4 +59,8 @@
     t_exception_object *thread_get_exception(void);
     int thread_exception_thrown(void);
 
+    t_exception_object *thread_save_exception(void);
+    void thread_restore_exception(t_exception_object *exception);
+    void thread_dump_exception(t_exception_object *exception);
+
 #endif
