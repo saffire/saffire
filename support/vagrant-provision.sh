@@ -50,7 +50,7 @@ echo -e "
  All necessary tools and libraries are installed to compile Saffire. Please run the following:
 \033[1;37m
    $ cd /vagrant
-   $ sh build.sh
+   $ sudo ./build.sh -i
 \033[0m
 
  This will compile and install a Saffire binary in \033[1;37m/usr/local/bin/saffire\033[0m. From this point you

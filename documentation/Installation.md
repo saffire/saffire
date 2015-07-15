@@ -20,7 +20,7 @@ Saffire. Once the box has started, issue the following:
 
     vagrant ssh
     cd /vagrant
-    sh build.sh
+    sudo ./build.sh -i
 
 This will compile and install Saffire in your vagrant box, where you can experiment all you like.
 
@@ -59,7 +59,7 @@ After installation of the packages, clone the github repository (either your own
     
     git clone https://github.com/saffire/saffire.git
 
-After this, you can compile and install Saffire:
+After this, you can compile Saffire:
 
     cd saffire
     sh build.sh
@@ -70,9 +70,9 @@ One more thing: in the current development settings, we need to have Saffire mod
     mkdir -p /usr/share/saffire/modules
     ln -s sfl /usr/share/saffire/modules/sfl
 
-If everything goes according to plan, you will have a `./build/release/saffire` binary up and running. You can test this
+If everything goes according to plan, you will have a `./build/release/bin/saffire` binary up and running. You can test this
 with the following command:
 
-    ./build/release/saffire
+    ./build/release/bin/saffire
 
 This should display an initial help file. 
