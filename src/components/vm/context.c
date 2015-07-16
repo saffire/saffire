@@ -154,8 +154,12 @@ char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
  */
 char *vm_context_strip_context(t_vm_context *ctx, char *class_name)
 {
+    // Strip the context if the class_name actually starts with the given context
     if (strstr(ctx->module.full, class_name) == 0) {
-        return string_strdup0(class_name + strlen(ctx->module.full) + strlen("\\"));
+        // If context is \, then it does not have an additional \.
+        int extra_separator_chars = (strcmp(ctx->module.full, "\\") == 0) ? 0 : strlen("\\");
+
+        return string_strdup0(class_name + strlen(ctx->module.full) + extra_separator_chars);
     }
 
     return string_strdup0(class_name);
