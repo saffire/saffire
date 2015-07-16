@@ -186,7 +186,7 @@ void object_inc_ref(t_object *obj) {
         refcount_objects = ht_create();
     }
 
-    ht_replace_ptr(refcount_objects, (void *)obj, (intptr_t *)obj->ref_count);
+    ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
 
 
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
@@ -209,7 +209,7 @@ static long object_dec_ref(t_object *obj) {
     }
     obj->ref_count--;
 
-    ht_replace_ptr(refcount_objects, (void *)obj, (intptr_t *)obj->ref_count);
+    ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
 
 #if __DEBUG_REFCOUNT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
