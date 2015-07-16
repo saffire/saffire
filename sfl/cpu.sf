@@ -1,6 +1,8 @@
 /**
  * This is the CPU class.
  */
+
+// https://github.com/anrieff/libcpuid
 class cpu {
 
     public method all() {

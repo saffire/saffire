@@ -121,7 +121,7 @@ void print_usage(void) {
  */
 static int _exec_command (struct command *cmd, int argc, char **argv) {
     // argv[0] points to action (or start of parameter list, or NULL when no actions/params are given)
-    char *dst_action = argv[0] ? argv[0] : "";
+    char *dst_action = (argc > 0 && argv[0]) ? argv[0] : "";
 
     // Iterate structure and find correct action depending on the argument signature
     struct command_action *action = cmd->info->actions;
@@ -144,7 +144,9 @@ static int _exec_command (struct command *cmd, int argc, char **argv) {
             // Parse the rest of the arguments, confirming the action's signature
             char *error = NULL;
             if (! saffire_parse_signature(argc, argv, action->arglist, &error)) {
-                output_char("%s\n", error);
+                output_char("Error: %s\n", error);
+                output_char("\n");
+                output_char("Usage:\n");
                 output_char("%s", cmd->info->help);
                 output_char("\n");
                 if (error) smm_free(error);
