@@ -14,10 +14,22 @@ apt-get install -y cmake build-essential
 apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev libxml2-dev libicu-dev
 apt-get autoremove
 
-# Needed as cunit pkgconfig does not supply a version line itself
+# Needed as cunit pkgconfig does not supply a version line itself and has an issue on the libdir
 grep "Version" /usr/lib/pkgconfig/cunit.pc
 if [[ $? == 1 ]] ; then
-    echo "Version: 2.1.0" >> /usr/lib/pkgconfig/cunit.pc
+    echo "* Upgrading cunit pkgconfig file..."
+    cat << 'EOST' > /usr/lib/pkgconfig/cunit.pc
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/CUnit
+
+Name: CUnit
+Description: The C Unit Test Library
+Libs: -L${libdir} -lcunit
+CFlags: -I${includedir}
+Version: 2.1.0
+EOST
 fi
 
 # Mandatory PHP scripts, needed for running unittests
@@ -33,8 +45,8 @@ ln -s /vagrant/support/nginx/config/saffire /etc/nginx/sites-enabled/saffire
 mkdir -p /usr/share/saffire/modules
 ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
 
-
 # Create new MOTD partial
+echo "* Adding new MOTD partial..."
 cat << 'EOST' > /etc/update-motd.d/99-saffire-welcome
 #!/bin/bash
 
@@ -69,6 +81,7 @@ echo -e "
 ";
 EOST
 
-chmod 755 /etc/update-motd.d/99-saffire-welcome
+chmod +x /etc/update-motd.d/99-saffire-welcome
+/etc/update-motd.d/99-saffire-welcome >/var/run/motd
 
-update-motd
+echo "* Provisioning completed."
