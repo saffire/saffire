@@ -37,13 +37,17 @@ apt-get install -y php5-cli
 
 
 # Install nginx
-apt-get install -y nginx
-ln -s /vagrant/support/nginx/config/saffire /etc/nginx/sites-enabled/saffire
-/etc/init.d/nginx reload
+if [[ ! -L /etc/nginx/sites-enabled/saffire ]]; then
+    apt-get install -y nginx
+    ln -s /vagrant/support/nginx/config/saffire /etc/nginx/sites-enabled/saffire
+    /etc/init.d/nginx reload
+fi
 
 # Symlink SFL library
-mkdir -p /usr/share/saffire/modules
-ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
+if [[ ! -L /usr/share/saffire/modules/sfl ]]; then
+  mkdir -p /usr/share/saffire/modules
+  ln -s /vagrant/sfl /usr/share/saffire/modules/sfl
+fi
 
 # Create new MOTD partial
 echo "* Adding new MOTD partial..."
