@@ -20,9 +20,9 @@ Saffire. Once the box has started, issue the following:
 
     vagrant ssh
     cd /vagrant
-    sudo ./build.sh -i
+    ./build.sh
 
-This will compile and install Saffire in your vagrant box, where you can experiment all you like.
+This will compile Saffire in your vagrant box, where you can experiment all you like.
 
 
 Installation on your local system:
