@@ -50,18 +50,22 @@ echo -e "
  All necessary tools and libraries are installed to compile Saffire. Please run the following:
 \033[1;37m
    $ cd /vagrant
-   $ sudo ./build.sh -i
+   $ ./build.sh
 \033[0m
 
- This will compile and install a Saffire binary in \033[1;37m/usr/local/bin/saffire\033[0m. From this point you
+ This will compile a Saffire binary in \033[1;37m/vagrant/build/release/bin/saffire\033[0m. From this point you
  can use saffire by issuing:
 \033[1;37m
-   $ saffire help
+   $ /vagrant/build/release/bin/saffire help
 \033[0m
 
  Or start executing your first saffire file with:
 \033[1;37m
+<<<<<<< HEAD
    $ saffire hello.sf
+=======
+   $ /vagrant/build/release/bin/saffire ./hello.sf
+>>>>>>> Don’t offer auto-install advice, fix incorrect usage
 \033[0m
 
  Have fun!
