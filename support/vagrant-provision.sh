@@ -61,11 +61,7 @@ echo -e "
 
  Or start executing your first saffire file with:
 \033[1;37m
-<<<<<<< HEAD
-   $ saffire hello.sf
-=======
-   $ /vagrant/build/release/bin/saffire ./hello.sf
->>>>>>> Don’t offer auto-install advice, fix incorrect usage
+   $ /vagrant/build/release/bin/saffire hello.sf
 \033[0m
 
  Have fun!
