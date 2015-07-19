@@ -736,15 +736,15 @@ dispatch:
         switch (opcode) {
             // Removes SP-0
             case VM_POP_TOP :
-                obj1 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_pop(frame, 1);
                 object_release(obj1);
                 goto dispatch;
                 break;
 
             // Rotate / swap SP-0 and SP-1
             case VM_ROT_TWO :
-                obj1 = vm_frame_stack_pop(frame);
-                obj2 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_pop(frame, 1);
+                obj2 = vm_frame_stack_pop(frame, 1);
                 vm_frame_stack_push(frame, obj1);
                 vm_frame_stack_push(frame, obj2);
                 goto dispatch;
@@ -752,9 +752,9 @@ dispatch:
 
             // Rotate SP-0 to SP-2
             case VM_ROT_THREE :
-                obj1 = vm_frame_stack_pop(frame);
-                obj2 = vm_frame_stack_pop(frame);
-                obj3 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_pop(frame, 1);
+                obj2 = vm_frame_stack_pop(frame, 1);
+                obj3 = vm_frame_stack_pop(frame, 1);
                 vm_frame_stack_push(frame, obj1);
                 vm_frame_stack_push(frame, obj2);
                 vm_frame_stack_push(frame, obj3);
@@ -763,7 +763,7 @@ dispatch:
 
             // Duplicate SP-0
             case VM_DUP_TOP :
-                obj1 = vm_frame_stack_fetch_top(frame);
+                obj1 = vm_frame_stack_fetch_top(frame, 0);
                 vm_frame_stack_push(frame, obj1);
                 object_inc_ref(obj1);
                 goto dispatch;
@@ -771,10 +771,10 @@ dispatch:
 
             // Rotate SP-0 to SP-3
             case VM_ROT_FOUR :
-                obj1 = vm_frame_stack_pop(frame);
-                obj2 = vm_frame_stack_pop(frame);
-                obj3 = vm_frame_stack_pop(frame);
-                obj4 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_pop(frame, 1);
+                obj2 = vm_frame_stack_pop(frame, 1);
+                obj3 = vm_frame_stack_pop(frame, 1);
+                obj4 = vm_frame_stack_pop(frame, 1);
                 vm_frame_stack_push(frame, obj1);
                 vm_frame_stack_push(frame, obj2);
                 vm_frame_stack_push(frame, obj3);
@@ -792,7 +792,7 @@ dispatch:
             case VM_LOAD_ATTRIB :
                 {
                     // The object to load the attribute from.
-                    t_object *self_obj = vm_frame_stack_pop(frame);
+                    t_object *self_obj = vm_frame_stack_pop(frame, 1);
 
                     // Name of attribute to load
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
@@ -874,7 +874,7 @@ dispatch:
             case VM_STORE_ATTRIB :
                 {
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
-                    t_object *search_obj = vm_frame_stack_pop(frame);
+                    t_object *search_obj = vm_frame_stack_pop(frame, 1);
 
 #ifdef __DEBUG
                     ht_debug(search_obj->attributes);
@@ -901,7 +901,7 @@ dispatch:
 
                     // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
 
-                    t_object *value = vm_frame_stack_pop(frame);
+                    t_object *value = vm_frame_stack_pop(frame, 1);
                     if (attrib_obj) {
                         // Decrease reference of original value
                         if (attrib_obj->data.attribute) {
@@ -936,7 +936,7 @@ dispatch:
 //            // store SP+0 as a global identifier
 //            case VM_STORE_GLOBAL :
 //                // Refcount stays equal. So no inc/dec ref needed
-//                dst = vm_frame_stack_pop(frame);
+//                dst = vm_frame_stack_pop(frame, 1);
 //                name = vm_frame_get_name(frame, oparg1);
 //                vm_frame_set_global_identifier(frame, name, dst);
 //                goto dispatch;
@@ -960,7 +960,7 @@ dispatch:
 
             // Store SP+0 into identifier
             case VM_STORE_ID :
-                dst = vm_frame_stack_pop(frame);
+                dst = vm_frame_stack_pop(frame, 1);
                 s = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_local_identifier(frame, s, dst);
 
@@ -986,8 +986,8 @@ dispatch:
 
             //
             case VM_OPERATOR :
-                right_obj = vm_frame_stack_pop(frame);
-                left_obj = vm_frame_stack_pop(frame);
+                right_obj = vm_frame_stack_pop(frame, 1);
+                left_obj = vm_frame_stack_pop(frame, 1);
 
                 if (left_obj != NULL && left_obj->type != right_obj->type) {
                     fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");      /* LCOV_EXCL_LINE */
@@ -1019,7 +1019,7 @@ dispatch:
 
             // Conditional jump on SP-0 is true
             case VM_JUMP_IF_TRUE :
-                dst = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame, 1);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
@@ -1035,7 +1035,7 @@ dispatch:
 
             // Conditional jump on SP-0 is false
             case VM_JUMP_IF_FALSE :
-                dst = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame, 1);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
@@ -1049,7 +1049,7 @@ dispatch:
                 break;
 
             case VM_JUMP_IF_FIRST_TRUE :
-                dst = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame, 1);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
@@ -1067,7 +1067,7 @@ dispatch:
                 break;
 
             case VM_JUMP_IF_FIRST_FALSE :
-                dst = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame, 1);
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
@@ -1092,7 +1092,7 @@ dispatch:
 
             // Duplicates the SP+0 a number of times
             case VM_DUP_TOPX :
-                dst = vm_frame_stack_fetch_top(frame);
+                dst = vm_frame_stack_fetch_top(frame, 0);
                 for (int i=0; i!=oparg1; i++) {
                     vm_frame_stack_push(frame, dst);
                     object_inc_ref(dst);
@@ -1104,7 +1104,7 @@ dispatch:
             case VM_CALL :
                 {
                     // Fetch methods to call
-                    obj1 = vm_frame_stack_pop_attrib(frame);
+                    obj1 = vm_frame_stack_pop(frame, 0);
                     if (
                          ! (OBJECT_IS_ATTRIBUTE(obj1) && ATTRIB_IS_METHOD(obj1)) &&
                          ! (OBJECT_TYPE_IS_CLASS(obj1))
@@ -1141,13 +1141,13 @@ dispatch:
                     t_dll *arg_list = dll_init();
 
                     // Fetch varargs object (or null_object when no varargs are needed)
-                    t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame);
+                    t_list_object *varargs = (t_list_object *)vm_frame_stack_pop(frame, 1);
 
                     // Add items
                     for (int i=0; i!=oparg1; i++) {
                         // We pop arguments, but we add it to a dll, don't decrease refcount, but we must do so
                         // when we finish with our dll
-                        dll_prepend(arg_list, vm_frame_stack_pop(frame));
+                        dll_prepend(arg_list, vm_frame_stack_pop(frame, 1));
                     }
 
                     if (! OBJECT_IS_NULL(varargs)) {
@@ -1198,12 +1198,12 @@ dispatch:
             case VM_IMPORT :
                 {
                     // Fetch alias
-                    t_object *alias_obj = vm_frame_stack_pop(frame);
+                    t_object *alias_obj = vm_frame_stack_pop(frame, 1);
                     char *alias_name = string_to_char(OBJ2STR(alias_obj));
                     object_release(alias_obj);
 
                     // Fetch the module to import
-                    t_object *module_obj = vm_frame_stack_pop(frame);
+                    t_object *module_obj = vm_frame_stack_pop(frame, 1);
                     char *module_name = string_to_char(OBJ2STR(module_obj));
                     object_release(module_obj);
 
@@ -1260,8 +1260,8 @@ dispatch:
 
             // Compare 2 objects and push a boolean(true) or boolean(false) object back onto the stack
             case VM_COMPARE_OP :
-                left_obj = vm_frame_stack_pop(frame);
-                right_obj = vm_frame_stack_pop(frame);
+                left_obj = vm_frame_stack_pop(frame, 1);
+                right_obj = vm_frame_stack_pop(frame, 1);
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
@@ -1384,19 +1384,19 @@ dispatch:
             case VM_BUILD_ATTRIB :
                 {
                     // pop access object
-                    t_object *access = vm_frame_stack_pop(frame);
+                    t_object *access = vm_frame_stack_pop(frame, 1);
 
                     // pop visibility object
-                    t_object *visibility = vm_frame_stack_pop(frame);
+                    t_object *visibility = vm_frame_stack_pop(frame, 1);
 
                     // pop value object
-                    t_object *value_obj = vm_frame_stack_pop(frame);
+                    t_object *value_obj = vm_frame_stack_pop(frame, 1);
 
                     int method_flags = 0;
 
                     if (oparg1 == ATTRIB_TYPE_METHOD) {
                         // Pop method flags (not used yet)
-                        t_object *method_flag_obj = vm_frame_stack_pop(frame);
+                        t_object *method_flag_obj = vm_frame_stack_pop(frame, 1);
                         method_flags = OBJ2NUM(method_flag_obj);
                         object_release(method_flag_obj);
 
@@ -1404,13 +1404,13 @@ dispatch:
                         t_hash_table *arg_list = ht_create();
                         for (int i=0; i!=oparg2; i++) {
                             t_method_arg *arg = smm_malloc(sizeof(t_method_arg));
-                            arg->value = vm_frame_stack_pop(frame);
+                            arg->value = vm_frame_stack_pop(frame, 1);
 
-                            t_object *name_obj = vm_frame_stack_pop(frame);
+                            t_object *name_obj = vm_frame_stack_pop(frame, 1);
                             s = string_to_char(OBJ2STR(name_obj));
                             object_release(name_obj);
 
-                            arg->typehint = (t_string_object *)vm_frame_stack_pop(frame);
+                            arg->typehint = (t_string_object *)vm_frame_stack_pop(frame, 1);
 
                             ht_add_str(arg_list, s, arg);
                             smm_free(s);
@@ -1456,7 +1456,7 @@ dispatch:
                 {
                     // pop class flags (abstract,
                     // @TODO: Do we need to mask certain flags, as they should not be set directly through opcodes?
-                    obj1 = vm_frame_stack_pop(frame);
+                    obj1 = vm_frame_stack_pop(frame, 1);
                     int flags = OBJ2NUM(obj1);
                     object_release(obj1);
 
@@ -1473,14 +1473,14 @@ dispatch:
 
                     // Pop the number of interfaces
                     t_dll *interfaces = dll_init();
-                    t_object *interface_cnt_obj = vm_frame_stack_pop(frame);
+                    t_object *interface_cnt_obj = vm_frame_stack_pop(frame, 1);
                     long interface_cnt = OBJ2NUM(interface_cnt_obj);
                     object_release(interface_cnt_obj);
                     DEBUG_PRINT_CHAR("Number of interfaces we need to implement: %ld\n", interface_cnt);
 
                     // Fetch all interface objects
                     for (int i=0; i!=interface_cnt; i++) {
-                        t_object *interface_name_obj = vm_frame_stack_pop(frame);
+                        t_object *interface_name_obj = vm_frame_stack_pop(frame, 1);
                         DEBUG_PRINT_STRING_ARGS("Implementing interface: %s\n", object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
@@ -1508,7 +1508,7 @@ dispatch:
 
 
                     // pop parent code object (as string)
-                    t_object *parent_class = vm_frame_stack_pop(frame);
+                    t_object *parent_class = vm_frame_stack_pop(frame, 1);
                     if (OBJECT_IS_NULL(parent_class)) {
                         object_release(parent_class);
                         parent_class = Object_Base;
@@ -1530,15 +1530,15 @@ dispatch:
 
 
                     // pop class name
-                    t_object *name_obj = vm_frame_stack_pop(frame);
+                    t_object *name_obj = vm_frame_stack_pop(frame, 1);
                     char *name = string_to_char(OBJ2STR(name_obj));
                     object_release(name_obj);
 
                     // Fetch all attributes
                     t_hash_table *attributes = ht_create();
                     for (int i=0; i!=oparg1; i++) {
-                        t_object *attr_name = vm_frame_stack_pop(frame);
-                        t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop_attrib(frame);
+                        t_object *attr_name = vm_frame_stack_pop(frame, 1);
+                        t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame, 0);
 
                         // Add method attribute to class
                         s = string_to_char(OBJ2STR(attr_name));
@@ -1574,7 +1574,7 @@ dispatch:
                 break;
 
             case VM_STORE_FRAME_ID :
-                obj1 = vm_frame_stack_pop(frame);
+                obj1 = vm_frame_stack_pop(frame, 1);
 
                 s = vm_frame_get_name(frame, oparg1);
 
@@ -1596,7 +1596,7 @@ dispatch:
             // Return / end the current frame
             case VM_RETURN :
                 // Pop "ret" from the stack
-                ret = vm_frame_stack_pop(frame);
+                ret = vm_frame_stack_pop(frame, 1);
 
                 // We will be using the object in 'block_end'
                 object_inc_ref(ret);
@@ -1621,14 +1621,14 @@ dispatch:
 
             // Setup an exception try/catch block with finally clause
             case VM_END_FINALLY :
-                ret = vm_frame_stack_pop(frame);
+                ret = vm_frame_stack_pop(frame, 1);
 
                 if (OBJECT_IS_NUMERICAL(ret)) {
                     reason = OBJ2NUM(ret);
                     object_release(ret);
 
                     if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
-                        ret = vm_frame_stack_pop(frame);
+                        ret = vm_frame_stack_pop(frame, 1);
                     }
                     goto block_end;
                     break;
@@ -1654,7 +1654,7 @@ dispatch:
             case VM_THROW :
                 {
                     // Fetch exception object
-                    t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    t_object *obj = (t_object *)vm_frame_stack_pop(frame, 1);
 
                     // Check if object extends exception
                     if (! object_instance_of(obj, "exception")) {
@@ -1684,7 +1684,7 @@ dispatch:
 
                     // Add elements from the stack into the tuple, sort in reverse order!
                     for (int i=0; i!=oparg1; i++) {
-                        t_object *val = vm_frame_stack_pop(frame);
+                        t_object *val = vm_frame_stack_pop(frame, 1);
 
                         ht_add_num(obj->data.ht, oparg1 - i - 1, val);
                     }
@@ -1701,7 +1701,7 @@ dispatch:
             case VM_UNPACK_TUPLE :
                 {
                     // Check if we are are unpacking a tuple
-                    t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame);
+                    t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame, 1);
 
                     if (! OBJECT_IS_TUPLE(obj)) {
                         // Not a tuple, but it's ok: "pad" with NULLs and use the object itself
@@ -1738,7 +1738,7 @@ dispatch:
             // Reset an iteration
             case VM_ITER_RESET :
                 {
-                    obj1 = vm_frame_stack_pop(frame);
+                    obj1 = vm_frame_stack_pop(frame, 1);
 
                     // check if we have the iterator interface implemented
                     if (! object_has_interface(obj1, "iterator")) {
@@ -1760,6 +1760,25 @@ dispatch:
                     vm_object_call(obj3, attr_obj, 0);
 
                     object_release(obj1);
+
+
+                    attr_obj = object_attrib_find(obj3, "__length");
+                    obj1 = vm_object_call(obj3, attr_obj, 0);
+                    if (! OBJECT_IS_NUMERICAL(obj1)) {
+                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "__lenght() must return a numerical value");
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+
+                    // Get the current block, and store iter data in it
+                    t_vm_frameblock *block = vm_peek_block(frame);
+                    if (block == NULL) {
+                        fatal_error(1, "Trying to initialize an iteration block, but block stack is empty.");
+                    }
+                    block->iter.available = 1;
+                    block->iter.count = OBJ2NUM(obj1);
+                    block->iter.index = -1;
                 }
                 goto dispatch;
                 break;
@@ -1767,12 +1786,28 @@ dispatch:
             // Fetch iteration values (key, val, meta)
             case VM_ITER_FETCH :
                 {
-                    obj1 = vm_frame_stack_pop(frame);
+                    obj1 = vm_frame_stack_pop(frame, 1);
 
                     // If we need 3 values, create and push metadata
                     if (oparg1 == 3) {
-                        vm_frame_stack_push(frame, Object_Null);
-                        object_inc_ref(Object_Null);
+
+                        // Find the current iteration block (doesn't have to be the current block, as we might be
+                        // inside a while-loop within the foreach.
+                        t_vm_frameblock *block = vm_find_iter_block(frame);
+
+                        // Increase iteration count
+                        block->iter.index++;
+
+                        // Create meta data object with correct values
+                        t_object *meta_obj = (t_object *)object_alloc_instance(Object_Meta, 0);
+                        object_add_constant(meta_obj, "first", ATTRIB_TYPE_CONSTANT | ATTRIB_ACCESS_RO | ATTRIB_VISIBILITY_PUBLIC, block->iter.index == 0 ? Object_True : Object_False);
+                        object_add_constant(meta_obj, "last", ATTRIB_TYPE_CONSTANT | ATTRIB_ACCESS_RO | ATTRIB_VISIBILITY_PUBLIC, (block->iter.count > 0 && block->iter.index == block->iter.count - 1) ? Object_True : Object_False);
+                        object_add_constant(meta_obj, "count", ATTRIB_TYPE_CONSTANT | ATTRIB_ACCESS_RO | ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(block->iter.count));
+                        object_add_constant(meta_obj, "index", ATTRIB_TYPE_CONSTANT | ATTRIB_ACCESS_RO | ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(block->iter.index));
+                        // Set meta_obj as immutable
+
+                        vm_frame_stack_push(frame, meta_obj);
+                        object_inc_ref(meta_obj);
                     }
                     // Always push value
                     attr_obj = object_attrib_find(obj1, "__value");
@@ -1809,7 +1844,7 @@ dispatch:
             case VM_BUILD_DATASTRUCT   :
                 {
                     // Fetch methods to call
-                    t_object *obj = (t_object *)vm_frame_stack_pop(frame);
+                    t_object *obj = (t_object *)vm_frame_stack_pop(frame, 1);
 
                     // We can only call a class, as we are instantiating a data structure
                     if (! OBJECT_TYPE_IS_CLASS(obj)) {
@@ -1833,7 +1868,7 @@ dispatch:
                     // Create argument list.
                     t_dll *dll = dll_init();
                     for (int i=0; i!=oparg1; i++) {
-                        dll_append(dll, vm_frame_stack_pop(frame));
+                        dll_append(dll, vm_frame_stack_pop(frame, 1));
                     }
 
                     // Create new object, because we know it's a data-structure, just add them to the list
@@ -1851,7 +1886,7 @@ dispatch:
             case VM_LOAD_SUBSCRIPT :
                 {
                     // Fetch actual data structure
-                    obj1 = vm_frame_stack_pop(frame);
+                    obj1 = vm_frame_stack_pop(frame, 1);
                     if (! object_has_interface(obj1, "subscription")) {
                         object_release(obj1);
 
@@ -1873,7 +1908,7 @@ dispatch:
                             break;
                         case 1 :
                             // foo[n]
-                            obj2 = vm_frame_stack_pop(frame);       // first key
+                            obj2 = vm_frame_stack_pop(frame, 1);       // first key
 
                             attr_obj = object_attrib_find(obj1, "__get");
                             ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
@@ -1882,8 +1917,8 @@ dispatch:
                             break;
                         case 2 :
                             // foo[n..m]
-                            obj3 = vm_frame_stack_pop(frame);       // max
-                            obj2 = vm_frame_stack_pop(frame);       // min
+                            obj3 = vm_frame_stack_pop(frame, 1);       // max
+                            obj2 = vm_frame_stack_pop(frame, 1);       // min
 
                             attr_obj = object_attrib_find(obj1, "__splice");
                             if (! attr_obj) {
@@ -1918,9 +1953,9 @@ dispatch:
 
             // Store a value into a datastructure
             case VM_STORE_SUBSCRIPT :
-                obj1 = vm_frame_stack_pop(frame);       // subscription
-                obj2 = vm_frame_stack_pop(frame);       // key
-                obj3 = vm_frame_stack_pop(frame);       // val
+                obj1 = vm_frame_stack_pop(frame, 1);       // subscription
+                obj2 = vm_frame_stack_pop(frame, 1);       // key
+                obj3 = vm_frame_stack_pop(frame, 1);       // val
 
                 attr_obj = object_attrib_find(obj1, "__set");
                 t_object *ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
@@ -2061,7 +2096,7 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             // Clean up any remaining items on the variable stack, but keep the last "REASON_FINALLY"
             while (frame->sp < block->sp - 1) {
                 DEBUG_PRINT_CHAR("Current SP: %d -> Needed SP: %d\n", frame->sp, block->sp);
-                t_object *obj = vm_frame_stack_pop(frame);
+                t_object *obj = vm_frame_stack_pop(frame, 1);
                 object_release(obj);
             }
 
@@ -2088,7 +2123,7 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
         // Unwind the variable stack. This will remove all variables used in the current (unwound) block.
         while (frame->sp < block->sp) {
-            t_object *obj = vm_frame_stack_pop(frame);
+            t_object *obj = vm_frame_stack_pop(frame, 1);
             object_release(obj);
         }
 

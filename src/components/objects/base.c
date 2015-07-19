@@ -117,7 +117,7 @@ static t_hash_table *find_interfaces(t_object *self, int check_parents) {
 
     t_object *obj = self;
     while (obj) {
-        t_dll_element *e = DLL_HEAD(obj->interfaces);
+        t_dll_element *e = obj->interfaces ? DLL_HEAD(obj->interfaces) : NULL;
         while (e) {
             t_object *interface_obj = (t_object *)e->data.p;
             e = DLL_NEXT(e);
@@ -248,6 +248,10 @@ SAFFIRE_METHOD(base, implements) {
     t_boolean_object *parents_obj;
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
         return NULL;
+    }
+
+    if (parents_obj == NULL) {
+         parents_obj = (t_boolean_object *)Object_True;
     }
 
     t_hash_table *interfaces = find_interfaces(self, IS_BOOLEAN_TRUE(parents_obj));

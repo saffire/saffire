@@ -1,25 +1,25 @@
 title: saffire module tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import \saffire\io;
+import io;
 
 io.print(saffire.version());
 ~~~~~~~~
 Saffire
 @@@@@
-import \saffire\io;
+import io;
 
 io.print(saffire.git_revision().length());
 ========
 40
 @@@@@
-import \saffire\io;
+import io;
 
 io.print(saffire.sapi());
 ======
 cli
 @@@@@
-import \saffire\io;
+import io;
 
 io.print(saffire.debug());
 ======

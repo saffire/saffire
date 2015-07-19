@@ -52,7 +52,11 @@ static t_object *_saffire_print(t_object *self, t_dll *arguments, int newline) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output_char("%s", OBJ2STR0(obj));
+        if (obj) {
+            output_char("%s", OBJ2STR0(obj));
+        } else {
+            output_char("");
+        }
 
         e = DLL_NEXT(e);
     }

@@ -2,7 +2,7 @@ title: while functional tests
 author: Chris Tankersley <chris@ctankersley.com>
 
 **********
-import \saffire\io;
+import io;
 a = 0;
 do {
   a = a + 1;
@@ -11,7 +11,7 @@ io.print(a);
 ====
 10
 @@@@
-import \saffire\io;
+import io;
 a = 0;
 do {
     a = a + 1;
@@ -20,7 +20,7 @@ io.print(a);
 ====
 1
 @@@@
-import \saffire\io;
+import io;
 a = 0;
 do a = a + 1; while ( a < 10);
 io.print(a);

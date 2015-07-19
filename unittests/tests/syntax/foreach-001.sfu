@@ -2,7 +2,7 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 foo = list[[1,2,3]];
 foreach (foo as k)  {
     io.print(k,"\n");
@@ -12,7 +12,7 @@ foreach (foo as k)  {
 2
 3
 @@@@
-import \saffire\io;
+import io;
 foo = hash[["a":1,"b":2,"c":3]];
 foreach (foo as k,v)  {
     io.print(k,"=>",v,"\n");
@@ -22,7 +22,7 @@ a=>1
 b=>2
 c=>3
 @@@@
-import \saffire\io;
+import io;
 foreach (hash[["a":1,"b":2,"c":3]] as k)  {
     io.print(k,"\n");
 }
@@ -55,7 +55,7 @@ foreach blaat {
 ====
 Error in line 1: syntax error, unexpected identifier, expecting '('
 @@@@
-import \saffire\io;
+import io;
 foreach ("foo" as a) {
   io.print(a,"\n");
 }
@@ -66,7 +66,7 @@ o
 o
 done
 @@@@
-import \saffire\io;
+import io;
 foreach (list[[]] as a) {
     /* no iteration, because of empty list */
     io.print("iteration\n");
@@ -75,7 +75,7 @@ io.print("done\n");
 ====
 done
 @@@@
-import \saffire\io;
+import io;
 foreach (list[[1,2,3]] as a) io.print(a,"\n");
 io.print("done\n");
 ====
@@ -84,7 +84,7 @@ io.print("done\n");
 3
 done
 @@@@
-import \saffire\io;
+import io;
 foreach (list[[]] as a);
 io.print("done\n");
 ====

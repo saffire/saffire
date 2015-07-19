@@ -1007,7 +1007,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                 case T_GOTO :
                     node = leaf->opr.ops[0];
                     sprintf(label1, "userlabel_%s", node->string.value);
-                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1   , 0);
+                    opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label1, 0);
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_JUMP_ABSOLUTE, 1, opr1));
                     break;
 
@@ -1052,8 +1052,6 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     stack_pop(state->context);
                     stack_pop(state->call_state);
 
-                    dll_append(frame, asm_create_codeline(0, VM_ITER_RESET, 0));
-
                     has_else_statement = (leaf->opr.nops == 6);
 
                     if (has_else_statement) {
@@ -1064,6 +1062,8 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                         opr1 = asm_create_opr(ASM_LINE_TYPE_OP_LABEL, label5, 0);
                         dll_append(frame, asm_create_codeline(0, VM_SETUP_LOOP, 1, opr1));
                     }
+
+                    dll_append(frame, asm_create_codeline(0, VM_ITER_RESET, 0));
 
                     dll_append(frame, asm_create_labelline(label1));
                     dll_append(frame, asm_create_codeline(0, VM_DUP_TOP, 0));

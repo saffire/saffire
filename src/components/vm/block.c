@@ -58,6 +58,7 @@ static t_vm_frameblock *_create_block(t_vm_stackframe *frame, int type, int sp) 
     block->type = type;
     block->sp = sp;
     block->visited = 0;
+    block->iter.available = 0;
 
 #ifdef __DEBUG
 vm_frame_block_debug(frame);
@@ -106,5 +107,24 @@ t_vm_frameblock *vm_pop_block(t_vm_stackframe *frame) {
  *
  */
 t_vm_frameblock *vm_peek_block(t_vm_stackframe *frame) {
+    if (frame->block_cnt == 0) {
+        return NULL;
+    }
     return &frame->blocks[frame->block_cnt - 1];
+}
+
+t_vm_frameblock *vm_find_iter_block(t_vm_stackframe *frame) {
+    int idx = frame->block_cnt - 1;
+
+    while (idx >= 0) {
+        if (frame->blocks[idx].iter.available == 1) {
+            return &frame->blocks[idx];
+        }
+        idx--;
+    }
+
+    fatal_error(1, "Trying to find an iteration block, but none were found");
+
+    // Make compiler happy
+    return NULL;
 }

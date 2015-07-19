@@ -36,6 +36,7 @@
     void vm_push_block_exception(t_vm_stackframe *frame, int type, int sp, int ip_catch, int ip_finally, int ip_end_finally);
     t_vm_frameblock *vm_pop_block(t_vm_stackframe *frame);
     t_vm_frameblock *vm_peek_block(t_vm_stackframe *frame);
+    t_vm_frameblock *vm_find_iter_block(t_vm_stackframe *frame);
 
 #endif
 

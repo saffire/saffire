@@ -2,7 +2,7 @@ title: Subscriptions
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 
 f = "foobarbaz";
 

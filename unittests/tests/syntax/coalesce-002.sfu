@@ -3,7 +3,7 @@ author: Joshua Thijssen <jthijssen@noxlogic.nl>
 
 **********
 // Simple null coalesce
-import \saffire\io;
+import io;
 
 a = null;
 b = a ?? "default";
@@ -12,7 +12,7 @@ io.print(b, "\n");
 default
 @@@@
 // Simple null coalesce with non-false value
-import \saffire\io;
+import io;
 
 a = "value";
 b = a ?? "default";
@@ -21,7 +21,7 @@ io.print(b, "\n");
 value
 @@@@
 // empty string, will result default value
-import \saffire\io;
+import io;
 
 b = "" ?? "default";
 io.print(b, "\n");
@@ -29,21 +29,21 @@ io.print(b, "\n");
 default
 @@@@
 // numerical 0, will result default value
-import \saffire\io;
+import io;
 b = 0 ?? "default";
 io.print(b, "\n");
 ====
 default
 @@@@
 // numerical 1, just prints 1
-import \saffire\io;
+import io;
 b = 1 ?? "default";
 io.print(b, "\n");
 ====
 1
 @@@@
 // Check if we can use result from methods
-import \saffire\io;
+import io;
 
 class foo {
     static public method bar() {
@@ -63,7 +63,7 @@ default
 true
 @@@@
 // Chaining coalesce
-import \saffire\io;
+import io;
 
 io.print((null ?? null ?? null), "\n");
 io.print((null ?? "b"  ?? null), "\n");

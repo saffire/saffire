@@ -24,53 +24,21 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#ifndef __OBJECT_META_H__
+#define __OBJECT_META_H__
 
-    #include <stdio.h>
-    #include <saffire/general/output.h>
+    #include <saffire/objects/object.h>
 
-    #ifdef __DEBUG
-        #define DEBUG_PRINT_CHAR output_debug_char
-        #define DEBUG_PRINT_STRING output_debug_string
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        SAFFIRE_OBJECT_FOOTER
+    } t_meta_object;
 
-        #define DEBUG_PRINT_STRING_ARGS(format, args...) \
-            { \
-                t_string *s__COUNTER__ = char0_to_string(format); \
-                output_debug_string(s__COUNTER__, args); \
-                string_free(s__COUNTER__); \
-            }
-    #else
-        #define DEBUG_PRINT_CHAR(format, args...) ((void)0)
-        #define DEBUG_PRINT_STRING(format, args...) ((void)0)
-        #define DEBUG_PRINT_STRING_ARGS(format, args...) ((void)0)
-    #endif
+    t_meta_object Object_Meta_struct;
 
+    #define Object_Meta   (t_object *)&Object_Meta_struct
 
-    #ifndef __DEBUG_STACK
-        // Display stack pushes and pops
-        #define __DEBUG_STACK        1
-    #endif
-    #ifndef __DEBUG_VM_OPCODES
-        // Display VM opcodes
-        #define __DEBUG_VM_OPCODES   1
-    #endif
-    #ifndef __DEBUG_FREE_OBJECT
-        // Display when free'ing objects
-        #define __DEBUG_FREE_OBJECT  0
-    #endif
-    #ifndef __DEBUG_STACKFRAME_DESTROY
-        // Display variables when destroying stackframe
-        #define __DEBUG_STACKFRAME_DESTROY  0
-    #endif
-    #ifndef __DEBUG_REFCOUNT
-        // Display ref counts
-        #define __DEBUG_REFCOUNT  0
-    #endif
-
-
-    // Parse flex/bison debugging
-    // #define __PARSEDEBUG 1
+    void object_meta_init(void);
+    void object_meta_fini(void);
 
 #endif
-

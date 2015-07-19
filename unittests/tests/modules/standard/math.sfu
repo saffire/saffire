@@ -1,8 +1,7 @@
 title: math module tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 **********
-!skip
-import \saffire\io;
+import io;
 import math;
 
 math.seed(1234);
@@ -12,16 +11,16 @@ io.print("3: ",  math.random(1,100), "\n");
 io.print("4: ",  math.random(1,100), "\n");
 
 math.seed(1234);
-io.print("1: ",  math.random(1,100), "\n");
-io.print("2: ",  math.random(1,100), "\n");
-io.print("3: ",  math.random(1,100), "\n");
-io.print("4: ",  math.random(1,100), "\n");
+io.print("1: ",  math.random(1,10), "\n");
+io.print("2: ",  math.random(1,10), "\n");
+io.print("3: ",  math.random(1,10), "\n");
+io.print("4: ",  math.random(1,10), "\n");
 ========
 15
 40
 56
 68
-15
-40
-56
-68
+5
+10
+6
+8

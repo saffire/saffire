@@ -2,7 +2,7 @@ title: goto control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
     goto label2;
     io.print("noLabel\n");
 label1:
@@ -16,10 +16,16 @@ label3:
 Label2
 Label
 @@@@
-!skip
-1:
-    goto 1;
+import io;
+i = 1;
+l1:
+    i+=1;
+    if (i == 100) goto l2;
+    goto l1;
+l2:
+    io.println("done");
 ====
+done
 @@@@
 // double labels
 foo:
@@ -45,7 +51,7 @@ Unknown token
 Error in line 3: syntax error, unexpected '/'
 @@@@
 // Correct scope
-import \saffire\io;
+import io;
 i = 0;
 while(true) {
     io.print("1");
@@ -62,8 +68,9 @@ io.print(i);
 12222222222410
 @@@@
 !skip
-// Allowed to jump out of a loop
-import \saffire\io;
+// Allowed to jump out of a loop should be possible, but we have to make sure we do
+// the correct number of pop_blocks as well.
+import io;
 
 goto label2;
 label:
@@ -83,7 +90,7 @@ label3
 @@@@
 !skip
 // Allowed to jump out of a loop
-import \saffire\io;
+import io;
 while(true) {
     io.print("1");
     goto label;

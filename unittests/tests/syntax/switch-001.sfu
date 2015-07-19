@@ -35,7 +35,7 @@ switch (1) {
 ====
 Error in line 7: syntax error, unexpected case
 @@@@
-import \saffire\io;
+import io;
 a = 1;
 switch (1) {
     default :
@@ -55,7 +55,7 @@ ok1
 ok2
 ok3
 @@@@
-import \saffire\io;
+import io;
 a = 1;
 switch (1) {
     default :
@@ -94,7 +94,7 @@ switch ("bar") {
 ====
 
 @@@@
-import \saffire\io;
+import io;
 a = b = 1;
 switch (true) {
     case a == 1 :

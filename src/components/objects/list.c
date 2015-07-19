@@ -329,6 +329,7 @@ void object_list_init(void) {
     object_add_internal_method((t_object *)&Object_List_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___rewind);
     object_add_internal_method((t_object *)&Object_List_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___next);
     object_add_internal_method((t_object *)&Object_List_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___hasNext);
+    object_add_internal_method((t_object *)&Object_List_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
 
     object_add_internal_method((t_object *)&Object_List_struct, "length",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
     object_add_internal_method((t_object *)&Object_List_struct, "add",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);

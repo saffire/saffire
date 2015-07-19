@@ -115,7 +115,7 @@
 %type <nPtr> program import_statement_list non_empty_import_statement_list top_statement_list non_empty_import_statement_line
 %type <nPtr> import_statement_line import_statement_element
 %type <nPtr> non_empty_top_statement_list top_statement class_definition interface_definition
-%type <nPtr> statement_list compound_statement statement expression_statement jump_statement
+%type <nPtr> statement_list compound_statement statement expression_statement jump_statement assignment_expression_list single_expression_statement
 %type <nPtr> label_statement iteration_statement foreach_iteration_statement class_list while_iteration_statement
 %type <nPtr> guarding_statement expression catch_list catch ds_element ds_elements
 %type <nPtr> class_implements interface_inherits method_argument_list class_extends
@@ -295,8 +295,8 @@ iteration_statement:
     |   foreach_iteration_statement %prec "then"               { $$ = $1; }
     |   foreach_iteration_statement T_ELSE statement { $$ = ast_node_add($1, $3); }
     |   T_DO { parser_loop_enter(saffireParser, @1.first_line); } statement T_WHILE '(' expression ')' ';' { parser_loop_leave(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_DO, 2, $3, $6); }
-    |   T_FOR '(' expression_statement expression_statement                       ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
-    |   T_FOR '(' expression_statement expression_statement assignment_expression ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
+    |   T_FOR '(' expression_statement single_expression_statement                            ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $7, ast_node_nop()); }
+    |   T_FOR '(' expression_statement single_expression_statement assignment_expression_list ')' { parser_loop_enter(saffireParser, @1.first_line); } statement { $$ = ast_node_opr(@1.first_line, T_FOR, 4, $3, $4, $5, $8); }
 ;
 
 
@@ -312,10 +312,20 @@ while_iteration_statement:
 
 /* An expression is anything that evaluates something */
 expression_statement:
+        ';'                              { $$ = ast_node_nop(); }
+    |   assignment_expression_list ';'   { $$ = $1; }
+;
+
+/* a single expression like "a=1;", but not: "a=1,b=2;" */
+single_expression_statement:
         ';'                         { $$ = ast_node_nop(); }
     |   assignment_expression ';'   { $$ = $1; }
 ;
 
+assignment_expression_list:
+        assignment_expression                                   { $$ = ast_node_group(1, $1); }
+    |   assignment_expression_list ',' assignment_expression    { $$ = ast_node_add($$, $3); }
+;
 
 /* Jumps to another part of the code */
 jump_statement:
@@ -351,7 +361,6 @@ catch_header:
 
 label_statement:
         T_IDENTIFIER ':'    { parser_check_label(saffireParser, @1.first_line, $1);  $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_string(@1.first_line, $1)); smm_free($1); }
-    |   T_LNUM ':'          { $$ = ast_node_opr(@1.first_line, T_LABEL, 1, ast_node_numerical(@1.first_line, $1)); }  /* @TODO: should we support goto 4; ? */
 ;
 
 

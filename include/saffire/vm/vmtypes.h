@@ -59,7 +59,6 @@
         t_object **constants_objects;   // Constants taken from bytecode, converted to actual objects
     } t_vm_codeblock;
 
-
     typedef struct _vm_frameblock {
         int type;       // Type (any of the BLOCK_TYPE_*)
         union {
@@ -77,6 +76,11 @@
         } handlers;
         int sp;         // Saved stack pointer
         int visited;    // When !=0, this frame is already visited by a JUMP_IF_*_AND_FIRST
+        struct {
+            int available;  // 1 if this loop has iteration data, 0 otherwise
+            int count;  // Number of elements in the iterator (-1 if not available)
+            int index;  // Current iteration (zero based)
+        } iter;
     } t_vm_frameblock;
 
 

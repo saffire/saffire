@@ -396,6 +396,7 @@ void object_init() {
     object_tuple_init();
     object_list_init();
     object_exception_init();
+    object_meta_init();
 }
 
 
@@ -405,6 +406,7 @@ void object_init() {
 void object_fini() {
     DEBUG_PRINT_CHAR("object fini\n");
 
+    object_meta_fini();
     object_exception_fini();
     object_list_fini();
     object_tuple_fini();
