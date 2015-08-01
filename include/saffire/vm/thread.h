@@ -38,7 +38,7 @@
         t_exception_object *exception;          // Current thrown exception
         t_vm_stackframe *exception_frame;       // Snapshot of the frame on when the exception was thrown
 
-        char *locale;                       // Current global locale
+        char *locale;                           // Current global locale
     } t_thread;
 
     t_thread *current_thread;

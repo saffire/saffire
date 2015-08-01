@@ -82,6 +82,9 @@ t_string *object_string_cat(t_string_object *s1, t_string_object *s2) {
 }
 
 int object_string_compare(t_string_object *s1, t_string_object *s2) {
+    create_utf8_from_string(s1->data.value);
+    create_utf8_from_string(s2->data.value);
+
     return utf8_strcmp(s1->data.value, s2->data.value);
 }
 
@@ -139,6 +142,8 @@ SAFFIRE_METHOD(string, length) {
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_toupper(self->data.value, self->data.locale);
 
     // Create new object
@@ -150,6 +155,8 @@ SAFFIRE_METHOD(string, upper) {
  * Saffire method: Returns ucfirst string object
  */
 SAFFIRE_METHOD(string, ucfirst) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_ucfirst(self->data.value, self->data.locale);
 
     // Create new object
@@ -163,6 +170,8 @@ SAFFIRE_METHOD(string, ucfirst) {
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_tolower(self->data.value, self->data.locale);
 
     // Create new object
@@ -384,8 +393,9 @@ SAFFIRE_METHOD(string, index) {
         return NULL;
     }
 
-    long offset = offset_obj == NULL ? 0 : OBJ2NUM(offset_obj);
+    size_t offset = offset_obj == NULL ? 0 : (size_t)OBJ2NUM(offset_obj);
 
+    create_utf8_from_string(self->data.value);
     int pos = utf8_strstr(self->data.value, needle_obj->data.value, offset);
 
     if (pos == -1) {
@@ -518,6 +528,9 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
         return NULL;
     }
 
+    create_utf8_from_string(self->data.value);
+    create_utf8_from_string(other->data.value);
+
     utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
@@ -527,6 +540,9 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
         return NULL;
     }
+
+    create_utf8_from_string(self->data.value);
+    create_utf8_from_string(other->data.value);
 
     utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_FALSE) : (RETURN_TRUE);
 }

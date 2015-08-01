@@ -27,6 +27,7 @@
 #ifndef __UNICODE_H__
 #define __UNICODE_H__
 
+    // Make sure unicode.h uses UTF8 instead of UTF16 internally
     #define U_CHARSET_IS_UTF8 1
 
     #include <unicode/uchar.h>
@@ -35,40 +36,23 @@
 
     typedef struct _string t_string;
 
-//    typedef struct {
-//        UChar   *val;       // Binary safe UTF8 string
-//    } t_unicode_string;
-
+    void create_utf8_from_string(t_string *str);
     void utf8_free_unicode(t_string *str);
 
-    int utf8_strcmp(t_string *s1, t_string *s2);
+    int utf8_strcmp(const t_string *s1, const t_string *s2);
 
-//    #define UTF8_C2U(c) utf8_char_to_string(c, strlen(c))
+//    size_t utf8_strlen(const t_string *str);
+//    t_string *utf8_memcpy_offset(const t_string *src, const size_t offset, const size_t count);
+//    int utf8_strcmp(const t_string *s1, const t_string *s2);
+//    t_string *utf8_strdup(const t_string *src);
+//    void utf8_strcpy(t_string *dst, const t_string *src);
+//    void utf8_strcat(t_string *dst, const t_string *src);
 
-//    t_string *utf8_string_new(int len);
-//    void utf8_string_free(t_string *s);
+    size_t utf8_strstr(const t_string *haystack, const t_string *needle, const size_t offset);
 
-//    t_string *utf8_char_to_string(char *value, size_t value_len);
-//    char *utf8_string_to_char(t_string *str, int *bytes_len);
-
-//    size_t utf8_strlen(t_string *str);
-
-//    t_string *utf8_memcpy_offset(t_string *src, int offset, int count);
-
-//    int utf8_strcmp(t_string *s1, t_string *s2);
-//    t_string *utf8_strdup(t_string *src);
-
-//    void utf8_strcpy(t_string *dst, t_string *src);
-//    void utf8_strcat(t_string *dst, t_string *src);
-
-    //int utf8_strstr(t_string *haystack, t_string *needle);
-    int utf8_strstr(t_string *haystack, t_string *needle, long offset);
-
-    t_string *utf8_toupper(t_string *src, char *locale);
-    t_string *utf8_tolower(t_string *src, char *locale);
-    t_string *utf8_ucfirst(t_string *src, char *locale);
-
-//    int utf8_strstr(t_string *haystack, t_string *needle);
+    t_string *utf8_toupper(const t_string *src, const char *locale);
+    t_string *utf8_tolower(const t_string *src, const char *locale);
+    t_string *utf8_ucfirst(const t_string *src, const char *locale);
 
 #endif
 

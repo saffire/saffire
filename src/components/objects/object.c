@@ -172,7 +172,9 @@ static void _object_free(t_object *obj) {
 }
 
 
+#ifdef __DEBUG
 t_hash_table *refcount_objects = NULL;
+#endif
 
 /**
  * Increase reference to object.
@@ -182,12 +184,12 @@ void object_inc_ref(t_object *obj) {
 
     obj->ref_count++;
 
+#ifdef __DEBUG
     if (refcount_objects == NULL) {
         refcount_objects = ht_create();
     }
-
     ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
-
+#endif
 
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
 
@@ -209,7 +211,9 @@ static long object_dec_ref(t_object *obj) {
     }
     obj->ref_count--;
 
+#ifdef __DEBUG
     ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
+#endif
 
 #if __DEBUG_REFCOUNT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {

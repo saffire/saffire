@@ -65,6 +65,19 @@ t_object *_vm_execute(t_vm_stackframe *frame);
 extern char *objectOprMethods[];
 extern char *objectCmpMethods[];
 
+// Maximum number of vectors for regular expression matching
+#define MAX_VEC 30
+
+// Debugging information
+int debug = 0;
+t_debuginfo *debug_info;
+
+
+#ifdef __DEBUG
+    extern t_hash_table *refcount_objects;
+#endif
+
+
 /**
  * This method is called when we need to call an operator method. Even though eventually
  * it is a normal method call to a _opr_* method, we go a different route so we can easily
@@ -84,7 +97,6 @@ static t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
     // Call the actual operator and return the result
     return vm_object_call(obj1, found_obj, 1, obj2);
 }
-
 
 /**
  * Calls an comparison function. Returns true or false objects
@@ -112,7 +124,6 @@ static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
 
     return ret;
 }
-
 
 /**
  * Parse calling arguments. It will iterate all arguments declarations needed for the
@@ -406,7 +417,6 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
     return 0;
 }
 
-
 /**
  * Check an attribute and if ok, chck
  */
@@ -417,9 +427,12 @@ static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *
     return _object_call_callable_with_args(self, frame, attrib_obj->data.bound_name, (t_callable_object *)attrib_obj->data.attribute, arg_list);
 }
 
-
-#define MAX_VEC 30
-
+/**
+ *
+ * @param regex_obj
+ * @param str_obj
+ * @return
+ */
 static t_object *_do_regex_match(t_regex_object *regex_obj, t_string_object *str_obj) {
     int subStrVec[MAX_VEC];
     int ret;
@@ -444,11 +457,6 @@ static t_object *_do_regex_match(t_regex_object *regex_obj, t_string_object *str
     // 0 or higher are ok
     RETURN_TRUE;
 }
-
-
-int debug = 0;
-t_debuginfo *debug_info;
-
 
 /**
  *
@@ -482,9 +490,9 @@ void vm_init(SaffireParser *sp, int runmode) {
     }
 }
 
-
-extern t_hash_table *refcount_objects;
-
+/**
+ *
+ */
 void vm_fini(void) {
     // Initialize debugging if needed
     if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
@@ -545,6 +553,11 @@ void vm_fini(void) {
     gc_fini();
 }
 
+/**
+ *
+ * @param frame
+ * @return
+ */
 int getlineno(t_vm_stackframe *frame) {
     if (frame->lineno_upperbound != 0 && frame->lineno_lowerbound <= frame->ip && frame->ip < frame->lineno_upperbound) {
         return frame->lineno_current_line;
@@ -587,7 +600,13 @@ int getlineno(t_vm_stackframe *frame) {
     return frame->lineno_current_line;
 }
 
-
+/**
+ *
+ * @param frame
+ * @param reason
+ * @param ret
+ * @return
+ */
 t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret);
 
 /**
@@ -2197,7 +2216,6 @@ t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result)
 
     return import_frame;
 }
-
 
 /**
  *

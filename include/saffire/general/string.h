@@ -41,7 +41,7 @@
     };
 
     t_string *char0_to_string(const char *s);
-    t_string *char_to_string(const char *s, size_t len);
+    t_string *char_to_string(const char *s, const size_t len);
     char *string_to_char(const t_string *s);
 
     t_string *string_new(void);

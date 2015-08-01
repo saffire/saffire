@@ -41,7 +41,7 @@ t_string *char0_to_string(const char *s) {
 /**
  *
  */
-t_string *char_to_string(const char *s, size_t len) {
+t_string *char_to_string(const char *s, const size_t len) {
     t_string *str = string_new();
 
     str->val = (char *)smm_malloc((len+1) * sizeof(char));
