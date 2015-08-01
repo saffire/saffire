@@ -80,6 +80,8 @@ static t_string *utf8_to_string(const UChar *str, const size_t len) {
 
     // Create string from char, and we can also cache the unicode
     t_string *dst = char_to_string(c_str, len);
+
+    dst->unicode = (UChar *)smm_malloc(sizeof(UChar) * (len + 1));
     u_memcpy(dst->unicode, str, len);
 
     return dst;
