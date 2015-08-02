@@ -27,18 +27,30 @@
 #include <semaphore.h>
 #include <saffire/general/mutex.h>
 
+/**
+ * Creates a mutex
+ */
 int mutex_create(t_mutex *mutex) {
     return sem_init(mutex, 0, 1);
 }
 
+/**
+ * Destroys a mutex
+ */
 int mutex_destroy(t_mutex *mutex) {
     return sem_destroy(mutex);
 }
 
-int mutex_wait(t_mutex *mutex) {
+/**
+ * Wait for a mutex to become available and lock it
+ */
+int mutex_wait_for_lock(t_mutex *mutex) {
     return sem_wait(mutex);
 }
 
-int mutex_post(t_mutex *mutex) {
+/**
+ * Unlocks mutex
+ */
+int mutex_unlock(t_mutex *mutex) {
     return sem_post(mutex);
 }
