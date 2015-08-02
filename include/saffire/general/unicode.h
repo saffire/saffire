@@ -48,7 +48,7 @@
 //    void utf8_strcpy(t_string *dst, const t_string *src);
 //    void utf8_strcat(t_string *dst, const t_string *src);
 
-    size_t utf8_strstr(const t_string *haystack, const t_string *needle, const size_t offset);
+    size_t utf8_strstr(const t_string *haystack, const t_string *needle, size_t offset);
 
     t_string *utf8_toupper(const t_string *src, const char *locale);
     t_string *utf8_tolower(const t_string *src, const char *locale);

@@ -41,25 +41,25 @@
     };
 
     t_string *char0_to_string(const char *s);
-    t_string *char_to_string(const char *s, const size_t len);
-    char *string_to_char(const t_string *s);
+    t_string *char_to_string(const char *s, size_t len);
+    char *string_to_char0(const t_string *s);
 
     t_string *string_new(void);
 
-    int string_strcmp(t_string *s1, t_string *s2);
-    int string_strcmp0(t_string *s1, const char *c_str);
+    int string_strcmp(const t_string *s1, const t_string *s2);
+    int string_strcmp0(const t_string *s1, const char *c_str);
 
-    char *string_strncpy0(char *s, int len);
+    char *string_strncpy0(const char *s, size_t len);
 
     char *string_strdup0(const char *s);
-    t_string *string_strdup(t_string *s);
+    t_string *string_strdup(const t_string *s);
 
     t_string *string_strcat0(t_string *dst, const char *src);
     t_string *string_strcat(t_string *dst, const t_string *src);
 
-    t_string *string_copy_partial(t_string *src, int offset, int count);
+    t_string *string_copy_partial(const t_string *src, size_t offset, size_t count);
 
-    int string_strpos(t_string *haystack, t_string *needle, long offset);
+    int string_strpos(const t_string *haystack, const t_string *needle, size_t offset);
 
     void string_free(t_string *str);
 

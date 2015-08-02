@@ -73,7 +73,7 @@ void create_utf8_from_string(t_string *str) {
 /**
  * Convert utf8 unicode string into a t_string
  */
-static t_string *utf8_to_string(const UChar *str, const size_t len) {
+static t_string *utf8_to_string(const UChar *str, size_t len) {
     // Convert unicode back to string
     char *c_str = (char *)smm_malloc(len);
     u_austrncpy(c_str, str, len);
@@ -127,7 +127,7 @@ static t_string *utf8_to_string(const UChar *str, const size_t len) {
  *
  * Note that offset is in chars, not in bytes
  */
-size_t utf8_strstr(const t_string *haystack, const t_string *needle, const size_t offset) {
+size_t utf8_strstr(const t_string *haystack, const t_string *needle, size_t offset) {
     UChar *pos = u_strstr(haystack->unicode + offset, needle->unicode);
 
     if (pos == NULL) return -1;

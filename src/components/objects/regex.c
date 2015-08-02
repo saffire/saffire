@@ -336,7 +336,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         t_string *str = char_to_string(value, value_len);
 
         // @TODO: Not binary safe
-        regex = string_to_char(str);
+        regex = string_to_char0(str);
     }
 
     _compile_regex(re_obj, regex);

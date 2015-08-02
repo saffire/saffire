@@ -191,7 +191,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
                 // Make sure we add our List[] to the local_identifiers below
                 obj = (t_object *)vararg_obj;
             } else {
-                char *instance = string_to_char(OBJ2STR(arg->typehint));
+                char *instance = DUP_OBJ2STR0(arg->typehint);
                 if (! object_instance_of(obj, instance)) {
                     smm_free(instance);
 
@@ -815,7 +815,7 @@ dispatch:
 
                     // Name of attribute to load
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
-                    char *name = string_to_char(OBJ2STR(name_obj));
+                    char *name = DUP_OBJ2STR0(name_obj);
 
                     // Scope of the loading (start from self. or parent.)
                     int scope = oparg2;
@@ -899,7 +899,7 @@ dispatch:
                     ht_debug(search_obj->attributes);
 #endif
 
-                    s = string_to_char(OBJ2STR(name_obj));
+                    s = DUP_OBJ2STR0(name_obj);
                     t_attrib_object *attrib_obj = object_attrib_find(search_obj, s);
                     smm_free(s);
 
@@ -913,7 +913,7 @@ dispatch:
                     if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
                         object_release(search_obj);
 
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", string_to_char(OBJ2STR(name_obj)));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", DUP_OBJ2STR0(name_obj));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -933,7 +933,7 @@ dispatch:
 
                     } else {
                         // if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
-                        s = string_to_char(OBJ2STR(name_obj));
+                        s = DUP_OBJ2STR0(name_obj);
                         object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
                         smm_free(s);
                     }
@@ -1218,12 +1218,12 @@ dispatch:
                 {
                     // Fetch alias
                     t_object *alias_obj = vm_frame_stack_pop(frame, 1);
-                    char *alias_name = string_to_char(OBJ2STR(alias_obj));
+                    char *alias_name = DUP_OBJ2STR0(alias_obj);
                     object_release(alias_obj);
 
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame, 1);
-                    char *module_name = string_to_char(OBJ2STR(module_obj));
+                    char *module_name = DUP_OBJ2STR0(module_obj);
                     object_release(module_obj);
 
                     // Create FQCN from module name (if needed)
@@ -1426,7 +1426,7 @@ dispatch:
                             arg->value = vm_frame_stack_pop(frame, 1);
 
                             t_object *name_obj = vm_frame_stack_pop(frame, 1);
-                            s = string_to_char(OBJ2STR(name_obj));
+                            s = DUP_OBJ2STR0(name_obj);
                             object_release(name_obj);
 
                             arg->typehint = (t_string_object *)vm_frame_stack_pop(frame, 1);
@@ -1503,7 +1503,7 @@ dispatch:
                         DEBUG_PRINT_STRING_ARGS("Implementing interface: %s\n", object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
-                        s = string_to_char(OBJ2STR(interface_name_obj));
+                        s = DUP_OBJ2STR0(interface_name_obj);
                         t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), s);
                         smm_free(s);
 
@@ -1532,7 +1532,7 @@ dispatch:
                         object_release(parent_class);
                         parent_class = Object_Base;
                     } else {
-                        s = string_to_char(OBJ2STR(parent_class));
+                        s = DUP_OBJ2STR0(parent_class);
                         object_release(parent_class);
                         parent_class = vm_frame_find_identifier(frame, s);
 
@@ -1550,7 +1550,7 @@ dispatch:
 
                     // pop class name
                     t_object *name_obj = vm_frame_stack_pop(frame, 1);
-                    char *name = string_to_char(OBJ2STR(name_obj));
+                    char *name = DUP_OBJ2STR0(name_obj);
                     object_release(name_obj);
 
                     // Fetch all attributes
@@ -1560,7 +1560,7 @@ dispatch:
                         t_attrib_object *attrib_obj = (t_attrib_object *)vm_frame_stack_pop(frame, 0);
 
                         // Add method attribute to class
-                        s = string_to_char(OBJ2STR(attr_name));
+                        s = DUP_OBJ2STR0(attr_name);
                         object_release(attr_name);
                         ht_add_str(attributes, s, attrib_obj);
 

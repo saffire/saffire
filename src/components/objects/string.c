@@ -115,7 +115,7 @@ SAFFIRE_METHOD(string, ctor) {
 
     self->data.value = string_strdup(str_obj->data.value);
     if (locale_obj) {
-        self->data.locale = string_to_char(locale_obj->data.value);
+        self->data.locale = string_to_char0(locale_obj->data.value);
     } else {
         t_thread *thread = thread_get_current();
         self->data.locale = thread->locale ? string_strdup0(thread->locale) : NULL;

@@ -135,11 +135,16 @@
     #define OBJECT_IS_BASE(obj)         (obj->type == objectTypeBase)
 
 
-    // fetch (string) value from a string object
-    #define OBJ2STR(_obj_)  (((t_string_object *)_obj_)->data.value)
-    #define OBJ2STR0(_obj_) (((t_string_object *)_obj_)->data.value->val)
+    // Fetches t_string value from a string object
+    #define OBJ2STR(_obj_)       (((t_string_object *)_obj_)->data.value)
 
-    // fetch (long) value from a numerical object
+    // Fetches value from a string object (assumes zero terminated string)
+    #define OBJ2STR0(_obj_)      (((t_string_object *)_obj_)->data.value->val)
+
+    // Duplicates zero terminated string from t_string object
+    #define DUP_OBJ2STR0(_obj_)  string_to_char0(((t_string_object *)_obj_)->data.value)
+
+    // Fetches (long) value from a numerical object
     #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->data.value)
 
 
