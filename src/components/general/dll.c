@@ -246,7 +246,7 @@ void dll_push_long(t_dll *dll, long data) {
  * Searches for specific offset
  */
 t_dll_element *dll_seek_offset(t_dll *dll, size_t offset) {
-    if (offset < 0 || offset >= dll->size) {
+    if (offset == 0 || offset >= dll->size) {
         return NULL;
     }
 

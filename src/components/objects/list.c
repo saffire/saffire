@@ -374,7 +374,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (arg_list->size == 1) {
         // Simple hash table. Direct copy
-        list_obj->data.ht = DLL_HEAD(arg_list)->data.p;
+        t_dll_element *e = DLL_HEAD(arg_list);
+        list_obj->data.ht = DLL_DATA_PTR(e);
         return;
     }
 
@@ -382,10 +383,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     list_obj->data.ht = ht_create();
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
-    t_dll *dll = (t_dll *)e->data.p;
+    t_dll *dll = DLL_DATA_PTR(e);
     e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *val = (t_object *)e->data.p;
+        t_object *val = DLL_DATA_PTR(e);
         ht_add_num(list_obj->data.ht, list_obj->data.ht->element_count, val);
         e = DLL_NEXT(e);
     }

@@ -706,7 +706,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        str_obj->data.value = (t_string *)e->data.p;
+        str_obj->data.value = DLL_DATA_PTR(e);
     } else if (arg_list->size > 1) {
         // 2 (or more) elements: it's a size + char0 string
 
@@ -716,7 +716,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);
-        char *value = (char *)e->data.p;
+        char *value = DLL_DATA_PTR(e);
 
         // Convert our stream to UTF8
         str_obj->data.value = char_to_string(value, value_len);

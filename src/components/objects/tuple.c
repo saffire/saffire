@@ -257,10 +257,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     e = DLL_NEXT(e);
 
-    t_dll *dll = (t_dll *)e->data.p;
+    t_dll *dll = DLL_DATA_PTR(e);
     e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *arg_obj = (t_object *)e->data.p;
+        t_object *arg_obj = DLL_DATA_PTR(e);
 
         DEBUG_PRINT_STRING_ARGS("Adding object: %s\n", object_debug(arg_obj));
         ht_add_num(tuple_obj->data.ht, cnt++, arg_obj);

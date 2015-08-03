@@ -165,7 +165,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
 
         // If we have values on the calling arg list, use the next value, overriding any default values set.
         if (given_count) {
-            obj = e ? e->data.p : NULL;
+            obj = e ? DLL_DATA_PTR(e) : NULL;
             given_count--;
         }
 
@@ -227,7 +227,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
         while (e) {
-            ht_add_num(vararg_obj->data.ht, vararg_obj->data.ht->element_count, e->data.p);
+            ht_add_num(vararg_obj->data.ht, vararg_obj->data.ht->element_count, DLL_DATA_PTR(e));
             e = DLL_NEXT(e);
         }
     }
@@ -260,10 +260,10 @@ static t_object *vm_create_userland_object(t_vm_stackframe *frame, char *name, i
 
     // Set interfaces
     user_obj->interfaces = interfaces;
-    t_dll_element *interface = DLL_HEAD(user_obj->interfaces);
-    while (interface) {
-        object_inc_ref((t_object *)interface->data.p);
-        interface = DLL_NEXT(interface);
+    t_dll_element *e = DLL_HEAD(user_obj->interfaces);
+    while (e) {
+        object_inc_ref(DLL_DATA_PTR(e));
+        e = DLL_NEXT(e);
     }
 
     // Set parent class
@@ -308,7 +308,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
     t_dll_element *e = DLL_HEAD(arg_list);
     while (e) {
 #ifdef __DEBUG
-        strcat(args, object_debug(e->data.p));
+        strcat(args, object_debug(DLL_DATA_PTR(e)));
 #else
         strcat(args, "an object");
 #endif
@@ -1189,7 +1189,7 @@ dispatch:
                     // Decrefs our arguments here
                     t_dll_element *e = DLL_HEAD(arg_list);
                     while (e) {
-                        object_release(e->data.p);
+                        object_release(DLL_DATA_PTR(e));
                         e = DLL_NEXT(e);
                     }
                     dll_free(arg_list);

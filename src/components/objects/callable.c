@@ -188,15 +188,15 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // internal code is just a pointer to the code
-        callable_obj->data.code.internal.native_func = (void *)e->data.p;
+        callable_obj->data.code.internal.native_func = DLL_DATA_PTR(e);
     } else {
         // external code is a bytecode structure
-        callable_obj->data.code.external.codeblock = (t_vm_codeblock *)e->data.p;
+        callable_obj->data.code.external.codeblock = DLL_DATA_PTR(e);
     }
     e = DLL_NEXT(e);
 
     // Add arguments for the callable
-    callable_obj->data.arguments = (t_hash_table *)e->data.p;
+    callable_obj->data.arguments = DLL_DATA_PTR(e);
     e = DLL_NEXT(e);
 }
 

@@ -206,13 +206,13 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     }
 
     if (e != NULL) {
-        exception_obj->data.message = (t_string *)e->data.p;
+        exception_obj->data.message = DLL_DATA_PTR(e);
         e = DLL_NEXT(e);
     }
 
     // Optional (stack) trace
     if (e != NULL) {
-        exception_obj->data.stacktrace = (t_hash_table *)e->data.p;
+        exception_obj->data.stacktrace = DLL_DATA_PTR(e);
         e = DLL_NEXT(e);
     }
 }

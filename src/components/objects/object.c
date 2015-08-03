@@ -126,10 +126,10 @@ static void _object_free(t_object *obj) {
 
     // Free interfaces
     if (obj->interfaces) {
-        t_dll_element *interface = DLL_HEAD(obj->interfaces);
-        while (interface) {
-            object_release((t_object *)interface->data.p);
-            interface = DLL_NEXT(interface);
+        t_dll_element *e = DLL_HEAD(obj->interfaces);
+        while (e) {
+            object_release(DLL_DATA_PTR(e));
+            e = DLL_NEXT(e);
         }
         dll_free(obj->interfaces);
         obj->interfaces = NULL;
@@ -493,13 +493,13 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
 
         // Fetch the next object from the list. We must assume the user has added enough room
         t_object **storage_obj = va_arg(storage_list, t_object **);
-        if (optional_argument == 0 && (!e || !e->data.p)) {
+        if (optional_argument == 0 && (!e || ! DLL_DATA_PTR(e))) {
             object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
             result = 0;
             goto done;
         }
 
-        t_object *argument_obj = e ? e->data.p : NULL;
+        t_object *argument_obj = e ? DLL_DATA_PTR(e) : NULL;
         if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
             object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
@@ -603,7 +603,7 @@ static void _object_remove_all_internal_interfaces(t_object *obj) {
 
     t_dll_element *e = DLL_HEAD(obj->interfaces);
     while (e) {
-        object_release((t_object *)e->data.p);
+        object_release(DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 }
@@ -743,16 +743,16 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
  * Iterates all interfaces found in this object, and see if the object actually implements it fully
  */
 int object_check_interface_implementations(t_object *obj) {
-    t_dll_element *elem = DLL_HEAD(obj->interfaces);
-    while (elem) {
-        t_object *interface = (t_object *)elem->data.p;
+    t_dll_element *e = DLL_HEAD(obj->interfaces);
+    while (e) {
+        t_object *interface = DLL_DATA_PTR(e);
 
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "* Checking interface: %s" ANSI_RESET "\n", interface->name);
 
         if (! _object_check_interface_implementations(obj, interface)) {
             return 0;
         }
-        elem = DLL_NEXT(elem);
+        e = DLL_NEXT(e);
     }
 
     // Everything fully implemented
@@ -766,14 +766,14 @@ int object_check_interface_implementations(t_object *obj) {
 int object_has_interface(t_object *obj, const char *interface_name) {
     DEBUG_PRINT_CHAR("object_has_interface(%s)\n", interface_name);
 
-    t_dll_element *elem = obj->interfaces != NULL ? DLL_HEAD(obj->interfaces) : NULL;
-    while (elem) {
-        t_object *interface = (t_object *)elem->data.p;
+    t_dll_element *e = obj->interfaces != NULL ? DLL_HEAD(obj->interfaces) : NULL;
+    while (e) {
+        t_object *interface = DLL_DATA_PTR(e);
 
         if (strcasecmp(interface->name, interface_name) == 0) {
             return 1;
         }
-        elem = DLL_NEXT(elem);
+        e = DLL_NEXT(e);
     }
 
     // No, cannot find it
@@ -814,8 +814,8 @@ t_dll *object_duplicate_interfaces(t_object *instance_obj) {
     t_dll *interfaces = dll_init();
     t_dll_element *e = DLL_HEAD(instance_obj->interfaces);
     while (e) {
-        dll_append(interfaces, e->data.p);
-        object_inc_ref((t_object *)e->data.p);
+        dll_append(interfaces, DLL_DATA_PTR(e));
+        object_inc_ref(DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 

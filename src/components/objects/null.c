@@ -53,7 +53,8 @@ SAFFIRE_METHOD(null, conv_string) {
 }
 
 SAFFIRE_COMPARISON_METHOD(null, ne) {
-    t_object *obj = DLL_HEAD(arguments)->data.p;
+    t_dll_element *e = DLL_HEAD(arguments);
+    t_object *obj = DLL_DATA_PTR(e);
 
     if(OBJECT_IS_NULL(obj)) {
         RETURN_FALSE;

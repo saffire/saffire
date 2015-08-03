@@ -179,7 +179,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Note that bound_class does not get a ref-increase, because of cyclic dependencies on the bound class itself
     t_dll_element *e = DLL_HEAD(arg_list);
-    attrib_obj->data.bound_class = (t_object *) e->data.p;
+    attrib_obj->data.bound_class = DLL_DATA_PTR(e);
 
 
 //    // build_attrib builds attributes that aren't bound to any class (yet))
@@ -188,7 +188,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 //    }
 
     e = DLL_NEXT(e);
-    attrib_obj->data.bound_name = string_strdup0((char *) e->data.p);
+    attrib_obj->data.bound_name = string_strdup0(DLL_DATA_PTR(e));
 
     e = DLL_NEXT(e);
     attrib_obj->data.attr_type = DLL_DATA_LONG(e);
@@ -200,7 +200,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     attrib_obj->data.attr_access = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attribute = (t_object *) e->data.p;
+    attrib_obj->data.attribute = DLL_DATA_PTR(e);
     object_inc_ref(attrib_obj->data.attribute);
 
     e = DLL_NEXT(e);

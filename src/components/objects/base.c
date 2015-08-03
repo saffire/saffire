@@ -119,7 +119,7 @@ static t_hash_table *find_interfaces(t_object *self, int check_parents) {
     while (obj) {
         t_dll_element *e = obj->interfaces ? DLL_HEAD(obj->interfaces) : NULL;
         while (e) {
-            t_object *interface_obj = (t_object *)e->data.p;
+            t_object *interface_obj = DLL_DATA_PTR(e);
             e = DLL_NEXT(e);
 
             // Check if element has already been added.
