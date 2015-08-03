@@ -65,7 +65,7 @@ static void _backpatch_labels(t_asm_frame *frame) {
     int start_offset;
 
     while (e) {
-        struct _backpatch *bp = (struct _backpatch *)e->data.p;
+        struct _backpatch *bp = DLL_DATA_PTR(e);
 
         // Check if labelname exists, if not, we have referenced to a label but never declared it.
         if (! ht_exists_str(frame->label_offsets, bp->label)) {
@@ -122,7 +122,7 @@ static int _convert_constant_string(t_asm_frame *frame, char *s) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = DLL_DATA_PTR(e);
 
         if (c->type == const_string && strcmp(s, c->data.s) == 0) return pos;
         pos++;
@@ -146,7 +146,7 @@ static int _convert_constant_regex(t_asm_frame *frame, char *r) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = DLL_DATA_PTR(e);
 
         if (c->type == const_regex && strcmp(r, c->data.s) == 0) return pos;
         pos++;
@@ -170,7 +170,7 @@ static int _convert_constant_code(t_asm_frame *frame, char *s) {
     int pos = 0;
     t_dll_element *e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = DLL_DATA_PTR(e);
 
         if (c->type == const_code && strcmp(s, c->data.s) == 0) return pos;
         pos++;
@@ -195,7 +195,7 @@ static int _convert_constant_numerical(t_asm_frame *frame, int i) {
 
     t_dll_element *e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = DLL_DATA_PTR(e);
 
         if (c->type == const_long && c->data.l == i) return pos;
         pos++;
@@ -218,7 +218,7 @@ static int _convert_identifier(t_asm_frame *frame, char *s) {
 
     t_dll_element *e = DLL_HEAD(frame->identifiers);
     while (e) {
-        char *t = (char *)e->data.p;
+        char *t = DLL_DATA_PTR(e);
         if (strcmp(t, s) == 0) return pos;
         pos++;
         e = DLL_NEXT(e);
@@ -237,7 +237,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
 
     e = DLL_HEAD(asm_frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = DLL_DATA_PTR(e);
         switch (c->type) {
             case const_long :
                 break;
@@ -248,7 +248,8 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
                 break;
         }
 
-        smm_free(e->data.p);
+        // @TODO: HIGH: Shouldn't this be done while destroying DLL elements?
+        smm_free(DLL_DATA_PTR(e));
 
         e = DLL_NEXT(e);
     }
@@ -262,7 +263,7 @@ static void assemble_frame_free(t_asm_frame *asm_frame) {
     // Free backpatches
     e = DLL_HEAD(asm_frame->backpatch_offsets);
     while (e) {
-        struct _backpatch *bp = e->data.p;
+        struct _backpatch *bp = DLL_DATA_PTR(e);
         smm_free(bp->label);
         smm_free(bp);
         e = DLL_NEXT(e);
@@ -307,7 +308,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
 
     t_dll_element *e = DLL_HEAD(source_frame);
     while (e) {
-        line = (t_asm_line *)e->data.p;
+        line = DLL_DATA_PTR(e);
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
             // Found a label. Store it so we can backpatch it later
@@ -420,7 +421,7 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
         e = DLL_HEAD(tc)->next;     // Skip first element.
         dll_append_long(tc, 0);     // Add trailing marker
         while (e) {
-            long i = e->data.l;
+            long i = DLL_DATA_LONG(e);
             frame->lino[j++] = (unsigned char)(i & 0xFF);
             e = DLL_NEXT(e);
         }
@@ -471,7 +472,7 @@ void assembler_free(t_hash_table *asm_code) {
         t_dll *frame = ht_iter_value(&iter);
         t_dll_element *e = DLL_HEAD(frame);
         while (e) {
-            _asm_free_line((t_asm_line *)e->data.p);
+            _asm_free_line(DLL_DATA_PTR(e));
             e = DLL_NEXT(e);
         }
 
@@ -576,7 +577,7 @@ static void _assembler_output_frame(t_dll *frame, FILE *f) {
     int oprcnt = 0;
     t_dll_element *e = DLL_HEAD(frame);
     while (e) {
-        t_asm_line *line = (t_asm_line *)e->data.p;
+        t_asm_line *line = DLL_DATA_PTR(e);
 
         if (line->type == ASM_LINE_TYPE_LABEL) {
             fprintf(f, "#%s:", line->s);

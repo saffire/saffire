@@ -59,7 +59,7 @@ long stack_pop(t_stack *stack) {
     t_dll_element *e = DLL_TAIL(stack->dll);
 
     // As dll_remove will throw away 'e', we must save data first..
-    long ret = e->data.l;
+    long ret = DLL_DATA_LONG(e);
     dll_remove(stack->dll, e);
 
     return ret;
@@ -76,7 +76,7 @@ long stack_peek(const t_stack *stack) {
     t_dll_element *e = DLL_TAIL(stack->dll);
     if (! e) return 0;
 
-    return e->data.l;
+    return DLL_DATA_LONG(e);
 }
 
 /**

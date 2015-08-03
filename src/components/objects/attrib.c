@@ -191,20 +191,20 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     attrib_obj->data.bound_name = string_strdup0((char *) e->data.p);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_type = (long) e->data.l;
+    attrib_obj->data.attr_type = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_visibility = (long) e->data.l;
+    attrib_obj->data.attr_visibility = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_access = (long) e->data.l;
+    attrib_obj->data.attr_access = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
     attrib_obj->data.attribute = (t_object *) e->data.p;
     object_inc_ref(attrib_obj->data.attribute);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_method_flags = (long) e->data.l;
+    attrib_obj->data.attr_method_flags = DLL_DATA_LONG(e);
 }
 
 static void obj_free(t_object *obj) {

@@ -400,7 +400,7 @@ static t_object *obj_clone(t_object *obj) {
 
 static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
-    long value = (long)e->data.l;
+    long value = DLL_DATA_LONG(e);
 
     // Return cached object if it's already present.
     if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {

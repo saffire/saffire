@@ -712,7 +712,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
-        int value_len = (int)e->data.l;
+        long value_len = DLL_DATA_LONG(e);
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);

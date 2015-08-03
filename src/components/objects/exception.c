@@ -201,7 +201,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Optional (numerical) code
     if (e != NULL) {
-        exception_obj->data.code = (long)e->data.l;
+        exception_obj->data.code = DLL_DATA_LONG(e);
         e = DLL_NEXT(e);
     }
 

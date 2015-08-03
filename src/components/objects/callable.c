@@ -183,7 +183,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->data.routing = (int)e->data.l;
+    callable_obj->data.routing = DLL_DATA_LONG(e);
     e = DLL_NEXT(e);
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
