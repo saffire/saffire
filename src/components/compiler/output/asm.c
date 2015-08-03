@@ -334,10 +334,10 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
                     // When offset > 127, we must use multiple bytes. The high bit (128) tells offset is spread out
                     // over multiple bytes.
                     if (delta_codeoff > 127) {
-                        dll_append(tc, (void *)(128 | 127));
+                        dll_append_long(tc, (128 | 127));
                         delta_codeoff -= 127;
                     } else {
-                        dll_append(tc, (void *)delta_codeoff);
+                        dll_append_long(tc, delta_codeoff);
                         delta_codeoff = 0;
                     }
                 } while (delta_codeoff != 0);
@@ -345,17 +345,17 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
                 do {
                     // If we have a negative line number, use 0 as a prepend for it to indicate this.
                     if (delta_lineno < 0) {
-                        dll_append(tc, (void *)0);
+                        dll_append_long(tc, 0);
                         delta_lineno = abs(delta_lineno);
                     }
 
                     // When offset > 127, we must use multiple bytes. The high bit (128) tells offset is spread out
                     // over multiple bytes.
                     if (delta_lineno > 127) {
-                        dll_append(tc, (void *)(128 | 127));
+                        dll_append_long(tc, (128 | 127));
                         delta_lineno -= 127;
                     } else {
-                        dll_append(tc, (void *)delta_lineno);
+                        dll_append_long(tc, delta_lineno);
                         delta_lineno = 0;
                     }
                 } while (delta_lineno != 0);
@@ -418,9 +418,9 @@ static t_asm_frame *assemble_frame(t_dll *source_frame, int mainframe) {
     int j = 0;
     if (tc->size > 0) {
         e = DLL_HEAD(tc)->next;     // Skip first element.
-        dll_append(tc, 0);          // Add trailing marker
+        dll_append_long(tc, 0);     // Add trailing marker
         while (e) {
-            long i = (long)e->data.l;
+            long i = e->data.l;
             frame->lino[j++] = (unsigned char)(i & 0xFF);
             e = DLL_NEXT(e);
         }

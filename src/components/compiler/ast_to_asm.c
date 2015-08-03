@@ -889,8 +889,7 @@ static void __ast_walker(t_ast_element *leaf, t_hash_table *output, t_dll *frame
                     dll_append(frame, asm_create_codeline(leaf->lineno, VM_CALL, 1, opr1));
 
                     // Pop the item after the call, but only when we need so.
-                    char cs = stack_peek(state->call_state);
-                    if (!cs || cs == ST_CALL_POP) {
+                    if (! stack_size(state->call_state) || stack_peek(state->call_state) == ST_CALL_POP) {
                         dll_append(frame, asm_create_codeline(leaf->lineno, VM_POP_TOP, 0));
                     }
 

@@ -42,23 +42,33 @@
         t_dll_element   *tail;          // End "tail" element
     } t_dll;
 
+    // Iteration macro's
     #define DLL_HEAD(dll) dll->head
     #define DLL_TAIL(dll) dll->tail
     #define DLL_SIZE(dll) dll->size
     #define DLL_NEXT(e)   e->next
     #define DLL_PREV(e)   e->prev
+    #define DLL_DATA_PTR(e)      (e->data.p)
+    #define DLL_DATA_LONG(e)     (e->data.l)
 
     t_dll *dll_init(void);
     void dll_free(t_dll *dll);
+
     t_dll_element *dll_prepend(t_dll *dll, void *data);
+    t_dll_element *dll_prepend_long(t_dll *dll, long data);
+
     t_dll_element *dll_append(t_dll *dll, void *data);
+    t_dll_element *dll_append_long(t_dll *dll, long data);
+
     t_dll_element *dll_insert_before(t_dll *dll, t_dll_element *, void *data);
     t_dll_element *dll_insert_after(t_dll *dll, t_dll_element *, void *data);
+
     int dll_remove(t_dll *dll, t_dll_element *element);
+
     void dll_push(t_dll *dll, void *data);
-//    void *dll_pop(t_dll *dll);
-//    void *dll_top(t_dll *dll);
-    t_dll_element *dll_seek_offset(t_dll *dll, int offset);
+    void dll_push_long(t_dll *dll, long data);
+
+    t_dll_element *dll_seek_offset(t_dll *dll, size_t offset);
 
 #endif
 

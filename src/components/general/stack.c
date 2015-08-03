@@ -31,7 +31,7 @@
 #include <saffire/general/output.h>
 
 /**
- *
+ * Initializes a new stack
  */
 t_stack *stack_init(void) {
     t_stack *stack = (t_stack *)smm_malloc(sizeof(t_stack));
@@ -42,18 +42,17 @@ t_stack *stack_init(void) {
 
 
 /**
- *
+ * Pushes long onto the stack
  */
-void stack_push(t_stack *stack, char data) {
-    // @TODO: We should not cast char data directly to (void *),..
-    dll_append(stack->dll, (void *)(long)data);
+void stack_push(t_stack *stack, long data) {
+    dll_append_long(stack->dll, data);
 }
 
 
 /**
- *
+ * Pops long from the stack
  */
-char stack_pop(t_stack *stack) {
+long stack_pop(t_stack *stack) {
     if (stack->dll->size <= 0) {
         fatal_error(1, "cannot pop from an empty stack!\n");        /* LCOV_EXCL_LINE */
     }
@@ -62,28 +61,34 @@ char stack_pop(t_stack *stack) {
     // As dll_remove will throw away 'e', we must save data first..
     long ret = e->data.l;
     dll_remove(stack->dll, e);
-    return (char)ret;
+
+    return ret;
 }
 
 /**
- *
+ * Peeks long from the stack. Does not remove element
  */
-char stack_peek(t_stack *stack) {
+long stack_peek(const t_stack *stack) {
+    if (stack->dll->size <= 0) {
+        fatal_error(1, "cannot peek on an empty stack!\n");        /* LCOV_EXCL_LINE */
+    }
+
     t_dll_element *e = DLL_TAIL(stack->dll);
     if (! e) return 0;
-    return (char)e->data.l;
+
+    return e->data.l;
 }
 
 /**
- *
+ * Returns size of the current stack
  */
-int stack_size(t_stack *stack) {
+size_t stack_size(const t_stack *stack) {
     return stack->dll->size;
 }
 
 
 /**
- *
+ * Free up the current stack
  */
 void stack_free(t_stack *stack) {
     dll_free(stack->dll);
