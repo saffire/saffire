@@ -63,41 +63,41 @@ char *replace_extension(const char *path, const char *source_ext, const char *de
 }
 
 /**
- * Checks if target is a file
+ * Checks if target is a regular file
  */
 int is_file(const char *target) {
-	struct stat s;
+    struct stat s;
 
-	if(stat(target,&s) == 0) {
-	    if(s.st_mode & S_IFREG) {
-			return 1;
-		}
-	}
-	return 0;
+    if(stat(target,&s) == 0) {
+        if(s.st_mode & S_IFREG) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
  * Checks if target is a directory
  */
 int is_directory(const char *target) {
-	struct stat s;
+    struct stat s;
 
-	if(stat(target,&s) == 0) {
-		if(s.st_mode & S_IFDIR) {
-			return 1;
-		}
-	}
-	return 0;
+    if(stat(target,&s) == 0) {
+        if(s.st_mode & S_IFDIR) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
- * Checks if filename is a saffire file
+ * Checks if filename is a saffire file (ends with .sf)
  */
 int is_saffire_file(const char *filename) {
-	char *extension = strrchr(filename, '.');
+    char *extension = strrchr(filename, '.');
 
-	if (extension && strcmp(filename, extension) != 0 && strcmp(extension, SAFFIRE_EXTENSION) == 0) {
-		return 1;
-	}
-	return 0;
+    if (extension && strcmp(filename, extension) != 0 && strcmp(extension, SAFFIRE_EXTENSION) == 0) {
+        return 1;
+    }
+    return 0;
 }

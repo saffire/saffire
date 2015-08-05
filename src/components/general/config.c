@@ -42,9 +42,10 @@
 #include <saffire/general/ini.h>
 #include <saffire/debug.h>
 
+// Main saffire configuration file
 #define SAFFIRE_INI_FILENAME "saffire.ini"
 
-// Default paths
+// Default search paths
 char global_ini_path[]  = "/etc/saffire";
 char user_ini_path[]    = "~";
 char *search_paths[] = {
@@ -71,7 +72,7 @@ t_ini *config_get_ini(void) {
 }
 
 
-char *config_seek(char *searchpaths[], char *file) {
+char *config_seek(char *searchpaths[], const char *file) {
     char path[PATH_MAX];
 
     int idx = 0;
@@ -131,9 +132,9 @@ int config_read(void) {
 
 
 /**
- * Store value into key and save file
+ * Stores a value into key and saves the ini file
  */
-int config_set_string(char *key, char *val) {
+int config_set_string(const char *key, const char *val) {
     if (! config_ini) return 0;
 
     if (! val) {
@@ -148,7 +149,7 @@ int config_set_string(char *key, char *val) {
 
 
 /**
- * Return a string from the configuration
+ * Returns a string from the configuration
  */
 char *config_get_string(const char *key, const char *default_value) {
     if (! config_ini) return (char *)default_value;
@@ -159,9 +160,9 @@ char *config_get_string(const char *key, const char *default_value) {
 
 
 /**
- * Return a boolean from the configuration
+ * Returns a boolean from the configuration
  */
-char config_get_bool(const char *key, char default_value) {
+char config_get_bool(const char *key, const char default_value) {
     if (! config_ini) return 0;
 
     char *val = ini_find(config_ini, key);
@@ -172,7 +173,7 @@ char config_get_bool(const char *key, char default_value) {
 
 
 /**
- * Return a long from the configuration
+ * Returns a long from the configuration
  */
 long config_get_long(const char *key, long default_value) {
     if (! config_ini) return 0;
@@ -185,7 +186,7 @@ long config_get_long(const char *key, long default_value) {
 
 
 /**
- * Return a list of all keys inside "matches" that matches the pattern. Returns number of matches found.
+ * Returns a list of all keys inside "matches" that matches the pattern.
  */
 t_hash_table *config_get_matches(const char *pattern, int wildcard) {
     if (! config_ini) return NULL;

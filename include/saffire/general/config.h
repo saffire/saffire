@@ -43,7 +43,7 @@
     t_ini *config_get_ini(void);
 
 
-    int config_set_string(char *key, char *value);
+    int config_set_string(const char *key, const char *value);
     char *config_get_string(const char *key, const char *default_value);
     char config_get_bool(const char *key, char default_value);
     long config_get_long(const char *key, long default_value);

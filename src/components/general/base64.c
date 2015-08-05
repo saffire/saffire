@@ -26,6 +26,7 @@
 */
 #include <stdint.h>
 #include <stdlib.h>
+#include <saffire/general/smm.h>
 
 // Taken and modified from http://stackoverflow.com/questions/342409/how-do-i-base64-encode-decode-in-c
 
@@ -43,7 +44,7 @@ static int mod_table[] = {0, 2, 1};
 
 void build_decoding_table(void) {
 
-    decoding_table = malloc(256);
+    decoding_table = smm_malloc(256);
 
     for (int i = 0; i < 64; i++)
         decoding_table[(unsigned char) encoding_table[i]] = i;
@@ -54,7 +55,7 @@ char *base64_encode(const unsigned char *data, size_t input_length, size_t *outp
 
     *output_length = 4 * ((input_length + 2) / 3) + 1;
 
-    char *encoded_data = malloc(*output_length);
+    char *encoded_data = smm_malloc(*output_length);
     if (encoded_data == NULL) return NULL;
 
     // Zero out last NULL byte
@@ -93,7 +94,7 @@ unsigned char *base64_decode(const char *data,
     if (data[input_length - 1] == '=') (*output_length)--;
     if (data[input_length - 2] == '=') (*output_length)--;
 
-    unsigned char *decoded_data = malloc(*output_length);
+    unsigned char *decoded_data = smm_malloc(*output_length);
     if (decoded_data == NULL) return NULL;
 
     for (int i = 0, j = 0; i < input_length;) {
@@ -118,5 +119,5 @@ unsigned char *base64_decode(const char *data,
 
 
 void base64_cleanup() {
-    free(decoding_table);
+    smm_free(decoding_table);
 }

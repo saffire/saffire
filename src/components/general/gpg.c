@@ -40,9 +40,9 @@
 
 
 /**
- * Verifies a buffer block. Returns 1 on valid. 0 when not valid.
+ * Verifies if a buffer block matches signature. Returns 1 on valid. 0 when not valid.
  */
-int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len) {
+int gpg_verify(char *buffer, unsigned int buffer_len, const char *signature, unsigned int signature_len) {
     char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
 
     // Open temp file (and modify tmp_path with generated filename)
@@ -100,7 +100,8 @@ int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned 
 }
 
 /**
- * Signs a buffer block. *signature should be NULL to allocate a new buffer, and *signature_len returns the length of the signature
+ * Signs a buffer block. *signature should be NULL to allocate a new signature buffer, and *signature_len returns
+ * the length of the signature.
  */
 int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len) {
     char tmp_path[] = TEMP_SAFFIRE_SIGN_PATH;
