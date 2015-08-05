@@ -102,7 +102,7 @@ while getopts "hvcit:b:" opt ; do
             echo "-h             Display usage info"
             echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
-            echo "-i             Install saffire after build"
+            echo "-i             Install Saffire after build"
             echo "-t <target>    Target to build (release|debug|all)"
             echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo

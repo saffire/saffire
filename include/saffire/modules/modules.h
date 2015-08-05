@@ -37,6 +37,7 @@
     #include <saffire/modules/standard/datetime.h>
 
     #include <saffire/modules/standard/os.h>
+    #include <saffire/modules/standard/cpu.h>
 
     #include <saffire/modules/sapi/fastcgi.h>
 
