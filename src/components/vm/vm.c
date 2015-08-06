@@ -899,21 +899,32 @@ dispatch:
                     ht_debug(search_obj->attributes);
 #endif
 
+                    if (OBJECT_IS_IMMUTABLE(search_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_ImmutableException, 1, "Trying to modify immutable property on object '%s'\n", search_obj->name);
+
+                        object_release(search_obj);
+
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
                     s = DUP_OBJ2STR0(name_obj);
                     t_attrib_object *attrib_obj = object_attrib_find(search_obj, s);
                     smm_free(s);
 
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
+
                         object_release(search_obj);
 
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
                     if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", DUP_OBJ2STR0(name_obj));
+
                         object_release(search_obj);
 
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", DUP_OBJ2STR0(name_obj));
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }

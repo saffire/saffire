@@ -12,6 +12,7 @@ systemException
     compileException
     indexException
     attributeException
+    immutableException
     typeException
     callException
         argumentException

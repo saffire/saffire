@@ -140,7 +140,7 @@
 /* Our actual lexemes */
 lnum            -?[0-9]+
 /* identifier      (\\[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
-identifier      ([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
+identifier      ([a-zA-Z_][a-zA-Z0-9_]*\??)
 whitespace      [ \t\r]+
 newline         "\n"
 sl_comment      "//".+
