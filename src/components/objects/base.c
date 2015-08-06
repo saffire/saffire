@@ -29,7 +29,7 @@
 #include <ctype.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /*

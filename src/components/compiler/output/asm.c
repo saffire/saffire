@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include <saffire/compiler/output/asm.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/dll.h>
 #include <saffire/vm/vm_opcodes.h>
 #include <saffire/debug.h>

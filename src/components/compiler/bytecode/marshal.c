@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <saffire/general/output.h>
 #include <saffire/compiler/bytecode.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/config.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/compiler/output/asm.h>

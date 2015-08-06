@@ -38,7 +38,7 @@
 #include <saffire/debug.h>
 #include <saffire/gc/gc.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/thread.h>
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)

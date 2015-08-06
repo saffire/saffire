@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <saffire/general/stack.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/output.h>
 
 /**

@@ -29,7 +29,7 @@
 
 #include <saffire/general/string.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/output.h>
 
 // Our default converter (@TODO: what about reading from other converters like utf16 etc??)

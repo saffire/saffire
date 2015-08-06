@@ -36,7 +36,7 @@
 #include <saffire/version.h>
 #include <saffire/vm/vm.h>
 #include <saffire/vm/thread.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <string.h>
 
 SAFFIRE_MODULE_METHOD(saffire, get_locale) {

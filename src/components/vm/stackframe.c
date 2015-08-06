@@ -32,7 +32,7 @@
 #include <saffire/vm/import.h>
 #include <saffire/compiler/bytecode.h>
 #include <saffire/vm/vm_opcodes.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/objects/string.h>
 #include <saffire/objects/numerical.h>
 #include <saffire/objects/hash.h>

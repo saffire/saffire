@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include <saffire/general/string.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 /**
  * This file deals with both saffire binary-safe strings (t_string) as well as

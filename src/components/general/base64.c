@@ -26,7 +26,7 @@
 */
 #include <stdint.h>
 #include <stdlib.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 // Taken and modified from http://stackoverflow.com/questions/342409/how-do-i-base64-encode-decode-in-c
 

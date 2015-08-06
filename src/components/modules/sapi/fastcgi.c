@@ -33,7 +33,7 @@
 #include <saffire/general/dll.h>
 #include <saffire/version.h>
 #include <saffire/vm/vm.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 #define NO_FCGI_DEFINES
 #include <fcgi_stdio.h>

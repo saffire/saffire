@@ -28,7 +28,7 @@
 #define __OUTPUT_ASM_H__
 
     #include <saffire/compiler/bytecode.h>
-    #include <saffire/general/smm.h>
+    #include <saffire/memory/smm.h>
 
     #define ASM_LINE_TYPE_OP_LABEL      1
     #define ASM_LINE_TYPE_OP_STRING     2

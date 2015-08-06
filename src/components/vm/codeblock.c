@@ -27,7 +27,7 @@
 #include <string.h>
 #include <saffire/vm/codeblock.h>
 #include <saffire/vm/context.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/debug.h>
 
 /**

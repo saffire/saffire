@@ -28,7 +28,7 @@
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/output.h>
 #include <saffire/vm/thread.h>
 

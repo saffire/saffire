@@ -26,7 +26,7 @@
 */
 #include <saffire/general/path_handling.h>
 #include <saffire/general/definitions.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>

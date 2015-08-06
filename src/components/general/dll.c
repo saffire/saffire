@@ -26,7 +26,7 @@
 */
 #include <stdio.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /**

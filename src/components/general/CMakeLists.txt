@@ -5,8 +5,6 @@ set(sources
     hashtable.c
     hash/chained.c
     hash/hash_funcs.c
-    smm.c
-    smm/asprintf.c
     md5.c
     dll.c
     stack.c
@@ -26,9 +24,10 @@ set(sources
 
 add_library(generic STATIC ${sources})
 
-add_dependencies(generic generate_interfaces generate_exceptions)
+add_dependencies(generic memory generate_interfaces generate_exceptions)
 
 target_link_libraries(
     generic
+    memory
     debugger
     ${3rdparty_libs})

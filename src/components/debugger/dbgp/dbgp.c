@@ -36,7 +36,7 @@
 #include <saffire/debugger/dbgp/commands.h>
 #include <saffire/general/output.h>
 #include <saffire/debug.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 extern struct dbgp_command dbgp_commands[];
 extern char *dbgp_status_names[5];

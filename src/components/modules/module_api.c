@@ -32,7 +32,7 @@
 #include <saffire/debug.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/vm/vm.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/modules/modules.h>
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))

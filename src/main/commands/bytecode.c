@@ -40,7 +40,7 @@
 #include <saffire/vm/vm.h>
 #include <saffire/vm/stackframe.h>
 #include <saffire/commands/command.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/parse_options.h>
 #include <saffire/general/path_handling.h>
 #include <saffire/compiler/bytecode.h>

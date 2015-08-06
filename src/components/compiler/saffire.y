@@ -31,7 +31,7 @@
 
     #include <stdio.h>
     #include <saffire/general/output.h>
-    #include <saffire/general/smm.h>
+    #include <saffire/memory/smm.h>
     #include <saffire/general/hashtable.h>
     #include <saffire/compiler/parser_helpers.h>
     #include <saffire/compiler/ast_nodes.h>

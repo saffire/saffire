@@ -24,19 +24,41 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <sys/stat.h>
+#include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <limits.h>
+#include <stdlib.h>
 #include <saffire/general/output.h>
-#include <compiler/bytecode.h>
-#include <saffire/memory/smm.h>
-#include <saffire/general/gpg.h>
-#include <saffire/general/bzip2.h>
-#include <saffire/general/config.h>
 #include <saffire/general/hashtable.h>
-#include <compiler/output/asm.h>
-#include <compiler/ast_to_asm.h>
-#include <saffire/general/path_handling.h>
+#include <saffire/memory/smm.h>
 
+long smm_malloc_calls = 0;
+long smm_realloc_calls = 0;
+long string_strdup_calls = 0;
+
+void *smm_malloc(size_t size) {
+    smm_malloc_calls++;
+    void *ptr = malloc(size);
+    if (ptr == NULL) {
+        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);        /* LCOV_EXCL_LINE */
+    }
+    return ptr;
+}
+
+void *smm_zalloc(size_t size) {
+    void *p = smm_malloc(size);
+    bzero(p, size);
+    return p;
+}
+
+void *smm_realloc(void *ptr, size_t size) {
+    smm_realloc_calls++;
+    void *newptr = realloc(ptr, size);
+    if (newptr == NULL) {
+        fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);      /* LCOV_EXCL_LINE */
+    }
+    return newptr;
+}
+
+void smm_free(void *ptr) {
+    return free(ptr);
+}

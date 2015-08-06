@@ -29,7 +29,7 @@
 #include <string.h>
 #include <saffire/general/output.h>
 #include <saffire/general/parse_options.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 /* Parameters known to saffire commands. Similar to argc & argv */
 char **saffire_params;

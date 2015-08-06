@@ -32,7 +32,7 @@
 #include <saffire/compiler/ast_nodes.h>
 #include <saffire/compiler/saffire_parser.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/stack.h>
 #include <saffire/general/dll.h>
 #include <saffire/debug.h>

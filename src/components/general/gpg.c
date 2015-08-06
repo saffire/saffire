@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/gpg.h>
 #include <saffire/general/popen2.h>
 #include <saffire/general/config.h>

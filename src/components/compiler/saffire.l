@@ -33,7 +33,7 @@
     #include <saffire/repl/repl.h>
     #include <saffire/general/output.h>
     #include <saffire/compiler/parser_helpers.h>
-    #include <saffire/general/smm.h>
+    #include <saffire/memory/smm.h>
     #include <saffire/compiler/ast_nodes.h>
     #include <saffire/compiler/saffire_parser.h>
     #include "parser.tab.h"

@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <saffire/general/hashtable.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/debug.h>

@@ -34,7 +34,7 @@
 #include <saffire/debugger/dbgp/sock.h>
 #include <saffire/debugger/dbgp/commands.h>
 #include <saffire/debug.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/objects/objects.h>
 #include <saffire/general/base64.h>
 #include <saffire/version.h>

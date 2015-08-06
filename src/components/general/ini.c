@@ -35,7 +35,7 @@
 #include <limits.h>
 #endif
 #include <saffire/general/ini.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/dll.h>
 
 /**

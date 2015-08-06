@@ -31,7 +31,7 @@
 #include <unistd.h>
 #include <saffire/general/printf.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /**

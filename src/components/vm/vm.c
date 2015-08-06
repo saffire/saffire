@@ -35,7 +35,7 @@
 #include <saffire/vm/thread.h>
 #include <saffire/vm/import.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
 #include <saffire/modules/module_api.h>

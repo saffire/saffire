@@ -29,7 +29,7 @@
 #include <saffire/objects/object.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/general/hash/hash_funcs.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 /**
  * These hash tables are not reentrant, nor threadsafe!

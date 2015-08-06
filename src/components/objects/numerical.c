@@ -30,7 +30,7 @@
 #include <saffire/debug.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
 #define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */
