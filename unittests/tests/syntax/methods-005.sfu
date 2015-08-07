@@ -1,0 +1,72 @@
+title: boolean method tests
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+class foo {
+    public property a? = true;
+
+    public method b?() {
+        return false;
+    }
+
+    public property c?;
+
+    public method d?() {
+        return 1;
+    }
+}
+
+f = foo();
+
+try {
+    i = f.a?;
+    io.println("ok1");
+} catch (typeException e) {
+    io.println("error1");
+}
+
+try {
+    i = f.b?();
+    io.println("ok2");
+} catch (typeException e) {
+    io.println("error2");
+}
+
+
+try {
+    f.c? = 1;
+    io.println("error3");
+} catch (typeException e) {
+    io.println("ok3");
+}
+
+try {
+    f.c? = true;
+    io.println("ok4");
+} catch (typeException e) {
+    io.println("error4");
+}
+
+
+try {
+    f.c? = "foobar";
+    io.println("error5");
+} catch (typeException e) {
+    io.println("ok5");
+}
+
+try {
+    f.d?();
+    io.println("error6");
+} catch (typeException e) {
+    io.println("ok6");
+}
+=====
+ok1
+ok2
+ok3
+ok4
+ok5
+ok6

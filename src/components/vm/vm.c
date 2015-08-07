@@ -48,6 +48,10 @@
 t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash table
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object
 
+
+// A boolean method or property ends on a '?'
+#define IS_BOOLEAN_ATTRIBUTE(s)  (s[strlen(s)-1] == '?')
+
 // Flow termination reasons
 #define REASON_NONE         0       // No return status. Just end the execution
 #define REASON_RETURN       1       // Return statement given
@@ -619,7 +623,6 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
     unsigned int opcode, oparg1, oparg2, oparg3;
     long reason = REASON_NONE;
     t_object *dst;
-    char *s;
 
 
 #ifdef __DEBUG
@@ -893,7 +896,9 @@ dispatch:
             case VM_STORE_ATTRIB :
                 {
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
+
                     t_object *search_obj = vm_frame_stack_pop(frame, 1);
+                    t_object *value_obj = vm_frame_stack_pop(frame, 1);
 
 #ifdef __DEBUG
                     ht_debug(search_obj->attributes);
@@ -903,19 +908,34 @@ dispatch:
                         thread_create_exception_printf((t_exception_object *)Object_ImmutableException, 1, "Trying to modify immutable property on object '%s'\n", search_obj->name);
 
                         object_release(search_obj);
+                        object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    s = DUP_OBJ2STR0(name_obj);
-                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, s);
-                    smm_free(s);
+                    char *property_name = DUP_OBJ2STR0(name_obj);
+                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, property_name);
+
+                    if (IS_BOOLEAN_ATTRIBUTE(property_name) && ! OBJECT_IS_BOOLEAN(value_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot set non-boolean value to property '%s'\n", property_name);
+
+                        smm_free(property_name);
+
+                        object_release(search_obj);
+                        object_release(value_obj);
+
+                        reason = REASON_EXCEPTION;
+                        goto block_end;
+                    }
+
+                    smm_free(property_name);
 
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
 
                         object_release(search_obj);
+                        object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -924,6 +944,7 @@ dispatch:
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", DUP_OBJ2STR0(name_obj));
 
                         object_release(search_obj);
+                        object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
@@ -931,7 +952,6 @@ dispatch:
 
                     // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
 
-                    t_object *value = vm_frame_stack_pop(frame, 1);
                     if (attrib_obj) {
                         // Decrease reference of original value
                         if (attrib_obj->data.attribute) {
@@ -939,17 +959,17 @@ dispatch:
                         }
 
                         // Set to new value
-                        attrib_obj->data.attribute = value;
-                        object_inc_ref(value);
+                        attrib_obj->data.attribute = value_obj;
+                        object_inc_ref(value_obj);
 
                     } else {
                         // if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
-                        s = DUP_OBJ2STR0(name_obj);
-                        object_add_property(search_obj, s, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value);
-                        smm_free(s);
+                        char *property_name = DUP_OBJ2STR0(name_obj);
+                        object_add_property(search_obj, property_name, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value_obj);
+                        smm_free(property_name);
                     }
 
-                    object_release(value);
+                    object_release(value_obj);
                     object_release(search_obj);
                 }
                 goto dispatch;
@@ -991,7 +1011,7 @@ dispatch:
             // Store SP+0 into identifier
             case VM_STORE_ID :
                 dst = vm_frame_stack_pop(frame, 1);
-                s = vm_frame_get_name(frame, oparg1);
+                char *s = vm_frame_get_name(frame, oparg1);
                 vm_frame_set_local_identifier(frame, s, dst);
 
                 object_release(dst);
@@ -1000,7 +1020,8 @@ dispatch:
 
             // Load and push identifier onto stack (either local or global)
             case VM_LOAD_ID :
-                s = vm_frame_get_name(frame, oparg1);
+                {
+                char *s = vm_frame_get_name(frame, oparg1);
 
                 dst = vm_frame_find_identifier(frame, s);
                 if (dst == NULL) {
@@ -1013,7 +1034,7 @@ dispatch:
                 object_inc_ref(dst);
                 goto dispatch;
                 break;
-
+                }
             //
             case VM_OPERATOR :
                 right_obj = vm_frame_stack_pop(frame, 1);
@@ -1633,6 +1654,15 @@ dispatch:
 
                 // Decrease object count, as we popped it from the stack
                 object_release(ret);
+
+                // Check if we just entered a boolean method (ending on '?')
+                if (frame->trace_method != NULL && IS_BOOLEAN_ATTRIBUTE(frame->trace_method) && ! OBJECT_IS_BOOLEAN(ret)) {
+                    reason = REASON_EXCEPTION;
+                    thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Method '%s.%s' must return a boolean", frame->trace_class, frame->trace_method);
+
+                    ret = NULL;
+                    goto block_end;
+                }
 
                 reason = REASON_RETURN;
                 goto block_end;
