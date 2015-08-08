@@ -47,7 +47,7 @@
         void (*populate)(t_object *, t_dll *);      // Populates an object with new values
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
-        t_object *(*clone)(t_object *);             // Clone this object to a new object
+        void (*clone)(const t_object *, t_object *);  // Clones additional object data
         t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
         char *(*hash)(t_object *);                  // Returns a string hash (prob md5) of the object
         char *(*debug)(t_object *);                 // Return debug string (value and info)

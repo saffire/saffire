@@ -737,6 +737,17 @@ static void obj_destroy(t_object *obj) {
     smm_free(obj);
 }
 
+/**
+ * Clones custom string data into a the new object
+ */
+static void obj_clone(const t_object *original_obj, t_object *cloned_obj) {
+    t_string_object *str_org_obj = (t_string_object *)original_obj;
+    t_string_object *str_cloned_obj = (t_string_object *)cloned_obj;
+
+    str_cloned_obj->data.locale = string_strdup0(str_org_obj->data.locale);
+    str_cloned_obj->data.value = string_strdup(str_org_obj->data.value);
+}
+
 
 #ifdef __DEBUG
 
@@ -778,7 +789,7 @@ t_object_funcs string_funcs = {
         obj_populate,         // Populate a string object
         obj_free,             // Free a string object
         obj_destroy,          // Destroy a string object
-        NULL,                 // Clone
+        obj_clone,            // Clone
         NULL,                 // Object cache
         obj_hash,             // Hash
 #ifdef __DEBUG

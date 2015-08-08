@@ -278,8 +278,7 @@ SAFFIRE_METHOD(base, annotations) {
  * Clone the object into a new object
  */
 SAFFIRE_METHOD(base, clone) {
-    t_object *obj = (t_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
+    RETURN_OBJECT(object_clone((t_object *)self));
 }
 
 /**
@@ -378,7 +377,7 @@ t_object_funcs base_funcs = {
         obj_destroy,          // Destroy a string object
         NULL,                 // Clone
         NULL,                 // Object cache
-        NULL,             // Hash
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug,
 #else

@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
@@ -262,20 +263,47 @@ char *object_debug(t_object *obj) {
 #endif
 
 
+
+static t_dll *object_duplicate_interfaces(t_object *instance_obj);
+
 /**
  * Clones an object and returns new object
  */
-t_object *object_clone(t_object *obj) {
-    DEBUG_PRINT_CHAR("Cloning: %s\n", obj->name);
+t_object *object_clone(t_object *orig_obj) {
+    assert(orig_obj != NULL);
 
-    // No clone function, so return same object
-    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
-        return obj;
+    // Allocate new object with correct size and copy data
+    t_object *clone_obj = smm_malloc(sizeof(t_object) + orig_obj->data_size);
+    memcpy(clone_obj, orig_obj, sizeof(t_object) + orig_obj->data_size);
+
+    // New separated object gets refcount 0
+    clone_obj->ref_count = 0;
+    clone_obj->name = string_strdup0(orig_obj->name);
+
+    if (clone_obj->class) {
+        object_inc_ref(clone_obj->class);
+    }
+    if (clone_obj->parent) {
+        object_inc_ref(clone_obj->parent);
     }
 
-    return obj->funcs->clone(obj);
-}
+    if (orig_obj->interfaces) {
+        clone_obj->interfaces = object_duplicate_interfaces(orig_obj);
+    }
 
+    if (orig_obj->attributes) {
+        // Duplicate attributes (as-is) from original object
+        clone_obj->attributes = object_duplicate_attributes(orig_obj, clone_obj);
+    }
+
+
+    // If there is a custom clone function on the object, call it..
+    if (orig_obj->funcs && orig_obj->funcs->clone) {
+        clone_obj->funcs->clone(orig_obj, clone_obj);
+    }
+
+    return clone_obj;
+}
 
 /**
  *
@@ -808,7 +836,7 @@ t_object *object_alloc_class(t_object *obj, int arg_count, ...) {
 }
 
 
-t_dll *object_duplicate_interfaces(t_object *instance_obj) {
+static t_dll *object_duplicate_interfaces(t_object *instance_obj) {
     if (! instance_obj->interfaces) return NULL;
 
     t_dll *interfaces = dll_init();

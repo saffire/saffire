@@ -110,6 +110,7 @@ char *string_strdup0(const char *s) {
 
 /**
  * Duplicates a t_string.
+ * @TODO: MEDIUM: Does not duplicate unicode, even if it's available
  */
 t_string *string_strdup(const t_string *s) {
     t_string *str = string_new();

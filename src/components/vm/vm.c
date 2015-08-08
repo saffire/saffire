@@ -412,7 +412,8 @@ static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
         // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
         t_object *parent_binding = self;
         while (parent_binding) {
-            if (parent_binding->class == attrib->data.bound_class || parent_binding == attrib->data.bound_class) return 1;
+            if (parent_binding->class == attrib->data.bound_class || parent_binding == attrib->data.bound_class ||
+                parent_binding->class == attrib->data.bound_instance || parent_binding == attrib->data.bound_instance) return 1;
             parent_binding = parent_binding->parent;
         }
     }
@@ -866,7 +867,7 @@ dispatch:
                     if (! _check_attrib_visibility(self_obj, attrib_obj)) {
                         object_release(self_obj);
 
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", OBJ2STR(name));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", name);
                         smm_free(name);
                         reason = REASON_EXCEPTION;
                         goto block_end;
