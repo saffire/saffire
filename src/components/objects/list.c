@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/debug.h>
 #include <saffire/general/output.h>
@@ -329,6 +329,7 @@ void object_list_init(void) {
     object_add_internal_method((t_object *)&Object_List_struct, "__rewind",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___rewind);
     object_add_internal_method((t_object *)&Object_List_struct, "__next",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___next);
     object_add_internal_method((t_object *)&Object_List_struct, "__hasNext",      ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method___hasNext);
+    object_add_internal_method((t_object *)&Object_List_struct, "__length",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
 
     object_add_internal_method((t_object *)&Object_List_struct, "length",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_length);
     object_add_internal_method((t_object *)&Object_List_struct, "add",            ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_list_method_add);
@@ -373,7 +374,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (arg_list->size == 1) {
         // Simple hash table. Direct copy
-        list_obj->data.ht = DLL_HEAD(arg_list)->data.p;
+        t_dll_element *e = DLL_HEAD(arg_list);
+        list_obj->data.ht = DLL_DATA_PTR(e);
         return;
     }
 
@@ -381,10 +383,10 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     list_obj->data.ht = ht_create();
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
-    t_dll *dll = (t_dll *)e->data.p;
+    t_dll *dll = DLL_DATA_PTR(e);
     e = DLL_HEAD(dll);    // 2nd elementof the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *val = (t_object *)e->data.p;
+        t_object *val = DLL_DATA_PTR(e);
         ht_add_num(list_obj->data.ht, list_obj->data.ht->element_count, val);
         e = DLL_NEXT(e);
     }

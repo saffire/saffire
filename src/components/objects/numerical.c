@@ -30,7 +30,7 @@
 #include <saffire/debug.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 #define NUMERICAL_CACHED_MIN   -5       /* minimum numerical value to cache */
 #define NUMERICAL_CACHED_MAX  256       /* maximum numerical value to cache */
@@ -381,26 +381,10 @@ void object_numerical_fini(void) {
 }
 
 
-/**
- * Clones a numerical object into a new object
- */
-static t_object *obj_clone(t_object *obj) {
-    t_numerical_object *num_obj = (t_numerical_object *)obj;
-
-    // Create new object and copy all info
-    t_numerical_object *new_obj = smm_malloc(sizeof(t_numerical_object));
-    memcpy(new_obj, num_obj, sizeof(t_numerical_object));
-
-    // New separated object
-    new_obj->ref_count = 0;
-
-    return (t_object *)new_obj;
-}
-
 
 static t_object *obj_cache(t_object *obj, t_dll *arg_list) {
     t_dll_element *e = DLL_HEAD(arg_list);
-    long value = (long)e->data.l;
+    long value = DLL_DATA_LONG(e);
 
     // Return cached object if it's already present.
     if (value >= NUMERICAL_CACHED_MIN && value <= NUMERICAL_CACHED_MAX) {

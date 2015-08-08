@@ -40,7 +40,7 @@
 #include <saffire/fastcgi/scoreboard.h>
 #include <saffire/fastcgi/daemonize.h>
 #include <saffire/fastcgi/fastcgi_srv.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/path_handling.h>
 #include <saffire/vm/vm.h>
 #include <saffire/compiler/ast_to_asm.h>

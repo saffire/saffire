@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/debug.h>
 #include <saffire/general/dll.h>
@@ -179,7 +179,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Note that bound_class does not get a ref-increase, because of cyclic dependencies on the bound class itself
     t_dll_element *e = DLL_HEAD(arg_list);
-    attrib_obj->data.bound_class = (t_object *) e->data.p;
+    attrib_obj->data.bound_class = DLL_DATA_PTR(e);
 
 
 //    // build_attrib builds attributes that aren't bound to any class (yet))
@@ -188,23 +188,23 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 //    }
 
     e = DLL_NEXT(e);
-    attrib_obj->data.bound_name = string_strdup0((char *) e->data.p);
+    attrib_obj->data.bound_name = string_strdup0(DLL_DATA_PTR(e));
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_type = (long) e->data.l;
+    attrib_obj->data.attr_type = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_visibility = (long) e->data.l;
+    attrib_obj->data.attr_visibility = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_access = (long) e->data.l;
+    attrib_obj->data.attr_access = DLL_DATA_LONG(e);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attribute = (t_object *) e->data.p;
+    attrib_obj->data.attribute = DLL_DATA_PTR(e);
     object_inc_ref(attrib_obj->data.attribute);
 
     e = DLL_NEXT(e);
-    attrib_obj->data.attr_method_flags = (long) e->data.l;
+    attrib_obj->data.attr_method_flags = DLL_DATA_LONG(e);
 }
 
 static void obj_free(t_object *obj) {

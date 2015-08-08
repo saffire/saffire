@@ -33,7 +33,7 @@
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/general/output.h>
 #include <saffire/debug.h>
@@ -82,6 +82,9 @@ t_string *object_string_cat(t_string_object *s1, t_string_object *s2) {
 }
 
 int object_string_compare(t_string_object *s1, t_string_object *s2) {
+    create_utf8_from_string(s1->data.value);
+    create_utf8_from_string(s2->data.value);
+
     return utf8_strcmp(s1->data.value, s2->data.value);
 }
 
@@ -112,7 +115,7 @@ SAFFIRE_METHOD(string, ctor) {
 
     self->data.value = string_strdup(str_obj->data.value);
     if (locale_obj) {
-        self->data.locale = string_to_char(locale_obj->data.value);
+        self->data.locale = string_to_char0(locale_obj->data.value);
     } else {
         t_thread *thread = thread_get_current();
         self->data.locale = thread->locale ? string_strdup0(thread->locale) : NULL;
@@ -139,6 +142,8 @@ SAFFIRE_METHOD(string, length) {
  * Saffire method: Returns uppercased string object
  */
 SAFFIRE_METHOD(string, upper) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_toupper(self->data.value, self->data.locale);
 
     // Create new object
@@ -150,6 +155,8 @@ SAFFIRE_METHOD(string, upper) {
  * Saffire method: Returns ucfirst string object
  */
 SAFFIRE_METHOD(string, ucfirst) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_ucfirst(self->data.value, self->data.locale);
 
     // Create new object
@@ -163,6 +170,8 @@ SAFFIRE_METHOD(string, ucfirst) {
  * Saffire method: Returns lowercased string object
  */
 SAFFIRE_METHOD(string, lower) {
+    create_utf8_from_string(self->data.value);
+
     t_string *dst = utf8_tolower(self->data.value, self->data.locale);
 
     // Create new object
@@ -384,8 +393,9 @@ SAFFIRE_METHOD(string, index) {
         return NULL;
     }
 
-    long offset = offset_obj == NULL ? 0 : OBJ2NUM(offset_obj);
+    size_t offset = offset_obj == NULL ? 0 : (size_t)OBJ2NUM(offset_obj);
 
+    create_utf8_from_string(self->data.value);
     int pos = utf8_strstr(self->data.value, needle_obj->data.value, offset);
 
     if (pos == -1) {
@@ -518,6 +528,9 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
         return NULL;
     }
 
+    create_utf8_from_string(self->data.value);
+    create_utf8_from_string(other->data.value);
+
     utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
@@ -527,6 +540,9 @@ SAFFIRE_COMPARISON_METHOD(string, ni) {
     if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
         return NULL;
     }
+
+    create_utf8_from_string(self->data.value);
+    create_utf8_from_string(other->data.value);
 
     utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_FALSE) : (RETURN_TRUE);
 }
@@ -690,17 +706,17 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        str_obj->data.value = (t_string *)e->data.p;
+        str_obj->data.value = DLL_DATA_PTR(e);
     } else if (arg_list->size > 1) {
         // 2 (or more) elements: it's a size + char0 string
 
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
-        int value_len = (int)e->data.l;
+        long value_len = DLL_DATA_LONG(e);
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);
-        char *value = (char *)e->data.p;
+        char *value = DLL_DATA_PTR(e);
 
         // Convert our stream to UTF8
         str_obj->data.value = char_to_string(value, value_len);
@@ -719,6 +735,17 @@ static void obj_free(t_object *obj) {
 
 static void obj_destroy(t_object *obj) {
     smm_free(obj);
+}
+
+/**
+ * Clones custom string data into a the new object
+ */
+static void obj_clone(const t_object *original_obj, t_object *cloned_obj) {
+    t_string_object *str_org_obj = (t_string_object *)original_obj;
+    t_string_object *str_cloned_obj = (t_string_object *)cloned_obj;
+
+    str_cloned_obj->data.locale = string_strdup0(str_org_obj->data.locale);
+    str_cloned_obj->data.value = string_strdup(str_org_obj->data.value);
 }
 
 
@@ -762,7 +789,7 @@ t_object_funcs string_funcs = {
         obj_populate,         // Populate a string object
         obj_free,             // Free a string object
         obj_destroy,          // Destroy a string object
-        NULL,                 // Clone
+        obj_clone,            // Clone
         NULL,                 // Object cache
         obj_hash,             // Hash
 #ifdef __DEBUG

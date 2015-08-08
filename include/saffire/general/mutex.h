@@ -33,7 +33,7 @@
 
     int mutex_create(t_mutex *mutex);
     int mutex_destroy(t_mutex *mutex);
-    int mutex_wait(t_mutex *mutex);
-    int mutex_post(t_mutex *mutex);
+    int mutex_wait_for_lock(t_mutex *mutex);
+    int mutex_unlock(t_mutex *mutex);
 
 #endif

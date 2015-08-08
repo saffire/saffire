@@ -27,7 +27,7 @@
 #ifndef __GPG_H__
 #define __GPG_H__
 
-    int gpg_verify(char *buffer, unsigned int buffer_len, char *signature, unsigned int signature_len);
+    int gpg_verify(char *buffer, unsigned int buffer_len, const char *signature, unsigned int signature_len);
     int gpg_sign(const char *gpg_key, const char *buffer, unsigned int buffer_len, char **signature, unsigned int *signature_len);
 
 #endif

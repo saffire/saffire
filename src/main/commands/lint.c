@@ -34,7 +34,7 @@
 #include <saffire/compiler/ast_nodes.h>
 #include <saffire/general/parse_options.h>
 #include <saffire/general/path_handling.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 void process_file(const char *filename);
 void process_directory(const char *directory);

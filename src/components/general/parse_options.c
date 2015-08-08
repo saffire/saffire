@@ -29,7 +29,7 @@
 #include <string.h>
 #include <saffire/general/output.h>
 #include <saffire/general/parse_options.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 /* Parameters known to saffire commands. Similar to argc & argv */
 char **saffire_params;
@@ -39,7 +39,7 @@ int saffire_params_count;
 /**
  * Converts a string value into a boolean 0 or 1. Returns -1 if cannot be converted.
  */
-int to_bool(char *value) {
+int to_bool(const char *value) {
     if (value == NULL) return 0;
     if (strlen(value) == 0) return 0;
     if (! strcasecmp(value, "disabled")) return 0;

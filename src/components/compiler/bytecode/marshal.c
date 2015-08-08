@@ -32,7 +32,7 @@
 #include <limits.h>
 #include <saffire/general/output.h>
 #include <saffire/compiler/bytecode.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/config.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/compiler/output/asm.h>
@@ -362,7 +362,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     // Add constants (order matter!)
     e = DLL_HEAD(frame->constants);
     while (e) {
-        t_asm_constant *c = (t_asm_constant *)e->data.p;
+        t_asm_constant *c = (t_asm_constant *)DLL_DATA_PTR(e);
         switch (c->type) {
             case const_code :
                 _new_constant_code(bc, convert_frames_to_bytecode(frames, c->data.s, 1));
@@ -384,7 +384,7 @@ t_bytecode *convert_frames_to_bytecode(t_hash_table *frames, char *name, int sta
     // Add identifiers (order matter!)
     e = DLL_HEAD(frame->identifiers);
     while (e) {
-        _new_name(bc, (char *)e->data.p);
+        _new_name(bc, (char *)DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 

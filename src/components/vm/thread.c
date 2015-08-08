@@ -29,7 +29,7 @@
 #include <string.h>
 #include <saffire/general/config.h>
 #include <saffire/vm/thread.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/vm.h>
 
 

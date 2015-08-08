@@ -42,6 +42,7 @@
     #include "tuple.h"
     #include "interfaces.h"
     #include "exception.h"
+    #include "meta.h"
 
     // Explicit io print callback
     t_object *module_io_print(char *format, ...);

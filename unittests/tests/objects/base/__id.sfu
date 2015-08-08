@@ -2,7 +2,7 @@ title: base __destroy tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 
 a = "hello1";
 id1 = a.__id();

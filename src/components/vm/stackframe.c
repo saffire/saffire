@@ -32,7 +32,7 @@
 #include <saffire/vm/import.h>
 #include <saffire/compiler/bytecode.h>
 #include <saffire/vm/vm_opcodes.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/objects/string.h>
 #include <saffire/objects/numerical.h>
 #include <saffire/objects/hash.h>
@@ -82,19 +82,10 @@ unsigned int vm_frame_get_operand(t_vm_stackframe *frame) {
 }
 
 /**
- * Pops an object from the stack. If the object is an attribute, fetch the actual data of that attribute.
- * Errors when the stack is empty
+ * Pops an object from the stack. If the resolve_attrib == 1 and object is an attribute object, fetch the actual
+ * data of that attribute. Will error when the stack is empty.
  */
-t_object *vm_frame_stack_pop(t_vm_stackframe *frame) {
-    t_object *obj = vm_frame_stack_pop_attrib(frame);
-    if (OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->data.attribute;
-    return obj;
-}
-
-/**
- * Pops an object from the stack. Errors when the stack is empty
- */
-t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
+t_object *vm_frame_stack_pop(t_vm_stackframe *frame, int resolve_attrib) {
 #if __DEBUG_STACK
     DEBUG_PRINT_CHAR(ANSI_BRIGHTYELLOW "STACK POP (%d): %08X '%s'{%d}\n" ANSI_RESET, frame->sp, (uintptr_t)frame->stack[frame->sp], object_debug(frame->stack[frame->sp]), ((t_object *)(frame->stack[frame->sp]))->ref_count);
 #endif
@@ -102,11 +93,14 @@ t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame) {
     if (frame->sp >= frame->codeblock->bytecode->stack_size) {
         fatal_error(1, "Trying to pop from an empty stack");        /* LCOV_EXCL_LINE */
     }
-    t_object *ret = frame->stack[frame->sp];
+
+    t_object *obj = frame->stack[frame->sp];
     frame->stack[frame->sp] = NULL;
     frame->sp++;
 
-    return ret;
+
+    if (resolve_attrib == 1 && OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->data.attribute;
+    return obj;
 }
 
 /**
@@ -133,19 +127,11 @@ void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj) {
 /**
  * Fetches the top of the stack. Does not pop anything.
  */
-t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame) {
-    return frame->stack[frame->sp];
-}
+t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame, int resolve_attrib) {
+    t_object *obj = frame->stack[frame->sp];
 
-/**
- * Fetches a non-top element form the stack. Does not pop anything.
- */
-t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx) {
-    if (idx < 0 || idx >= frame->codeblock->bytecode->stack_size) {
-        fatal_error(1, "Trying to fetch from outside stack range");     /* LCOV_EXCL_LINE */
-    }
-
-    return frame->stack[idx];
+    if (resolve_attrib == 1 && OBJECT_IS_ATTRIBUTE(obj)) return ((t_attrib_object *)obj)->data.attribute;
+    return obj;
 }
 
 /**
@@ -423,7 +409,7 @@ t_vm_stackframe *vm_stackframe_new(t_vm_stackframe *parent_frame, t_vm_codeblock
     t_vm_stackframe *frame = smm_malloc(sizeof(t_vm_stackframe));
 
     DEBUG_PRINT_CHAR("THIS FRAME IS %08X\n", frame);
-    bzero(frame, sizeof (t_vm_stackframe));
+    bzero(frame, sizeof(t_vm_stackframe));
 
     frame->parent = parent_frame;
     frame->codeblock = codeblock;

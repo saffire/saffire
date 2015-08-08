@@ -31,7 +31,7 @@
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/vm.h>
 #include <saffire/debug.h>
 
@@ -44,7 +44,7 @@ static t_object *_saffire_print(t_object *self, t_dll *arguments, int newline) {
 
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
     while (e) {
-        obj = (t_object *)e->data.p;
+        obj = DLL_DATA_PTR(e);
 
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
@@ -52,7 +52,11 @@ static t_object *_saffire_print(t_object *self, t_dll *arguments, int newline) {
             obj = vm_object_call(obj, string_method, 0);
         }
 
-        output_char("%s", OBJ2STR0(obj));
+        if (obj) {
+            output_char("%s", OBJ2STR0(obj));
+        } else {
+            output_char("");
+        }
 
         e = DLL_NEXT(e);
     }
@@ -168,10 +172,8 @@ SAFFIRE_MODULE_METHOD(io, println) {
  *
  */
 SAFFIRE_MODULE_METHOD(io, printf) {
-    t_object *obj;
-
     t_dll_element *e = DLL_HEAD(SAFFIRE_METHOD_ARGS);
-    obj = (t_object *)e->data.p;
+    t_object *obj = DLL_DATA_PTR(e);
     if (! OBJECT_IS_STRING(obj)) {
         t_attrib_object *string_method = object_attrib_find(obj, "__string");
         obj = vm_object_call(obj, string_method, 0);

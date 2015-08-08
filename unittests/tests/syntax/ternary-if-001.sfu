@@ -3,35 +3,35 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 // Normal notation
-import \saffire\io;
+import io;
 a = true ? false : true;
 io.print(a);
 ====
 false
 @@@@
 // Double
-import \saffire\io;
+import io;
 a = true ? false ? true : "1" : "2";
 io.print(a);
 ====
 1
 @@@@
 // No short notation
-import \saffire\io;
+import io;
 a = true ?: false;
 io.print(a);
 ====
 Error in line 3: syntax error, unexpected ':'
 @@@@
 // invalid compound statement
-import \saffire\io;
+import io;
 a = "foo" ? "bar" : { "baz" }
 io.print(a);
 ====
 Error in line 3: syntax error, unexpected '{'
 @@@@
 // Ternary inside ternary
-import \saffire\io;
+import io;
 a = false ? "bar" : false ? "qux" : "woq";
 io.print(a);
 ====

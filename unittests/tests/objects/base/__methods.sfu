@@ -2,7 +2,7 @@ title: base __methods tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 
 a = "hello1";
 foreach (a.__methods() as k,v) {
@@ -48,7 +48,7 @@ __get
 __has
 __splice
 @@@@@
-import \saffire\io;
+import io;
 
 a = "hello1";
 foreach (a.__methods(true) as k,v) {
@@ -108,7 +108,7 @@ __refcount
 __id
 __opr_not
 @@@@@@
-import \saffire\io;
+import io;
 
 class myclass {
     public method foo() {}
@@ -124,7 +124,7 @@ foreach (a.__methods() as k,v) {
 bar
 foo
 @@@@@@
-import \saffire\io;
+import io;
 
 class myclass extends string {
     public method foo() {}

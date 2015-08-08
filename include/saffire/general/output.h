@@ -38,8 +38,11 @@
     #define ANSI_BRIGHTBLUE   "\33[34;1m"
     #define ANSI_RESET        "\33[0m"
 
-    void output_set_helpers(int (*char_helper)(FILE *f, char c), int (*string_helper)(FILE *f, t_string *s));
-    void output_get_helpers(int (**char_helper)(FILE *f, char c), int (**string_helper)(FILE *f, t_string *s));
+    typedef int (*t_string_helper)(FILE *f, t_string *s);
+    typedef int (*t_char_helper)(FILE *f, char c);
+
+    void output_set_helpers(t_char_helper char_helper, t_string_helper string_helper);
+    void output_get_helpers(t_char_helper *char_helper, t_string_helper *string_helper);
 
     void output_flush(void);
 

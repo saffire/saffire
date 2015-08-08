@@ -33,7 +33,7 @@
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/vm.h>
 #include <saffire/vm/thread.h>
 

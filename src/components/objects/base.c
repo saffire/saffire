@@ -29,7 +29,7 @@
 #include <ctype.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /*
@@ -117,9 +117,9 @@ static t_hash_table *find_interfaces(t_object *self, int check_parents) {
 
     t_object *obj = self;
     while (obj) {
-        t_dll_element *e = DLL_HEAD(obj->interfaces);
+        t_dll_element *e = obj->interfaces ? DLL_HEAD(obj->interfaces) : NULL;
         while (e) {
-            t_object *interface_obj = (t_object *)e->data.p;
+            t_object *interface_obj = DLL_DATA_PTR(e);
             e = DLL_NEXT(e);
 
             // Check if element has already been added.
@@ -250,6 +250,10 @@ SAFFIRE_METHOD(base, implements) {
         return NULL;
     }
 
+    if (parents_obj == NULL) {
+         parents_obj = (t_boolean_object *)Object_True;
+    }
+
     t_hash_table *interfaces = find_interfaces(self, IS_BOOLEAN_TRUE(parents_obj));
     RETURN_LIST(interfaces);
 }
@@ -274,8 +278,7 @@ SAFFIRE_METHOD(base, annotations) {
  * Clone the object into a new object
  */
 SAFFIRE_METHOD(base, clone) {
-    t_object *obj = (t_object *)object_clone((t_object *)self);
-    RETURN_OBJECT(obj);
+    RETURN_OBJECT(object_clone((t_object *)self));
 }
 
 /**
@@ -374,7 +377,7 @@ t_object_funcs base_funcs = {
         obj_destroy,          // Destroy a string object
         NULL,                 // Clone
         NULL,                 // Object cache
-        NULL,             // Hash
+        NULL,                 // Hash
 #ifdef __DEBUG
         obj_debug,
 #else

@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
@@ -38,7 +39,7 @@
 #include <saffire/debug.h>
 #include <saffire/gc/gc.h>
 #include <saffire/general/output.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/thread.h>
 
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
@@ -126,10 +127,10 @@ static void _object_free(t_object *obj) {
 
     // Free interfaces
     if (obj->interfaces) {
-        t_dll_element *interface = DLL_HEAD(obj->interfaces);
-        while (interface) {
-            object_release((t_object *)interface->data.p);
-            interface = DLL_NEXT(interface);
+        t_dll_element *e = DLL_HEAD(obj->interfaces);
+        while (e) {
+            object_release(DLL_DATA_PTR(e));
+            e = DLL_NEXT(e);
         }
         dll_free(obj->interfaces);
         obj->interfaces = NULL;
@@ -172,7 +173,9 @@ static void _object_free(t_object *obj) {
 }
 
 
+#ifdef __DEBUG
 t_hash_table *refcount_objects = NULL;
+#endif
 
 /**
  * Increase reference to object.
@@ -182,12 +185,12 @@ void object_inc_ref(t_object *obj) {
 
     obj->ref_count++;
 
+#ifdef __DEBUG
     if (refcount_objects == NULL) {
         refcount_objects = ht_create();
     }
-
     ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
-
+#endif
 
     if (OBJECT_IS_CALLABLE(obj) || OBJECT_IS_ATTRIBUTE(obj)) return;
 
@@ -209,7 +212,9 @@ static long object_dec_ref(t_object *obj) {
     }
     obj->ref_count--;
 
+#ifdef __DEBUG
     ht_replace_ptr(refcount_objects, (void *)obj, (void *)(intptr_t)obj->ref_count);
+#endif
 
 #if __DEBUG_REFCOUNT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
@@ -258,20 +263,47 @@ char *object_debug(t_object *obj) {
 #endif
 
 
+
+static t_dll *object_duplicate_interfaces(t_object *instance_obj);
+
 /**
  * Clones an object and returns new object
  */
-t_object *object_clone(t_object *obj) {
-    DEBUG_PRINT_CHAR("Cloning: %s\n", obj->name);
+t_object *object_clone(t_object *orig_obj) {
+    assert(orig_obj != NULL);
 
-    // No clone function, so return same object
-    if (! obj || ! obj->funcs || ! obj->funcs->clone) {
-        return obj;
+    // Allocate new object with correct size and copy data
+    t_object *clone_obj = smm_malloc(sizeof(t_object) + orig_obj->data_size);
+    memcpy(clone_obj, orig_obj, sizeof(t_object) + orig_obj->data_size);
+
+    // New separated object gets refcount 0
+    clone_obj->ref_count = 0;
+    clone_obj->name = string_strdup0(orig_obj->name);
+
+    if (clone_obj->class) {
+        object_inc_ref(clone_obj->class);
+    }
+    if (clone_obj->parent) {
+        object_inc_ref(clone_obj->parent);
     }
 
-    return obj->funcs->clone(obj);
-}
+    if (orig_obj->interfaces) {
+        clone_obj->interfaces = object_duplicate_interfaces(orig_obj);
+    }
 
+    if (orig_obj->attributes) {
+        // Duplicate attributes (as-is) from original object
+        clone_obj->attributes = object_duplicate_attributes(orig_obj, clone_obj);
+    }
+
+
+    // If there is a custom clone function on the object, call it..
+    if (orig_obj->funcs && orig_obj->funcs->clone) {
+        clone_obj->funcs->clone(orig_obj, clone_obj);
+    }
+
+    return clone_obj;
+}
 
 /**
  *
@@ -396,6 +428,7 @@ void object_init() {
     object_tuple_init();
     object_list_init();
     object_exception_init();
+    object_meta_init();
 }
 
 
@@ -405,6 +438,7 @@ void object_init() {
 void object_fini() {
     DEBUG_PRINT_CHAR("object fini\n");
 
+    object_meta_fini();
     object_exception_fini();
     object_list_fini();
     object_tuple_fini();
@@ -487,13 +521,13 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
 
         // Fetch the next object from the list. We must assume the user has added enough room
         t_object **storage_obj = va_arg(storage_list, t_object **);
-        if (optional_argument == 0 && (!e || !e->data.p)) {
+        if (optional_argument == 0 && (!e || ! DLL_DATA_PTR(e))) {
             object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
             result = 0;
             goto done;
         }
 
-        t_object *argument_obj = e ? e->data.p : NULL;
+        t_object *argument_obj = e ? DLL_DATA_PTR(e) : NULL;
         if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
             object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
             result = 0;
@@ -597,7 +631,7 @@ static void _object_remove_all_internal_interfaces(t_object *obj) {
 
     t_dll_element *e = DLL_HEAD(obj->interfaces);
     while (e) {
-        object_release((t_object *)e->data.p);
+        object_release(DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 }
@@ -737,16 +771,16 @@ static int _object_check_interface_implementations(t_object *obj, t_object *inte
  * Iterates all interfaces found in this object, and see if the object actually implements it fully
  */
 int object_check_interface_implementations(t_object *obj) {
-    t_dll_element *elem = DLL_HEAD(obj->interfaces);
-    while (elem) {
-        t_object *interface = (t_object *)elem->data.p;
+    t_dll_element *e = DLL_HEAD(obj->interfaces);
+    while (e) {
+        t_object *interface = DLL_DATA_PTR(e);
 
         DEBUG_PRINT_CHAR(ANSI_BRIGHTBLUE "* Checking interface: %s" ANSI_RESET "\n", interface->name);
 
         if (! _object_check_interface_implementations(obj, interface)) {
             return 0;
         }
-        elem = DLL_NEXT(elem);
+        e = DLL_NEXT(e);
     }
 
     // Everything fully implemented
@@ -760,14 +794,14 @@ int object_check_interface_implementations(t_object *obj) {
 int object_has_interface(t_object *obj, const char *interface_name) {
     DEBUG_PRINT_CHAR("object_has_interface(%s)\n", interface_name);
 
-    t_dll_element *elem = obj->interfaces != NULL ? DLL_HEAD(obj->interfaces) : NULL;
-    while (elem) {
-        t_object *interface = (t_object *)elem->data.p;
+    t_dll_element *e = obj->interfaces != NULL ? DLL_HEAD(obj->interfaces) : NULL;
+    while (e) {
+        t_object *interface = DLL_DATA_PTR(e);
 
         if (strcasecmp(interface->name, interface_name) == 0) {
             return 1;
         }
-        elem = DLL_NEXT(elem);
+        e = DLL_NEXT(e);
     }
 
     // No, cannot find it
@@ -802,14 +836,14 @@ t_object *object_alloc_class(t_object *obj, int arg_count, ...) {
 }
 
 
-t_dll *object_duplicate_interfaces(t_object *instance_obj) {
+static t_dll *object_duplicate_interfaces(t_object *instance_obj) {
     if (! instance_obj->interfaces) return NULL;
 
     t_dll *interfaces = dll_init();
     t_dll_element *e = DLL_HEAD(instance_obj->interfaces);
     while (e) {
-        dll_append(interfaces, e->data.p);
-        object_inc_ref((t_object *)e->data.p);
+        dll_append(interfaces, DLL_DATA_PTR(e));
+        object_inc_ref(DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 

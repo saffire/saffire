@@ -29,7 +29,7 @@
 #include <saffire/objects/objects.h>
 #include <saffire/gc/gc.h>
 #include <saffire/general/mutex.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/debug.h>
 #include <saffire/general/output.h>
 
@@ -63,7 +63,7 @@ t_object *gc_queue_recycle(int type) {
     }
 
     // Lock mutex for this queue
-    mutex_wait(&gc_queue[type].mutex);
+    mutex_wait_for_lock(&gc_queue[type].mutex);
 
     t_object *obj = NULL;
     if (gc_queue[type].index > 0) {
@@ -72,7 +72,7 @@ t_object *gc_queue_recycle(int type) {
     }
 
     // Unlock mutex
-    mutex_post(&gc_queue[type].mutex);
+    mutex_unlock(&gc_queue[type].mutex);
 
     return obj;
 }
@@ -87,7 +87,7 @@ int gc_queue_add(t_object *obj) {
     // @TODO: There is no sanity check to see if obj->type is between 0 and OBJECT_TYPE_LEN!
 
     // Lock mutex for this queue
-    mutex_wait(&gc_queue[obj->type].mutex);
+    mutex_wait_for_lock(&gc_queue[obj->type].mutex);
 
     // Add to recycle queue
     if (gc_queue[obj->type].index < gc_queue[obj->type].size) {
@@ -99,7 +99,7 @@ int gc_queue_add(t_object *obj) {
     }
 
     // Unlock mutex
-    mutex_post(&gc_queue[obj->type].mutex);
+    mutex_unlock(&gc_queue[obj->type].mutex);
 
     return ret;
 }

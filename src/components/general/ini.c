@@ -35,9 +35,12 @@
 #include <limits.h>
 #endif
 #include <saffire/general/ini.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/dll.h>
 
+/**
+ * Destroys all ini keys
+ */
 static void ini_destroy_keys(t_ini *ini) {
     t_hash_iter iter;
     ht_iter_init(&iter, ini->keys);
@@ -68,7 +71,7 @@ static void ini_parse(t_ini *ini) {
     char *match2;
 
 
-    // We default to the global section
+    // We default all keys to the global section
     char *section = string_strdup0("global");
 
     // Sanity check
@@ -94,22 +97,22 @@ static void ini_parse(t_ini *ini) {
     long lineno = 1;
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
     while (e) {
-        rc = pcre_exec(section_re, 0, e->data.p, strlen(e->data.p), 0, 0, offsets, 30);
+        rc = pcre_exec(section_re, 0, DLL_DATA_PTR(e), strlen(DLL_DATA_PTR(e)), 0, 0, offsets, 30);
         if (rc >= 1) {
             // Found a [section] line
-            pcre_get_substring(e->data.p, offsets, rc, 1, (const char **)&match1);
+            pcre_get_substring(DLL_DATA_PTR(e), offsets, rc, 1, (const char **)&match1);
             smm_free(section);
             section = string_strdup0(match1);
             pcre_free_substring(match1);
         } else {
-            rc = pcre_exec(key_re, 0, e->data.p, strlen(e->data.p), 0, 0, offsets, 30);
+            rc = pcre_exec(key_re, 0, DLL_DATA_PTR(e), strlen(DLL_DATA_PTR(e)), 0, 0, offsets, 30);
             if (rc == 3) {
                 // Found a "key = val" line
-                pcre_get_substring(e->data.p, offsets, rc, 1, (const char **)&match1);
-                pcre_get_substring(e->data.p, offsets, rc, 2, (const char **)&match2);
+                pcre_get_substring(DLL_DATA_PTR(e), offsets, rc, 1, (const char **)&match1);
+                pcre_get_substring(DLL_DATA_PTR(e), offsets, rc, 2, (const char **)&match2);
 
                 // Create full section.key
-                int len = strlen(section) + strlen(match1) + 2;
+                long len = strlen(section) + strlen(match1) + 2;
                 char *fullkey = smm_malloc(len);
                 bzero(fullkey, len);
                 strcpy(fullkey, section);
@@ -130,9 +133,9 @@ static void ini_parse(t_ini *ini) {
         }
 
         // Assume that this line is the last line of the section.
-        int empty = 1;
-        char *p = (char *)e->data.p;
-        for (int i=0; i!=strlen(p); i++) {
+        long empty = 1;
+        char *p = DLL_DATA_PTR(e);
+        for (long i=0; i!=strlen(p); i++) {
             if (! isspace(p[i])) {
                 empty = 0;
                 break;
@@ -159,7 +162,7 @@ static void ini_parse(t_ini *ini) {
 }
 
 
-char *realpathex(const char *path, char *buff) {
+static char *realpathex(const char *path, char *buff) {
     char *home;
     if (*path=='~' && (home = getenv("HOME"))) {
         char s[PATH_MAX];
@@ -194,7 +197,7 @@ t_ini *ini_read(const char *path, char *filename) {
     while (fgets(line, 2048, f) != NULL) {
         if (strlen(line) == 0) continue;
 
-        int off = strlen(line)-1;
+        long off = strlen(line)-1;
 
         // Trim CR+LFs
         while (line[off] == '\r' || line[off] == '\n') {
@@ -219,7 +222,7 @@ void ini_free(t_ini *ini) {
         // Free ini lines
         t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
         while (e) {
-            smm_free(e->data.p);
+            smm_free(DLL_DATA_PTR(e));
             e = DLL_NEXT(e);
         }
         dll_free(ini->_private.ini_lines);
@@ -290,7 +293,7 @@ static char *ini_get_key(const char *key) {
     if (dotpos == NULL) {
         k = string_strdup0(key);
     } else {
-        int len = strlen(key) - (dotpos - key);
+        long len = strlen(key) - (dotpos - key);
         k = (char *)smm_malloc(len + 1);
         bzero(k, len + 1);
         strncpy(k, dotpos+1, len);
@@ -305,7 +308,7 @@ static char *ini_get_section(const char *key) {
     if (!dotpos) {
         section = string_strdup0("global");
     } else {
-        int len = (dotpos - key);
+        long len = (dotpos - key);
         section = (char *)smm_malloc(len + 1);
         bzero(section, len + 1);
         strncpy(section, key, len);
@@ -319,11 +322,11 @@ static char *ini_get_section(const char *key) {
  * Key must be fully qualified: <section>.<key>
  */
 void ini_add(t_ini *ini, const char *key, const char *val) {
-    int offset;
+    long offset;
     char *tmp = ini_get_key(key);
 
     // Generate the complete line we need to store
-    int len = strlen(tmp) + 3 + strlen(val) + 1;
+    long len = strlen(tmp) + 3 + strlen(val) + 1;
     char *line = smm_malloc(len);
     bzero(line, len);
 
@@ -333,12 +336,12 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
     smm_free(tmp);
 
     if (ht_exists_str(ini->keys, (char *)key)) {
-       t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
-       if (ie->value) smm_free(ie->value);
-       ie->value = string_strdup0(val);
+        t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
+        if (ie->value) smm_free(ie->value);
+        ie->value = string_strdup0(val);
 
         t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
-        smm_free(e->data.p);
+        smm_free(DLL_DATA_PTR(e));
         e->data.p = string_strdup0(line);
     } else {
         char *section = ini_get_section(key);
@@ -376,12 +379,12 @@ void ini_add(t_ini *ini, const char *key, const char *val) {
  * Removes a key from the ini file.
  * Returns 0 on failure, 1 on success
  */
-int ini_remove(t_ini *ini, const char *key) {
+long ini_remove(t_ini *ini, const char *key) {
     if (! ht_exists_str(ini->keys, (char *)key)) return 0;
 
     t_ini_element *ie = ht_find_str(ini->keys, (char *)key);
     t_dll_element *e = dll_seek_offset(ini->_private.ini_lines, ie->offset - 1);
-    smm_free(e->data.p);
+    smm_free(DLL_DATA_PTR(e));
     dll_remove(ini->_private.ini_lines, e);
 
     // free ini key
@@ -400,7 +403,7 @@ int ini_remove(t_ini *ini, const char *key) {
  * Saves current ini back into 'filename'
  * Returns 0 on failuire, 1 on success
  */
-int ini_save(t_ini *ini, const char *path, const char *filename) {
+long ini_save(t_ini *ini, const char *path, const char *filename) {
     char fullpath[PATH_MAX];
 
     snprintf(fullpath, PATH_MAX-1, "%s/%s", path, filename);
@@ -411,7 +414,7 @@ int ini_save(t_ini *ini, const char *path, const char *filename) {
 
     t_dll_element *e = DLL_HEAD(ini->_private.ini_lines);
     while (e) {
-        fprintf(f, "%p\n", e->data.p);
+        fprintf(f, "%p\n", DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 

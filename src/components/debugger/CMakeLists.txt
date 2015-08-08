@@ -13,4 +13,5 @@ add_dependencies(debugger generate_interfaces generate_exceptions)
 target_link_libraries(
     debugger
     generic
+    memory
     ${3rdparty_libs})

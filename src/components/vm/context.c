@@ -29,14 +29,20 @@
 #include <saffire/general/output.h>
 #include <saffire/vm/codeblock.h>
 #include <saffire/vm/context.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/debug.h>
 #include <assert.h>
+
+
+/*
+ * A context is a mapping between a fully qualified class name and a file path.
+ *
+ */
 
 /**
  * Converts a FQCN to a path
  */
-char *vm_context_convert_fqcn_to_path(char *fqcn) {
+char *vm_context_convert_fqcn_to_path(const char *fqcn) {
     char *s = string_strdup0(fqcn);
 
     // Convert backward slashes to forward slashes
@@ -52,7 +58,7 @@ char *vm_context_convert_fqcn_to_path(char *fqcn) {
 /**
  * Returns the context path from a specified context.
  */
-char *vm_context_get_classname_from_fqcn(char *fqcn) {
+char *vm_context_get_classname_from_fqcn(const char *fqcn) {
     char *c = strrchr(fqcn, '\\');
     if (c == NULL) return string_strdup0(fqcn);
     if ((fqcn - c) == 0) return string_strdup0(fqcn);
@@ -61,7 +67,7 @@ char *vm_context_get_classname_from_fqcn(char *fqcn) {
     return string_strdup0(c);
 }
 
-char *vm_context_get_modulepath_from_fqcn(char *fqcn) {
+char *vm_context_get_modulepath_from_fqcn(const char *fqcn) {
     // Special case for root, use root as module_path
     if (strcmp(fqcn, "\\") == 0) {
         return string_strdup0(fqcn);
@@ -76,7 +82,7 @@ char *vm_context_get_modulepath_from_fqcn(char *fqcn) {
 }
 
 
-t_vm_context *vm_context_duplicate(t_vm_context *src) {
+t_vm_context *vm_context_duplicate(const t_vm_context *src) {
     t_vm_context *dst = smm_malloc(sizeof(t_vm_context));
 
     dst->module.full = string_strdup0(src->module.full);
@@ -87,29 +93,27 @@ t_vm_context *vm_context_duplicate(t_vm_context *src) {
     return dst;
 }
 
-t_vm_context *vm_context_new(char *module_fqcn, char *file_path) {
+/**
+ * Creates a new context structure based on the module fqcn and given file path in which this class is found.
+ */
+t_vm_context *vm_context_new(const char *module_fqcn, const char *file_path) {
     t_vm_context *context = (t_vm_context *)smm_malloc(sizeof(t_vm_context));
     bzero(context, sizeof(t_vm_context));
 
-    if (module_fqcn) {
-        char *module_path = vm_context_get_modulepath_from_fqcn(module_fqcn);
-        context->module.full = string_strdup0(module_path);
-    }
+    char *module_path = vm_context_get_modulepath_from_fqcn(module_fqcn);
+    context->module.full = string_strdup0(module_path);
 
-    if (file_path) {
-        char *duppath = NULL;
+    char *duppath = NULL;
+    context->file.full = string_strdup0(file_path);
 
-        context->file.full = string_strdup0(file_path);
+    // dirname and/or basename can (and will)modify existing path
+    duppath = string_strdup0(file_path);
+    context->file.path = string_strdup0(dirname(duppath));
+    smm_free(duppath);
 
-        // dirname and/or basename can (and will)modify existing path
-        duppath = string_strdup0(file_path);
-        context->file.path = string_strdup0(dirname(duppath));
-        smm_free(duppath);
-
-        duppath = string_strdup0(file_path);
-        context->file.base = string_strdup0(basename(duppath));
-        smm_free(duppath);
-    }
+    duppath = string_strdup0(file_path);
+    context->file.base = string_strdup0(basename(duppath));
+    smm_free(duppath);
 
     return context;
 }
@@ -137,7 +141,7 @@ void vm_context_free(t_vm_context *ctx) {
  * @param classname
  * @return
  */
-char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
+char *vm_context_create_fqcn_from_context(const t_vm_context *ctx, const char *class_name) {
     if (vm_context_is_fqcn(class_name)) {
         return string_strdup0(class_name);
     }
@@ -152,7 +156,7 @@ char *vm_context_create_fqcn_from_context(t_vm_context *ctx, char *class_name) {
 /**
  *  returns '\bar' from '\foo\bar' when context is '\foo'
  */
-char *vm_context_strip_context(t_vm_context *ctx, char *class_name)
+char *vm_context_strip_context(const t_vm_context *ctx, const char *class_name)
 {
     // Strip the context if the class_name actually starts with the given context
     if (strstr(ctx->module.full, class_name) == 0) {
@@ -166,12 +170,10 @@ char *vm_context_strip_context(t_vm_context *ctx, char *class_name)
 }
 
 /**
- * Creates a fully qualified class name based on the pre/post
- * @param pre
- * @param post
- * @param fqcn
+ * Creates a fully qualified class name  (eg:  '/foo/bar'  'baz'  becomes '/foo/bar/baz')
+ * Takes care of root context:  '/' and 'baz'  ->  '/baz'  and not '//baz'
  */
-char *vm_context_concat_path(char *prefix, char *class) {
+char *vm_context_concat_path(const char *prefix, const char *class) {
     char *fqcn = NULL;
 
     if (vm_context_is_fqcn(class)) {
@@ -198,6 +200,6 @@ char *vm_context_concat_path(char *prefix, char *class) {
  * @param class_name
  * @return
  */
-int vm_context_is_fqcn(char *class_name) {
+int vm_context_is_fqcn(const char *class_name) {
     return class_name[0] == '\\';
 }

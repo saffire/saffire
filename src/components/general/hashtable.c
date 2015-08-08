@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <saffire/general/hashtable.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/debug.h>
@@ -38,10 +38,10 @@ extern t_hashfuncs chained_hf;
 
 #define HT_INITIAL_BUCKET_COUNT    16           // Initial hash size
 #define HT_LOAD_FACTOR           1.25           // Above this load, we will increase the hash size (it's above 1.00
-// because we use chaining instead of linear probing or other means)
+                                                // because we use chaining instead of linear probing or other means)
 #define HT_RESIZE_FACTOR         1.75           // Factor to resize to (current size * ht_resize_factor)
 
-#define DEFAULT_HASHFUNCS        &chained_hf     // Default hashtable functionality
+#define DEFAULT_HASHFUNCS        &chained_hf     // Default hash table functionality
 
 
 /**
@@ -433,7 +433,7 @@ t_hash_key *ht_key_create(int type, void *val) {
 }
 
 /**
- * Create copy of a key
+ * Creates a copy of a key
  */
 t_hash_key *ht_key_copy(t_hash_key *org) {
     t_hash_key *cpy = (t_hash_key *)malloc(sizeof(t_hash_key));

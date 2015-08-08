@@ -40,7 +40,7 @@
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/vm/vm.h>
 
 /**
@@ -255,6 +255,7 @@ static void _init(void) {
     object_add_constant((t_object *)&Object_Stat_struct, "S_IROTH",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_IROTH));
     object_add_constant((t_object *)&Object_Stat_struct, "S_IWOTH",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_IWOTH));
     object_add_constant((t_object *)&Object_Stat_struct, "S_IXOTH",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_IXOTH));
+// @TODO: HIGH: we should always define constants in Saffire. If not supported by OS, it should just be null
 #ifdef S_ENFMT
     object_add_constant((t_object *)&Object_Stat_struct, "S_ENFMT",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_ENFMT));
 #endif
@@ -262,19 +263,31 @@ static void _init(void) {
     object_add_constant((t_object *)&Object_Stat_struct, "S_IWRITE",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_IWRITE));
     object_add_constant((t_object *)&Object_Stat_struct, "S_IEXEC",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(S_IEXEC));
 
+// @TODO: HIGH: we should always define constants in Saffire. If not supported by OS, it should just be null
 #ifdef __APPLE__
     object_add_constant((t_object *)&Object_Stat_struct, "UF_NODUMP",      ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_NODUMP));
     object_add_constant((t_object *)&Object_Stat_struct, "UF_IMMUTABLE",   ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_IMMUTABLE));
     object_add_constant((t_object *)&Object_Stat_struct, "UF_APPEND",      ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_APPEND));
     object_add_constant((t_object *)&Object_Stat_struct, "UF_OPAQUE",      ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_OPAQUE));
+
+// @TODO: HIGH: we should always define constants in Saffire. If not supported by OS, it should just be null
+#ifdef UF_NOUNLINK
     object_add_constant((t_object *)&Object_Stat_struct, "UF_NOUNLINK",    ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_NOUNLINK));
+#endif
     object_add_constant((t_object *)&Object_Stat_struct, "UF_COMPRESSED",  ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_COMPRESSED));
     object_add_constant((t_object *)&Object_Stat_struct, "UF_HIDDEN",      ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(UF_HIDDEN));
 
     object_add_constant((t_object *)&Object_Stat_struct, "SF_ARCHIVED",    ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SF_ARCHIVED));
     object_add_constant((t_object *)&Object_Stat_struct, "SF_IMMUTABLE",   ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SF_IMMUTABLE));
     object_add_constant((t_object *)&Object_Stat_struct, "SF_APPEND",      ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SF_APPEND));
+#endif
+
+// @TODO: HIGH: we should always define constants in Saffire. If not supported by OS, it should just be null
+#ifdef SF_NOUNLINK
     object_add_constant((t_object *)&Object_Stat_struct, "SF_NOUNLINK",    ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SF_NOUNLINK));
+#endif
+// @TODO: HIGH: we should always define constants in Saffire. If not supported by OS, it should just be null
+#ifdef SF_SNAPSHOT
     object_add_constant((t_object *)&Object_Stat_struct, "SF_SNAPSHOT",    ATTRIB_VISIBILITY_PUBLIC, NUM2OBJ(SF_SNAPSHOT));
 #endif
 }

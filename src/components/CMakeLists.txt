@@ -1,4 +1,4 @@
-
+add_subdirectory(memory)
 add_subdirectory(compiler)
 add_subdirectory(debugger)
 add_subdirectory(fastcgi)

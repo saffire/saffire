@@ -30,7 +30,7 @@
 #include <saffire/general/output.h>
 #include <saffire/commands/command.h>
 #include <saffire/general/config.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/parse_options.h>
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))

@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/vm/thread.h>
 #include <saffire/debug.h>
@@ -183,20 +183,20 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // The routing decides if the code is internal or external
     t_dll_element *e = DLL_HEAD(arg_list);
-    callable_obj->data.routing = (int)e->data.l;
+    callable_obj->data.routing = DLL_DATA_LONG(e);
     e = DLL_NEXT(e);
 
     if (CALLABLE_IS_CODE_INTERNAL(callable_obj)) {
         // internal code is just a pointer to the code
-        callable_obj->data.code.internal.native_func = (void *)e->data.p;
+        callable_obj->data.code.internal.native_func = DLL_DATA_PTR(e);
     } else {
         // external code is a bytecode structure
-        callable_obj->data.code.external.codeblock = (t_vm_codeblock *)e->data.p;
+        callable_obj->data.code.external.codeblock = DLL_DATA_PTR(e);
     }
     e = DLL_NEXT(e);
 
     // Add arguments for the callable
-    callable_obj->data.arguments = (t_hash_table *)e->data.p;
+    callable_obj->data.arguments = DLL_DATA_PTR(e);
     e = DLL_NEXT(e);
 }
 

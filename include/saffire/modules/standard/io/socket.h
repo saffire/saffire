@@ -1,6 +1,14 @@
 #ifndef __MODULE_STANDARD_IO_SOCKET_H__
 #define __MODULE_STANDARD_IO_SOCKET_H__
 
+    // Make sure socklen_t will be defined by sys/socket.h on darwin
+    #ifdef __APPLE__
+        #define _BSD_SOCKLEN_T_
+    #endif
+
+    #include <sys/socket.h>
+
+
     t_module module_io_socket;
 
     typedef struct {

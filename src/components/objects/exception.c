@@ -28,7 +28,7 @@
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/output.h>
 #include <saffire/vm/thread.h>
 
@@ -201,18 +201,18 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     // Optional (numerical) code
     if (e != NULL) {
-        exception_obj->data.code = (long)e->data.l;
+        exception_obj->data.code = DLL_DATA_LONG(e);
         e = DLL_NEXT(e);
     }
 
     if (e != NULL) {
-        exception_obj->data.message = (t_string *)e->data.p;
+        exception_obj->data.message = DLL_DATA_PTR(e);
         e = DLL_NEXT(e);
     }
 
     // Optional (stack) trace
     if (e != NULL) {
-        exception_obj->data.stacktrace = (t_hash_table *)e->data.p;
+        exception_obj->data.stacktrace = DLL_DATA_PTR(e);
         e = DLL_NEXT(e);
     }
 }

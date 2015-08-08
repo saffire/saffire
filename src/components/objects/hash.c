@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/debug.h>
 #include <saffire/general/output.h>
@@ -364,7 +364,8 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
 
     if (arg_list->size == 1) {
         // Simple hash table. Direct copy
-        hash_obj->data.ht = DLL_HEAD(arg_list)->data.p;
+        t_dll_element *e = DLL_HEAD(arg_list);
+        hash_obj->data.ht = DLL_DATA_PTR(e);
         return;
     }
 
@@ -372,13 +373,13 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     hash_obj->data.ht = ht_create();
     t_dll_element *e = DLL_HEAD(arg_list);
     e = DLL_NEXT(e);
-    t_dll *dll = (t_dll *)e->data.p;
+    t_dll *dll = DLL_DATA_PTR(e);
     e = DLL_HEAD(dll);    // 2nd element of the DLL is a DLL itself.. inception!
     while (e) {
-        t_object *key = (t_object *)e->data.p;
+        t_object *key = DLL_DATA_PTR(e);
         e = DLL_NEXT(e);
         if (! e) break;
-        t_object *val = (t_object *)e->data.p;
+        t_object *val = DLL_DATA_PTR(e);
 
     DEBUG_PRINT_CHAR("KEY Hash increasing reference: %08X from %d to %d\n", (intptr_t)key, key->ref_count, key->ref_count+1);
     DEBUG_PRINT_CHAR("VAL Hash increasing reference: %08X from %d to %d\n", (intptr_t)val, val->ref_count, val->ref_count+1);

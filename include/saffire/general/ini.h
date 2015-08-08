@@ -43,7 +43,7 @@
 
     typedef struct _ini_element {
         char *value;
-        int offset;
+        long offset;
     } t_ini_element;
 
 
@@ -53,7 +53,7 @@
     t_hash_table *ini_match(t_ini *ini, const char *pattern);
     char *ini_find(t_ini *ini, const char *key);
     void ini_add(t_ini *ini, const char *key, const char *val);
-    int ini_remove(t_ini *ini, const char *key);
-    int ini_save(t_ini *ini, const char *path, const char *filename);
+    long ini_remove(t_ini *ini, const char *key);
+    long ini_save(t_ini *ini, const char *path, const char *filename);
 
 #endif

@@ -2,7 +2,7 @@ title: base __refcount tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 
 a = "hello world";
 io.print(a.__refcount(),"\n");

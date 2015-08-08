@@ -7,7 +7,7 @@ break;
 Error in line 2: We can only break inside a loop
 @@@@
 
-import \saffire\io;
+import io;
 do {
     break;
     io.print("inner");
@@ -16,7 +16,7 @@ io.print("done");
 ====
 done
 @@@@
-import \saffire\io;
+import io;
 do {
     while (1) {
         break;
@@ -29,7 +29,7 @@ io.print("done");
 ====
 done
 @@@@
-import \saffire\io;
+import io;
 foreach (list[[1,2,3]] as b) {
     io.print(b);
     break;

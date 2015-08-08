@@ -33,7 +33,7 @@
 #include <saffire/compiler/saffire_parser.h>
 #include <saffire/objects/callable.h>
 #include <saffire/compiler/ast_nodes.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/objects/attrib.h>
 #include "parser.tab.h"
 

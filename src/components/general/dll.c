@@ -26,7 +26,7 @@
 */
 #include <stdio.h>
 #include <saffire/general/dll.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /**
@@ -57,6 +57,16 @@ void dll_free(t_dll *dll) {
 
 
 /**
+ * Prepend a long element after the tail of the DLL
+ */
+t_dll_element *dll_prepend_long(t_dll *dll, long data) {
+    t_dll_element *e = dll_prepend(dll, NULL);
+
+    e->data.l = data;
+    return e;
+}
+
+/**
  * Prepend an element before the head of the DLL.
  */
 t_dll_element *dll_prepend(t_dll *dll, void *data) {
@@ -83,6 +93,16 @@ t_dll_element *dll_prepend(t_dll *dll, void *data) {
     // Increase DLL size
     dll->size++;
 
+    return e;
+}
+
+/**
+ * Append a long element after the tail of the DLL
+ */
+t_dll_element *dll_append_long(t_dll *dll, long data) {
+    t_dll_element *e = dll_append(dll, NULL);
+
+    e->data.l = data;
     return e;
 }
 
@@ -213,33 +233,22 @@ void dll_push(t_dll *dll, void *data) {
     dll_insert_after(dll, NULL, data);
 }
 
-///**
-// * Pops data at the tail of the DLL
-// */
-//void *dll_pop(t_dll *dll) {
-//    t_dll_element *e = DLL_TAIL(dll);
-//    if (!e) return NULL;
-//
-//    void *ret = e->data;
-//    dll_remove(dll, e);
-//    return ret;
-//}
+/**
+ * Pushes data at the tail of the DLL
+ */
+void dll_push_long(t_dll *dll, long data) {
+    t_dll_element *e = dll_insert_after(dll, NULL, NULL);
 
-///*
-// * Peeks at data at the tail of the DLL
-// */
-//void *dll_top(t_dll *dll) {
-//    t_dll_element *e = DLL_TAIL(dll);
-//    if (!e) return NULL;
-//
-//    return e->data;
-//}
+    e->data.l = data;
+}
 
 /**
  * Searches for specific offset
  */
-t_dll_element *dll_seek_offset(t_dll *dll, int offset) {
-    if (offset < 0 || offset >= dll->size) return NULL;
+t_dll_element *dll_seek_offset(t_dll *dll, size_t offset) {
+    if (offset == 0 || offset >= dll->size) {
+        return NULL;
+    }
 
     t_dll_element *e = DLL_HEAD(dll);
     while (offset) {

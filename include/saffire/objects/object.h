@@ -47,7 +47,7 @@
         void (*populate)(t_object *, t_dll *);      // Populates an object with new values
         void (*free)(t_object *);                   // Frees objects internal data and places it onto gc queue
         void (*destroy)(t_object *);                // Destroys object. Don't use object after this call!
-        t_object *(*clone)(t_object *);             // Clone this object to a new object
+        void (*clone)(const t_object *, t_object *);  // Clones additional object data
         t_object *(*cache)(t_object *, t_dll *);    // Returns a cached object or NULL when no cached object is found
         char *(*hash)(t_object *);                  // Returns a string hash (prob md5) of the object
         char *(*debug)(t_object *);                 // Return debug string (value and info)
@@ -114,7 +114,7 @@
     #define OBJECT_TYPE_IS_ABSTRACT(obj)    ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
     #define OBJECT_TYPE_IS_INSTANCE(obj)    ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
 
-    #define OBJECT_TYPE_IS_IMMUTABLE(obj)   ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
+    #define OBJECT_IS_IMMUTABLE(obj)   ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
     #define OBJECT_TYPE_IS_FINAL(obj)       ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
     #define OBJECT_IS_ALLOCATED(obj)        ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
     #define OBJECT_IS_USERLAND(obj)         ((obj->flags & OBJECT_TYPE_USERLAND) == OBJECT_TYPE_USERLAND)
@@ -135,11 +135,16 @@
     #define OBJECT_IS_BASE(obj)         (obj->type == objectTypeBase)
 
 
-    // fetch (string) value from a string object
-    #define OBJ2STR(_obj_)  (((t_string_object *)_obj_)->data.value)
-    #define OBJ2STR0(_obj_) (((t_string_object *)_obj_)->data.value->val)
+    // Fetches t_string value from a string object
+    #define OBJ2STR(_obj_)       (((t_string_object *)_obj_)->data.value)
 
-    // fetch (long) value from a numerical object
+    // Fetches value from a string object (assumes zero terminated string)
+    #define OBJ2STR0(_obj_)      (((t_string_object *)_obj_)->data.value->val)
+
+    // Duplicates zero terminated string from t_string object
+    #define DUP_OBJ2STR0(_obj_)  string_to_char0(((t_string_object *)_obj_)->data.value)
+
+    // Fetches (long) value from a numerical object
     #define OBJ2NUM(_obj_) (((t_numerical_object *)_obj_)->data.value)
 
 

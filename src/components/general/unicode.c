@@ -29,11 +29,21 @@
 
 #include <saffire/general/string.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/output.h>
 
 // Our default converter (@TODO: what about reading from other converters like utf16 etc??)
 UConverter *converter;
+
+
+/*
+ * Unicode strings (UCode) are stored within a t_string. In order to speed up processing, all
+ * strings are stored by default as bytestreams without encoding. As soon as any textual processing
+ * needs to take place (like comparing, slicing etc), it will need to "convert" this bytestream
+ * to a Ucode unicode string. It will store this inside the t_string structure, which means that it
+ * only has to do this once, and only when usage is really needed. It also means that these utf* functions
+ * will change the incoming t_string objects, as unicode representations can be stored on them.
+ */
 
 
 /**
@@ -50,29 +60,29 @@ void utf8_free_unicode(t_string *str) {
 /**
  * convert t_string into a utf8 unicode string which gets stored into the t_string
  */
-UChar *utf8_from_string(t_string *str) {
+void create_utf8_from_string(t_string *str) {
     // unicode string already created
-    if (str->unicode) return str->unicode;
+    if (str->unicode) return;
 
     // Create unicode from string, and store this in string
     str->unicode = (UChar *)smm_malloc(sizeof(UChar) * (str->len + 1));
     u_uastrncpy(str->unicode, str->val, str->len);
-
-    return str->unicode;
 }
 
 
 /**
- * convert utf8 unicode string into a t_string
+ * Convert utf8 unicode string into a t_string
  */
-t_string *utf8_to_string(UChar *str, size_t len) {
+static t_string *utf8_to_string(const UChar *str, size_t len) {
     // Convert unicode back to string
     char *c_str = (char *)smm_malloc(len);
     u_austrncpy(c_str, str, len);
 
     // Create string from char, and we can also cache the unicode
     t_string *dst = char_to_string(c_str, len);
-    dst->unicode = str;
+
+    dst->unicode = (UChar *)smm_malloc(sizeof(UChar) * (len + 1));
+    u_memcpy(dst->unicode, str, len);
 
     return dst;
 }
@@ -112,10 +122,12 @@ t_string *utf8_to_string(UChar *str, size_t len) {
 //    return bytes;
 //}
 
-int utf8_strstr(t_string *haystack, t_string *needle, long offset) {
-    utf8_from_string(haystack);
-    utf8_from_string(needle);
-
+/**
+ * Find a substring withing a string. When offset > 0, it will start at that offset in the string.
+ *
+ * Note that offset is in chars, not in bytes
+ */
+size_t utf8_strstr(const t_string *haystack, const t_string *needle, size_t offset) {
     UChar *pos = u_strstr(haystack->unicode + offset, needle->unicode);
 
     if (pos == NULL) return -1;
@@ -124,14 +136,11 @@ int utf8_strstr(t_string *haystack, t_string *needle, long offset) {
 }
 
 /**
- *
+ * Compares s1 against s2. Returns 0 when equal, -1 when s1 if "larger" and 1 when s2 is "larger".
  */
-int utf8_strcmp(t_string *s1, t_string *s2) {
+int utf8_strcmp(const t_string *s1, const t_string *s2) {
     int res, len = s1->len;
     if (len > s2->len) len = s2->len;
-
-    utf8_from_string(s1);
-    utf8_from_string(s2);
 
     res = u_memcmp(s1->unicode, s2->unicode, len);
     if (! res) return res;
@@ -175,12 +184,14 @@ int utf8_strcmp(t_string *s1, t_string *s2) {
 
 
 /**
- *
+ * Returns an upper cased string
  */
-t_string *utf8_toupper(t_string *src, char *locale) {
+t_string *utf8_toupper(const t_string *src, const char *locale) {
     UErrorCode status = U_ZERO_ERROR;
 
-    utf8_from_string(src);
+    if (src->unicode == NULL) {
+        return NULL;
+    }
 
     // Convert the unicode string
     UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
@@ -192,38 +203,42 @@ t_string *utf8_toupper(t_string *src, char *locale) {
 
 
 /**
-  *
-  */
- t_string *utf8_tolower(t_string *src, char *locale) {
-     UErrorCode status = U_ZERO_ERROR;
+ * Returns a lower cased string
+ */
+t_string *utf8_tolower(const t_string *src, const char *locale) {
+    UErrorCode status = U_ZERO_ERROR;
 
-     utf8_from_string(src);
+    if (src->unicode == NULL) {
+        return NULL;
+    }
 
-     // Convert the unicode string
-     UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-     u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+    // Convert the unicode string
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
+    u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
 
-     t_string *dst = utf8_to_string(u_str, src->len);
-     return dst;
- }
+    t_string *dst = utf8_to_string(u_str, src->len);
+    return dst;
+}
 
- /**
-  *
-  */
- t_string *utf8_ucfirst(t_string *src, char *locale) {
-     UErrorCode status = U_ZERO_ERROR;
+/**
+ * Returns a lower cased string with the first char upper cased
+ */
+t_string *utf8_ucfirst(const t_string *src, const char *locale) {
+    UErrorCode status = U_ZERO_ERROR;
 
-     utf8_from_string(src);
+    if (src->unicode == NULL) {
+        return NULL;
+    }
 
-     // Convert the unicode string
-     UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-     u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+    // Convert the unicode string
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
+    u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
 
-     u_strToUpper(u_str, 1, src->unicode, src->len, locale, &status);
+    u_strToUpper(u_str, 1, src->unicode, src->len, locale, &status);
 
-     t_string *dst = utf8_to_string(u_str, src->len);
-     return dst;
- }
+    t_string *dst = utf8_to_string(u_str, src->len);
+    return dst;
+}
 
 
 

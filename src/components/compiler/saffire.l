@@ -33,7 +33,7 @@
     #include <saffire/repl/repl.h>
     #include <saffire/general/output.h>
     #include <saffire/compiler/parser_helpers.h>
-    #include <saffire/general/smm.h>
+    #include <saffire/memory/smm.h>
     #include <saffire/compiler/ast_nodes.h>
     #include <saffire/compiler/saffire_parser.h>
     #include "parser.tab.h"
@@ -140,7 +140,7 @@
 /* Our actual lexemes */
 lnum            -?[0-9]+
 /* identifier      (\\[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
-identifier      ([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)
+identifier      ([a-zA-Z_][a-zA-Z0-9_]*\??)
 whitespace      [ \t\r]+
 newline         "\n"
 sl_comment      "//".+

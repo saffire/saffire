@@ -34,7 +34,7 @@
 #include <saffire/objects/object.h>
 #include <saffire/modules/module_api.h>
 #include <saffire/compiler/ast_nodes.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/commands/command.h>
 #include <saffire/general/parse_options.h>
 #include <saffire/general/path_handling.h>

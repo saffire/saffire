@@ -36,7 +36,7 @@
 #include <saffire/version.h>
 #include <saffire/vm/vm.h>
 #include <saffire/vm/thread.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <string.h>
 
 SAFFIRE_MODULE_METHOD(saffire, get_locale) {
@@ -165,7 +165,7 @@ SAFFIRE_MODULE_METHOD(saffire, modules) {
 
     t_dll_element *e = DLL_HEAD(registered_modules);
     while (e) {
-        t_module_info *module_info = (t_module_info *)(e->data.p);
+        t_module_info *module_info = (t_module_info *)DLL_DATA_PTR(e);
 
         t_hash_table *module_ht = ht_create();
 

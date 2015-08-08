@@ -15,6 +15,7 @@ iterator
     __rewind
     __hasNext
     __next
+    __length
 datastructure
     __populate
 subscription

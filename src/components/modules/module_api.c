@@ -32,7 +32,7 @@
 #include <saffire/debug.h>
 #include <saffire/general/hashtable.h>
 #include <saffire/vm/vm.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/modules/modules.h>
 
 #define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
@@ -150,7 +150,7 @@ void module_fini(void) {
     // Unregister in the reversed order
     t_dll_element *e = DLL_TAIL(registered_modules);
     while (e) {
-        t_module_info *module_info = (t_module_info *)e->data.p;
+        t_module_info *module_info = DLL_DATA_PTR(e);
         unregister_module(module_info->mod);
         smm_free(module_info->path);
         smm_free(module_info);

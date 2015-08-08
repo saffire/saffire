@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <saffire/general/string.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 
 
 /**

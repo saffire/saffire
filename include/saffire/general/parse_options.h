@@ -56,7 +56,7 @@
     char saffire_getopt_bool(int idx);
     long saffire_getopt_int(int idx);
 
-    int to_bool(char *value);
+    int to_bool(const char *value);
 
 #endif
 

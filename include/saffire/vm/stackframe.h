@@ -43,12 +43,10 @@
     unsigned char vm_frame_get_next_opcode(t_vm_stackframe *frame);
     unsigned int vm_frame_get_operand(t_vm_stackframe *frame);
 
-    t_object *vm_frame_stack_pop_attrib(t_vm_stackframe *frame);
-    t_object *vm_frame_stack_pop(t_vm_stackframe *frame);
+    t_object *vm_frame_stack_pop(t_vm_stackframe *frame, int resolve_attrib);
     void vm_frame_stack_push(t_vm_stackframe *frame, t_object *obj);
     void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj);
-    t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame);
-    t_object *vm_frame_stack_fetch(t_vm_stackframe *frame, int idx);
+    t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame, int resolve_attrib);
 
     t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx);
     t_object *vm_frame_get_identifier(t_vm_stackframe *frame, char *id);

@@ -30,7 +30,8 @@ set(sources
     hash.c
     tuple.c
     list.c
-    exception.c)
+    exception.c
+    meta.c)
 
 add_library(objects STATIC ${sources})
 

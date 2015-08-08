@@ -24,43 +24,21 @@
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <saffire/general/output.h>
-#include <saffire/general/hashtable.h>
-#include <saffire/general/smm.h>
+#ifndef __OBJECT_META_H__
+#define __OBJECT_META_H__
 
-// @TODO: Fix this into a better/faster memory manager (slab allocator)
+    #include <saffire/objects/object.h>
 
-long smm_malloc_calls = 0;
-long smm_realloc_calls = 0;
-long string_strdup_calls = 0;
+    typedef struct {
+        SAFFIRE_OBJECT_HEADER
+        SAFFIRE_OBJECT_FOOTER
+    } t_meta_object;
 
-void *smm_malloc(size_t size) {
-    smm_malloc_calls++;
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fatal_error(1, "Error while allocating memory (%lu bytes)!\n", (unsigned long)size);        /* LCOV_EXCL_LINE */
-    }
-    return ptr;
-}
+    t_meta_object Object_Meta_struct;
 
-void *smm_zalloc(size_t size) {
-    void *p = smm_malloc(size);
-    bzero(p, size);
-    return p;
-}
+    #define Object_Meta   (t_object *)&Object_Meta_struct
 
-void *smm_realloc(void *ptr, size_t size) {
-    smm_realloc_calls++;
-    void *newptr = realloc(ptr, size);
-    if (newptr == NULL) {
-        fatal_error(1, "Error while reallocating memory (%lu bytes)!\n", (unsigned long)size);      /* LCOV_EXCL_LINE */
-    }
-    return newptr;
-}
+    void object_meta_init(void);
+    void object_meta_fini(void);
 
-void smm_free(void *ptr) {
-    return free(ptr);
-}
+#endif

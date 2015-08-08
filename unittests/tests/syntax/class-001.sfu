@@ -28,21 +28,21 @@ final abstract class Foo {
 ====
 Error in line 3: Abstract members cannot be made final
 @@@@
-import \saffire\io;
+import io;
 abstract class Foo {
 }
 io.print("done");
 ====
 done
 @@@@
-import \saffire\io;
+import io;
 final static class Foo {
 }
 io.print("done");
 ====
 done
 @@@@
-import \saffire\io;
+import io;
 static class Foo {
 }
 io.print("done");

@@ -1,7 +1,7 @@
 title: Hash table key tests
 author: Freek Lijten <freeklijten@gmail.com>, Joshua Thijssen <joshua@saffire-lang.org>
 **********
-import \saffire\io;
+import io;
 hashTable = hash();
 hashTable.set("a", "foo");
 hashTable.set("b", "bar");

@@ -33,7 +33,7 @@
 #include <saffire/general/string.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
-#include <saffire/general/smm.h>
+#include <saffire/memory/smm.h>
 #include <saffire/general/md5.h>
 #include <saffire/debug.h>
 #include <saffire/general/output.h>
@@ -321,22 +321,23 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
     if (arg_list->size == 1) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
-        regex = ((t_string *)e->data.p)->val;
+        t_string *s = DLL_DATA_PTR(e);
+        regex = s->val;
     } else {
         // 2 (or more) elements: it's a size + char0 string
 
         // Get length of string
         t_dll_element *e = DLL_HEAD(arg_list);
-        int value_len = (int)e->data.l;
+        long value_len = DLL_DATA_LONG(e);
 
         // Get actual binary safe and non-encoded string
         e = DLL_NEXT(e);
-        char *value = (char *)e->data.p;
+        char *value = DLL_DATA_PTR(e);
 
         t_string *str = char_to_string(value, value_len);
 
         // @TODO: Not binary safe
-        regex = string_to_char(str);
+        regex = string_to_char0(str);
     }
 
     _compile_regex(re_obj, regex);

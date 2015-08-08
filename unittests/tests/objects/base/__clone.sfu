@@ -2,4 +2,63 @@ title: base __clone tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
+import io;
+
+class foo {
+    public property a = 1;
+    protected property b = 5;
+
+    public method incb() {
+        self.b += 1;
+    }
+
+    public method getb() {
+        return self.b;
+    }
+}
+
+f = foo();
+f.incb();
+io.println(f.getb());   // 6
+f.incb();
+io.println(f.getb());   // 7
+
+g = f;
+h = f.__clone();
+
+f.incb();
+io.println(f.getb());   // 8
+io.println(g.getb());   // 8
+io.println(h.getb());   // 7
+
+g.incb();
+io.println(f.getb());   // 9
+io.println(g.getb());   // 9
+io.println(h.getb());   // 7
+
+h.incb();
+io.println(f.getb());   // 9
+io.println(g.getb());   // 9
+io.println(h.getb());   // 8
+=======
+6
+7
+8
+8
+7
+9
+9
+7
+9
+9
+8
+@@@@@@@
+import io;
+a = "foo".__clone();
+io.println(a);
+
+b = a.__clone();
+io.println(b);
+========
+foo
+foo

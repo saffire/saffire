@@ -2,7 +2,7 @@ title: foreach control tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-import \saffire\io;
+import io;
 foo = list[[1,"A",3]];
 foreach (foo as k,v)  {
     io.print(k,v,"\n");
@@ -12,7 +12,7 @@ foreach (foo as k,v)  {
 A
 3
 @@@@
-import \saffire\io;
+import io;
 foo = hash[["a":1,"b":2,"c":3]];
 foreach (foo as k)  {
     io.print(k,"\n");
@@ -30,21 +30,39 @@ foreach (foo as k,v,x)  {
 a=>1
 b=>2
 c=>3
-a=>1Null
-b=>2Null
-c=>3Null
+a=>1
+b=>2
+c=>3
 @@@@
-!skip meta object is not yet available
-import \saffire\io;
-foo = hash[["a":1,"b":2,"c":3]];
+import io;
+
+foo = hash[["a":1,"b":2,"c":3,"d":4]];
+
 foreach (foo as k,v,meta)  {
-    if (meta.first) io.print("first\n");
-    if (meta.last) io.print("last\n");
-    io.print(meta.count," ",meta.index," ",k," ",v,"\n");
+    if (meta.first) io.println("first");
+    if (meta.last) io.println("last");
+    io.println(meta.first, " ", meta.last, " ", meta.count," ",meta.index," ",k," ",v);
 }
 ====
 first
-3 0 a 1
-3 1 b 2
+true false 4 0 a 1
+false false 4 1 b 2
+false false 4 2 c 3
 last
-3 2 c 3
+false true 4 3 d 4
+@@@@
+import io;
+
+foreach ("hello" as k,v,meta)  {
+    if (meta.first) io.println("first");
+    if (meta.last) io.println("last");
+    io.println(meta.first, " ", meta.last, " ", meta.count," ",meta.index," ",k," ",v);
+}
+====
+first
+true false 5 0 0 h
+false false 5 1 1 e
+false false 5 2 2 l
+false false 5 3 3 l
+last
+false true 5 4 4 o

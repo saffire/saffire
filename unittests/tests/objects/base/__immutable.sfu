@@ -2,4 +2,53 @@ title: base __immutable tests
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
-!skip
+import io;
+
+class foo {
+    public property a;
+    public property b;
+
+    public method makeachange() {
+        self.a += 1;
+    }
+}
+
+f = foo();
+f.a = 1;
+f.b = 3;
+f.c = 71;
+f.makeachange();
+io.println(f.a);
+io.println(f.__immutable?());
+
+f.__immutable();
+io.println(f.__immutable?());
+
+try {
+    f.b = 5;
+    io.println("error");
+} catch (immutableException e) {
+    io.println("ok1");
+}
+
+try {
+    f.newprop = 5;
+    io.println("error");
+} catch (immutableException e) {
+    io.println("ok2");
+}
+
+try {
+    f.makeachange();
+    io.println("error");
+} catch (immutableException e) {
+    io.println("ok3");
+}
+
+=======
+2
+false
+true
+ok1
+ok2
+ok3
