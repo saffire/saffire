@@ -1,7 +1,11 @@
 
-# @TODO: Only set this when not doing debug
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-unused-function -Wno-unused-result")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Wno-unused-function -ggdb  -O0 -D__DEBUG")
+# Used for all targets
+set(DEFAULT_C_FLAGS "-std=gnu99 -Wall -Wno-unused-function -Wno-unused-result")
+
+# Additional fields for targets
+set(CMAKE_C_FLAGS             "${DEFAULT_C_FLAGS} -O3 ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG       "${DEFAULT_C_FLAGS} -ggdb -O0 -D__DEBUG ${CMAKE_C_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS_COVERAGE    "${DEFAULT_C_FLAGS} -ggdb -O0 -fprofile-arcs -ftest-coverage ${CMAKE_C_FLAGS_COVERAGE}")
 
 # Add include directory so include files are found
 include_directories(${saffire_SOURCE_DIR}/include)
