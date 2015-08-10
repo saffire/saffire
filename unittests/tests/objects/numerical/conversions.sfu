@@ -1,0 +1,52 @@
+title: numerical conversions
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+io.println(  1.hex()   );
+io.println(  16.hex()   );
+io.println(  256.hex()   );
+io.println(  100.hex()   );
+io.println(  42.hex()   );
+io.println(  255.hex()   );
+
+io.println(  1.dec()   );
+io.println(  16.dec()   );
+io.println(  256.dec()   );
+io.println(  100.dec()   );
+io.println(  42.dec()   );
+
+io.println(  1.bin()   );
+io.println(  16.bin()   );
+io.println(  21.bin()   );
+io.println(  256.bin()   );
+io.println(  100.bin()   );
+io.println(  42.bin()   );
+
+io.println(  011111110.bin()   );
+io.println(  011111110.oct()   );
+io.println(  011111110.dec()   );
+io.println(  011111110.hex()   );
+======
+1
+10
+100
+64
+2a
+ff
+1
+16
+256
+100
+42
+1
+10000
+10101
+100000000
+1100100
+101010
+101010011000101011000110
+52305306
+11111110
+a98ac6

@@ -139,6 +139,9 @@
 
 /* Our actual lexemes */
 lnum            -?[0-9]+
+hnum            0x[0-9A-Fa-f]+
+onum            0[0-7]+
+bnum            b[01]+
 /* identifier      (\\[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
 identifier      ([a-zA-Z_][a-zA-Z0-9_]*\??)
 whitespace      [ \t\r]+
@@ -350,6 +353,26 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     yylval->lVal = strtol(yytext, NULL, 10);
     return T_LNUM;
 }
+
+{hnum} {
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+2, NULL, 16);
+    return T_LNUM;
+}
+{onum} {
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+1, NULL, 8);
+    return T_LNUM;
+}
+{bnum} {
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+1, NULL, 2);
+    return T_LNUM;
+}
+
 
 . {
     do_yylloc;
