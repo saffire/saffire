@@ -259,6 +259,24 @@ SAFFIRE_METHOD(base, implements) {
 }
 
 /**
+ * Returns a list of interfaces this object implements
+ */
+SAFFIRE_METHOD(base, instanceof) {
+    t_object *obj;
+
+    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
+        return NULL;
+    }
+
+    if (object_instance_of(self, obj->name)) {
+        RETURN_TRUE;
+    }
+
+    RETURN_FALSE;
+}
+
+
+/**
  * Returns the number of memory in KB
  */
 SAFFIRE_METHOD(base, memory) {
@@ -338,6 +356,7 @@ void object_base_init() {
     object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
     object_add_internal_method((t_object *)&Object_Base_struct, "__name",         ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
     object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__instanceOf",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_instanceof);
     object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);
     object_add_internal_method((t_object *)&Object_Base_struct, "__annotations",  ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_annotations);
     object_add_internal_method((t_object *)&Object_Base_struct, "__clone",        ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_clone);
