@@ -24,4 +24,23 @@ import io;
 io.print(saffire.debug());
 ======
 false
+@@@@@
+import io;
+
+io.println(saffire.get_locale());
+
+saffire.set_locale("nl_BE");
+io.println(saffire.get_locale());
+=====
+nl_NL
+nl_BE
+@@@@@
+saffire.set_locale();
+~~~~~~~
+Error while parsing argument list
+@@@@@
+import io;
+io.println(saffire.modules().count() > 6);
+~~~~~~~
+true
 

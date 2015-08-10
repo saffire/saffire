@@ -103,7 +103,7 @@ while getopts "hvcit:b:" opt ; do
             echo "-v             Make the build process verbose"
             echo "-c             Clean build directory first"
             echo "-i             Install saffire after build"
-            echo "-t <target>    Target to build (release|debug|all)"
+            echo "-t <target>    Target to build (release|debug|coverage|all)"
             echo "-b <build-dir> Path to the build directory. \`build' is used as default"
             echo
             echo "When no target is specified, release will be build."
@@ -122,5 +122,13 @@ if [ $BUILDTYPE = "all" -o $BUILDTYPE = "release" ] ; then
 fi
 
 if [ $BUILDTYPE = "all" -o $BUILDTYPE = "debug" ] ; then
-    build_target Debug debug $CLEAN $VERBOSE $INSTALL
+    build_target Debug debug $CLEAN $VERBOSE 0
+fi
+
+if [ $BUILDTYPE = "all" -o $BUILDTYPE = "coverage" ] ; then
+    build_target Coverage coverage $CLEAN $VERBOSE 0
+    cd $BUILD_ROOT_DIR/coverage
+    export SAFFIRE_TEST_BIN=`pwd`/bin/saffire
+    make saffire_coverage
+    cd $SRC_ROOT_DIR
 fi
