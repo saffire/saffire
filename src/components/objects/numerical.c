@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdlib.h>
 #include <saffire/debug.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>
@@ -41,6 +42,38 @@
 #define NUMERICAL_CACHED_CNT    NUMERICAL_CACHED_MAX + NUMERICAL_CACHE_OFF + 1
 
 t_numerical_object **numerical_cache;
+
+
+
+
+static char *itoa(long value, char *result, int radix) {
+    if (radix < 2 || radix > 36) {
+        *result = '\0';
+        return result;
+    }
+
+    char *ptr = result, *ptr1 = result, tmp_char;
+    long tmp_value;
+
+    do {
+        tmp_value = value;
+        value /= radix;
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * radix)];
+    } while (value);
+
+    if (tmp_value < 0) *ptr++ = '-';
+    *ptr-- = '\0';
+
+    while (ptr1 < ptr) {
+        tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+
+    return result;
+}
+
+
 
 
 /* ======================================================================
@@ -95,10 +128,47 @@ SAFFIRE_METHOD(numerical, conv_numerical) {
     RETURN_SELF;
 }
 
-SAFFIRE_METHOD(numerical, conv_string) {
-    char tmp[32];       // @TODO: Should be enough??
-    snprintf(tmp, 31, "%ld", self->data.value);
+
+SAFFIRE_METHOD(numerical, bin) {
+    // Make sure we have room for all binary digits
+    char tmp[8 * sizeof(self->data.value) + 1];
+
+    itoa(self->data.value, tmp, 2);
     RETURN_STRING_FROM_CHAR(tmp);
+}
+
+SAFFIRE_METHOD(numerical, oct) {
+    char *tmp = NULL;
+
+    smm_asprintf_char(&tmp, "%lo", self->data.value);
+    t_string_object *str_obj = (t_string_object *)STR02OBJ(tmp);
+    smm_free(tmp);
+
+    RETURN_OBJECT(str_obj);
+}
+
+SAFFIRE_METHOD(numerical, dec) {
+    char *tmp = NULL;
+
+    smm_asprintf_char(&tmp, "%ld", self->data.value);
+    t_string_object *str_obj = (t_string_object *)STR02OBJ(tmp);
+    smm_free(tmp);
+
+    RETURN_OBJECT(str_obj);
+}
+
+SAFFIRE_METHOD(numerical, hex) {
+    char *tmp = NULL;
+
+    smm_asprintf_char(&tmp, "%lx", self->data.value);
+    t_string_object *str_obj = (t_string_object *)STR02OBJ(tmp);
+    smm_free(tmp);
+
+    RETURN_OBJECT(str_obj);
+}
+
+SAFFIRE_METHOD(numerical, conv_string) {
+    return object_numerical_method_dec(self, arguments);
 }
 
 
@@ -319,6 +389,11 @@ void object_numerical_init(void) {
 
     object_add_internal_method((t_object *)&Object_Numerical_struct, "neg",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_neg);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "abs",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_abs);
+
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "bin",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_bin);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "oct",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_oct);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "dec",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_dec);
+    object_add_internal_method((t_object *)&Object_Numerical_struct, "hex",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_hex);
 
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_add);
     object_add_internal_method((t_object *)&Object_Numerical_struct, "__opr_sub",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_numerical_method_opr_sub);

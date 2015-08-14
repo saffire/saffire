@@ -98,7 +98,9 @@ __properties
 __methods
 __parents
 __name
+__type
 __implements
+__instanceOf
 __memory
 __annotations
 __clone

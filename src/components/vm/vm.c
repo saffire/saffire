@@ -83,6 +83,57 @@ t_debuginfo *debug_info;
 
 
 /**
+ * Coerces right_obj into left_obj by calling left_obj.__coerce(right_obj)
+ */
+static int _vm_coerce(t_object *left_obj, t_object *right_obj, t_object **left_target_obj, t_object **right_target_obj) {
+    *left_target_obj = left_obj;
+    *right_target_obj = right_obj;
+
+    DEBUG_PRINT_CHAR(">>> Coercing %s to %s\n", right_obj->name, left_obj->name);
+
+    t_attrib_object *coerce_method = object_attrib_find(left_obj, "__coerce");
+    if (! coerce_method) {
+        return 0;
+    }
+
+    t_tuple_object *ret = (t_tuple_object *)vm_object_call(left_obj, coerce_method, 1, right_obj);
+    if (! ret) {
+        // Exception thrown,
+        return 0;
+    }
+
+    // Must return tuple
+    if (! OBJECT_IS_TUPLE(ret)) {
+        thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]]");
+        return 0;
+    }
+
+    // Must return tuple of 2
+    if (ret->data.ht->element_count != 2) {
+        thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]] with 2 elements");
+        return 0;
+    }
+
+    // Must return tuple of 2 with same typed objects
+    t_object *obj1 = ht_find_num(ret->data.ht, 0);
+    t_object *obj2 = ht_find_num(ret->data.ht, 1);
+
+    // What about  "foo extends string" vs "string" ??  or instanceof?
+    if (obj1->type != obj2->type) {
+        thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]] with 2 elements of the same type");
+        return 0;
+    }
+
+    *left_target_obj = obj1;
+    *right_target_obj = obj2;
+
+    object_inc_ref(obj1);
+    object_inc_ref(obj2);
+
+    return 1;
+}
+
+/**
  * This method is called when we need to call an operator method. Even though eventually
  * it is a normal method call to a _opr_* method, we go a different route so we can easily
  * do custom optimizations later on.
@@ -202,7 +253,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
                     // classname does not match the typehint
 
                     // @TODO: we need to check if object as a parent or interface that matches!
-                    object_raise_exception(Object_ArgumentException, 1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+                    object_raise_exception(Object_ArgumentException, 1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR0(arg->typehint), obj->name);
                     return 0;
                 }
 
@@ -933,7 +984,7 @@ dispatch:
                     smm_free(property_name);
 
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR0(name_obj));
 
                         object_release(search_obj);
                         object_release(value_obj);
@@ -1038,17 +1089,42 @@ dispatch:
                 }
             //
             case VM_OPERATOR :
-                right_obj = vm_frame_stack_pop(frame, 1);
-                left_obj = vm_frame_stack_pop(frame, 1);
+                right_obj = obj2 = vm_frame_stack_pop(frame, 1);
+                left_obj = obj1 = vm_frame_stack_pop(frame, 1);
 
-                if (left_obj != NULL && left_obj->type != right_obj->type) {
-                    fatal_error(1, "Types are not equal. Coersing needed, but not yet implemented\n");      /* LCOV_EXCL_LINE */
+                if (left_obj != NULL && left_obj->type != right_obj->type && ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)) {
+                    // Types are not equal.
+                    reason = REASON_EXCEPTION;
+
+                    // Add generic coerce exception if none other has been thrown
+                    if (! thread_exception_thrown()) {
+                        thread_create_exception_printf(
+                            (t_exception_object *)Object_TypeException,
+                            1,
+                            "'%s' and '%s' cannot be coerced.",
+                            left_obj->type == objectTypeUser ? left_obj->name : objectTypeNames[left_obj->type],
+                            right_obj->type == objectTypeUser ? right_obj->name : objectTypeNames[right_obj->type]
+                        );
+                    }
+
+                    goto block_end;
                 }
 
-                dst = vm_object_operator(left_obj, oparg1, right_obj);
+
+                // Right object and obj1 might be the same, but might be different when coerced.
+                // Left object and obj2 might be the same, but might be different when coerced.
+                dst = vm_object_operator(obj1, oparg1, obj2);
+
                 if (! dst) {
                     object_release(right_obj);
                     object_release(left_obj);
+
+                    if (left_obj != obj1) {
+                        object_release(obj1);
+                    }
+                    if (right_obj != obj2) {
+                        object_release(obj2);
+                    }
 
                     reason = REASON_EXCEPTION;
                     goto block_end;
@@ -1057,6 +1133,13 @@ dispatch:
 
                 object_release(right_obj);
                 object_release(left_obj);
+
+                if (left_obj != obj1) {
+                    object_release(obj1);
+                }
+                if (right_obj != obj2) {
+                    object_release(obj2);
+                }
 
                 vm_frame_stack_push(frame, dst);
                 object_inc_ref(dst);
@@ -1164,7 +1247,7 @@ dispatch:
                         object_release(obj1);
 
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR(obj1));
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR0(obj1));
                         goto block_end;
                         break;
                     }
@@ -1544,14 +1627,14 @@ dispatch:
                             dll_free(interfaces);
 
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR0(interface_name_obj));
                             goto block_end;
                         }
                         if (! OBJECT_TYPE_IS_INTERFACE(interface_obj)) {
                             dll_free(interfaces);
 
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "'%s' is not an interface", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "'%s' is not an interface", OBJ2STR0(interface_name_obj));
                             goto block_end;
                         }
 
@@ -2082,7 +2165,7 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 //    DEBUG_PRINT_CHAR("init unwind_blocks: [curblocks %d] (%d)\n", frame->block_cnt, *reason);
 
     // Unwind block as long as there is a reason to unwind
-    while (*reason != REASON_NONE && frame->block_cnt > 0) {
+        while (*reason != REASON_NONE && frame->block_cnt > 0) {
 //        DEBUG_PRINT_CHAR("  CUR block: %d\n", frame->block_cnt);
 //        DEBUG_PRINT_CHAR("  Current reason: %d\n", *reason);
 //        DEBUG_PRINT_CHAR("  Block Type: %d\n", block->type);
@@ -2103,7 +2186,6 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             *reason = REASON_NONE;
             break;
         }
-
 
         // Case 2: Return called inside try (or catch) block, but not inside finally block
         if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION) {
@@ -2220,6 +2302,13 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             *reason = REASON_NONE;
             break;
         }
+
+        // Case 8: Returning inside a loop-block
+        if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_LOOP) {
+            *reason = REASON_RETURN;
+            break;
+        }
+
     }
 
     // It might be possible that we unwind every block and still have a a reason different than REASON_NONE. This will
