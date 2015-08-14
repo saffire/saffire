@@ -114,6 +114,14 @@ SAFFIRE_METHOD(callable, conv_boolean) {
     RETURN_TRUE;
 }
 
+/**
+ *
+ */
+SAFFIRE_METHOD(callable, conv_string) {
+    RETURN_STRING_FROM_CHAR("Callable");
+}
+
+
 
 /**
  *
@@ -156,6 +164,8 @@ void object_callable_init(void) {
     object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__dtor",         ATTRIB_METHOD_DTOR, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_dtor);
     object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__boolean",      ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_boolean);
     object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__null",         ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_null);
+
+    object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "__string",       ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_conv_string);
 
     object_add_internal_method_attributes(attributes, (t_object *)&Object_Callable_struct, "isInternal",     ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_callable_method_internal);
 
