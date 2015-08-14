@@ -8,7 +8,7 @@ apt-get update
 
 # Install compile tools
 apt-get install -y git-core make automake gcc pkg-config bison flex colormake
-apt-get install -y cmake build-essential
+apt-get install -y build-essential libtool cmake
 
 # Install mandatory libraries
 apt-get install -y libpcre3-dev libfcgi-dev libedit-dev libbz2-dev libcunit1-dev libxml2-dev libicu-dev
