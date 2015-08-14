@@ -33,7 +33,7 @@
 
     #define LIST2OBJ(h)         object_alloc_instance(Object_List, 1, h)
     #define RETURN_LIST(h)      RETURN_OBJECT(LIST2OBJ(h))
-
+    #define RETURN_EMPTY_LIST() RETURN_OBJECT(LIST2OBJ(ht_create()))
 
 
     typedef struct {
