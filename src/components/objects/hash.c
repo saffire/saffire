@@ -169,6 +169,24 @@ SAFFIRE_METHOD(hash, keys) {
     RETURN_LIST(ht);
 }
 
+/**
+ *
+ */
+SAFFIRE_METHOD(hash, values) {
+    t_hash_table *ht = ht_create();
+
+    t_hash_iter iter;
+    ht_iter_init(&iter, self->data.ht);
+    while (ht_iter_valid(&iter)) {
+        t_object *val = ht_iter_value(&iter);
+
+        ht_add_num(ht, ht->element_count, (t_object *)val);
+        ht_iter_next(&iter);
+    }
+
+    RETURN_LIST(ht);
+}
+
 
 /**
   * Saffire method: Returns true if requested key exists and false if not
@@ -324,6 +342,7 @@ void object_hash_init(void) {
     object_add_internal_method((t_object *)&Object_Hash_struct, "splice",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_splice);
 
     object_add_internal_method((t_object *)&Object_Hash_struct, "keys",         ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_keys);
+    object_add_internal_method((t_object *)&Object_Hash_struct, "values",       ATTRIB_METHOD_STATIC, ATTRIB_VISIBILITY_PUBLIC, object_hash_method_values);
 
 
 //    // hash + tuple[k,v]
