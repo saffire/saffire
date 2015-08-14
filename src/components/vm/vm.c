@@ -202,7 +202,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
                     // classname does not match the typehint
 
                     // @TODO: we need to check if object as a parent or interface that matches!
-                    object_raise_exception(Object_ArgumentException, 1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR(arg->typehint), obj->name);
+                    object_raise_exception(Object_ArgumentException, 1, "Typehinting for argument %d does not match. Wanted '%s' but found '%s'\n", cur_arg, OBJ2STR0(arg->typehint), obj->name);
                     return 0;
                 }
 
@@ -933,7 +933,7 @@ dispatch:
                     smm_free(property_name);
 
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
-                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR(name_obj));
+                        thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR0(name_obj));
 
                         object_release(search_obj);
                         object_release(value_obj);
@@ -1164,7 +1164,7 @@ dispatch:
                         object_release(obj1);
 
                         reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR(obj1));
+                        thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "'%s' is must be a class or callable", OBJ2STR0(obj1));
                         goto block_end;
                         break;
                     }
@@ -1544,14 +1544,14 @@ dispatch:
                             dll_free(interfaces);
 
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Interface '%s' is not found", OBJ2STR0(interface_name_obj));
                             goto block_end;
                         }
                         if (! OBJECT_TYPE_IS_INTERFACE(interface_obj)) {
                             dll_free(interfaces);
 
                             reason = REASON_EXCEPTION;
-                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "'%s' is not an interface", OBJ2STR(interface_name_obj));
+                            thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "'%s' is not an interface", OBJ2STR0(interface_name_obj));
                             goto block_end;
                         }
 
