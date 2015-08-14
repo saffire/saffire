@@ -289,7 +289,23 @@ SAFFIRE_METHOD(string, conv_null) {
  *
  */
 SAFFIRE_METHOD(string, conv_numerical) {
-    long value = strtol(STROBJ2CHAR0(self), NULL, 0);
+    char *c = STROBJ2CHAR0(self);
+    long value;
+
+    if (c[0] == '0' && c[1] == 'x') {
+        // Hex
+        value = strtol(c, NULL, 16);
+    } else if (c[0] == 'b') {
+        // Binary
+        value = strtol(c, NULL, 2);
+    } else if (c[0] == '0') {
+        // Octal
+        value = strtol(c, NULL, 8);
+    } else {
+        // default to decimal
+        value = strtol(c, NULL, 10);
+    }
+
     RETURN_NUMERICAL(value);
 }
 

@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdlib.h>
 #include <saffire/debug.h>
 #include <saffire/objects/object.h>
 #include <saffire/objects/objects.h>

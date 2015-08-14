@@ -14,6 +14,7 @@ systemException
     attributeException
     immutableException
     typeException
+    coerceException
     callException
         argumentException
         callableException
