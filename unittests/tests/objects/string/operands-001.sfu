@@ -1,0 +1,24 @@
+title: string operands
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+io.println("foo" + "bar");
+io.println("bar" + "foo");
+
+a = "foo";
+b = "bar";
+c = a + b + b;
+d = c + c;
+io.println(a);
+io.println(b);
+io.println(c);
+io.println(d);
+=========
+foobar
+barfoo
+foo
+bar
+foobar
+foobarbarfoobarbar
