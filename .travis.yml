@@ -1,6 +1,6 @@
 language: c
 
-sudo: false
+sudo: required
 
 before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then ./support/travis/linux/before_script.sh; fi
