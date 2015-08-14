@@ -241,6 +241,13 @@ SAFFIRE_METHOD(base, name) {
 }
 
 /**
+ * Returns the type of the class
+ */
+SAFFIRE_METHOD(base, type) {
+    RETURN_STRING_FROM_CHAR(objectTypeNames[self->type]);
+}
+
+/**
  * Returns a list of interfaces this object implements
  */
 SAFFIRE_METHOD(base, implements) {
@@ -355,6 +362,7 @@ void object_base_init() {
     object_add_internal_method((t_object *)&Object_Base_struct, "__methods",      ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_methods);
     object_add_internal_method((t_object *)&Object_Base_struct, "__parents",      ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_parents);
     object_add_internal_method((t_object *)&Object_Base_struct, "__name",         ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_name);
+    object_add_internal_method((t_object *)&Object_Base_struct, "__type",         ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_type);
     object_add_internal_method((t_object *)&Object_Base_struct, "__implements",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_implements);
     object_add_internal_method((t_object *)&Object_Base_struct, "__instanceOf",   ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_instanceof);
     object_add_internal_method((t_object *)&Object_Base_struct, "__memory",       ATTRIB_METHOD_MIXED, ATTRIB_VISIBILITY_PUBLIC, object_base_method_memory);

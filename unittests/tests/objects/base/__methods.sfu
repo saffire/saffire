@@ -98,6 +98,7 @@ __properties
 __methods
 __parents
 __name
+__type
 __implements
 __memory
 __annotations
