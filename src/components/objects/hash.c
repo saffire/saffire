@@ -148,7 +148,7 @@ SAFFIRE_METHOD(hash, get) {
     }
 
     t_object *obj = ht_find_obj(self->data.ht, key);
-    if (obj == NULL) return default_value ? default_value : object_alloc_instance(Object_Null, 0);
+    if (obj == NULL) return default_value ? default_value : Object_Null;
     RETURN_OBJECT(obj);
 }
 
