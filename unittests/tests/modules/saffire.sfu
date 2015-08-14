@@ -40,6 +40,6 @@ saffire.set_locale();
 Error while parsing argument list
 @@@@@
 import io;
-io.println(saffire.modules().count() > 6);
+io.println(saffire.modules().length() > 6);
 ~~~~~~~
 true
