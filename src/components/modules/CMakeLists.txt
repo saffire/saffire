@@ -21,21 +21,13 @@ set(sources
 
 add_library(modules STATIC ${sources})
 
-########################################################################
-# Add libcpuid
-########################################################################
-include_directories(${saffire_SOURCE_DIR}/lib/src)
-add_library(libcpuid STATIC IMPORTED)
-set_property(TARGET libcpuid PROPERTY IMPORTED_LOCATION ${saffire_SOURCE_DIR}/lib/src/libcpuid/libcpuid/.libs/libcpuid.a)
-
-
-
-########################################################################
 add_dependencies(modules generate_interfaces generate_exceptions)
+
+include(${CMAKE_SOURCE_DIR}/lib/CPUID.cmake)
 
 target_link_libraries(
     modules
     generic
     dl
-    libcpuid
+    cpuid
     ${3rdparty_libs})

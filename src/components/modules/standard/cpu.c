@@ -34,7 +34,7 @@
 #include <saffire/objects/object.h>
 
 #include <saffire/config.h>
-#include "libcpuid/libcpuid/libcpuid.h"
+#include <libcpuid/libcpuid.h>
 
 
 static int cpu_data_initialized = 0;

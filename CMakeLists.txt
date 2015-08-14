@@ -23,7 +23,6 @@ INCLUDE (${CMAKE_ROOT}/Modules/CheckSymbolExists.cmake)
 CHECK_INCLUDE_FILE("stdint.h" HAVE_STDINT_H)
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 
-#add_subdirectory(lib/cmake/libcpuid)
 add_subdirectory(include/saffire)
 add_subdirectory(src)
 add_subdirectory(unittests/core)
