@@ -1115,30 +1115,24 @@ dispatch:
                 // Left object and obj2 might be the same, but might be different when coerced.
                 dst = vm_object_operator(obj1, oparg1, obj2);
 
-                if (! dst) {
-                    object_release(right_obj);
-                    object_release(left_obj);
-
-                    if (left_obj != obj1) {
-                        object_release(obj1);
-                    }
-                    if (right_obj != obj2) {
-                        object_release(obj2);
-                    }
-
-                    reason = REASON_EXCEPTION;
-                    goto block_end;
-                    break;
-                }
-
+                // Release objects
                 object_release(right_obj);
                 object_release(left_obj);
 
+                // Obj1 and left_obj can be different when coerced
                 if (left_obj != obj1) {
                     object_release(obj1);
                 }
+                // Obj2 and right_obj can be different when coerced
                 if (right_obj != obj2) {
                     object_release(obj2);
+                }
+
+
+                if (! dst) {
+                    reason = REASON_EXCEPTION;
+                    goto block_end;
+                    break;
                 }
 
                 vm_frame_stack_push(frame, dst);
@@ -1395,8 +1389,8 @@ dispatch:
 
             // Compare 2 objects and push a boolean(true) or boolean(false) object back onto the stack
             case VM_COMPARE_OP :
-                left_obj = vm_frame_stack_pop(frame, 1);
-                right_obj = vm_frame_stack_pop(frame, 1);
+                left_obj = obj1 = vm_frame_stack_pop(frame, 1);
+                right_obj = obj2 = vm_frame_stack_pop(frame, 1);
 
                 // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
                 // the base class!
@@ -1468,47 +1462,68 @@ dispatch:
                 DEBUG_PRINT_CHAR("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
 
                 // Compare types do not match
-                if (left_obj->type != right_obj->type && !(OBJECT_IS_NULL(left_obj) || OBJECT_IS_NULL(right_obj))) {
+                if (left_obj->type != right_obj->type && ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)) {
+                    // Types are not equal.
+                    reason = REASON_EXCEPTION;
 
-                    // Try an implicit cast if possible
-                    DEBUG_PRINT_CHAR("Explicit casting '%s' to '%s'\n", right_obj->name, left_obj->name);
-                    t_attrib_object *cast_method = object_attrib_find(right_obj, left_obj->name);
-                    if (! cast_method) {
-                        object_release(right_obj);
-                        object_release(left_obj);
-
-                        reason = REASON_EXCEPTION;
-                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot compare '%s' against '%s'", left_obj->name, right_obj->name);
-                        goto block_end;
-                    }
-                    obj1 = vm_object_call(right_obj, cast_method, 0);
-                    if (! obj1) {
-                        object_release(right_obj);
-                        object_release(left_obj);
-
-                        reason = REASON_EXCEPTION;
-                        goto block_end;
+                    // Add generic coerce exception if none other has been thrown
+                    if (! thread_exception_thrown()) {
+                        thread_create_exception_printf(
+                            (t_exception_object *)Object_TypeException,
+                            1,
+                            "'%s' and '%s' cannot be coerced.",
+                            left_obj->type == objectTypeUser ? left_obj->name : objectTypeNames[left_obj->type],
+                            right_obj->type == objectTypeUser ? right_obj->name : objectTypeNames[right_obj->type]
+                        );
                     }
 
-                    // Release original right obj, and change to obj1, the casted object
-                    object_release(right_obj);
-                    right_obj = obj1;
-
-
+                    goto block_end;
                 }
 
-                dst = vm_object_comparison(left_obj, oparg1, right_obj);
-                if (! dst) {
-                    object_release(left_obj);
-                    object_release(right_obj);
 
+                // @TODO: HIGH: why the OBJECT_IS_NULL() references here?
+                if (left_obj != NULL &&
+                    left_obj->type != right_obj->type &&
+                    !(OBJECT_IS_NULL(left_obj) || OBJECT_IS_NULL(right_obj)) &&
+                    ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)
+                   ) {
+                    // Types are not equal.
+                    reason = REASON_EXCEPTION;
+
+                    // Add generic coerce exception if none other has been thrown
+                    if (! thread_exception_thrown()) {
+                        thread_create_exception_printf(
+                            (t_exception_object *)Object_TypeException,
+                            1,
+                            "'%s' and '%s' cannot be coerced.",
+                            left_obj->type == objectTypeUser ? left_obj->name : objectTypeNames[left_obj->type],
+                            right_obj->type == objectTypeUser ? right_obj->name : objectTypeNames[right_obj->type]
+                        );
+                    }
+
+                    goto block_end;
+                }
+
+                dst = vm_object_comparison(obj1, oparg1, obj2);
+
+                // Release objects
+                object_release(right_obj);
+                object_release(left_obj);
+
+                // Obj1 and left_obj can be different when coerced
+                if (left_obj != obj1) {
+                    object_release(obj1);
+                }
+                // Obj2 and right_obj can be different when coerced
+                if (right_obj != obj2) {
+                    object_release(obj2);
+                }
+
+                if (! dst) {
                     reason = REASON_EXCEPTION;
                     goto block_end;
                     break;
                 }
-
-                object_release(left_obj);
-                object_release(right_obj);
 
                 vm_frame_stack_push(frame, dst);
                 object_inc_ref(dst);
