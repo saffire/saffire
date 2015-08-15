@@ -81,7 +81,7 @@
 }
 
 %token END 0 "end of file"
-%token <lVal> T_LNUM "numerical value"
+%token <lVal> T_NUM "numerical value"
 %token <sVal> T_STRING "string" T_IDENTIFIER "identifier" T_REGEX "regular expression"
 
 %type <lVal> modifier modifier_list assignment_operator comparison_operator
@@ -166,23 +166,6 @@ program:
         /* A program consists of use-statements and a list of top-statements */
         import_statement_list top_statement_list { $$ = ast_node_opr(@1.first_line, T_PROGRAM,2, $1, $2); }
 ;
-
-
-
-/*
-   Import statements are a bit complex, as there are different variations on how to import:
-
-   import foo;
-   import foo as bar;
-   import foo as bar from baz;
-   import foo,bar;
-   import foo as foo1, bar as bar1;
-   import foo as foo1 from baz1, bar as bar1 from baz2;
-
-   Lot's of shuffling around with groups and add_multi, but this is just to make sure all imports will ultimately end up
-   inside one group instead of (possibly) larger tree. This keeps all the imports A) flat and B) tupled with class, alias and module.
- */
-
 
 /* Import list could be empty or a list of import statements */
 import_statement_list:
@@ -336,7 +319,6 @@ jump_statement:
     |   T_RETURN expression ';'     { parser_validate_return(saffireParser, @1.first_line);  $$ = ast_node_opr(@1.first_line, T_RETURN, 1, $2); }
     |   T_THROW expression ';'      { $$ = ast_node_opr(@1.first_line, T_THROW, 1, $2); }
     |   T_GOTO T_IDENTIFIER ';'     { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_string(@2.first_line, $2)); smm_free($2); }
-    |   T_GOTO T_LNUM ';'           { $$ = ast_node_opr(@1.first_line, T_GOTO, 1, ast_node_numerical(@2.first_line, $2)); }                 // @TODO: Should support goto 3; ?
 ;
 
 /* try/catch try/catch/finally blocks */
@@ -491,7 +473,7 @@ assignment_operator:
 
 /* Any number, any string, any regex */
 real_scalar_value:
-        T_LNUM        { $$ = ast_node_numerical(@1.first_line, $1); }
+        T_NUM         { $$ = ast_node_numerical(@1.first_line, $1); }
     |   T_STRING      { $$ = ast_node_string(@1.first_line, $1); smm_free($1); }
     |   T_REGEX       { $$ = ast_node_regex(@1.first_line, $1); smm_free($1); }
 ;

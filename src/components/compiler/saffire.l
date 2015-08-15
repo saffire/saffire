@@ -138,11 +138,11 @@
 
 
 /* Our actual lexemes */
-lnum            -?[0-9]+
-hnum            0x[0-9A-Fa-f]+
-onum            0[0-7]+
-bnum            b[01]+
-/* identifier      (\\[\+])|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)|([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*[\?\!]?) */
+
+dec_num         -?[0-9]*
+hex_num         0x[0-9A-Fa-f]+
+oct_num         0[0-7]+
+bin_num         b[01]+
 identifier      ([a-zA-Z_][a-zA-Z0-9_]*\??)
 whitespace      [ \t\r]+
 newline         "\n"
@@ -339,6 +339,35 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
 <st_string_dbl>[^\\"\n]*        { do_yylloc; strbuf = add_strbuf(strbuf, yytext); }
 <st_string_sgl>[^\\'\n]*        { do_yylloc; strbuf = add_strbuf(strbuf, yytext); }
 
+{oct_num} {
+    /* Match octal before decimal, so 072 is matched as octal, even though it also matches dec_num) */
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+1, NULL, 8);
+    return T_NUM;
+}
+
+{dec_num} {
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext, NULL, 10);
+    return T_NUM;
+}
+
+{hex_num} {
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+2, NULL, 16);
+    return T_NUM;
+}
+
+{bin_num} {
+    /* Match binary before identifier, as "b0010" is also matched as an identifier */
+    do_yylloc;
+    saffire_push_state(st_div);
+    yylval->lVal = strtol(yytext+1, NULL, 2);
+    return T_NUM;
+}
 
 {identifier} {
     do_yylloc;
@@ -347,34 +376,8 @@ ml_comment      "/*"([^\*]|\*[^/])*"*/"
     return T_IDENTIFIER;
 }
 
-{lnum} {
-    do_yylloc;
-    saffire_push_state(st_div);
-    yylval->lVal = strtol(yytext, NULL, 10);
-    return T_LNUM;
-}
-
-{hnum} {
-    do_yylloc;
-    saffire_push_state(st_div);
-    yylval->lVal = strtol(yytext+2, NULL, 16);
-    return T_LNUM;
-}
-{onum} {
-    do_yylloc;
-    saffire_push_state(st_div);
-    yylval->lVal = strtol(yytext+1, NULL, 8);
-    return T_LNUM;
-}
-{bnum} {
-    do_yylloc;
-    saffire_push_state(st_div);
-    yylval->lVal = strtol(yytext+1, NULL, 2);
-    return T_LNUM;
-}
-
-
 . {
+    /* Catchall */
     do_yylloc;
     parser_error((SaffireParser *)yyextra, yylloc->first_line, "Unknown token: '%s'\n", yytext);
     yyterminate();

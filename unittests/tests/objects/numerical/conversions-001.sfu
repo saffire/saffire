@@ -24,10 +24,11 @@ io.println(  256.bin()   );
 io.println(  100.bin()   );
 io.println(  42.bin()   );
 
-io.println(  011111110.bin()   );
-io.println(  011111110.oct()   );
-io.println(  011111110.dec()   );
-io.println(  011111110.hex()   );
+// These are decimals!
+io.println(  11111110.bin()   );
+io.println(  11111110.oct()   );
+io.println(  11111110.dec()   );
+io.println(  11111110.hex()   );
 ======
 1
 10

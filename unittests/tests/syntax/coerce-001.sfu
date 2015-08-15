@@ -2,3 +2,7 @@ title: Coerce
 author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
+import io;
+io.println("foo");
+========
+foo

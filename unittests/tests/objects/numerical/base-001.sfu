@@ -1,0 +1,20 @@
+title: numerical sequences
+author: Joshua Thijssen <joshua@saffire-lang.org>
+
+**********
+import io;
+
+io.println(52);     // decimal
+io.println(14);     // decimal
+io.println(014);    // octal
+io.println(0xf2);   // hex
+io.println(b11001); // binary
+
+io.println(14 + 0x0F + b11101 + 052);  // Mixed
+=====
+52
+14
+12
+242
+25
+100
