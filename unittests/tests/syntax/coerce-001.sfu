@@ -3,6 +3,170 @@ author: Joshua Thijssen <joshua@saffire-lang.org>
 
 **********
 import io;
-io.println("foo");
-========
-foo
+
+class Color {
+
+    // Keeps numerical RGB value of the color
+    protected property value;
+
+    // Internal list of color names and RGB pairs.
+    protected property names = hash[[
+        "white"  : 0xFFFFFF,
+        "black"  : 0x000000,
+        "red"    : 0xFF0000,
+        "green"  : 0x00FF00,
+        "blue"   : 0x0000FF,
+        "yellow" : 0xFFFF00,
+        "cyan"   : 0x00FFFF,
+    ]];
+
+    // Constructor (should be method overloading with __ctor(Numerical) for hex numbers, but
+    // that is not functional yet).
+    public method __ctor(string name) {
+
+        // Parse hex value RGB if string starts with #
+        if (name[0] == '#') {
+            self.value = ("0x" + name[1..]).__numerical() & 0xFFFFFF;
+            return self;
+        }
+
+        // Use custom color name (if any)
+        self.value = self.names[name];
+        if (self.value) {
+            return self;
+        }
+
+        // Nothing found, throw exception
+        throw argumentException("Cannot find color name: '" + name + "'");
+    }
+
+
+    // Coerce method to cast "something" to a color (if possible)
+    public method __coerce(obj) {
+        if (obj.__instanceOf(string)) {
+            return tuple[[Color(obj), self]];
+        }
+
+        if (obj.__instanceOf(numerical)) {
+            return tuple[[Color("#" + obj.hex()), self]];
+        }
+
+        throw TypeError("Cannot coerce " + obj.__name() + " into a Color object");
+    }
+
+
+    // Operator overloading for the + operator
+    public method __opr_add(Color c) {
+        a = c.getValue();
+
+        v = (a | self.value) & 0xFFFFFF;
+        return Color("#" + (v).hex());
+    }
+
+
+    // overloading for the == comparison
+    public method __cmp_eq(Color c) {
+        return self.getHexValue() == c.getHexValue();
+    }
+
+    // Return hex value as a string
+    public method getHexValue() {
+        return self.getValue().hex();
+    }
+
+    // Return numerical value
+    public method getValue() {
+        return self.value;
+    }
+
+    // Return name of color (if any available)
+    public method getName() {
+        // We should have something like:  k = hash.searchKey(v)
+        foreach (self.names as k, v) {
+            if (self.value == v) {
+                return k;
+            }
+        }
+
+        return "unknown";
+    }
+
+}
+
+
+
+c1 = Color("white");
+io.println(c1.getHexValue());
+io.println(c1.getName());
+
+c2 = Color("red");
+io.println(c2.getHexValue());
+io.println(c2.getName());
+
+c3 = Color("#00FF00");
+io.println(c3.getHexValue());
+io.println(c3.getName());
+
+c4 = Color("#123456");
+io.println(c4.getHexValue());
+io.println(c4.getName());
+
+c5 = Color("#FF0002");
+io.println(c5.getHexValue());
+io.println(c5.getName());
+
+// Works, because c3 and c5 are "equal" types
+c6 = c3 + c5;
+io.println(c6.getHexValue());
+io.println(c6.getName());
+
+c7 = c3 + "white";
+io.println(c7.getHexValue());
+io.println(c7.getName());
+
+c8 = c3 + 0x0000FF;
+io.println(c8.getHexValue());
+io.println(c8.getName());
+
+c8_1 = c3 + c3;
+io.println(c8_1.getHexValue());
+io.println(c8_1.getName());
+
+c8_1 = c3 + 0xFFFFFF;
+io.println(c8_1.getHexValue());
+io.println(c8_1.getName());
+
+if (Color("#FFFFFF") == "white") {
+    io.println("Color is white.");
+} else {
+    io.println("Nope. Not white.");
+}
+
+if (Color("#FFFF00") == "white") {
+    io.println("Color is white.");
+} else {
+    io.println("Nope. Not white.");
+}
+===========
+ffffff
+white
+ff0000
+red
+ff00
+green
+123456
+unknown
+ff0002
+unknown
+ffff02
+unknown
+ffffff
+white
+ffff
+cyan
+ff00
+green
+ffffff
+white
+Color is white.
+Nope. Not white.
