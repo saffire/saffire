@@ -42,7 +42,7 @@ static long _get_long(t_dll_element **e) {
 
     if (! OBJECT_IS_NUMERICAL(obj)) {
         t_attrib_object *numerical_method = object_attrib_find(obj, "__numerical");
-        obj = vm_object_call(obj, numerical_method, 0);
+        obj = call_saffire_method(obj, numerical_method, 0);
     }
 
     (*e) = DLL_NEXT((*e));
@@ -59,7 +59,7 @@ static t_string *_get_string(t_dll_element **e) {
 
     if (! OBJECT_IS_STRING(obj)) {
         t_attrib_object *string_method = object_attrib_find(obj, "__string");
-        obj = vm_object_call(obj, string_method, 0);
+        obj = call_saffire_method(obj, string_method, 0);
         if (! obj) return char0_to_string("");
     }
 

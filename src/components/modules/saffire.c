@@ -86,7 +86,7 @@ SAFFIRE_MODULE_METHOD(saffire, sapi) {
 }
 
 SAFFIRE_MODULE_METHOD(saffire, debug) {
-    if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+    if (VM_IN_DEBUG_MODE) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;

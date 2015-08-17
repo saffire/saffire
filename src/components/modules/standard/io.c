@@ -49,7 +49,7 @@ static t_object *_saffire_print(t_object *self, t_dll *arguments, int newline) {
         // Implied conversion to string
         if (! OBJECT_IS_STRING(obj)) {
             t_attrib_object *string_method = object_attrib_find(obj, "__string");
-            obj = vm_object_call(obj, string_method, 0);
+            obj = call_saffire_method(obj, string_method, 0);
         }
 
         if (obj) {
@@ -80,17 +80,17 @@ static void _io_dump(t_object *obj, int depth) {
 
     // fetch iterator
     method = object_attrib_find(obj, "__iterator");
-    iter_obj = vm_object_call(obj, method, 0);
+    iter_obj = call_saffire_method(obj, method, 0);
 
-    // We don't know how the iterator is implemented internally, so we just call the iterator functionality through vm_object_call
+    // We don't know how the iterator is implemented internally, so we just call the iterator functionality through call_saffire_method
 
     method = object_attrib_find(iter_obj, "__rewind");
-    ret = vm_object_call(iter_obj, method, 0);
+    ret = call_saffire_method(iter_obj, method, 0);
     object_release(ret);
 
     do {
         method = object_attrib_find(iter_obj, "__hasNext");
-        ret = vm_object_call(iter_obj, method, 0);
+        ret = call_saffire_method(iter_obj, method, 0);
         if (IS_BOOLEAN_FALSE(ret)) {
             object_release(ret);
             break;
@@ -99,10 +99,10 @@ static void _io_dump(t_object *obj, int depth) {
         }
 
         method = object_attrib_find(iter_obj, "__key");
-        t_object *key = vm_object_call(iter_obj, method, 0);
+        t_object *key = call_saffire_method(iter_obj, method, 0);
 
         method = object_attrib_find(iter_obj, "__value");
-        t_object *val = vm_object_call(iter_obj, method, 0);
+        t_object *val = call_saffire_method(iter_obj, method, 0);
 
         //
 
@@ -111,7 +111,7 @@ static void _io_dump(t_object *obj, int depth) {
 
         if (! OBJECT_IS_STRING(key)) {
             t_attrib_object *string_method = object_attrib_find(key, "__string");
-            key_str = (t_string_object *)vm_object_call(key, string_method, 0);
+            key_str = (t_string_object *)call_saffire_method(key, string_method, 0);
             object_release((t_object *)key);
         } else {
             key_str = (t_string_object *)key;
@@ -128,7 +128,7 @@ static void _io_dump(t_object *obj, int depth) {
         } else if (! OBJECT_IS_STRING(val)) {
             // Convert to string
             t_attrib_object *string_method = object_attrib_find(val, "__string");
-            val_str = (t_string_object *)vm_object_call(val, string_method, 0);
+            val_str = (t_string_object *)call_saffire_method(val, string_method, 0);
             object_release((t_object *)val);
         } else {
             // Otherwise, just print string
@@ -145,7 +145,7 @@ static void _io_dump(t_object *obj, int depth) {
         object_release((t_object *)key_str);
 
         method = object_attrib_find(iter_obj, "__next");
-        ret = vm_object_call(iter_obj, method, 0);
+        ret = call_saffire_method(iter_obj, method, 0);
         object_release(ret);
     } while (1);
 
@@ -176,7 +176,7 @@ SAFFIRE_MODULE_METHOD(io, printf) {
     t_object *obj = DLL_DATA_PTR(e);
     if (! OBJECT_IS_STRING(obj)) {
         t_attrib_object *string_method = object_attrib_find(obj, "__string");
-        obj = vm_object_call(obj, string_method, 0);
+        obj = call_saffire_method(obj, string_method, 0);
     }
 
     t_string *format = ((t_string_object *)obj)->data.value;

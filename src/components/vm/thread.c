@@ -33,6 +33,8 @@
 #include <saffire/vm/vm.h>
 
 
+long getlineno(t_vm_stackframe *frame);
+
 // Current running thread. Don't change directly, but only through thread_switch() methods.
 t_thread *current_thread;
 
@@ -80,9 +82,6 @@ t_vm_stackframe *thread_get_exception_frame(void) {
 int thread_exception_thrown(void) {
     return (current_thread->exception != NULL);
 }
-
-int getlineno(t_vm_stackframe *frame);
-
 
 
 t_hash_table *thread_create_stacktrace() {

@@ -113,7 +113,7 @@ static int fcgi_loop(void) {
     atexit(&FCGX_Finish);
 
     // Initialize virtualmachine
-    vm_init(NULL, VM_RUNMODE_FASTCGI);
+    vm_init(VM_RUNMODE_FASTCGI);
 
     output_set_helpers(_fcgi_output_char_helper, _fcgi_output_string_helper);
 //    is_tty = 0;

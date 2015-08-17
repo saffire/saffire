@@ -30,7 +30,6 @@
     #include <saffire/compiler/bytecode.h>
     #include <saffire/objects/hash.h>
     #include <saffire/vm/stackframe.h>
-    #include <saffire/compiler/saffire_parser.h>
     #include <saffire/objects/attrib.h>
 
     t_hash_table *builtin_identifiers_ht;       // hash table with all builtin identifiers
@@ -40,18 +39,20 @@
     #define VM_RUNMODE_FASTCGI      1       // Virtual machine run as FastCGI
     #define VM_RUNMODE_CLI          2       // Virtual machine run as CLI
     #define VM_RUNMODE_REPL         4       // Virtual machine run as REPL
-    #define VM_RUNMODE_DEBUG      128       // Debugging should be activated
+    #define VM_RUNMODE_DEBUG      128       // (dbgp) Debugging should be activated
+
+    #define VM_IN_DEBUG_MODE    ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG)
 
     // Actual runmode of the VM (fastcgi, cli, repl etc)
     int vm_runmode;
 
-    void vm_init(SaffireParser *sp, int runmode);
+    void vm_init(int runmode);
     void vm_fini(void);
     int vm_execute(t_vm_stackframe *stackframe);
     void vm_populate_builtins(const char *name, t_object *obj);
 
     t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result);
-    t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
+    t_object *call_saffire_method(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...);
 
 #endif
 

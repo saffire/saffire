@@ -86,7 +86,7 @@ static int do_exec(void) {
     // Create initial frame and attach our bytecode to it
     int runmode = VM_RUNMODE_CLI;
     if (flag_debug) runmode |= VM_RUNMODE_DEBUG;
-    vm_init(NULL, runmode);
+    vm_init(runmode);
 
 
     // Create initial code & stackframe

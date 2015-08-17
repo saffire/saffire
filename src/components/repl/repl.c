@@ -184,7 +184,7 @@ int repl(void) {
     }
 
     // Initialize runner
-    vm_init(sp, VM_RUNMODE_REPL);
+    vm_init(VM_RUNMODE_REPL);
 
 
     t_bytecode *bytecode = smm_malloc(sizeof(t_bytecode));

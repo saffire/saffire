@@ -49,7 +49,7 @@ t_hash_table *builtin_identifiers_ht;       // Builtin identifiers - actual hash
 t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object
 
 
-// A boolean method or property ends on a '?'
+// A boolean method or property name that ends on a '?'
 #define IS_BOOLEAN_ATTRIBUTE(s)  (s[strlen(s)-1] == '?')
 
 // Flow termination reasons
@@ -62,7 +62,8 @@ t_hash_object *builtin_identifiers;         // Builtin identifiers - hash object
 #define REASON_RERAISE      6       // Exception not handled. Reraised in finally clause
 #define REASON_FINALLY      7       // No exception raised after finally
 
-
+// Forwarding declarations
+t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret);
 t_object *_vm_execute(t_vm_stackframe *frame);
 
 // Defines the object operator and comparison methods.
@@ -76,8 +77,8 @@ extern char *objectCmpMethods[];
 int debug = 0;
 t_debuginfo *debug_info;
 
-
 #ifdef __DEBUG
+    // External table to keep track of objects for refcount debugging
     extern t_hash_table *refcount_objects;
 #endif
 
@@ -93,25 +94,25 @@ static int _vm_coerce(t_object *left_obj, t_object *right_obj, t_object **left_t
 
     t_attrib_object *coerce_method = object_attrib_find(left_obj, "__coerce");
     if (! coerce_method) {
-        return 0;
+        return -1;
     }
 
-    t_tuple_object *ret = (t_tuple_object *)vm_object_call(left_obj, coerce_method, 1, right_obj);
+    t_tuple_object *ret = (t_tuple_object *)call_saffire_method(left_obj, coerce_method, 1, right_obj);
     if (! ret) {
         // Exception thrown,
-        return 0;
+        return -1;
     }
 
     // Must return tuple
     if (! OBJECT_IS_TUPLE(ret)) {
         thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]]");
-        return 0;
+        return -1;
     }
 
     // Must return tuple of 2
     if (ret->data.ht->element_count != 2) {
         thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]] with 2 elements");
-        return 0;
+        return -1;
     }
 
     // Must return tuple of 2 with same typed objects
@@ -121,7 +122,7 @@ static int _vm_coerce(t_object *left_obj, t_object *right_obj, t_object **left_t
     // What about  "foo extends string" vs "string" ??  or instanceof?
     if (obj1->type != obj2->type) {
         thread_create_exception_printf((t_exception_object *)Object_CoerceException, 1, "__coerce() must return a tuple[[]] with 2 elements of the same type");
-        return 0;
+        return -1;
     }
 
     *left_target_obj = obj1;
@@ -130,7 +131,7 @@ static int _vm_coerce(t_object *left_obj, t_object *right_obj, t_object **left_t
     object_inc_ref(obj1);
     object_inc_ref(obj2);
 
-    return 1;
+    return 0;
 }
 
 /**
@@ -150,7 +151,7 @@ static t_object *vm_object_operator(t_object *obj1, int opr, t_object *obj2) {
     DEBUG_PRINT_CHAR(">>> Calling operator %s(%d) on object %s\n", opr_method, opr, obj1->name);
 
     // Call the actual operator and return the result
-    return vm_object_call(obj1, found_obj, 1, obj2);
+    return call_saffire_method(obj1, found_obj, 1, obj2);
 }
 
 /**
@@ -168,13 +169,13 @@ static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
     DEBUG_PRINT_CHAR(">>> Calling comparison %s(%d) on object %s\n", cmp_method, cmp, obj1->name);
 
     // Call the actual operator and return the result
-    t_object *ret = vm_object_call(obj1, found_obj, 1, obj2);
+    t_object *ret = call_saffire_method(obj1, found_obj, 1, obj2);
     if (! ret) return ret;
 
     // Implicit conversion to boolean if needed
     if (! OBJECT_IS_BOOLEAN(ret)) {
         t_attrib_object *bool_method = object_attrib_find(ret, "__boolean");
-        ret = vm_object_call(ret, bool_method, 0);
+        ret = call_saffire_method(ret, bool_method, 0);
     }
 
     return ret;
@@ -184,7 +185,7 @@ static t_object *vm_object_comparison(t_object *obj1, int cmp, t_object *obj2) {
  * Parse calling arguments. It will iterate all arguments declarations needed for the
  * callable. The arguments are placed onto the frame stack.
  *
- * Returns 1 in success, 0 on failure/exception is thrown
+ * Returns 0 on success, -1 on failure/exception is thrown
  */
 static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *callable, t_dll *arg_list) {
     t_hash_table *ht = callable->data.arguments;
@@ -227,12 +228,11 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         // No more arguments to pass found, so obj MUST be of a value, otherwise caller didn't specify enough arguments.
         if (obj == NULL && ! is_vararg) {
             object_raise_exception(Object_ArgumentException, 1, "Not enough arguments passed, and no default values found");
-            return 0;
+            return -1;
         }
 
         if (arg->typehint->type != objectTypeNull) {
             // Check typehint / varargs
-
 
             if (is_vararg) {
                 // the '...' typehint found.
@@ -262,7 +262,6 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
         }
 
         // Everything is ok, add the new value onto the local identifiers
-
         vm_frame_set_local_identifier(frame, name, obj);
 
         need_count--;
@@ -277,7 +276,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
     if (given_count > 0) {
         if (vararg_obj == NULL) {
             object_raise_exception(Object_ArgumentException, 1, "No variable argument found, and too many arguments passed");
-            return 0;
+            return -1;
         }
 
         // Just add arguments to vararg list. No need to do any typehint checks here.
@@ -288,7 +287,7 @@ static int _parse_calling_arguments(t_vm_stackframe *frame, t_callable_object *c
     }
 
     // All ok
-    return 1;
+    return 0;
 }
 
 /**
@@ -339,7 +338,7 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
     // Check if the object is actually a callable
     if (! OBJECT_IS_CALLABLE(callable_obj)) {
-        thread_create_exception((t_exception_object *)Object_CallableException, 1, "Object is not from callable instance");
+        thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Object is not callable");
         return NULL;
     }
 
@@ -356,22 +355,6 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
     // External code
 
-    // Create context name
-    char context[1250];
-    char args[1000];
-    strcpy(args, "");
-    t_dll_element *e = DLL_HEAD(arg_list);
-    while (e) {
-#ifdef __DEBUG
-        strcat(args, object_debug(DLL_DATA_PTR(e)));
-#else
-        strcat(args, "an object");
-#endif
-        e = DLL_NEXT(e);
-        if (e) strcat(args, ", ");
-    }
-    snprintf(context, 1249, "%s.%s([%ld args: %s])", self_obj ? self_obj->name : "<anonymous>", callable_obj->name, arg_list->size, args);
-
     // Create a new execution frame
     t_vm_stackframe *child_frame = vm_stackframe_new(scope_frame, callable_obj->data.code.external.codeblock);
     child_frame->trace_class = self_obj ? string_strdup0(self_obj->name) : string_strdup0("<anonymous>");
@@ -379,12 +362,10 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
     // Create self inside the new frame
     vm_frame_set_local_identifier(child_frame, "self", self_obj);
-//    t_object *old_self_obj = ht_replace_str(child_frame->local_identifiers->data.ht, "self", self_obj);
-//    if (old_self_obj) object_release(old_self_obj);
-//    object_inc_ref(self_obj);
 
-    // Parse calling arguments to see if they match our signatures
-    if (! _parse_calling_arguments(child_frame, callable_obj, arg_list)) {
+    // Parse calling arguments to see if they match our signatures. Note that _parse_calling_arguments also
+    // populates our arguments into the child_frame.
+    if (arg_list && _parse_calling_arguments(child_frame, callable_obj, arg_list) != 0) {
         vm_stackframe_destroy(child_frame);
 
         // Exception thrown in the argument parsing
@@ -406,25 +387,25 @@ static t_object *_object_call_callable_with_args(t_object *self_obj, t_vm_stackf
 
 /**
  * Returns a few values:
- *   - 1 called statically from an instance (could trigger error later on)
- *   - 1 called statically from a class (ok)
- *   - 0 called dynamically from an instance (not ok)
- *   - 1 called statically from a class (not ok)
+ *    0 when called statically from an instance (could still trigger error later on)
+ *    0 when called statically from a class (ok)
+ *   -1 when called dynamically from an instance (not ok)
+ *    0 when called statically from a class (not ok)
  *
  */
 static int _check_attribute_for_static_call(t_object *self, t_attrib_object *attrib_obj) {
     // Calls to constants are ok from both instance and class
     if (ATTRIB_IS_CONSTANT(attrib_obj)) {
-        return 1;
+        return 0;
     }
 
     if (! OBJECT_TYPE_IS_CLASS(self)) {
         // calls from an instance are ok (@TODO: Really, should static calls from dynamic be not ok)
-        return 1;
+        return 0;
     }
 
     // class, only ok when method is static
-    return ATTRIB_METHOD_IS_STATIC(attrib_obj) ? 1 : 0;
+    return ATTRIB_METHOD_IS_STATIC(attrib_obj) ? 0 : -1;
 }
 
 /**
@@ -446,31 +427,32 @@ static int _check_attribute_for_static_call(t_object *self, t_attrib_object *att
  *   3) if attribute == private, we only allow from the same class
  */
 static int _check_attrib_visibility(t_object *self, t_attrib_object *attrib) {
-//    if (attrib->bound_class == NULL) {
-//        int i = 0;
-//    }
 
     // Not bound, so always ok
-    if (! attrib->data.bound_instance) return 1;
+    if (! attrib->data.bound_instance) return 0;
 
     // Public attributes are always ok
-    if (ATTRIB_IS_PUBLIC(attrib)) return 1;
+    if (ATTRIB_IS_PUBLIC(attrib)) return 0;
 
     // Private visibility is allowed when we are inside the SAME class.
-    if (ATTRIB_IS_PRIVATE(attrib) && attrib->data.bound_instance->class == self) return 1;
+    if (ATTRIB_IS_PRIVATE(attrib) && attrib->data.bound_instance->class == self) return 0;
 
     if (ATTRIB_IS_PROTECTED(attrib)) {
         // Iterate self down all its parent, to see if one matches "attrib". If so, the protected visibility is ok.
         t_object *parent_binding = self;
         while (parent_binding) {
             if (parent_binding->class == attrib->data.bound_class || parent_binding == attrib->data.bound_class ||
-                parent_binding->class == attrib->data.bound_instance || parent_binding == attrib->data.bound_instance) return 1;
+                parent_binding->class == attrib->data.bound_instance || parent_binding == attrib->data.bound_instance) return 0;
             parent_binding = parent_binding->parent;
         }
+
+        // Cannot find a protected attribute downstream
+        return -1;
     }
 
-    // Attribute is not found (@TODO: is this even possible?)
-    return 0;
+    // We can't reach this without errors
+    fatal_error(1, "Error: attribute is public, private nor protected");
+    return -1;
 }
 
 /**
@@ -484,6 +466,7 @@ static t_object *_object_call_attrib_with_args(t_object *self, t_attrib_object *
 }
 
 /**
+ * Matches a string against a regex object.
  *
  * @param regex_obj
  * @param str_obj
@@ -515,25 +498,28 @@ static t_object *_do_regex_match(t_regex_object *regex_obj, t_string_object *str
 }
 
 /**
- *
+ * Initializes the virtual machine with specified runmode
  */
-void vm_init(SaffireParser *sp, int runmode) {
-    // Set run mode (repl, cli, fastcgi)
+void vm_init(int runmode) {
+    // Set global run mode (repl, cli, fastcgi)
     vm_runmode = runmode;
 
     // Setup the initial thread
     t_thread *thread = thread_new();
     current_thread = thread;
 
+    // Garbage collector init
     gc_init();
 
     // Initialize hash where everybody can add their builtins to. Since object_hash does not exist yet,
     // we must use a generic hash for this. We will "convert" this to an hash-hobject later
     builtin_identifiers_ht = ht_create();
 
+    // Initialize saffire objects and modules
     object_init();
     module_init();
 
+    // Namespace caching for quick lookups of modules and FQCN objects
     vm_namespace_cache_init();
 
     // Convert our builtin identifiers to an actual hash object
@@ -541,7 +527,7 @@ void vm_init(SaffireParser *sp, int runmode) {
     object_inc_ref((t_object *)builtin_identifiers);
 
     // Initialize debugging if needed
-    if ((runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+    if (VM_IN_DEBUG_MODE) {
         debug_info = dbgp_init();
     }
 }
@@ -550,8 +536,8 @@ void vm_init(SaffireParser *sp, int runmode) {
  *
  */
 void vm_fini(void) {
-    // Initialize debugging if needed
-    if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG) {
+    // Finalize debugging if needed
+    if (VM_IN_DEBUG_MODE) {
         dbgp_fini(debug_info);
     }
 
@@ -610,36 +596,46 @@ void vm_fini(void) {
 }
 
 /**
+ * Returns the current line number based on the instruction pointer in the current frame.
  *
  * @param frame
- * @return
+ * @return long
  */
-int getlineno(t_vm_stackframe *frame) {
-    if (frame->lineno_upperbound != 0 && frame->lineno_lowerbound <= frame->ip && frame->ip < frame->lineno_upperbound) {
+long getlineno(t_vm_stackframe *frame) {
+
+    // If IP is within current bounds, just return the current line number
+    if (frame->lineno_upperbound != 0 &&
+        frame->lineno_lowerbound <= frame->ip &&
+        frame->ip < frame->lineno_upperbound
+    ) {
         return frame->lineno_current_line;
     }
 
-    int delta_lino = 0;
-    int delta_line = 0;
+    long delta_lino = 0;
+    long delta_line = 0;
 
-    // @TODO: Check if lino_offset doesn't go out of bounds
+    // Check if current offset isn't larger then the bytecode length.
     if (frame->lineno_current_lino_offset >= frame->codeblock->bytecode->lino_length) {
         return frame->lineno_current_line;
     }
 
-    int i;
-
-    // Peek if the first entry is a 0, if so, this number is actually negative
-    int negate = 0;
+    // Peek if the first entry is a 0, if so, the offset is actually negative. This is to compensate the fact
+    // that sometimes byte code is generated on different places (for instance, in while() blocks)
+    long negate = 0;
     if (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset] == 0) {
         frame->lineno_current_lino_offset++;
         negate = 1;
     }
 
+    // Decompress delta linenumber. A lineno byte > 127 indicates the next block is also part of this.
+    long i;
     do {
         i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_line += i;
     } while (i > 127);
+
+    // Decompress delta lino (which bytecode offset marks the upper bound). A lineno byte > 127 indicates the
+    // next block is also part of this.
     do {
         i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
         delta_lino += i;
@@ -649,21 +645,12 @@ int getlineno(t_vm_stackframe *frame) {
         delta_line = 0 - delta_line;
     }
 
-    frame->lineno_lowerbound = frame->lineno_upperbound;
+    frame->lineno_lowerbound = frame->lineno_upperbound + 1;
     frame->lineno_upperbound += delta_lino;
     frame->lineno_current_line += delta_line;
 
     return frame->lineno_current_line;
 }
-
-/**
- *
- * @param frame
- * @param reason
- * @param ret
- * @return
- */
-t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret);
 
 /**
  *
@@ -715,7 +702,6 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
 
     for (;;) {
 
-
         // Room for some other stuff
 dispatch:
         // Increase number of executions done
@@ -724,25 +710,22 @@ dispatch:
 
 #ifdef __DEBUG
     #if __DEBUG_VM_OPCODES
-        int ln = getlineno(frame);
+        long ln = getlineno(frame);
         unsigned long cip = frame->ip;
         //vm_frame_stack_debug(frame);
     #endif
 #endif
 
-
-
         // Only do this when we are debugging and the debugger is attached
-        if ((vm_runmode & VM_RUNMODE_DEBUG) == VM_RUNMODE_DEBUG && debug_info->attached) {
+        if (VM_IN_DEBUG_MODE && debug_info->attached) {
             dbgp_debug(debug_info, frame);
         }
-
 
 
         // Get opcode and additional argument
         opcode = vm_frame_get_next_opcode(frame);
 
-        // If high bit is set, get operand
+        // If high bits are set, get operands. Assumes maximum of 3 operands
         oparg1 = ((opcode & 0x80) == 0x80) ? vm_frame_get_operand(frame) : 0;
         oparg2 = ((opcode & 0xC0) == 0xC0) ? vm_frame_get_operand(frame) : 0;
         oparg3 = ((opcode & 0xE0) == 0xE0) ? vm_frame_get_operand(frame) : 0;
@@ -800,8 +783,10 @@ dispatch:
 
 
 
-
+        // Breaks out of the current frame.
         if (opcode == VM_STOP) break;
+
+        // Reserved code
         if (opcode == VM_RESERVED) {
             fatal_error(1, "VM: Reached reserved (0xFF) opcode. Halting.\n");       /* LCOV_EXCL_LINE */
         }
@@ -858,7 +843,7 @@ dispatch:
 
             // No operation
             case VM_NOP :
-                // Do nothing..
+                // Does nothing. Can be used for bytecode padding
                 goto dispatch;
                 break;
 
@@ -905,7 +890,7 @@ dispatch:
                     }
 
                     // Make sure we are not loading a non-static attribute from a static context
-                    if (ATTRIB_IS_METHOD(attrib_obj) && ! _check_attribute_for_static_call(self_obj, attrib_obj)) {
+                    if (ATTRIB_IS_METHOD(attrib_obj) && _check_attribute_for_static_call(self_obj, attrib_obj) != 0) {
                         object_release(self_obj);
 
                         thread_create_exception_printf((t_exception_object *)Object_CallableException, 1, "Cannot call dynamic method '%s' from class '%s'\n", attrib_obj->data.bound_name, self_obj->name);
@@ -915,7 +900,7 @@ dispatch:
                     }
 
                     // Check visibility of attribute
-                    if (! _check_attrib_visibility(self_obj, attrib_obj)) {
+                    if (_check_attrib_visibility(self_obj, attrib_obj) != 0) {
                         object_release(self_obj);
 
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to fetch attribute '%s'\n", name);
@@ -944,66 +929,65 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Store an attribute into an object
+            // Stores an attribute into an object
             case VM_STORE_ATTRIB :
                 {
+                    // Name of the attribute
                     t_object *name_obj = vm_frame_get_constant(frame, oparg1);
-
-                    t_object *search_obj = vm_frame_stack_pop(frame, 1);
+                    // Object to store attribute in
+                    t_object *target_obj = vm_frame_stack_pop(frame, 1);
+                    // Actual attribute
                     t_object *value_obj = vm_frame_stack_pop(frame, 1);
 
-#ifdef __DEBUG
-                    ht_debug(search_obj->attributes);
-#endif
+                    // Can't change immutable objects
+                    if (OBJECT_IS_IMMUTABLE(target_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_ImmutableException, 1, "Trying to modify immutable property on object '%s'\n", target_obj->name);
 
-                    if (OBJECT_IS_IMMUTABLE(search_obj)) {
-                        thread_create_exception_printf((t_exception_object *)Object_ImmutableException, 1, "Trying to modify immutable property on object '%s'\n", search_obj->name);
-
-                        object_release(search_obj);
+                        object_release(target_obj);
                         object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    char *property_name = DUP_OBJ2STR0(name_obj);
-                    t_attrib_object *attrib_obj = object_attrib_find(search_obj, property_name);
+                    // Check if we want to set an boolean to a boolean-attribute (ending on a '?')
+                    if (IS_BOOLEAN_ATTRIBUTE(OBJ2STR0(name_obj)) && ! OBJECT_IS_BOOLEAN(value_obj)) {
+                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot set non-boolean value to property '%s'\n", OBJ2STR0(name_obj));
 
-                    if (IS_BOOLEAN_ATTRIBUTE(property_name) && ! OBJECT_IS_BOOLEAN(value_obj)) {
-                        thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Cannot set non-boolean value to property '%s'\n", property_name);
-
-                        smm_free(property_name);
-
-                        object_release(search_obj);
+                        object_release(target_obj);
                         object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    smm_free(property_name);
+                    // Find actual attribute
+                    t_attrib_object *attrib_obj = object_attrib_find(target_obj, OBJ2STR0(name_obj));
 
+                    // Read only?
                     if (attrib_obj && ATTRIB_IS_READONLY(attrib_obj)) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Cannot write to readonly attribute '%s'\n", OBJ2STR0(name_obj));
 
-                        object_release(search_obj);
+                        object_release(target_obj);
                         object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
-                    if (attrib_obj && ! _check_attrib_visibility(search_obj, attrib_obj)) {
+
+                    // Incorrect visibility
+                    if (attrib_obj && _check_attrib_visibility(target_obj, attrib_obj) != 0) {
                         thread_create_exception_printf((t_exception_object *)Object_VisibilityException, 1, "Visibility does not allow to access attribute '%s'\n", DUP_OBJ2STR0(name_obj));
 
-                        object_release(search_obj);
+                        object_release(target_obj);
                         object_release(value_obj);
 
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
 
-                    // @TODO: Not everything is a property by default. Check value to make sure it's a property or a method
 
+                    // Actually set the attribute
                     if (attrib_obj) {
                         // Decrease reference of original value
                         if (attrib_obj->data.attribute) {
@@ -1015,44 +999,18 @@ dispatch:
                         object_inc_ref(value_obj);
 
                     } else {
-                        // if we don't have a attrib_obj, we just add a new attribute to the object (RW/PUBLIC)
-                        char *property_name = DUP_OBJ2STR0(name_obj);
-                        object_add_property(search_obj, property_name, ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value_obj);
-                        smm_free(property_name);
+                        // if the attribute does not exist yet, we just add a new attribute to the object (RW/PUBLIC)
+                        // @TODO: MEDIUM: Why ATTRIB_TYPE_PROPERTY, can't it be a ATTRIB_TYPE_METHOD ??
+                        object_add_property(target_obj, OBJ2STR0(name_obj), ATTRIB_TYPE_PROPERTY | ATTRIB_ACCESS_RW | ATTRIB_VISIBILITY_PUBLIC, value_obj);
                     }
 
                     object_release(value_obj);
-                    object_release(search_obj);
+                    object_release(target_obj);
                 }
                 goto dispatch;
                 break;
 
-
-//            // Load a global identifier
-//            case VM_LOAD_GLOBAL :
-//                dst = vm_frame_get_global_identifier(frame, oparg1);
-//                vm_frame_stack_push(frame, dst);
-//                goto dispatch;
-//                break;
-//
-//            // store SP+0 as a global identifier
-//            case VM_STORE_GLOBAL :
-//                // Refcount stays equal. So no inc/dec ref needed
-//                dst = vm_frame_stack_pop(frame, 1);
-//                name = vm_frame_get_name(frame, oparg1);
-//                vm_frame_set_global_identifier(frame, name, dst);
-//                goto dispatch;
-//                break;
-//
-//            // Remove global identifier
-//            case VM_DELETE_GLOBAL :
-//                dst = vm_frame_get_global_identifier(frame, oparg1);
-//                name = vm_frame_get_name(frame, oparg1);
-//                vm_frame_set_global_identifier(frame, name, NULL);
-//                goto dispatch;
-//                break;
-
-            // Load and push constant onto stack
+            // Load and push a constant onto the stack
             case VM_LOAD_CONST :
                 dst = vm_frame_get_constant(frame, oparg1);
                 vm_frame_stack_push(frame, dst);
@@ -1070,15 +1028,15 @@ dispatch:
                 goto dispatch;
                 break;
 
-            // Load and push identifier onto stack (either local or global)
+            // Load and push identifier onto stack
             case VM_LOAD_ID :
                 {
-                char *s = vm_frame_get_name(frame, oparg1);
+                char *name = vm_frame_get_name(frame, oparg1);
 
-                dst = vm_frame_find_identifier(frame, s);
+                dst = vm_frame_find_identifier(frame, name);
                 if (dst == NULL) {
                     reason = REASON_EXCEPTION;
-                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", s, dst);
+                    thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Identifier '%s' is not found", name);
                     goto block_end;
                 }
 
@@ -1092,7 +1050,10 @@ dispatch:
                 right_obj = obj2 = vm_frame_stack_pop(frame, 1);
                 left_obj = obj1 = vm_frame_stack_pop(frame, 1);
 
-                if (left_obj != NULL && left_obj->type != right_obj->type && ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)) {
+                if (left_obj != NULL &&
+                    left_obj->type != right_obj->type &&
+                    _vm_coerce(left_obj, right_obj, &obj1, &obj2) != 0
+                ) {
                     // Types are not equal.
                     reason = REASON_EXCEPTION;
 
@@ -1152,7 +1113,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
-                    dst = vm_object_call(dst, bool_method, 0);
+                    dst = call_saffire_method(dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_TRUE(dst)) {
@@ -1168,7 +1129,7 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
-                    dst = vm_object_call(dst, bool_method, 0);
+                    dst = call_saffire_method(dst, bool_method, 0);
                 }
 
                 if (IS_BOOLEAN_FALSE(dst)) {
@@ -1182,16 +1143,21 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
-                    dst = vm_object_call(dst, bool_method, 0);
+                    dst = call_saffire_method(dst, bool_method, 0);
                 }
 
-                // @TODO: We assume that this opcode has at least 1 block!
+                // Sanity check to see if we have at least one block
+                if (frame->block_cnt == 0) {
+                    fatal_error(1, "jumpingin without a block!");
+                }
+
                 if (IS_BOOLEAN_TRUE(dst) && frame->blocks[frame->block_cnt-1].visited == 0) {
                     frame->ip += oparg1;
                 }
 
-                // We have visited this frame
+                // We have visited this frame, so next time we won't do the jump
                 frame->blocks[frame->block_cnt-1].visited = 1;
+
                 goto dispatch;
                 break;
 
@@ -1200,16 +1166,20 @@ dispatch:
                 if (! OBJECT_IS_BOOLEAN(dst)) {
                     // Cast to boolean
                     t_attrib_object *bool_method = object_attrib_find(dst, "__boolean");
-                    dst = vm_object_call(dst, bool_method, 0);
+                    dst = call_saffire_method(dst, bool_method, 0);
                 }
 
-                // @TODO: We assume that this opcode has at least 1 block!
+                if (frame->block_cnt == 0) {
+                    fatal_error(1, "jumpingin without a block!");
+                }
+
                 if (IS_BOOLEAN_FALSE(dst) && frame->blocks[frame->block_cnt-1].visited == 0) {
                     frame->ip += oparg1;
                 }
 
-                // We have visited this frame
+                // We have visited this frame, so next time we won't do the jump
                 frame->blocks[frame->block_cnt-1].visited = 1;
+
                 goto dispatch;
                 break;
 
@@ -1328,24 +1298,20 @@ dispatch:
                 {
                     // Fetch alias
                     t_object *alias_obj = vm_frame_stack_pop(frame, 1);
-                    char *alias_name = DUP_OBJ2STR0(alias_obj);
-                    object_release(alias_obj);
-
                     // Fetch the module to import
                     t_object *module_obj = vm_frame_stack_pop(frame, 1);
-                    char *module_name = DUP_OBJ2STR0(module_obj);
-                    object_release(module_obj);
 
                     // Create FQCN from module name (if needed)
-                    char *fqcn_module = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), module_name);
-                    char *fqcn_alias = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), alias_name);
+                    char *fqcn_module = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), OBJ2STR0(module_obj));
+                    char *fqcn_alias = vm_context_create_fqcn_from_context(vm_frame_get_context(frame), OBJ2STR0(alias_obj));
 
                     vm_frame_set_alias_identifier(frame, fqcn_alias, fqcn_module);
 
+                    object_release(alias_obj);
+                    object_release(module_obj);
+
                     smm_free(fqcn_module);
                     smm_free(fqcn_alias);
-                    smm_free(alias_name);
-                    smm_free(module_name);
                 }
                 goto dispatch;
                 break;
@@ -1392,11 +1358,9 @@ dispatch:
                 left_obj = obj1 = vm_frame_stack_pop(frame, 1);
                 right_obj = obj2 = vm_frame_stack_pop(frame, 1);
 
-                // @TODO: EQ and NE can be checked here as well. Or could we "override" them anyway? Store them inside
-                // the base class!
-
+                // Regular expression matches are handled separately.
                 if (oparg1 == COMPARISON_RE || oparg1 == COMPARISON_NRE) {
-
+                    // Right hand item must be a regex
                     if (! OBJECT_IS_REGEX(right_obj)) {
 
                         object_release(left_obj);
@@ -1407,6 +1371,7 @@ dispatch:
                         goto block_end;
                     }
 
+                    // Left hand item must be a string
                     if (! OBJECT_IS_STRING(left_obj)) {
 
                         object_release(left_obj);
@@ -1417,7 +1382,7 @@ dispatch:
                         goto block_end;
                     }
 
-
+                    // Do actual matching
                     t_object *ret_obj = _do_regex_match((t_regex_object *)right_obj, (t_string_object *)left_obj);
                     if (! ret_obj) {
                         object_release(left_obj);
@@ -1461,8 +1426,8 @@ dispatch:
 
                 DEBUG_PRINT_CHAR("Compare '%s (%d)' against '%s (%d)'\n", left_obj->name, left_obj->type, right_obj->name, right_obj->type);
 
-                // Compare types do not match
-                if (left_obj->type != right_obj->type && ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)) {
+                // Types do not match, coerce them first
+                if (left_obj->type != right_obj->type && _vm_coerce(left_obj, right_obj, &obj1, &obj2) != 0) {
                     // Types are not equal.
                     reason = REASON_EXCEPTION;
 
@@ -1485,7 +1450,7 @@ dispatch:
                 if (left_obj != NULL &&
                     left_obj->type != right_obj->type &&
                     !(OBJECT_IS_NULL(left_obj) || OBJECT_IS_NULL(right_obj)) &&
-                    ! _vm_coerce(left_obj, right_obj, &obj1, &obj2)
+                    _vm_coerce(left_obj, right_obj, &obj1, &obj2) != 0
                    ) {
                     // Types are not equal.
                     reason = REASON_EXCEPTION;
@@ -1604,20 +1569,20 @@ dispatch:
             case VM_BUILD_INTERFACE :
             case VM_BUILD_CLASS :
                 {
-                    // pop class flags (abstract,
+                    // pop class flags
                     // @TODO: Do we need to mask certain flags, as they should not be set directly through opcodes?
                     obj1 = vm_frame_stack_pop(frame, 1);
-                    int flags = OBJ2NUM(obj1);
+                    long flags = OBJ2NUM(obj1);
                     object_release(obj1);
 
-                    // Depending on the opcode, we are building a class or an interface
+                    // Depending on the opcode, we are building either a class or an interface
                     if (opcode == VM_BUILD_CLASS) {
                         flags |= OBJECT_TYPE_CLASS;
                     } else {
                         flags |= OBJECT_TYPE_INTERFACE;
                     }
 
-                    // As we are generated from opcodes, it's a userland object
+                    // As we are generated from opcodes, its always a user land object
                     flags |= OBJECT_TYPE_USERLAND;
 
 
@@ -1634,9 +1599,7 @@ dispatch:
                         DEBUG_PRINT_STRING_ARGS("Implementing interface: %s\n", object_debug(interface_name_obj));
 
                         // Check if the interface actually exists
-                        s = DUP_OBJ2STR0(interface_name_obj);
-                        t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), s);
-                        smm_free(s);
+                        t_object *interface_obj = vm_frame_find_identifier(thread_get_current_frame(), OBJ2STR0(interface_name_obj));
 
                         if (! interface_obj) {
                             dll_free(interfaces);
@@ -1660,6 +1623,9 @@ dispatch:
                     // pop parent code object (as string)
                     t_object *parent_class = vm_frame_stack_pop(frame, 1);
                     if (OBJECT_IS_NULL(parent_class)) {
+                        // When our parent class is NULL, we assume the base parent class must be used
+                        // Note that this means that we cannot extend the NULL class (which is ok).
+                        // This is because the stack can only take objects, not a NULL value (0x0) itself.
                         object_release(parent_class);
                         parent_class = Object_Base;
                     } else {
@@ -1667,7 +1633,6 @@ dispatch:
                         object_release(parent_class);
                         parent_class = vm_frame_find_identifier(frame, s);
 
-                        // Find the object of this string
                         if (parent_class == NULL) {
                             reason = REASON_EXCEPTION;
                             thread_create_exception_printf((t_exception_object *)Object_AttributeException, 1, "Class '%s' not found", s);
@@ -1724,6 +1689,9 @@ dispatch:
                 break;
 
             case VM_STORE_FRAME_ID :
+                // @TODO: Why is this different from VM_STORE_ID (except fqcn)
+
+                // Store SP-0 as name[oparg1] in the current frame
                 obj1 = vm_frame_stack_pop(frame, 1);
 
                 s = vm_frame_get_name(frame, oparg1);
@@ -1733,10 +1701,6 @@ dispatch:
                 vm_frame_set_local_identifier(frame, fqcn, (t_object *)obj1);
                 smm_free(fqcn);
 
-
-                // Register in the frame for cleanup and gc protection
-                // vm_frame_register_userobject(frame, (t_object *)new_obj);
-
                 object_release(obj1);
 
                 goto dispatch;
@@ -1745,7 +1709,7 @@ dispatch:
 
             // Return / end the current frame
             case VM_RETURN :
-                // Pop "ret" from the stack
+                // Pop "ret" object from the stack
                 ret = vm_frame_stack_pop(frame, 1);
 
                 // We will be using the object in 'block_end'
@@ -1755,7 +1719,10 @@ dispatch:
                 object_release(ret);
 
                 // Check if we just entered a boolean method (ending on '?')
-                if (frame->trace_method != NULL && IS_BOOLEAN_ATTRIBUTE(frame->trace_method) && ! OBJECT_IS_BOOLEAN(ret)) {
+                if (frame->trace_method != NULL &&
+                    IS_BOOLEAN_ATTRIBUTE(frame->trace_method) &&
+                    ! OBJECT_IS_BOOLEAN(ret)
+                ) {
                     reason = REASON_EXCEPTION;
                     thread_create_exception_printf((t_exception_object *)Object_TypeException, 1, "Method '%s.%s' must return a boolean", frame->trace_class, frame->trace_method);
 
@@ -1771,43 +1738,42 @@ dispatch:
             case VM_SETUP_EXCEPT :
                 vm_push_block_exception(frame, BLOCK_TYPE_EXCEPTION, frame->sp, frame->ip + oparg1, frame->ip + oparg2, frame->ip + oparg3);
 
-                t_object *obj = object_alloc_instance(Object_Numerical, 1, REASON_FINALLY);
-                vm_frame_stack_push(frame, obj);
-                object_inc_ref(obj);
+                obj1 = object_alloc_instance(Object_Numerical, 1, REASON_FINALLY);
+                vm_frame_stack_push(frame, obj1);
+                object_inc_ref(obj1);
 
                 goto dispatch;
                 break;
 
             // Setup an exception try/catch block with finally clause
             case VM_END_FINALLY :
+                // Pop "return" object
                 ret = vm_frame_stack_pop(frame, 1);
 
+                // Numerical object, it's the actual reason for returning
                 if (OBJECT_IS_NUMERICAL(ret)) {
                     reason = OBJ2NUM(ret);
                     object_release(ret);
 
+                    // return and continue have their additional return values also on the stack
                     if (reason == REASON_RETURN || reason == REASON_CONTINUE) {
                         ret = vm_frame_stack_pop(frame, 1);
                     }
                     goto block_end;
                     break;
                 } else if (OBJECT_IS_EXCEPTION(ret)) {
+                    // Exception object found. It means we need to reraise this execption
                     object_release(ret);
 
                     reason = REASON_RERAISE;
                     ret = NULL;
                     goto block_end;
                     break;
-
-                } else {
-                    object_release(ret);
-
-                    // This should not happen (orly?)
-                    thread_create_exception((t_exception_object *)Object_SystemException, 1, "Unknown value on the stack during finally cleanup (probably a saffire-bug)");
-                    reason = REASON_EXCEPTION;
-                    goto block_end;
-                    break;
                 }
+
+                // This should not happen (orly?)
+                fatal_error(1, "Unknown value on the stack during finally");
+                break;
 
             // Throw an exception
             case VM_THROW :
@@ -1839,18 +1805,18 @@ dispatch:
             case VM_PACK_TUPLE :
                 {
                     // Create an empty tuple
-                    t_tuple_object *obj = (t_tuple_object *)object_alloc_instance(Object_Tuple, 0);
+                    t_tuple_object *tuple_obj = (t_tuple_object *)object_alloc_instance(Object_Tuple, 0);
 
                     // Add elements from the stack into the tuple, sort in reverse order!
                     for (int i=0; i!=oparg1; i++) {
                         t_object *val = vm_frame_stack_pop(frame, 1);
 
-                        ht_add_num(obj->data.ht, oparg1 - i - 1, val);
+                        ht_add_num(tuple_obj->data.ht, oparg1 - i - 1, val);
                     }
 
                     // Push tuple on the stack
-                    vm_frame_stack_push(frame, (t_object *)obj);
-                    object_inc_ref((t_object *)obj);
+                    vm_frame_stack_push(frame, (t_object *)tuple_obj);
+                    object_inc_ref((t_object *)tuple_obj);
                 }
 
                 goto dispatch;
@@ -1860,11 +1826,11 @@ dispatch:
             case VM_UNPACK_TUPLE :
                 {
                     // Check if we are are unpacking a tuple
-                    t_tuple_object *obj = (t_tuple_object *)vm_frame_stack_pop(frame, 1);
+                    t_tuple_object *tuple_obj = (t_tuple_object *)vm_frame_stack_pop(frame, 1);
 
-                    if (! OBJECT_IS_TUPLE(obj)) {
+                    if (! OBJECT_IS_TUPLE(tuple_obj)) {
                         // Not a tuple, but it's ok: "pad" with NULLs and use the object itself
-                        vm_frame_stack_push(frame, (t_object *)obj);
+                        vm_frame_stack_push(frame, (t_object *)tuple_obj);
 
                         for (int i=0; i < oparg1-1; i++) {
                             vm_frame_stack_push(frame, Object_Null);
@@ -1874,20 +1840,20 @@ dispatch:
                     } else {
 
                         // Push the tuple vars. Make sure we start from the correct position
-                        int offset = oparg1 < obj->data.ht->element_count ? oparg1 : obj->data.ht->element_count;
+                        int offset = oparg1 < tuple_obj->data.ht->element_count ? oparg1 : tuple_obj->data.ht->element_count;
                         for (int i=0; i < offset; i++) {
-                            t_object *val = ht_find_num(obj->data.ht, i);
+                            t_object *val = ht_find_num(tuple_obj->data.ht, i);
                             vm_frame_stack_push(frame, val);
                             object_inc_ref(val);
                         }
 
                         // If we haven't got enough elements in our tuple, pad the result with NULLs first
-                        while (oparg1-- > obj->data.ht->element_count) {
+                        while (oparg1-- > tuple_obj->data.ht->element_count) {
                             vm_frame_stack_push(frame, Object_Null);
                             object_inc_ref(Object_Null);
                         }
 
-                        object_release((t_object *)obj);
+                        object_release((t_object *)tuple_obj);
                     }
                 }
 
@@ -1910,21 +1876,21 @@ dispatch:
 
                     // Fetch the actual iterator and push it to the stack
                     attr_obj = object_attrib_find(obj1, "__iterator");
-                    obj3 = vm_object_call(obj1, attr_obj, 0);
+                    obj3 = call_saffire_method(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
                     object_inc_ref(obj3);
 
                     // Call rewind
                     attr_obj = object_attrib_find(obj3, "__rewind");
-                    vm_object_call(obj3, attr_obj, 0);
+                    call_saffire_method(obj3, attr_obj, 0);
 
                     object_release(obj1);
 
 
                     attr_obj = object_attrib_find(obj3, "__length");
-                    obj1 = vm_object_call(obj3, attr_obj, 0);
+                    obj1 = call_saffire_method(obj3, attr_obj, 0);
                     if (! OBJECT_IS_NUMERICAL(obj1)) {
-                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "__lenght() must return a numerical value");
+                        thread_create_exception((t_exception_object *)Object_TypeException, 1, "__length() must return a numerical value");
                         reason = REASON_EXCEPTION;
                         goto block_end;
                     }
@@ -1970,27 +1936,27 @@ dispatch:
                     }
                     // Always push value
                     attr_obj = object_attrib_find(obj1, "__value");
-                    obj3 = vm_object_call(obj1, attr_obj, 0);
+                    obj3 = call_saffire_method(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
                     object_inc_ref(obj3);
 
                     if (oparg1 >= 2) {
                         // Push value of key
                         attr_obj = object_attrib_find(obj1, "__key");
-                        obj3 = vm_object_call(obj1, attr_obj, 0);
+                        obj3 = call_saffire_method(obj1, attr_obj, 0);
                         vm_frame_stack_push(frame, obj3);
                         object_inc_ref(obj3);
                     }
 
                     // Push value of hasNext
                     attr_obj = object_attrib_find(obj1, "__hasNext");
-                    obj3 = vm_object_call(obj1, attr_obj, 0);
+                    obj3 = call_saffire_method(obj1, attr_obj, 0);
                     vm_frame_stack_push(frame, obj3);
                     object_inc_ref(obj3);
 
                     if (IS_BOOLEAN_TRUE(obj3)) {
                         attr_obj = object_attrib_find(obj1, "__next");
-                        obj3 = vm_object_call(obj1, attr_obj, 0);
+                        obj3 = call_saffire_method(obj1, attr_obj, 0);
                     }
 
                     object_release(obj1);
@@ -2058,8 +2024,8 @@ dispatch:
 
                     switch (oparg1) {
                         case 0 :
-                            object_release(obj1);
                             // foo[]
+                            object_release(obj1);
                             thread_create_exception((t_exception_object *)Object_InterfaceException, 1, "not supporting [] yet");
                             reason = REASON_EXCEPTION;
                             goto block_end;
@@ -2070,7 +2036,7 @@ dispatch:
                             obj2 = vm_frame_stack_pop(frame, 1);       // first key
 
                             attr_obj = object_attrib_find(obj1, "__get");
-                            ret_obj = vm_object_call(obj1, attr_obj, 1, obj2);
+                            ret_obj = call_saffire_method(obj1, attr_obj, 1, obj2);
 
                             object_release(obj2);
                             break;
@@ -2090,7 +2056,7 @@ dispatch:
                                 reason = REASON_EXCEPTION;
                                 goto block_end;
                             }
-                            ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
+                            ret_obj = call_saffire_method(obj1, attr_obj, 2, obj2, obj3);
 
                             object_release(obj2);
                             object_release(obj3);
@@ -2117,7 +2083,7 @@ dispatch:
                 obj3 = vm_frame_stack_pop(frame, 1);       // val
 
                 attr_obj = object_attrib_find(obj1, "__set");
-                t_object *ret_obj = vm_object_call(obj1, attr_obj, 2, obj2, obj3);
+                t_object *ret_obj = call_saffire_method(obj1, attr_obj, 2, obj2, obj3);
                 if (! ret_obj) {
                     reason = REASON_EXCEPTION;
                     goto block_end;
@@ -2133,7 +2099,7 @@ dispatch:
 
 
             default:
-                fatal_error(1, "unknown vm opcode!");
+                fatal_error(1, "unknown opcode encountered: %0X\n", opcode);
                 break;
 
 
@@ -2177,25 +2143,22 @@ block_end:
 t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *ret) {
     // Peek block to see if there is any
     t_vm_frameblock *block = vm_peek_block(frame);
-//    DEBUG_PRINT_CHAR("init unwind_blocks: [curblocks %d] (%d)\n", frame->block_cnt, *reason);
+
+    // Sanity check. If we broke out the VM for an exception, but there wasn't an actual exception thrown
+    if (*reason == REASON_EXCEPTION && ! thread_exception_thrown()) {
+        thread_create_exception_printf((t_exception_object *)Object_SystemException, 1, "Unknown exception");
+    }
 
     // Unwind block as long as there is a reason to unwind
-        while (*reason != REASON_NONE && frame->block_cnt > 0) {
-//        DEBUG_PRINT_CHAR("  CUR block: %d\n", frame->block_cnt);
-//        DEBUG_PRINT_CHAR("  Current reason: %d\n", *reason);
-//        DEBUG_PRINT_CHAR("  Block Type: %d\n", block->type);
+    while (*reason != REASON_NONE && frame->block_cnt > 0) {
 
         // The next scenario's will change the instruction pointer (and maybe some other values), but they don't
         // change anything with the block-stack. For instance, when we continue a while-loop. This means we will only
         // peek at the current block, but not pop it.
         block = vm_peek_block(frame);
-        //DEBUG_PRINT_CHAR("Checking frameblock %d. CBT: %d\n", frame->block_cnt, block->type);
 
         // Case 1: Continue called inside a loop block
         if (*reason == REASON_CONTINUE && block->type == BLOCK_TYPE_LOOP) {
-//            DEBUG_PRINT_CHAR("CASE 1\n");
-//            DEBUG_PRINT_CHAR("\n*** Continuing loop at %08lX\n\n", OBJ2NUM(ret));
-
             // Continue to at the start of the block
             frame->ip = OBJ2NUM(ret);
             *reason = REASON_NONE;
@@ -2204,7 +2167,6 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
         // Case 2: Return called inside try (or catch) block, but not inside finally block
         if (*reason == REASON_RETURN && block->type == BLOCK_TYPE_EXCEPTION) {
-//            DEBUG_PRINT_CHAR("CASE 2: RETURN IN TRY, CATCH OR FINALLY\n");
             /* We push the return value and the reason (REASON_RETURN) onto the stack, since END_FINALLY will expect
              * this. We have no real way to know if a try block has a return statement inside, so SETUP_EXCEPT will
              * push a REASON_NONE and a dummy retval onto the stack as well. END_EXCEPTION will catch this because
@@ -2238,7 +2200,6 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
             } else if (frame->ip <= block->handlers.exception.ip_end_finally) {
                 DEBUG_PRINT_CHAR("RETTING out from FINALLY\n");
                 frame->ip = block->handlers.exception.ip_end_finally;
-
                 *reason = REASON_FINALLY;
             } else {
                 DEBUG_PRINT_CHAR("Not retting in anything\n");
@@ -2328,16 +2289,14 @@ t_vm_frameblock *unwind_blocks(t_vm_stackframe *frame, long *reason, t_object *r
 
     // It might be possible that we unwind every block and still have a a reason different than REASON_NONE. This will
     // be handled by the parent frame.
-
-    DEBUG_PRINT_CHAR("fini unwind_blocks: [block_cnt: %d] %d\n", frame->block_cnt, *reason);
     return block;
 }
 
 /**
-* The same as a normal execute, but don't handle exceptions
-* @param frame
-* @return
-*/
+ * The same as a normal execute, but don't handle exceptions
+ * @param frame
+ * @return
+ */
 t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result) {
     // Execute the frame
     DEBUG_PRINT_CHAR("\n       ============================ VM import execution start (%s)============================\n", codeblock->context->module.full);
@@ -2366,27 +2325,13 @@ t_vm_stackframe *vm_execute_import(t_vm_codeblock *codeblock, t_object **result)
 /**
  *
  */
-void _vm_load_implicit_builtins(t_vm_stackframe *frame) {
-    // Implicit load the saffire module, without any debugging
-    int runmode = vm_runmode;
-    vm_runmode &= ~VM_RUNMODE_DEBUG;
-
-    //  Import mandatory saffire object (make '\saffire\saffire' known as "saffire" in the current namespace)
-    vm_frame_set_alias_identifier(frame, "\\saffire", "\\saffire\\saffire");
-
-    // Back to normal runmode again
-    vm_runmode = runmode;
-}
-
-/**
- *
- */
 int vm_execute(t_vm_stackframe *frame) {
     int ret_val = 0;
 
     thread_set_current_frame(frame);
 
-    _vm_load_implicit_builtins(frame);
+    // Always implicitly add "saffire" import.
+    vm_frame_set_alias_identifier(frame, "\\saffire", "\\saffire\\saffire");
 
     // Execute the frame
     t_object *result = _vm_execute(frame);
@@ -2427,7 +2372,7 @@ int vm_execute(t_vm_stackframe *frame) {
                 fatal_error(1, "The saffire.uncaughtExceptionHandler() method was not found");
             }
             // We assume that finding our exception handler always work
-            result = vm_object_call(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
+            result = call_saffire_method(saffire_obj, exceptionhandler_obj, 1, thread_get_exception());
             if (result == NULL) {
                 result = object_alloc_instance(Object_Numerical, 1, 0);
             }
@@ -2445,7 +2390,7 @@ int vm_execute(t_vm_stackframe *frame) {
         // Convert returned object to numerical, so we can use it as an error code
         t_attrib_object *result_numerical = object_attrib_find(result, "__numerical");
         if (result_numerical) {
-            t_object *result2 = vm_object_call(result, result_numerical, 0);
+            t_object *result2 = call_saffire_method(result, result_numerical, 0);
             object_release(result);
             ret_val = ((t_numerical_object *) result2)->data.value;
             object_release(result2);
@@ -2475,25 +2420,33 @@ void vm_populate_builtins(const char *name, t_object *obj) {
 }
 
 /**
- * Calls a method from specified object. Returns NULL when method is not found.
+ * Calls a user land saffire method from given object (class or instance). Returns NULL on errors, with
+ * the assumption an exception is thrown.
  */
-t_object *vm_object_call(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...) {
+t_object *call_saffire_method(t_object *self, t_attrib_object *attrib_obj, int arg_count, ...) {
     if (! self || ! attrib_obj) return NULL;
 
-    // Create DLL with all arguments
-    va_list args;
-    va_start(args, arg_count);
-    t_dll *arg_list = dll_init();
-    for (int i=0; i!=arg_count; i++) {
-        t_object *obj = va_arg(args, t_object *);
-        dll_append(arg_list, obj);
+    t_dll *arg_list = NULL;
+
+    if (arg_count > 0) {
+        // Create DLL with all arguments
+        va_list args;
+        va_start(args, arg_count);
+        arg_list = dll_init();
+        for (int i=0; i!=arg_count; i++) {
+            dll_append(arg_list, va_arg(args, t_object *));
+        }
+        va_end(args);
     }
-    va_end(args);
 
     t_object *ret_obj = _object_call_attrib_with_args(self, attrib_obj, arg_list);
 
+    // @TODO: HIGH: should we check for exception. and if not found, throw a generic one?
+
     // Free dll
-    dll_free(arg_list);
+    if (arg_list) {
+        dll_free(arg_list);
+    }
 
     return ret_obj;
 }
