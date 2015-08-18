@@ -63,105 +63,105 @@ SAFFIRE_METHOD(boolean, conv_string) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(boolean, add) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value + other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value + other >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sub) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value - other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value - other >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, mul) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value * other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value * other >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, div) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    if (! other->data.value) RETURN_FALSE;
+    if (! other) RETURN_FALSE;
 
-    (self->data.value / other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value / other >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, mod) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value % other->data.value >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value % other >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, and) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    ((self->data.value & other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value & other) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, or) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    ((self->data.value | other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value | other) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, xor) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    ((self->data.value ^ other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value ^ other) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sl) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    ((self->data.value << other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value << other) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, sr) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    ((self->data.value >> other->data.value) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
+    ((self->data.value >> other) >= 1) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_OPERATOR_METHOD(boolean, not) {
@@ -178,63 +178,63 @@ SAFFIRE_OPERATOR_METHOD(boolean, inv) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(boolean, eq) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value == other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value == other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, ne) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value != other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value != other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, lt) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value < other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value < other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, gt) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value > other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value > other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, le) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value <= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value <= other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(boolean, ge) {
-    t_boolean_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value >= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value >= other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 

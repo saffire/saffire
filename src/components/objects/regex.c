@@ -147,7 +147,7 @@ SAFFIRE_METHOD(regex, regex) {
  * Saffire method: match a string against (compiled) regex
  */
 SAFFIRE_METHOD(regex, match) {
-    t_string_object *regex_str, *subject_str;
+    t_string *regex_str, *subject_str;
     int ovector[OVECCOUNT];
     int rc;
 
@@ -157,7 +157,7 @@ SAFFIRE_METHOD(regex, match) {
     }
 
     // Compile regex
-    if (_compile_regex(self, STROBJ2CHAR0(regex_str)) == -1) {
+    if (_compile_regex(self, STRING_CHAR0(regex_str)) == -1) {
         return NULL;
     }
 
@@ -165,8 +165,8 @@ SAFFIRE_METHOD(regex, match) {
     struct pcre_extra *extra = NULL;
     int start_offset = 0;
 
-    char *subject = STROBJ2CHAR0(subject_str);
-    long subject_len = STROBJ2CHAR0LEN(subject_str);
+    char *subject = STRING_CHAR0(subject_str);
+    long subject_len = STRING_LEN(subject_str);
 
     // Convert to utf8 and execute regex
     rc = pcre_exec(self->data.regex, extra, subject, subject_len, start_offset, options, ovector, OVECCOUNT);
@@ -189,7 +189,7 @@ SAFFIRE_METHOD(regex, match) {
 
     // Add numerical indices first
     for (int idx=0; idx < rc; idx++) {
-        char *c = subject_str->data.value->val;
+        char *c = STRING_CHAR0(subject_str);
         int len = ovector[2 * idx + 1] - ovector[2 * idx + 0];
 //        printf("%2d: '%.*s'\n", idx, len, (char *) c + ovector[2 * idx + 0]);
 
@@ -211,7 +211,7 @@ SAFFIRE_METHOD(regex, match) {
     char *ptr = name_table;
     for (int idx=0; idx < name_cnt; idx++) {
         int n = (ptr[0] << 8) | ptr[1];
-        char *c = subject_str->data.value->val;
+        char *c = STRING_CHAR0(subject_str);
 
 //        printf("Entry %d: %*s: %.*s\n", n, name_size - 3, (char *)(ptr + 2), ovector[2 * n + 1] - ovector[2 * n], c + ovector[2 * n]);
 
@@ -322,7 +322,7 @@ static void obj_populate(t_object *obj, t_dll *arg_list) {
         // 1 element: it's already a string
         t_dll_element *e = DLL_HEAD(arg_list);
         t_string *s = DLL_DATA_PTR(e);
-        regex = s->val;
+        regex = STRING_CHAR0(s);
     } else {
         // 2 (or more) elements: it's a size + char0 string
 

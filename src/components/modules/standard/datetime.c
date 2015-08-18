@@ -53,10 +53,9 @@ SAFFIRE_MODULE_METHOD(datetime, now) {
 SAFFIRE_MODULE_METHOD(datetime, format) {
     size_t buf_len = 256;
     int ret_len;
+    t_string *format;
 
-    t_string_object *format_obj;
-
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &format_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &format) != 0) {
         return NULL;
     }
 
@@ -65,7 +64,7 @@ SAFFIRE_MODULE_METHOD(datetime, format) {
     struct tm tm = *localtime(&datetime_obj->data.time);
 
     char *buf = smm_malloc(buf_len);
-    while ((ret_len = strftime(buf, buf_len, STROBJ2CHAR0(format_obj), &tm)) == buf_len || ret_len == 0) {
+    while ((ret_len = strftime(buf, buf_len, STRING_CHAR0(format), &tm)) == buf_len || ret_len == 0) {
         // Increase buffer and redo strftime again
         buf_len *= 2;
         buf = smm_realloc(buf, buf_len);

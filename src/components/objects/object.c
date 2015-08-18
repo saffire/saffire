@@ -482,26 +482,25 @@ void object_fini() {
  *   b    a boolean object
  *   o    any object
  *   |    optional arguments after this
+ *   +    previous value may also be nullable (does not make sense with 'N')
  *
  * so:
  *
  *   'ss' must have two string objects as arguments
  *   'so' must have one string, and one generic object (could be a string too)
  *   'ss|n'  must have two strings and optionally a numerical object
+ *   'n+|n'  must have a numerical (or a NULL), and optionally a numerical (but not a NULL)
  *
  * Will return 0 on ok, -1 on error
  */
-int object_parse_arguments(t_dll *dll, const char *spec, ...) {
-    const char *ptr = spec;
+static int _object_parse_arguments(t_dll *arguments, int convert_objects, const char *speclist, va_list dst_vars) {
+    const char *ptr = speclist;
     int optional_argument = 0;
-    va_list storage_list;
     t_objectype_enum type;
     int result = -1;
 
-    va_start(storage_list, spec);
-
     // Point to first element
-    t_dll_element *e = DLL_HEAD(dll);
+    t_dll_element *e = DLL_HEAD(arguments);
 
     // First, check if the number of elements equals (or is more) than the number of mandatory objects in the spec
     int cnt = 0;
@@ -510,15 +509,16 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
         cnt++;
         ptr++;
     }
-    if (dll->size < cnt) {
-        object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
+    if (arguments->size < cnt) {
+        object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, arguments->size);
         result = -1;
         goto done;
     }
 
     // We know have have enough elements. Iterate the spec
-    ptr = spec;
+    ptr = speclist;
     while (*ptr) {
+        int nullable = 0;
         char c = *ptr; // Save current spec character
         ptr++;
         switch (c) {
@@ -551,8 +551,14 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
                 break;
         }
 
+        // Check if the next value is a +, if so, we also accept nullable
+        if (*ptr == '+') {
+            nullable = 1;
+            ptr++;
+        }
+
         // Fetch the next object from the list. We must assume the user has added enough room
-        t_object **storage_obj = va_arg(storage_list, t_object **);
+        t_object **storage_obj = va_arg(dst_vars, t_object **);
         if (optional_argument == 0 && (!e || ! DLL_DATA_PTR(e))) {
             object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
             result = -1;
@@ -560,14 +566,58 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
         }
 
         t_object *argument_obj = e ? DLL_DATA_PTR(e) : NULL;
-        if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
-            object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
+        if (argument_obj &&
+            type != objectTypeAny &&
+            (type != argument_obj->type || (type != objectTypeNull && nullable == 1))
+        ) {
+            object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s%s, but got a %s", objectTypeNames[type], (nullable?" or a NULL":""), objectTypeNames[argument_obj->type]);
             result = -1;
             goto done;
         }
 
-        // Copy this object to here
-        *storage_obj = argument_obj;
+
+        /*
+         * Could be done better...
+         */
+
+        if (convert_objects == 0) {
+            // Don't convert objects, return as-is
+            *storage_obj = argument_obj;
+        } else {
+            // Convert objects if possible
+            if (type == objectTypeNumerical) {
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // Instead of null-object, return int 0
+                    *storage_obj = 0;
+                } else {
+                    *storage_obj = (void *)((t_numerical_object *)argument_obj)->data.value;
+                }
+            } else if (type == objectTypeBoolean) {
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // Instead of null-object, return int 0
+                    *storage_obj = 0;
+                } else {
+                    *storage_obj = (void *)((t_boolean_object *)argument_obj)->data.value;
+                }
+            } else if (type == objectTypeString) {
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // return null object
+                    *storage_obj = argument_obj;
+                } else {
+                    *storage_obj = (void *)((t_string_object *)argument_obj)->data.value;
+                }
+            } else if (type == objectTypeRegex) {
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // return null object
+                    *storage_obj = argument_obj;
+                } else {
+                    *storage_obj = (void *)((t_regex_object *)argument_obj)->data.regex;
+                }
+            } else {
+                // Unknown type, so just return as-is
+                *storage_obj = argument_obj;
+            }
+        }
 
         // Goto next element
         e = e ? DLL_NEXT(e) : NULL;
@@ -578,8 +628,34 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
 
     // General cleanup
 done:
-    va_end(storage_list);
     return result;
+}
+
+
+/**
+ * Parses arguments, converts scalar objects like string and numericals to actual char *, and longs
+ */
+int object_parse_arguments(t_dll *arguments, const char *speclist, ...) {
+    va_list dst_vars;
+
+    va_start(dst_vars, speclist);
+    int ret = _object_parse_arguments(arguments, 1, speclist, dst_vars);
+    va_end(dst_vars);
+
+    return ret;
+}
+
+/**
+ * Parses arguments, but returns only objects
+ */
+int object_parse_argument_objects(t_dll *arguments, const char *speclist, ...) {
+    va_list dst_vars;
+
+    va_start(dst_vars, speclist);
+    int ret = _object_parse_arguments(arguments, 0, speclist, dst_vars);
+    va_end(dst_vars);
+
+    return ret;
 }
 
 
@@ -746,7 +822,7 @@ static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_
         DEBUG_PRINT_STRING_ARGS("        - typehint1: '%-20s (%d)'  value1: '%-20s' \n", OBJ2STR(arg1->typehint), object_debug(arg1->value));
         DEBUG_PRINT_STRING_ARGS("        - typehint2: '%-20s (%d)'  value2: '%-20s' \n", OBJ2STR(arg2->typehint), object_debug(arg2->value));
 
-        if (object_string_compare(arg1->typehint, arg2->typehint) != 0) {
+        if (string_strcmp(arg1->typehint->data.value, arg2->typehint->data.value) != 0) {
             return 0;
         }
 

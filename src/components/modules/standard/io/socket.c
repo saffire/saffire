@@ -46,19 +46,17 @@
  *
  */
 SAFFIRE_MODULE_METHOD(io_socket, ctor) {
-    t_numerical_object *family_obj;
-    t_numerical_object *sockettype_obj;
-    t_numerical_object *protocol_obj;
+    long family, socket_type, protocol;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nnn", &family_obj, &sockettype_obj, &protocol_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nnn", &family, &socket_type, &protocol) != 0) {
         return NULL;
     }
 
     // Setup values for the new object
     t_socket_object *socket_obj = (t_socket_object *)self;
 
-    socket_obj->data.socket = socket(OBJ2NUM(family_obj), OBJ2NUM(sockettype_obj), OBJ2NUM(protocol_obj));
-    socket_obj->data.socket_type = OBJ2NUM(family_obj);
+    socket_obj->data.socket = socket(family, socket_type, protocol);
+    socket_obj->data.socket_type = family;
 
     if (socket_obj->data.socket == -1) {
         object_raise_exception(Object_IoException, 1, "Cannot create socket: %s", strerror(errno));
@@ -78,11 +76,10 @@ SAFFIRE_MODULE_METHOD(io_socket, ctor) {
  *
  */
 SAFFIRE_MODULE_METHOD(io_socket, setOption) {
-    t_numerical_object *level_obj;
-    t_numerical_object *optname_obj;
+    long level, optname;
     t_object *optval_obj;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nno", &level_obj, &optname_obj, &optval_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nno", &level, &optname, &optval_obj) != 0) {
         return NULL;
     }
 
@@ -97,7 +94,7 @@ SAFFIRE_MODULE_METHOD(io_socket, setOption) {
     long optval = OBJ2NUM((t_numerical_object *)optval_obj);
     long optval_len = sizeof(optval);
 
-    int res = setsockopt(socket_obj->data.socket, OBJ2NUM(level_obj), OBJ2NUM(optname_obj), (void *)&optval, optval_len);
+    int res = setsockopt(socket_obj->data.socket, level, optname, (void *)&optval, optval_len);
     if (res == -1) {
         object_raise_exception(Object_IoException, 1, "Could not set socket option %s", strerror(errno));
         return NULL;
@@ -110,10 +107,9 @@ SAFFIRE_MODULE_METHOD(io_socket, setOption) {
  *
  */
 SAFFIRE_MODULE_METHOD(io_socket, getOption) {
-    t_numerical_object *level_obj;
-    t_numerical_object *optname_obj;
+    long level, optname;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &level_obj, &optname_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &level, &optname) != 0) {
         return NULL;
     }
 
@@ -122,7 +118,7 @@ SAFFIRE_MODULE_METHOD(io_socket, getOption) {
     long optval;
     socklen_t optval_len = sizeof(optval);
 
-    int res = getsockopt(socket_obj->data.socket, OBJ2NUM(level_obj), OBJ2NUM(optname_obj), (void *)&optval, &optval_len);
+    int res = getsockopt(socket_obj->data.socket, level, optname, (void *)&optval, &optval_len);
     if (res == -1) {
         object_raise_exception(Object_IoException, 1, "Could not get socket option: %s", strerror(errno));
         return NULL;
@@ -137,11 +133,11 @@ SAFFIRE_MODULE_METHOD(io_socket, getOption) {
  *
  */
 SAFFIRE_MODULE_METHOD(io_socket, bind) {
-    t_string_object *host_obj;
-    t_numerical_object *port_obj;
+    t_string *host;
+    long port;
     struct sockaddr_in sa;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "sn", &host_obj, &port_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "sn", &host, &port) != 0) {
         return NULL;
     }
 
@@ -154,9 +150,9 @@ SAFFIRE_MODULE_METHOD(io_socket, bind) {
 
     // Set values
     sa.sin_family = AF_INET;
-    sa.sin_port = htons(OBJ2NUM(port_obj));
+    sa.sin_port = htons(port);
     // @TODO: We only support IP addresses. Make sure we could convert hostnames through gethostbyname()
-    inet_pton(AF_INET, STROBJ2CHAR0(host_obj), &(sa.sin_addr));
+    inet_pton(AF_INET, STRING_CHAR0(host), &(sa.sin_addr));
 
     // Bind socket
     int res = bind(socket_obj->data.socket, (struct sockaddr *)&sa, sizeof(sa));
@@ -178,15 +174,15 @@ SAFFIRE_MODULE_METHOD(io_socket, bind) {
  *
  */
 SAFFIRE_MODULE_METHOD(io_socket, listen) {
-    t_numerical_object *backlog_obj;
+    long backlog;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &backlog_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &backlog) != 0) {
         return NULL;
     }
 
     t_socket_object *socket_obj = (t_socket_object *)self;
 
-    listen(socket_obj->data.socket, OBJ2NUM(backlog_obj));
+    listen(socket_obj->data.socket, backlog);
 
     RETURN_SELF;
 }
@@ -247,18 +243,17 @@ SAFFIRE_MODULE_METHOD(io_socket, close) {
 }
 
 SAFFIRE_MODULE_METHOD(io_socket, read) {
-    t_numerical_object *bytes_obj;
+    long bytes;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &bytes_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &bytes) != 0) {
         return NULL;
     }
 
-    int buflen = OBJ2NUM(bytes_obj);
-    char *buf = smm_malloc(buflen);
+    char *buf = smm_malloc(bytes);
 
     t_socket_object *socket_obj = (t_socket_object *)self;
 
-    int read_bytes = recv(socket_obj->data.socket, buf, buflen, 0);
+    int read_bytes = recv(socket_obj->data.socket, buf, bytes, 0);
     t_string_object *obj = (t_string_object *)object_alloc_instance(Object_String, 2, read_bytes, buf);
     smm_free(buf);
 
@@ -266,15 +261,15 @@ SAFFIRE_MODULE_METHOD(io_socket, read) {
 }
 
 SAFFIRE_MODULE_METHOD(io_socket, write) {
-    t_string_object *str_obj;
+    t_string *str;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str) != 0) {
         return NULL;
     }
 
     t_socket_object *socket_obj = (t_socket_object *)self;
 
-    int written_bytes = send(socket_obj->data.socket, STROBJ2CHAR0(str_obj), STROBJ2CHAR0LEN(str_obj), 0);
+    int written_bytes = send(socket_obj->data.socket, STRING_CHAR0(str), STRING_LEN(str), 0);
 
     RETURN_NUMERICAL(written_bytes);
 }

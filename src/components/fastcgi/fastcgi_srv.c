@@ -76,8 +76,8 @@ static int _fcgi_output_char_helper(FILE *f, char c) {
     return FCGX_PutChar(c, fcgi_err);
 }
 static int _fcgi_output_string_helper(FILE *f, t_string *s) {
-    if (f == stdout) return FCGX_PutStr(s->val, s->len, fcgi_out);
-    return FCGX_PutStr(s->val, s->len, fcgi_err);
+    if (f == stdout) return FCGX_PutStr(STRING_CHAR0(s), STRING_LEN(s), fcgi_out);
+    return FCGX_PutStr(STRING_CHAR0(s), STRING_LEN(s), fcgi_err);
 }
 
 

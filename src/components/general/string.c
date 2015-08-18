@@ -51,12 +51,14 @@ t_string *char0_to_string(const char *s) {
  * Converts a binary safe string into a t_string
  */
 t_string *char_to_string(const char *s, size_t len) {
-    t_string *str = string_new();
 
-    str->val = (char *)smm_malloc((len+1) * sizeof(char));
-    memcpy(str->val, s, len);
-    *(str->val + len) = '\0';
-    str->len = len;
+    char *c = (char *)smm_malloc((len+1) * sizeof(char));
+    memcpy(c, s, len);
+    *(c + len) = '\0';
+
+    t_string *str = string_new();
+    STRING_CHAR0(str) = c;
+    STRING_LEN(str) = len;
 
     return str;
 }
@@ -68,7 +70,7 @@ t_string *char_to_string(const char *s, size_t len) {
  * Note that this function is not binary safe.
  */
 char *string_to_char0(const t_string *str) {
-    return string_strdup0(str->val);
+    return string_strdup0(STRING_CHAR0(str));
 }
 
 
@@ -78,8 +80,8 @@ char *string_to_char0(const t_string *str) {
 void string_free(t_string *s) {
     if (!s) return;
 
-    if (s->unicode) smm_free(s->unicode);
-    if (s->val) smm_free(s->val);
+    if (STRING_UNICODE(s)) smm_free(STRING_UNICODE(s));
+    if (STRING_CHAR0(s)) smm_free(STRING_CHAR0(s));
 
     smm_free(s);
     s = NULL;
@@ -91,9 +93,9 @@ void string_free(t_string *s) {
  */
 t_string *string_new(void) {
     t_string *str = (t_string *)smm_malloc(sizeof(t_string));
-    str->val = NULL;
-    str->len = 0;
-    str->unicode = NULL;
+    STRING_CHAR0(str) = NULL;
+    STRING_LEN(str) = 0;
+    STRING_UNICODE(str) = NULL;
     return str;
 }
 
@@ -118,9 +120,11 @@ t_string *string_strdup(const t_string *s) {
     // @TODO: HIGH: We should not add an additional zero, as duplicating a string many times result in many
     // additional 0-bytes!
 
-    str->val = (char *)smm_malloc(s->len+1);    // string will always be zero terminated
-    memcpy(str->val, s->val, s->len+1);
-    str->len = s->len;
+    char *c = (char *)smm_malloc(STRING_LEN(s) + 1);    // string will always be zero terminated
+    memcpy(c, STRING_CHAR0(s), STRING_LEN(s) + 1);
+
+    STRING_CHAR0(str) = c;
+    STRING_LEN(str) = STRING_LEN(s);
 
     return str;
 
@@ -141,17 +145,18 @@ t_string *string_strcat0(t_string *dst, const char *src) {
  */
 t_string *string_strcat(t_string *dst, const t_string *src) {
     // Reallocate memory and copy
-    dst->val = (char *)smm_realloc(dst->val, dst->len + src->len + 1);
-    memcpy(dst->val + dst->len, src->val, src->len);
+    char *c = (char *)smm_realloc(STRING_CHAR0(dst), STRING_LEN(dst) + STRING_LEN(src) + 1);
+    memcpy(c + STRING_LEN(dst), STRING_CHAR0(src), STRING_LEN(src));
 
     // Set terminating zero (always added!)
-    dst->val[dst->len + src->len] = '\0';
+    c[STRING_LEN(dst) + STRING_LEN(src)] = '\0';
 
-    dst->len += src->len;
+    STRING_LEN(dst) += STRING_LEN(src);
+    STRING_CHAR0(dst) = c;
 
-    if (dst->unicode) {
+    if (STRING_UNICODE(dst)) {
         // Unicode string has changed, so free if needed
-        smm_free(dst->unicode);
+        smm_free(STRING_UNICODE(dst));
     }
 
     return dst;
@@ -164,12 +169,12 @@ t_string *string_strcat(t_string *dst, const t_string *src) {
  * This function is not unicode-safe
  */
 int string_strpos(const t_string *haystack, const t_string *needle, size_t offset) {
-    if (offset > haystack->len) {
+    if (offset > STRING_LEN(haystack)) {
         return -1;
     }
 
-    char *str = haystack->val + offset;
-    char *p = strstr(str, needle->val);
+    char *str = STRING_CHAR0(haystack) + offset;
+    char *p = strstr(str, STRING_CHAR0(needle));
 
     return (str - p);
 }
@@ -180,13 +185,13 @@ int string_strpos(const t_string *haystack, const t_string *needle, size_t offse
  * This function is not unicode-safe
  */
 int string_strcmp(const t_string *s1, const t_string *s2) {
-    int res, len = s1->len;
-    if (len > s2->len) len = s2->len;
+    int res, len = STRING_LEN(s1);
+    if (len > STRING_LEN(s2)) len = STRING_LEN(s2);
 
-    res = memcmp(s1->val, s2->val, len);
+    res = memcmp(STRING_CHAR0(s1), STRING_CHAR0(s2), len);
     if (! res) return res;
 
-    return s1->len > s2->len ? 1 : -1;
+    return STRING_LEN(s1) > STRING_LEN(s2) ? 1 : -1;
 }
 
 
@@ -209,10 +214,14 @@ int string_strcmp0(const t_string *s1, const char *c_str) {
  */
 t_string *string_copy_partial(const t_string *src, size_t offset, size_t count) {
     t_string *dst = string_new();
-    dst->len = count;
-    dst->val = smm_malloc(count+1);
-    memcpy(dst->val, (char *)(src->val + offset), count);
-    dst->val[count] = '\0';
+
+    STRING_LEN(dst) = count;
+
+    char *c = smm_malloc(count+1);
+    memcpy(c, (char *)(STRING_CHAR0(src) + offset), count);
+    c[count] = '\0';
+
+    STRING_CHAR0(dst) = c;
 
     return dst;
 }

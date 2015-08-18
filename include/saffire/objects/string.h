@@ -72,6 +72,5 @@
 
 
     int object_string_hash_compare(t_string_object *s1, t_string_object *s2);
-    int object_string_compare(t_string_object *s1, t_string_object *s2);
 
 #endif

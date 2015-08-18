@@ -70,18 +70,14 @@ static void _seed_randomizer(unsigned long seed) {
  *
  */
 SAFFIRE_MODULE_METHOD(math, random) {
-    t_numerical_object *from_obj;
-    t_numerical_object *to_obj;
+    long from, to;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &from_obj, &to_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &from, &to) != 0) {
         return NULL;
     }
 
-    long from = OBJ2NUM(from_obj);
-    long to = OBJ2NUM(to_obj);
-
     if (from >= to) {
-        // Throw exception thatn to > from
+        // Throw exception that to > from
     }
 
     if (randomizer_initialized == 0) {
@@ -97,13 +93,12 @@ SAFFIRE_MODULE_METHOD(math, random) {
  *
  */
 SAFFIRE_MODULE_METHOD(math, seed) {
-    t_numerical_object *seed_obj;
+    long seed;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &seed_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &seed) != 0) {
         return NULL;
     }
 
-    long seed = OBJ2NUM(seed_obj);
     _seed_randomizer(seed);
 
     RETURN_SELF;

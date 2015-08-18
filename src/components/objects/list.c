@@ -101,17 +101,19 @@ SAFFIRE_METHOD(list, __hasNext) {
   * Saffire method: Returns object stored at "key" inside the list (or NULL when not found)
   */
 SAFFIRE_METHOD(list, get) {
-    t_numerical_object *key;
+    long key;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &key) != 0) {
         return NULL;
     }
 
-    t_object *obj = ht_find_num(self->data.ht, key->data.value);
+    t_object *obj = ht_find_num(self->data.ht, key);
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
 
+
+// @TODO: HIGH: Remove this (!)
 volatile int rdtscll() {
     int a,d;
     __asm__ __volatile__

@@ -40,6 +40,10 @@
         UChar           *unicode;       // Unicode string. May or may not be filled.
     };
 
+    #define STRING_CHAR0(str)       str->val
+    #define STRING_LEN(str)         str->len
+    #define STRING_UNICODE(str)     str->unicode
+
     t_string *char0_to_string(const char *s);
     t_string *char_to_string(const char *s, size_t len);
     char *string_to_char0(const t_string *s);

@@ -50,10 +50,10 @@ UConverter *converter;
  * Free unicode string if available
  */
 void utf8_free_unicode(t_string *str) {
-    if (! str->unicode) return;
+    if (! STRING_UNICODE(str)) return;
 
-    smm_free(str->unicode);
-    str->unicode = NULL;
+    smm_free(STRING_UNICODE(str));
+    STRING_UNICODE(str) = NULL;
 }
 
 
@@ -62,11 +62,11 @@ void utf8_free_unicode(t_string *str) {
  */
 void create_utf8_from_string(t_string *str) {
     // unicode string already created
-    if (str->unicode) return;
+    if (STRING_UNICODE(str)) return;
 
     // Create unicode from string, and store this in string
-    str->unicode = (UChar *)smm_malloc(sizeof(UChar) * (str->len + 1));
-    u_uastrncpy(str->unicode, str->val, str->len);
+    STRING_UNICODE(str) = (UChar *)smm_malloc(sizeof(UChar) * (STRING_LEN(str) + 1));
+    u_uastrncpy(STRING_UNICODE(str), STRING_CHAR0(str), STRING_LEN(str));
 }
 
 
@@ -81,8 +81,8 @@ static t_string *utf8_to_string(const UChar *str, size_t len) {
     // Create string from char, and we can also cache the unicode
     t_string *dst = char_to_string(c_str, len);
 
-    dst->unicode = (UChar *)smm_malloc(sizeof(UChar) * (len + 1));
-    u_memcpy(dst->unicode, str, len);
+    STRING_UNICODE(dst) = (UChar *)smm_malloc(sizeof(UChar) * (len + 1));
+    u_memcpy(STRING_UNICODE(dst), str, len);
 
     return dst;
 }
@@ -112,11 +112,11 @@ static t_string *utf8_to_string(const UChar *str, size_t len) {
 // *
 // */
 //char *utf8_string_to_char(t_string *s, int *bytes_len) {
-//    char *bytes = (char *)smm_malloc(s->len);
-//    u_austrncpy(bytes, s->val, s->len);
+//    char *bytes = (char *)smm_malloc(STRING_LEN(s));
+//    u_austrncpy(bytes, STRING_CHAR0(s), STRING_LEN(s));
 //
 //    if (bytes_len != NULL) {
-//        *bytes_len = s->len;
+//        *bytes_len = STRING_LEN(s);
 //    }
 //
 //    return bytes;
@@ -128,57 +128,57 @@ static t_string *utf8_to_string(const UChar *str, size_t len) {
  * Note that offset is in chars, not in bytes
  */
 size_t utf8_strstr(const t_string *haystack, const t_string *needle, size_t offset) {
-    UChar *pos = u_strstr(haystack->unicode + offset, needle->unicode);
+    UChar *pos = u_strstr(STRING_UNICODE(haystack) + offset, STRING_UNICODE(needle));
 
     if (pos == NULL) return -1;
 
-    return (pos - (haystack->unicode + offset));
+    return (pos - (STRING_UNICODE(haystack) + offset));
 }
 
 /**
  * Compares s1 against s2. Returns 0 when equal, -1 when s1 if "larger" and 1 when s2 is "larger".
  */
 int utf8_strcmp(const t_string *s1, const t_string *s2) {
-    int res, len = s1->len;
-    if (len > s2->len) len = s2->len;
+    int res, len = STRING_LEN(s1);
+    if (len > STRING_LEN(s2)) len = STRING_LEN(s2);
 
-    res = u_memcmp(s1->unicode, s2->unicode, len);
+    res = u_memcmp(STRING_UNICODE(s1), STRING_UNICODE(s2), len);
     if (! res) return res;
-    return s1->len > s2->len ? 1 : -1;
+    return STRING_LEN(s1) > STRING_LEN(s2) ? 1 : -1;
 }
 
 //t_string *utf8_strdup(t_string *src) {
-//    t_string *s = utf8_string_new(src->len);
-//    u_memcpy(s->val, src->val, src->len);
+//    t_string *s = utf8_string_new(STRING_LEN(src));
+//    u_memcpy(STRING_CHAR0(s), STRING_CHAR0(src), STRING_LEN(src));
 //    return s;
 //}
 //
 //t_string *utf8_string_new(int len) {
 //    t_string *s = (t_string *)smm_malloc(sizeof(t_string));
-//    s->val = (UChar *)smm_malloc(len * sizeof(UChar));
-//    s->len = len;
+//    STRING_CHAR0(s) = (UChar *)smm_malloc(len * sizeof(UChar));
+//    STRING_LEN(s) = len;
 //    return s;
 //}
 
 //void utf8_string_free(t_string *s) {
 //    if (!s) return;
 //
-//    if (s->val) smm_free(s->val);
+//    if (STRING_CHAR0(s)) smm_free(STRING_CHAR0(s));
 //    smm_free(s);
 //}
 
 //void utf8_strcpy(t_string *dst, t_string *src) {
-//    u_strncpy(dst->val, src->val, src->len);
+//    u_strncpy(STRING_CHAR0(dst), STRING_CHAR0(src), STRING_LEN(src));
 //}
 //
 //void utf8_strcat(t_string *dst, t_string *src) {
-//    u_strncat(dst->val + dst->len, src->val, src->len);
+//    u_strncat(STRING_CHAR0(dst) + STRING_LEN(dst), STRING_CHAR0(src), STRING_LEN(src));
 //}
 
 //t_string *utf8_memcpy_offset(t_string *src, int offset, int count) {
 //    t_string *dst = utf8_string_new(count);
 //
-//    u_memcpy(dst->val, src->val + offset, count);
+//    u_memcpy(STRING_CHAR0(dst), STRING_CHAR0(src) + offset, count);
 //    return dst;
 //}
 
@@ -189,15 +189,15 @@ int utf8_strcmp(const t_string *s1, const t_string *s2) {
 t_string *utf8_toupper(const t_string *src, const char *locale) {
     UErrorCode status = U_ZERO_ERROR;
 
-    if (src->unicode == NULL) {
+    if (STRING_UNICODE(src) == NULL) {
         return NULL;
     }
 
     // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-    u_strToUpper(u_str, src->len+1, src->unicode, src->len, locale, &status);
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (STRING_LEN(src) + 1));
+    u_strToUpper(u_str, STRING_LEN(src)+1, STRING_UNICODE(src), STRING_LEN(src), locale, &status);
 
-    t_string *dst = utf8_to_string(u_str, src->len);
+    t_string *dst = utf8_to_string(u_str, STRING_LEN(src));
     return dst;
 }
 
@@ -208,15 +208,15 @@ t_string *utf8_toupper(const t_string *src, const char *locale) {
 t_string *utf8_tolower(const t_string *src, const char *locale) {
     UErrorCode status = U_ZERO_ERROR;
 
-    if (src->unicode == NULL) {
+    if (STRING_UNICODE(src) == NULL) {
         return NULL;
     }
 
     // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-    u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (STRING_LEN(src) + 1));
+    u_strToLower(u_str, STRING_LEN(src), STRING_UNICODE(src), STRING_LEN(src), locale, &status);
 
-    t_string *dst = utf8_to_string(u_str, src->len);
+    t_string *dst = utf8_to_string(u_str, STRING_LEN(src));
     return dst;
 }
 
@@ -226,17 +226,17 @@ t_string *utf8_tolower(const t_string *src, const char *locale) {
 t_string *utf8_ucfirst(const t_string *src, const char *locale) {
     UErrorCode status = U_ZERO_ERROR;
 
-    if (src->unicode == NULL) {
+    if (STRING_UNICODE(src) == NULL) {
         return NULL;
     }
 
     // Convert the unicode string
-    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (src->len + 1));
-    u_strToLower(u_str, src->len, src->unicode, src->len, locale, &status);
+    UChar *u_str = (UChar *)smm_malloc(sizeof(UChar) * (STRING_LEN(src) + 1));
+    u_strToLower(u_str, STRING_LEN(src), STRING_UNICODE(src), STRING_LEN(src), locale, &status);
 
-    u_strToUpper(u_str, 1, src->unicode, src->len, locale, &status);
+    u_strToUpper(u_str, 1, STRING_UNICODE(src), STRING_LEN(src), locale, &status);
 
-    t_string *dst = utf8_to_string(u_str, src->len);
+    t_string *dst = utf8_to_string(u_str, STRING_LEN(src));
     return dst;
 }
 

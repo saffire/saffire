@@ -177,108 +177,108 @@ SAFFIRE_METHOD(numerical, conv_string) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(numerical, add) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, self->data.value + other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value + other);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, self->data.value - other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value - other);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, self->data.value * other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value * other);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    if (other->data.value == 0) {
+    if (other == 0) {
         object_raise_exception(Object_DivideByZeroException, 1, "Cannot divide by zero");
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, self->data.value / other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value / other);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, self->data.value % other->data.value);
+    return object_alloc_instance(Object_Numerical, 1, self->data.value % other);
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, (self->data.value & other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value & other));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, (self->data.value | other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value | other));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, (self->data.value ^ other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value ^ other));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, (self->data.value << other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value << other));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    return object_alloc_instance(Object_Numerical, 1, (self->data.value >> other->data.value));
+    return object_alloc_instance(Object_Numerical, 1, (self->data.value >> other));
 }
 
 SAFFIRE_OPERATOR_METHOD(numerical, inv) {
@@ -307,63 +307,63 @@ SAFFIRE_OPERATOR_METHOD(numerical, pos) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value == other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value == other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, ne) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value != other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value != other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, lt) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value < other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value < other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, gt) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value > other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value > other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, le) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value <= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value <= other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(numerical, ge) {
-    t_numerical_object *other;
+    long other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
-    (self->data.value >= other->data.value) ? (RETURN_TRUE) : (RETURN_FALSE);
+    (self->data.value >= other) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 

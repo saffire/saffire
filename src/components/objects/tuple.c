@@ -75,20 +75,19 @@ SAFFIRE_METHOD(tuple, length) {
   * Saffire method: Returns object stored at index inside the tuple (or NULL when not found)
   */
 SAFFIRE_METHOD(tuple, get) {
-    t_numerical_object *index;
+    long idx;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &index) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &idx) != 0) {
         return NULL;
     }
 
     // Check index boundaries
-    long idx = OBJ2NUM(index);
     if (idx < 0 || idx >= self->data.ht->element_count) {
         object_raise_exception(Object_IndexException, 1, "Index out of range");
         return NULL;
     }
 
-    t_object *obj = ht_find_num(self->data.ht, OBJ2NUM(index));
+    t_object *obj = ht_find_num(self->data.ht, idx);
     if (obj == NULL) RETURN_NULL;
     RETURN_OBJECT(obj);
 }
@@ -139,13 +138,13 @@ SAFFIRE_METHOD(tuple, populate) {
  */
 /*
 SAFFIRE_METHOD(tuple, remove) {
-    t_string_object *key;
+    t_string *key;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key) != 0) {
         return NULL;
     }
 
-    ht_remove(self->data.ht, key->value);
+    ht_remove(self->data.ht, STRING2CHAR0(key));
     RETURN_SELF;
 }
 */

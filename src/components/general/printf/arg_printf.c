@@ -79,12 +79,12 @@ int arg_printf_string(FILE *f, t_string *fmt, t_dll *args, fnptr output) {
     t_string *where = NULL;
     long num;
     t_dll_element *e = DLL_HEAD(args);
-    char *fmt_char = fmt->val;
+    char *fmt_char = STRING_CHAR0(fmt);
 
     state = flags = count = given_wd = 0;
 
 /* begin scanning format specifier list */
-    for (; fmt_char <= fmt->val + fmt->len - 1; fmt_char++)
+    for (; fmt_char <= STRING_CHAR0(fmt) + STRING_LEN(fmt) - 1; fmt_char++)
     {
         switch(state)
         {
@@ -222,16 +222,16 @@ OK, I found my mistake. The math here is _always_ unsigned */
                 flags &= ~PR_LZ;
                 where_char--;
                 t_string *tmp = _get_string(&e);
-                *where_char = tmp->val[0];
+                *where_char = STRING_CHAR0(tmp)[0];
                 actual_wd = 1;
                 goto EMIT2;
             case 's':
 /* disallow pad-left-with-zeroes for %s */
                 flags &= ~PR_LZ;
                 where = _get_string(&e);
-                where_char = (unsigned char *)where->val;
+                where_char = (unsigned char *)STRING_CHAR0(where);
 EMIT:
-                actual_wd = where->len;
+                actual_wd = STRING_LEN(where);
                 if (flags & PR_WS) actual_wd++;
 /* if we pad left with ZEROES, do the sign now */
                 if((flags & (PR_WS | PR_LZ)) == (PR_WS | PR_LZ)) {

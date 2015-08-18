@@ -46,15 +46,15 @@ SAFFIRE_MODULE_METHOD(saffire, get_locale) {
 }
 
 SAFFIRE_MODULE_METHOD(saffire, set_locale) {
-    t_string_object *locale_obj;
+    t_string *locale;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale) != 0) {
         return NULL;
     }
 
     // Set locale
     t_thread *thread = thread_get_current();
-    thread->locale = string_strdup0(STROBJ2CHAR0(locale_obj));
+    thread->locale = string_strdup0(STRING_CHAR0(locale));
 
     RETURN_SELF;
 }
@@ -94,25 +94,25 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 }
 
 SAFFIRE_MODULE_METHOD(saffire, args) {
-    t_numerical_object *num_obj;
+    long idx = -1;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|n", &num_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|n", &idx) != 0) {
         RETURN_SELF;
     }
 
-    if (num_obj == NULL) {
+    if (idx == -1) {
         t_hash_table *ht = ht_create();
 
-        for (int idx=0; idx!=saffire_getopt_count(); idx++) {
-            ht_add_num(ht, ht->element_count, STR02OBJ(saffire_getopt_string(idx)));
+        for (int i=0; i!=saffire_getopt_count(); i++) {
+            ht_add_num(ht, ht->element_count, STR02OBJ(saffire_getopt_string(i)));
         }
         RETURN_LIST(ht);
     }
 
-    int idx = OBJ2NUM(num_obj);
     if (idx >= saffire_getopt_count() || idx < 0) {
         RETURN_NULL;
     }
+
     RETURN_STRING_FROM_CHAR(saffire_getopt_string(idx));
 }
 
@@ -142,7 +142,7 @@ SAFFIRE_MODULE_METHOD(saffire, exception_handler) {
     module_io_print("%s", "-------------------------------------------\n");
 
     module_io_print("  Code: %d\n", exception_obj->data.code);
-    module_io_print("  Mesg: %s\n", exception_obj->data.message->val);
+    module_io_print("  Mesg: %s\n", STRING_CHAR0(exception_obj->data.message));
     module_io_print("%s", "-------------------------------------------\n");
 
     t_hash_iter iter;
