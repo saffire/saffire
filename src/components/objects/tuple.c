@@ -77,7 +77,7 @@ SAFFIRE_METHOD(tuple, length) {
 SAFFIRE_METHOD(tuple, get) {
     t_numerical_object *index;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &index)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &index) != 0) {
         return NULL;
     }
 
@@ -99,7 +99,7 @@ SAFFIRE_METHOD(tuple, get) {
 //SAFFIRE_METHOD(tuple, add) {
 //    t_object *val;
 //
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val)) {
+//    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &val) != 0) {
 //        return NULL;
 //    }
 //    ht_add_num(self->data.ht, self->data.ht->element_count, val);
@@ -112,7 +112,7 @@ SAFFIRE_METHOD(tuple, get) {
 SAFFIRE_METHOD(tuple, populate) {
     t_hash_object *ht_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj) != 0) {
         return NULL;
     }
     if (! OBJECT_IS_HASH(ht_obj)) {
@@ -141,7 +141,7 @@ SAFFIRE_METHOD(tuple, populate) {
 SAFFIRE_METHOD(tuple, remove) {
     t_string_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &key) != 0) {
         return NULL;
     }
 

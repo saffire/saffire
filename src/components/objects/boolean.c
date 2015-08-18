@@ -65,7 +65,7 @@ SAFFIRE_METHOD(boolean, conv_string) {
 SAFFIRE_OPERATOR_METHOD(boolean, add) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -75,7 +75,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, add) {
 SAFFIRE_OPERATOR_METHOD(boolean, sub) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -85,7 +85,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, sub) {
 SAFFIRE_OPERATOR_METHOD(boolean, mul) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -95,7 +95,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, mul) {
 SAFFIRE_OPERATOR_METHOD(boolean, div) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -107,7 +107,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, div) {
 SAFFIRE_OPERATOR_METHOD(boolean, mod) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -117,7 +117,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, mod) {
 SAFFIRE_OPERATOR_METHOD(boolean, and) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -127,7 +127,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, and) {
 SAFFIRE_OPERATOR_METHOD(boolean, or) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -137,7 +137,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, or) {
 SAFFIRE_OPERATOR_METHOD(boolean, xor) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -147,7 +147,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, xor) {
 SAFFIRE_OPERATOR_METHOD(boolean, sl) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -157,7 +157,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, sl) {
 SAFFIRE_OPERATOR_METHOD(boolean, sr) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -180,7 +180,7 @@ SAFFIRE_OPERATOR_METHOD(boolean, inv) {
 SAFFIRE_COMPARISON_METHOD(boolean, eq) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -190,7 +190,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, eq) {
 SAFFIRE_COMPARISON_METHOD(boolean, ne) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -200,7 +200,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, ne) {
 SAFFIRE_COMPARISON_METHOD(boolean, lt) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -210,7 +210,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, lt) {
 SAFFIRE_COMPARISON_METHOD(boolean, gt) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -220,7 +220,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, gt) {
 SAFFIRE_COMPARISON_METHOD(boolean, le) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 
@@ -230,7 +230,7 @@ SAFFIRE_COMPARISON_METHOD(boolean, le) {
 SAFFIRE_COMPARISON_METHOD(boolean, ge) {
     t_boolean_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "b",  &other) != 0) {
         return NULL;
     }
 

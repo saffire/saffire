@@ -103,7 +103,7 @@ SAFFIRE_METHOD(list, __hasNext) {
 SAFFIRE_METHOD(list, get) {
     t_numerical_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &key)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &key) != 0) {
         return NULL;
     }
 
@@ -170,7 +170,7 @@ SAFFIRE_METHOD(list, random) {
 SAFFIRE_METHOD(list, add) {
     t_object *val;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &val)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &val) != 0) {
         return NULL;
     }
 
@@ -186,7 +186,7 @@ SAFFIRE_METHOD(list, add) {
 SAFFIRE_METHOD(list, populate) {
     t_hash_object *ht_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj) != 0) {
         return NULL;
     }
     if (! OBJECT_IS_HASH(ht_obj)) {
@@ -217,7 +217,7 @@ SAFFIRE_METHOD(list, sequence) {
     t_object *to;
     t_object *skip;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo|o",  &from, &to, &skip)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo|o",  &from, &to, &skip) != 0) {
         return NULL;
     }
 

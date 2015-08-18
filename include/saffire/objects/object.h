@@ -114,7 +114,7 @@
     #define OBJECT_TYPE_IS_ABSTRACT(obj)    ((obj->flags & OBJECT_TYPE_ABSTRACT) == OBJECT_TYPE_ABSTRACT)
     #define OBJECT_TYPE_IS_INSTANCE(obj)    ((obj->flags & OBJECT_TYPE_INSTANCE) == OBJECT_TYPE_INSTANCE)
 
-    #define OBJECT_IS_IMMUTABLE(obj)   ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
+    #define OBJECT_IS_IMMUTABLE(obj)        ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE)
     #define OBJECT_TYPE_IS_FINAL(obj)       ((obj->flags & OBJECT_TYPE_FINAL) == OBJECT_TYPE_FINAL)
     #define OBJECT_IS_ALLOCATED(obj)        ((obj->flags & OBJECT_FLAG_ALLOCATED) == OBJECT_FLAG_ALLOCATED)
     #define OBJECT_IS_USERLAND(obj)         ((obj->flags & OBJECT_TYPE_USERLAND) == OBJECT_TYPE_USERLAND)
@@ -260,13 +260,9 @@
     char *object_get_hash(t_object *obj);
     t_object *object_alloc_instance(t_object *obj, int arg_count, ...);
     t_object *object_alloc_class(t_object *obj, int arg_count, ...);
-    t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached);
-    void object_instantiate(t_object *instance_obj, t_object *class_obj);
     void object_inc_ref(t_object *obj);
     long object_release(t_object *obj);
 
-
-    t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instance_obj);
 
     void object_add_interface(t_object *class, t_object *interface);
     void object_add_property(t_object *obj, char *name, int visibility, t_object *property);

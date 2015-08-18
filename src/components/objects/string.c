@@ -109,7 +109,7 @@ int object_string_compare(t_string_object *s1, t_string_object *s2) {
  */
 SAFFIRE_METHOD(string, ctor) {
     t_string_object *str_obj, *locale_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str_obj, &locale_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str_obj, &locale_obj) != 0) {
         return NULL;
     }
 
@@ -320,7 +320,7 @@ SAFFIRE_METHOD(string, split) {
     t_string_object *token_obj;
     t_numerical_object *max_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &token_obj, &max_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &token_obj, &max_obj) != 0) {
         return NULL;
     }
 
@@ -335,7 +335,7 @@ SAFFIRE_METHOD(string, splice) {
     t_object *min_obj;
     t_object *max_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &min_obj, &max_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &min_obj, &max_obj) != 0) {
         return NULL;
     }
 
@@ -376,7 +376,7 @@ SAFFIRE_METHOD(string, splice) {
 SAFFIRE_METHOD(string, to_locale) {
     t_string_object *str_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", (t_object *)&str_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", (t_object *)&str_obj) != 0) {
         return NULL;
     }
 
@@ -405,7 +405,7 @@ SAFFIRE_METHOD(string, index) {
     t_string_object *needle_obj;
     t_numerical_object *offset_obj = NULL;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", (t_object *)&needle_obj, &offset_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", (t_object *)&needle_obj, &offset_obj) != 0) {
         return NULL;
     }
 
@@ -429,7 +429,7 @@ SAFFIRE_METHOD(string, index) {
 SAFFIRE_OPERATOR_METHOD(string, add) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -447,7 +447,7 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
 SAFFIRE_COMPARISON_METHOD(string, eq) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -467,7 +467,7 @@ SAFFIRE_COMPARISON_METHOD(string, eq) {
 SAFFIRE_COMPARISON_METHOD(string, ne) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -487,7 +487,7 @@ SAFFIRE_COMPARISON_METHOD(string, ne) {
 SAFFIRE_COMPARISON_METHOD(string, lt) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -500,7 +500,7 @@ SAFFIRE_COMPARISON_METHOD(string, lt) {
 SAFFIRE_COMPARISON_METHOD(string, gt) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -513,7 +513,7 @@ SAFFIRE_COMPARISON_METHOD(string, gt) {
 SAFFIRE_COMPARISON_METHOD(string, le) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -527,7 +527,7 @@ SAFFIRE_COMPARISON_METHOD(string, le) {
 SAFFIRE_COMPARISON_METHOD(string, ge) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -540,7 +540,7 @@ SAFFIRE_COMPARISON_METHOD(string, ge) {
 SAFFIRE_COMPARISON_METHOD(string, in) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -553,7 +553,7 @@ SAFFIRE_COMPARISON_METHOD(string, in) {
 SAFFIRE_COMPARISON_METHOD(string, ni) {
     t_string_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
@@ -606,7 +606,7 @@ SAFFIRE_METHOD(string, __remove) {
 SAFFIRE_METHOD(string, __get) {
     t_object *idx_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj) != 0) {
         return NULL;
     }
 
@@ -626,7 +626,7 @@ SAFFIRE_METHOD(string, __get) {
 SAFFIRE_METHOD(string, __has) {
     t_object *idx_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj) != 0) {
         return NULL;
     }
 

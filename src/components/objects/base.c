@@ -176,7 +176,7 @@ SAFFIRE_METHOD(base, dtor) {
 SAFFIRE_METHOD(base, constants) {
     // Check arguments
     t_boolean_object *parents_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
         return NULL;
     }
 
@@ -190,7 +190,7 @@ SAFFIRE_METHOD(base, constants) {
 SAFFIRE_METHOD(base, properties) {
     // Check arguments
     t_boolean_object *parents_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
         return NULL;
     }
 
@@ -205,7 +205,7 @@ SAFFIRE_METHOD(base, properties) {
 SAFFIRE_METHOD(base, methods) {
     // Check arguments
     t_boolean_object *parents_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
         return NULL;
     }
 
@@ -253,7 +253,7 @@ SAFFIRE_METHOD(base, type) {
 SAFFIRE_METHOD(base, implements) {
     // Check arguments
     t_boolean_object *parents_obj;
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
         return NULL;
     }
 
@@ -271,7 +271,7 @@ SAFFIRE_METHOD(base, implements) {
 SAFFIRE_METHOD(base, instanceof) {
     t_object *obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &obj) != 0) {
         return NULL;
     }
 

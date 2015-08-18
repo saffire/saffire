@@ -42,6 +42,9 @@
 #include <saffire/memory/smm.h>
 #include <saffire/vm/thread.h>
 
+// Include generated interfaces
+#include "_generated_interfaces.inc"
+
 // @TODO: in_place: is this option really needed? (inplace modifications of object, like A++; or A = A + 2;)
 // @TODO: a++ seems like an unary operator instead?
 
@@ -61,17 +64,15 @@ const char *objectOprMethods[14] = { "__opr_add", "__opr_sub", "__opr_mul", "__o
 
 
 
-// Include generated interfaces
-#include "_generated_interfaces.inc"
-
-
-int object_is_immutable(t_object *obj) {
-    return ((obj->flags & OBJECT_FLAG_IMMUTABLE) == OBJECT_FLAG_IMMUTABLE);
-}
-
+// Forward defines
+static void object_duplicate_interfaces(t_object *src_obj, t_object *dst_obj);
+static void object_duplicate_attributes(t_object *src_obj, t_object *dst_obj);
+static void object_instantiate(t_object *instance_obj, t_object *class_obj);
 
 /**
- * Checks if an object is an instance of a class. Will check against parents too
+ * Checks if an object is an instance of a class. Will check against parents too.
+
+ * Returns 1 if so, 0 otherwise.
  */
 int object_instance_of(t_object *obj, const char *instance) {
     DEBUG_PRINT_CHAR("object_instance_of(%s, %s)\n", obj->name, instance);
@@ -178,7 +179,7 @@ t_hash_table *refcount_objects = NULL;
 #endif
 
 /**
- * Increase reference to object.
+ * Increases reference to an object.
  */
 void object_inc_ref(t_object *obj) {
     if (! obj) return;
@@ -201,7 +202,7 @@ void object_inc_ref(t_object *obj) {
 
 
 /**
- * Decrease reference from object.
+ * Decrease reference from object. Returns the current ref_count, or 0 on error, release or otherwise.
  */
 static long object_dec_ref(t_object *obj) {
     if (! obj) return 0;
@@ -222,7 +223,9 @@ static long object_dec_ref(t_object *obj) {
     }
 #endif
 
-    if (obj->ref_count != 0) return obj->ref_count;
+    if (obj->ref_count != 0) {
+        return obj->ref_count;
+    }
 
 #if __DEBUG_FREE_OBJECT
     if (! OBJECT_IS_CALLABLE(obj) && ! OBJECT_IS_ATTRIBUTE(obj)) {
@@ -263,11 +266,8 @@ char *object_debug(t_object *obj) {
 #endif
 
 
-
-static t_dll *object_duplicate_interfaces(t_object *instance_obj);
-
 /**
- * Clones an object and returns new object
+ * Clones an object and returns this new object
  */
 t_object *object_clone(t_object *orig_obj) {
     assert(orig_obj != NULL);
@@ -287,14 +287,11 @@ t_object *object_clone(t_object *orig_obj) {
         object_inc_ref(clone_obj->parent);
     }
 
-    if (orig_obj->interfaces) {
-        clone_obj->interfaces = object_duplicate_interfaces(orig_obj);
-    }
+    // Duplicate interfaces
+    object_duplicate_interfaces(orig_obj, clone_obj);
 
-    if (orig_obj->attributes) {
-        // Duplicate attributes (as-is) from original object
-        clone_obj->attributes = object_duplicate_attributes(orig_obj, clone_obj);
-    }
+    // Duplicate attributes (as-is) from original object
+    object_duplicate_attributes(orig_obj, clone_obj);
 
 
     // If there is a custom clone function on the object, call it..
@@ -306,24 +303,29 @@ t_object *object_clone(t_object *orig_obj) {
 }
 
 /**
+ * Duplicate attributes of a class into an instance. Will not add them directly
+ * to the instance object, but just returns a hash-table with the objects
  *
- * @param class_obj
+ * @param src_obj    Class object to duplicate from
+ * @param dst_obj    Instance object to duplicate the attributes to
  * @return
  */
-t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instance_obj) {
+static void object_duplicate_attributes(t_object *src_obj, t_object *dst_obj) {
+    if (! src_obj->attributes) return;
+
     t_hash_table *duplicated_attributes = ht_create();
 
     t_hash_iter iter;
-    ht_iter_init(&iter, class_obj->attributes);
+    ht_iter_init(&iter, src_obj->attributes);
     while (ht_iter_valid(&iter)) {
         char *name = ht_iter_key_str(&iter);
         t_attrib_object *attrib = ht_iter_value(&iter);
 
         // Duplicate attribute into new instance
-        t_attrib_object *dup_attrib = object_attrib_duplicate(attrib, instance_obj);
+        t_attrib_object *dup_attrib = object_attrib_duplicate(attrib, dst_obj);
 
         // We "bind" the attribute to this class
-        object_attrib_bind(dup_attrib, instance_obj, name);
+        object_attrib_bind(dup_attrib, dst_obj, name);
 
         // Replace the current attribute with the dupped one
         ht_add_str(duplicated_attributes, name, (void *)dup_attrib);
@@ -334,10 +336,15 @@ t_hash_table *object_duplicate_attributes(t_object *class_obj, t_object *instanc
         ht_iter_next(&iter);
     }
 
-    return duplicated_attributes;
+    // Store attributes into instance object
+    dst_obj->attributes = duplicated_attributes;
 }
 
 
+/**
+ * Returns a hash-string of the given object. By default this is the address of the object, but it could
+ * also be a more customized hash function within an object itself.
+ */
 char *object_get_hash(t_object *obj) {
     // When there is no hash function, we just use the address of the object
     if (! obj->funcs->hash) {
@@ -355,12 +362,16 @@ char *object_get_hash(t_object *obj) {
 /**
  * Creates a new object with specific values, with a already created
  * argument DLL list.
+ *
+ * @param obj           The actual class to allocate from.
+ * @param arguments     DLL with given arguments
+ * @param *cached       If not NULL, it is set to 1 when the object was found in the cache.
  */
-t_object *object_alloc_args(t_object *obj, t_dll *arguments, int *cached) {
+static t_object *_object_allocate_with_args(t_object *obj, t_dll *arguments, int *cached) {
     t_object *res = NULL;
 
     if (! OBJECT_TYPE_IS_CLASS(obj)) {
-        fatal_error(1, "Can only object_alloc_args() from a class or interface objects.\n");
+        fatal_error(1, "Can only _object_allocate_with_args() from a class.\n");
     }
 
     // Nothing found to new, just return NULL object
@@ -457,14 +468,35 @@ void object_fini() {
 
 
 /**
+ * Parse arguments for a given object. Used mostly for parsing arguments from Saffire methods
  *
+ * Normally called as:
+ *      object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &s1_obj, &s2_obj);
+ *
+ * Spec is a string with the following format:
+ *
+ *   s    a string object
+ *   n    a numerical object
+ *   N    a NULL object
+ *   r    a regex object
+ *   b    a boolean object
+ *   o    any object
+ *   |    optional arguments after this
+ *
+ * so:
+ *
+ *   'ss' must have two string objects as arguments
+ *   'so' must have one string, and one generic object (could be a string too)
+ *   'ss|n'  must have two strings and optionally a numerical object
+ *
+ * Will return 0 on ok, -1 on error
  */
 int object_parse_arguments(t_dll *dll, const char *spec, ...) {
     const char *ptr = spec;
     int optional_argument = 0;
     va_list storage_list;
     t_objectype_enum type;
-    int result = 0;
+    int result = -1;
 
     va_start(storage_list, spec);
 
@@ -480,7 +512,7 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
     }
     if (dll->size < cnt) {
         object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: at least %d arguments are needed. Only %ld are given", cnt, dll->size);
-        result = 0;
+        result = -1;
         goto done;
     }
 
@@ -514,7 +546,7 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
                 break;
             default :
                 object_raise_exception(Object_SystemException, 1, "Error while parsing argument list: cannot parse argument: '%c'", c);
-                result = 0;
+                result = -1;
                 goto done;
                 break;
         }
@@ -523,14 +555,14 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
         t_object **storage_obj = va_arg(storage_list, t_object **);
         if (optional_argument == 0 && (!e || ! DLL_DATA_PTR(e))) {
             object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
-            result = 0;
+            result = -1;
             goto done;
         }
 
         t_object *argument_obj = e ? DLL_DATA_PTR(e) : NULL;
         if (argument_obj && type != objectTypeAny && type != argument_obj->type) {
             object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s, but got a %s", objectTypeNames[type], objectTypeNames[argument_obj->type]);
-            result = 0;
+            result = -1;
             goto done;
         }
 
@@ -542,7 +574,7 @@ int object_parse_arguments(t_dll *dll, const char *spec, ...) {
     }
 
     // Everything is ok
-    result = 1;
+    result = 0;
 
     // General cleanup
 done:
@@ -652,7 +684,7 @@ static void _object_remove_all_internal_attributes(t_object *obj) {
 
 
 /**
- * Frees internal object data
+ * Frees internal object data for the given object
  */
 void object_free_internal_object(t_object *obj) {
     // Free attributes
@@ -661,6 +693,7 @@ void object_free_internal_object(t_object *obj) {
         ht_destroy(obj->attributes);
     }
 
+    // @TODO: MEDIUM: if interfaces are linked, we only need to clean up when   obj == obj->class ??
     // Remove interfaces
     if (obj->interfaces) {
         _object_remove_all_internal_interfaces(obj);
@@ -671,7 +704,7 @@ void object_free_internal_object(t_object *obj) {
 
 
 /**
- *
+ * Raises an exception
  */
 void object_raise_exception(t_object *exception, int code, char *format, ...) {
     va_list args;
@@ -686,6 +719,9 @@ void object_raise_exception(t_object *exception, int code, char *format, ...) {
 }
 
 
+/**
+ * Checks if arguments of callable object 1 and callable object 2 matches.
+ */
 static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_object *obj2) {
     t_hash_table *ht1 = obj1->data.arguments;
     t_hash_table *ht2 = obj2->data.arguments;
@@ -721,6 +757,9 @@ static int _object_check_matching_arguments(t_callable_object *obj1, t_callable_
 }
 
 
+/**
+ * checks if the given object implements fully the given interface. Return 1 when so, 0 otherwise.
+ */
 static int _object_check_interface_implementations(t_object *obj, t_object *interface) {
     // ceci ne pas une interface
     if (! OBJECT_TYPE_IS_INTERFACE(interface)) {
@@ -812,46 +851,32 @@ int object_has_interface(t_object *obj, const char *interface_name) {
 
 
 /**
- * Allocates a class from the given object
+ * Duplicate interface DLL from src into dst.
  */
-t_object *object_alloc_class(t_object *obj, int arg_count, ...) {
-    va_list arg_list;
-
-    // Create argument DLL
-    t_dll *arguments = dll_init();
-    va_start(arg_list, arg_count);
-    for (int i=0; i!=arg_count; i++) {
-        dll_append(arguments, (void *)va_arg(arg_list, void *));
-    }
-    va_end(arg_list);
-
-    // Create new object
-    int cached = 0;
-    t_object *new_obj = object_alloc_args(obj, arguments, &cached);
-
-    // Free argument DLL
-    dll_free(arguments);
-
-    return new_obj;
-}
-
-
-static t_dll *object_duplicate_interfaces(t_object *instance_obj) {
-    if (! instance_obj->interfaces) return NULL;
+static void object_duplicate_interfaces(t_object *src_obj, t_object *dst_obj) {
+    if (! src_obj->interfaces) return;
 
     t_dll *interfaces = dll_init();
-    t_dll_element *e = DLL_HEAD(instance_obj->interfaces);
+    t_dll_element *e = DLL_HEAD(src_obj->interfaces);
     while (e) {
         dll_append(interfaces, DLL_DATA_PTR(e));
         object_inc_ref(DLL_DATA_PTR(e));
         e = DLL_NEXT(e);
     }
 
-    return interfaces;
+    dst_obj->interfaces = interfaces;
 }
 
-t_object *object_alloc_instance(t_object *obj, int arg_count, ...) {
+
+/**
+ * Allocates a class from the given object. This can only happen when the VM creates a new user class or interface.
+ */
+t_object *object_alloc_class(t_object *obj, int arg_count, ...) {
     va_list arg_list;
+
+    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+        fatal_error(1, "Can only allocate a new class from another class.\n");
+    }
 
     // Create argument DLL
     t_dll *arguments = dll_init();
@@ -863,37 +888,60 @@ t_object *object_alloc_instance(t_object *obj, int arg_count, ...) {
 
     // Create new object
     int cached = 0;
-    t_object *new_obj = object_alloc_args(obj, arguments, &cached);
+    t_object *new_obj = _object_allocate_with_args(obj, arguments, &cached);
 
     // Free argument DLL
     dll_free(arguments);
-
-    // It might be possible that object_alloc_args() returned a cached instance.
-    if (cached) return new_obj;
-
-    // Instantiate the new object
-    object_instantiate(new_obj, obj);
 
     return new_obj;
 }
 
 
-void object_instantiate(t_object *instance_obj, t_object *class_obj) {
-    // Object is an instance, not a class
+/**
+ * Allocate a new instance from a specific object
+ */
+t_object *object_alloc_instance(t_object *obj, int arg_count, ...) {
+    va_list arg_list;
+
+    if (! OBJECT_TYPE_IS_CLASS(obj)) {
+        fatal_error(1, "Can only allocate a new instance from another class.\n");
+    }
+
+    // Create argument DLL
+    t_dll *arguments = dll_init();
+    va_start(arg_list, arg_count);
+    for (int i=0; i!=arg_count; i++) {
+        dll_append(arguments, (void *)va_arg(arg_list, void *));
+    }
+    va_end(arg_list);
+
+    // Create new object
+    int cached = 0;
+    t_object *instance_obj = _object_allocate_with_args(obj, arguments, &cached);
+
+    // Free argument DLL
+    dll_free(arguments);
+
+    // It might be possible that object_alloc_args() returned a cached instance.
+    if (cached == 1) return instance_obj;
+
+
+
+    // Bind all attributes to the instance
+    object_duplicate_attributes(instance_obj->class, instance_obj);
+
+    // Duplicate interfaces
+    // @TODO: MEDIUM: We should not duplicate interfaces, but merely link them. Only when we hit the "base" class,
+    // (ie: instance == parent), we should free the interfaces
+    object_duplicate_interfaces(instance_obj->class, instance_obj);
+
+    // Object is now an instance, not a class
     instance_obj->flags &= ~OBJECT_TYPE_CLASS;
     instance_obj->flags |= OBJECT_TYPE_INSTANCE;
 
-    // Bind all attributes to the instance
-    if (class_obj->attributes) {
-        t_hash_table *duplicated_attributes = object_duplicate_attributes(class_obj, instance_obj);
-        instance_obj->attributes = duplicated_attributes;
-    }
-
-    if (class_obj->interfaces) {
-        t_dll *duplicated_interfaces = object_duplicate_interfaces(instance_obj);
-        instance_obj->interfaces = duplicated_interfaces;
-    }
+    return instance_obj;
 }
+
 
 
 /**

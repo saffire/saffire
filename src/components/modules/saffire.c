@@ -48,7 +48,7 @@ SAFFIRE_MODULE_METHOD(saffire, get_locale) {
 SAFFIRE_MODULE_METHOD(saffire, set_locale) {
     t_string_object *locale_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale_obj) != 0) {
         return NULL;
     }
 
@@ -96,7 +96,7 @@ SAFFIRE_MODULE_METHOD(saffire, debug) {
 SAFFIRE_MODULE_METHOD(saffire, args) {
     t_numerical_object *num_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "|n", &num_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|n", &num_obj) != 0) {
         RETURN_SELF;
     }
 
@@ -120,7 +120,7 @@ SAFFIRE_MODULE_METHOD(saffire, args) {
 SAFFIRE_MODULE_METHOD(saffire, exception_handler) {
     t_exception_object *exception_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &exception_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &exception_obj) != 0) {
         RETURN_SELF;
     }
 
