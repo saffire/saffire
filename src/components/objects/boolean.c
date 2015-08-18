@@ -270,7 +270,7 @@ void object_boolean_init(void) {
 
         not:    !F=T   !T=F
     */
-    // @TODO: ATTRIB_VISIBILITY_PROTECTED???
+    // @TODO: HIGH Shouldn't these be ATTRIB_VISIBILITY_PROTECTED???
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_add",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_add);
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_sub",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_sub);
     object_add_internal_method((t_object *)&Object_Boolean_struct, "__opr_mul",   ATTRIB_METHOD_NONE, ATTRIB_VISIBILITY_PUBLIC, object_boolean_method_opr_mul);

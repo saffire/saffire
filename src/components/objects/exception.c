@@ -107,8 +107,7 @@ SAFFIRE_METHOD(exception, setcode) {
 
 SAFFIRE_METHOD(exception, getstacktrace) {
     if (self->data.stacktrace == NULL) {
-        // @TODO: Return empty hashtable?
-        RETURN_NULL;
+        RETURN_EMPTY_LIST();
     }
 
     RETURN_LIST(self->data.stacktrace);
