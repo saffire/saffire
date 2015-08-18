@@ -56,7 +56,7 @@ SAFFIRE_MODULE_METHOD(datetime, format) {
 
     t_string_object *format_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &format_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &format_obj) != 0) {
         return NULL;
     }
 

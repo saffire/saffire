@@ -55,7 +55,7 @@ SAFFIRE_MODULE_METHOD(io_file, open) {
     t_string_object *name_obj;
     t_string_object *mode_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &name_obj, &mode_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &name_obj, &mode_obj) != 0) {
         return NULL;
     }
 
@@ -180,7 +180,7 @@ SAFFIRE_MODULE_METHOD(io_file, seek) {
     t_numerical_object *offset_obj;
     t_numerical_object *origin_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &offset_obj, &origin_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &offset_obj, &origin_obj) != 0) {
         return NULL;
     }
 
@@ -197,7 +197,7 @@ SAFFIRE_MODULE_METHOD(io_file, read) {
 
     t_numerical_object *size_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &size_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &size_obj) != 0) {
         return NULL;
     }
 
@@ -225,7 +225,7 @@ SAFFIRE_MODULE_METHOD(io_file, write) {
 
     t_string_object *str_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj) != 0) {
         return NULL;
     }
 

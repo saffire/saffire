@@ -73,7 +73,7 @@ SAFFIRE_MODULE_METHOD(math, random) {
     t_numerical_object *from_obj;
     t_numerical_object *to_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &from_obj, &to_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &from_obj, &to_obj) != 0) {
         return NULL;
     }
 
@@ -99,7 +99,7 @@ SAFFIRE_MODULE_METHOD(math, random) {
 SAFFIRE_MODULE_METHOD(math, seed) {
     t_numerical_object *seed_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &seed_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &seed_obj) != 0) {
         return NULL;
     }
 

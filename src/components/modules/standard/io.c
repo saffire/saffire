@@ -210,7 +210,7 @@ SAFFIRE_MODULE_METHOD(io, sprintf) {
 SAFFIRE_MODULE_METHOD(io, dump) {
     t_object *iter_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &iter_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &iter_obj) != 0) {
         return NULL;
     }
 

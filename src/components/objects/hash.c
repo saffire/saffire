@@ -105,7 +105,7 @@ SAFFIRE_METHOD(hash, __hasNext) {
 SAFFIRE_METHOD(hash, populate) {
     t_hash_object *ht_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  (t_object *)&ht_obj) != 0) {
         return NULL;
     }
     if (! OBJECT_IS_HASH(ht_obj)) {
@@ -143,7 +143,7 @@ SAFFIRE_METHOD(hash, get) {
     t_object *key;
     t_object *default_value = NULL;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o|o", &key, &default_value)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o|o", &key, &default_value) != 0) {
         return NULL;
     }
 
@@ -194,7 +194,7 @@ SAFFIRE_METHOD(hash, values) {
 SAFFIRE_METHOD(hash, has) {
     t_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key) != 0) {
         return NULL;
     }
 
@@ -212,7 +212,7 @@ SAFFIRE_METHOD(hash, has) {
 SAFFIRE_METHOD(hash, set) {
     t_object *key, *val;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &key, &val)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &key, &val) != 0) {
         return NULL;
     }
 
@@ -228,7 +228,7 @@ SAFFIRE_METHOD(hash, set) {
 SAFFIRE_METHOD(hash, remove) {
     t_object *key;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &key) != 0) {
         return NULL;
     }
 

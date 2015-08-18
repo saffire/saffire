@@ -41,7 +41,7 @@ SAFFIRE_METHOD(exception, ctor) {
     t_string_object *msg_obj;
     t_numerical_object *code_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj) != 0) {
         return NULL;
     }
 
@@ -81,7 +81,7 @@ SAFFIRE_METHOD(exception, getmessage) {
 SAFFIRE_METHOD(exception, setmessage) {
     t_string_object *message;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &message)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &message) != 0) {
         object_raise_exception(Object_ArgumentException, 1, "error while parsing argument list");
         return NULL;
     }
@@ -97,7 +97,7 @@ SAFFIRE_METHOD(exception, getcode) {
 SAFFIRE_METHOD(exception, setcode) {
     t_numerical_object *code;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &code)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &code) != 0) {
         return NULL;
     }
 
@@ -127,7 +127,7 @@ SAFFIRE_METHOD(exception, getstacktrace) {
 SAFFIRE_COMPARISON_METHOD(exception, eq) {
     t_exception_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other) != 0) {
         return NULL;
     }
 
@@ -137,7 +137,7 @@ SAFFIRE_COMPARISON_METHOD(exception, eq) {
 SAFFIRE_COMPARISON_METHOD(exception, ne) {
     t_exception_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o",  &other) != 0) {
         return NULL;
     }
 

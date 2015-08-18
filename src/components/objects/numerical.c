@@ -179,7 +179,7 @@ SAFFIRE_METHOD(numerical, conv_string) {
 SAFFIRE_OPERATOR_METHOD(numerical, add) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -189,7 +189,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, add) {
 SAFFIRE_OPERATOR_METHOD(numerical, sub) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -199,7 +199,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sub) {
 SAFFIRE_OPERATOR_METHOD(numerical, mul) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -209,7 +209,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mul) {
 SAFFIRE_OPERATOR_METHOD(numerical, div) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -224,7 +224,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, div) {
 SAFFIRE_OPERATOR_METHOD(numerical, mod) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -234,7 +234,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, mod) {
 SAFFIRE_OPERATOR_METHOD(numerical, and) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -244,7 +244,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, and) {
 SAFFIRE_OPERATOR_METHOD(numerical, or) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -254,7 +254,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, or) {
 SAFFIRE_OPERATOR_METHOD(numerical, xor) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -264,7 +264,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, xor) {
 SAFFIRE_OPERATOR_METHOD(numerical, sl) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -274,7 +274,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, sl) {
 SAFFIRE_OPERATOR_METHOD(numerical, sr) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -309,7 +309,7 @@ SAFFIRE_OPERATOR_METHOD(numerical, pos) {
 SAFFIRE_COMPARISON_METHOD(numerical, eq) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -319,7 +319,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, eq) {
 SAFFIRE_COMPARISON_METHOD(numerical, ne) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -329,7 +329,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, ne) {
 SAFFIRE_COMPARISON_METHOD(numerical, lt) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -339,7 +339,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, lt) {
 SAFFIRE_COMPARISON_METHOD(numerical, gt) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -349,7 +349,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, gt) {
 SAFFIRE_COMPARISON_METHOD(numerical, le) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 
@@ -359,7 +359,7 @@ SAFFIRE_COMPARISON_METHOD(numerical, le) {
 SAFFIRE_COMPARISON_METHOD(numerical, ge) {
     t_numerical_object *other;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n",  &other) != 0) {
         return NULL;
     }
 

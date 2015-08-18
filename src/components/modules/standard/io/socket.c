@@ -50,7 +50,7 @@ SAFFIRE_MODULE_METHOD(io_socket, ctor) {
     t_numerical_object *sockettype_obj;
     t_numerical_object *protocol_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nnn", &family_obj, &sockettype_obj, &protocol_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nnn", &family_obj, &sockettype_obj, &protocol_obj) != 0) {
         return NULL;
     }
 
@@ -82,7 +82,7 @@ SAFFIRE_MODULE_METHOD(io_socket, setOption) {
     t_numerical_object *optname_obj;
     t_object *optval_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nno", &level_obj, &optname_obj, &optval_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nno", &level_obj, &optname_obj, &optval_obj) != 0) {
         return NULL;
     }
 
@@ -113,7 +113,7 @@ SAFFIRE_MODULE_METHOD(io_socket, getOption) {
     t_numerical_object *level_obj;
     t_numerical_object *optname_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &level_obj, &optname_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &level_obj, &optname_obj) != 0) {
         return NULL;
     }
 
@@ -141,7 +141,7 @@ SAFFIRE_MODULE_METHOD(io_socket, bind) {
     t_numerical_object *port_obj;
     struct sockaddr_in sa;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "sn", &host_obj, &port_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "sn", &host_obj, &port_obj) != 0) {
         return NULL;
     }
 
@@ -180,7 +180,7 @@ SAFFIRE_MODULE_METHOD(io_socket, bind) {
 SAFFIRE_MODULE_METHOD(io_socket, listen) {
     t_numerical_object *backlog_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &backlog_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &backlog_obj) != 0) {
         return NULL;
     }
 
@@ -249,7 +249,7 @@ SAFFIRE_MODULE_METHOD(io_socket, close) {
 SAFFIRE_MODULE_METHOD(io_socket, read) {
     t_numerical_object *bytes_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &bytes_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &bytes_obj) != 0) {
         return NULL;
     }
 
@@ -268,7 +268,7 @@ SAFFIRE_MODULE_METHOD(io_socket, read) {
 SAFFIRE_MODULE_METHOD(io_socket, write) {
     t_string_object *str_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj) != 0) {
         return NULL;
     }
 

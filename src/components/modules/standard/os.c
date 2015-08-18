@@ -49,7 +49,7 @@
 SAFFIRE_MODULE_METHOD(os, stat) {
     t_string_object *path_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj) != 0) {
         return NULL;
     }
 
@@ -86,7 +86,7 @@ SAFFIRE_MODULE_METHOD(os, usleep) {
     t_numerical_object *delay_obj;
     long delay;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &delay_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &delay_obj) != 0) {
         return NULL;
     }
 
@@ -103,7 +103,7 @@ SAFFIRE_MODULE_METHOD(os, usleep) {
 SAFFIRE_MODULE_METHOD(os, realpath) {
     t_string_object *path_obj;
 
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj) != 0) {
         return NULL;
     }
 

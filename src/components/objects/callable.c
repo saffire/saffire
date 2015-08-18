@@ -87,7 +87,7 @@ SAFFIRE_METHOD(callable, internal) {
 //SAFFIRE_METHOD(callable, bind) {
 //    t_object *newbound_obj;
 //
-//    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "u",  &newbound_obj)) {
+//    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "u",  &newbound_obj) != 0) {
 //        return NULL;
 //    }
 //

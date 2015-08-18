@@ -152,7 +152,7 @@ SAFFIRE_METHOD(regex, match) {
     int rc;
 
     // Parse the arguments
-    if (! object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &regex_str, &subject_str)) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &regex_str, &subject_str) != 0) {
         return NULL;
     }
 
