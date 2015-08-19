@@ -505,7 +505,8 @@ static int _object_parse_arguments(t_dll *arguments, int convert_objects, const 
     // First, check if the number of elements equals (or is more) than the number of mandatory objects in the spec
     int cnt = 0;
     while (*ptr) {
-        if (*ptr == '|') break;
+        if (*ptr == '|') break;     // Optional character that does not imply an argument itself
+        if (*ptr == '+') break;     // Optional character that does not imply an argument itself
         cnt++;
         ptr++;
     }
@@ -558,7 +559,7 @@ static int _object_parse_arguments(t_dll *arguments, int convert_objects, const 
         }
 
         // Fetch the next object from the list. We must assume the user has added enough room
-        t_object **storage_obj = va_arg(dst_vars, t_object **);
+        void **storage_ptr = va_arg(dst_vars, void **);
         if (optional_argument == 0 && (!e || ! DLL_DATA_PTR(e))) {
             object_raise_exception(Object_ArgumentException, 1, "Error while fetching mandatory argument.");
             result = -1;
@@ -568,57 +569,67 @@ static int _object_parse_arguments(t_dll *arguments, int convert_objects, const 
         t_object *argument_obj = e ? DLL_DATA_PTR(e) : NULL;
         if (argument_obj &&
             type != objectTypeAny &&
-            (type != argument_obj->type || (type != objectTypeNull && nullable == 1))
+            (
+                (nullable == 0 && (type != argument_obj->type)) ||
+                (nullable == 1 && (type != argument_obj->type && argument_obj->type != objectTypeNull))
+            )
         ) {
-            object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s%s, but got a %s", objectTypeNames[type], (nullable?" or a NULL":""), objectTypeNames[argument_obj->type]);
+            object_raise_exception(Object_ArgumentException, 1, "Error while parsing argument list: wanted a %s%s, but got a %s", objectTypeNames[type], (nullable?" or a null":""), objectTypeNames[argument_obj->type]);
             result = -1;
             goto done;
         }
 
-
-        /*
-         * Could be done better...
-         */
-
-        if (convert_objects == 0) {
-            // Don't convert objects, return as-is
-            *storage_obj = argument_obj;
-        } else {
-            // Convert objects if possible
-            if (type == objectTypeNumerical) {
-                if (nullable && argument_obj->type == objectTypeNull) {
-                    // Instead of null-object, return int 0
-                    *storage_obj = 0;
-                } else {
-                    *storage_obj = (void *)((t_numerical_object *)argument_obj)->data.value;
-                }
-            } else if (type == objectTypeBoolean) {
-                if (nullable && argument_obj->type == objectTypeNull) {
-                    // Instead of null-object, return int 0
-                    *storage_obj = 0;
-                } else {
-                    *storage_obj = (void *)((t_boolean_object *)argument_obj)->data.value;
-                }
-            } else if (type == objectTypeString) {
-                if (nullable && argument_obj->type == objectTypeNull) {
-                    // return null object
-                    *storage_obj = argument_obj;
-                } else {
-                    *storage_obj = (void *)((t_string_object *)argument_obj)->data.value;
-                }
-            } else if (type == objectTypeRegex) {
-                if (nullable && argument_obj->type == objectTypeNull) {
-                    // return null object
-                    *storage_obj = argument_obj;
-                } else {
-                    *storage_obj = (void *)((t_regex_object *)argument_obj)->data.regex;
-                }
-            } else {
-                // Unknown type, so just return as-is
-                *storage_obj = argument_obj;
-            }
+        // No argument object found, leave the current storage_ptr alone
+        if (! argument_obj) {
+            goto next;
         }
 
+        // Don't convert objects, return as-is
+        if (convert_objects == 0) {
+            *storage_ptr = argument_obj;
+            goto next;
+        }
+
+        // Convert objects if possible
+        switch (type) {
+            case objectTypeNumerical :
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // Instead of null-object, return int 0
+                    *storage_ptr = 0;
+                } else {
+                    *storage_ptr = (void *)((t_numerical_object *)argument_obj)->data.value;
+                }
+                break;
+            case objectTypeBoolean :
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // Instead of null-object, return int 0
+                    *storage_ptr = 0;
+                } else {
+                    *storage_ptr = (void *)((t_boolean_object *)argument_obj)->data.value;
+                }
+                break;
+            case objectTypeString :
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // return null object
+                    *storage_ptr = argument_obj;
+                } else {
+                    *storage_ptr = (void *)((t_string_object *)argument_obj)->data.value;
+                }
+                break;
+            case objectTypeRegex :
+                if (nullable && argument_obj->type == objectTypeNull) {
+                    // return null object
+                    *storage_ptr = argument_obj;
+                } else {
+                    *storage_ptr = (void *)((t_regex_object *)argument_obj)->data.regex;
+                }
+            default :
+                // Unknown type, so just return as-is
+                *storage_ptr = argument_obj;
+                break;
+        }
+
+next:
         // Goto next element
         e = e ? DLL_NEXT(e) : NULL;
     }

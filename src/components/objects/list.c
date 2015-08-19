@@ -215,36 +215,26 @@ SAFFIRE_METHOD(list, populate) {
  * Saffire method: Returns value
  */
 SAFFIRE_METHOD(list, sequence) {
-    t_object *from;
-    t_object *to;
-    t_object *skip;
+    long from = 0;
+    long to = 0;
+    long skip = 1;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo|o",  &from, &to, &skip) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn|n",  &from, &to, &skip) != 0) {
         return NULL;
     }
 
-    // Default skip value
-    if (skip == NULL) {
-        skip = object_alloc_instance(Object_Numerical, 1, 1);
-    }
-
-    if (! OBJECT_IS_NUMERICAL(from) || ! OBJECT_IS_NUMERICAL(to) || ! OBJECT_IS_NUMERICAL(to)) {
-        object_raise_exception(Object_ArgumentException, 1, "sequence() only works with numerical values");
-        return NULL;
-    }
-
-    if (((t_numerical_object *)from)->data.value > ((t_numerical_object *)to)->data.value) {
+    if (from > to) {
         object_raise_exception(Object_ArgumentException, 1, "'from' value must be lower than the 'to' value");
         return NULL;
     }
 
-    if (((t_numerical_object *)skip)->data.value <= 0) {
+    if (skip <= 0) {
         object_raise_exception(Object_ArgumentException, 1, "'skip' must be 1 or higher");
         return NULL;
     }
 
     t_list_object *list_obj = (t_list_object *)object_alloc_instance(Object_List, 0);
-    for (int i=((t_numerical_object *)from)->data.value; i<=((t_numerical_object *)to)->data.value; i+=((t_numerical_object *)skip)->data.value) {
+    for (int i=from; i<=to; i+=skip) {
         ht_add_num(list_obj->data.ht, list_obj->data.ht->element_count, object_alloc_instance(Object_Numerical, 1, i));
     }
 

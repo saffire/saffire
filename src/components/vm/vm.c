@@ -596,63 +596,6 @@ void vm_fini(void) {
 }
 
 /**
- * Returns the current line number based on the instruction pointer in the current frame.
- *
- * @param frame
- * @return long
- */
-long getlineno(t_vm_stackframe *frame) {
-
-    // If IP is within current bounds, just return the current line number
-    if (frame->lineno_upperbound != 0 &&
-        frame->lineno_lowerbound <= frame->ip &&
-        frame->ip < frame->lineno_upperbound
-    ) {
-        return frame->lineno_current_line;
-    }
-
-    long delta_lino = 0;
-    long delta_line = 0;
-
-    // Check if current offset isn't larger then the bytecode length.
-    if (frame->lineno_current_lino_offset >= frame->codeblock->bytecode->lino_length) {
-        return frame->lineno_current_line;
-    }
-
-    // Peek if the first entry is a 0, if so, the offset is actually negative. This is to compensate the fact
-    // that sometimes byte code is generated on different places (for instance, in while() blocks)
-    long negate = 0;
-    if (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset] == 0) {
-        frame->lineno_current_lino_offset++;
-        negate = 1;
-    }
-
-    // Decompress delta linenumber. A lineno byte > 127 indicates the next block is also part of this.
-    long i;
-    do {
-        i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
-        delta_line += i;
-    } while (i > 127);
-
-    // Decompress delta lino (which bytecode offset marks the upper bound). A lineno byte > 127 indicates the
-    // next block is also part of this.
-    do {
-        i = (frame->codeblock->bytecode->lino[frame->lineno_current_lino_offset++] & 127);
-        delta_lino += i;
-    } while (i > 127);
-
-    if (negate) {
-        delta_line = 0 - delta_line;
-    }
-
-    frame->lineno_lowerbound = frame->lineno_upperbound + 1;
-    frame->lineno_upperbound += delta_lino;
-    frame->lineno_current_line += delta_line;
-
-    return frame->lineno_current_line;
-}
-
-/**
  *
  */
 t_object *_vm_execute(t_vm_stackframe *frame) {
@@ -683,7 +626,7 @@ t_object *_vm_execute(t_vm_stackframe *frame) {
                 ANSI_RESET "\n",
                 tb_depth,
                 ctx->file.full ? ctx->file.full : "<none>",
-                getlineno(tb_frame),
+                vm_frame_get_source_line(tb_frame),
                 ctx->module.full ? ctx->module.full : "",
                 tb_frame->trace_method ? tb_frame->trace_method : ""
             );
@@ -710,7 +653,7 @@ dispatch:
 
 #ifdef __DEBUG
     #if __DEBUG_VM_OPCODES
-        long ln = getlineno(frame);
+        long ln = vm_frame_get_source_line(frame);
         unsigned long cip = frame->ip;
         //vm_frame_stack_debug(frame);
     #endif

@@ -32,9 +32,6 @@
 #include <saffire/memory/smm.h>
 #include <saffire/vm/vm.h>
 
-
-long getlineno(t_vm_stackframe *frame);
-
 // Current running thread. Don't change directly, but only through thread_switch() methods.
 t_thread *current_thread;
 
@@ -96,7 +93,7 @@ t_hash_table *thread_create_stacktrace() {
         smm_asprintf_char(&s, "#%d %s:%d %s.%s (<args>)",
             depth,
             ctx->file.full ? ctx->file.full : "<none>",
-            getlineno(frame),
+            vm_frame_get_source_line(frame),
             ctx->module.full ? ctx->module.full : "",
             frame->trace_method ? frame->trace_method : ""
         );

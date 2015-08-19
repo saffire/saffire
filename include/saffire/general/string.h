@@ -58,8 +58,8 @@
     char *string_strdup0(const char *s);
     t_string *string_strdup(const t_string *s);
 
-    t_string *string_strcat0(t_string *dst, const char *src);
-    t_string *string_strcat(t_string *dst, const t_string *src);
+    t_string *string_strcat0(const t_string *pre, const char *post);
+    t_string *string_strcat(const t_string *pre, const t_string *post);
 
     t_string *string_copy_partial(const t_string *src, size_t offset, size_t count);
 

@@ -133,7 +133,7 @@ t_string *string_strdup(const t_string *s) {
 /**
  * Concatenates a zero-terminated string to a t_string.
  */
-t_string *string_strcat0(t_string *dst, const char *src) {
+t_string *string_strcat0(const t_string *dst, const char *src) {
     t_string *s = char0_to_string(src);
 
     return string_strcat(dst, s);
@@ -143,24 +143,21 @@ t_string *string_strcat0(t_string *dst, const char *src) {
 /**
  * Concatenates two strings together
  */
-t_string *string_strcat(t_string *dst, const t_string *src) {
-    // Reallocate memory and copy
-    char *c = (char *)smm_realloc(STRING_CHAR0(dst), STRING_LEN(dst) + STRING_LEN(src) + 1);
-    memcpy(c + STRING_LEN(dst), STRING_CHAR0(src), STRING_LEN(src));
+t_string *string_strcat(const t_string *pre, const t_string *post) {
+    t_string *new = string_new();
+
+    // Allocate memory and copy both strings over
+    char *c = (char *)smm_malloc(STRING_LEN(pre) + STRING_LEN(post) + 1);
+    memcpy(c, STRING_CHAR0(pre), STRING_LEN(pre));
+    memcpy(c + STRING_LEN(pre), STRING_CHAR0(post), STRING_LEN(post));
 
     // Set terminating zero (always added!)
-    c[STRING_LEN(dst) + STRING_LEN(src)] = '\0';
+    c[STRING_LEN(pre) + STRING_LEN(post)] = '\0';
 
-    STRING_LEN(dst) += STRING_LEN(src);
-    STRING_CHAR0(dst) = c;
+    STRING_LEN(new) += STRING_LEN(pre) + STRING_LEN(post);
+    STRING_CHAR0(new) = c;
 
-    if (STRING_UNICODE(dst)) {
-        // Unicode string has changed, so free if needed
-        smm_free(STRING_UNICODE(dst));
-    }
-
-    return dst;
-
+    return new;
 }
 
 /**

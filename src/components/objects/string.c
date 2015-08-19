@@ -107,7 +107,7 @@ static int _string_compare(t_string *s1, t_string *s2) {
  * Saffire method: constructor
  */
 SAFFIRE_METHOD(string, ctor) {
-    t_string *str, *locale = NULL;
+    t_string *str = NULL, *locale = NULL;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str, &locale) != 0) {
         return NULL;
@@ -335,7 +335,7 @@ SAFFIRE_METHOD(string, split) {
  *
  */
 SAFFIRE_METHOD(string, splice) {
-    // @TODO: We probably want to just change the length and the offset of the t_string. Not doing any real copies
+    // @TODO: MEDIUM: We probably want to just change the length and the offset of the t_string. Not doing any real copies
     long min, max;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n+n+", &min, &max) != 0) {
@@ -438,8 +438,7 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
 
     t_string *dst = string_strcat(self->data.value, other);
 
-    t_string_object *uc_obj = string_create_new_object(dst, self->data.locale);
-    RETURN_OBJECT(uc_obj);
+    RETURN_STRING(dst);
 }
 
 /* ======================================================================

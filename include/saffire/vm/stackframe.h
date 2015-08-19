@@ -48,6 +48,8 @@
     void vm_frame_stack_modify(t_vm_stackframe *frame, int idx, t_object *obj);
     t_object *vm_frame_stack_fetch_top(t_vm_stackframe *frame, int resolve_attrib);
 
+    long vm_frame_get_source_line(t_vm_stackframe *frame);
+
     t_object *vm_frame_get_constant(t_vm_stackframe *frame, int idx);
     t_object *vm_frame_get_identifier(t_vm_stackframe *frame, char *id);
     t_object *vm_frame_find_identifier(t_vm_stackframe *frame, char *id);
