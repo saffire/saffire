@@ -38,21 +38,15 @@
  */
 
 SAFFIRE_METHOD(exception, ctor) {
-    t_string_object *msg_obj;
-    t_numerical_object *code_obj;
+    t_string *msg;
+    long code = 0;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n",  (t_object *)&msg_obj, (t_object *)&code_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &msg, &code) != 0) {
         return NULL;
     }
 
-    self->data.message = string_strdup(msg_obj->data.value);
-
-    if (code_obj) {
-        self->data.code = code_obj->data.value;
-    } else {
-        self->data.code = 0;
-    }
-
+    self->data.message = string_strdup(msg);
+    self->data.code = code;
     self->data.stacktrace = NULL;
 
     RETURN_SELF;
@@ -79,14 +73,14 @@ SAFFIRE_METHOD(exception, getmessage) {
 }
 
 SAFFIRE_METHOD(exception, setmessage) {
-    t_string_object *message;
+    t_string *message;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &message) != 0) {
         object_raise_exception(Object_ArgumentException, 1, "error while parsing argument list");
         return NULL;
     }
 
-    self->data.message = message->data.value;
+    self->data.message = string_strdup(message);
     RETURN_SELF;
 }
 
@@ -95,20 +89,19 @@ SAFFIRE_METHOD(exception, getcode) {
 }
 
 SAFFIRE_METHOD(exception, setcode) {
-    t_numerical_object *code;
+    long code;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &code) != 0) {
         return NULL;
     }
 
-    self->data.code = code->data.value;
+    self->data.code = code;
     RETURN_SELF;
 }
 
 SAFFIRE_METHOD(exception, getstacktrace) {
     if (self->data.stacktrace == NULL) {
-        // @TODO: Return empty hashtable?
-        RETURN_NULL;
+        RETURN_EMPTY_LIST();
     }
 
     RETURN_LIST(self->data.stacktrace);
@@ -234,7 +227,7 @@ static void obj_destroy(t_object *obj) {
 static char *obj_debug(t_object *obj) {
     t_exception_object *exception_obj = (t_exception_object *)obj;
 
-    snprintf(exception_obj->__debug_info, DEBUG_INFO_SIZE-1, "%s(%ld)[%s]", exception_obj->name, exception_obj->data.code, exception_obj->data.message ? exception_obj->data.message->val : "");
+    snprintf(exception_obj->__debug_info, DEBUG_INFO_SIZE-1, "%s(%ld)[%s]", exception_obj->name, exception_obj->data.code, exception_obj->data.message ? STRING_CHAR0(exception_obj->data.message) : "");
 
     return exception_obj->__debug_info;
 }

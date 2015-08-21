@@ -430,7 +430,7 @@ DBGP_CMD_DEF(context_get) {
                 t_string *s = ((t_string_object *)obj)->data.value;
 
                 // @TODO: We have to convert
-                basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
+                basebuf = base64_encode((unsigned char *)STRING_CHAR0(s), STRING_LEN(s), &basebuflen);
 //                printf("basebuf: '%s'\n", basebuf);
                 xmlNodeSetContent(node, BAD_CAST basebuf);
                 free(basebuf);

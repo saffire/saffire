@@ -40,6 +40,10 @@
         UChar           *unicode;       // Unicode string. May or may not be filled.
     };
 
+    #define STRING_CHAR0(str)       str->val
+    #define STRING_LEN(str)         str->len
+    #define STRING_UNICODE(str)     str->unicode
+
     t_string *char0_to_string(const char *s);
     t_string *char_to_string(const char *s, size_t len);
     char *string_to_char0(const t_string *s);
@@ -54,8 +58,8 @@
     char *string_strdup0(const char *s);
     t_string *string_strdup(const t_string *s);
 
-    t_string *string_strcat0(t_string *dst, const char *src);
-    t_string *string_strcat(t_string *dst, const t_string *src);
+    t_string *string_strcat0(const t_string *pre, const char *post);
+    t_string *string_strcat(const t_string *pre, const t_string *post);
 
     t_string *string_copy_partial(const t_string *src, size_t offset, size_t count);
 

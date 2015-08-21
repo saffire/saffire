@@ -47,18 +47,17 @@
  *
  */
 SAFFIRE_MODULE_METHOD(os, stat) {
-    t_string_object *path_obj;
+    t_string *path;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path) != 0) {
         return NULL;
     }
 
-    char *path = STROBJ2CHAR0(path_obj);
     struct stat sb;
 
-    int ret = stat(path, &sb);
+    int ret = stat(STRING_CHAR0(path), &sb);
     if (ret == -1) {
-        object_raise_exception(Object_FileNotFoundException, 1, "Cannot stat file '%s'", path);
+        object_raise_exception(Object_FileNotFoundException, 1, "Cannot stat file '%s'", STRING_CHAR0(path));
 
         RETURN_NULL;
     }
@@ -83,14 +82,12 @@ SAFFIRE_MODULE_METHOD(os, cwd) {
 }
 
 SAFFIRE_MODULE_METHOD(os, usleep) {
-    t_numerical_object *delay_obj;
     long delay;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &delay_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &delay) != 0) {
         return NULL;
     }
 
-    delay = OBJ2NUM(delay_obj);
     if (delay < 0) {
         delay = 0;
     }
@@ -101,14 +98,14 @@ SAFFIRE_MODULE_METHOD(os, usleep) {
 }
 
 SAFFIRE_MODULE_METHOD(os, realpath) {
-    t_string_object *path_obj;
+    t_string *path;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &path) != 0) {
         return NULL;
     }
 
     char *rpath = smm_malloc(PATH_MAX);
-    realpath(STROBJ2CHAR0(path_obj), rpath);
+    realpath(STRING_CHAR0(path), rpath);
 
     t_string_object *str_obj = (t_string_object *)STR02OBJ(rpath);
     smm_free(rpath);

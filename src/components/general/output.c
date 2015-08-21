@@ -41,7 +41,7 @@ static int _stdio_output_char_helper(FILE *f, char c) {
     return fwrite(&c, 1, 1, f);
 }
 static int _stdio_output_string_helper(FILE *f, t_string *s) {
-    return fwrite(s->val, s->len, 1, f);
+    return fwrite(STRING_CHAR0(s), STRING_LEN(s), 1, f);
 }
 
 // By default, the helpers will print to STDIO

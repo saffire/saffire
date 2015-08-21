@@ -74,18 +74,17 @@ static t_string_object *string_create_new_object(t_string *str, char *locale) {
     return uc_obj;
 }
 
-t_string *object_string_cat(t_string_object *s1, t_string_object *s2) {
-    t_string *dst = string_strdup(s1->data.value);
-    string_strcat(dst, s2->data.value);
+//t_string *object_string_cat(t_string *s1, t_string *s2) {
+//    t_string *dst = string_strdup(s1);
+//    string_strcat(dst, s2);
+//    return dst;
+//}
 
-    return dst;
-}
+static int _string_compare(t_string *s1, t_string *s2) {
+    create_utf8_from_string(s1);
+    create_utf8_from_string(s2);
 
-int object_string_compare(t_string_object *s1, t_string_object *s2) {
-    create_utf8_from_string(s1->data.value);
-    create_utf8_from_string(s2->data.value);
-
-    return utf8_strcmp(s1->data.value, s2->data.value);
+    return utf8_strcmp(s1, s2);
 }
 
 /* ======================================================================
@@ -108,18 +107,20 @@ int object_string_compare(t_string_object *s1, t_string_object *s2) {
  * Saffire method: constructor
  */
 SAFFIRE_METHOD(string, ctor) {
-    t_string_object *str_obj, *locale_obj;
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str_obj, &locale_obj) != 0) {
+    t_string *str = NULL, *locale = NULL;
+
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|s", &str, &locale) != 0) {
         return NULL;
     }
 
-    self->data.value = string_strdup(str_obj->data.value);
-    if (locale_obj) {
-        self->data.locale = string_to_char0(locale_obj->data.value);
+    self->data.value = string_strdup(str);
+    if (locale) {
+        self->data.locale = STRING_CHAR0(locale);
     } else {
         t_thread *thread = thread_get_current();
         self->data.locale = thread->locale ? string_strdup0(thread->locale) : NULL;
     }
+
     RETURN_SELF;
 }
 
@@ -135,7 +136,7 @@ SAFFIRE_METHOD(string, dtor) {
  * Saffire method: Returns length of the string (in characters)
  */
 SAFFIRE_METHOD(string, length) {
-    RETURN_NUMERICAL(self->data.value->len);
+    RETURN_NUMERICAL(STRING_LEN(self->data.value));
 }
 
 /**
@@ -184,12 +185,13 @@ SAFFIRE_METHOD(string, lower) {
  */
 SAFFIRE_METHOD(string, reverse) {
     t_string *dst = string_strdup(self->data.value);
+    utf8_free_unicode(dst);
 
     // Reverse all chars, except the last \0
-    for (int i=0; i!=dst->len; i++) {
-        dst->val[i] = self->data.value->val[dst->len - 1 - i];
+    char *c = STRING_CHAR0(dst);
+    for (int i=0; i!=STRING_LEN(dst); i++) {
+        c[i] = STRING_CHAR0(self->data.value)[STRING_LEN(dst) - 1 - i];
     }
-    utf8_free_unicode(dst);
 
     t_string_object *obj = string_create_new_object(dst, self->data.locale);
     RETURN_OBJECT(obj);
@@ -200,12 +202,12 @@ SAFFIRE_METHOD(string, reverse) {
  * Saffire method: Trims whitespaces left and right
  */
 SAFFIRE_METHOD(string, trim) {
-    if (self->data.value->len == 0) {
+    if (STRING_LEN(self->data.value) == 0) {
         RETURN_STRING_FROM_CHAR("");
     }
 
     // Trim left
-    char *str = self->data.value->val;
+    char *str = STRING_CHAR0(self->data.value);
     while(isspace(*str)) str++;
 
     // Hit a \0 char? return empty string (breaks binsafe strings)
@@ -214,7 +216,7 @@ SAFFIRE_METHOD(string, trim) {
     }
 
     // Trim right
-    char *end = self->data.value->val + self->data.value->len - 1;
+    char *end = STRING_CHAR0(self->data.value) + STRING_LEN(self->data.value) - 1;
     while(end >= str && isspace(*end)) end--;
     end++;
 
@@ -226,13 +228,13 @@ SAFFIRE_METHOD(string, trim) {
  * Saffire method: Trims whitespaces left
  */
 SAFFIRE_METHOD(string, ltrim) {
-    if (self->data.value->len == 0) {
+    if (STRING_LEN(self->data.value) == 0) {
         RETURN_STRING_FROM_CHAR("");
     }
 
     // Trim left
-    long len = self->data.value->len;
-    char *str = self->data.value->val;
+    long len = STRING_LEN(self->data.value);
+    char *str = STRING_CHAR0(self->data.value);
     while(isspace(*str)) {
         str++;
         len--;
@@ -250,13 +252,13 @@ SAFFIRE_METHOD(string, ltrim) {
  * Saffire method: Trims whitespaces right
  */
 SAFFIRE_METHOD(string, rtrim) {
-    if (self->data.value->len == 0) {
+    if (STRING_LEN(self->data.value) == 0) {
         RETURN_STRING_FROM_CHAR("");
     }
 
     // Trim right
-    char *str = self->data.value->val;
-    char *end = str + self->data.value->len - 1;
+    char *str = STRING_CHAR0(self->data.value);
+    char *end = str + STRING_LEN(self->data.value) - 1;
     while(end >= str && isspace(*end)) end--;
     end++;
 
@@ -271,7 +273,7 @@ SAFFIRE_METHOD(string, rtrim) {
  *
  */
 SAFFIRE_METHOD(string, conv_boolean) {
-    if (self->data.value->len == 0) {
+    if (STRING_LEN(self->data.value) == 0) {
         RETURN_FALSE;
     } else {
         RETURN_TRUE;
@@ -317,12 +319,14 @@ SAFFIRE_METHOD(string, conv_string) {
 }
 
 SAFFIRE_METHOD(string, split) {
-    t_string_object *token_obj;
-    t_numerical_object *max_obj;
+    t_string *token;
+    long max = 0;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &token_obj, &max_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &token, &max) != 0) {
         return NULL;
     }
+
+    // @TODO: HIGH: Split does not work? string_split??
 
     RETURN_FALSE;
 }
@@ -331,25 +335,26 @@ SAFFIRE_METHOD(string, split) {
  *
  */
 SAFFIRE_METHOD(string, splice) {
-    // @TODO: We probably want to just change the length and the offset of the t_string. Not doing any real copies
-    t_object *min_obj;
-    t_object *max_obj;
+    // @TODO: MEDIUM: We probably want to just change the length and the offset of the t_string. Not doing any real copies
+    long min, max;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "oo", &min_obj, &max_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n+n+", &min, &max) != 0) {
         return NULL;
     }
 
-    signed long min = OBJECT_IS_NULL(min_obj) ? 0 : OBJ2NUM(min_obj);
-    signed long max = OBJECT_IS_NULL(max_obj) ? self->data.value->len : OBJ2NUM(max_obj);
+    // If max is 0, use the complete length of the string
+    if (max == 0) {
+        max = STRING_LEN(self->data.value);
+    }
 
     if (min == 0 && max == 0) RETURN_SELF;
 
     // Below 0, means we have to seek from the end of the string
-    if (min < 0) min = self->data.value->len + min - 1;
-    if (max < 0) max = self->data.value->len + max - 1;
+    if (min < 0) min = STRING_LEN(self->data.value) + min - 1;
+    if (max < 0) max = STRING_LEN(self->data.value) + max - 1;
 
-    if (min > self->data.value->len) min = self->data.value->len;
-    if (max > self->data.value->len || max == 0) max = self->data.value->len;
+    if (min > STRING_LEN(self->data.value)) min = STRING_LEN(self->data.value);
+    if (max > STRING_LEN(self->data.value) || max == 0) max = STRING_LEN(self->data.value);
 
     // Sanity check
     if (max < min) {
@@ -374,9 +379,9 @@ SAFFIRE_METHOD(string, splice) {
  *
  */
 SAFFIRE_METHOD(string, to_locale) {
-    t_string_object *str_obj;
+    t_string *locale;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", (t_object *)&str_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &locale) != 0) {
         return NULL;
     }
 
@@ -384,7 +389,7 @@ SAFFIRE_METHOD(string, to_locale) {
     t_string_object *dst = (t_string_object *)object_clone((t_object *)self);
 
     // Set new locale
-    string_change_locale(dst, STROBJ2CHAR0(str_obj));
+    string_change_locale(dst, STRING_CHAR0(locale));
 
     RETURN_OBJECT(dst);
 }
@@ -402,18 +407,16 @@ SAFFIRE_METHOD(string, get_locale) {
  *
  */
 SAFFIRE_METHOD(string, index) {
-    t_string_object *needle_obj;
-    t_numerical_object *offset_obj = NULL;
+    t_string *needle;
+    long offset = 0;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", (t_object *)&needle_obj, &offset_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s|n", &needle, &offset) != 0) {
         return NULL;
     }
 
-    size_t offset = offset_obj == NULL ? 0 : (size_t)OBJ2NUM(offset_obj);
-
     create_utf8_from_string(self->data.value);
-    int pos = utf8_strstr(self->data.value, needle_obj->data.value, offset);
 
+    int pos = utf8_strstr(self->data.value, needle, offset);
     if (pos == -1) {
         RETURN_FALSE;
     }
@@ -427,17 +430,15 @@ SAFFIRE_METHOD(string, index) {
  * ======================================================================
  */
 SAFFIRE_OPERATOR_METHOD(string, add) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
+    t_string *dst = string_strcat(self->data.value, other);
 
-    t_string *dst = object_string_cat(self, other);
-
-    t_string_object *uc_obj = string_create_new_object(dst, self->data.locale);
-    RETURN_OBJECT(uc_obj);
+    RETURN_STRING(dst);
 }
 
 /* ======================================================================
@@ -445,79 +446,79 @@ SAFFIRE_OPERATOR_METHOD(string, add) {
  * ======================================================================
  */
 SAFFIRE_COMPARISON_METHOD(string, eq) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (self->data.value->len != other->data.value->len) {
+    if (STRING_LEN(self->data.value) != STRING_LEN(other)) {
         RETURN_FALSE;
     }
 
     // @TODO: Assuming that every unique string will be at the same address, we could do a simple address check
     //        instead of a memcmp. However, it means that we MUST make sure that the value_len's are also matching,
     //        otherwise "foo" would match "foobar", as they both have the same start address
-    if (object_string_compare(self, other) == 0) {
+    if (_string_compare(self->data.value, other) == 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ne) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (self->data.value->len != other->data.value->len) {
+    if (STRING_LEN(self->data.value) != STRING_LEN(other)) {
         RETURN_TRUE;
     }
 
     // @TODO: Assuming that every unique string will be at the same address, we could do a simple address check
     //        instead of a memcmp. However, it means that we MUST make sure that the value_len's are also matching,
     //        otherwise "foo" would match "foobar", as they both have the same start address
-    if (object_string_compare(self, other) != 0) {
+    if (_string_compare(self->data.value, other) != 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, lt) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (object_string_compare(self, other) < 0) {
+    if (_string_compare(self->data.value, other) < 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, gt) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (object_string_compare(self, other) > 0) {
+    if (_string_compare(self->data.value, other) > 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, le) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (object_string_compare(self, other) <= 0) {
+    if (_string_compare(self->data.value, other) <= 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -525,42 +526,42 @@ SAFFIRE_COMPARISON_METHOD(string, le) {
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ge) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
-    if (object_string_compare(self, other) >= 0) {
+    if (_string_compare(self->data.value, other) >= 0) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
 }
 
 SAFFIRE_COMPARISON_METHOD(string, in) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
     create_utf8_from_string(self->data.value);
-    create_utf8_from_string(other->data.value);
+    create_utf8_from_string(other);
 
-    utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_TRUE) : (RETURN_FALSE);
+    utf8_strstr(self->data.value, other, 0) ? (RETURN_TRUE) : (RETURN_FALSE);
 }
 
 SAFFIRE_COMPARISON_METHOD(string, ni) {
-    t_string_object *other;
+    t_string *other;
 
     if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s",  &other) != 0) {
         return NULL;
     }
 
     create_utf8_from_string(self->data.value);
-    create_utf8_from_string(other->data.value);
+    create_utf8_from_string(other);
 
-    utf8_strstr(self->data.value, other->data.value, 0) ? (RETURN_FALSE) : (RETURN_TRUE);
+    utf8_strstr(self->data.value, other, 0) ? (RETURN_FALSE) : (RETURN_TRUE);
 }
 
 
@@ -591,7 +592,7 @@ SAFFIRE_METHOD(string, __rewind) {
 }
 
 SAFFIRE_METHOD(string, __hasNext) {
-    if (self->data.iter < self->data.value->len) {
+    if (self->data.iter < STRING_LEN(self->data.value)) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -604,18 +605,16 @@ SAFFIRE_METHOD(string, __remove) {
     RETURN_SELF;
 }
 SAFFIRE_METHOD(string, __get) {
-    t_object *idx_obj;
+    long idx;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &idx) != 0) {
         return NULL;
     }
 
-    long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->data.value->len) {
+    if (idx < 0 || idx > STRING_LEN(self->data.value)) {
         object_raise_exception(Object_IndexException, 1, "Index out of range");
         return NULL;
     }
-
 
     t_string *dst = string_copy_partial(self->data.value, idx, 1);
     t_string_object *dst_obj = string_create_new_object(dst, self->data.locale);
@@ -624,14 +623,13 @@ SAFFIRE_METHOD(string, __get) {
 
 
 SAFFIRE_METHOD(string, __has) {
-    t_object *idx_obj;
+    long idx;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "o", &idx_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &idx) != 0) {
         return NULL;
     }
 
-    long idx = OBJ2NUM(idx_obj);
-    if (idx < 0 || idx > self->data.value->len) {
+    if (idx < 0 || idx > STRING_LEN(self->data.value)) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
@@ -776,7 +774,7 @@ static char *obj_debug(t_object *obj) {
     if (! str_obj->data.value) {
         snprintf(str_obj->__debug_info, DEBUG_INFO_SIZE-1, "string()");
     } else {
-        snprintf(str_obj->__debug_info, DEBUG_INFO_SIZE-1, "string(%zd):\"%s\"", str_obj->data.value->len, str_obj->data.value->val);
+        snprintf(str_obj->__debug_info, DEBUG_INFO_SIZE-1, "string(%zd):\"%s\"", STRING_LEN(str_obj->data.value), STRING_CHAR0(str_obj->data.value));
     }
     return str_obj->__debug_info;
 }

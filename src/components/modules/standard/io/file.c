@@ -52,26 +52,26 @@
  *
  */
 SAFFIRE_MODULE_METHOD(io_file, open) {
-    t_string_object *name_obj;
-    t_string_object *mode_obj;
+    t_string *name;
+    t_string *mode;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &name_obj, &mode_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "ss", &name, &mode) != 0) {
         return NULL;
     }
 
     // Instantiate new file object
 
     t_file_object *file_obj = (t_file_object *)object_alloc_instance(self, 0);
-    file_obj->data.fp = fopen(OBJ2STR0(name_obj), OBJ2STR0(mode_obj));
+    file_obj->data.fp = fopen(STRING_CHAR0(name), STRING_CHAR0(mode));
 
     if (file_obj->data.fp == NULL) {
-        object_raise_exception(Object_FileNotFoundException, 1, "Cannot open file '%s'", OBJ2STR0(name_obj));
+        object_raise_exception(Object_FileNotFoundException, 1, "Cannot open file '%s'", STRING_CHAR0(name));
         return NULL;
     }
 
     file_obj->data.bytes_in = 0;
     file_obj->data.bytes_out = 0;
-    file_obj->data.path = string_strdup0(OBJ2STR0(name_obj));
+    file_obj->data.path = string_strdup0(STRING_CHAR0(name));
     file_obj->data.stat = NULL;
 
     RETURN_OBJECT(file_obj);
@@ -177,14 +177,13 @@ SAFFIRE_MODULE_METHOD(io_file, tell) {
 SAFFIRE_MODULE_METHOD(io_file, seek) {
     t_file_object *file_obj = (t_file_object *)self;
 
-    t_numerical_object *offset_obj;
-    t_numerical_object *origin_obj;
+    long offset, origin;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &offset_obj, &origin_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "nn", &offset, &origin) != 0) {
         return NULL;
     }
 
-    long ret = fseek(file_obj->data.fp, OBJ2NUM(offset_obj), OBJ2NUM(origin_obj));
+    long ret = fseek(file_obj->data.fp, offset, origin);
 
     RETURN_NUMERICAL(ret);
 }
@@ -195,22 +194,21 @@ SAFFIRE_MODULE_METHOD(io_file, seek) {
 SAFFIRE_MODULE_METHOD(io_file, read) {
     t_file_object *file_obj = (t_file_object *)self;
 
-    t_numerical_object *size_obj;
+    long size;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &size_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "n", &size) != 0) {
         return NULL;
     }
 
     // Allocate buffer to hold maximum number of bytes
-    long buflen = OBJ2NUM(size_obj);
-    char *buf = (char *)smm_malloc(buflen);
+    char *buf = (char *)smm_malloc(size);
 
     // Read bytes
-    long bytes_read = fread(buf, 1, buflen, file_obj->data.fp);
+    long bytes_read = fread(buf, 1, size, file_obj->data.fp);
     file_obj->data.bytes_in += bytes_read;
 
     // Resize buffer back when we have read less bytes than requested
-    if (bytes_read < buflen) {
+    if (bytes_read < size) {
         buf = smm_realloc(buf, bytes_read);
     }
 
@@ -223,13 +221,13 @@ SAFFIRE_MODULE_METHOD(io_file, read) {
 SAFFIRE_MODULE_METHOD(io_file, write) {
     t_file_object *file_obj = (t_file_object *)self;
 
-    t_string_object *str_obj;
+    t_string *str;
 
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "s", &str) != 0) {
         return NULL;
     }
 
-    long bytes_written = fwrite(str_obj->data.value->val, 1, str_obj->data.value->len, file_obj->data.fp);
+    long bytes_written = fwrite(STRING_CHAR0(str), 1, STRING_LEN(str), file_obj->data.fp);
     file_obj->data.bytes_out += bytes_written;
 
     RETURN_NUMERICAL(bytes_written);

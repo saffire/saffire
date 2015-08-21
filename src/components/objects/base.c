@@ -174,13 +174,14 @@ SAFFIRE_METHOD(base, dtor) {
  * Returns a list of all properties in this class
  */
 SAFFIRE_METHOD(base, constants) {
+    long parents = 0;
+
     // Check arguments
-    t_boolean_object *parents_obj;
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", &parents) != 0) {
         return NULL;
     }
 
-    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_CONSTANT, IS_BOOLEAN_TRUE(parents_obj));
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_CONSTANT, parents);
     RETURN_LIST(methods);
 }
 
@@ -189,12 +190,13 @@ SAFFIRE_METHOD(base, constants) {
  */
 SAFFIRE_METHOD(base, properties) {
     // Check arguments
-    t_boolean_object *parents_obj;
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
+    long parents = 0;
+
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", &parents) != 0) {
         return NULL;
     }
 
-    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_PROPERTY, IS_BOOLEAN_TRUE(parents_obj));
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_PROPERTY, parents);
     RETURN_LIST(methods);
 }
 
@@ -204,12 +206,12 @@ SAFFIRE_METHOD(base, properties) {
  */
 SAFFIRE_METHOD(base, methods) {
     // Check arguments
-    t_boolean_object *parents_obj;
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
+    long parents = 0;
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", &parents) != 0) {
         return NULL;
     }
 
-    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_METHOD, IS_BOOLEAN_TRUE(parents_obj));
+    t_hash_table *methods = find_properties(self, ATTRIB_TYPE_METHOD, parents);
     RETURN_LIST(methods);
 }
 
@@ -252,16 +254,13 @@ SAFFIRE_METHOD(base, type) {
  */
 SAFFIRE_METHOD(base, implements) {
     // Check arguments
-    t_boolean_object *parents_obj;
-    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", (t_object *)&parents_obj) != 0) {
+    long parents = 1;
+
+    if (object_parse_arguments(SAFFIRE_METHOD_ARGS, "|b", &parents) != 0) {
         return NULL;
     }
 
-    if (parents_obj == NULL) {
-         parents_obj = (t_boolean_object *)Object_True;
-    }
-
-    t_hash_table *interfaces = find_interfaces(self, IS_BOOLEAN_TRUE(parents_obj));
+    t_hash_table *interfaces = find_interfaces(self, parents);
     RETURN_LIST(interfaces);
 }
 

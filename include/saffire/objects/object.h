@@ -254,12 +254,16 @@
     void object_init(void);
     void object_fini(void);
 
-    char *object_debug(t_object *obj);
     int object_parse_arguments(t_dll *arguments, const char *speclist, ...);
+    int object_parse_argument_objects(t_dll *arguments, const char *speclist, ...);
+
+    char *object_debug(t_object *obj);
     t_object *object_clone(t_object *obj);
     char *object_get_hash(t_object *obj);
+
     t_object *object_alloc_instance(t_object *obj, int arg_count, ...);
     t_object *object_alloc_class(t_object *obj, int arg_count, ...);
+
     void object_inc_ref(t_object *obj);
     long object_release(t_object *obj);
 

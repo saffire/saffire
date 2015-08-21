@@ -165,14 +165,14 @@ static int _debug_output_string_helper(FILE *f, t_string *s) {
         xmlNewProp(stream_node, BAD_CAST "type", BAD_CAST (f == stdout ? "stdout" : "stderr"));
 
         size_t basebuflen;
-        char *basebuf = base64_encode((unsigned char *)s->val, s->len, &basebuflen);
+        char *basebuf = base64_encode((unsigned char *)STRING_CHAR0(s), STRING_LEN(s), &basebuflen);
         xmlNodeSetContent(stream_node, BAD_CAST basebuf);
         free(basebuf);
 
         dbgp_xml_send(di->sock_fd, stream_node);
     }
 
-    return s->len;
+    return STRING_LEN(s);
 }
 
 
